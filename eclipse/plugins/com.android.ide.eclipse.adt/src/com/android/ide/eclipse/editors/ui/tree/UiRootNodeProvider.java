@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.wizards.actions;
+package com.android.ide.eclipse.editors.ui.tree;
 
-import com.android.ide.eclipse.adt.wizards.newxmlfile.NewXmlFileWizard;
-
-import org.eclipse.jface.action.IAction;
-import org.eclipse.ui.IWorkbenchWizard;
+import com.android.ide.eclipse.editors.uimodel.UiElementNode;
 
 /**
- * Delegate for the toolbar action "Android Project".
- * It displays the Android New XML file wizard.
+ * An object that can provide a uiRootNode.
  */
-public class NewXmlFileAction extends OpenWizardAction {
-
-    @Override
-    protected IWorkbenchWizard instanciateWizard(IAction action) {
-        return new NewXmlFileWizard();
-    }
+public interface UiRootNodeProvider {
+    /** Returns the UiDocumentNode for the current model. */
+    public abstract UiElementNode getRootNode();
 }
