@@ -8,7 +8,7 @@ set -e # fail early
 
 # CD to the top android directory
 D=`dirname "$0"`
-cd "$D/../../../../"
+cd "$D/../../../"
 
 HOST=`uname`
 if [ "$HOST" == "Linux" ]; then
@@ -19,7 +19,7 @@ elif [ "$HOST" == "Darwin" ]; then
 
 elif [ "${HOST:0:6}" == "CYGWIN" ]; then
     if [ "x$1" == "x" ] || [ `basename "$1"` != "layoutlib.jar" ]; then
-        echo "Usage: $0 sdk/platforms/xxx/data/layoutlib.jar"
+        echo "Usage: $0 yoursdk/platforms/xxx/data/layoutlib.jar"
         echo "Argument 1 should be the path to the layoutlib.jar that should be updated."
         exit 1
     fi
