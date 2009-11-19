@@ -4,7 +4,7 @@ set -e
 
 # CD to the top android directory
 D=`dirname "$0"`
-cd "$D/../../../../"
+cd "$D/../../../"
 
 # computes relative ".." paths from $1 to here (in /android)
 function back() {
@@ -26,7 +26,7 @@ else
     }
 fi
 
-BASE="development/tools/eclipse/plugins/com.android.ide.eclipse.tests"
+BASE="sdk/eclipse/plugins/com.android.ide.eclipse.tests"
 DEST=$BASE
 BACK=`back $DEST`
 
@@ -66,8 +66,8 @@ fi
 
 # create link to ddmlib tests
 DEST=$BASE/unittests/com/android
-cpdir $DEST development/tools/ddms/libs/ddmlib/tests/src/com/android/ddmlib
-cpdir $DEST development/tools/sdkmanager/libs/sdklib/tests/com/android/sdklib
+cpdir $DEST sdk/ddms/libs/ddmlib/tests/src/com/android/ddmlib
+cpdir $DEST sdk/sdkmanager/libs/sdklib/tests/com/android/sdklib
 
 # Cleanup old obsolete symlink
 [[ -e $DEST/sdkuilib || -L $DEST/sdkuilib ]] && rm -rfv $DEST/sdkuilib
