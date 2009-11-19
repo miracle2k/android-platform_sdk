@@ -18,9 +18,9 @@ function die() {
 
 # CD to the top android directory
 D=`dirname "$0"`
-cd "$D/../../../../"
+cd "$D/../../../"
 
-DEST="development/tools/eclipse/scripts"
+DEST="sdk/eclipse/scripts"
 
 set -e # fail early
 
