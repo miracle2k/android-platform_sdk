@@ -2,7 +2,7 @@
 
 # build script for eclipse adt build on linux platform
 #
-# Usage: development/tools/eclipse/scripts/build_plugins <build_version> 
+# Usage: sdk/eclipse/scripts/build_plugins <build_version> 
 #
 # It expects environment variable ECLIPSE_HOME to be defined to point to _your_
 # version of Eclipse RCP (must have the WTP & GEF plugins available too.)
@@ -59,10 +59,10 @@ function dieWithUsage() {
 HOST=`uname`
 [ "$HOST" == "Linux" ] || die "ERROR: This script is currently only supported on Linux platform"
 
-# Make sure this runs from the tools/eclipse plugin.
+# Make sure this runs from the sdk/eclipse plugin.
 D=`dirname "$0"`
 cd "$D/.."
-[ `basename "$PWD"` == "eclipse" ] || dieWithUsage "Please run this script from the device/tools/eclipse directory"
+[ `basename "$PWD"` == "eclipse" ] || dieWithUsage "Please run this script from the sdk/eclipse directory"
 
 # check for number of parameters
 [ $# -lt 1 ] && dieWithUsage "ERROR: Not enough parameters"
