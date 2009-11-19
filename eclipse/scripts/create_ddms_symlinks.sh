@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------------------------------------------------------------------|
 # Creates the links to use ddm{ui}lib in the eclipse-ide plugin.
-# Run this from device/tools/eclipse/scripts
+# Run this from sdk/eclipse/scripts
 #----------------------------------------------------------------------------|
 
 set -e
@@ -37,10 +37,10 @@ fi
 
 # CD to the top android directory
 D=`dirname "$0"`
-cd "$D/../../../../"
+cd "$D/../../../"
 
 
-BASE="development/tools/eclipse/plugins/com.android.ide.eclipse.ddms"
+BASE="sdk/eclipse/plugins/com.android.ide.eclipse.ddms"
 
 DEST=$BASE/libs
 mkdir -p $DEST
@@ -50,8 +50,8 @@ done
 
 DEST=$BASE/src/com/android
 mkdir -p $DEST
-for i in development/tools/ddms/libs/ddmlib/src/com/android/ddmlib \
-         development/tools/ddms/libs/ddmuilib/src/com/android/ddmuilib ; do
+for i in sdk/ddms/libs/ddmlib/src/com/android/ddmlib \
+         sdk/ddms/libs/ddmuilib/src/com/android/ddmuilib ; do
   cpdir $DEST $i
 done
 
@@ -74,6 +74,6 @@ for i in \
     up.png \
     v.png \
     w.png warning.png ; do
-  cpfile $DEST development/tools/ddms/libs/ddmuilib/src/resources/images/$i
+  cpfile $DEST sdk/ddms/libs/ddmuilib/src/resources/images/$i
 done
 
