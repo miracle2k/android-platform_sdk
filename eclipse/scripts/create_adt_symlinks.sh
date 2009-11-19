@@ -8,9 +8,9 @@ set -e # fail early
 
 # CD to the top android directory
 D=`dirname "$0"`
-cd "$D/../../../../"
+cd "$D/../../../"
 
-DEST="development/tools/eclipse/plugins/com.android.ide.eclipse.adt"
+DEST="sdk/eclipse/plugins/com.android.ide.eclipse.adt"
 # computes "../.." from DEST to here (in /android)
 BACK=`echo $DEST | sed 's@[^/]*@..@g'`
 
