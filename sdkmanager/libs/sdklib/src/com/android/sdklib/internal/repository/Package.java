@@ -16,6 +16,7 @@
 
 package com.android.sdklib.internal.repository;
 
+import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
@@ -40,7 +41,7 @@ import java.util.Properties;
  * <p/>
  * Derived classes must implement the {@link IDescription} methods.
  */
-public abstract class Package implements IDescription {
+public abstract class Package implements IDescription, Comparable<Package> {
 
     private static final String PROP_REVISION     = "Pkg.Revision";     //$NON-NLS-1$
     private static final String PROP_LICENSE      = "Pkg.License";      //$NON-NLS-1$
@@ -423,4 +424,50 @@ public abstract class Package implements IDescription {
         // not an upgrade but not incompatible either.
         return UpdateInfo.NOT_UPDATE;
     }
+
+
+    /**
+     * Returns an ordering like this:
+     * - Tools.
+     * - Docs.
+     * - Platform n preview
+     * - Add-on based on n preview
+     * - Platform n
+     * - Add-on based on n
+     * - Platform n-1
+     * - Add-on based on n-1
+     * - Extra packages.
+     */
+    public int compareTo(Package other) {
+        int s1 = this.sortingScore();
+        int s2 = other.sortingScore();
+        return s1 - s2;
+    }
+
+    /**
+     * Computes the score for each package used by {@link #compareTo(Package)}.
+     */
+    private int sortingScore() {
+        int type = 0;
+        int rev = getRevision();
+        int offset = 0;
+        if (this instanceof ToolPackage) {
+            type = 3;
+        } else if (this instanceof DocPackage) {
+            type = 2;
+        } else if (this instanceof PlatformPackage || this instanceof AddonPackage) {
+            type = 1;
+            AndroidVersion v = ((IPackageVersion) this).getVersion();
+            offset = v.getApiLevel();
+            offset = offset * 2 + (v.isPreview() ? 1 : 0);
+            offset = offset * 2 + ((this instanceof AddonPackage) ? 0 : 1);
+        } else {
+            // extras and everything else
+            type = 0;
+        }
+
+        int n = (type << 28) + (offset << 12) + rev;
+        return 0 - n;
+    }
+
 }
