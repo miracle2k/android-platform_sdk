@@ -208,17 +208,23 @@ public class RepoSourcesAdapter {
                 packages = null;
             }
 
-            if (packages == null && source.getFetchError() != null) {
-                // Return a dummy entry to display the fetch error
-                return new Object[] { new RepoSourceError(source) };
+            ArrayList<Object> results = new ArrayList<Object>();
+
+            if (source.getFetchError() != null) {
+                // Insert a dummy entry to display the fetch error
+                results.add(new RepoSourceError(source));
             }
 
             // Either return a non-null package list or create a new empty node
             if (packages != null) {
-                return packages;
+                for (Package p : packages) {
+                    results.add(p);
+                }
             } else {
-                return new Object[] { new RepoSourceEmpty(source, !wasEmptyBeforeFilter) } ;
+                results.add(new RepoSourceEmpty(source, !wasEmptyBeforeFilter));
             }
+
+            return results.toArray();
         }
 
         /**

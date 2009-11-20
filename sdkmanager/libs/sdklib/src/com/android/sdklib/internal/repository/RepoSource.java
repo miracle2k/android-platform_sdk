@@ -159,19 +159,25 @@ public class RepoSource implements IDescription {
         monitor.incProgress(1);
 
         mFetchError = null;
+        String[] validationError = new String[] { null };
         Exception[] exception = new Exception[] { null };
         ByteArrayInputStream xml = fetchUrl(url, exception);
         Document validatedDoc = null;
+        boolean usingAlternateXml = false;
         String validatedUri = null;
         if (xml != null) {
             monitor.setDescription("Validate XML");
-            String uri = validateXml(xml, url, monitor);
+            String uri = validateXml(xml, url, validationError);
             if (uri != null) {
                 validatedDoc = getDocument(xml, monitor);
                 validatedUri = uri;
             } else {
                 validatedDoc = findAlternateToolsXml(xml);
-                validatedUri = SdkRepository.NS_SDK_REPOSITORY;
+                if (validatedDoc != null) {
+                    validationError[0] = null;  // remove error from XML validation
+                    validatedUri = SdkRepository.NS_SDK_REPOSITORY;
+                    usingAlternateXml = true;
+                }
             }
         }
 
@@ -185,13 +191,17 @@ public class RepoSource implements IDescription {
 
             xml = fetchUrl(url, exception);
             if (xml != null) {
-                String uri = validateXml(xml, url, monitor);
+                String uri = validateXml(xml, url, validationError);
                 if (uri != null) {
                     validatedDoc = getDocument(xml, monitor);
                     validatedUri = uri;
                 } else {
                     validatedDoc = findAlternateToolsXml(xml);
-                    validatedUri = SdkRepository.NS_SDK_REPOSITORY;
+                    if (validatedDoc != null) {
+                        validationError[0] = null;  // remove error from XML validation
+                        validatedUri = SdkRepository.NS_SDK_REPOSITORY;
+                        usingAlternateXml = true;
+                    }
                 }
             }
 
@@ -228,9 +238,19 @@ public class RepoSource implements IDescription {
             monitor.setResult("Failed to fetch URL %1$s, reason: %2$s", url, reason);
         }
 
+        if(validationError[0] != null) {
+            monitor.setResult("%s", validationError[0]);  //$NON-NLS-1$
+        }
+
         // Stop here if we failed to validate the XML. We don't want to load it.
         if (validatedDoc == null) {
             return;
+        }
+
+        if (usingAlternateXml) {
+            String info = "This repository requires a more recent version of the Tools. Please update.";
+            mFetchError = mFetchError == null ? info : mFetchError + ". " + info;
+            mDescription = "This repository requires a more recent version of the Tools.\nYou must update it before you can see other new packages.";
         }
 
         monitor.incProgress(1);
@@ -318,7 +338,7 @@ public class RepoSource implements IDescription {
      * If the XML was correctly validated, returns the schema that worked.
      * If no schema validated the XML, returns null.
      */
-    private String validateXml(ByteArrayInputStream xml, String url, ITaskMonitor monitor) {
+    private String validateXml(ByteArrayInputStream xml, String url, String[] outError) {
 
         String lastError = null;
         String extraError = null;
@@ -346,7 +366,7 @@ public class RepoSource implements IDescription {
         }
 
         if (lastError != null) {
-            monitor.setResult(lastError, url, extraError);
+            outError[0] = String.format(lastError, url, extraError);
         }
         return null;
     }
