@@ -22,12 +22,16 @@
     attributeFormDefault="unqualified"
     version="1">
 
-    <xsd:element name="layout-devices">
+    <!-- The root element layout-devices defines a sequence of 0..n device elements. -->
+
+    <xsd:element name="layout-devices" type="c:layoutDevicesType" />
+
+    <xsd:complexType name="layoutDevicesType">
         <xsd:annotation>
             <xsd:documentation xml:lang="en">
                 The "layout-devices" element is the root element of this schema.
 
-                It must contain one or more "device" elements that each define the configurations
+                It must contain zero or more "device" elements that each define the configurations
                 available for a given device.
 
                 These definitions are used in the Graphical Layout Editor in the
@@ -35,43 +39,41 @@
             </xsd:documentation>
         </xsd:annotation>
 
-        <xsd:complexType>
-            <xsd:sequence>
-                <!-- layout-devices defines a sequence of 1..n device elements. -->
-                <xsd:element name="device" minOccurs="1" maxOccurs="unbounded">
+        <xsd:sequence>
+            <!-- layout-devices defines a sequence of 0..n device elements. -->
+            <xsd:element name="device" minOccurs="0" maxOccurs="unbounded">
 
-                    <xsd:annotation>
-                        <xsd:documentation xml:lang="en">
-                            A device element must contain at most one "default" element
-                            followed by one or more "config" elements.
+                <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                        A device element must contain at most one "default" element
+                        followed by one or more "config" elements.
 
-                            The "default" element defines all the default parameters
-                            inherited by the following "config" elements.
-                            Each "config" element can override the default values, if any.
+                        The "default" element defines all the default parameters
+                        inherited by the following "config" elements.
+                        Each "config" element can override the default values, if any.
 
-                            A "device" element also has a required "name" attribute that
-                            represents the user-interface name of this device.
-                        </xsd:documentation>
-                    </xsd:annotation>
+                        A "device" element also has a required "name" attribute that
+                        represents the user-interface name of this device.
+                    </xsd:documentation>
+                </xsd:annotation>
 
-                    <xsd:complexType>
-                        <!-- device defines a choice of 0..1 default element
-                        and 1..n config elements. -->
+                <xsd:complexType>
+                    <!-- device defines a choice of 0..1 default element
+                    and 1..n config elements. -->
 
-                        <xsd:sequence>
-                            <xsd:element name="default" type="c:parametersType"
-                                         minOccurs="0"  maxOccurs="1" />
-                            <xsd:element name="config"  type="c:configType"
-                                         minOccurs="1"  maxOccurs="unbounded" />
-                        </xsd:sequence>
+                    <xsd:sequence>
+                        <xsd:element name="default" type="c:parametersType"
+                                     minOccurs="0"  maxOccurs="1" />
+                        <xsd:element name="config"  type="c:configType"
+                                     minOccurs="1"  maxOccurs="unbounded" />
+                    </xsd:sequence>
 
-                        <xsd:attribute name="name" type="xsd:normalizedString" use="required" />
-                    </xsd:complexType>
+                    <xsd:attribute name="name" type="xsd:normalizedString" use="required" />
+                </xsd:complexType>
 
-                </xsd:element>
-            </xsd:sequence>
-        </xsd:complexType>
-    </xsd:element>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
 
     <!-- The type of a device>default element.
          This is overridden by configType below for the device>config element.
