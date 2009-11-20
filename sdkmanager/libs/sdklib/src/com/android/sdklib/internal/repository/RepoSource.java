@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
@@ -736,6 +737,9 @@ public class RepoSource implements IDescription {
             }
 
             mPackages = packages.toArray(new Package[packages.size()]);
+
+            // Order the packages.
+            Arrays.sort(mPackages, null);
 
             return true;
         }
