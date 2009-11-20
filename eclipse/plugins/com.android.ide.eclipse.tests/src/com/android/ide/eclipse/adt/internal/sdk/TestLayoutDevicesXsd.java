@@ -189,15 +189,12 @@ public class TestLayoutDevicesXsd extends TestCase {
                 "cvc-complex-type.4: Attribute 'name' must appear on element 'd:device'.");
     }
 
-    /** A document with a root element containing no device element is not valid. */
+    /** A document with a root element containing no device element is valid. */
     public void testEmptyRootXml() throws Exception {
-        checkFailure(
+        checkSuccess(
                 // document
                 "<?xml version=\"1.0\"?>" +
-                "<d:layout-devices xmlns:d=\"http://schemas.android.com/sdk/android/layout-devices/1\" />",
-
-                // expected failure
-                "cvc-complex-type.2.4.b: The content of element 'd:layout-devices' is not complete.*");
+                "<d:layout-devices xmlns:d=\"http://schemas.android.com/sdk/android/layout-devices/1\" />");
     }
 
     /** A document with an empty device element is not valid. */
