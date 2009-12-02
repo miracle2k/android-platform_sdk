@@ -127,7 +127,7 @@ public final class AvdManager {
     /**
      * Pattern for matching SD Card sizes, e.g. "4K" or "16M".
      */
-    public final static Pattern SDCARD_SIZE_PATTERN = Pattern.compile("\\d+[MK]"); //$NON-NLS-1$
+    public final static Pattern SDCARD_SIZE_PATTERN = Pattern.compile("(\\d+)([MK])"); //$NON-NLS-1$
 
     /** Regex used to validate characters that compose an AVD name. */
     public final static Pattern RE_AVD_NAME = Pattern.compile("[a-zA-Z0-9._-]+"); //$NON-NLS-1$
@@ -548,6 +548,23 @@ public final class AvdManager {
                     // First, check that it matches the pattern for sdcard size
                     Matcher m = SDCARD_SIZE_PATTERN.matcher(sdcard);
                     if (m.matches()) {
+                        // get the sdcard values for checks
+                        int sdcardSize = Integer.parseInt(m.group(1)); // pattern check
+                                                                       // above makes
+                                                                       // this unlikely to fail
+                        String sdcardSizeModifier = m.group(2);
+                        if ("K".equals(sdcardSizeModifier)) {
+                            sdcardSize *= 1024;
+                        } else { // must be "M" per the pattern
+                            sdcardSize *= 1024 * 1024;
+                        }
+
+                        if (sdcardSize < 9 * 1024 * 1024) {
+                            log.error(null, "SD Card size must be at least 9MB");
+                            needCleanup = true;
+                            return null;
+                        }
+
                         // create the sdcard.
                         sdcardFile = new File(avdFolder, SDCARD_IMG);
                         String path = sdcardFile.getAbsolutePath();
@@ -574,12 +591,9 @@ public final class AvdManager {
                         // only when the dev does 'android list avd'
                         values.put(AVD_INI_SDCARD_SIZE, sdcard);
                     } else {
-                        log.error(null,
-                                "'%1$s' is not recognized as a valid sdcard value.\n" +
-                                "Value should be:\n" +
-                                "1. path to an sdcard.\n" +
-                                "2. size of the sdcard to create: <size>[K|M]",
-                                sdcard);
+                        log.error(null, "'%1$s' is not recognized as a valid sdcard value.\n"
+                                + "Value should be:\n" + "1. path to an sdcard.\n"
+                                + "2. size of the sdcard to create: <size>[K|M]", sdcard);
                         needCleanup = true;
                         return null;
                     }
