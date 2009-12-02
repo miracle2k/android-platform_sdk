@@ -227,7 +227,7 @@ final class AddOnTarget implements IAndroidTarget {
 
         // The receiver is an add-on. There are 2 big use cases: The add-on has libraries
         // or the add-on doesn't (in which case we consider it a platform).
-        if (mLibraries.length == 0) {
+        if (mLibraries == null || mLibraries.length == 0) {
             return mBasePlatform.isCompatibleBaseFor(target);
         } else {
             // the only targets that can run the receiver are the same add-on in the same or later
