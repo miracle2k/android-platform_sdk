@@ -257,11 +257,13 @@ final class AvdCreationDialog extends GridDialog {
         mSdCardSize = new Text(sdCardGroup, SWT.BORDER);
         mSdCardSize.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mSdCardSize.addVerifyListener(mDigitVerifier);
+        mSdCardSize.addModifyListener(validateListener);
 
         mSdCardSizeCombo = new Combo(sdCardGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
         mSdCardSizeCombo.add("KiB");
         mSdCardSizeCombo.add("MiB");
         mSdCardSizeCombo.select(1);
+        mSdCardSizeCombo.addSelectionListener(validateListener);
 
         mSdCardFileRadio = new Button(sdCardGroup, SWT.RADIO);
         mSdCardFileRadio.setText("File:");
@@ -718,6 +720,24 @@ final class AvdCreationDialog extends GridDialog {
                 String sdName = mSdCardFile.getText().trim();
                 if (sdName.length() > 0 && !new File(sdName).isFile()) {
                     error = "SD Card path isn't valid.";
+                }
+            } else {
+                String valueString = mSdCardSize.getText();
+                if (valueString.length() > 0) {
+                    int value = Integer.parseInt(valueString); // verifier makes this
+                                                               // unlikely to fail.
+                    switch (mSdCardSizeCombo.getSelectionIndex()) {
+                        case 0:
+                            value *= 1024;
+                            break;
+                        case 1:
+                            value *= 1024 * 1024;
+                            break;
+                    }
+
+                    if (value < 9 * 1024 * 1024) {
+                        error = "SD Card size must be at least 9MB";
+                    }
                 }
             }
         }
