@@ -116,61 +116,19 @@ public class SdkStatsService {
      * created.
      */
     public static void ping(final String app, final String version, final Display display) {
-        // Validate the application and version input.
-        final String normalVersion = normalizeVersion(app, version);
-
         // Unique, randomly assigned ID for this installation.
         PreferenceStore prefs = getPreferenceStore();
         if (prefs != null) {
-            if (!prefs.contains(PING_ID)) {
+            if (prefs.contains(PING_ID) == false) {
                 // First time: make up a new ID.  TODO: Use something more random?
                 prefs.setValue(PING_ID, new Random().nextLong());
 
-                // Also give them a chance to opt out.
-                prefs.setValue(PING_OPT_IN, getUserPermission(display));
-                try {
-                    prefs.save();
-                }
-                catch (IOException ioe) {
-                }
+                // ask the user whether he/she wants to opt-out.
+                // This will call doPing in the Display thread after the dialog closes.
+                getUserPermissionAndPing(app, version, prefs, display);
+            } else {
+                doPing(app, version, prefs);
             }
-
-            // If the user has not opted in, do nothing and quietly return.
-            if (!prefs.getBoolean(PING_OPT_IN)) {
-                // user opted out.
-                return;
-            }
-
-            // If the last ping *for this app* was too recent, do nothing.
-            String timePref = PING_TIME + "." + app;  // $NON-NLS-1$
-            long now = System.currentTimeMillis();
-            long then = prefs.getLong(timePref);
-            if (now - then < PING_INTERVAL_MSEC) {
-                // too soon after a ping.
-                return;
-            }
-
-            // Record the time of the attempt, whether or not it succeeds.
-            prefs.setValue(timePref, now);
-            try {
-                prefs.save();
-            }
-            catch (IOException ioe) {
-            }
-
-            // Send the ping itself in the background (don't block if the
-            // network is down or slow or confused).
-            final long id = prefs.getLong(PING_ID);
-            new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        actuallySendPing(app, normalVersion, id);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }.start();
         }
     }
 
@@ -227,6 +185,55 @@ public class SdkStatsService {
     }
 
     /**
+     * Pings the usage stats server, as long as the prefs contain the opt-in boolean
+     * @param app name to report in the ping
+     * @param version to report in the ping
+     * @param prefs the preference store where the opt-in value and ping times are store
+     */
+    private static void doPing(final String app, String version, PreferenceStore prefs) {
+        // Validate the application and version input.
+        final String normalVersion = normalizeVersion(app, version);
+
+        // If the user has not opted in, do nothing and quietly return.
+        if (!prefs.getBoolean(PING_OPT_IN)) {
+            // user opted out.
+            return;
+        }
+
+        // If the last ping *for this app* was too recent, do nothing.
+        String timePref = PING_TIME + "." + app;  // $NON-NLS-1$
+        long now = System.currentTimeMillis();
+        long then = prefs.getLong(timePref);
+        if (now - then < PING_INTERVAL_MSEC) {
+            // too soon after a ping.
+            return;
+        }
+
+        // Record the time of the attempt, whether or not it succeeds.
+        prefs.setValue(timePref, now);
+        try {
+            prefs.save();
+        }
+        catch (IOException ioe) {
+        }
+
+        // Send the ping itself in the background (don't block if the
+        // network is down or slow or confused).
+        final long id = prefs.getLong(PING_ID);
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    actuallySendPing(app, normalVersion, id);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+    }
+
+
+    /**
      * Unconditionally send a "ping" request to the Google toolbar server.
      *
      * @param app name to report in the ping
@@ -236,7 +243,7 @@ public class SdkStatsService {
      */
     @SuppressWarnings("deprecation")
     private static void actuallySendPing(String app, String version, long id)
-        throws IOException {
+                throws IOException {
         // Detect and report the host OS.
         String os = System.getProperty("os.name");          // $NON-NLS-1$
         if (os.startsWith("Mac OS")) {                      // $NON-NLS-1$
@@ -300,14 +307,11 @@ public class SdkStatsService {
     }
 
     /**
-     * Prompt the user for whether they want to opt out of reporting.
-     * @return whether the user allows reporting (they do not opt out).
+     * Prompt the user for whether they want to opt out of reporting, and then calls
+     * {@link #doPing(String, String, PreferenceStore)}
      */
-    private static boolean getUserPermission(Display display) {
-        // Whether the user gave permission (size-1 array for writing to).
-        // Initialize to false, set when the user clicks the button.
-        final boolean[] permission = new boolean[] { false };
-
+    private static void getUserPermissionAndPing(final String app, final String version,
+            final PreferenceStore prefs, Display display) {
         boolean dispose = false;
         if (display == null) {
             display = new Display();
@@ -317,8 +321,13 @@ public class SdkStatsService {
         final Display currentDisplay = display;
         final boolean disposeDisplay = dispose;
 
-        display.syncExec(new Runnable() {
+        display.asyncExec(new Runnable() {
             public void run() {
+                // Whether the user gave permission (size-1 array for writing to).
+                // Initialize to false, set when the user clicks the button.
+                final boolean[] permission = new boolean[] { false };
+
+
                 final Shell shell = new Shell(currentDisplay, SWT.TITLE | SWT.BORDER);
                 shell.setText(WINDOW_TITLE_TEXT);
                 shell.setLayout(new GridLayout(1, false)); // 1 column
@@ -376,18 +385,28 @@ public class SdkStatsService {
                         / 2 - size.y / 2, size.x, size.y);
 
                 shell.open();
+
                 while (!shell.isDisposed()) {
                     if (!currentDisplay.readAndDispatch())
                         currentDisplay.sleep();
                 }
+
+                // the dialog has closed, take care of storing the user preference
+                // and do the ping (in a different thread)
+                prefs.setValue(PING_OPT_IN, permission[0]);
+                try {
+                    prefs.save();
+                    doPing(app, version, prefs);
+                }
+                catch (IOException ioe) {
+                }
+
 
                 if (disposeDisplay) {
                     currentDisplay.dispose();
                 }
             }
         });
-
-        return permission[0];
     }
 
     /**
