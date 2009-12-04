@@ -59,4 +59,29 @@
             <d:screen-orientation>land</d:screen-orientation>
         </d:config>
     </d:device>
+    <d:device name="Nexus One">
+        <d:default>
+            <d:screen-size>normal</d:screen-size>
+            <d:screen-ratio>long</d:screen-ratio>
+            <d:screen-orientation>port</d:screen-orientation>
+            <d:pixel-density>hdpi</d:pixel-density>
+            <d:touch-type>finger</d:touch-type>
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:text-input-method>nokeys</d:text-input-method>
+            <d:nav-method>trackball</d:nav-method>
+            <d:screen-dimension>
+                <d:size>480</d:size>
+                <d:size>800</d:size>
+            </d:screen-dimension>
+            <d:xdpi>254</d:xdpi>
+            <d:ydpi>254</d:ydpi>
+        </d:default>
+
+        <d:config name="Portrait">
+            <d:screen-orientation>port</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape">
+            <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+    </d:device>
 </d:layout-devices>
