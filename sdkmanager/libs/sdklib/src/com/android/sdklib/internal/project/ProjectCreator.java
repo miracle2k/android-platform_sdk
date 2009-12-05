@@ -320,7 +320,8 @@ public class ProjectCreator {
 
             // create the source folder for the activity
             if (activityClassName != null) {
-                String srcActivityFolderPath = SdkConstants.FD_SOURCES + File.separator + activityPath;
+                String srcActivityFolderPath =
+                        SdkConstants.FD_SOURCES + File.separator + activityPath;
                 File sourceFolder = createDirs(projectFolder, srcActivityFolderPath);
 
                 String javaTemplate = isTestProject ? "java_tests_file.template"
@@ -887,7 +888,7 @@ public class ProjectCreator {
                 }
             }
         }
-        
+
     }
 
     /**

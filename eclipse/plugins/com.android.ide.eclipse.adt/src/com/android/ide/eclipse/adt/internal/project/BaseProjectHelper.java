@@ -113,7 +113,7 @@ public final class BaseProjectHelper {
             AdtPlugin.log(e, "Failed to add marker '%1$s' to '%2$s'", //$NON-NLS-1$
                     markerId, file.getFullPath());
         }
-        
+
         return null;
     }
 
@@ -143,7 +143,7 @@ public final class BaseProjectHelper {
             AdtPlugin.log(e, "Failed to add marker '%1$s' to '%2$s'", //$NON-NLS-1$
                     markerId, resource.getFullPath());
         }
-        
+
         return null;
     }
 
@@ -157,7 +157,7 @@ public final class BaseProjectHelper {
      * @param severity the severity of the marker.
      * @param priority the priority of the marker
      * @return the IMarker that was added.
-     * @throws CoreException 
+     * @throws CoreException
      */
     public final static IMarker addMarker(IResource resource, String markerId,
             String message, int lineNumber, int severity, int priority) throws CoreException {
@@ -204,7 +204,7 @@ public final class BaseProjectHelper {
                 if (Flags.isAbstract(flags)) {
                     return String.format("%1$s is abstract", className);
                 }
-                
+
                 // test whether the class is public or not.
                 if (testVisibility && Flags.isPublic(flags) == false) {
                     // if its not public, it may have a public default constructor,
@@ -236,7 +236,7 @@ public final class BaseProjectHelper {
                                 return String.format("%1$s is enclosed, but not static",
                                         declaringType.getFullyQualifiedName());
                             }
-                            
+
                             flags = tmpType.getFlags();
                             if (testVisibility && Flags.isPublic(flags) == false) {
                                 return String.format("%1$s is not public",
@@ -253,7 +253,7 @@ public final class BaseProjectHelper {
                 // test the class inherit from the specified super class.
                 // get the type hierarchy
                 ITypeHierarchy hierarchy = type.newSupertypeHierarchy(new NullProgressMonitor());
-                
+
                 // if the super class is not the reference class, it may inherit from
                 // it so we get its supertype. At some point it will be null and we
                 // will stop
@@ -265,12 +265,12 @@ public final class BaseProjectHelper {
                         foundProperSuperClass = true;
                     }
                 }
-                
+
                 // didn't find the proper superclass? return false.
                 if (foundProperSuperClass == false) {
                     return String.format("%1$s does not extend %2$s", className, superClassName);
                 }
-                
+
                 return TEST_CLASS_OK;
             } else {
                 return String.format("Class %1$s does not exist", className);
@@ -279,7 +279,7 @@ public final class BaseProjectHelper {
             return String.format("%1$s: %2$s", className, e.getMessage());
         }
     }
-    
+
     /**
      * Parses the manifest file for errors.
      * <p/>
@@ -296,7 +296,7 @@ public final class BaseProjectHelper {
             manifestFile.deleteMarkers(AndroidConstants.MARKER_XML, true, IResource.DEPTH_ZERO);
             manifestFile.deleteMarkers(AndroidConstants.MARKER_ANDROID, true, IResource.DEPTH_ZERO);
         }
-        
+
         // and parse
         return AndroidManifestParser.parseForError(
                 BaseProjectHelper.getJavaProject(manifestFile.getProject()),
@@ -310,7 +310,8 @@ public final class BaseProjectHelper {
      * @param project
      * @return the IJavaProject or null if the project couldn't be created or if the project
      * does not have the Java Nature.
-     * @throws CoreException
+     * @throws CoreException if this method fails. Reasons include:
+     * <ul><li>This project does not exist.</li><li>This project is not open.</li></ul>
      */
     public static IJavaProject getJavaProject(IProject project) throws CoreException {
         if (project != null && project.hasNature(JavaCore.NATURE_ID)) {
@@ -318,7 +319,7 @@ public final class BaseProjectHelper {
         }
         return null;
     }
-    
+
     /**
      * Reveals a specific line in the source file defining a specified class,
      * for a specific project.
@@ -332,7 +333,7 @@ public final class BaseProjectHelper {
 
         // get the java project
         IJavaProject javaProject = JavaCore.create(project);
-        
+
         try {
             // look for the IType matching the class name.
             IType result = javaProject.findType(className);
@@ -346,19 +347,19 @@ public final class BaseProjectHelper {
                     // no editor area? we open the java perspective.
                     new OpenJavaPerspectiveAction().run();
                 }
-                
+
                 IEditorPart editor = JavaUI.openInEditor(result);
                 if (editor instanceof ITextEditor) {
                     // get the text editor that was just opened.
                     ITextEditor textEditor = (ITextEditor)editor;
-                    
+
                     IEditorInput input = textEditor.getEditorInput();
-                    
+
                     // get the location of the line to show.
                     IDocumentProvider documentProvider = textEditor.getDocumentProvider();
                     IDocument document = documentProvider.getDocument(input);
                     IRegion lineInfo = document.getLineInformation(line - 1);
-                    
+
                     // select and reveal the line.
                     textEditor.selectAndReveal(lineInfo.getOffset(), lineInfo.getLength());
                 }
@@ -368,7 +369,7 @@ public final class BaseProjectHelper {
         } catch (BadLocationException e) {
         }
     }
-    
+
     /**
      * Returns the list of android-flagged projects. This list contains projects that are opened
      * in the workspace and that are flagged as android project (through the android nature)
@@ -421,7 +422,7 @@ public final class BaseProjectHelper {
         // return the android projects list.
         return androidProjectList.toArray(new IJavaProject[androidProjectList.size()]);
     }
-    
+
     /**
      * Returns the {@link IFolder} representing the output for the project.
      * <p>
@@ -434,7 +435,7 @@ public final class BaseProjectHelper {
             if (project.isOpen() && project.hasNature(JavaCore.NATURE_ID)) {
                 // get a java project from the normal project object
                 IJavaProject javaProject = JavaCore.create(project);
-    
+
                 IPath path = javaProject.getOutputLocation();
                 IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
                 IResource outputResource = wsRoot.findMember(path);
