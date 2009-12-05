@@ -50,7 +50,7 @@ public final class ProjectProperties {
 
     public static enum PropertyType {
         BUILD("build.properties", BUILD_HEADER),
-        DEFAULT("default.properties", DEFAULT_HEADER),
+        DEFAULT(SdkConstants.FN_DEFAULT_PROPERTIES, DEFAULT_HEADER),
         LOCAL("local.properties", LOCAL_HEADER);
 
         private final String mFilename;

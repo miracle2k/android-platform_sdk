@@ -19,7 +19,9 @@ package com.android.ide.eclipse.adt.internal.sdk;
 import com.android.ddmlib.IDevice;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
+import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IProjectListener;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
@@ -34,11 +36,17 @@ import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 
@@ -59,7 +67,7 @@ import java.util.Map;
  *
  * To get the list of platforms or add-ons present in the SDK, call {@link #getTargets()}.
  */
-public class Sdk implements IProjectListener {
+public class Sdk implements IProjectListener, IFileListener {
     private static Sdk sCurrentSdk = null;
 
     private final SdkManager mManager;
@@ -434,6 +442,7 @@ public class Sdk implements IProjectListener {
         // listen to projects closing
         ResourceMonitor monitor = ResourceMonitor.getMonitor();
         monitor.addProjectListener(this);
+        monitor.addFileListener(this, IResourceDelta.CHANGED);
 
         // pre-compute some paths
         mDocBaseUrl = getDocumentationBaseUrl(mManager.getLocation() +
@@ -449,7 +458,9 @@ public class Sdk implements IProjectListener {
      *  Cleans and unloads the SDK.
      */
     private void dispose() {
-        ResourceMonitor.getMonitor().removeProjectListener(this);
+        ResourceMonitor monitor = ResourceMonitor.getMonitor();
+        monitor.removeProjectListener(this);
+        monitor.removeFileListener(this);
     }
 
     void setTargetData(IAndroidTarget target, AndroidTargetData data) {
@@ -546,6 +557,34 @@ public class Sdk implements IProjectListener {
     public void projectOpenedWithWorkspace(IProject project) {
         // ignore this. The project will be added to the map the first time the target needs
         // to be resolved.
+    }
+
+    public void fileChanged(final IFile file, IMarkerDelta[] markerDeltas, int kind) {
+        if (SdkConstants.FN_DEFAULT_PROPERTIES.equals(file.getName()) &&
+                file.getParent() == file.getProject()) {
+            // we can't do the change from the Workspace resource change notification
+            // so we create build-type job for it.
+            Job job = new Job("Project Update") {
+                @Override
+                protected IStatus run(IProgressMonitor monitor) {
+                    try {
+                        IJavaProject javaProject = BaseProjectHelper.getJavaProject(
+                                file.getProject());
+                        if (javaProject != null) {
+                            AndroidClasspathContainerInitializer.updateProjects(
+                                    new IJavaProject[] { javaProject });
+                        }
+                    } catch (CoreException e) {
+                        // This can't happen as it's only for closed project (or non existing)
+                        // but in that case we can't get a fileChanged on this file.
+                    }
+
+                    return Status.OK_STATUS;
+                }
+            };
+            job.setPriority(Job.BUILD); // build jobs are run after other interactive jobs
+            job.schedule();
+        }
     }
 }
 
