@@ -83,6 +83,9 @@ public final class SdkConstants {
     /** hardware properties definition file */
     public final static String FN_HARDWARE_INI = "hardware-properties.ini";
 
+    /** project property file */
+    public final static String FN_DEFAULT_PROPERTIES = "default.properties";
+
     /** Skin layout file */
     public final static String FN_SKIN_LAYOUT = "layout";//$NON-NLS-1$
 
