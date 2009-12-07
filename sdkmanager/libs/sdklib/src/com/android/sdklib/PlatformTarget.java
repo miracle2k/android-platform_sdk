@@ -229,26 +229,28 @@ final class PlatformTarget implements IAndroidTarget {
     }
 
     /*
-     * Always return -1 if the object we compare to is an addon.
-     * Otherwise, compare api level.
+     * Order by API level (preview/n count as between n and n+1).
+     * At the same API level, order as: Platform first, then add-on ordered by vendor and then name
      * (non-Javadoc)
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
     public int compareTo(IAndroidTarget target) {
-        if (target.isPlatform() == false) {
-            return -1;
+        // quick check.
+        if (this == target) {
+            return 0;
         }
 
-        int apiDiff = mVersion.getApiLevel() - target.getVersion().getApiLevel();
+        int versionDiff = mVersion.compareTo(target.getVersion());
 
-        if (mVersion.getCodename() != null && apiDiff == 0) {
-            if (target.getVersion().getCodename() == null) {
-                return +1; // preview showed last
+        // only if the version are the same do we care about add-ons.
+        if (versionDiff == 0) {
+            // platforms go before add-ons.
+            if (target.isPlatform() == false) {
+                return -1;
             }
-            return mVersion.getCodename().compareTo(target.getVersion().getCodename());
         }
 
-        return apiDiff;
+        return versionDiff;
     }
 
     // ---- platform only methods.
