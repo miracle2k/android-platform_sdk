@@ -59,6 +59,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 
 /**
@@ -717,6 +719,12 @@ public final class AvdSelector {
         }
 
         if (avds != null && avds.length > 0) {
+            Arrays.sort(avds, new Comparator<AvdInfo>() {
+                public int compare(AvdInfo o1, AvdInfo o2) {
+                    return o1.compareTo(o2);
+                }
+            });
+
             table.setEnabled(true);
 
             if (mTargetFilter != null) {
