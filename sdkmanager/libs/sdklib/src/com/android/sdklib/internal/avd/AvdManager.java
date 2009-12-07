@@ -138,7 +138,7 @@ public final class AvdManager {
     public final static String HARDWARE_INI = "hardware.ini"; //$NON-NLS-1$
 
     /** An immutable structure describing an Android Virtual Device. */
-    public static final class AvdInfo {
+    public static final class AvdInfo implements Comparable<AvdInfo> {
 
         /**
          * Status for an {@link AvdInfo}. Indicates whether or not this AVD is valid.
@@ -305,6 +305,35 @@ public final class AvdManager {
             }
 
             return null;
+        }
+
+        /**
+         * Compares this object with the specified object for order. Returns a
+         * negative integer, zero, or a positive integer as this object is less
+         * than, equal to, or greater than the specified object.
+         *
+         * @param o the Object to be compared.
+         * @return a negative integer, zero, or a positive integer as this object is
+         *         less than, equal to, or greater than the specified object.
+         */
+        public int compareTo(AvdInfo o) {
+            // first handle possible missing targets (if the AVD failed to load for
+            // unresolved targets.
+            if (mTarget == null) {
+                return +1;
+            } else if (o.mTarget == null) {
+                return -1;
+            }
+
+            // then compare the targets
+            int targetDiff = mTarget.compareTo(o.mTarget);
+
+            if (targetDiff == 0) {
+                // same target? compare on the avd name
+                return mName.compareTo(o.mName);
+            }
+
+            return targetDiff;
         }
     }
 
