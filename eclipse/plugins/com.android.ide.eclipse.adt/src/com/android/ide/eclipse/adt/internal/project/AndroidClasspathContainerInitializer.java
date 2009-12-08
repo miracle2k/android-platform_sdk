@@ -68,13 +68,13 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
     private final static String PROPERTY_TARGET_NAME = "androidTargetCache"; //$NON-NLS-1$
     private final static String CACHE_VERSION = "01"; //$NON-NLS-1$
     private final static String CACHE_VERSION_SEP = CACHE_VERSION + PATH_SEPARATOR;
-    
+
     private final static int CACHE_INDEX_JAR = 0;
     private final static int CACHE_INDEX_SRC = 1;
     private final static int CACHE_INDEX_DOCS_URI = 2;
     private final static int CACHE_INDEX_OPT_DOCS_URI = 3;
     private final static int CACHE_INDEX_ADD_ON_START = CACHE_INDEX_OPT_DOCS_URI;
-    
+
     public AndroidClasspathContainerInitializer() {
         // pass
     }
@@ -111,7 +111,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
     public static boolean checkPath(IPath path) {
         return CONTAINER_ID.equals(path.toString());
     }
-    
+
     /**
      * Updates the {@link IJavaProject} objects with new android framework container. This forces
      * JDT to recompile them.
@@ -120,11 +120,11 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
      */
     public static boolean updateProjects(IJavaProject[] androidProjects) {
         try {
-            // Allocate a new AndroidClasspathContainer, and associate it to the android framework 
+            // Allocate a new AndroidClasspathContainer, and associate it to the android framework
             // container id for each projects.
             // By providing a new association between a container id and a IClasspathContainer,
             // this forces the JDT to query the IClasspathContainer for new IClasspathEntry (with
-            // IClasspathContainer#getClasspathEntries()), and therefore force recompilation of 
+            // IClasspathContainer#getClasspathEntries()), and therefore force recompilation of
             // the projects.
             int projectCount = androidProjects.length;
 
@@ -137,7 +137,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
             JavaCore.setClasspathContainer(
                     new Path(CONTAINER_ID),
                     androidProjects, containers, new NullProgressMonitor());
-            
+
             return true;
         } catch (JavaModelException e) {
             return false;
@@ -154,15 +154,15 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
 
         String markerMessage = null;
         boolean outputToConsole = true;
-        
+
         try {
             AdtPlugin plugin = AdtPlugin.getDefault();
-            
+
             // get the lock object for project manipulation during SDK load.
             Object lock = plugin.getSdkLockObject();
             synchronized (lock) {
                 boolean sdkIsLoaded = plugin.getSdkLoadStatus() == LoadStatus.LOADED;
-                
+
                 // check if the project has a valid target.
                 IAndroidTarget target = null;
                 if (sdkIsLoaded) {
@@ -171,7 +171,9 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
 
                 // if we are loaded and the target is non null, we create a valid ClassPathContainer
                 if (sdkIsLoaded && target != null) {
-                    
+                    // first make sure the target has loaded its data
+                    Sdk.getCurrent().checkAndLoadTargetData(target);
+
                     String targetName = target.getClasspathName();
 
                     return new AndroidClasspathContainer(
@@ -202,13 +204,13 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                     // loaded and therefore we can't get the target yet.
                     // We check if there is a cache of the needed information.
                     AndroidClasspathContainer container = getContainerFromCache(iProject);
-                    
+
                     if (container == null) {
-                        // either the cache was wrong (ie folder does not exists anymore), or 
+                        // either the cache was wrong (ie folder does not exists anymore), or
                         // there was no cache. In this case we need to make sure the project
                         // is resolved again after the SDK is loaded.
                         plugin.setProjectToResolve(javaProject);
-                        
+
                         markerMessage = String.format(
                                 "Unable to resolve target '%s' until the SDK is loaded.",
                                 hashString);
@@ -221,13 +223,13 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                         // we created a container from the cache, so we register the project
                         // to be checked for cache validity once the SDK is loaded
                         plugin.setProjectToCheck(javaProject);
-                        
+
                         // and return the container
                         return container;
                     }
-                    
+
                 }
-                
+
                 // return a dummy container to replace the one we may have had before.
                 // It'll be replaced by the real when if/when the target is resolved if/when the
                 // SDK finishes loading.
@@ -255,7 +257,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 if (outputToConsole) {
                     AdtPlugin.printErrorToConsole(iProject, markerMessage);
                 }
-                
+
                 try {
                     BaseProjectHelper.addMarker(iProject, AdtConstants.MARKER_TARGET, markerMessage,
                             -1, IMarker.SEVERITY_ERROR, IMarker.PRIORITY_HIGH);
@@ -325,19 +327,19 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
      * The method also stores the paths used to create the entries in the project persistent
      * properties. A new {@link AndroidClasspathContainer} can be created from the stored path
      * using the {@link #getContainerFromCache(IProject)} method.
-     * @param project 
+     * @param project
      * @param target The target that contains the libraries.
-     * @param targetName 
+     * @param targetName
      */
     private static IClasspathEntry[] createClasspathEntries(IProject project,
             IAndroidTarget target, String targetName) {
-        
+
         // get the path from the target
         String[] paths = getTargetPaths(target);
-        
+
         // create the classpath entry from the paths
         IClasspathEntry[] entries = createClasspathEntriesFromPaths(paths);
-        
+
         // paths now contains all the path required to recreate the IClasspathEntry with no
         // target info. We encode them in a single string, with each path separated by
         // OS path separator.
@@ -346,14 +348,14 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
             sb.append(PATH_SEPARATOR);
             sb.append(p);
         }
-        
+
         // store this in a project persistent property
         ProjectHelper.saveStringProperty(project, PROPERTY_CONTAINER_CACHE, sb.toString());
         ProjectHelper.saveStringProperty(project, PROPERTY_TARGET_NAME, targetName);
 
         return entries;
     }
-    
+
     /**
      * Generates an {@link AndroidClasspathContainer} from the project cache, if possible.
      */
@@ -364,14 +366,14 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
         if (cache == null || targetNameCache == null) {
             return null;
         }
-        
+
         // the first 2 chars must match CACHE_VERSION. The 3rd char is the normal separator.
         if (cache.startsWith(CACHE_VERSION_SEP) == false) {
             return null;
         }
-        
+
         cache = cache.substring(CACHE_VERSION_SEP.length());
-        
+
         // the cache contains multiple paths, separated by a character guaranteed to not be in
         // the path (\u001C).
         // The first 3 are for android.jar (jar, source, doc), the rest are for the optional
@@ -381,7 +383,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
         if (paths.length < 3 || paths.length == 4) {
             return null;
         }
-        
+
         // now we check the paths actually exist.
         // There's an exception: If the source folder for android.jar does not exist, this is
         // not a problem, so we skip it.
@@ -392,10 +394,10 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                     new File(new URI(paths[CACHE_INDEX_DOCS_URI])).exists() == false) {
                 return null;
             }
-        
+
             // check the path for the add-ons, if they exist.
             if (paths.length > CACHE_INDEX_ADD_ON_START) {
-                
+
                 // check the docs path separately from the rest of the paths as it's a URI.
                 if (new File(new URI(paths[CACHE_INDEX_OPT_DOCS_URI])).exists() == false) {
                     return null;
@@ -421,14 +423,14 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
         return new AndroidClasspathContainer(entries,
                 new Path(CONTAINER_ID), targetNameCache);
     }
-    
+
     /**
      * Generates an array of {@link IClasspathEntry} from a set of paths.
      * @see #getTargetPaths(IAndroidTarget)
      */
     private static IClasspathEntry[] createClasspathEntriesFromPaths(String[] paths) {
         ArrayList<IClasspathEntry> list = new ArrayList<IClasspathEntry>();
-        
+
         // First, we create the IClasspathEntry for the framework.
         // now add the android framework to the class path.
         // create the path object.
@@ -439,7 +441,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
         IClasspathAttribute cpAttribute = JavaCore.newClasspathAttribute(
                 IClasspathAttribute.JAVADOC_LOCATION_ATTRIBUTE_NAME,
                 paths[CACHE_INDEX_DOCS_URI]);
-        
+
         // create the access rule to restrict access to classes in com.android.internal
         IAccessRule accessRule = JavaCore.newAccessRule(
                 new Path("com/android/internal/**"), //$NON-NLS-1$
@@ -454,7 +456,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 );
 
         list.add(frameworkClasspathEntry);
-        
+
         // now deal with optional libraries
         if (paths.length >= 5) {
             String docPath = paths[CACHE_INDEX_OPT_DOCS_URI];
@@ -470,7 +472,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                                     docPath)
                     };
                 }
-    
+
                 IClasspathEntry entry = JavaCore.newLibraryEntry(
                         jarPath,
                         null, // source attachment path
@@ -482,7 +484,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 list.add(entry);
             }
         }
-        
+
         return list.toArray(new IClasspathEntry[list.size()]);
     }
 
@@ -495,7 +497,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
         projectLoop: while (i < projects.size()) {
             IJavaProject javaProject = projects.get(i);
             IProject iProject = javaProject.getProject();
-            
+
             // check if the project is opened
             if (iProject.isOpen() == false) {
                 // remove from the list
@@ -514,9 +516,9 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 i++;
                 continue;
             }
-            
+
             String[] targetPaths = getTargetPaths(target);
-            
+
             // now get the cached paths
             String cache = ProjectHelper.loadStringProperty(iProject, PROPERTY_CONTAINER_CACHE);
             if (cache == null) {
@@ -524,23 +526,23 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 i++;
                 continue;
             }
-            
+
             String[] cachedPaths = cache.split(Pattern.quote(PATH_SEPARATOR));
             if (cachedPaths.length < 3 || cachedPaths.length == 4) {
                 // paths length is wrong. simply resolve the project again
                 i++;
                 continue;
             }
-            
+
             // Now we compare the paths. The first 4 can be compared directly.
             // because of case sensitiveness we need to use File objects
-            
+
             if (targetPaths.length != cachedPaths.length) {
                 // different paths, force resolve again.
                 i++;
                 continue;
             }
-            
+
             // compare the main paths (android.jar, main sources, main javadoc)
             if (new File(targetPaths[CACHE_INDEX_JAR]).equals(
                             new File(cachedPaths[CACHE_INDEX_JAR])) == false ||
@@ -552,7 +554,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 i++;
                 continue;
             }
-            
+
             if (cachedPaths.length > CACHE_INDEX_OPT_DOCS_URI) {
                 // compare optional libraries javadoc
                 if (new File(targetPaths[CACHE_INDEX_OPT_DOCS_URI]).equals(
@@ -561,7 +563,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                     i++;
                     continue;
                 }
-                
+
                 // testing the optional jar files is a little bit trickier.
                 // The order is not guaranteed to be identical.
                 // From a previous test, we do know however that there is the same number.
@@ -569,7 +571,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 // lists manually.
                 targetLoop: for (int tpi = 4 ; tpi < targetPaths.length; tpi++) {
                     String targetPath = targetPaths[tpi];
-                    
+
                     // look for a match in the other array
                     for (int cpi = 4 ; cpi < cachedPaths.length; cpi++) {
                         if (new File(targetPath).equals(new File(cachedPaths[cpi]))) {
@@ -577,7 +579,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                             continue targetLoop;
                         }
                     }
-                    
+
                     // if we stop here, we haven't found a match, which means there's a
                     // discrepancy in the libraries. We force a resolve.
                     i++;
@@ -590,7 +592,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
             projects.remove(i);
         }
     }
-    
+
     /**
      * Returns the paths necessary to create the {@link IClasspathEntry} for this targets.
      * <p/>The paths are always in the same order.
@@ -608,13 +610,13 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
      */
     private static String[] getTargetPaths(IAndroidTarget target) {
         ArrayList<String> paths = new ArrayList<String>();
-        
+
         // first, we get the path for android.jar
         // The order is: android.jar, source folder, docs folder
         paths.add(target.getPath(IAndroidTarget.ANDROID_JAR));
         paths.add(target.getPath(IAndroidTarget.SOURCES));
         paths.add(AdtPlugin.getUrlDoc());
-        
+
         // now deal with optional libraries.
         IOptionalLibrary[] libraries = target.getOptionalLibraries();
         if (libraries != null) {
@@ -626,7 +628,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 // we add an empty string, to always have the same count.
                 paths.add("");
             }
-            
+
             // because different libraries could use the same jar file, we make sure we add
             // each jar file only once.
             HashSet<String> visitedJars = new HashSet<String>();

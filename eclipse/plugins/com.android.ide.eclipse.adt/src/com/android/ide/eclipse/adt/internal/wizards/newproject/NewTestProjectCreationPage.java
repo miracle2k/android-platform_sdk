@@ -557,11 +557,7 @@ public class NewTestProjectCreationPage extends WizardPage {
         mSdkTargetSelector = new SdkTargetSelector(group, null);
 
         mSdkTargetChangeListener = new ITargetChangeListener() {
-            public void onProjectTargetChange(IProject changedProject) {
-                // Ignore
-            }
-
-            public void onTargetsLoaded() {
+            public void onSdkLoaded() {
                 // Update the sdk target selector with the new targets
 
                 // get the targets from the sdk
@@ -576,12 +572,20 @@ public class NewTestProjectCreationPage extends WizardPage {
                     mSdkTargetSelector.setSelection(targets[0]);
                 }
             }
+
+            public void onProjectTargetChange(IProject changedProject) {
+                // Ignore
+            }
+
+            public void onTargetLoaded(IAndroidTarget target) {
+                // Ignore
+            }
         };
 
         AdtPlugin.getDefault().addTargetListener(mSdkTargetChangeListener);
 
         // Invoke it once to initialize the targets
-        mSdkTargetChangeListener.onTargetsLoaded();
+        mSdkTargetChangeListener.onSdkLoaded();
 
         mSdkTargetSelector.setSelectionListener(new SelectionAdapter() {
             @Override

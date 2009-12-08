@@ -39,7 +39,6 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFileListener;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetParser;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
@@ -856,7 +855,7 @@ public class AdtPlugin extends AbstractUIPlugin {
     }
 
     /**
-     * Returns whether the Sdk has been loaded.
+     * Returns whether the {@link IAndroidTarget}s have been loaded from the SDK.
      */
     public final LoadStatus getSdkLoadStatus() {
         synchronized (getSdkLockObject()) {
@@ -1024,27 +1023,6 @@ public class AdtPlugin extends AbstractUIPlugin {
 
                     if (sdk != null) {
 
-                        progress.setTaskName(Messages.AdtPlugin_Parsing_Resources);
-
-                        final IAndroidTarget[] targets = sdk.getTargets();
-                        final int n = targets.length;
-                        if (n > 0) {
-                            // load the rest of the targets.
-                            // TODO: make this on-demand.
-                            int w = 60 / n;
-                            for (IAndroidTarget target : targets) {
-                                SubMonitor p2 = progress.newChild(w);
-                                IStatus status = new AndroidTargetParser(target).run(p2);
-                                if (status.getCode() != IStatus.OK) {
-                                    synchronized (getSdkLockObject()) {
-                                        mSdkIsLoaded = LoadStatus.FAILED;
-                                        mPostLoadProjectsToResolve.clear();
-                                    }
-                                    return status;
-                                }
-                            }
-                        }
-
                         ArrayList<IJavaProject> list = new ArrayList<IJavaProject>();
                         synchronized (getSdkLockObject()) {
                             mSdkIsLoaded = LoadStatus.LOADED;
@@ -1077,24 +1055,30 @@ public class AdtPlugin extends AbstractUIPlugin {
                         }
 
                         progress.worked(10);
+                    } else {
+                        // SDK failed to Load!
+                        // Sdk#loadSdk() has already displayed an error.
+                        synchronized (getSdkLockObject()) {
+                            mSdkIsLoaded = LoadStatus.FAILED;
+                        }
                     }
 
                     // Notify resource changed listeners
                     progress.setTaskName("Refresh UI");
                     progress.setWorkRemaining(mTargetChangeListeners.size());
 
-                    // Clone the list before iterating, to avoid Concurrent Modification
+                    // Clone the list before iterating, to avoid ConcurrentModification
                     // exceptions
                     final List<ITargetChangeListener> listeners =
-                            (List<ITargetChangeListener>)mTargetChangeListeners.clone();
+                        (List<ITargetChangeListener>)mTargetChangeListeners.clone();
                     final SubMonitor progress2 = progress;
                     AdtPlugin.getDisplay().syncExec(new Runnable() {
                         public void run() {
                             for (ITargetChangeListener listener : listeners) {
                                 try {
-                                    listener.onTargetsLoaded();
+                                    listener.onSdkLoaded();
                                 } catch (Exception e) {
-                                    AdtPlugin.log(e, "Failed to update a TargetChangeListener.");  //$NON-NLS-1$
+                                    AdtPlugin.log(e, "Failed to update a TargetChangeListener."); //$NON-NLS-1$
                                 } finally {
                                     progress2.worked(1);
                                 }
@@ -1353,11 +1337,11 @@ public class AdtPlugin extends AbstractUIPlugin {
     }
 
     /**
-     * Updates all the {@link ITargetChangeListener} that a target has changed for a given project.
+     * Updates all the {@link ITargetChangeListener}s that a target has changed for a given project.
      * <p/>Only editors related to that project should reload.
      */
     @SuppressWarnings("unchecked")
-    public void updateTargetListener(final IProject project) {
+    public void updateTargetListeners(final IProject project) {
         final List<ITargetChangeListener> listeners =
             (List<ITargetChangeListener>)mTargetChangeListeners.clone();
 
@@ -1366,6 +1350,28 @@ public class AdtPlugin extends AbstractUIPlugin {
                 for (ITargetChangeListener listener : listeners) {
                     try {
                         listener.onProjectTargetChange(project);
+                    } catch (Exception e) {
+                        AdtPlugin.log(e, "Failed to update a TargetChangeListener.");  //$NON-NLS-1$
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Updates all the {@link ITargetChangeListener}s that a target data was loaded.
+     * <p/>Only editors related to a project using this target should reload.
+     */
+    @SuppressWarnings("unchecked")
+    public void updateTargetListeners(final IAndroidTarget target) {
+        final List<ITargetChangeListener> listeners =
+            (List<ITargetChangeListener>)mTargetChangeListeners.clone();
+
+        AdtPlugin.getDisplay().asyncExec(new Runnable() {
+            public void run() {
+                for (ITargetChangeListener listener : listeners) {
+                    try {
+                        listener.onTargetLoaded(target);
                     } catch (Exception e) {
                         AdtPlugin.log(e, "Failed to update a TargetChangeListener.");  //$NON-NLS-1$
                     }

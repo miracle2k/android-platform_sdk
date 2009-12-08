@@ -30,7 +30,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQua
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk.TargetChangeListener;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.ConfigurationState;
 import com.android.sdklib.IAndroidTarget;
@@ -292,7 +292,7 @@ class NewXmlFileCreationPage extends WizardPage {
     private boolean mInternalTypeUpdate;
     private boolean mInternalConfigSelectorUpdate;
     private ProjectChooserHelper mProjectChooserHelper;
-    private ITargetChangeListener mSdkTargetChangeListener;
+    private TargetChangeListener mSdkTargetChangeListener;
 
     private TypeInfo mCurrentTypeInfo;
 
@@ -349,16 +349,14 @@ class NewXmlFileCreationPage extends WizardPage {
     }
 
     private void installTargetChangeListener() {
-        mSdkTargetChangeListener = new ITargetChangeListener() {
-            public void onProjectTargetChange(IProject changedProject) {
-                // If this is the current project, force it to reload its data
-                if (changedProject != null && changedProject == mProject) {
-                    changeProject(mProject);
-                }
+        mSdkTargetChangeListener = new TargetChangeListener() {
+            @Override
+            public IProject getProject() {
+                return mProject;
             }
 
-            public void onTargetsLoaded() {
-                // Reload the current project, if any, in case its target has changed.
+            @Override
+            public void reload() {
                 if (mProject != null) {
                     changeProject(mProject);
                 }
