@@ -37,7 +37,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
 
@@ -57,7 +56,7 @@ import java.util.List;
  * TODO list:
  *   - The available items should depend on the actual GLE2 Canvas selection. Selected android
  *     views should force filtering on what they accept can be dropped on them (e.g. TabHost,
- *     TableLayout)
+ *     TableLayout). Should enable/disable them, not hide them, to avoid shuffling around.
  *   - Optional: a text filter
  *   - Optional: have icons that depict the element and/or automatically rendered icons
  *     based on a rendering of the widget.
