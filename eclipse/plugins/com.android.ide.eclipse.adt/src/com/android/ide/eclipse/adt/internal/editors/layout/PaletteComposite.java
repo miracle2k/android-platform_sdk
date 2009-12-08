@@ -29,8 +29,10 @@ import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.dnd.TransferData;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseTrackListener;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -53,20 +55,23 @@ import java.util.List;
  * @since GLE2
  *
  * TODO list:
- * - *Mandatory* for a first release:
- *   - Currently this displays elements as buttons. Eventually this needs to either be replaced
- *     by custom drawing right in here or we need to use a custom control.
- *   - Needs to be able to originate drag'n'drop from these controls onto the GEP.
- *   - Scroll the list.
- * - For later releases:
- *   - Ability to collapse palettes or dockable palettes.
+ *   - The available items should depend on the actual GLE2 Canvas selection. Selected android
+ *     views should force filtering on what they accept can be dropped on them (e.g. TabHost,
+ *     TableLayout)
+ *   - Optional: a text filter
+ *   - Optional: have icons that depict the element and/or automatically rendered icons
+ *     based on a rendering of the widget.
+ *   - Optional: have context-sensitive tools items, e.g. selection arrow tool,
+ *     group selection tool, alignment, etc.
  *   - Different view strategies: big icon, small icons, text vs no text, compact grid.
  *     - This would only be useful with meaningful icons. Out current 1-letter icons are not enough
  *       to get rid of text labels.
- *   - Would be nice to have context-sensitive tools items, e.g. selection arrow tool,
- *     group selection tool, alignment, etc.
  */
 public class PaletteComposite extends Composite {
+
+
+    /** The parent grid layout that contains all the {@link Toggle} and {@link Item} widgets. */
+    private Composite mRoot;
 
     /**
      * Create the composite.
@@ -82,7 +87,7 @@ public class PaletteComposite extends Composite {
     }
 
     /**
-     * Load or reload the palette elements by using the layour and view descriptors from the
+     * Loads or reloads the palette elements by using the layout and view descriptors from the
      * given target data.
      *
      * @param targetData The target data that contains the descriptors. If null or empty,
@@ -96,27 +101,29 @@ public class PaletteComposite extends Composite {
 
         setGridLayout(this, 2);
 
-        final Composite parent = new Composite(this, SWT.NONE);
-        setGridLayout(parent, 0);
+        mRoot = new Composite(this, SWT.NONE);
+        setGridLayout(mRoot, 0);
 
         if (targetData != null) {
-            /* TODO: All this is TEMPORARY. */
-            Label l = new Label(this, SWT.NONE);
-            l.setText("*** PLACEHOLDER ***");  //$NON-NLS-1$
-            l.setToolTipText("Temporary mock for the palette. Needs to scroll, needs no buttons, needs to drag'n'drop."); //$NON-NLS-1$
-
-            addGroup(parent, "Layouts", targetData.getLayoutDescriptors().getLayoutDescriptors());
-            addGroup(parent, "Views", targetData.getLayoutDescriptors().getViewDescriptors());
+            addGroup(mRoot, "Layouts", targetData.getLayoutDescriptors().getLayoutDescriptors());
+            addGroup(mRoot, "Views", targetData.getLayoutDescriptors().getViewDescriptors());
         }
 
         layout(true);
 
         final ScrollBar vbar = getVerticalBar();
+
+        vbar.setMaximum(getSize().y);
+
+        for (Listener listener : vbar.getListeners(SWT.Selection)) {
+            vbar.removeListener(SWT.Selection, listener);
+        }
+
         vbar.addListener(SWT.Selection, new Listener() {
             public void handleEvent(Event event) {
-                Point p = parent.getLocation();
+                Point p = mRoot.getLocation();
                 p.y = - vbar.getSelection();
-                parent.setLocation(p);
+                mRoot.setLocation(p);
             }
         });
     }
@@ -142,15 +149,22 @@ public class PaletteComposite extends Composite {
         setGridLayout(group, 0);
 
         Toggle toggle = new Toggle(group, uiName);
-        //label.setText(String.format("-= %s =-", uiName));
-        //label.setToolTipText();
 
         for (ElementDescriptor desc : descriptors) {
-            toggle.addItem(new Item(group, desc));
+            Item item = new Item(group, desc);
+            toggle.addItem(item);
+            GridData gd = new GridData();
+            item.setLayoutData(gd);
         }
     }
 
-    private static class Toggle extends CLabel implements MouseTrackListener, Listener {
+    /**
+     * A Toggle widget is a row that is the head of a group.
+     * <p/>
+     * When clicked, the toggle will show/hide all the {@link Item} widgets that have been
+     * added to it using {@link #addItem(Item)}.
+     */
+    private static class Toggle extends CLabel implements MouseTrackListener, MouseListener {
         private boolean mMouseIn;
         private DragSource mSource;
         private ArrayList<Item> mItems = new ArrayList<Item>();
@@ -159,12 +173,14 @@ public class PaletteComposite extends Composite {
             super(parent, SWT.NONE);
             mMouseIn = false;
 
+            setData(null);
+
             String s = String.format("-= %s =-", groupName);
             setText(s);
             setToolTipText(s);
             //TODO use triangle icon and swap it -- setImage(desc.getIcon());
             addMouseTrackListener(this);
-            addListener(SWT.Selection, this);
+            addMouseListener(this);
         }
 
         public void addItem(Item item) {
@@ -189,6 +205,8 @@ public class PaletteComposite extends Composite {
             return style;
         }
 
+        // -- MouseTrackListener callbacks
+
         public void mouseEnter(MouseEvent e) {
             if (!mMouseIn) {
                 mMouseIn = true;
@@ -207,15 +225,52 @@ public class PaletteComposite extends Composite {
             // pass
         }
 
-        /** Selection event */
-        public void handleEvent(Event event) {
+        // -- MouseListener callbacks
+
+        public void mouseDoubleClick(MouseEvent arg0) {
+            // pass
+        }
+
+        public void mouseDown(MouseEvent arg0) {
+            // pass
+        }
+
+        public void mouseUp(MouseEvent arg0) {
             for (Item i : mItems) {
+                if (i.isVisible()) {
+                    Object ld = i.getLayoutData();
+                    if (ld instanceof GridData) {
+                        GridData gd = (GridData) ld;
+
+                        i.setData(gd.heightHint != SWT.DEFAULT ?
+                                    Integer.valueOf(gd.heightHint) :
+                                        null);
+                        gd.heightHint = 0;
+                    }
+                } else {
+                    Object ld = i.getLayoutData();
+                    if (ld instanceof GridData) {
+                        GridData gd = (GridData) ld;
+
+                        Object d = i.getData();
+                        if (d instanceof Integer) {
+                            gd.heightHint = ((Integer) d).intValue();
+                        } else {
+                            gd.heightHint = SWT.DEFAULT;
+                        }
+                    }
+                }
                 i.setVisible(!i.isVisible());
-                i.setEnabled(!i.isEnabled());
             }
+
+            getParent().getParent().layout(true /*changed*/);
         }
     }
 
+    /**
+     * An Item widget represents one {@link ElementDescriptor} that can be dropped on the
+     * GLE2 canvas using drag'n'drop.
+     */
     private static class Item extends CLabel implements MouseTrackListener {
 
         private boolean mMouseIn;
