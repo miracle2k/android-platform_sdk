@@ -20,6 +20,7 @@ import com.android.layoutlib.api.ILayoutResult;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -72,12 +73,35 @@ public class LayoutCanvas extends Canvas {
      */
     private static final int SELECTION_MIN_SIZE = 6;
 
+    /*
+     * The last valid ILayoutResult passed to {@link #setResult(ILayoutResult)}.
+     * This can be null.
+     * When non null, {@link #mLastValidViewInfoRoot} is guaranteed to be non-null too.
+    */
     private ILayoutResult mLastValidResult;
+
+    /**
+     * The ViewInfo root created for the last update of {@link #mLastValidResult}.
+     * This is null when {@link #mLastValidResult} is null.
+     * When non null, {@link #mLastValidResult} is guaranteed to be non-null too.
+     */
     private ViewInfo mLastValidViewInfoRoot;
+
+    /**
+     * True when the last {@link #setResult(ILayoutResult)} provided a valid {@link ILayoutResult}
+     * in which case it is also available in {@link #mLastValidResult}.
+     * When false this means the canvas is displaying an out-dated result image & bounds and some
+     * features should be disabled accordingly such a drag'n'drop.
+     * <p/>
+     * When this is false, {@link #mLastValidResult} can be non-null and points to an older
+     * layout result.
+     */
+    private boolean mIsResultValid;
 
     /** Current background image. Null when there's no image. */
     private Image mImage;
 
+    /** The current selection list. The list is never null, however it can be empty. */
     private final LinkedList<Selection> mSelections = new LinkedList<Selection>();
 
     /** Selection border color. Do not dispose, it's a system color. */
@@ -99,15 +123,11 @@ public class LayoutCanvas extends Canvas {
     /** Hover border color. Must be disposed, it's NOT a system color. */
     private Color mHoverFgColor;
 
-    private AlternateSelection mAltSelection;
-
     /**
-     * True when the last {@link #setResult(ILayoutResult)} provided a valid {@link ILayoutResult}
-     * in which case it is also available in {@link #mLastValidResult}.
-     * When false this means the canvas is displaying an out-dated result image & bounds and some
-     * features should be disabled accordingly such a drag'n'drop.
+     * The <em>current</em> alternate selection, if any, which changes when the Alt key is
+     * used during a selection. Can be null.
      */
-    private boolean mIsResultValid;
+    private AlternateSelection mAltSelection;
 
 
     public LayoutCanvas(Composite parent, int style) {
@@ -195,6 +215,57 @@ public class LayoutCanvas extends Canvas {
         }
 
         redraw();
+    }
+
+    /**
+     * Called by the {@link GraphicalEditorPart} when the Copy action is requested.
+     *
+     * @param clipboard The shared clipboard. Must not be disposed.
+     */
+    public void onCopy(Clipboard clipboard) {
+        // TODO implement copy to clipbard. Also will need to provide feedback to enable
+        // copy only when there's a selection.
+    }
+
+    /**
+     * Called by the {@link GraphicalEditorPart} when the Cut action is requested.
+     *
+     * @param clipboard The shared clipboard. Must not be disposed.
+     */
+    public void onCut(Clipboard clipboard) {
+        // TODO implement copy to clipbard. Also will need to provide feedback to enable
+        // cut only when there's a selection.
+    }
+
+    /**
+     * Called by the {@link GraphicalEditorPart} when the Paste action is requested.
+     *
+     * @param clipboard The shared clipboard. Must not be disposed.
+     */
+    public void onPaste(Clipboard clipboard) {
+
+    }
+
+    /**
+     * Called by the {@link GraphicalEditorPart} when the Select All action is requested.
+     */
+    public void onSelectAll() {
+        // First clear the current selection, if any.
+        mSelections.clear();
+        mAltSelection = null;
+
+        // Now select everything if there's a valid layout
+        if (mIsResultValid && mLastValidResult != null) {
+            selectAllViewInfos(mLastValidViewInfoRoot);
+            redraw();
+        }
+    }
+
+    /**
+     * Delete action
+     */
+    public void onDelete() {
+        // TODO not implemented yet, not even hooked in yet!
     }
 
     //---
@@ -516,6 +587,19 @@ public class LayoutCanvas extends Canvas {
     }
 
     /**
+     * Used by {@link #onSelectAll()} to add all current view infos to the selection list.
+     *
+     * @param viewInfo The root to add. This info and all its children will be added to the
+     *                 selection list.
+     */
+    private void selectAllViewInfos(ViewInfo viewInfo) {
+        mSelections.add(new Selection(viewInfo));
+        for (ViewInfo vi : viewInfo.getChildren()) {
+            selectAllViewInfos(vi);
+        }
+    }
+
+    /**
      * Maps a {@link ILayoutViewInfo} in a structure more adapted to our needs.
      * The only large difference is that we keep both the original bounds of the view info
      * and we pre-compute the selection bounds which are absolute to the rendered image (where
@@ -536,7 +620,7 @@ public class LayoutCanvas extends Canvas {
 
         /**
          * Constructs a {@link ViewInfo} hierarchy based on a given {@link ILayoutViewInfo}
-         * hierarchy. This call is recursives and builds a full tree.
+         * hierarchy. This call is recursive and builds a full tree.
          *
          * @param viewInfo The root of the {@link ILayoutViewInfo} hierarchy.
          */
@@ -584,7 +668,11 @@ public class LayoutCanvas extends Canvas {
             mSelectionRect = new Rectangle(x, y, w - 1, h - 1);
         }
 
-        /** Returns the original {@link ILayoutResult} bounds, relative to the parent. */
+        /**
+         * Returns the original {@link ILayoutResult} bounds, relative to the parent.
+         * @deprecated TODO Remove if it's not going to be used
+         */
+        @SuppressWarnings("unused")
         public Rectangle getRealRect() {
             return mRealRect;
         }
@@ -611,7 +699,9 @@ public class LayoutCanvas extends Canvas {
         /**
          * Returns the parent {@link ViewInfo}.
          * It is null for the root and non-null for children.
+         * @deprecated TODO Remove if it's not going to be used
          */
+        @SuppressWarnings("unused")
         public ViewInfo getParent() {
             return mParent;
         }
