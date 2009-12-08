@@ -269,38 +269,39 @@ final class AddOnTarget implements IAndroidTarget {
     }
 
     /*
-     * Always return +1 if the object we compare to is a platform.
-     * Otherwise, do vendor then name then api version comparison.
+     * Order by API level (preview/n count as between n and n+1).
+     * At the same API level, order as: Platform first, then add-on ordered by vendor and then name
      * (non-Javadoc)
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
     public int compareTo(IAndroidTarget target) {
-        if (target.isPlatform()) {
-            return +1;
+        // quick check.
+        if (this == target) {
+            return 0;
         }
 
-        // compare vendor
-        int value = mVendor.compareTo(target.getVendor());
+        int versionDiff = getVersion().compareTo(target.getVersion());
 
-        // if same vendor, compare name
-        if (value == 0) {
-            value = mName.compareTo(target.getName());
-        }
-
-        // if same vendor/name, compare version
-        if (value == 0) {
-            if (getVersion().isPreview() == true) {
-                value = target.getVersion().isPreview() == true ?
-                        getVersion().getApiString().compareTo(target.getVersion().getApiString()) :
-                        +1; // put the preview at the end.
+        // only if the version are the same do we care about platform/add-ons.
+        if (versionDiff == 0) {
+            // platforms go before add-ons.
+            if (target.isPlatform()) {
+                return +1;
             } else {
-                value = target.getVersion().isPreview() == true ?
-                        -1 : // put the preview at the end :
-                        getVersion().getApiLevel() - target.getVersion().getApiLevel();
+                AddOnTarget targetAddOn = (AddOnTarget)target;
+
+                // both are add-ons of the same version. Compare per vendor then by name
+                int vendorDiff = mVendor.compareTo(targetAddOn.mVendor);
+                if (vendorDiff == 0) {
+                    return mName.compareTo(targetAddOn.mName);
+                } else {
+                    return vendorDiff;
+                }
             }
+
         }
 
-        return value;
+        return versionDiff;
     }
 
     // ---- local methods.

@@ -37,7 +37,7 @@ import java.util.Properties;
  * For generic UI display of the API version, {@link #getApiString()} is to be used.
  *
  */
-public class AndroidVersion {
+public final class AndroidVersion implements Comparable<AndroidVersion> {
 
     private static final String PROP_API_LEVEL = "AndroidVersion.ApiLevel";  //$NON-NLS-1$
     private static final String PROP_CODENAME = "AndroidVersion.CodeName";   //$NON-NLS-1$
@@ -199,5 +199,40 @@ public class AndroidVersion {
         // there may be some collisions between the hashcode of the codename and the api level
         // but it's acceptable.
         return mApiLevel;
+    }
+
+    /**
+     * Compares this object with the specified object for order. Returns a
+     * negative integer, zero, or a positive integer as this object is less
+     * than, equal to, or greater than the specified object.
+     *
+     * @param o the Object to be compared.
+     * @return a negative integer, zero, or a positive integer as this object is
+     *         less than, equal to, or greater than the specified object.
+     */
+    public int compareTo(AndroidVersion o) {
+        if (mCodename == null) {
+            if (o.mCodename == null) {
+                return mApiLevel - o.mApiLevel;
+            } else {
+                if (mApiLevel == o.mApiLevel) {
+                    return -1; // same api level but o is a preview for next version
+                }
+
+                return mApiLevel - o.mApiLevel;
+            }
+        } else {
+            // 'this' is a preview
+            if (mApiLevel == o.mApiLevel) {
+                if (o.mCodename == null) {
+                    return +1;
+                } else {
+                    return mCodename.compareTo(o.mCodename); // strange case where the 2 previews
+                                                             // have different codename?
+                }
+            } else {
+                return mApiLevel - o.mApiLevel;
+            }
+        }
     }
 }
