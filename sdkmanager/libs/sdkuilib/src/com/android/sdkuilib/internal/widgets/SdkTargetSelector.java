@@ -36,6 +36,9 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 
 /**
  * The SDK target selector is a table that is added to the given parent composite.
@@ -142,6 +145,14 @@ public class SdkTargetSelector {
      */
     public void setTargets(IAndroidTarget[] targets) {
         mTargets = targets;
+        if (mTargets != null) {
+            Arrays.sort(mTargets, new Comparator<IAndroidTarget>() {
+                public int compare(IAndroidTarget o1, IAndroidTarget o2) {
+                    return o1.compareTo(o2);
+                }
+            });
+        }
+
         fillTable(mTable);
     }
 
