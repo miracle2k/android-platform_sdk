@@ -15,6 +15,7 @@
  */
 package com.android.ide.eclipse.ddms;
 
+import com.android.ide.eclipse.ddms.views.AllocTrackerView;
 import com.android.ide.eclipse.ddms.views.DeviceView;
 import com.android.ide.eclipse.ddms.views.EmulatorControlView;
 import com.android.ide.eclipse.ddms.views.FileExplorerView;
@@ -57,6 +58,7 @@ public class Perspective implements IPerspectiveFactory {
         folder.addPlaceholder(ThreadView.ID + ":*"); //$NON-NLS-1$
         folder.addView(ThreadView.ID);
         folder.addView(HeapView.ID);
+        folder.addView(AllocTrackerView.ID);
         folder.addView(FileExplorerView.ID);
 
         layout.addPerspectiveShortcut("org.eclipse.ui.resourcePerspective"); //$NON-NLS-1$
@@ -66,6 +68,7 @@ public class Perspective implements IPerspectiveFactory {
         layout.addShowViewShortcut(DeviceView.ID);
         layout.addShowViewShortcut(FileExplorerView.ID);
         layout.addShowViewShortcut(HeapView.ID);
+        layout.addShowViewShortcut(AllocTrackerView.ID);
         layout.addShowViewShortcut(LogCatView.ID);
         layout.addShowViewShortcut(ThreadView.ID);
 
