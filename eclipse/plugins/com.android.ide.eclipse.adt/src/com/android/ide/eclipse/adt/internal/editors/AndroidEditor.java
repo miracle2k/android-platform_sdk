@@ -20,7 +20,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk.TargetChangeListener;
 import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.core.resources.IFile;
@@ -100,7 +100,7 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
     private XmlModelStateListener mXmlModelStateListener;
     /** Listener to update the root node if the target of the file is changed because of a
      * SDK location change or a project target change */
-    private ITargetChangeListener mTargetListener;
+    private TargetChangeListener mTargetListener;
 
     /**
      * Creates a form editor.
@@ -109,14 +109,14 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
         super();
         ResourcesPlugin.getWorkspace().addResourceChangeListener(this);
 
-        mTargetListener = new ITargetChangeListener() {
-            public void onProjectTargetChange(IProject changedProject) {
-                if (changedProject == getProject()) {
-                    onTargetsLoaded();
-                }
+        mTargetListener = new TargetChangeListener() {
+            @Override
+            public IProject getProject() {
+                return AndroidEditor.this.getProject();
             }
 
-            public void onTargetsLoaded() {
+            @Override
+            public void reload() {
                 commitPages(false /* onSave */);
 
                 // recreate the ui root node always

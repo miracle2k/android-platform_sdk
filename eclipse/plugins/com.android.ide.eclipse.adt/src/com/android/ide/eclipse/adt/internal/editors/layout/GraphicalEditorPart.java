@@ -33,7 +33,7 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
-import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk.TargetChangeListener;
 import com.android.layoutlib.api.ILayoutBridge;
 import com.android.layoutlib.api.ILayoutLog;
 import com.android.layoutlib.api.ILayoutResult;
@@ -546,15 +546,14 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
     /**
      * Listens to target changed in the current project, to trigger a new layout rendering.
      */
-    private class TargetListener implements ITargetChangeListener {
-
-        public void onProjectTargetChange(IProject changedProject) {
-            if (changedProject == getLayoutEditor().getProject()) {
-                onTargetsLoaded();
-            }
+    private class TargetListener extends TargetChangeListener {
+        @Override
+        public IProject getProject() {
+            return getLayoutEditor().getProject();
         }
 
-        public void onTargetsLoaded() {
+        @Override
+        public void reload() {
             // because the SDK changed we must reset the configured framework resource.
             mConfiguredFrameworkRes = null;
 
