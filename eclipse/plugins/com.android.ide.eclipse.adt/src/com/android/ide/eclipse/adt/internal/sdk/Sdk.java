@@ -73,12 +73,21 @@ public class Sdk implements IProjectListener, IFileListener {
     private final SdkManager mManager;
     private final AvdManager mAvdManager;
 
+    /** Map associating an {@link IAndroidTarget} to an {@link AndroidTargetData} */
+    private final HashMap<IAndroidTarget, AndroidTargetData> mTargetDataMap =
+        new HashMap<IAndroidTarget, AndroidTargetData>();
+    /** Map associating an {@link IAndroidTarget} and the {@link LoadStatus} of its
+     * {@link AndroidTargetData}. */
+    private final HashMap<IAndroidTarget, LoadStatus> mTargetDataStatusMap =
+        new HashMap<IAndroidTarget, LoadStatus>();
+
+    /** Map associating {@link IProject} and their resolved {@link IAndroidTarget}. */
     private final HashMap<IProject, IAndroidTarget> mProjectTargetMap =
             new HashMap<IProject, IAndroidTarget>();
-    private final HashMap<IAndroidTarget, AndroidTargetData> mTargetDataMap =
-            new HashMap<IAndroidTarget, AndroidTargetData>();
+    /** Map associating {@link IProject} and their APK creation settings ({@link ApkSettings}). */
     private final HashMap<IProject, ApkSettings> mApkSettingsMap =
             new HashMap<IProject, ApkSettings>();
+
     private final String mDocBaseUrl;
 
     private final LayoutDeviceManager mLayoutDeviceManager = new LayoutDeviceManager();
@@ -96,11 +105,54 @@ public class Sdk implements IProjectListener, IFileListener {
          * Called when the targets are loaded (either the SDK finished loading when Eclipse starts,
          * or the SDK is changed).
          */
-        void onTargetsLoaded();
+        void onTargetLoaded(IAndroidTarget target);
+
+        /**
+         * Called when the base content of the SDK is parsed.
+         */
+        void onSdkLoaded();
+    }
+
+    /**
+     * Basic abstract implementation of the ITargetChangeListener for the case where both
+     * {@link #onProjectTargetChange(IProject)} and {@link #onTargetLoaded(IAndroidTarget)}
+     * use the same code based on a simple test requiring to know the current IProject.
+     */
+    public static abstract class TargetChangeListener implements ITargetChangeListener {
+        /**
+         * Returns the {@link IProject} associated with the listener.
+         */
+        public abstract IProject getProject();
+
+        /**
+         * Called when the listener needs to take action on the event. This is only called
+         * if {@link #getProject()} and the {@link IAndroidTarget} associated with the project
+         * match the values received in {@link #onProjectTargetChange(IProject)} and
+         * {@link #onTargetLoaded(IAndroidTarget)}.
+         */
+        public abstract void reload();
+
+        public void onProjectTargetChange(IProject changedProject) {
+            if (changedProject != null && changedProject.equals(getProject())) {
+                reload();
+            }
+        }
+
+        public void onTargetLoaded(IAndroidTarget target) {
+            IProject project = getProject();
+            if (target != null && target.equals(Sdk.getCurrent().getTarget(project))) {
+                reload();
+            }
+        }
+
+        public void onSdkLoaded() {
+            // do nothing;
+        }
     }
 
     /**
      * Loads an SDK and returns an {@link Sdk} object if success.
+     * <p/>If the SDK failed to load, it displays an error to the user.
      * @param sdkLocation the OS path to the SDK.
      */
     public static Sdk loadSdk(String sdkLocation) {
@@ -271,7 +323,7 @@ public class Sdk implements IProjectListener, IFileListener {
 
             // finally, update the opened editors.
             if (resolveProject) {
-                AdtPlugin.getDefault().updateTargetListener(project);
+                AdtPlugin.getDefault().updateTargetListeners(project);
             }
         }
     }
@@ -280,6 +332,9 @@ public class Sdk implements IProjectListener, IFileListener {
      * Returns the {@link IAndroidTarget} object associated with the given {@link IProject}.
      */
     public IAndroidTarget getTarget(IProject project) {
+        if (project == null) {
+            return null;
+        }
         synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
             IAndroidTarget target = mProjectTargetMap.get(project);
             if (target == null) {
@@ -376,6 +431,68 @@ public class Sdk implements IProjectListener, IFileListener {
                     project.getName());
         }
     }
+
+    /**
+     * Checks and loads (if needed) the data for a given target.
+     * <p/> The data is loaded in a separate {@link Job}, and opened editors will be notified
+     * through their implementation of {@link ITargetChangeListener#onTargetLoaded(IAndroidTarget)}.
+     * @param target the target to load.
+     */
+    public void checkAndLoadTargetData(final IAndroidTarget target) {
+        boolean loadData = false;
+
+        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
+            LoadStatus status = mTargetDataStatusMap.get(target);
+            if (status == null) {
+                // set status to loading
+                mTargetDataStatusMap.put(target, LoadStatus.LOADING);
+                // and set the flag to start the loading below
+                loadData = true;
+            }
+        }
+
+        if (loadData) {
+            Job job = new Job(String.format("Loading data for %1$s", target.getFullName())) {
+                @Override
+                protected IStatus run(IProgressMonitor monitor) {
+                    try {
+                        IStatus status = new AndroidTargetParser(target).run(monitor);
+                        AdtPlugin plugin = AdtPlugin.getDefault();
+                        synchronized (plugin.getSdkLockObject()) {
+                            if (status.getCode() != IStatus.OK) {
+                                mTargetDataStatusMap.put(target, LoadStatus.FAILED);
+                            } else {
+                                mTargetDataStatusMap.put(target, LoadStatus.LOADED);
+                                plugin.updateTargetListeners(target);
+                            }
+                        }
+                        return status;
+                    } catch (Throwable t) {
+                        AdtPlugin.log(t, "Exception in checkAndLoadTargetData.");    //$NON-NLS-1$
+                        return new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                                String.format(
+                                        "Parsing Data for %1$s failed", //$NON-NLS-1$
+                                        target.hashString()),
+                                t);
+                    }
+                }
+            };
+            job.setPriority(Job.BUILD); // build jobs are run after other interactive jobs
+            job.schedule();
+        }
+    }
+
+    /**
+     * Returns the {@link LoadStatus} for the data of a given {@link IAndroidTarget}.
+     * @param target the target that is queried.
+     * @return the status or <code>null</code> if the data was not loaded.
+     */
+    public LoadStatus getTargetDataLoadStatus(IAndroidTarget target) {
+        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
+            return mTargetDataStatusMap.get(target);
+        }
+    }
+
     /**
      * Return the {@link AndroidTargetData} for a given {@link IAndroidTarget}.
      */
