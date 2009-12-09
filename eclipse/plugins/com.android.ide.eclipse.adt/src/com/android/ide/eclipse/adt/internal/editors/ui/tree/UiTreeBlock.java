@@ -26,6 +26,7 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.IUiUpdateListener;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk.TargetChangeListener;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.Action;
@@ -299,14 +300,18 @@ public final class UiTreeBlock extends MasterDetailsBlock implements ICommitXml 
 
         /** Listener to update the root node if the target of the file is changed because of a
          * SDK location change or a project target change */
-        final ITargetChangeListener targetListener = new ITargetChangeListener() {
-            public void onProjectTargetChange(IProject changedProject) {
-                if (changedProject == mEditor.getProject()) {
-                    onTargetsLoaded();
+        final ITargetChangeListener targetListener = new TargetChangeListener() {
+            @Override
+            public IProject getProject() {
+                if (mEditor != null) {
+                    return mEditor.getProject();
                 }
+
+                return null;
             }
 
-            public void onTargetsLoaded() {
+            @Override
+            public void reload() {
                 // If a details part has been created, we need to "refresh" it too.
                 if (mDetailsPart != null) {
                     // The details part does not directly expose access to its internal

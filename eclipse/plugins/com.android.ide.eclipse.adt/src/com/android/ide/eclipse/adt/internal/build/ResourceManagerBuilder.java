@@ -64,7 +64,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
 
         // Clear the project of the generic markers
         BaseBuilder.removeMarkersFromProject(project, AdtConstants.MARKER_ADT);
-        
+
         // check for existing target marker, in which case we abort.
         // (this means: no SDK, no target, or unresolvable target.)
         abortOnBadSetup(project);
@@ -86,7 +86,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
             BaseProjectHelper.addMarker(project, AdtConstants.MARKER_ADT, errorMessage,
                     IMarker.SEVERITY_ERROR);
             AdtPlugin.printErrorToConsole(project, errorMessage);
-            
+
             // interrupt the build. The next builders will not run.
             stopBuild(errorMessage);
         }
@@ -110,11 +110,11 @@ public class ResourceManagerBuilder extends BaseBuilder {
             // This interrupts the build. The next builders will not run.
             stopBuild("Project has no target");
         }
-        
+
         // check the 'gen' source folder is present
         boolean hasGenSrcFolder = false; // whether the project has a 'gen' source folder setup
         IJavaProject javaProject = JavaCore.create(project);
-        
+
         IClasspathEntry[] classpaths = javaProject.readRawClasspath();
         if (classpaths != null) {
             for (IClasspathEntry e : classpaths) {
@@ -132,7 +132,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
         boolean genFolderPresent = false; // whether the gen folder actually exists
         IResource resource = project.findMember(SdkConstants.FD_GEN_SOURCES);
         genFolderPresent = resource != null && resource.exists();
-        
+
         if (hasGenSrcFolder == false && genFolderPresent) {
             // No source folder setup for 'gen' in the project, but there's already a
             // 'gen' resource (file or folder).
@@ -178,7 +178,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
                         new SubProgressMonitor(monitor, 10));
                 genFolder.setDerived(true);
             }
-            
+
             // add it to the source folder list, if needed only (or it will throw)
             if (hasGenSrcFolder == false) {
                 IClasspathEntry[] entries = javaProject.getRawClasspath();
@@ -186,7 +186,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
                         JavaCore.newSourceEntry(genFolder.getFullPath()));
                 javaProject.setRawClasspath(entries, new SubProgressMonitor(monitor, 10));
             }
-            
+
             // refresh the whole project
             project.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 10));
         }

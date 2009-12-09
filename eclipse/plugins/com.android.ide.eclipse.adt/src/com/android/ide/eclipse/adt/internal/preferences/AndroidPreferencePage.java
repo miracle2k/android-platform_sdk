@@ -204,11 +204,7 @@ public class AndroidPreferencePage extends FieldEditorPreferencePage implements
         }
 
         private class TargetChangedListener implements ITargetChangeListener {
-            public void onProjectTargetChange(IProject changedProject) {
-                // do nothing.
-            }
-
-            public void onTargetsLoaded() {
+            public void onSdkLoaded() {
                 if (mTargetSelector != null) {
                     // We may not have an sdk if the sdk path pref is empty or not valid.
                     Sdk sdk = Sdk.getCurrent();
@@ -216,6 +212,14 @@ public class AndroidPreferencePage extends FieldEditorPreferencePage implements
 
                     mTargetSelector.setTargets(targets);
                 }
+            }
+
+            public void onProjectTargetChange(IProject changedProject) {
+                // do nothing.
+            }
+
+            public void onTargetLoaded(IAndroidTarget target) {
+                // do nothing.
             }
         }
     }
