@@ -53,6 +53,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.gef.ui.parts.SelectionSynchronizer;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
@@ -62,9 +63,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
@@ -228,8 +231,46 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
         mSashError.setWeights(new int[] { 80, 20 });
         mSashError.setMaximizedControl(mLayoutCanvas);
 
+        setupEditActions();
+
         // Initialize the state
         reloadPalette();
+    }
+
+    private void setupEditActions() {
+
+        IActionBars actionBars = getEditorSite().getActionBars();
+
+        actionBars.setGlobalActionHandler(ActionFactory.COPY.getId(), new Action("Copy") {
+            @Override
+            public void run() {
+                // TODO enable copy only when there's a selection
+                mLayoutCanvas.onCopy(mClipboard);
+            }
+        });
+
+        actionBars.setGlobalActionHandler(ActionFactory.CUT.getId(), new Action("Cut") {
+            @Override
+            public void run() {
+                // TODO enable cut only when there's a selection
+                mLayoutCanvas.onCut(mClipboard);
+            }
+        });
+
+        actionBars.setGlobalActionHandler(ActionFactory.PASTE.getId(), new Action("Paste") {
+            @Override
+            public void run() {
+                mLayoutCanvas.onPaste(mClipboard);
+            }
+        });
+
+        actionBars.setGlobalActionHandler(ActionFactory.SELECT_ALL.getId(),
+                new Action("Select All") {
+            @Override
+            public void run() {
+                mLayoutCanvas.onSelectAll();
+            }
+        });
     }
 
     /**
