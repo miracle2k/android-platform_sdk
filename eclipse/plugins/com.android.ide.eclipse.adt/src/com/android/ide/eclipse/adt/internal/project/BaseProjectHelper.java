@@ -153,26 +153,22 @@ public final class BaseProjectHelper {
      * @param resource the file to be marked
      * @param markerId The id of the marker to add.
      * @param message the message associated with the mark
-     * @param lineNumber the line number where to put the mark if != -1.
      * @param severity the severity of the marker.
      * @param priority the priority of the marker
      * @return the IMarker that was added.
      * @throws CoreException
      */
-    public final static IMarker addMarker(IResource resource, String markerId,
-            String message, int lineNumber, int severity, int priority) throws CoreException {
-        IMarker marker = resource.createMarker(markerId);
+    public final static IMarker addMarker(IProject project, String markerId,
+            String message, int severity, int priority) throws CoreException {
+        IMarker marker = project.createMarker(markerId);
         marker.setAttribute(IMarker.MESSAGE, message);
         marker.setAttribute(IMarker.SEVERITY, severity);
-        if (lineNumber != -1) {
-            marker.setAttribute(IMarker.LINE_NUMBER, lineNumber);
-        }
         marker.setAttribute(IMarker.PRIORITY, priority);
 
         // on Windows, when adding a marker to a project, it takes a refresh for the marker
         // to show. In order to fix this we're forcing a refresh of elements receiving
         // markers (and only the element, not its children), to force the marker display.
-        resource.refreshLocal(IResource.DEPTH_ZERO, new NullProgressMonitor());
+        project.refreshLocal(IResource.DEPTH_ZERO, new NullProgressMonitor());
 
         return marker;
     }

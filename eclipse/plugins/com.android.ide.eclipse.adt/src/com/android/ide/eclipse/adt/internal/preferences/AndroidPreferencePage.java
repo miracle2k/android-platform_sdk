@@ -66,7 +66,7 @@ public class AndroidPreferencePage extends FieldEditorPreferencePage implements
     @Override
     public void createFieldEditors() {
 
-        mDirectoryField = new SdkDirectoryFieldEditor(AdtPlugin.PREFS_SDK_DIR,
+        mDirectoryField = new SdkDirectoryFieldEditor(AdtPrefs.PREFS_SDK_DIR,
                 Messages.AndroidPreferencePage_SDK_Location_, getFieldEditorParent());
 
         addField(mDirectoryField);

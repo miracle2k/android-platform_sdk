@@ -28,7 +28,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
  */
 public class LaunchPreferencePage extends FieldEditorPreferencePage implements
         IWorkbenchPreferencePage {
-    
+
     public LaunchPreferencePage() {
         super(GRID);
         setPreferenceStore(AdtPlugin.getDefault().getPreferenceStore());
@@ -37,10 +37,10 @@ public class LaunchPreferencePage extends FieldEditorPreferencePage implements
 
     @Override
     protected void createFieldEditors() {
-        addField(new StringFieldEditor(AdtPlugin.PREFS_EMU_OPTIONS,
+        addField(new StringFieldEditor(AdtPrefs.PREFS_EMU_OPTIONS,
                 Messages.LaunchPreferencePage_Default_Emu_Options, getFieldEditorParent()));
 
-        addField(new StringFieldEditor(AdtPlugin.PREFS_HOME_PACKAGE,
+        addField(new StringFieldEditor(AdtPrefs.PREFS_HOME_PACKAGE,
                 Messages.LaunchPreferencePage_Default_HOME_Package, getFieldEditorParent()));
     }
 

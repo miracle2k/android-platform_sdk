@@ -16,9 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.build;
 
-import com.android.ide.eclipse.adt.AdtConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.XmlErrorHandler;
@@ -332,7 +332,7 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
             String markerId) {
         try {
             if (project.exists()) {
-                project.deleteMarkers(markerId, true, IResource.DEPTH_INFINITE);
+                project.deleteMarkers(markerId, true, IResource.DEPTH_ZERO);
             }
         } catch (CoreException ce) {
             String msg = String.format(Messages.Marker_Delete_Error, markerId, project.getName());
@@ -390,7 +390,7 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
                     while (true) {
                         String line = outReader.readLine();
                         if (line != null) {
-                            AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE,
+                            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
                                     project, line);
                         } else {
                             break;
@@ -764,8 +764,7 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
 
         if (markerAlreadyExists == false) {
             if (line != -1) {
-                BaseProjectHelper.addMarker(f2, markerId, message, line,
-                        severity);
+                BaseProjectHelper.addMarker(f2, markerId, message, line, severity);
             } else {
                 BaseProjectHelper.addMarker(f2, markerId, message, severity);
             }
@@ -863,11 +862,11 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
                             } else {
                                 String message = String.format( Messages.Couldnt_Locate_s_Error,
                                         path);
-                                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE,
+                                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
                                         project, message);
 
                                 // Also put a warning marker on the project
-                                markProject(AdtConstants.MARKER_ADT, message,
+                                markProject(AndroidConstants.MARKER_ADT, message,
                                         IMarker.SEVERITY_WARNING);
                             }
                         }
@@ -894,14 +893,14 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
         }
 
         // abort if there are TARGET or ADT type markers
-        IMarker[] markers = project.findMarkers(AdtConstants.MARKER_TARGET,
+        IMarker[] markers = project.findMarkers(AndroidConstants.MARKER_TARGET,
                 false /*includeSubtypes*/, IResource.DEPTH_ZERO);
 
         if (markers.length > 0) {
             stopBuild("");
         }
 
-        markers = project.findMarkers(AdtConstants.MARKER_ADT, false /*includeSubtypes*/,
+        markers = project.findMarkers(AndroidConstants.MARKER_ADT, false /*includeSubtypes*/,
                 IResource.DEPTH_ZERO);
 
         if (markers.length > 0) {
