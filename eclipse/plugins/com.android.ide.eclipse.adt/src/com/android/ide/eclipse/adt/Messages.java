@@ -14,8 +14,6 @@ public class Messages extends NLS {
 
     public static String AdtPlugin_Failed_To_Start_s;
 
-    public static String AdtPlugin_Parsing_Resources;
-
     public static String Console_Data_Project_Tag;
 
     public static String Console_Date_Tag;
