@@ -16,11 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.build;
 
-import com.android.ide.eclipse.adt.AdtConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.build.BaseBuilder.BaseDeltaVisitor;
 import com.android.ide.eclipse.adt.internal.build.PreCompilerBuilder.AidlData;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.sdklib.SdkConstants;
@@ -386,7 +386,7 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
                     break;
             }
             if (message != null) {
-                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE,
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
                         mBuilder.getProject(), message);
             }
 
