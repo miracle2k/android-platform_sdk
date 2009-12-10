@@ -29,6 +29,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchConfiguration.TargetMode;
 import com.android.ide.eclipse.adt.internal.launch.DelayedLaunchInfo.InstallRetryMode;
 import com.android.ide.eclipse.adt.internal.launch.DeviceChooserDialog.DeviceChooserResponse;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
 import com.android.ide.eclipse.adt.internal.project.ApkInstallManager;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
@@ -225,7 +226,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
 
                 // set default emulator options
                 IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
-                String emuOptions = store.getString(AdtPlugin.PREFS_EMU_OPTIONS);
+                String emuOptions = store.getString(AdtPrefs.PREFS_EMU_OPTIONS);
                 wc.setAttribute(LaunchConfigDelegate.ATTR_COMMANDLINE, emuOptions);
 
                 // map the config and the project
@@ -1322,7 +1323,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
                 AdtPlugin.printToConsole(launchInfo.getProject(),
                         String.format("Waiting for HOME ('%1$s') to be launched...",
                             AdtPlugin.getDefault().getPreferenceStore().getString(
-                                    AdtPlugin.PREFS_HOME_PACKAGE)));
+                                    AdtPrefs.PREFS_HOME_PACKAGE)));
             }
         }
     }
@@ -1395,7 +1396,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
             String applicationName = client.getClientData().getClientDescription();
             if (applicationName != null) {
                 IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
-                String home = store.getString(AdtPlugin.PREFS_HOME_PACKAGE);
+                String home = store.getString(AdtPrefs.PREFS_HOME_PACKAGE);
 
                 if (home.equals(applicationName)) {
 
