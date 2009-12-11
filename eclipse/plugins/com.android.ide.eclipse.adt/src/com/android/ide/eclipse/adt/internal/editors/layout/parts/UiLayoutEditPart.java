@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.parts;
 
+import com.android.ide.eclipse.adt.internal.editors.layout.parts.UiElementsEditPartFactory.IOutlineProvider;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
 import org.eclipse.draw2d.IFigure;
@@ -52,9 +53,11 @@ public final class UiLayoutEditPart extends UiElementEditPart {
     }
 
     private final HighlightInfo mHighlightInfo = new HighlightInfo();
+    private final IOutlineProvider mProvider;
 
-    public UiLayoutEditPart(UiElementNode uiElementNode) {
+    public UiLayoutEditPart(UiElementNode uiElementNode, IOutlineProvider provider) {
         super(uiElementNode);
+        mProvider = provider;
     }
 
     @Override
@@ -73,7 +76,7 @@ public final class UiLayoutEditPart extends UiElementEditPart {
 
     @Override
     protected IFigure createFigure() {
-        IFigure f = new LayoutFigure();
+        IFigure f = new LayoutFigure(mProvider);
         f.setLayoutManager(new XYLayout());
         return f;
     }

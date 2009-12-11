@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.parts;
 
+import com.android.ide.eclipse.adt.internal.editors.layout.parts.UiElementsEditPartFactory.IOutlineProvider;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.UiLayoutEditPart.HighlightInfo;
 
 import org.eclipse.draw2d.ColorConstants;
@@ -37,8 +38,8 @@ class LayoutFigure extends ElementFigure {
 
     private HighlightInfo mHighlightInfo;
 
-    public LayoutFigure() {
-        super();
+    public LayoutFigure(IOutlineProvider provider) {
+        super(provider);
     }
 
     public void setHighlighInfo(HighlightInfo highlightInfo) {
