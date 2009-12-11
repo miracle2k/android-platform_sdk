@@ -295,13 +295,14 @@
    </extension>
    <extension
          point="org.eclipse.core.runtime.preferences">
-      <initializer class="com.android.ide.eclipse.adt.internal.preferences.PreferenceInitializer"/>
+      <initializer class="com.android.ide.eclipse.adt.internal.preferences.AdtPrefs"/>
    </extension>
    <extension
          id="com.android.ide.eclipse.adt.adtProblem"
          name="Android ADT Problem"
          point="org.eclipse.core.resources.markers">
       <super type="org.eclipse.core.resources.problemmarker"/>
+      <super type="org.eclipse.core.resources.textmarker"/>
       <persistent value="true"/>
    </extension>
    <extension

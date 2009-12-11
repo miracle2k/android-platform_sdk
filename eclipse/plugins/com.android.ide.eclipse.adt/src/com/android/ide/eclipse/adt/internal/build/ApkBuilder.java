@@ -16,9 +16,10 @@
 
 package com.android.ide.eclipse.adt.internal.build;
 
-import com.android.ide.eclipse.adt.AdtConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.ApkInstallManager;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
@@ -69,6 +70,7 @@ import java.security.cert.X509Certificate;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -188,11 +190,51 @@ public class ApkBuilder extends BaseBuilder {
     }
 
     /**
-     * {@link IZipEntryFilter} to filter out everything that is not a standard java resources.
+     * Custom {@link IZipEntryFilter} to filter out everything that is not a standard java
+     * resources, and also record whether the zip file contains native libraries.
      * <p/>Used in {@link SignedJarBuilder#writeZip(java.io.InputStream, IZipEntryFilter)} when
      * we only want the java resources from external jars.
      */
-    private final IZipEntryFilter mJavaResourcesFilter = new JavaResourceFilter();
+    private final static class JavaAndNativeResourceFilter extends JavaResourceFilter {
+        private final List<String> mNativeLibs = new ArrayList<String>();
+        private boolean mNativeLibInteference = false;
+
+        @Override
+        public boolean checkEntry(String name) {
+            boolean value = super.checkEntry(name);
+
+            // only do additional checks if the file passes the default checks.
+            if (value) {
+                if (name.endsWith(".so")) {
+                    mNativeLibs.add(name);
+
+                    // only .so located in lib/ will interfer with the installation
+                    if (name.startsWith("lib/")) {
+                        mNativeLibInteference = true;
+                    }
+                } else if (name.endsWith(".jnilib")) {
+                    mNativeLibs.add(name);
+                }
+            }
+
+            return value;
+        }
+
+        List<String> getNativeLibs() {
+            return mNativeLibs;
+        }
+
+        boolean getNativeLibInterefence() {
+            return mNativeLibInteference;
+        }
+
+        void clear() {
+            mNativeLibs.clear();
+            mNativeLibInteference = false;
+        }
+    };
+
+    private final JavaAndNativeResourceFilter mResourceFilter = new JavaAndNativeResourceFilter();
 
     public ApkBuilder() {
         super();
@@ -229,14 +271,14 @@ public class ApkBuilder extends BaseBuilder {
             // lose it if we have to abort the build for any reason.
             ApkDeltaVisitor dv = null;
             if (kind == FULL_BUILD) {
-                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, project,
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                         Messages.Start_Full_Apk_Build);
 
                 mPackageResources = true;
                 mConvertToDex = true;
                 mBuildFinalPackage = true;
             } else {
-                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, project,
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                         Messages.Start_Inc_Apk_Build);
 
                 // go through the resources and see if something changed.
@@ -279,7 +321,7 @@ public class ApkBuilder extends BaseBuilder {
             saveProjectBooleanProperty(PROPERTY_BUILD_APK, mBuildFinalPackage);
 
             if (dv != null && dv.mXmlError) {
-                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, project,
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                 Messages.Xml_Error);
 
                 // if there was some XML errors, we just return w/o doing
@@ -289,7 +331,7 @@ public class ApkBuilder extends BaseBuilder {
 
             if (outputFolder == null) {
                 // mark project and exit
-                markProject(AdtConstants.MARKER_ADT, Messages.Failed_To_Get_Output,
+                markProject(AndroidConstants.MARKER_ADT, Messages.Failed_To_Get_Output,
                         IMarker.SEVERITY_ERROR);
                 return referencedProjects;
             }
@@ -337,7 +379,7 @@ public class ApkBuilder extends BaseBuilder {
                                     tmp.exists() == false)) {
                                 String msg = String.format(Messages.s_Missing_Repackaging,
                                         filename);
-                                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE,
+                                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
                                         project, msg);
                                 mPackageResources = true;
                                 mBuildFinalPackage = true;
@@ -364,7 +406,7 @@ public class ApkBuilder extends BaseBuilder {
                 if (tmp == null || (tmp instanceof IFile &&
                         tmp.exists() == false)) {
                     String msg = String.format(Messages.s_Missing_Repackaging, finalPackageName);
-                    AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, project, msg);
+                    AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project, msg);
                     mBuildFinalPackage = true;
                 } else if (apkfilters != null) {
                     // if the full apk is present, we check the filtered apk as well
@@ -375,7 +417,7 @@ public class ApkBuilder extends BaseBuilder {
                         if (tmp == null || (tmp instanceof IFile &&
                                 tmp.exists() == false)) {
                             String msg = String.format(Messages.s_Missing_Repackaging, filename);
-                            AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, project, msg);
+                            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project, msg);
                             mBuildFinalPackage = true;
                             break;
                         }
@@ -398,7 +440,7 @@ public class ApkBuilder extends BaseBuilder {
             if (mPackageResources || mConvertToDex || mBuildFinalPackage) {
                 IPath binLocation = outputFolder.getLocation();
                 if (binLocation == null) {
-                    markProject(AdtConstants.MARKER_ADT, Messages.Output_Missing,
+                    markProject(AndroidConstants.MARKER_ADT, Messages.Output_Missing,
                             IMarker.SEVERITY_ERROR);
                     return referencedProjects;
                 }
@@ -441,7 +483,7 @@ public class ApkBuilder extends BaseBuilder {
                         // mark project and exit
                         String msg = String.format(Messages.s_File_Missing,
                                 AndroidConstants.FN_ANDROID_MANIFEST);
-                        markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+                        markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
                         return referencedProjects;
                     }
 
@@ -472,8 +514,9 @@ public class ApkBuilder extends BaseBuilder {
 
                         // build the default resource package
                         if (executeAapt(project, osManifestPath, osResPath,
-                                osAssetsPath, osBinPath + File.separator +
-                                AndroidConstants.FN_RESOURCES_AP_, null /*configFilter*/) == false) {
+                                osAssetsPath,
+                                osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
+                                null /*configFilter*/) == false) {
                             // aapt failed. Whatever files that needed to be marked
                             // have already been marked. We just return.
                             return referencedProjects;
@@ -521,7 +564,8 @@ public class ApkBuilder extends BaseBuilder {
                 // and classes.dex.
                 // This is the default package with all the resources.
 
-                String classesDexPath = osBinPath + File.separator + AndroidConstants.FN_CLASSES_DEX;
+                String classesDexPath = osBinPath + File.separator +
+                        AndroidConstants.FN_CLASSES_DEX;
                 if (finalPackage(osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
                                 classesDexPath,osFinalPackagePath, javaProject,
                                 referencedJavaProjects) == false) {
@@ -561,7 +605,7 @@ public class ApkBuilder extends BaseBuilder {
                 // reset the installation manager to force new installs of this project
                 ApkInstallManager.getInstance().resetInstallationFor(project);
 
-                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, getProject(),
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, getProject(),
                         "Build Success!");
             }
         } catch (Exception exception) {
@@ -584,7 +628,7 @@ public class ApkBuilder extends BaseBuilder {
 
             msg = String.format("Unknown error: %1$s", msg);
             AdtPlugin.printErrorToConsole(project, msg);
-            markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
         }
 
         return referencedProjects;
@@ -622,7 +666,7 @@ public class ApkBuilder extends BaseBuilder {
         commandArray.add(target.getPath(IAndroidTarget.AAPT));
         commandArray.add("package"); //$NON-NLS-1$
         commandArray.add("-f");//$NON-NLS-1$
-        if (AdtPlugin.getBuildVerbosity() == AdtConstants.BUILD_VERBOSE) {
+        if (AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE) {
             commandArray.add("-v"); //$NON-NLS-1$
         }
         if (configFilter != null) {
@@ -645,7 +689,7 @@ public class ApkBuilder extends BaseBuilder {
         String command[] = commandArray.toArray(
                 new String[commandArray.size()]);
 
-        if (AdtPlugin.getBuildVerbosity() == AdtConstants.BUILD_VERBOSE) {
+        if (AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE) {
             StringBuilder sb = new StringBuilder();
             for (String c : command) {
                 sb.append(c);
@@ -674,7 +718,7 @@ public class ApkBuilder extends BaseBuilder {
                 if (execError != 0) {
                     AdtPlugin.printErrorToConsole(project, results.toArray());
                 } else {
-                    AdtPlugin.printBuildToConsole(AdtConstants.BUILD_ALWAYS, project,
+                    AdtPlugin.printBuildToConsole(BuildVerbosity.ALWAYS, project,
                             results.toArray());
                 }
             }
@@ -685,7 +729,7 @@ public class ApkBuilder extends BaseBuilder {
                 // not all files that should have been marked, were marked), we put a generic
                 // marker on the project and abort.
                 if (parsingError) {
-                    markProject(AdtConstants.MARKER_ADT, Messages.Unparsed_AAPT_Errors,
+                    markProject(AndroidConstants.MARKER_ADT, Messages.Unparsed_AAPT_Errors,
                             IMarker.SEVERITY_ERROR);
                 }
 
@@ -694,11 +738,11 @@ public class ApkBuilder extends BaseBuilder {
             }
         } catch (IOException e1) {
             String msg = String.format(Messages.AAPT_Exec_Error, command[0]);
-            markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
             return false;
         } catch (InterruptedException e) {
             String msg = String.format(Messages.AAPT_Exec_Error, command[0]);
-            markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
             return false;
         }
 
@@ -758,7 +802,7 @@ public class ApkBuilder extends BaseBuilder {
             System.arraycopy(libraries, 0, fileNames, 1 + projectOutputs.length, libraries.length);
 
             int res = wrapper.run(osOutFilePath, fileNames,
-                    AdtPlugin.getBuildVerbosity() == AdtConstants.BUILD_VERBOSE,
+                    AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE,
                     mOutStream, mErrStream);
 
             if (res != 0) {
@@ -766,7 +810,7 @@ public class ApkBuilder extends BaseBuilder {
                 String message = String.format(Messages.Dalvik_Error_d,
                         res);
                 AdtPlugin.printErrorToConsole(getProject(), message);
-                markProject(AdtConstants.MARKER_ADT, message, IMarker.SEVERITY_ERROR);
+                markProject(AndroidConstants.MARKER_ADT, message, IMarker.SEVERITY_ERROR);
                 return false;
             }
         } catch (Throwable ex) {
@@ -776,7 +820,7 @@ public class ApkBuilder extends BaseBuilder {
             }
             message = String.format(Messages.Dalvik_Error_s, message);
             AdtPlugin.printErrorToConsole(getProject(), message);
-            markProject(AdtConstants.MARKER_ADT, message, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, message, IMarker.SEVERITY_ERROR);
             if ((ex instanceof NoClassDefFoundError)
                     || (ex instanceof NoSuchMethodError)) {
                 AdtPlugin.printErrorToConsole(getProject(), Messages.Incompatible_VM_Warning,
@@ -803,13 +847,13 @@ public class ApkBuilder extends BaseBuilder {
         FileOutputStream fos = null;
         try {
             IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
-            String osKeyPath = store.getString(AdtPlugin.PREFS_CUSTOM_DEBUG_KEYSTORE);
+            String osKeyPath = store.getString(AdtPrefs.PREFS_CUSTOM_DEBUG_KEYSTORE);
             if (osKeyPath == null || new File(osKeyPath).exists() == false) {
                 osKeyPath = DebugKeyProvider.getDefaultKeyStoreOsPath();
-                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, getProject(),
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, getProject(),
                         Messages.ApkBuilder_Using_Default_Key);
             } else {
-                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, getProject(),
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, getProject(),
                         String.format(Messages.ApkBuilder_Using_s_To_Sign, osKeyPath));
             }
 
@@ -822,7 +866,7 @@ public class ApkBuilder extends BaseBuilder {
                         }
 
                         public void out(String message) {
-                            AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE,
+                            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
                                     javaProject.getProject(),
                                     Messages.ApkBuilder_Signing_Key_Creation_s + message);
                         }
@@ -834,7 +878,7 @@ public class ApkBuilder extends BaseBuilder {
                 String msg = String.format(Messages.Final_Archive_Error_s,
                         Messages.ApkBuilder_Unable_To_Gey_Key);
                 AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-                markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+                markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
                 return false;
             }
 
@@ -845,7 +889,7 @@ public class ApkBuilder extends BaseBuilder {
                     String.format(Messages.ApkBuilder_Certificate_Expired_on_s,
                             DateFormat.getInstance().format(certificate.getNotAfter())));
                 AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-                markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+                markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
                 return false;
             }
 
@@ -854,7 +898,7 @@ public class ApkBuilder extends BaseBuilder {
             SignedJarBuilder builder = new SignedJarBuilder(fos, key, certificate);
 
             // add the intermediate file containing the compiled resources.
-            AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, getProject(),
+            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, getProject(),
                     String.format(Messages.ApkBuilder_Packaging_s, intermediateApk));
             FileInputStream fis = new FileInputStream(intermediateApk);
             try {
@@ -864,8 +908,9 @@ public class ApkBuilder extends BaseBuilder {
             }
 
             // Now we add the new file to the zip archive for the classes.dex file.
-            AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, getProject(),
-                    String.format(Messages.ApkBuilder_Packaging_s, AndroidConstants.FN_CLASSES_DEX));
+            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, getProject(),
+                    String.format(Messages.ApkBuilder_Packaging_s,
+                            AndroidConstants.FN_CLASSES_DEX));
             File entryFile = new File(dex);
             builder.writeFile(entryFile, AndroidConstants.FN_CLASSES_DEX);
 
@@ -874,11 +919,43 @@ public class ApkBuilder extends BaseBuilder {
 
             // Now we write the standard resources from the external libraries
             for (String libraryOsPath : getExternalJars()) {
-                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, getProject(),
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, getProject(),
                         String.format(Messages.ApkBuilder_Packaging_s, libraryOsPath));
                 try {
                     fis = new FileInputStream(libraryOsPath);
-                    builder.writeZip(fis, mJavaResourcesFilter);
+                    mResourceFilter.clear();
+                    builder.writeZip(fis, mResourceFilter);
+
+                    // check if we found native libraries in the external library. This
+                    // constitutes an error or warning depending on if they are in lib/
+                    List<String> nativeLibs = mResourceFilter.getNativeLibs();
+                    boolean nativeInterference = mResourceFilter.getNativeLibInterefence();
+                    if (nativeLibs.size() > 0) {
+                        String libName = new File(libraryOsPath).getName();
+                        String msg = String.format("Native libraries detected in '%1$s'. See console for more information.",
+                                libName);
+
+                        markProject(AndroidConstants.MARKER_ADT, msg,
+                                nativeInterference ?
+                                        IMarker.SEVERITY_ERROR : IMarker.SEVERITY_WARNING);
+
+                        ArrayList<String> consoleMsgs = new ArrayList<String>();
+                        consoleMsgs.add(String.format(
+                                "The library '%1$s' contains native libraries that will not run on the device.",
+                                libName));
+                        if (nativeInterference) {
+                            consoleMsgs.add("Additionally some of those libraries will interfer with the installation of the application because of their location in lib/");
+                            consoleMsgs.add("lib/ is reserved for NDK libraries.");
+                        }
+                        consoleMsgs.add("The following libraries were found:");
+                        for (String lib : nativeLibs) {
+                            consoleMsgs.add(" - " + lib);
+                        }
+                        AdtPlugin.printErrorToConsole(javaProject.getProject(),
+                                consoleMsgs.toArray());
+
+                        return false;
+                    }
                 } finally {
                     fis.close();
                 }
@@ -899,20 +976,20 @@ public class ApkBuilder extends BaseBuilder {
             // mark project and return
             String msg = String.format(Messages.Final_Archive_Error_s, e1.getMessage());
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-            markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
             return false;
         } catch (IOException e1) {
             // mark project and return
             String msg = String.format(Messages.Final_Archive_Error_s, e1.getMessage());
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-            markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
             return false;
         } catch (KeytoolException e) {
             String eMessage = e.getMessage();
 
             // mark the project with the standard message
             String msg = String.format(Messages.Final_Archive_Error_s, eMessage);
-            markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
 
             // output more info in the console
             AdtPlugin.printErrorToConsole(javaProject.getProject(),
@@ -925,7 +1002,7 @@ public class ApkBuilder extends BaseBuilder {
 
             // mark the project with the standard message
             String msg = String.format(Messages.Final_Archive_Error_s, eMessage);
-            markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
 
             // and also output it in the console
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
@@ -933,7 +1010,7 @@ public class ApkBuilder extends BaseBuilder {
             // mark project and return
             String msg = String.format(Messages.Final_Archive_Error_s, e.getMessage());
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-            markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
             return false;
         } catch (Exception e) {
             // try to catch other exception to actually display an error. This will be useful
@@ -947,7 +1024,7 @@ public class ApkBuilder extends BaseBuilder {
 
             msg = String.format("Unknown error: %1$s", msg);
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-            markProject(AdtConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
             return false;
         } finally {
             if (fos != null) {
@@ -1098,8 +1175,10 @@ public class ApkBuilder extends BaseBuilder {
                             // get the File object
                             File entryFile = member.getLocation().toFile();
 
-                            AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, getProject(),
-                                    String.format(Messages.ApkBuilder_Packaging_s_into_s, fullPath, zipPath));
+                            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, getProject(),
+                                    String.format(
+                                            Messages.ApkBuilder_Packaging_s_into_s,
+                                            fullPath, zipPath));
 
                             // write it in the zip archive
                             jarBuilder.writeFile(entryFile, zipPath);

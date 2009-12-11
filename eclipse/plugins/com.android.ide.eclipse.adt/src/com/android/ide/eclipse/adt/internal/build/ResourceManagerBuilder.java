@@ -16,9 +16,10 @@
 
 package com.android.ide.eclipse.adt.internal.build;
 
-import com.android.ide.eclipse.adt.AdtConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
@@ -63,7 +64,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
         IProject project = getProject();
 
         // Clear the project of the generic markers
-        BaseBuilder.removeMarkersFromProject(project, AdtConstants.MARKER_ADT);
+        removeMarkersFromProject(project, AndroidConstants.MARKER_ADT);
 
         // check for existing target marker, in which case we abort.
         // (this means: no SDK, no target, or unresolvable target.)
@@ -83,8 +84,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
         }
 
         if (errorMessage != null) {
-            BaseProjectHelper.addMarker(project, AdtConstants.MARKER_ADT, errorMessage,
-                    IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, errorMessage, IMarker.SEVERITY_ERROR);
             AdtPlugin.printErrorToConsole(project, errorMessage);
 
             // interrupt the build. The next builders will not run.
@@ -96,7 +96,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
 
         if (osSdkFolder == null || osSdkFolder.length() == 0) {
             AdtPlugin.printErrorToConsole(project, Messages.No_SDK_Setup_Error);
-            markProject(AdtConstants.MARKER_ADT, Messages.No_SDK_Setup_Error,
+            markProject(AndroidConstants.MARKER_ADT, Messages.No_SDK_Setup_Error,
                     IMarker.SEVERITY_ERROR);
 
             // This interrupts the build. The next builders will not run.
@@ -150,7 +150,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
             }
 
             AdtPlugin.printErrorToConsole(project, message);
-            markProject(AdtConstants.MARKER_ADT, message, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_ADT, message, IMarker.SEVERITY_ERROR);
 
             // This interrupts the build. The next builders will not run.
             stopBuild(message);
@@ -172,7 +172,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
             // create the new source folder, if needed
             IFolder genFolder = project.getFolder(SdkConstants.FD_GEN_SOURCES);
             if (genFolderPresent == false) {
-                AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, project,
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                         "Creating 'gen' source folder for generated Java files");
                 genFolder.create(true /* force */, true /* local */,
                         new SubProgressMonitor(monitor, 10));
@@ -193,19 +193,16 @@ public class ResourceManagerBuilder extends BaseBuilder {
 
         // Check the preference to be sure we are supposed to refresh
         // the folders.
-        if (AdtPlugin.getAutoResRefresh()) {
-            AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE, project,
-                    Messages.Refreshing_Res);
+        if (AdtPrefs.getPrefs().getBuildForceResResfresh()) {
+            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project, Messages.Refreshing_Res);
 
             // refresh the res folder.
-            IFolder resFolder = project.getFolder(
-                    AndroidConstants.WS_RESOURCES);
+            IFolder resFolder = project.getFolder(AndroidConstants.WS_RESOURCES);
             resFolder.refreshLocal(IResource.DEPTH_INFINITE, monitor);
 
             // Also refresh the assets folder to make sure the ApkBuilder
             // will now it's changed and will force a new resource packaging.
-            IFolder assetsFolder = project.getFolder(
-                    AndroidConstants.WS_ASSETS);
+            IFolder assetsFolder = project.getFolder(AndroidConstants.WS_ASSETS);
             assetsFolder.refreshLocal(IResource.DEPTH_INFINITE, monitor);
         }
 
