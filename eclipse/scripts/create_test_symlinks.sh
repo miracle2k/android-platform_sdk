@@ -32,16 +32,22 @@ BACK=`back $DEST`
 
 HOST=`uname`
 if [ "$HOST" == "Linux" ]; then
-    ln -svf $BACK/out/host/linux-x86/framework/kxml2-2.3.0.jar "$DEST/"
-    ln -svf $BACK/out/host/linux-x86/framework/layoutlib.jar   "$DEST/"
+    ln -svf $BACK/out/host/linux-x86/framework/kxml2-2.3.0.jar        "$DEST/"
+    ln -svf $BACK/out/host/linux-x86/framework/layoutlib.jar          "$DEST/"
+    ln -svf $BACK/out/host/linux-x86/framework/groovy-all-1.6.5.jar   "$DEST/"
 
 elif [ "$HOST" == "Darwin" ]; then
-    ln -svf $BACK/out/host/darwin-x86/framework/kxml2-2.3.0.jar "$DEST/"
-    ln -svf $BACK/out/host/darwin-x86/framework/layoutlib.jar   "$DEST/"
+    ln -svf $BACK/out/host/darwin-x86/framework/kxml2-2.3.0.jar       "$DEST/"
+    ln -svf $BACK/out/host/darwin-x86/framework/layoutlib.jar         "$DEST/"
+    ln -svf $BACK/out/host/darwin-x86/framework/groovy-all-1.6.5.jar  "$DEST/"
 
 elif [ "${HOST:0:6}" == "CYGWIN" ]; then
     if [ ! -f "$DEST/kxml2-2.3.0.jar" ]; then
         cp -v "prebuilt/common/kxml2/kxml2-2.3.0.jar" "$DEST/"
+    fi
+
+    if [ ! -f "$DEST/groovy-all-1.6.5.jar" ]; then
+        cp -v "prebuilt/common/groovy/groovy-all-1.6.5.jar" "$DEST/"
     fi
 
     LIBS="layoutlib.jar"

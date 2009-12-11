@@ -16,6 +16,7 @@
 
    <license url="http://www.eclipse.org/org/documents/epl-v10.php">
       Note:  kxml2-2.3.0.jar is under the BSD license rather than the EPL.  You can find a copy of the BSD License at http://www.opensource.org/licenses/bsd-license.php
+      Note:  groovy-all-1.6.5.jar is under a BSD/Apache license rather than the EPL.  For details, please see http://groovy.codehaus.org/faq.html#licence .
 
       Eclipse Public License - v 1.0
 
