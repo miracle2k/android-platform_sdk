@@ -75,6 +75,24 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         public int getLevel() {
             return mLevel;
         }
+
+        /**
+         * Finds and returns a {@link BuildVerbosity} whose {@link #name()} matches a given name.
+         * <p/>This is different from {@link Enum#valueOf(Class, String)} in that it returns null
+         * if no matches are found.
+         *
+         * @param name the name to look up.
+         * @return returns the matching enum or null of no match where found.
+         */
+        public static BuildVerbosity find(String name) {
+            for (BuildVerbosity v : values()) {
+                if (v.name().equals(name)) {
+                    return v;
+                }
+            }
+
+            return null;
+        }
     }
 
     public static void init(IPreferenceStore preferenceStore) {
@@ -100,7 +118,7 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         }
 
         if (property == null || PREFS_BUILD_VERBOSITY.equals(property)) {
-            mBuildVerbosity = BuildVerbosity.valueOf(mStore.getString(PREFS_BUILD_VERBOSITY));
+            mBuildVerbosity = BuildVerbosity.find(mStore.getString(PREFS_BUILD_VERBOSITY));
             if (mBuildVerbosity == null) {
                 mBuildVerbosity = BuildVerbosity.NORMAL;
             }
