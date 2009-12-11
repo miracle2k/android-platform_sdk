@@ -77,7 +77,7 @@ public class UiElementPullParserTest extends TestCase {
         ElementDescriptor[] a = new ElementDescriptor[] {
                 buttonDescriptor, textDescriptor, linearDescriptor, relativeDescriptor
         };
-        
+
         linearDescriptor.setChildren(a);
         relativeDescriptor.setChildren(a);
 
@@ -85,9 +85,9 @@ public class UiElementPullParserTest extends TestCase {
         ElementDescriptor rootDescriptor = new ElementDescriptor("root", "", "", "",
                 new AttributeDescriptor[] { }, a, false);
 
-        
+
         ui = new UiElementNode(rootDescriptor);
-        
+
         /* create a dummy XML file.
          * <LinearLayout android:orientation="vertical">
          *      <Button android:name="button1" android:text="button1text"/>
@@ -101,7 +101,7 @@ public class UiElementPullParserTest extends TestCase {
                 null);
         button1.addAttributes(SdkConstants.NS_RESOURCES, "name", "button1");
         button1.addAttributes(SdkConstants.NS_RESOURCES, "text", "button1text");
-        
+
         // create a map of the attributes we add to the multi-attribute nodes so that
         // we can more easily test the values when we parse the XML.
         // This is due to some attributes showing in a certain order for a node and in a different
@@ -118,7 +118,7 @@ public class UiElementPullParserTest extends TestCase {
         button2Map = new HashMap<String, String>();
         button2Map.put("name", "button2");
         button2Map.put("text", "button2text");
-        
+
         MockXmlNode text = new MockXmlNode(null /* namespace */, "TextView", Node.ELEMENT_NODE,
                 null);
         text.addAttributes(SdkConstants.NS_RESOURCES, "name", "text1");
@@ -131,14 +131,14 @@ public class UiElementPullParserTest extends TestCase {
         MockXmlNode relative = new MockXmlNode(null /* namespace */, "RelativeLayout",
                 Node.ELEMENT_NODE, new MockXmlNode[] { button2, text });
         relative.addAttributes(SdkConstants.NS_RESOURCES, "orientation", "toto");
-        
+
         MockXmlNode linear = new MockXmlNode(null /* namespace */, "LinearLayout",
                 Node.ELEMENT_NODE, new MockXmlNode[] { button1, relative });
         linear.addAttributes(SdkConstants.NS_RESOURCES, "orientation", "vertical");
-        
+
         MockXmlNode root = new MockXmlNode(null /* namespace */, "root", Node.ELEMENT_NODE,
                 new MockXmlNode[] { linear });
-        
+
         // put the namespace/prefix in place
         root.setPrefix(SdkConstants.NS_RESOURCES, "android");
 
@@ -152,14 +152,14 @@ public class UiElementPullParserTest extends TestCase {
     protected void tearDown() throws Exception {
         super.tearDown();
     }
-    
+
     public void testParser() {
         try {
             // wrap the parser around the ui element node, and start parsing
-            UiElementPullParser parser = new UiElementPullParser(ui);
-            
+            UiElementPullParser parser = new UiElementPullParser(ui, false, null);
+
             assertEquals(XmlPullParser.START_DOCUMENT, parser.getEventType());
-            
+
             // top level Linear layout
             assertEquals(XmlPullParser.START_TAG, parser.next());
             assertEquals("LinearLayout", parser.getName());
@@ -168,7 +168,7 @@ public class UiElementPullParserTest extends TestCase {
             assertEquals(SdkConstants.NS_RESOURCES, parser.getAttributeNamespace(0));
             assertEquals("android", parser.getAttributePrefix(0));
             assertEquals("vertical", parser.getAttributeValue(0));
-            
+
             // Button
             assertEquals(XmlPullParser.START_TAG, parser.next());
             assertEquals("Button", parser.getName());
@@ -204,14 +204,14 @@ public class UiElementPullParserTest extends TestCase {
             check(parser, 1, textMap);
             // end of TextView
             assertEquals(XmlPullParser.END_TAG, parser.next());
-            
+
             // end of RelativeLayout
             assertEquals(XmlPullParser.END_TAG, parser.next());
 
-            
+
             // end of top level linear layout
             assertEquals(XmlPullParser.END_TAG, parser.next());
-            
+
             assertEquals(XmlPullParser.END_DOCUMENT, parser.next());
         } catch (XmlPullParserException e) {
             e.printStackTrace();
@@ -229,11 +229,11 @@ public class UiElementPullParserTest extends TestCase {
     private void check(UiElementPullParser parser, int i, HashMap<String, String> map) {
         String name = parser.getAttributeName(i);
         String value = parser.getAttributeValue(i);
-        
+
         String referenceValue = map.get(name);
         assertNotNull(referenceValue);
         assertEquals(referenceValue, value);
-        
+
         assertEquals(SdkConstants.NS_RESOURCES, parser.getAttributeNamespace(i));
         assertEquals("android", parser.getAttributePrefix(i));
     }
