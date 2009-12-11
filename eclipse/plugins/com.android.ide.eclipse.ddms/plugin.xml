@@ -58,6 +58,13 @@
             icon="icons/emulator.png"
             id="com.android.ide.eclipse.ddms.views.EmulatorControlView"
             name="Emulator Control"/>
+      <view
+            allowMultiple="false"
+            category="com.android.ide.eclipse.ddms.views.category"
+            class="com.android.ide.eclipse.ddms.views.AllocTrackerView"
+            icon="icons/heap.png"
+            id="com.android.ide.eclipse.ddms.views.AllocTrackerView"
+            name="Allocation Tracker"/>
    </extension>
    <extension
          point="org.eclipse.ui.perspectives">
