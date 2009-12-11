@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.launch;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchConfiguration.TargetMode;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
@@ -475,7 +476,7 @@ public class EmulatorConfigTab extends AbstractLaunchConfigurationTab {
                 LaunchConfigDelegate.DEFAULT_NO_BOOT_ANIM);
 
         IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
-        String emuOptions = store.getString(AdtPlugin.PREFS_EMU_OPTIONS);
+        String emuOptions = store.getString(AdtPrefs.PREFS_EMU_OPTIONS);
         configuration.setAttribute(LaunchConfigDelegate.ATTR_COMMANDLINE, emuOptions);
    }
 }

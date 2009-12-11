@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.project;
 
-import com.android.ide.eclipse.adt.AdtConstants;
+import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
@@ -259,8 +259,8 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 }
 
                 try {
-                    BaseProjectHelper.addMarker(iProject, AdtConstants.MARKER_TARGET, markerMessage,
-                            -1, IMarker.SEVERITY_ERROR, IMarker.PRIORITY_HIGH);
+                    BaseProjectHelper.addMarker(iProject, AndroidConstants.MARKER_TARGET,
+                            markerMessage, IMarker.SEVERITY_ERROR, IMarker.PRIORITY_HIGH);
                 } catch (CoreException e) {
                     // In some cases, the workspace may be locked for modification when we
                     // pass here.
@@ -270,8 +270,9 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                         @Override
                         protected IStatus run(IProgressMonitor monitor) {
                             try {
-                                BaseProjectHelper.addMarker(iProject, AdtConstants.MARKER_TARGET,
-                                        fmessage, -1, IMarker.SEVERITY_ERROR,
+                                BaseProjectHelper.addMarker(iProject,
+                                        AndroidConstants.MARKER_TARGET,
+                                        fmessage, IMarker.SEVERITY_ERROR,
                                         IMarker.PRIORITY_HIGH);
                             } catch (CoreException e2) {
                                 return e2.getStatus();
@@ -289,7 +290,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 // no error, remove potential MARKER_TARGETs.
                 try {
                     if (iProject.exists()) {
-                        iProject.deleteMarkers(AdtConstants.MARKER_TARGET, true,
+                        iProject.deleteMarkers(AndroidConstants.MARKER_TARGET, true,
                                 IResource.DEPTH_INFINITE);
                     }
                 } catch (CoreException ce) {
@@ -299,7 +300,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                         @Override
                         protected IStatus run(IProgressMonitor monitor) {
                             try {
-                                iProject.deleteMarkers(AdtConstants.MARKER_TARGET, true,
+                                iProject.deleteMarkers(AndroidConstants.MARKER_TARGET, true,
                                         IResource.DEPTH_INFINITE);
                             } catch (CoreException e2) {
                                 return e2.getStatus();

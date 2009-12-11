@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.wizards.export;
 
-import com.android.ide.eclipse.adt.AdtConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.jarutils.KeystoreHelper;
@@ -657,7 +657,7 @@ public final class ExportWizard extends Wizard implements IExportWizard {
                     while (true) {
                         String line = outReader.readLine();
                         if (line != null) {
-                            AdtPlugin.printBuildToConsole(AdtConstants.BUILD_VERBOSE,
+                            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
                                     project, line);
                         } else {
                             break;

@@ -27,7 +27,8 @@ import com.android.ide.eclipse.adt.internal.editors.menu.MenuEditor;
 import com.android.ide.eclipse.adt.internal.editors.resources.ResourcesEditor;
 import com.android.ide.eclipse.adt.internal.editors.xml.XmlEditor;
 import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchController;
-import com.android.ide.eclipse.adt.internal.preferences.BuildPreferencePage;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ExportHelper;
@@ -71,7 +72,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardDialog;
@@ -118,31 +118,11 @@ public class AdtPlugin extends AbstractUIPlugin {
     /** The plug-in ID */
     public static final String PLUGIN_ID = "com.android.ide.eclipse.adt"; //$NON-NLS-1$
 
-    public final static String PREFS_SDK_DIR = PLUGIN_ID + ".sdk"; //$NON-NLS-1$
-
-    public final static String PREFS_RES_AUTO_REFRESH = PLUGIN_ID + ".resAutoRefresh"; //$NON-NLS-1$
-
-    public final static String PREFS_BUILD_VERBOSITY = PLUGIN_ID + ".buildVerbosity"; //$NON-NLS-1$
-
-    public final static String PREFS_DEFAULT_DEBUG_KEYSTORE = PLUGIN_ID + ".defaultDebugKeyStore"; //$NON-NLS-1$
-
-    public final static String PREFS_CUSTOM_DEBUG_KEYSTORE = PLUGIN_ID + ".customDebugKeyStore"; //$NON-NLS-1$
-
-    public final static String PREFS_HOME_PACKAGE = PLUGIN_ID + ".homePackage"; //$NON-NLS-1$
-
-    public final static String PREFS_EMU_OPTIONS = PLUGIN_ID + ".emuOptions"; //$NON-NLS-1$
-
     /** singleton instance */
     private static AdtPlugin sPlugin;
 
     private static Image sAndroidLogo;
     private static ImageDescriptor sAndroidLogoDesc;
-
-    /** default store, provided by eclipse */
-    private IPreferenceStore mStore;
-
-    /** cached location for the sdk folder */
-    private String mOsSdkLocation;
 
     /** The global android console */
     private MessageConsole mAndroidConsole;
@@ -155,9 +135,6 @@ public class AdtPlugin extends AbstractUIPlugin {
 
     /** Image loader object */
     private ImageLoader mLoader;
-
-    /** Verbosity of the build */
-    private int mBuildVerbosity = AdtConstants.BUILD_NORMAL;
 
     /** Color used in the error console */
     private Color mRed;
@@ -206,6 +183,7 @@ public class AdtPlugin extends AbstractUIPlugin {
             String tag = getMessageTag(mProject != null ? mProject.getName() : null);
 
             print(tag);
+            print(' ');
             if (mPrefix != null) {
                 print(mPrefix);
             }
@@ -286,25 +264,17 @@ public class AdtPlugin extends AbstractUIPlugin {
         });
 
         // get the eclipse store
-        mStore = getPreferenceStore();
+        AdtPrefs.init(getPreferenceStore());
 
         // set the listener for the preference change
         Preferences prefs = getPluginPreferences();
         prefs.addPropertyChangeListener(new IPropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent event) {
-                // get the name of the property that changed.
-                String property = event.getProperty();
+                // load the new preferences
+                AdtPrefs.getPrefs().loadValues(event);
 
-                // if the SDK changed, we update the cached version
-                if (PREFS_SDK_DIR.equals(property)) {
-
-                    // get the new one from the preferences
-                    mOsSdkLocation = (String)event.getNewValue();
-
-                    // make sure it ends with a separator
-                    if (mOsSdkLocation.endsWith(File.separator) == false) {
-                        mOsSdkLocation = mOsSdkLocation + File.separator;
-                    }
+                // if the SDK changed, we have to do some extra work
+                if (AdtPrefs.PREFS_SDK_DIR.equals(event.getProperty())) {
 
                     // finally restart adb, in case it's a different version
                     DdmsPlugin.setAdb(getOsAbsoluteAdb(), true /* startAdb */);
@@ -315,32 +285,22 @@ public class AdtPlugin extends AbstractUIPlugin {
 
                         reparseSdk();
                     }
-                } else if (PREFS_BUILD_VERBOSITY.equals(property)) {
-                    mBuildVerbosity = BuildPreferencePage.getBuildLevel(
-                            mStore.getString(PREFS_BUILD_VERBOSITY));
                 }
             }
         });
 
-        mOsSdkLocation = mStore.getString(PREFS_SDK_DIR);
-
-        // make sure it ends with a separator. Normally this is done when the preference
-        // is set. But to make sure older version still work, we fix it here as well.
-        if (mOsSdkLocation.length() > 0 && mOsSdkLocation.endsWith(File.separator) == false) {
-            mOsSdkLocation = mOsSdkLocation + File.separator;
-        }
+        // load preferences.
+        AdtPrefs.getPrefs().loadValues(null /*event*/);
 
         // check the location of SDK
         final boolean isSdkLocationValid = checkSdkLocationAndId();
-
-        mBuildVerbosity = BuildPreferencePage.getBuildLevel(
-                mStore.getString(PREFS_BUILD_VERBOSITY));
 
         // create the loader that's able to load the images
         mLoader = new ImageLoader(this);
 
         // start the DdmsPlugin by setting the adb location, only if it is set already.
-        if (mOsSdkLocation.length() > 0) {
+        String osSdkLocation = AdtPrefs.getPrefs().getOsSdkFolder();
+        if (osSdkLocation.length() > 0) {
             DdmsPlugin.setAdb(getOsAbsoluteAdb(), true);
         }
 
@@ -505,29 +465,11 @@ public class AdtPlugin extends AbstractUIPlugin {
             return null;
         }
 
-        if (sPlugin.mOsSdkLocation == null) {
-            sPlugin.mOsSdkLocation = sPlugin.mStore.getString(PREFS_SDK_DIR);
-        }
-        return sPlugin.mOsSdkLocation;
+        return AdtPrefs.getPrefs().getOsSdkFolder();
     }
 
     public static String getOsSdkToolsFolder() {
         return getOsSdkFolder() + SdkConstants.OS_SDK_TOOLS_FOLDER;
-    }
-
-    public static synchronized boolean getAutoResRefresh() {
-        if (sPlugin == null) {
-            return false;
-        }
-        return sPlugin.mStore.getBoolean(PREFS_RES_AUTO_REFRESH);
-    }
-
-    public static synchronized int getBuildVerbosity() {
-        if (sPlugin != null) {
-            return sPlugin.mBuildVerbosity;
-        }
-
-        return 0;
     }
 
     /**
@@ -772,17 +714,17 @@ public class AdtPlugin extends AbstractUIPlugin {
 
     /**
      * Prints one or more build messages to the android console, filtered by Build output verbosity.
-     * @param level Verbosity level of the message.
+     * @param level {@link BuildVerbosity} level of the message.
      * @param project The project to which the message is associated. Can be null.
      * @param objects the objects to print through their <code>toString</code> method.
      * @see AdtConstants#BUILD_ALWAYS
      * @see AdtConstants#BUILD_NORMAL
      * @see AdtConstants#BUILD_VERBOSE
      */
-    public static synchronized void printBuildToConsole(int level, IProject project,
+    public static synchronized void printBuildToConsole(BuildVerbosity level, IProject project,
             Object... objects) {
         if (sPlugin != null) {
-            if (level <= sPlugin.mBuildVerbosity) {
+            if (level.getLevel() <= AdtPrefs.getPrefs().getBuildVerbosity().getLevel()) {
                 String tag = project != null ? project.getName() : null;
                 printToStream(sPlugin.mAndroidConsoleStream, tag, objects);
             }
@@ -899,12 +841,13 @@ public class AdtPlugin extends AbstractUIPlugin {
      * @return false if the location is not correct.
      */
     private boolean checkSdkLocationAndId() {
-        if (mOsSdkLocation == null || mOsSdkLocation.length() == 0) {
+        String sdkLocation = AdtPrefs.getPrefs().getOsSdkFolder();
+        if (sdkLocation == null || sdkLocation.length() == 0) {
             displayError(Messages.Dialog_Title_SDK_Location, Messages.SDK_Not_Setup);
             return false;
         }
 
-        return checkSdkLocationAndId(mOsSdkLocation, new CheckSdkErrorHandler() {
+        return checkSdkLocationAndId(sdkLocation, new CheckSdkErrorHandler() {
             @Override
             public boolean handleError(String message) {
                 AdtPlugin.displayError(Messages.Dialog_Title_SDK_Location,
@@ -1019,7 +962,7 @@ public class AdtPlugin extends AbstractUIPlugin {
                     SubMonitor progress = SubMonitor.convert(monitor,
                             "Initialize SDK Manager", 100);
 
-                    Sdk sdk = Sdk.loadSdk(mOsSdkLocation);
+                    Sdk sdk = Sdk.loadSdk(AdtPrefs.getPrefs().getOsSdkFolder());
 
                     if (sdk != null) {
 
@@ -1428,6 +1371,7 @@ public class AdtPlugin extends AbstractUIPlugin {
 
         for (Object obj : objects) {
             stream.print(dateTag);
+            stream.print(" "); //$NON-NLS-1$
             if (obj instanceof String) {
                 stream.println((String)obj);
             } else {
@@ -1437,7 +1381,8 @@ public class AdtPlugin extends AbstractUIPlugin {
     }
 
     /**
-     * Creates a string containing the current date/time, and the tag
+     * Creates a string containing the current date/time, and the tag.
+     * The tag does not end with a whitespace.
      * @param tag The tag associated to the message. Can be null
      * @return The dateTag
      */

@@ -138,22 +138,31 @@ public class AndroidConstants {
     public final static String NS_CUSTOM_RESOURCES = "http://schemas.android.com/apk/res/%1$s"; //$NON-NLS-1$
 
     /** The old common plug-in ID. Please do not use for new features. */
-    public static final String COMMON_PLUGIN_ID = "com.android.ide.eclipse.common"; //$NON-NLS-1$
+    private static final String LEGACY_PLUGIN_ID = "com.android.ide.eclipse.common"; //$NON-NLS-1$
+
+    /** Generic marker for ADT errors. */
+    public final static String MARKER_ADT = AdtPlugin.PLUGIN_ID + ".adtProblem"; //$NON-NLS-1$
+
+    /** Marker for Android Target errors.
+     * This is not cleared on each like other markers. Instead, it's cleared
+     * when an AndroidClasspathContainerInitializer has succeeded in creating an
+     * AndroidClasspathContainer */
+    public final static String MARKER_TARGET = AdtPlugin.PLUGIN_ID + ".targetProblem"; //$NON-NLS-1$
 
     /** aapt marker error when running the compile command */
-    public final static String MARKER_AAPT_COMPILE = COMMON_PLUGIN_ID + ".aaptProblem"; //$NON-NLS-1$
+    public final static String MARKER_AAPT_COMPILE = LEGACY_PLUGIN_ID + ".aaptProblem"; //$NON-NLS-1$
 
     /** aapt marker error when running the package command */
-    public final static String MARKER_AAPT_PACKAGE = COMMON_PLUGIN_ID + ".aapt2Problem"; //$NON-NLS-1$
+    public final static String MARKER_AAPT_PACKAGE = LEGACY_PLUGIN_ID + ".aapt2Problem"; //$NON-NLS-1$
 
     /** XML marker error. */
-    public final static String MARKER_XML = COMMON_PLUGIN_ID + ".xmlProblem"; //$NON-NLS-1$
+    public final static String MARKER_XML = LEGACY_PLUGIN_ID + ".xmlProblem"; //$NON-NLS-1$
 
     /** aidl marker error. */
-    public final static String MARKER_AIDL = COMMON_PLUGIN_ID + ".aidlProblem"; //$NON-NLS-1$
+    public final static String MARKER_AIDL = LEGACY_PLUGIN_ID + ".aidlProblem"; //$NON-NLS-1$
 
     /** android marker error */
-    public final static String MARKER_ANDROID = COMMON_PLUGIN_ID + ".androidProblem"; //$NON-NLS-1$
+    public final static String MARKER_ANDROID = LEGACY_PLUGIN_ID + ".androidProblem"; //$NON-NLS-1$
 
     /** Name for the "type" marker attribute */
     public final static String MARKER_ATTR_TYPE = "android.type"; //$NON-NLS-1$
