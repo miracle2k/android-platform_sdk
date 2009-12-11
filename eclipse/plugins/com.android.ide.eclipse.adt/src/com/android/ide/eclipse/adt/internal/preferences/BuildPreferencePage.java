@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.preferences;
 
-import com.android.ide.eclipse.adt.AdtConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.jarutils.DebugKeyProvider;
 import com.android.jarutils.DebugKeyProvider.KeytoolException;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
@@ -46,46 +46,36 @@ import java.util.Date;
 public class BuildPreferencePage extends FieldEditorPreferencePage implements
         IWorkbenchPreferencePage {
 
-    final static String BUILD_STR_SILENT = "silent"; //$NON-NLS-1$
-    final static String BUILD_STR_NORMAL = "normal"; //$NON-NLS-1$
-    final static String BUILD_STR_VERBOSE = "verbose"; //$NON-NLS-1$
-
     public BuildPreferencePage() {
         super(GRID);
         setPreferenceStore(AdtPlugin.getDefault().getPreferenceStore());
         setDescription(Messages.BuildPreferencePage_Title);
     }
 
-    public static int getBuildLevel(String buildPrefValue) {
-        if (BUILD_STR_SILENT.equals(buildPrefValue)) {
-            return AdtConstants.BUILD_ALWAYS;
-        } else if (BUILD_STR_VERBOSE.equals(buildPrefValue)) {
-            return AdtConstants.BUILD_VERBOSE;
-        }
-
-        return AdtConstants.BUILD_NORMAL;
-    }
-
     @Override
     protected void createFieldEditors() {
-        addField(new BooleanFieldEditor(AdtPlugin.PREFS_RES_AUTO_REFRESH,
+        addField(new BooleanFieldEditor(AdtPrefs.PREFS_BUILD_RES_AUTO_REFRESH,
                 Messages.BuildPreferencePage_Auto_Refresh_Resources_on_Build,
                 getFieldEditorParent()));
 
+        addField(new BooleanFieldEditor(AdtPrefs.PREFS_BUILD_RES_AUTO_REFRESH,
+                "Force error when external jars contain native libraries",
+                getFieldEditorParent()));
+
         RadioGroupFieldEditor rgfe = new RadioGroupFieldEditor(
-                AdtPlugin.PREFS_BUILD_VERBOSITY,
+                AdtPrefs.PREFS_BUILD_VERBOSITY,
                 Messages.BuildPreferencePage_Build_Output, 1, new String[][] {
-                    { Messages.BuildPreferencePage_Silent, BUILD_STR_SILENT },
-                    { Messages.BuildPreferencePage_Normal, BUILD_STR_NORMAL },
-                    { Messages.BuildPreferencePage_Verbose, BUILD_STR_VERBOSE }
+                    { Messages.BuildPreferencePage_Silent, BuildVerbosity.ALWAYS.name() },
+                    { Messages.BuildPreferencePage_Normal, BuildVerbosity.NORMAL.name() },
+                    { Messages.BuildPreferencePage_Verbose, BuildVerbosity.VERBOSE.name() }
                     },
                 getFieldEditorParent(), true);
         addField(rgfe);
 
-        addField(new ReadOnlyFieldEditor(AdtPlugin.PREFS_DEFAULT_DEBUG_KEYSTORE,
+        addField(new ReadOnlyFieldEditor(AdtPrefs.PREFS_DEFAULT_DEBUG_KEYSTORE,
                 Messages.BuildPreferencePage_Default_KeyStore, getFieldEditorParent()));
 
-        addField(new KeystoreFieldEditor(AdtPlugin.PREFS_CUSTOM_DEBUG_KEYSTORE,
+        addField(new KeystoreFieldEditor(AdtPrefs.PREFS_CUSTOM_DEBUG_KEYSTORE,
                 Messages.BuildPreferencePage_Custom_Keystore, getFieldEditorParent()));
 
     }
@@ -110,12 +100,12 @@ public class BuildPreferencePage extends FieldEditorPreferencePage implements
         @Override
         protected void createControl(Composite parent) {
             super.createControl(parent);
-            
+
             Text control = getTextControl();
             control.setEditable(false);
         }
     }
-    
+
     /**
      * Custom {@link FileFieldEditor} that checks that the keystore is valid.
      */
@@ -124,12 +114,12 @@ public class BuildPreferencePage extends FieldEditorPreferencePage implements
             super(name, label, parent);
             setValidateStrategy(VALIDATE_ON_KEY_STROKE);
         }
-        
+
         @Override
         protected boolean checkState() {
             String fileName = getTextControl().getText();
             fileName = fileName.trim();
-            
+
             // empty values are considered ok.
             if (fileName.length() > 0) {
                 File file = new File(fileName);
@@ -140,18 +130,18 @@ public class BuildPreferencePage extends FieldEditorPreferencePage implements
                                 null /* storeType */, null /* key gen output */);
                         PrivateKey key = provider.getDebugKey();
                         X509Certificate certificate = (X509Certificate)provider.getCertificate();
-                        
+
                         if (key == null || certificate == null) {
                             showErrorMessage("Unable to find debug key in keystore!");
                             return false;
                         }
-                        
+
                         Date today = new Date();
                         if (certificate.getNotAfter().compareTo(today) < 0) {
                             showErrorMessage("Certificate is expired!");
                             return false;
                         }
-                        
+
                         if (certificate.getNotBefore().compareTo(today) > 0) {
                             showErrorMessage("Certificate validity is in the future!");
                             return false;
@@ -174,7 +164,7 @@ public class BuildPreferencePage extends FieldEditorPreferencePage implements
                         return false;
                     }
 
-            
+
                 } else {
                     // file does not exist.
                     showErrorMessage("Not a valid keystore path.");
@@ -185,7 +175,7 @@ public class BuildPreferencePage extends FieldEditorPreferencePage implements
             clearErrorMessage();
             return true;
         }
-        
+
         @Override
         public Text getTextControl(Composite parent) {
             setValidateStrategy(VALIDATE_ON_KEY_STROKE);
@@ -206,7 +196,7 @@ public class BuildPreferencePage extends FieldEditorPreferencePage implements
                 } else {
                     setErrorMessage("Uknown error when getting the debug key!");
                 }
-                
+
                 return;
             }
 
