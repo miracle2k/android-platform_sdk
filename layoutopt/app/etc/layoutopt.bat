@@ -44,5 +44,5 @@ set jarpath=%frameworkdir%%jarfile%
 
 set javaextdirs=%swt_path%;%frameworkdir%
 
-call java %java_debug% -Djava.ext.dirs=%javaextdirs% %jarpath% %*
+call java %java_debug% -Djava.ext.dirs=%javaextdirs% -jar %jarpath% %*
 
