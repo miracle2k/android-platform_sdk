@@ -27,6 +27,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewEleme
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.ElementCreateCommand;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.UiElementEditPart;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.UiElementsEditPartFactory;
+import com.android.ide.eclipse.adt.internal.editors.layout.parts.UiElementsEditPartFactory.IOutlineProvider;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.CopyCutAction;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.PasteAction;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
@@ -116,7 +117,7 @@ import java.util.Map;
  * @since GLE1
  */
 public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
-        implements IGraphicalLayoutEditor, IConfigListener, ILayoutReloadListener {
+        implements IGraphicalLayoutEditor, IConfigListener, ILayoutReloadListener, IOutlineProvider {
 
 
     /** Reference to the layout editor */
@@ -187,6 +188,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         }
     };
 
+    private boolean mExplodedView;
 
     public GraphicalLayoutEditor(LayoutEditor layoutEditor) {
         mLayoutEditor = layoutEditor;
@@ -318,7 +320,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         super.configureGraphicalViewer();
 
         GraphicalViewer viewer = getGraphicalViewer();
-        viewer.setEditPartFactory(new UiElementsEditPartFactory(mParent.getDisplay()));
+        viewer.setEditPartFactory(new UiElementsEditPartFactory(mParent.getDisplay(), this));
         viewer.setRootEditPart(new ScalableFreeformRootEditPart());
 
         // Disable the following -- we don't drag *from* the GraphicalViewer yet:
@@ -943,19 +945,36 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
                         // get the selected theme
                         String theme = mConfigComposite.getTheme();
                         if (theme != null) {
-
                             // Compute the layout
-                            UiElementPullParser parser = new UiElementPullParser(getModel());
                             Rectangle rect = getBounds();
-                            boolean isProjectTheme = mConfigComposite.isProjectTheme();
+
+                            mExplodedView = !mConfigComposite.getClipping(); //FIXME: need new toggle
+                            int width = rect.width;
+                            int height = rect.height;
+                            if (mExplodedView) {
+                                // compute how many padding in x and y will bump the screen size
+                                ExplodedRenderingHelper helper = new ExplodedRenderingHelper(
+                                        getModel(), iProject);
+
+                                // there are 2 paddings for each view
+                                // left and right, or top and bottom.
+                                int paddingValue = ExplodedRenderingHelper.PADDING_VALUE * 2;
+
+                                width += helper.getWidthPadding() * paddingValue;
+                                height += helper.getHeightPadding() * paddingValue;
+                            }
 
                             int density = mConfigComposite.getDensity().getDpiValue();
                             float xdpi = mConfigComposite.getXDpi();
                             float ydpi = mConfigComposite.getYDpi();
+                            boolean isProjectTheme = mConfigComposite.isProjectTheme();
+
+                            UiElementPullParser parser = new UiElementPullParser(getModel(),
+                                    mExplodedView, density, xdpi, iProject);
 
                             ILayoutResult result = computeLayout(bridge, parser,
                                     iProject /* projectKey */,
-                                    rect.width, rect.height, !mConfigComposite.getClipping(),
+                                    width, height, !mConfigComposite.getClipping(),
                                     density, xdpi, ydpi,
                                     theme, isProjectTheme,
                                     configuredProjectRes, frameworkResources, mProjectCallback,
@@ -1349,5 +1368,9 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
                     projectResources, frameworkResources, projectCallback,
                     logger);
         }
+    }
+
+    public boolean hasOutline() {
+        return mExplodedView;
     }
 }

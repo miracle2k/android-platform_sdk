@@ -34,7 +34,7 @@ public class UiViewEditPart extends UiElementEditPart {
 
     @Override
     protected IFigure createFigure() {
-        IFigure f = new ElementFigure();
+        IFigure f = new ElementFigure(null);
         f.setLayoutManager(new XYLayout());
         return f;
     }

@@ -882,15 +882,32 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                         // get the selected theme
                         String theme = mConfigComposite.getTheme();
                         if (theme != null) {
-
                             // Compute the layout
-                            UiElementPullParser parser = new UiElementPullParser(getModel());
                             Rectangle rect = getBounds();
-                            boolean isProjectTheme = mConfigComposite.isProjectTheme();
+
+                            boolean explodedView = !mConfigComposite.getClipping(); //FIXME: need new toggle
+                            int width = rect.width;
+                            int height = rect.height;
+                            if (explodedView) {
+                                // compute how many padding in x and y will bump the screen size
+                                ExplodedRenderingHelper helper = new ExplodedRenderingHelper(
+                                        getModel(), iProject);
+
+                                // there are 2 paddings for each view
+                                // left and right, or top and bottom.
+                                int paddingValue = ExplodedRenderingHelper.PADDING_VALUE * 2;
+
+                                width += helper.getWidthPadding() * paddingValue;
+                                height += helper.getHeightPadding() * paddingValue;
+                            }
 
                             int density = mConfigComposite.getDensity().getDpiValue();
                             float xdpi = mConfigComposite.getXDpi();
                             float ydpi = mConfigComposite.getYDpi();
+                            boolean isProjectTheme = mConfigComposite.isProjectTheme();
+
+                            UiElementPullParser parser = new UiElementPullParser(getModel(),
+                                    explodedView, density, xdpi, iProject);
 
                             ILayoutResult result = computeLayout(bridge, parser,
                                     iProject /* projectKey */,
