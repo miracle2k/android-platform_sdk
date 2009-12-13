@@ -22,6 +22,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDes
 import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
 import com.android.ide.eclipse.adt.internal.editors.mock.MockXmlNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier.Density;
 import com.android.sdklib.SdkConstants;
 
 import org.w3c.dom.Node;
@@ -156,7 +157,13 @@ public class UiElementPullParserTest extends TestCase {
     public void testParser() {
         try {
             // wrap the parser around the ui element node, and start parsing
-            UiElementPullParser parser = new UiElementPullParser(ui, false, null);
+            UiElementPullParser parser = new UiElementPullParser(
+                    ui, // model
+                    false, // explodedView
+                    Density.MEDIUM.getDpiValue(), // density (default from ConfigurationComposite)
+                    Density.MEDIUM.getDpiValue(), // xdpi (default from ConfigurationComposite)
+                    null // iProject
+                    );
 
             assertEquals(XmlPullParser.START_DOCUMENT, parser.getEventType());
 
