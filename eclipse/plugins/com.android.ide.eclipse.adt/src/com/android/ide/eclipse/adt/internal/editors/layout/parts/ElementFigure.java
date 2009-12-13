@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.parts;
 
+import com.android.ide.eclipse.adt.internal.editors.layout.parts.UiElementsEditPartFactory.IOutlineProvider;
+
 import org.eclipse.draw2d.ColorConstants;
 import org.eclipse.draw2d.Figure;
 import org.eclipse.draw2d.Graphics;
@@ -34,8 +36,10 @@ class ElementFigure extends Figure {
 
     private boolean mIsSelected;
     private Rectangle mInnerBounds;
+    private final IOutlineProvider mProvider;
 
-    public ElementFigure() {
+    public ElementFigure(IOutlineProvider provider) {
+        mProvider = provider;
         setOpaque(false);
     }
 
@@ -67,10 +71,10 @@ class ElementFigure extends Figure {
     protected void paintBorder(Graphics graphics) {
         super.paintBorder(graphics);
 
-        if (mIsSelected) {
+        if (mIsSelected || (mProvider != null && mProvider.hasOutline())) {
             graphics.setLineWidth(1);
             graphics.setLineStyle(SWT.LINE_SOLID);
-            graphics.setForegroundColor(ColorConstants.red);
+            graphics.setForegroundColor(mIsSelected ? ColorConstants.red : ColorConstants.white);
             graphics.drawRectangle(getInnerBounds());
         }
     }
