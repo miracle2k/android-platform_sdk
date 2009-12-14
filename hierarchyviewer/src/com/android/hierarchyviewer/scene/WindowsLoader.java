@@ -58,7 +58,7 @@ public class WindowsLoader {
                 int index = line.indexOf(' ');
                 if (index != -1) {
                     Window w = new Window(line.substring(index + 1),
-                            Integer.parseInt(line.substring(0, index), 16));
+                            (int) Long.parseLong(line.substring(0, index), 16));
                     windows.add(w);
                 }
             }
