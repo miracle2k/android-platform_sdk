@@ -27,12 +27,13 @@ import org.eclipse.jface.preference.IPreferenceStore;
 
 import java.io.File;
 
+@SuppressWarnings("deprecation")
 public final class AdtPrefs extends AbstractPreferenceInitializer {
     public final static String PREFS_SDK_DIR = AdtPlugin.PLUGIN_ID + ".sdk"; //$NON-NLS-1$
 
     public final static String PREFS_BUILD_RES_AUTO_REFRESH = AdtPlugin.PLUGIN_ID + ".resAutoRefresh"; //$NON-NLS-1$
 
-    public final static String PREFS_BUILD_FORCE_ERROR_NATIVELIB_IN_JAR = AdtPlugin.PLUGIN_ID + ".forceErrorNativeLibInJar"; //$NON-NLS-1$
+    public final static String PREFS_BUILD_FORCE_ERROR_ON_NATIVELIB_IN_JAR = AdtPlugin.PLUGIN_ID + ".forceErrorNativeLibInJar"; //$NON-NLS-1$
 
     public final static String PREFS_BUILD_VERBOSITY = AdtPlugin.PLUGIN_ID + ".buildVerbosity"; //$NON-NLS-1$
 
@@ -57,6 +58,7 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
     private BuildVerbosity mBuildVerbosity = BuildVerbosity.NORMAL;
 
     private boolean mBuildForceResResfresh = false;
+    private boolean mBuildForceErrorOnNativeLibInJar = true;
 
     public static enum BuildVerbosity {
         /** Build verbosity "Always". Those messages are always displayed, even in silent mode */
@@ -128,6 +130,9 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
             mBuildForceResResfresh = mStore.getBoolean(PREFS_BUILD_RES_AUTO_REFRESH);
         }
 
+        if (property == null || PREFS_BUILD_FORCE_ERROR_ON_NATIVELIB_IN_JAR.equals(property)) {
+            mBuildForceErrorOnNativeLibInJar = mStore.getBoolean(PREFS_BUILD_RES_AUTO_REFRESH);
+        }
     }
 
     /**
@@ -146,11 +151,16 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         return mBuildForceResResfresh;
     }
 
+    public boolean getBuildForceErrorOnNativeLibInJar() {
+        return mBuildForceErrorOnNativeLibInJar;
+    }
+
     @Override
     public void initializeDefaultPreferences() {
         IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
 
         store.setDefault(PREFS_BUILD_RES_AUTO_REFRESH, true);
+        store.setDefault(PREFS_BUILD_FORCE_ERROR_ON_NATIVELIB_IN_JAR, true);
 
         store.setDefault(PREFS_BUILD_VERBOSITY, BuildVerbosity.ALWAYS.name());
 
