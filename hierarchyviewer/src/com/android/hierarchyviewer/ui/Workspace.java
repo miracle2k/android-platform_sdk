@@ -22,6 +22,7 @@ import com.android.hierarchyviewer.device.DeviceBridge;
 import com.android.hierarchyviewer.device.Window;
 import com.android.hierarchyviewer.laf.UnifiedContentBorder;
 import com.android.hierarchyviewer.scene.CaptureLoader;
+import com.android.hierarchyviewer.scene.VersionLoader;
 import com.android.hierarchyviewer.scene.ViewHierarchyLoader;
 import com.android.hierarchyviewer.scene.ViewHierarchyScene;
 import com.android.hierarchyviewer.scene.ViewManager;
@@ -171,6 +172,9 @@ public class Workspace extends JFrame {
     private JLabel maxZoomLabel;
     private JTextField filterText;
     private JLabel filterLabel;
+
+    private int protocolVersion;
+    private int serverVersion;
 
     public Workspace() {
         super("Hierarchy Viewer");
@@ -1105,23 +1109,38 @@ public class Workspace extends JFrame {
             }
         }
     }
+    
+    static class WindowsResult {
+        Window[] windows;
+        int serverVersion;
+        int protocolVersion;
+    }
 
-    private class LoadWindowsTask extends SwingWorker<Window[], Void> {
+    private class LoadWindowsTask extends SwingWorker<WindowsResult, Void> {
         private LoadWindowsTask() {
             beginTask();
         }
 
         @Override
         @WorkerThread
-        protected Window[] doInBackground() throws Exception {
-            return WindowsLoader.loadWindows(currentDevice);
+        protected WindowsResult doInBackground() throws Exception {
+            WindowsResult r = new WindowsResult();
+            r.protocolVersion = VersionLoader.loadProtocolVersion(currentDevice);
+            r.serverVersion = VersionLoader.loadServerVersion(currentDevice);
+            r.windows = WindowsLoader.loadWindows(currentDevice,
+                    r.protocolVersion, r.serverVersion);
+            return r;
         }
 
         @Override
         protected void done() {
             try {
+                WindowsResult result = get();
+                protocolVersion = result.protocolVersion;
+                serverVersion = result.serverVersion;
+
                 windowsTableModel.clear();
-                windowsTableModel.addWindows(get());
+                windowsTableModel.addWindows(result.windows);
             } catch (ExecutionException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {

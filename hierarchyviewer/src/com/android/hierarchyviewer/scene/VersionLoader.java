@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2009 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+
 package com.android.hierarchyviewer.scene;
 
 import com.android.ddmlib.IDevice;
 import com.android.hierarchyviewer.device.DeviceBridge;
-import com.android.hierarchyviewer.device.Window;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -27,18 +27,22 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.ArrayList;
 
-public class WindowsLoader {
-    public static Window[] loadWindows(IDevice device, int protocol, int server) {
+public class VersionLoader {
+    public static int loadServerVersion(IDevice device) {
+        return loadVersion(device, "SERVER");
+    }
+    
+    public static int loadProtocolVersion(IDevice device) {
+        return loadVersion(device, "PROTOCOL");
+    }
+
+    private static int loadVersion(IDevice device, String command) {
         Socket socket = null;
         BufferedReader in = null;
         BufferedWriter out = null;
-        System.out.println("protocol = " + protocol);
-        System.out.println("version = " + server);
-        try {
-            ArrayList<Window> windows = new ArrayList<Window>();
 
+        try {
             socket = new Socket();
             socket.connect(new InetSocketAddress("127.0.0.1",
                     DeviceBridge.getDeviceLocalPort(device)));
@@ -46,34 +50,12 @@ public class WindowsLoader {
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            out.write("LIST");
+            out.write(command);
             out.newLine();
             out.flush();
 
-            String line;
-            while ((line = in.readLine()) != null) {
-                if ("DONE.".equalsIgnoreCase(line)) {
-                    break;
-                }
-
-                int index = line.indexOf(' ');
-                if (index != -1) {
-                    String windowId = line.substring(0, index);
-
-                    int id;
-                    if (server > 2) {
-                        id = (int) Long.parseLong(windowId, 16);
-                    } else {
-                        id = Integer.parseInt(windowId, 16);
-                    }
-
-                    Window w = new Window(line.substring(index + 1), id);
-                    windows.add(w);
-                }
-            }
-
-            return windows.toArray(new Window[windows.size()]);
-        } catch (IOException e) {
+            return Integer.parseInt(in.readLine());
+        } catch (Exception e) {
             // Empty
         } finally {
             try {
@@ -91,6 +73,7 @@ public class WindowsLoader {
             }
         }
 
-        return new Window[0];
+        // Versioning of the protocol and server was added with version 2
+        return 2;
     }
 }
