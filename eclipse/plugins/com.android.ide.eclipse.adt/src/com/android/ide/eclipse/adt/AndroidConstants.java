@@ -16,6 +16,9 @@
 
 package com.android.ide.eclipse.adt;
 
+import com.android.ide.eclipse.adt.internal.build.ApkBuilder;
+import com.android.ide.eclipse.adt.internal.build.PreCompilerBuilder;
+import com.android.ide.eclipse.adt.internal.build.ResourceManagerBuilder;
 import com.android.sdklib.SdkConstants;
 
 import java.io.File;
@@ -140,7 +143,7 @@ public class AndroidConstants {
     /** The old common plug-in ID. Please do not use for new features. */
     private static final String LEGACY_PLUGIN_ID = "com.android.ide.eclipse.common"; //$NON-NLS-1$
 
-    /** Generic marker for ADT errors. */
+    /** Generic marker for ADT errors, only to be used in the {@link ResourceManagerBuilder} */
     public final static String MARKER_ADT = AdtPlugin.PLUGIN_ID + ".adtProblem"; //$NON-NLS-1$
 
     /** Marker for Android Target errors.
@@ -149,20 +152,26 @@ public class AndroidConstants {
      * AndroidClasspathContainer */
     public final static String MARKER_TARGET = AdtPlugin.PLUGIN_ID + ".targetProblem"; //$NON-NLS-1$
 
-    /** aapt marker error when running the compile command */
+    /** aapt marker error when running the compile command, only to be used
+     * in {@link PreCompilerBuilder} */
     public final static String MARKER_AAPT_COMPILE = LEGACY_PLUGIN_ID + ".aaptProblem"; //$NON-NLS-1$
 
-    /** aapt marker error when running the package command */
-    public final static String MARKER_AAPT_PACKAGE = LEGACY_PLUGIN_ID + ".aapt2Problem"; //$NON-NLS-1$
-
-    /** XML marker error. */
+    /** XML marker error, only to be used in {@link PreCompilerBuilder} */
     public final static String MARKER_XML = LEGACY_PLUGIN_ID + ".xmlProblem"; //$NON-NLS-1$
 
-    /** aidl marker error. */
+    /** aidl marker error, only to be used in {@link PreCompilerBuilder} */
     public final static String MARKER_AIDL = LEGACY_PLUGIN_ID + ".aidlProblem"; //$NON-NLS-1$
 
-    /** android marker error */
+    /** android marker error, only to be used in the Manifest parsing
+     * from the {@link PreCompilerBuilder} */
     public final static String MARKER_ANDROID = LEGACY_PLUGIN_ID + ".androidProblem"; //$NON-NLS-1$
+
+    /** aapt marker error when running the package command, only to be used in {@link ApkBuilder} */
+    public final static String MARKER_AAPT_PACKAGE = LEGACY_PLUGIN_ID + ".aapt2Problem"; //$NON-NLS-1$
+
+    /** final packaging error marker, only to be used in {@link ApkBuilder} */
+    public final static String MARKER_PACKAGING = AdtPlugin.PLUGIN_ID + ".packagingProblem"; //$NON-NLS-1$
+
 
     /** Name for the "type" marker attribute */
     public final static String MARKER_ATTR_TYPE = "android.type"; //$NON-NLS-1$
