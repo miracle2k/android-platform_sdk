@@ -33,6 +33,8 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
@@ -54,7 +56,7 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
             UiElementNode uiParent) {
         super(attributeDescriptor, uiParent);
     }
-    
+
     /* (non-java doc)
      * Creates a label widget and an associated text field.
      * <p/>
@@ -71,32 +73,31 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
         SectionHelper.addControlTooltip(label, DescriptorsUtils.formatTooltip(desc.getTooltip()));
 
         int style = SWT.DROP_DOWN;
-        mCombo = new Combo(parent, style); 
+        mCombo = new Combo(parent, style);
         TableWrapData twd = new TableWrapData(TableWrapData.FILL_GRAB, TableWrapData.MIDDLE);
         twd.maxWidth = 100;
         mCombo.setLayoutData(twd);
-        
+
         fillCombo();
-        
+
         setTextWidgetValue(getCurrentValue());
-        
+
         mCombo.addModifyListener(new ModifyListener() {
             /**
              * Sent when the text is modified, whether by the user via manual
              * input or programmatic input via setText().
-             * <p/>
-             * Simply mark the attribute as dirty if it really changed.
-             * The container SectionPart will collect these flag and manage them.
              */
             public void modifyText(ModifyEvent e) {
-                if (!isInInternalTextModification() &&
-                        !isDirty() &&
-                        mCombo != null &&
-                        getCurrentValue() != null &&
-                        !mCombo.getText().equals(getCurrentValue())) {
-                    setDirty(true);
-                }
-            }            
+                onComboChange();
+            }
+        });
+
+        mCombo.addSelectionListener(new SelectionAdapter() {
+            /** Sent when the text is changed from a list selection. */
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                onComboChange();
+            }
         });
 
         // Remove self-reference when the widget is disposed
@@ -106,7 +107,7 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
             }
         });
     }
-    
+
     protected void fillCombo() {
         String[] values = getPossibleValues(null);
 
@@ -120,11 +121,11 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
             }
         }
     }
-    
+
     /**
      * Get the list values, either from the initial values set in the attribute
      * or by querying the framework resource parser.
-     * 
+     *
      * {@inheritDoc}
      */
     @Override
@@ -134,7 +135,7 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
 
         String attr_name = descriptor.getXmlLocalName();
         String element_name = uiParent.getDescriptor().getXmlName();
-        
+
         // FrameworkResourceManager expects a specific prefix for the attribute.
         String nsPrefix = "";
         if (SdkConstants.NS_RESOURCES.equals(descriptor.getNamespaceUri())) {
@@ -143,9 +144,9 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
             nsPrefix = "xmlns:"; //$NON-NLS-1$
         }
         attr_name = nsPrefix + attr_name;
-        
+
         String[] values = null;
-        
+
         if (descriptor instanceof ListAttributeDescriptor &&
                 ((ListAttributeDescriptor) descriptor).getValues() != null) {
             // Get enum values from the descriptor
@@ -159,10 +160,10 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
             AndroidTargetData data = editor.getTargetData();
             if (data != null) {
                 // get the great-grand-parent descriptor.
-                
+
                 // the parent should always exist.
                 UiElementNode grandParentNode = uiParent.getUiParent();
-    
+
                 String greatGrandParentNodeName = null;
                 if (grandParentNode != null) {
                     UiElementNode greatGrandParentNode = grandParentNode.getUiParent();
@@ -171,11 +172,11 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
                             greatGrandParentNode.getDescriptor().getXmlName();
                     }
                 }
-            
+
                 values = data.getAttributeValues(element_name, attr_name, greatGrandParentNodeName);
             }
         }
-        
+
         return values;
     }
 
@@ -184,7 +185,7 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
         if (mCombo != null) {
             return mCombo.getText();
         }
-        
+
         return null;
     }
 
@@ -197,6 +198,22 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
     public void setTextWidgetValue(String value) {
         if (mCombo != null) {
             mCombo.setText(value);
+        }
+    }
+
+    /**
+     * Handles Combo change, either from text edit or from selection change.
+     * <p/>
+     * Simply mark the attribute as dirty if it really changed.
+     * The container SectionPart will collect these flag and manage them.
+     */
+    private void onComboChange() {
+        if (!isInInternalTextModification() &&
+                !isDirty() &&
+                mCombo != null &&
+                getCurrentValue() != null &&
+                !mCombo.getText().equals(getCurrentValue())) {
+            setDirty(true);
         }
     }
 }
