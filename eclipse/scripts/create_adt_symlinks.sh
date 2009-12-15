@@ -26,15 +26,17 @@ if [ "$HOST" == "Linux" ]; then
     for LIB in $LIBS; do
         ln -svf $BACK/out/host/linux-x86/framework/$LIB.jar "$DEST/"
     done
-    ln -svf $BACK/out/host/linux-x86/framework/kxml2-2.3.0.jar "$DEST/"
+    ln -svf $BACK/out/host/linux-x86/framework/kxml2-2.3.0.jar          "$DEST/"
     ln -svf $BACK/out/host/linux-x86/framework/commons-compress-1.0.jar "$DEST/"
+    ln -svf $BACK/out/host/linux-x86/framework/groovy-all-1.6.5.jar     "$DEST/"
   
 elif [ "$HOST" == "Darwin" ]; then
     for LIB in $LIBS; do
         ln -svf $BACK/out/host/darwin-x86/framework/$LIB.jar "$DEST/"
     done
-    ln -svf $BACK/out/host/darwin-x86/framework/kxml2-2.3.0.jar "$DEST/"
+    ln -svf $BACK/out/host/darwin-x86/framework/kxml2-2.3.0.jar          "$DEST/"
     ln -svf $BACK/out/host/darwin-x86/framework/commons-compress-1.0.jar "$DEST/"
+    ln -svf $BACK/out/host/darwin-x86/framework/groovy-all-1.6.5.jar     "$DEST/"
 
 elif [ "${HOST:0:6}" == "CYGWIN" ]; then
     for LIB in $LIBS; do
@@ -47,6 +49,10 @@ elif [ "${HOST:0:6}" == "CYGWIN" ]; then
 
     if [ ! -f "$DEST/commons-compress-1.0.jar" ]; then
         cp -v "prebuilt/common/commons-compress/commons-compress-1.0.jar" "$DEST/"
+    fi
+
+    if [ ! -f "$DEST/groovy-all-1.6.5.jar" ]; then
+        cp -v "prebuilt/common/groovy/groovy-all-1.6.5.jar" "$DEST/"
     fi
 
     chmod -v a+rx "$DEST"/*.jar
