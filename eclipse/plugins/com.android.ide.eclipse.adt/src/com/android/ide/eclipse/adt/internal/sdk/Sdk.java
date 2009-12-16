@@ -56,6 +56,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -73,13 +74,23 @@ public class Sdk implements IProjectListener, IFileListener {
     private final SdkManager mManager;
     private final AvdManager mAvdManager;
 
+    /**
+     * Data bundled using during the load of Target data.
+     * <p/>This contains the {@link LoadStatus} and a list of projects that attempted
+     * to compile before the loading was finished. Those projects will be recompiled
+     * at the end of the loading.
+     */
+    private final static class TargetLoadBundle {
+        LoadStatus status;
+        final HashSet<IJavaProject> projecsToReload = new HashSet<IJavaProject>();
+    }
+
     /** Map associating an {@link IAndroidTarget} to an {@link AndroidTargetData} */
     private final HashMap<IAndroidTarget, AndroidTargetData> mTargetDataMap =
         new HashMap<IAndroidTarget, AndroidTargetData>();
-    /** Map associating an {@link IAndroidTarget} and the {@link LoadStatus} of its
-     * {@link AndroidTargetData}. */
-    private final HashMap<IAndroidTarget, LoadStatus> mTargetDataStatusMap =
-        new HashMap<IAndroidTarget, LoadStatus>();
+    /** Map associating an {@link IAndroidTarget} and its {@link TargetLoadBundle}. */
+    private final HashMap<IAndroidTarget, TargetLoadBundle> mTargetDataStatusMap =
+        new HashMap<IAndroidTarget, TargetLoadBundle>();
 
     /** Map associating {@link IProject} and their resolved {@link IAndroidTarget}. */
     private final HashMap<IProject, IAndroidTarget> mProjectTargetMap =
@@ -155,7 +166,7 @@ public class Sdk implements IProjectListener, IFileListener {
      * <p/>If the SDK failed to load, it displays an error to the user.
      * @param sdkLocation the OS path to the SDK.
      */
-    public static Sdk loadSdk(String sdkLocation) {
+    public static synchronized Sdk loadSdk(String sdkLocation) {
         if (sCurrentSdk != null) {
             sCurrentSdk.dispose();
             sCurrentSdk = null;
@@ -207,7 +218,7 @@ public class Sdk implements IProjectListener, IFileListener {
     /**
      * Returns the current {@link Sdk} object.
      */
-    public static Sdk getCurrent() {
+    public static synchronized Sdk getCurrent() {
         return sCurrentSdk;
     }
 
@@ -436,18 +447,41 @@ public class Sdk implements IProjectListener, IFileListener {
      * Checks and loads (if needed) the data for a given target.
      * <p/> The data is loaded in a separate {@link Job}, and opened editors will be notified
      * through their implementation of {@link ITargetChangeListener#onTargetLoaded(IAndroidTarget)}.
+     * <p/>An optional project as second parameter can be given to be recompiled once the target
+     * data is finished loading.
+     * <p/>The return value is non-null only if the target data has already been loaded (and in this
+     * case is the status of the load operation)
      * @param target the target to load.
+     * @param project an optional project to be recompiled when the target data is loaded.
+     * If the target is already loaded, nothing happens.
+     * @return The load status if the target data is already loaded.
      */
-    public void checkAndLoadTargetData(final IAndroidTarget target) {
+    public LoadStatus checkAndLoadTargetData(final IAndroidTarget target, IJavaProject project) {
         boolean loadData = false;
 
         synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
-            LoadStatus status = mTargetDataStatusMap.get(target);
-            if (status == null) {
+            TargetLoadBundle bundle = mTargetDataStatusMap.get(target);
+            if (bundle == null) {
+                bundle = new TargetLoadBundle();
+                mTargetDataStatusMap.put(target,bundle);
+
                 // set status to loading
-                mTargetDataStatusMap.put(target, LoadStatus.LOADING);
+                bundle.status = LoadStatus.LOADING;
+
+                // add project to bundle
+                if (project != null) {
+                    bundle.projecsToReload.add(project);
+                }
+
                 // and set the flag to start the loading below
                 loadData = true;
+            } else if (bundle.status == LoadStatus.LOADING) {
+                // add project to bundle
+                if (project != null) {
+                    bundle.projecsToReload.add(project);
+                }
+            } else if (bundle.status == LoadStatus.LOADED || bundle.status == LoadStatus.FAILED) {
+                return bundle.status;
             }
         }
 
@@ -455,19 +489,42 @@ public class Sdk implements IProjectListener, IFileListener {
             Job job = new Job(String.format("Loading data for %1$s", target.getFullName())) {
                 @Override
                 protected IStatus run(IProgressMonitor monitor) {
+                    AdtPlugin plugin = AdtPlugin.getDefault();
                     try {
                         IStatus status = new AndroidTargetParser(target).run(monitor);
-                        AdtPlugin plugin = AdtPlugin.getDefault();
+
+                        IJavaProject[] javaProjectArray = null;
+
                         synchronized (plugin.getSdkLockObject()) {
+                            TargetLoadBundle bundle = mTargetDataStatusMap.get(target);
+
                             if (status.getCode() != IStatus.OK) {
-                                mTargetDataStatusMap.put(target, LoadStatus.FAILED);
+                                bundle.status = LoadStatus.FAILED;
+                                bundle.projecsToReload.clear();
                             } else {
-                                mTargetDataStatusMap.put(target, LoadStatus.LOADED);
+                                bundle.status = LoadStatus.LOADED;
+
+                                // Prepare the array of project to recompile.
+                                // The call is done outside of the synchronized block.
+                                javaProjectArray = bundle.projecsToReload.toArray(
+                                        new IJavaProject[bundle.projecsToReload.size()]);
+
+                                // and update the UI of the editors that depend on the target data.
                                 plugin.updateTargetListeners(target);
                             }
                         }
+
+                        if (javaProjectArray != null) {
+                            AndroidClasspathContainerInitializer.updateProjects(javaProjectArray);
+                        }
+
                         return status;
                     } catch (Throwable t) {
+                        synchronized (plugin.getSdkLockObject()) {
+                            TargetLoadBundle bundle = mTargetDataStatusMap.get(target);
+                            bundle.status = LoadStatus.FAILED;
+                        }
+
                         AdtPlugin.log(t, "Exception in checkAndLoadTargetData.");    //$NON-NLS-1$
                         return new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
                                 String.format(
@@ -480,17 +537,8 @@ public class Sdk implements IProjectListener, IFileListener {
             job.setPriority(Job.BUILD); // build jobs are run after other interactive jobs
             job.schedule();
         }
-    }
 
-    /**
-     * Returns the {@link LoadStatus} for the data of a given {@link IAndroidTarget}.
-     * @param target the target that is queried.
-     * @return the status or <code>null</code> if the data was not loaded.
-     */
-    public LoadStatus getTargetDataLoadStatus(IAndroidTarget target) {
-        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
-            return mTargetDataStatusMap.get(target);
-        }
+        return null;
     }
 
     /**

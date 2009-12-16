@@ -264,8 +264,10 @@ public class ApkBuilder extends BaseBuilder {
         IProject[] referencedProjects = null;
 
         try {
+            IJavaProject javaProject = JavaCore.create(project);
+
             // Top level check to make sure the build can move forward.
-            abortOnBadSetup(project);
+            abortOnBadSetup(javaProject);
 
             // get the list of referenced projects.
             referencedProjects = ProjectHelper.getReferencedProjects(project);
@@ -273,7 +275,6 @@ public class ApkBuilder extends BaseBuilder {
 
             // get the output folder, this method returns the path with a trailing
             // separator
-            IJavaProject javaProject = JavaCore.create(project);
             IFolder outputFolder = BaseProjectHelper.getOutputFolder(project);
 
             // now we need to get the classpath list
@@ -1298,12 +1299,14 @@ public class ApkBuilder extends BaseBuilder {
     }
 
     @Override
-    protected void abortOnBadSetup(IProject project) throws CoreException {
-        super.abortOnBadSetup(project);
+    protected void abortOnBadSetup(IJavaProject javaProject) throws CoreException {
+        super.abortOnBadSetup(javaProject);
 
-        // for this version, we stop on any marker (ie also markers coming from JDT)
-        IMarker[] markers = project.findMarkers(null /*type*/, false /*includeSubtypes*/,
-                IResource.DEPTH_ZERO);
+        // for this version, we stop on any marker (ie also markers coming from JDT).
+        // The depth is set to ZERO to make sure we don't stop on warning on resources.
+        // Only markers set directly on the project are considered.
+        IMarker[] markers = javaProject.getProject().findMarkers(null /*type*/,
+                false /*includeSubtypes*/, IResource.DEPTH_ZERO);
 
         if (markers.length > 0) {
             stopBuild("");

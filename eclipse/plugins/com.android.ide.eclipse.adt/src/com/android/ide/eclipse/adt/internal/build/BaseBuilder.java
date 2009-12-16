@@ -24,6 +24,8 @@ import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.XmlErrorHandler;
 import com.android.ide.eclipse.adt.internal.project.XmlErrorHandler.XmlErrorListener;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -880,25 +882,41 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
      * Aborts the build if the SDK/project setups are broken. This does not
      * display any errors.
      *
-     * @param project The {@link IJavaProject} being compiled.
+     * @param javaProject The {@link IJavaProject} being compiled.
      * @throws CoreException
      */
-    protected void abortOnBadSetup(IProject project) throws CoreException {
-        // check if we have finished loading the SDK.
-        if (AdtPlugin.getDefault().getSdkLoadStatus() != LoadStatus.LOADED) {
+    protected void abortOnBadSetup(IJavaProject javaProject) throws CoreException {
+        IProject iProject = javaProject.getProject();
+        // check if we have finished loading the project target.
+        Sdk sdk = Sdk.getCurrent();
+        if (sdk == null) {
             // we exit silently
             stopBuild("SDK is not loaded yet");
         }
 
+        // get the target for the project
+        IAndroidTarget target = sdk.getTarget(javaProject.getProject());
+
+        if (target == null) {
+            // we exit silently
+            stopBuild("Project target not resolved yet.");
+        }
+
+        // check on the target data.
+        if (sdk.checkAndLoadTargetData(target, javaProject) != LoadStatus.LOADED) {
+            // we exit silently
+            stopBuild("Project target not loaded yet.");
+       }
+
         // abort if there are TARGET or ADT type markers
-        IMarker[] markers = project.findMarkers(AndroidConstants.MARKER_TARGET,
+        IMarker[] markers = iProject.findMarkers(AndroidConstants.MARKER_TARGET,
                 false /*includeSubtypes*/, IResource.DEPTH_ZERO);
 
         if (markers.length > 0) {
             stopBuild("");
         }
 
-        markers = project.findMarkers(AndroidConstants.MARKER_ADT, false /*includeSubtypes*/,
+        markers = iProject.findMarkers(AndroidConstants.MARKER_ADT, false /*includeSubtypes*/,
                 IResource.DEPTH_ZERO);
 
         if (markers.length > 0) {

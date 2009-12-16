@@ -73,13 +73,14 @@ public class ResourceManagerBuilder extends BaseBuilder {
             throws CoreException {
         // Get the project.
         IProject project = getProject();
+        IJavaProject javaProject = JavaCore.create(project);
 
         // Clear the project of the generic markers
         removeMarkersFromProject(project, AndroidConstants.MARKER_ADT);
 
         // check for existing target marker, in which case we abort.
         // (this means: no SDK, no target, or unresolvable target.)
-        abortOnBadSetup(project);
+        abortOnBadSetup(javaProject);
 
         // Check the compiler compliance level, displaying the error message
         // since this is the first builder.
@@ -124,7 +125,6 @@ public class ResourceManagerBuilder extends BaseBuilder {
 
         // check the 'gen' source folder is present
         boolean hasGenSrcFolder = false; // whether the project has a 'gen' source folder setup
-        IJavaProject javaProject = JavaCore.create(project);
 
         IClasspathEntry[] classpaths = javaProject.readRawClasspath();
         if (classpaths != null) {
