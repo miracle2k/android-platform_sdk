@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
+import com.android.ddmlib.MultiLineReceiver;
 import com.android.ddmlib.AndroidDebugBridge.IDebugBridgeChangeListener;
 import com.android.ddmlib.AndroidDebugBridge.IDeviceChangeListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor;
@@ -25,7 +26,9 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IP
 
 import org.eclipse.core.resources.IProject;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * Registers which apk was installed on which device.
@@ -51,16 +54,60 @@ public class ApkInstallManager implements IDeviceChangeListener, IDebugBridgeCha
     /**
      * Internal struct to associate a project and a device.
      */
-    private static class ApkInstall {
-        public ApkInstall(IProject project, IDevice device) {
+    private final static class ApkInstall {
+        public ApkInstall(IProject project, String packageName, IDevice device) {
             this.project = project;
+            this.packageName = packageName;
             this.device = device;
         }
-        IProject project;
-        IDevice device;
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ApkInstall) {
+                ApkInstall apkObj = (ApkInstall)obj;
+
+                return (device == apkObj.device && project.equals(apkObj.project) &&
+                        packageName.equals(apkObj.packageName));
+            }
+
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return (device.getSerialNumber() + project.getName() + packageName).hashCode();
+        }
+
+        final IProject project;
+        final String packageName;
+        final IDevice device;
     }
 
-    private final ArrayList<ApkInstall> mInstallList = new ArrayList<ApkInstall>();
+    private final static class PmReceiver extends MultiLineReceiver {
+        boolean foundPackage = false;
+        @Override
+        public void processNewLines(String[] lines) {
+            // if the package if found, then pm will show a line starting with "package:/"
+            if (foundPackage == false) { // just in case this is called several times for multilines
+                for (String line : lines) {
+                    if (line.startsWith("package:/")) {
+                        foundPackage = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        public boolean isCancelled() {
+            return false;
+        }
+    }
+
+    /**
+     * Hashset of the list of installed package. Hashset used to ensure we don't re-add new
+     * objects for the same app.
+     */
+    private final HashSet<ApkInstall> mInstallList = new HashSet<ApkInstall>();
 
     public static ApkInstallManager getInstance() {
         return sThis;
@@ -69,11 +116,12 @@ public class ApkInstallManager implements IDeviceChangeListener, IDebugBridgeCha
     /**
      * Registers an installation of <var>project</var> onto <var>device</var>
      * @param project The project that was installed.
+     * @param packageName the package name of the apk
      * @param device The device that received the installation.
      */
-    public void registerInstallation(IProject project, IDevice device) {
+    public void registerInstallation(IProject project, String packageName, IDevice device) {
         synchronized (mInstallList) {
-            mInstallList.add(new ApkInstall(project, device));
+            mInstallList.add(new ApkInstall(project, packageName, device));
         }
     }
 
@@ -83,11 +131,30 @@ public class ApkInstallManager implements IDeviceChangeListener, IDebugBridgeCha
      * @param device the device that may have received the installation.
      * @return
      */
-    public boolean isApplicationInstalled(IProject project, IDevice device) {
+    public boolean isApplicationInstalled(IProject project, String packageName, IDevice device) {
         synchronized (mInstallList) {
+            ApkInstall found = null;
             for (ApkInstall install : mInstallList) {
-                if (project == install.project && device == install.device) {
-                    return true;
+                if (project.equals(install.project) && packageName.equals(install.packageName) &&
+                        device == install.device) {
+                    found = install;
+                    break;
+                }
+            }
+
+            // check the app is still installed.
+            if (found != null) {
+                try {
+                    PmReceiver receiver = new PmReceiver();
+                    found.device.executeShellCommand("pm path " + packageName, receiver);
+                    if (receiver.foundPackage == false) {
+                        mInstallList.remove(found);
+                    }
+
+                    return receiver.foundPackage;
+                } catch (IOException e) {
+                    // failed to query pm? force reinstall.
+                    return false;
                 }
             }
         }
@@ -102,12 +169,11 @@ public class ApkInstallManager implements IDeviceChangeListener, IDebugBridgeCha
      */
     public void resetInstallationFor(IProject project) {
         synchronized (mInstallList) {
-            for (int i = 0 ; i < mInstallList.size() ;) {
-                ApkInstall install = mInstallList.get(i);
-                if (install.project == project) {
-                    mInstallList.remove(i);
-                } else {
-                    i++;
+            Iterator<ApkInstall> iterator = mInstallList.iterator();
+            while (iterator.hasNext()) {
+                ApkInstall install = iterator.next();
+                if (install.project.equals(project)) {
+                    iterator.remove();
                 }
             }
         }
@@ -139,12 +205,11 @@ public class ApkInstallManager implements IDeviceChangeListener, IDebugBridgeCha
      */
     public void deviceDisconnected(IDevice device) {
         synchronized (mInstallList) {
-            for (int i = 0 ; i < mInstallList.size() ;) {
-                ApkInstall install = mInstallList.get(i);
+            Iterator<ApkInstall> iterator = mInstallList.iterator();
+            while (iterator.hasNext()) {
+                ApkInstall install = iterator.next();
                 if (install.device == device) {
-                    mInstallList.remove(i);
-                } else {
-                    i++;
+                    iterator.remove();
                 }
             }
         }
