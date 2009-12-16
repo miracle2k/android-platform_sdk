@@ -84,54 +84,30 @@ public final class BaseProjectHelper {
     /**
      * Adds a marker to a file on a specific line. This methods catches thrown
      * {@link CoreException}, and returns null instead.
-     * @param file the file to be marked
+     * @param resource the resource to be marked
      * @param markerId The id of the marker to add.
      * @param message the message associated with the mark
      * @param lineNumber the line number where to put the mark. If line is < 1, it puts the marker
-     * on line 1.
+     * on line 1,
      * @param severity the severity of the marker.
      * @return the IMarker that was added or null if it failed to add one.
      */
-    public final static IMarker addMarker(IResource file, String markerId,
+    public final static IMarker markResource(IResource resource, String markerId,
             String message, int lineNumber, int severity) {
-        try {
-            IMarker marker = file.createMarker(markerId);
-            marker.setAttribute(IMarker.MESSAGE, message);
-            marker.setAttribute(IMarker.SEVERITY, severity);
-            if (lineNumber < 1) {
-                lineNumber = 1;
-            }
-            marker.setAttribute(IMarker.LINE_NUMBER, lineNumber);
-
-            // on Windows, when adding a marker to a project, it takes a refresh for the marker
-            // to show. In order to fix this we're forcing a refresh of elements receiving
-            // markers (and only the element, not its children), to force the marker display.
-            file.refreshLocal(IResource.DEPTH_ZERO, new NullProgressMonitor());
-
-            return marker;
-        } catch (CoreException e) {
-            AdtPlugin.log(e, "Failed to add marker '%1$s' to '%2$s'", //$NON-NLS-1$
-                    markerId, file.getFullPath());
-        }
-
-        return null;
-    }
-
-    /**
-     * Adds a marker to a resource. This methods catches thrown {@link CoreException},
-     * and returns null instead.
-     * @param resource the file to be marked
-     * @param markerId The id of the marker to add.
-     * @param message the message associated with the mark
-     * @param severity the severity of the marker.
-     * @return the IMarker that was added or null if it failed to add one.
-     */
-    public final static IMarker addMarker(IResource resource, String markerId,
-            String message, int severity) {
         try {
             IMarker marker = resource.createMarker(markerId);
             marker.setAttribute(IMarker.MESSAGE, message);
             marker.setAttribute(IMarker.SEVERITY, severity);
+
+            // if marker is text type, enforce a line number so that it shows in the editor
+            // somewhere (line 1)
+            if (lineNumber < 1 && marker.isSubtypeOf(IMarker.TEXT)) {
+                lineNumber = 1;
+            }
+
+            if (lineNumber >= 1) {
+                marker.setAttribute(IMarker.LINE_NUMBER, lineNumber);
+            }
 
             // on Windows, when adding a marker to a project, it takes a refresh for the marker
             // to show. In order to fix this we're forcing a refresh of elements receiving
@@ -148,8 +124,23 @@ public final class BaseProjectHelper {
     }
 
     /**
-     * Adds a marker to a resource. This method does not catch {@link CoreException} and instead
-     * throw them.
+     * Adds a marker to a resource. This methods catches thrown {@link CoreException},
+     * and returns null instead.
+     * @param resource the file to be marked
+     * @param markerId The id of the marker to add.
+     * @param message the message associated with the mark
+     * @param severity the severity of the marker.
+     * @return the IMarker that was added or null if it failed to add one.
+     */
+    public final static IMarker markResource(IResource resource, String markerId,
+            String message, int severity) {
+        return markResource(resource, markerId, message, -1, severity);
+    }
+
+    /**
+     * Adds a marker to an {@link IProject}. This method does not catch {@link CoreException}, like
+     * {@link #markResource(IResource, String, String, int)}.
+     *
      * @param resource the file to be marked
      * @param markerId The id of the marker to add.
      * @param message the message associated with the mark
@@ -158,7 +149,7 @@ public final class BaseProjectHelper {
      * @return the IMarker that was added.
      * @throws CoreException
      */
-    public final static IMarker addMarker(IProject project, String markerId,
+    public final static IMarker markProject(IProject project, String markerId,
             String message, int severity, int priority) throws CoreException {
         IMarker marker = project.createMarker(markerId);
         marker.setAttribute(IMarker.MESSAGE, message);

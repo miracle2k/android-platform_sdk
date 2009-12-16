@@ -55,6 +55,17 @@ public class ResourceManagerBuilder extends BaseBuilder {
         super();
     }
 
+    @Override
+    protected void clean(IProgressMonitor monitor) throws CoreException {
+        super.clean(monitor);
+
+        // Get the project.
+        IProject project = getProject();
+
+        // Clear the project of the generic markers
+        removeMarkersFromProject(project, AndroidConstants.MARKER_ADT);
+    }
+
     // build() returns a list of project from which this project depends for future compilation.
     @SuppressWarnings("unchecked")
     @Override

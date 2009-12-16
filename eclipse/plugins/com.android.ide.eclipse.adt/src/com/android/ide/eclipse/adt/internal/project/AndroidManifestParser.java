@@ -562,9 +562,8 @@ public class AndroidManifestParser {
                 int line = mLocator.getLineNumber();
 
                 // mark the file
-                IMarker marker = BaseProjectHelper.addMarker(getFile(),
-                        AndroidConstants.MARKER_ANDROID,
-                        result, line, IMarker.SEVERITY_ERROR);
+                IMarker marker = BaseProjectHelper.markResource(getFile(),
+                        AndroidConstants.MARKER_ANDROID, result, line, IMarker.SEVERITY_ERROR);
 
                 // add custom attributes to be used by the manifest editor.
                 if (marker != null) {
