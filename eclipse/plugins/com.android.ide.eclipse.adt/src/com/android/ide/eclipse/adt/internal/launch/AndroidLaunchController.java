@@ -794,7 +794,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
      */
     private boolean syncApp(DelayedLaunchInfo launchInfo, IDevice device) {
         boolean alreadyInstalled = ApkInstallManager.getInstance().isApplicationInstalled(
-                launchInfo.getProject(), device);
+                launchInfo.getProject(), launchInfo.getPackageName(), device);
 
         if (alreadyInstalled) {
             AdtPlugin.printToConsole(launchInfo.getProject(),
@@ -840,7 +840,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
             // if the installation succeeded, we register it.
             if (installResult) {
                ApkInstallManager.getInstance().registerInstallation(
-                       launchInfo.getProject(), device);
+                       launchInfo.getProject(), launchInfo.getPackageName(), device);
             }
             return installResult;
         }
