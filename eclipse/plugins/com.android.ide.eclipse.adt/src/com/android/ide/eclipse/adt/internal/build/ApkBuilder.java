@@ -951,8 +951,10 @@ public class ApkBuilder extends BaseBuilder {
                         String msg = String.format("Native libraries detected in '%1$s'. See console for more information.",
                                 libName);
 
+
                         markProject(AndroidConstants.MARKER_PACKAGING, msg,
-                                nativeInterference ?
+                                nativeInterference ||
+                                        AdtPrefs.getPrefs().getBuildForceErrorOnNativeLibInJar() ?
                                         IMarker.SEVERITY_ERROR : IMarker.SEVERITY_WARNING);
 
                         ArrayList<String> consoleMsgs = new ArrayList<String>();

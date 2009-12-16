@@ -58,7 +58,7 @@ public class BuildPreferencePage extends FieldEditorPreferencePage implements
                 Messages.BuildPreferencePage_Auto_Refresh_Resources_on_Build,
                 getFieldEditorParent()));
 
-        addField(new BooleanFieldEditor(AdtPrefs.PREFS_BUILD_RES_AUTO_REFRESH,
+        addField(new BooleanFieldEditor(AdtPrefs.PREFS_BUILD_FORCE_ERROR_ON_NATIVELIB_IN_JAR,
                 "Force error when external jars contain native libraries",
                 getFieldEditorParent()));
 
