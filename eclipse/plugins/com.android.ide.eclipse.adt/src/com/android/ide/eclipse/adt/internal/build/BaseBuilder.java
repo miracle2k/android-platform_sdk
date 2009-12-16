@@ -277,16 +277,18 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
     }
 
     /**
-     * Adds a marker to the current project.
+     * Adds a marker to the current project.  This methods catches thrown {@link CoreException},
+     * and returns null instead.
      *
      * @param markerId The id of the marker to add.
      * @param message the message associated with the mark
      * @param severity the severity of the marker.
+     * @return the marker that was created (or null if failure)
+     * @see IMarker
      */
-    protected final void markProject(String markerId, String message, int severity) {
-        BaseProjectHelper.addMarker(getProject(), markerId, message, severity);
+    protected final IMarker markProject(String markerId, String message, int severity) {
+        return BaseProjectHelper.markResource(getProject(), markerId, message, severity);
     }
-
 
     /**
      * Removes markers from a file.
@@ -332,7 +334,7 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
             String markerId) {
         try {
             if (project.exists()) {
-                project.deleteMarkers(markerId, true, IResource.DEPTH_ZERO);
+                project.deleteMarkers(markerId, true, IResource.DEPTH_INFINITE);
             }
         } catch (CoreException ce) {
             String msg = String.format(Messages.Marker_Delete_Error, markerId, project.getName());
@@ -763,11 +765,7 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
         }
 
         if (markerAlreadyExists == false) {
-            if (line != -1) {
-                BaseProjectHelper.addMarker(f2, markerId, message, line, severity);
-            } else {
-                BaseProjectHelper.addMarker(f2, markerId, message, severity);
-            }
+            BaseProjectHelper.markResource(f2, markerId, message, line, severity);
         }
 
         return true;
@@ -866,7 +864,7 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
                                         project, message);
 
                                 // Also put a warning marker on the project
-                                markProject(AndroidConstants.MARKER_ADT, message,
+                                markProject(AndroidConstants.MARKER_PACKAGING, message,
                                         IMarker.SEVERITY_WARNING);
                             }
                         }

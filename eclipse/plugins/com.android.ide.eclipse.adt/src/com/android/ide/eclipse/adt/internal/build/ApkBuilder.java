@@ -240,6 +240,18 @@ public class ApkBuilder extends BaseBuilder {
         super();
     }
 
+    @Override
+    protected void clean(IProgressMonitor monitor) throws CoreException {
+        super.clean(monitor);
+
+        // Get the project.
+        IProject project = getProject();
+
+        // Clear the project of the generic markers
+        removeMarkersFromProject(project, AndroidConstants.MARKER_AAPT_COMPILE);
+        removeMarkersFromProject(project, AndroidConstants.MARKER_PACKAGING);
+    }
+
     // build() returns a list of project from which this project depends for future compilation.
     @SuppressWarnings("unchecked")
     @Override
@@ -329,9 +341,12 @@ public class ApkBuilder extends BaseBuilder {
                 return referencedProjects;
             }
 
+            // remove older packaging markers.
+            removeMarkersFromProject(javaProject.getProject(), AndroidConstants.MARKER_PACKAGING);
+
             if (outputFolder == null) {
                 // mark project and exit
-                markProject(AndroidConstants.MARKER_ADT, Messages.Failed_To_Get_Output,
+                markProject(AndroidConstants.MARKER_PACKAGING, Messages.Failed_To_Get_Output,
                         IMarker.SEVERITY_ERROR);
                 return referencedProjects;
             }
@@ -440,7 +455,7 @@ public class ApkBuilder extends BaseBuilder {
             if (mPackageResources || mConvertToDex || mBuildFinalPackage) {
                 IPath binLocation = outputFolder.getLocation();
                 if (binLocation == null) {
-                    markProject(AndroidConstants.MARKER_ADT, Messages.Output_Missing,
+                    markProject(AndroidConstants.MARKER_PACKAGING, Messages.Output_Missing,
                             IMarker.SEVERITY_ERROR);
                     return referencedProjects;
                 }
@@ -483,7 +498,7 @@ public class ApkBuilder extends BaseBuilder {
                         // mark project and exit
                         String msg = String.format(Messages.s_File_Missing,
                                 AndroidConstants.FN_ANDROID_MANIFEST);
-                        markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+                        markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
                         return referencedProjects;
                     }
 
@@ -628,7 +643,7 @@ public class ApkBuilder extends BaseBuilder {
 
             msg = String.format("Unknown error: %1$s", msg);
             AdtPlugin.printErrorToConsole(project, msg);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
         }
 
         return referencedProjects;
@@ -729,7 +744,7 @@ public class ApkBuilder extends BaseBuilder {
                 // not all files that should have been marked, were marked), we put a generic
                 // marker on the project and abort.
                 if (parsingError) {
-                    markProject(AndroidConstants.MARKER_ADT, Messages.Unparsed_AAPT_Errors,
+                    markProject(AndroidConstants.MARKER_PACKAGING, Messages.Unparsed_AAPT_Errors,
                             IMarker.SEVERITY_ERROR);
                 }
 
@@ -738,11 +753,11 @@ public class ApkBuilder extends BaseBuilder {
             }
         } catch (IOException e1) {
             String msg = String.format(Messages.AAPT_Exec_Error, command[0]);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
             return false;
         } catch (InterruptedException e) {
             String msg = String.format(Messages.AAPT_Exec_Error, command[0]);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
             return false;
         }
 
@@ -810,7 +825,7 @@ public class ApkBuilder extends BaseBuilder {
                 String message = String.format(Messages.Dalvik_Error_d,
                         res);
                 AdtPlugin.printErrorToConsole(getProject(), message);
-                markProject(AndroidConstants.MARKER_ADT, message, IMarker.SEVERITY_ERROR);
+                markProject(AndroidConstants.MARKER_PACKAGING, message, IMarker.SEVERITY_ERROR);
                 return false;
             }
         } catch (Throwable ex) {
@@ -820,7 +835,7 @@ public class ApkBuilder extends BaseBuilder {
             }
             message = String.format(Messages.Dalvik_Error_s, message);
             AdtPlugin.printErrorToConsole(getProject(), message);
-            markProject(AndroidConstants.MARKER_ADT, message, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, message, IMarker.SEVERITY_ERROR);
             if ((ex instanceof NoClassDefFoundError)
                     || (ex instanceof NoSuchMethodError)) {
                 AdtPlugin.printErrorToConsole(getProject(), Messages.Incompatible_VM_Warning,
@@ -844,6 +859,7 @@ public class ApkBuilder extends BaseBuilder {
      */
     private boolean finalPackage(String intermediateApk, String dex, String output,
             final IJavaProject javaProject, IJavaProject[] referencedJavaProjects) {
+
         FileOutputStream fos = null;
         try {
             IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
@@ -878,7 +894,7 @@ public class ApkBuilder extends BaseBuilder {
                 String msg = String.format(Messages.Final_Archive_Error_s,
                         Messages.ApkBuilder_Unable_To_Gey_Key);
                 AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-                markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+                markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
                 return false;
             }
 
@@ -889,7 +905,7 @@ public class ApkBuilder extends BaseBuilder {
                     String.format(Messages.ApkBuilder_Certificate_Expired_on_s,
                             DateFormat.getInstance().format(certificate.getNotAfter())));
                 AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-                markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+                markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
                 return false;
             }
 
@@ -935,7 +951,7 @@ public class ApkBuilder extends BaseBuilder {
                         String msg = String.format("Native libraries detected in '%1$s'. See console for more information.",
                                 libName);
 
-                        markProject(AndroidConstants.MARKER_ADT, msg,
+                        markProject(AndroidConstants.MARKER_PACKAGING, msg,
                                 nativeInterference ?
                                         IMarker.SEVERITY_ERROR : IMarker.SEVERITY_WARNING);
 
@@ -976,20 +992,20 @@ public class ApkBuilder extends BaseBuilder {
             // mark project and return
             String msg = String.format(Messages.Final_Archive_Error_s, e1.getMessage());
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
             return false;
         } catch (IOException e1) {
             // mark project and return
             String msg = String.format(Messages.Final_Archive_Error_s, e1.getMessage());
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
             return false;
         } catch (KeytoolException e) {
             String eMessage = e.getMessage();
 
             // mark the project with the standard message
             String msg = String.format(Messages.Final_Archive_Error_s, eMessage);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
 
             // output more info in the console
             AdtPlugin.printErrorToConsole(javaProject.getProject(),
@@ -1002,7 +1018,7 @@ public class ApkBuilder extends BaseBuilder {
 
             // mark the project with the standard message
             String msg = String.format(Messages.Final_Archive_Error_s, eMessage);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
 
             // and also output it in the console
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
@@ -1010,7 +1026,7 @@ public class ApkBuilder extends BaseBuilder {
             // mark project and return
             String msg = String.format(Messages.Final_Archive_Error_s, e.getMessage());
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
             return false;
         } catch (Exception e) {
             // try to catch other exception to actually display an error. This will be useful
@@ -1024,7 +1040,7 @@ public class ApkBuilder extends BaseBuilder {
 
             msg = String.format("Unknown error: %1$s", msg);
             AdtPlugin.printErrorToConsole(javaProject.getProject(), msg);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+            markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
             return false;
         } finally {
             if (fos != null) {

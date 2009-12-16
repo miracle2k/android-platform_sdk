@@ -34,7 +34,7 @@ public class XmlErrorHandler extends DefaultHandler {
 
     /** link to the delta visitor, to set the xml error flag */
     private XmlErrorListener mErrorListener;
-    
+
     /**
      * Classes which implement this interface provide a method that deals
      * with XML errors.
@@ -45,10 +45,10 @@ public class XmlErrorHandler extends DefaultHandler {
          */
         public void errorFound();
     }
-    
+
     public static class BasicXmlErrorListener implements XmlErrorListener {
         public boolean mHasXmlError = false;
-        
+
         public void errorFound() {
             mHasXmlError = true;
         }
@@ -62,7 +62,7 @@ public class XmlErrorHandler extends DefaultHandler {
     /**
      * Xml Error call back
      * @param exception the parsing exception
-     * @throws SAXException 
+     * @throws SAXException
      */
     @Override
     public void error(SAXParseException exception) throws SAXException {
@@ -72,7 +72,7 @@ public class XmlErrorHandler extends DefaultHandler {
     /**
      * Xml Fatal Error call back
      * @param exception the parsing exception
-     * @throws SAXException 
+     * @throws SAXException
      */
     @Override
     public void fatalError(SAXParseException exception) throws SAXException {
@@ -82,23 +82,23 @@ public class XmlErrorHandler extends DefaultHandler {
     /**
      * Xml Warning call back
      * @param exception the parsing exception
-     * @throws SAXException 
+     * @throws SAXException
      */
     @Override
     public void warning(SAXParseException exception) throws SAXException {
         if (mFile != null) {
-            BaseProjectHelper.addMarker(mFile,
+            BaseProjectHelper.markResource(mFile,
                     AndroidConstants.MARKER_XML,
                     exception.getMessage(),
                     exception.getLineNumber(),
                     IMarker.SEVERITY_WARNING);
         }
     }
-    
+
     protected final IFile getFile() {
         return mFile;
     }
-    
+
     /**
      * Handles a parsing error and an optional line number.
      * @param exception
@@ -108,25 +108,18 @@ public class XmlErrorHandler extends DefaultHandler {
         if (mErrorListener != null) {
             mErrorListener.errorFound();
         }
-        
+
         String message = exception.getMessage();
         if (message == null) {
             message = "Unknown error " + exception.getClass().getCanonicalName();
         }
-        
+
         if (mFile != null) {
-            if (lineNumber != -1) {
-                BaseProjectHelper.addMarker(mFile,
-                        AndroidConstants.MARKER_XML,
-                        message,
-                        lineNumber,
-                        IMarker.SEVERITY_ERROR);
-            } else {
-                BaseProjectHelper.addMarker(mFile,
-                        AndroidConstants.MARKER_XML,
-                        message,
-                        IMarker.SEVERITY_ERROR);
-            }
+            BaseProjectHelper.markResource(mFile,
+                    AndroidConstants.MARKER_XML,
+                    message,
+                    lineNumber,
+                    IMarker.SEVERITY_ERROR);
         }
     }
 }

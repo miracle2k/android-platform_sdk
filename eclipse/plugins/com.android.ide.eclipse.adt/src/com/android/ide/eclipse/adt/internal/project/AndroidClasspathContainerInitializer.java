@@ -259,7 +259,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 }
 
                 try {
-                    BaseProjectHelper.addMarker(iProject, AndroidConstants.MARKER_TARGET,
+                    BaseProjectHelper.markProject(iProject, AndroidConstants.MARKER_TARGET,
                             markerMessage, IMarker.SEVERITY_ERROR, IMarker.PRIORITY_HIGH);
                 } catch (CoreException e) {
                     // In some cases, the workspace may be locked for modification when we
@@ -270,7 +270,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                         @Override
                         protected IStatus run(IProgressMonitor monitor) {
                             try {
-                                BaseProjectHelper.addMarker(iProject,
+                                BaseProjectHelper.markProject(iProject,
                                         AndroidConstants.MARKER_TARGET,
                                         fmessage, IMarker.SEVERITY_ERROR,
                                         IMarker.PRIORITY_HIGH);
