@@ -215,11 +215,11 @@ public class PreCompilerBuilder extends BaseBuilder {
 
             // get the project objects
             IProject project = getProject();
+            IJavaProject javaProject = JavaCore.create(project);
 
             // Top level check to make sure the build can move forward.
-            abortOnBadSetup(project);
+            abortOnBadSetup(javaProject);
 
-            IJavaProject javaProject = JavaCore.create(project);
             IAndroidTarget projectTarget = Sdk.getCurrent().getTarget(project);
 
             // now we need to get the classpath list

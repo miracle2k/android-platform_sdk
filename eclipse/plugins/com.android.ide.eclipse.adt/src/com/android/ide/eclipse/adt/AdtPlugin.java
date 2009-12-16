@@ -1015,7 +1015,7 @@ public class AdtPlugin extends AbstractUIPlugin {
                     final List<ITargetChangeListener> listeners =
                         (List<ITargetChangeListener>)mTargetChangeListeners.clone();
                     final SubMonitor progress2 = progress;
-                    AdtPlugin.getDisplay().syncExec(new Runnable() {
+                    AdtPlugin.getDisplay().asyncExec(new Runnable() {
                         public void run() {
                             for (ITargetChangeListener listener : listeners) {
                                 try {
