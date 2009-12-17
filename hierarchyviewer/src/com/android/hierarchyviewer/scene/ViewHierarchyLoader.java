@@ -32,7 +32,6 @@ import java.net.Socket;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Stack;
-import java.util.regex.Pattern;
 
 public class ViewHierarchyLoader {
     @SuppressWarnings("empty-statement")
@@ -54,7 +53,7 @@ public class ViewHierarchyLoader {
                     DeviceBridge.getDeviceLocalPort(device)));
 
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "utf-8"));
 
             System.out.println("==> DUMP");
 
