@@ -30,7 +30,7 @@ import org.eclipse.ui.IEditorPart;
  *
  * @since GLE2
  */
-/*package*/ interface IGraphicalLayoutEditor extends IEditorPart {
+public interface IGraphicalLayoutEditor extends IEditorPart {
 
     /**
      * Sets the UI for the edition of a new file.

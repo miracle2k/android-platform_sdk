@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.editors.layout;
+package com.android.ide.eclipse.adt.internal.editors.layout.gle1;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
+import com.android.ide.eclipse.adt.internal.editors.layout.ExplodedRenderingHelper;
+import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor;
+import com.android.ide.eclipse.adt.internal.editors.layout.ProjectCallback;
+import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
+import com.android.ide.eclipse.adt.internal.editors.layout.WidgetPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor.UiEditorActions;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ILayoutReloadListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
@@ -149,7 +156,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         @Override
         public IProject getProject() {
             return getLayoutEditor().getProject();
-        };
+        }
 
         @Override
         public void reload() {

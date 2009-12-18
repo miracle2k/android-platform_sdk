@@ -394,18 +394,18 @@ public final class UiElementPullParser extends BasePullParser {
         }
     }
 
-    /** {@link #TYPE_DIMENSION} complex unit: Value is raw pixels. */
+    /** {@link DimensionEntry} complex unit: Value is raw pixels. */
     public static final int COMPLEX_UNIT_PX = 0;
-    /** {@link #TYPE_DIMENSION} complex unit: Value is Device Independent
+    /** {@link DimensionEntry} complex unit: Value is Device Independent
      *  Pixels. */
     public static final int COMPLEX_UNIT_DIP = 1;
-    /** {@link #TYPE_DIMENSION} complex unit: Value is a scaled pixel. */
+    /** {@link DimensionEntry} complex unit: Value is a scaled pixel. */
     public static final int COMPLEX_UNIT_SP = 2;
-    /** {@link #TYPE_DIMENSION} complex unit: Value is in points. */
+    /** {@link DimensionEntry} complex unit: Value is in points. */
     public static final int COMPLEX_UNIT_PT = 3;
-    /** {@link #TYPE_DIMENSION} complex unit: Value is in inches. */
+    /** {@link DimensionEntry} complex unit: Value is in inches. */
     public static final int COMPLEX_UNIT_IN = 4;
-    /** {@link #TYPE_DIMENSION} complex unit: Value is in millimeters. */
+    /** {@link DimensionEntry} complex unit: Value is in millimeters. */
     public static final int COMPLEX_UNIT_MM = 5;
 
     private final static DimensionEntry[] sDimensions = new DimensionEntry[] {

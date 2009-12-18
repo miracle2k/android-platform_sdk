@@ -38,7 +38,7 @@ import java.util.List;
  * - move the logic for each layout to groovy scripts?
  * - support custom classes (by querying JDT for its super class and reverting to its behavior)
  */
-final class ExplodedRenderingHelper {
+public final class ExplodedRenderingHelper {
     /** value of the padding in pixel.
      * TODO: make a preference?
      */
@@ -47,7 +47,7 @@ final class ExplodedRenderingHelper {
     private final int[] mPadding = new int[] { 0, 0 };
     private List<ElementDescriptor> mLayoutDescriptors;
 
-    ExplodedRenderingHelper(UiElementNode top, IProject iProject) {
+    public ExplodedRenderingHelper(UiElementNode top, IProject iProject) {
         // get the layout descriptor
         IAndroidTarget target = Sdk.getCurrent().getTarget(iProject);
         AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
@@ -61,7 +61,7 @@ final class ExplodedRenderingHelper {
      * Returns the number of extra padding in the X axis. This doesn't return a number of pixel
      * or dip, but how many paddings are pushing the screen dimension out.
      */
-    int getWidthPadding() {
+    public int getWidthPadding() {
         return mPadding[0];
     }
 
@@ -69,7 +69,7 @@ final class ExplodedRenderingHelper {
      * Returns the number of extra padding in the Y axis. This doesn't return a number of pixel
      * or dip, but how many paddings are pushing the screen dimension out.
      */
-    int getHeightPadding() {
+    public int getHeightPadding() {
         return mPadding[1];
     }
 
