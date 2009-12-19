@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.sdk;
+package com.android.ide.eclipse.tests.groovytests;
 
 import org.codehaus.groovy.control.CompilationFailedException;
-import org.codehaus.groovy.control.MultipleCompilationErrorsException;
 import org.eclipse.swt.graphics.Rectangle;
+
+import groovy.lang.GroovyClassLoader;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 
-import groovy.lang.GroovyClassLoader;
 import junit.framework.TestCase;
 
 /**
@@ -64,7 +64,8 @@ public class TestGroovy extends TestCase {
      * @throws InstantiationException
      * @throws IllegalAccessException
      */
-    public AdtTestInterface loadScript(String filename)
+    @SuppressWarnings("unchecked")
+    private AdtTestInterface loadScript(String filename)
         throws CompilationFailedException, ClassCastException,
                InstantiationException, IllegalAccessException,
                FileNotFoundException {
@@ -91,7 +92,9 @@ public class TestGroovy extends TestCase {
      */
     public void testMissingScript() throws Exception {
         try {
+            @SuppressWarnings("unused")
             AdtTestInterface instance = loadScript("not_an_existing_script.groovy");
+            fail("loadScript should not succeed, FileNotFoundException expected.");
         } catch (FileNotFoundException e) {
             assertEquals("not_an_existing_script.groovy", e.getMessage());
             return; // succeed
@@ -106,7 +109,9 @@ public class TestGroovy extends TestCase {
      */
     public void testInvalidInterface() throws Exception {
         try {
+            @SuppressWarnings("unused")
             AdtTestInterface instance = loadScript("invalid_interface.groovy");
+            fail("loadScript should not succeed, ClassCastException expected.");
         } catch(ClassCastException e) {
             // This has to fail because the script does not implement our interface
             // The message explains why but we're not harcoding the message in the test.
@@ -123,7 +128,9 @@ public class TestGroovy extends TestCase {
      */
     public void testCompilationError() throws Exception {
         try {
+            @SuppressWarnings("unused")
             AdtTestInterface instance = loadScript("compile_error.groovy");
+            fail("loadScript should not succeed, CompilationFailedException expected.");
         } catch (CompilationFailedException e) {
             // This script does not compile, the message explains why but we're not
             // harcoding the message in the test.
