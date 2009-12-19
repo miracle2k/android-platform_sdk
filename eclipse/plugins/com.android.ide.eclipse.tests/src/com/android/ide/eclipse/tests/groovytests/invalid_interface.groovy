@@ -14,18 +14,11 @@
  * limitations under the License.
  */
 
-import com.android.ide.eclipse.adt.internal.sdk.TestGroovy.AdtTestInterface;
+package com.android.ide.eclipse.tests.groovytests;
 
-import org.eclipse.swt.graphics.Rectangle;
+class InvalidInterface implements Runnable {
 
-class CompileError implements AdtTestInterface {
-
-    public boolean acceptDrag(String xmlName) {
-        // missing return value (implicit in Groovy so not really an error)
+    public void run() {
+        // pass
     }
-
-    // invalid syntax
-    public Rectangle accept(])
-
-    // missing method: public Rectangle acceptDrop(String xmlName)
 }
