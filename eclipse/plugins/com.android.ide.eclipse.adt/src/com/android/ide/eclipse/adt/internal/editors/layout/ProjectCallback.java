@@ -34,15 +34,15 @@ import java.util.HashMap;
  * Loader for Android Project class in order to use them in the layout editor.
  */
 public final class ProjectCallback implements IProjectCallback {
-    
+
     private final HashMap<String, Class<?>> mLoadedClasses = new HashMap<String, Class<?>>();
     private final IProject mProject;
     private final ClassLoader mParentClassLoader;
     private final ProjectResources mProjectRes;
     private boolean mUsed = false;
     private String mNamespace;
-    
-    ProjectCallback(ClassLoader classLoader, ProjectResources projectRes, IProject project) {
+
+    public ProjectCallback(ClassLoader classLoader, ProjectResources projectRes, IProject project) {
         mParentClassLoader = classLoader;
         mProjectRes = projectRes;
         mProject = project;
@@ -51,7 +51,7 @@ public final class ProjectCallback implements IProjectCallback {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * This implementation goes through the output directory of the Eclipse project and loads the
      * <code>.class</code> file directly.
      */
@@ -59,18 +59,18 @@ public final class ProjectCallback implements IProjectCallback {
     public Object loadView(String className, Class[] constructorSignature,
             Object[] constructorParameters)
             throws ClassNotFoundException, Exception {
-        
+
         // look for a cached version
         Class<?> clazz = mLoadedClasses.get(className);
         if (clazz != null) {
             return instantiateClass(clazz, constructorSignature, constructorParameters);
         }
-        
+
         // load the class.
         ProjectClassLoader loader = new ProjectClassLoader(mParentClassLoader, mProject);
         try {
             clazz = loader.loadClass(className);
-            
+
             if (clazz != null) {
                 mUsed = true;
                 mLoadedClasses.put(className, clazz);
@@ -80,10 +80,10 @@ public final class ProjectCallback implements IProjectCallback {
             // Log this error with the class name we're trying to load and abort.
             AdtPlugin.log(e, "ProjectCallback.loadView failed to find class %1$s", className); //$NON-NLS-1$
         }
-        
+
         return null;
     }
-    
+
     /**
      * Returns the namespace for the project. The namespace contains a standard part + the
      * application package.
@@ -124,10 +124,10 @@ public final class ProjectCallback implements IProjectCallback {
         if (mProjectRes != null) {
             return mProjectRes.resolveResourceValue(id);
         }
-        
+
         return null;
     }
-    
+
     /*
      * (non-Javadoc)
      * @see com.android.layoutlib.api.IProjectCallback#getResourceValue(java.lang.String, java.lang.String)
@@ -136,15 +136,15 @@ public final class ProjectCallback implements IProjectCallback {
         if (mProjectRes != null) {
             return mProjectRes.getResourceValue(type, name);
         }
-        
+
         return null;
     }
-    
+
     /**
      * Returns whether the loader has received requests to load custom views.
      * <p/>This allows to efficiently only recreate when needed upon code change in the project.
      */
-    boolean isUsed() {
+    public boolean isUsed() {
         return mUsed;
     }
 
@@ -154,7 +154,7 @@ public final class ProjectCallback implements IProjectCallback {
      * @param constructorSignature the signature of the constructor to use
      * @param constructorParameters the parameters to use in the constructor.
      * @return A new class object, created using a specific constructor and parameters.
-     * @throws Exception 
+     * @throws Exception
      */
     @SuppressWarnings("unchecked")
     private Object instantiateClass(Class<?> clazz, Class[] constructorSignature,

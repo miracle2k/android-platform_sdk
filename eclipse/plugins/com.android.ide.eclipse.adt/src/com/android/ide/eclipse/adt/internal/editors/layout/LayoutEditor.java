@@ -20,6 +20,10 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle1.GraphicalLayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiContentOutlinePage;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiPropertySheetPage;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiActions;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -355,7 +359,7 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
      * Returns true if the Graphics editor page is visible. This <b>must</b> be
      * called from the UI thread.
      */
-    boolean isGraphicalEditorActive() {
+    public boolean isGraphicalEditorActive() {
         IWorkbenchPartSite workbenchSite = getSite();
         IWorkbenchPage workbenchPage = workbenchSite.getPage();
 
