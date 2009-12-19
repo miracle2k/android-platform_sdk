@@ -123,11 +123,17 @@ public class LayoutCanvas extends Canvas {
     /** Hover border color. Must be disposed, it's NOT a system color. */
     private Color mHoverFgColor;
 
+    /** Outline color. Do not dispose, it's a system color. */
+    private Color mOutlineColor;
+
     /**
      * The <em>current</em> alternate selection, if any, which changes when the Alt key is
      * used during a selection. Can be null.
      */
     private AlternateSelection mAltSelection;
+
+    /** When true, always display the outline of all views. */
+    private boolean mShowOutline;
 
 
     public LayoutCanvas(Composite parent, int style) {
@@ -136,6 +142,7 @@ public class LayoutCanvas extends Canvas {
         Display d = getDisplay();
         mSelectionFgColor = d.getSystemColor(SWT.COLOR_RED);
         mHoverFgColor     = new Color(d, 0xFF, 0x99, 0x00); // orange
+        mOutlineColor     = d.getSystemColor(SWT.COLOR_GREEN);
         mSelectionFont    = d.getSystemFont();
 
         addPaintListener(new PaintListener() {
@@ -214,6 +221,11 @@ public class LayoutCanvas extends Canvas {
             mAltSelection = null;
         }
 
+        redraw();
+    }
+
+    public void setShowOutline(boolean newState) {
+        mShowOutline = newState;
         redraw();
     }
 
@@ -307,6 +319,12 @@ public class LayoutCanvas extends Canvas {
             }
         }
 
+        if (mShowOutline) {
+            gc.setForeground(mOutlineColor);
+            gc.setLineStyle(SWT.LINE_DOT);
+            drawOutline(gc, mLastValidViewInfoRoot);
+        }
+
         if (mHoverRect != null) {
             gc.setForeground(mHoverFgColor);
             gc.setLineStyle(SWT.LINE_DOT);
@@ -322,6 +340,16 @@ public class LayoutCanvas extends Canvas {
 
         for (Selection s : mSelections) {
             drawSelection(gc, s);
+        }
+    }
+
+    private void drawOutline(GC gc, ViewInfo info) {
+
+        Rectangle r = info.getAbsRect();
+        gc.drawRectangle(r.x + IMAGE_MARGIN, r.y + IMAGE_MARGIN, r.width, r.height);
+
+        for (ViewInfo vi : info.getChildren()) {
+            drawOutline(gc, vi);
         }
     }
 
@@ -611,7 +639,7 @@ public class LayoutCanvas extends Canvas {
      * have a fixed API.
      */
     private static class ViewInfo {
-        private final Rectangle mRealRect;
+        private final Rectangle mAbsRect;
         private final Rectangle mSelectionRect;
         private final String mName;
         private final Object mKey;
@@ -638,12 +666,12 @@ public class LayoutCanvas extends Canvas {
             int w = viewInfo.getRight() - x;
             int h = viewInfo.getBottom() - y;
 
-            mRealRect = new Rectangle(x, y, w, h);
-
             if (parent != null) {
                 x += parentX;
                 y += parentY;
             }
+
+            mAbsRect = new Rectangle(x, y, w - 1, h - 1);
 
             if (viewInfo.getChildren() != null) {
                 for (ILayoutViewInfo child : viewInfo.getChildren()) {
@@ -669,12 +697,11 @@ public class LayoutCanvas extends Canvas {
         }
 
         /**
-         * Returns the original {@link ILayoutResult} bounds, relative to the parent.
-         * @deprecated TODO Remove if it's not going to be used
+         * Returns the original {@link ILayoutResult} bounds in absolute coordinates
+         * over the whole graphic.
          */
-        @SuppressWarnings("unused")
-        public Rectangle getRealRect() {
-            return mRealRect;
+        public Rectangle getAbsRect() {
+            return mAbsRect;
         }
 
         /*
@@ -859,6 +886,5 @@ public class LayoutCanvas extends Canvas {
             return getCurrent();
         }
     }
-
 
 }
