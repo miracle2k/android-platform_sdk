@@ -1,5 +1,3 @@
-import org.eclipse.swt.graphics.Rectangle;
-
 /*
  * Copyright (C) 2009 The Android Open Source Project
  *
@@ -16,9 +14,12 @@ import org.eclipse.swt.graphics.Rectangle;
  * limitations under the License.
  */
 
-import com.android.ide.eclipse.adt.internal.sdk.TestGroovy.AdtTestInterface;
+package com.android.ide.eclipse.tests.groovytests;
+
+import com.android.ide.eclipse.tests.groovytests.TestGroovy.AdtTestInterface;
 
 import org.eclipse.swt.graphics.Rectangle;
+
 
 class AdtGroovyTest implements AdtTestInterface {
 

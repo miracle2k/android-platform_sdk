@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
- * 
+ * Copyright (C) 2009 The Android Open Source Project
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the "License"); you
  * may not use this file except in compliance with the License. You may obtain a
  * copy of the License at
- * 
+ *
  * http://www.eclipse.org/org/documents/epl-v10.php
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -15,26 +15,31 @@
  */
 package com.android.ide.eclipse.tests;
 
+import com.android.ide.eclipse.tests.groovytests.TestGroovy;
+
 import junit.framework.TestSuite;
 
-
 /**
- * Container TestSuite for all eclipse tests, both functional and unit
+ * Container TestSuite for groovy tests to be run
  */
-public class AllTests extends TestSuite {
 
-    public AllTests() {
-        
+public class GroovyTestsSuite extends TestSuite {
+
+    static final String GROOVY_TEST_PACKAGE = "com.android.ide.eclipse.tests.groovytests";
+
+    public GroovyTestsSuite() {
+
     }
-    
+
     /**
      * Returns a suite of test cases to be run.
+     * Needed for JUnit3 compliant command line test runner
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite();
-        suite.addTest(FuncTests.suite());
-        suite.addTest(UnitTests.suite());
-        suite.addTest(GroovyTestsSuite.suite());
+
+        suite.addTestSuite(TestGroovy.class);
+
         return suite;
     }
 
