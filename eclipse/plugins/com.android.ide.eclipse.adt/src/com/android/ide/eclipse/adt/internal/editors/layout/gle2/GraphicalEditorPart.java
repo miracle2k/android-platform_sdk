@@ -26,6 +26,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ILayoutReloadListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
+import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomToggle;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.ElementCreateCommand;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
@@ -147,6 +148,8 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
     private ReloadListener mReloadListener;
 
+    protected boolean mUseExplodeMode;
+
 
     public GraphicalEditorPart(LayoutEditor layoutEditor) {
         mLayoutEditor = layoutEditor;
@@ -215,8 +218,33 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
         gl.marginHeight = gl.marginWidth = 0;
 
         // create the top part for the configuration control
+
+        CustomToggle[] toggles = new CustomToggle[] {
+                new CustomToggle(
+                        "Explode",
+                        null, //image
+                        "Displays extra margins in the layout."
+                        ) {
+                    @Override
+                    public void onSelected(boolean newState) {
+                        mUseExplodeMode = newState;
+                        recomputeLayout();
+                    }
+                },
+                new CustomToggle(
+                        "Outline",
+                        null, //image
+                        "Shows the of all views in the layout."
+                        ) {
+                    @Override
+                    public void onSelected(boolean newState) {
+                        mLayoutCanvas.setShowOutline(newState);
+                    }
+                }
+        };
+
         mConfigListener = new ConfigListener();
-        mConfigComposite = new ConfigurationComposite(mConfigListener, parent, SWT.BORDER);
+        mConfigComposite = new ConfigurationComposite(mConfigListener, toggles, parent, SWT.BORDER);
         mConfigComposite.updateUIFromResources();
 
         mSashPalette = new SashForm(parent, SWT.HORIZONTAL);
@@ -390,7 +418,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
             recomputeLayout();
         }
 
-        public void OnClippingChange() {
+        public void onClippingChange() {
             recomputeLayout();
         }
 
@@ -891,10 +919,9 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                             // Compute the layout
                             Rectangle rect = getBounds();
 
-                            boolean explodedView = !mConfigComposite.getClipping(); //FIXME: need new toggle
                             int width = rect.width;
                             int height = rect.height;
-                            if (explodedView) {
+                            if (mUseExplodeMode) {
                                 // compute how many padding in x and y will bump the screen size
                                 ExplodedRenderingHelper helper = new ExplodedRenderingHelper(
                                         getModel(), iProject);
@@ -913,7 +940,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                             boolean isProjectTheme = mConfigComposite.isProjectTheme();
 
                             UiElementPullParser parser = new UiElementPullParser(getModel(),
-                                    explodedView, density, xdpi, iProject);
+                                    mUseExplodeMode, density, xdpi, iProject);
 
                             ILayoutResult result = computeLayout(bridge, parser,
                                     iProject /* projectKey */,
@@ -962,7 +989,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
      * the implementation API level.
      *
      * Implementation detail: the bridge's computeLayout() method already returns a newly
-     * allocated ILayourResult.
+     * allocated ILayoutResult.
      */
     @SuppressWarnings("deprecation")
     private static ILayoutResult computeLayout(LayoutBridge bridge,
