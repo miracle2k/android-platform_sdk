@@ -29,6 +29,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor.UiEditor
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ILayoutReloadListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
+import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomToggle;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.ElementCreateCommand;
@@ -147,6 +148,8 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
     private ProjectCallback mProjectCallback;
     private ILayoutLog mLogger;
 
+    private boolean mUseExplodeMode;
+    private boolean mUseOutlineMode;
     private boolean mNeedsXmlReload = false;
     private boolean mNeedsRecompute = false;
 
@@ -195,8 +198,6 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         }
     };
 
-    private boolean mExplodedView;
-
     public GraphicalLayoutEditor(LayoutEditor layoutEditor) {
         mLayoutEditor = layoutEditor;
         setEditDomain(new DefaultEditDomain(this));
@@ -220,7 +221,33 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         gl.marginHeight = gl.marginWidth = 0;
 
         // create the top part for the configuration control
-        mConfigComposite = new ConfigurationComposite(this, parent, SWT.NONE);
+
+        CustomToggle[] toggles = new CustomToggle[] {
+                new CustomToggle(
+                        "Explode",
+                        null, //image
+                        "Displays extra margins in the layout."
+                        ) {
+                    @Override
+                    public void onSelected(boolean newState) {
+                        mUseExplodeMode = newState;
+                        recomputeLayout();
+                    }
+                },
+                new CustomToggle(
+                        "Outline",
+                        null, //image
+                        "Shows the outline of all views in the layout."
+                        ) {
+                    @Override
+                    public void onSelected(boolean newState) {
+                        mUseOutlineMode = newState;
+                        recomputeLayout();
+                    }
+                }
+        };
+
+        mConfigComposite = new ConfigurationComposite(this, toggles, parent, SWT.NONE);
 
         // create a new composite that will contain the standard editor controls.
         Composite editorParent = new Composite(parent, SWT.NONE);
@@ -822,7 +849,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         recomputeLayout();
     }
 
-    public void OnClippingChange() {
+    public void onClippingChange() {
         recomputeLayout();
     }
 
@@ -955,10 +982,9 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
                             // Compute the layout
                             Rectangle rect = getBounds();
 
-                            mExplodedView = !mConfigComposite.getClipping(); //FIXME: need new toggle
                             int width = rect.width;
                             int height = rect.height;
-                            if (mExplodedView) {
+                            if (mUseExplodeMode) {
                                 // compute how many padding in x and y will bump the screen size
                                 ExplodedRenderingHelper helper = new ExplodedRenderingHelper(
                                         getModel(), iProject);
@@ -977,7 +1003,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
                             boolean isProjectTheme = mConfigComposite.isProjectTheme();
 
                             UiElementPullParser parser = new UiElementPullParser(getModel(),
-                                    mExplodedView, density, xdpi, iProject);
+                                    mUseExplodeMode, density, xdpi, iProject);
 
                             ILayoutResult result = computeLayout(bridge, parser,
                                     iProject /* projectKey */,
@@ -1378,6 +1404,6 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
     }
 
     public boolean hasOutline() {
-        return mExplodedView;
+        return mUseOutlineMode;
     }
 }

@@ -41,6 +41,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -83,11 +84,12 @@ public class ConfigurationComposite extends Composite {
     private final ArrayList<ResourceQualifier[] > mLocaleList =
         new ArrayList<ResourceQualifier[]>();
 
-    private final IConfigListener mListener;
-
     private boolean mClipping = true;
 
     private LayoutDevice mCurrentDevice;
+
+    /** The config listener given to the constructor. Never null. */
+    private final IConfigListener mListener;
 
     /**
      * Interface implemented by the part which owns a {@link ConfigurationComposite}.
@@ -99,7 +101,7 @@ public class ConfigurationComposite extends Composite {
         void onConfigurationChange();
         void onThemeChange();
         void onCreate();
-        void OnClippingChange();
+        void onClippingChange();
 
         ProjectResources getProjectResources();
         ProjectResources getFrameworkResources();
@@ -107,17 +109,91 @@ public class ConfigurationComposite extends Composite {
         Map<String, Map<String, IResourceValue>> getConfiguredFrameworkResources();
     }
 
-    public ConfigurationComposite(IConfigListener listener, Composite parent, int style) {
+    /**
+     * Interface implemented by the part which owns a {@link ConfigurationComposite}
+     * to define and handle custom toggle buttons in the button bar. Each toggle is
+     * implemented using a button, with a callback when the button is selected.
+     */
+    public static abstract class CustomToggle {
+
+        /** The UI label of the toggle. Can be null if the image exists. */
+        private final String mUiLabel;
+
+        /** The image to use for this toggle. Can be null if the label exists. */
+        private final Image mImage;
+
+        /** The tooltip for the toggle. Can be null. */
+        private final String mUiTooltip;
+
+        /**
+         * Initializes a new {@link CustomToggle}. The values set here will be used
+         * later to create the actual toggle.
+         *
+         * @param uiLabel   The UI label of the toggle. Can be null if the image exists.
+         * @param image     The image to use for this toggle. Can be null if the label exists.
+         * @param uiTooltip The tooltip for the toggle. Can be null.
+         */
+        public CustomToggle(
+                String uiLabel,
+                Image image,
+                String uiTooltip) {
+            mUiLabel = uiLabel;
+            mImage = image;
+            mUiTooltip = uiTooltip;
+        }
+
+        /** Called by the {@link ConfigurationComposite} when the button is selected. */
+        public abstract void onSelected(boolean newState);
+
+        private void createToggle(Composite parent) {
+            final Button b = new Button(parent, SWT.TOGGLE | SWT.FLAT);
+
+            if (mUiTooltip != null) {
+                b.setToolTipText(mUiTooltip);
+            }
+            if (mImage != null) {
+                b.setImage(mImage);
+            }
+            if (mUiLabel != null) {
+                b.setText(mUiLabel);
+            }
+
+            b.addSelectionListener(new SelectionAdapter() {
+                @Override
+                public void widgetSelected(SelectionEvent e) {
+                    onSelected(b.getSelection());
+                }
+            });
+        }
+    }
+
+    /**
+     * Creates a new {@link ConfigurationComposite} and adds it to the parent.
+     *
+     * @param listener An {@link IConfigListener} that gets and sets configuration properties.
+     *          Mandatory, cannot be null.
+     * @param customToggles An array of {@link CustomToggle} to define extra toggles button
+     *          to display at the top of the composite. Can be empty or null.
+     * @param parent The parent composite.
+     * @param style The style of this composite.
+     */
+    public ConfigurationComposite(IConfigListener listener,
+            CustomToggle[] customToggles,
+            Composite parent, int style) {
         super(parent, style);
         mListener = listener;
 
+        if (customToggles == null) {
+            customToggles = new CustomToggle[0];
+        }
+
         GridLayout gl;
         GridData gd;
-        int cols = 10; // device*2+config*2+locale*2+separator*2+theme+createBtn
+        int cols = 10;  // device*2+config*2+locale*2+separator*2+theme+createBtn
 
-        // ---- First line: collapse button, clipping button, editing config display.
+        // ---- First line: custom buttons, clipping button, editing config display.
         Composite labelParent = new Composite(this, SWT.NONE);
-        labelParent.setLayout(gl = new GridLayout(3, false));
+        labelParent.setLayout(gl = new GridLayout(3 + customToggles.length, false));
         gl.marginWidth = gl.marginHeight = 0;
         labelParent.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
         gd.horizontalSpan = cols;
@@ -127,6 +203,10 @@ public class ConfigurationComposite extends Composite {
         mCurrentLayoutLabel.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
         gd.widthHint = 50;
 
+        for (CustomToggle toggle : customToggles) {
+            toggle.createToggle(labelParent);
+        }
+
         mClippingButton = new Button(labelParent, SWT.TOGGLE | SWT.FLAT);
         mClippingButton.setSelection(mClipping);
         mClippingButton.setToolTipText("Toggles screen clipping on/off");
@@ -134,7 +214,7 @@ public class ConfigurationComposite extends Composite {
         mClippingButton.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                OnClippingChange();
+                onClippingChange();
             }
         });
 
@@ -675,10 +755,10 @@ public class ConfigurationComposite extends Composite {
         }
     }
 
-    protected void OnClippingChange() {
+    protected void onClippingChange() {
         mClipping = mClippingButton.getSelection();
         if (mListener != null) {
-            mListener.OnClippingChange();
+            mListener.onClippingChange();
         }
     }
 
