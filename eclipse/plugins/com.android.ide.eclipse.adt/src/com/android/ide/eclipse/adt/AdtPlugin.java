@@ -83,6 +83,7 @@ import org.eclipse.ui.IEditorDescriptor;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.console.ConsolePlugin;
 import org.eclipse.ui.console.IConsole;
@@ -717,9 +718,9 @@ public class AdtPlugin extends AbstractUIPlugin {
      * @param level {@link BuildVerbosity} level of the message.
      * @param project The project to which the message is associated. Can be null.
      * @param objects the objects to print through their <code>toString</code> method.
-     * @see AdtConstants#BUILD_ALWAYS
-     * @see AdtConstants#BUILD_NORMAL
-     * @see AdtConstants#BUILD_VERBOSE
+     * @see BuildVerbosity#ALWAYS
+     * @see BuildVerbosity#NORMAL
+     * @see BuildVerbosity#VERBOSE
      */
     public static synchronized void printBuildToConsole(BuildVerbosity level, IProject project,
             Object... objects) {
@@ -1233,10 +1234,16 @@ public class AdtPlugin extends AbstractUIPlugin {
                             try {
                                 // remove the property & set editor
                                 file.setPersistentProperty(qname, null);
-                                IWorkbenchPage page = PlatformUI.getWorkbench().
-                                                        getActiveWorkbenchWindow().getActivePage();
 
-                                IEditorPart oldEditor = page.findEditor(new FileEditorInput(file));
+                                // the window can be null sometimes
+                                IWorkbench wb = PlatformUI.getWorkbench();
+                                IWorkbenchWindow win = wb == null ? null :
+                                                       wb.getActiveWorkbenchWindow();
+                                IWorkbenchPage page = win == null ? null :
+                                                      win.getActivePage();
+
+                                IEditorPart oldEditor = page == null ? null :
+                                                        page.findEditor(new FileEditorInput(file));
                                 if (oldEditor != null &&
                                         AdtPlugin.displayPrompt("Android XML Editor",
                                             String.format("The file you just saved as been recognized as a file that could be better handled using the Android XML Editor. Do you want to edit '%1$s' using the Android XML editor instead?",
