@@ -25,6 +25,7 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.layoutlib.api.IXmlPullParser;
 import com.android.layoutlib.api.IDensityBasedResourceValue.Density;
+import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 
@@ -42,8 +43,10 @@ import java.util.regex.Pattern;
 
 /**
  * {@link IXmlPullParser} implementation on top of {@link UiElementNode}.
- * <p/>It's designed to work on layout files, and will most likely not work on other resource
- * files.
+ * <p/>
+ * It's designed to work on layout files, and will most likely not work on other resource files.
+ * <p/>
+ * This pull parser generates {@link ILayoutViewInfo}s which key is a {@link UiElementNode}.
  */
 public final class UiElementPullParser extends BasePullParser {
     private final static String ATTR_PADDING = "padding"; //$NON-NLS-1$
@@ -139,8 +142,14 @@ public final class UiElementPullParser extends BasePullParser {
 
     /**
      * {@inheritDoc}
-     *
-     * This implementation returns the underlying DOM node.
+     * <p/>
+     * This implementation returns the underlying DOM node of type {@link UiElementNode}.
+     * Note that the link between the GLE and the parsing code depends on this being the actual
+     * type returned, so you can't just randomly change it here.
+     * <p/>
+     * Currently used by:
+     * - private method GraphicalLayoutEditor#updateNodeWithBounds(ILayoutViewInfo).
+     * - private constructor of LayoutCanvas.ViewInfo.
      */
     public Object getViewKey() {
         return getCurrentNode();

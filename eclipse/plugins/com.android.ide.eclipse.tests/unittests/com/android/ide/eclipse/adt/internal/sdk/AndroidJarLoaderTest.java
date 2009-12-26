@@ -123,7 +123,7 @@ public class AndroidJarLoaderTest extends TestCase {
         // Class1 and Class1$InnerStaticClass1 derive from Object and are thus ignored.
         // Class1$InnerClass2 should never be seen either.
         assertEquals("jar.example.Class2",  //$NON-NLS-1$
-                found.get("jar.example.Class1").get(0).getCanonicalName());  //$NON-NLS-1$
+                found.get("jar.example.Class1").get(0).getFullClassName());  //$NON-NLS-1$
         assertEquals(1, found.get("jar.example.Class1").size());      //$NON-NLS-1$
         assertEquals(0, found.get("jar.example.Class2").size());      //$NON-NLS-1$
     }

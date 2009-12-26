@@ -97,7 +97,7 @@ public class ResourceMonitor implements IResourceChangeListener {
          */
         public void folderChanged(IFolder folder, int kind);
     }
-    
+
     /**
      * Interface for a listener to be notified when resource change event starts and ends.
      */
@@ -105,13 +105,13 @@ public class ResourceMonitor implements IResourceChangeListener {
         public void resourceChangeEventStart();
         public void resourceChangeEventEnd();
     }
-    
+
     /**
      * Base listener bundle to associate a listener to an event mask.
      */
     private static class ListenerBundle {
         /** Mask value to accept all events */
-        public final static int MASK_NONE = -1; 
+        public final static int MASK_NONE = -1;
 
         /**
          * Event mask. Values accepted are IResourceDelta.###
@@ -123,7 +123,7 @@ public class ResourceMonitor implements IResourceChangeListener {
          * */
         int kindMask;
     }
-    
+
     /**
      * Listener bundle for file event.
      */
@@ -132,7 +132,7 @@ public class ResourceMonitor implements IResourceChangeListener {
         /** The file listener */
         IFileListener listener;
     }
-    
+
     /**
      * Listener bundle for folder event.
      */
@@ -140,7 +140,7 @@ public class ResourceMonitor implements IResourceChangeListener {
         /** The file listener */
         IFolderListener listener;
     }
-    
+
     private final ArrayList<FileListenerBundle> mFileListeners =
         new ArrayList<FileListenerBundle>();
 
@@ -148,10 +148,10 @@ public class ResourceMonitor implements IResourceChangeListener {
         new ArrayList<FolderListenerBundle>();
 
     private final ArrayList<IProjectListener> mProjectListeners = new ArrayList<IProjectListener>();
-    
+
     private final ArrayList<IResourceEventListener> mEventListeners =
         new ArrayList<IResourceEventListener>();
-    
+
     private IWorkspace mWorkspace;
 
     /**
@@ -188,7 +188,7 @@ public class ResourceMonitor implements IResourceChangeListener {
                 if (flags == IResourceDelta.OPEN) {
                     // the project is opening or closing.
                     IProject project = (IProject)r;
-                    
+
                     if (project.isOpen()) {
                         // notify the listeners.
                         for (IProjectListener pl : mProjectListeners) {
@@ -206,12 +206,12 @@ public class ResourceMonitor implements IResourceChangeListener {
             return true;
         }
     }
-    
+
     public static ResourceMonitor getMonitor() {
         return sThis;
     }
 
-    
+
     /**
      * Starts the resource monitoring.
      * @param ws The current workspace.
@@ -233,7 +233,7 @@ public class ResourceMonitor implements IResourceChangeListener {
     public static void stopMonitoring(IWorkspace ws) {
         if (sThis != null) {
             ws.removeResourceChangeListener(sThis);
-            
+
             sThis.mFileListeners.clear();
             sThis.mProjectListeners.clear();
         }
@@ -243,16 +243,17 @@ public class ResourceMonitor implements IResourceChangeListener {
      * Adds a file listener.
      * @param listener The listener to receive the events.
      * @param kindMask The event mask to filter out specific events.
-     * {@link ListenerBundle#MASK_NONE} will forward all events. 
+     * {@link ListenerBundle#MASK_NONE} will forward all events.
+     * See {@link ListenerBundle#kindMask} for more values.
      */
     public synchronized void addFileListener(IFileListener listener, int kindMask) {
         FileListenerBundle bundle = new FileListenerBundle();
         bundle.listener = listener;
         bundle.kindMask = kindMask;
-        
+
         mFileListeners.add(bundle);
     }
-    
+
     /**
      * Removes an existing file listener.
      * @param listener the listener to remove.
@@ -271,13 +272,14 @@ public class ResourceMonitor implements IResourceChangeListener {
      * Adds a folder listener.
      * @param listener The listener to receive the events.
      * @param kindMask The event mask to filter out specific events.
-     * {@link ListenerBundle#MASK_NONE} will forward all events. 
+     * {@link ListenerBundle#MASK_NONE} will forward all events.
+     * See {@link ListenerBundle#kindMask} for more values.
      */
     public synchronized void addFolderListener(IFolderListener listener, int kindMask) {
         FolderListenerBundle bundle = new FolderListenerBundle();
         bundle.listener = listener;
         bundle.kindMask = kindMask;
-        
+
         mFolderListeners.add(bundle);
     }
 
@@ -301,7 +303,7 @@ public class ResourceMonitor implements IResourceChangeListener {
      */
     public synchronized void addProjectListener(IProjectListener listener) {
         mProjectListeners.add(listener);
-        
+
         // we need to look at the opened projects and give them to the listener.
 
         // get the list of opened android projects.
@@ -313,7 +315,7 @@ public class ResourceMonitor implements IResourceChangeListener {
             listener.projectOpenedWithWorkspace(androidProject.getProject());
         }
     }
-    
+
     /**
      * Removes an existing project listener.
      * @param listener the listener to remove.
@@ -321,7 +323,7 @@ public class ResourceMonitor implements IResourceChangeListener {
     public synchronized void removeProjectListener(IProjectListener listener) {
         mProjectListeners.remove(listener);
     }
-    
+
     /**
      * Adds a resource event listener.
      * @param listener The listener to receive the events.
@@ -346,7 +348,7 @@ public class ResourceMonitor implements IResourceChangeListener {
         for (IResourceEventListener listener : mEventListeners) {
             listener.resourceChangeEventStart();
         }
-        
+
         if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
             // a project is being deleted. Lets get the project object and remove
             // its compiled resource list.
@@ -360,7 +362,7 @@ public class ResourceMonitor implements IResourceChangeListener {
         } else {
             // this a regular resource change. We get the delta and go through it with a visitor.
             IResourceDelta delta = event.getDelta();
-            
+
             DeltaVisitor visitor = new DeltaVisitor();
             try {
                 delta.accept(visitor);
@@ -373,5 +375,5 @@ public class ResourceMonitor implements IResourceChangeListener {
             listener.resourceChangeEventEnd();
         }
     }
-    
+
 }

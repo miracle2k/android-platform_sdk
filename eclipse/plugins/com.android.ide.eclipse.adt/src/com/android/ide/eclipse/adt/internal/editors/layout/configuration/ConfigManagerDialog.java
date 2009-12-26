@@ -459,6 +459,7 @@ public class ConfigManagerDialog extends GridDialog {
      * Returns a {@link DeviceSelection} object representing the selected path in the
      * {@link TreeViewer}
      */
+    @SuppressWarnings("unchecked")
     private DeviceSelection getSelection() {
         // get the selection paths
         TreeSelection selection = (TreeSelection)mTreeViewer.getSelection();

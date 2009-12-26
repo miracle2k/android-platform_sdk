@@ -31,7 +31,9 @@ import com.android.sdklib.SdkConstants;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 
 
 /**
@@ -54,25 +56,25 @@ public final class LayoutDescriptors implements IDescriptorProvider {
 
     /** The list of all known View (not ViewLayout) descriptors. */
     private ArrayList<ElementDescriptor> mViewDescriptors = new ArrayList<ElementDescriptor>();
-    
+
     /** Read-Only list of View Descriptors. */
     private List<ElementDescriptor> mROViewDescriptors;
-    
+
     /** @return the document descriptor. Contains all layouts and views linked together. */
     public DocumentDescriptor getDescriptor() {
         return mRootDescriptor;
     }
-    
+
     /** @return The read-only list of all known ViewLayout descriptors. */
     public List<ElementDescriptor> getLayoutDescriptors() {
         return mROLayoutDescriptors;
     }
-    
+
     /** @return The read-only list of all known View (not ViewLayout) descriptors. */
     public List<ElementDescriptor> getViewDescriptors() {
         return mROViewDescriptors;
     }
-    
+
     public ElementDescriptor[] getRootElementDescriptors() {
         return mRootDescriptor.getChildren();
     }
@@ -82,18 +84,24 @@ public final class LayoutDescriptors implements IDescriptorProvider {
      * <p/>
      * It first computes the new children of the descriptor and then update them
      * all at once.
-     * <p/> 
+     * <p/>
      *  TODO: differentiate groups from views in the tree UI? => rely on icons
-     * <p/> 
-     * 
+     * <p/>
+     *
      * @param views The list of views in the framework.
      * @param layouts The list of layouts in the framework.
      */
     public synchronized void updateDescriptors(ViewClassInfo[] views, ViewClassInfo[] layouts) {
+
+        // This map links every ViewClassInfo to the ElementDescriptor we created.
+        // It is filled by convertView() and used later to fix the super-class hierarchy.
+        HashMap<ViewClassInfo, ViewElementDescriptor> infoDescMap =
+            new HashMap<ViewClassInfo, ViewElementDescriptor>();
+
         ArrayList<ElementDescriptor> newViews = new ArrayList<ElementDescriptor>();
         if (views != null) {
             for (ViewClassInfo info : views) {
-                ElementDescriptor desc = convertView(info);
+                ElementDescriptor desc = convertView(info, infoDescMap);
                 newViews.add(desc);
             }
         }
@@ -105,7 +113,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         ArrayList<ElementDescriptor> newLayouts = new ArrayList<ElementDescriptor>();
         if (layouts != null) {
             for (ViewClassInfo info : layouts) {
-                ElementDescriptor desc = convertView(info);
+                ElementDescriptor desc = convertView(info, infoDescMap);
                 newLayouts.add(desc);
             }
         }
@@ -119,6 +127,8 @@ public final class LayoutDescriptors implements IDescriptorProvider {
             layoutDesc.setChildren(newDescriptors);
         }
 
+        fixSuperClasses(infoDescMap);
+
         // The <merge> tag can only be a root tag, so it is added at the end.
         // It gets everything else as children but it is not made a child itself.
         ElementDescriptor mergeTag = createMerge(newLayouts);
@@ -129,20 +139,26 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         mViewDescriptors = newViews;
         mLayoutDescriptors  = newLayouts;
         mRootDescriptor.setChildren(newDescriptors);
-        
+
         mROLayoutDescriptors = Collections.unmodifiableList(mLayoutDescriptors);
         mROViewDescriptors = Collections.unmodifiableList(mViewDescriptors);
     }
 
     /**
      * Creates an element descriptor from a given {@link ViewClassInfo}.
+     *
+     * @param info The {@link ViewClassInfo} to convert into a new {@link ViewElementDescriptor}.
+     * @param infoDescMap This map links every ViewClassInfo to the ElementDescriptor it created.
+     *                    It is filled by here and used later to fix the super-class hierarchy.
      */
-    private ElementDescriptor convertView(ViewClassInfo info) {
+    private ElementDescriptor convertView(
+            ViewClassInfo info,
+            HashMap<ViewClassInfo, ViewElementDescriptor> infoDescMap) {
         String xml_name = info.getShortClassName();
         String tooltip = info.getJavaDoc();
-        
+
         ArrayList<AttributeDescriptor> attributes = new ArrayList<AttributeDescriptor>();
-        
+
         // All views and groups have an implicit "style" attribute which is a reference.
         AttributeInfo styleInfo = new DeclareStyleableInfo.AttributeInfo(
                 "style",    //$NON-NLS-1$ xmlLocalName
@@ -156,7 +172,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
                 styleInfo,
                 false,      //required
                 null);      // overrides
-        
+
         // Process all View attributes
         DescriptorsUtils.appendAttributes(attributes,
                 null, // elementName
@@ -164,14 +180,14 @@ public final class LayoutDescriptors implements IDescriptorProvider {
                 info.getAttributes(),
                 null, // requiredAttributes
                 null /* overrides */);
-        
+
         for (ViewClassInfo link = info.getSuperClass();
                 link != null;
                 link = link.getSuperClass()) {
             AttributeInfo[] attrList = link.getAttributes();
             if (attrList.length > 0) {
                 attributes.add(new SeparatorAttributeDescriptor(
-                        String.format("Attributes from %1$s", link.getShortClassName()))); 
+                        String.format("Attributes from %1$s", link.getShortClassName())));
                 DescriptorsUtils.appendAttributes(attributes,
                         null, // elementName
                         SdkConstants.NS_RESOURCES,
@@ -215,7 +231,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
             }
         }
 
-        return new ViewElementDescriptor(xml_name,
+        ViewElementDescriptor desc = new ViewElementDescriptor(xml_name,
                 xml_name, // ui_name
                 info.getFullClassName(),
                 tooltip,
@@ -224,11 +240,13 @@ public final class LayoutDescriptors implements IDescriptorProvider {
                 layoutAttributes.toArray(new AttributeDescriptor[layoutAttributes.size()]),
                 null, // children
                 false /* mandatory */);
+        infoDescMap.put(info, desc);
+        return desc;
     }
 
     /**
      * Creates a new <include> descriptor and adds it to the list of view descriptors.
-     * 
+     *
      * @param knownViews A list of view descriptors being populated. Also used to find the
      *   View descriptor and extract its layout attributes.
      */
@@ -237,7 +255,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
 
         // Create the include custom attributes
         ArrayList<AttributeDescriptor> attributes = new ArrayList<AttributeDescriptor>();
-        
+
         // Note that the "layout" attribute does NOT have the Android namespace
         DescriptorsUtils.appendAttribute(attributes,
                 null, //elementXmlName
@@ -273,7 +291,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
                 viewLayoutAttribs,  // layout attributes
                 null, // children
                 false /* mandatory */);
-        
+
         knownViews.add(desc);
     }
 
@@ -318,7 +336,37 @@ public final class LayoutDescriptors implements IDescriptorProvider {
                 }
             }
         }
-        
+
         return null;
+    }
+
+    /**
+     * Set the super-class of each {@link ViewElementDescriptor} by using the super-class
+     * information available in the {@link ViewClassInfo}.
+     */
+    private void fixSuperClasses(HashMap<ViewClassInfo, ViewElementDescriptor> infoDescMap) {
+
+        for (Entry<ViewClassInfo, ViewElementDescriptor> entry : infoDescMap.entrySet()) {
+            ViewClassInfo info = entry.getKey();
+            ViewElementDescriptor desc = entry.getValue();
+
+            ViewClassInfo sup = info.getSuperClass();
+            if (sup != null) {
+                ViewElementDescriptor supDesc = infoDescMap.get(sup);
+                while (supDesc == null && sup != null) {
+                    // We don't have a descriptor for the super-class. That means the class is
+                    // probably abstract, so we just need to walk up the super-class chain till
+                    // we find one we have. All views derive from android.view.View so we should
+                    // surely find that eventually.
+                    sup = sup.getSuperClass();
+                    if (sup != null) {
+                        supDesc = infoDescMap.get(sup);
+                    }
+                }
+                if (supDesc != null) {
+                    desc.setSuperClass(supDesc);
+                }
+            }
+        }
     }
 }

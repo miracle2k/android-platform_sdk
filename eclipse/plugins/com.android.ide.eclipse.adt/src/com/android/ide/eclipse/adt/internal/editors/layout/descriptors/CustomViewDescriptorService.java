@@ -273,6 +273,7 @@ public final class CustomViewDescriptorService {
      * Returns the array of {@link AttributeDescriptor} for the specified {@link IType}.
      * <p/>
      * The array should contain the descriptor for this type and all its supertypes.
+     *
      * @param type the type for which the {@link AttributeDescriptor} are returned.
      * @param parentDescriptor the {@link ElementDescriptor} of the direct superclass.
      */
