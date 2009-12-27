@@ -282,7 +282,7 @@ public final class XmlDescriptors implements IDescriptorProvider {
                 ElementDescriptor desc = convertPref(info);
                 newGroups.add(desc);
                 
-                if (info.getCanonicalClassName() == AndroidConstants.CLASS_PREFERENCES) {
+                if (info.getFullClassName() == AndroidConstants.CLASS_PREFERENCES) {
                     topPreferences = desc;
                 }
             }
@@ -353,7 +353,7 @@ public final class XmlDescriptors implements IDescriptorProvider {
 
         return new ViewElementDescriptor(xml_name,
                 xml_name, // ui_name
-                info.getCanonicalClassName(),
+                info.getFullClassName(),
                 tooltip,
                 null, // sdk_url
                 attributes.toArray(new AttributeDescriptor[attributes.size()]),

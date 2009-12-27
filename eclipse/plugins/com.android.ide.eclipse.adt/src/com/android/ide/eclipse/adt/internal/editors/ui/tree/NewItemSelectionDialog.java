@@ -73,7 +73,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
 
     /**
      * Creates the new item selection dialog.
-     * 
+     *
      * @param shell The parent shell for the list.
      * @param labelProvider ILabelProvider for the list.
      * @param descriptorFilters The element allows at the root of the tree. Can be null.
@@ -100,17 +100,17 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
                 }
             }
         }
-        
+
         setHelpAvailable(false);
         setMultipleSelection(false);
-        
+
         setValidator(new ISelectionStatusValidator() {
             public IStatus validate(Object[] selection) {
                 if (selection.length == 1 && selection[0] instanceof ViewElementDescriptor) {
                     return new Status(IStatus.OK, // severity
                             AdtPlugin.PLUGIN_ID, //plugin id
                             IStatus.OK, // code
-                            ((ViewElementDescriptor) selection[0]).getCanonicalClassName(), //msg 
+                            ((ViewElementDescriptor) selection[0]).getFullClassName(), //msg
                             null); // exception
                 } else if (selection.length == 1 && selection[0] instanceof ElementDescriptor) {
                     return new Status(IStatus.OK, // severity
@@ -122,14 +122,14 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
                     return new Status(IStatus.ERROR, // severity
                             AdtPlugin.PLUGIN_ID, //plugin id
                             IStatus.ERROR, // code
-                            "Invalid selection", // msg, translatable 
+                            "Invalid selection", // msg, translatable
                             null); // exception
                 }
             }
         });
-        
+
         // Determine the initial selection using a couple heuristics.
-        
+
         // First check if we can get the last used node type for this file.
         // The heuristic is that generally one keeps adding the same kind of items to the
         // same file, so reusing the last used item type makes most sense.
@@ -165,7 +165,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -184,13 +184,13 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
                     IFile f = ((FileEditorInput) editorInput).getFile();
                     if (f != null) {
                         mLastUsedKey = f.getFullPath().toPortableString();
-    
+
                         return sLastUsedXmlName.get(mLastUsedKey);
                     }
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -216,7 +216,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
         if (ui_node != null) {
             TreeMap<String, Integer> counts = new TreeMap<String, Integer>();
             int max = -1;
-            
+
             for (UiElementNode child : ui_node.getUiChildren()) {
                 String name = child.getDescriptor().getXmlName();
                 Integer i = counts.get(name);
@@ -257,15 +257,15 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
 
     /**
      * Creates the dialog area.
-     * 
+     *
      * First add a radio area, which may be either 2 radio controls or
      * just a message area if there's only one choice (the app root node).
-     * 
+     *
      * Then uses the default from the AbstractElementListSelectionDialog
      * which is to add both a filter text and a filtered list. Adding both
      * is necessary (since the base class accesses both internal directly
-     * fields without checking for null pointers.) 
-     * 
+     * fields without checking for null pointers.)
+     *
      * Finally sets the initial selection list.
      */
     @Override
@@ -279,12 +279,12 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
         // Initialize the list state.
         // This must be done after the filtered list as been created.
         chooseNode(mChosenRootNode);
-        
+
         // Set the initial selection
         setInitialSelection(mChosenRootNode);
         return contents;
     }
-    
+
     /**
      * Tries to set the initial selection based on the {@link #mInitialXmlName} computed
      * in the constructor. The selection is only set if there's an element descriptor
@@ -301,7 +301,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
             if (partial) {
                 name = name.substring(1).toLowerCase();
             }
-            
+
             for (ElementDescriptor desc : getAllowedDescriptors(rootNode)) {
                 if (!partial && desc.getXmlName().equals(name)) {
                     initialElement = desc;
@@ -315,7 +315,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
                 }
             }
         }
-        
+
         setSelection(initialElement == null ? null : new ElementDescriptor[] { initialElement });
     }
 
@@ -324,7 +324,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
      * @param content the parent composite of the message area.
      */
     private Composite createRadioControl(Composite content) {
-        
+
         if (mSelectedUiNode != null) {
             Button radio1 = new Button(content, SWT.RADIO);
             radio1.setText(String.format("Create a new element at the top level, in %1$s.",
@@ -339,7 +339,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
             radio1.setSelection(false);
             radio2.setSelection(true);
             mChosenRootNode = mSelectedUiNode;
-            
+
             radio1.addSelectionListener(new SelectionAdapter() {
                 @Override
                 public void widgetSelected(SelectionEvent e) {
@@ -347,7 +347,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
                     chooseNode(mLocalRootNode);
                 }
             });
-            
+
             radio2.addSelectionListener(new SelectionAdapter() {
                 @Override
                 public void widgetSelected(SelectionEvent e) {
@@ -362,7 +362,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
 
             mChosenRootNode = mLocalRootNode;
         }
-         
+
         return content;
     }
 
@@ -370,11 +370,11 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
      * Internal helper to remember the root node choosen by the user.
      * It also sets the list view to the adequate list of children that can
      * be added to the chosen root node.
-     * 
+     *
      * If the chosen root node is mLocalRootNode and a descriptor filter was specified
      * when creating the master-detail part, we use this as the set of nodes that
      * can be created on the root node.
-     * 
+     *
      * @param ui_node The chosen root node, either mLocalRootNode or
      *                mSelectedUiNode.
      */
@@ -386,12 +386,12 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
     /**
      * Returns the list of {@link ElementDescriptor}s that can be added to the given
      * UI node.
-     * 
+     *
      * @param ui_node The UI node to which element should be added. Cannot be null.
      * @return A non-null array of {@link ElementDescriptor}. The array might be empty.
      */
     private ElementDescriptor[] getAllowedDescriptors(UiElementNode ui_node) {
-        if (ui_node == mLocalRootNode && 
+        if (ui_node == mLocalRootNode &&
                 mDescriptorFilters != null &&
                 mDescriptorFilters.length != 0) {
             return mDescriptorFilters;

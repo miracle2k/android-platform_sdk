@@ -45,13 +45,13 @@ import java.util.List;
  * associated {@link ElementDescriptor} object.
  * <p/>
  * If the custom class does not exist, no monitoring is put in place to avoid having to listen
- * to all class changes in the projects. 
- * 
+ * to all class changes in the projects.
+ *
  */
 public final class CustomViewDescriptorService {
 
     private static CustomViewDescriptorService sThis = new CustomViewDescriptorService();
-    
+
     /**
      * Map where keys are the project, and values are another map containing all the known
      * custom View class for this project. The custom View class are stored in a map
@@ -67,10 +67,10 @@ public final class CustomViewDescriptorService {
      */
     @SuppressWarnings("unused")
     private ICustomViewDescriptorListener mListener;
-    
+
     /**
      * Classes which implements this interface provide a method that deal with modifications
-     * in custom View class triggering a change in its associated {@link ViewClassInfo} object. 
+     * in custom View class triggering a change in its associated {@link ViewClassInfo} object.
      */
     public interface ICustomViewDescriptorListener {
         /**
@@ -81,14 +81,14 @@ public final class CustomViewDescriptorService {
          */
         public void updatedClassInfo(IProject project, String className, ElementDescriptor descriptor);
     }
-    
+
     /**
      * Returns the singleton instance of {@link CustomViewDescriptorService}.
      */
     public static CustomViewDescriptorService getInstance() {
         return sThis;
     }
-    
+
     /**
      * Sets the listener receiving custom View class modification notifications.
      * @param listener the listener to receive the notifications.
@@ -99,7 +99,7 @@ public final class CustomViewDescriptorService {
     public void setListener(ICustomViewDescriptorListener listener) {
         mListener = listener;
     }
-    
+
     /**
      * Returns the {@link ElementDescriptor} for a particular project/class.
      * <p/>
@@ -108,51 +108,51 @@ public final class CustomViewDescriptorService {
      * established, a monitoring for that particular class is initiated. Any change will
      * trigger a notification to the {@link ICustomViewDescriptorListener}.
      * @param project the project containing the class.
-     * @param fqClassName the fully qualified name of the class.
+     * @param fqcn the fully qualified name of the class.
      * @return a <code>ElementDescriptor</code> or <code>null</code> if the class was not
      * a custom View class.
      */
-    public ElementDescriptor getDescriptor(IProject project, String fqClassName) {
+    public ElementDescriptor getDescriptor(IProject project, String fqcn) {
         // look in the map first
         synchronized (mCustomDescriptorMap) {
             HashMap<String, ElementDescriptor> map = mCustomDescriptorMap.get(project);
-            
+
             if (map != null) {
-                ElementDescriptor descriptor = map.get(fqClassName);
+                ElementDescriptor descriptor = map.get(fqcn);
                 if (descriptor != null) {
                     return descriptor;
                 }
             }
-        
+
             // if we step here, it looks like we haven't created it yet.
             // First lets check this is in fact a valid type in the project
-            
+
             try {
                 // We expect the project to be both opened and of java type (since it's an android
                 // project), so we can create a IJavaProject object from our IProject.
                 IJavaProject javaProject = JavaCore.create(project);
-                
+
                 // replace $ by . in the class name
-                String javaClassName = fqClassName.replaceAll("\\$", "\\."); //$NON-NLS-1$ //$NON-NLS-2$
-        
+                String javaClassName = fqcn.replaceAll("\\$", "\\."); //$NON-NLS-1$ //$NON-NLS-2$
+
                 // look for the IType object for this class
                 IType type = javaProject.findType(javaClassName);
                 if (type != null && type.exists()) {
                     // the type exists. Let's get the parent class and its ViewClassInfo.
-                    
+
                     // get the type hierarchy
                     ITypeHierarchy hierarchy = type.newSupertypeHierarchy(
                             new NullProgressMonitor());
-                    
+
                     ElementDescriptor parentDescriptor = getDescriptor(
                             hierarchy.getSuperclass(type), project, hierarchy);
-                    
+
                     if (parentDescriptor != null) {
                         // we have a valid parent, lets create a new ElementDescriptor.
 
-                        ViewElementDescriptor descriptor = new ViewElementDescriptor(fqClassName,
-                                fqClassName, // ui_name
-                                fqClassName, // canonical class name
+                        ViewElementDescriptor descriptor = new ViewElementDescriptor(fqcn,
+                                fqcn, // ui_name
+                                fqcn, // canonical class name
                                 null, // tooltip
                                 null, // sdk_url
                                 getAttributeDescriptor(type, parentDescriptor),
@@ -166,12 +166,12 @@ public final class CustomViewDescriptorService {
                                 map = new HashMap<String, ElementDescriptor>();
                                 mCustomDescriptorMap.put(project, map);
                             }
-                        
-                            map.put(fqClassName, descriptor);
+
+                            map.put(fqcn, descriptor);
                         }
-                        
+
                         //TODO setup listener on this resource change.
-                        
+
                         return descriptor;
                     }
                 }
@@ -183,12 +183,12 @@ public final class CustomViewDescriptorService {
 
         return null;
     }
-    
+
     /**
      * Computes (if needed) and returns the {@link ElementDescriptor} for the specified type.
-     * 
-     * @param type 
-     * @param project 
+     *
+     * @param type
+     * @param project
      * @param typeHierarchy
      * @return A ViewElementDescriptor or null if type or typeHierarchy is null.
      */
@@ -209,19 +209,19 @@ public final class CustomViewDescriptorService {
             return null;
         }
 
-        String canonicalName = type.getFullyQualifiedName();
-        
+        String fqcn = type.getFullyQualifiedName();
+
         if (builtInList != null) {
             for (ElementDescriptor desc : builtInList) {
                 if (desc instanceof ViewElementDescriptor) {
                     ViewElementDescriptor viewDescriptor = (ViewElementDescriptor)desc;
-                    if (canonicalName.equals(viewDescriptor.getCanonicalClassName())) {
+                    if (fqcn.equals(viewDescriptor.getFullClassName())) {
                         return viewDescriptor;
                     }
                 }
             }
         }
-        
+
         // it's not a built-in class? Lets look if the superclass is built-in
         // give up if there's no type
         if (typeHierarchy == null) {
@@ -232,43 +232,43 @@ public final class CustomViewDescriptorService {
         if (parentType != null) {
             ViewElementDescriptor parentDescriptor = getDescriptor(parentType, project,
                     typeHierarchy);
-            
+
             if (parentDescriptor != null) {
                 // parent class is a valid View class with a descriptor, so we create one
                 // for this class.
-                ViewElementDescriptor descriptor = new ViewElementDescriptor(canonicalName,
-                        canonicalName, // ui_name
-                        canonicalName, // canonical name
+                ViewElementDescriptor descriptor = new ViewElementDescriptor(fqcn,
+                        fqcn, // ui_name
+                        fqcn, // canonical name
                         null, // tooltip
                         null, // sdk_url
                         getAttributeDescriptor(type, parentDescriptor),
                         null, // layout attributes
                         null, // children
                         false /* mandatory */);
-                
+
                 // add it to the map
                 synchronized (mCustomDescriptorMap) {
                     HashMap<String, ElementDescriptor> map = mCustomDescriptorMap.get(project);
-                    
+
                     if (map == null) {
                         map = new HashMap<String, ElementDescriptor>();
                         mCustomDescriptorMap.put(project, map);
                     }
-                    
-                    map.put(canonicalName, descriptor);
-                    
+
+                    map.put(fqcn, descriptor);
+
                 }
 
                 //TODO setup listener on this resource change.
-                
+
                 return descriptor;
             }
         }
-        
+
         // class is neither a built-in view class, nor extend one. return null.
         return null;
     }
-    
+
     /**
      * Returns the array of {@link AttributeDescriptor} for the specified {@link IType}.
      * <p/>

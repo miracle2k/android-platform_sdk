@@ -24,26 +24,27 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 /**
  * {@link ViewElementDescriptor} describes the properties expected for a given XML element node
  * representing a class in an XML Layout file.
- * 
+ *
  * @see ElementDescriptor
  */
 public final class ViewElementDescriptor extends ElementDescriptor {
-    
-    private String mCanonicalClassName;
+
+    /** The full class name (FQCN) of this view. */
+    private String mFullClassName;
 
     /** The list of layout attributes. Can be empty but not null. */
     private AttributeDescriptor[] mLayoutAttributes;
 
-    
+
     /**
      * Constructs a new {@link ViewElementDescriptor} based on its XML name, UI name,
      * the canonical name of the class it represents, its tooltip, its SDK url, its attributes list,
      * its children list and its mandatory flag.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      * @param ui_name The XML element name for the user interface, typically capitalized.
-     * @param canonicalClassName The canonical class name the {@link ViewElementDescriptor} is
-     * representing.
+     * @param fullClassName The fully qualified class name the {@link ViewElementDescriptor} is
+     *          representing.
      * @param tooltip An optional tooltip. Can be null or empty.
      * @param sdk_url An optional SKD URL. Can be null or empty.
      * @param attributes The list of allowed attributes. Can be null or empty.
@@ -55,12 +56,12 @@ public final class ViewElementDescriptor extends ElementDescriptor {
      *  ceases to exist.
      */
     public ViewElementDescriptor(String xml_name, String ui_name,
-            String canonicalClassName,
+            String fullClassName,
             String tooltip, String sdk_url,
             AttributeDescriptor[] attributes, AttributeDescriptor[] layoutAttributes,
             ElementDescriptor[] children, boolean mandatory) {
         super(xml_name, ui_name, tooltip, sdk_url, attributes, children, mandatory);
-        mCanonicalClassName = canonicalClassName;
+        mFullClassName = fullClassName;
         mLayoutAttributes = layoutAttributes != null ? layoutAttributes : new AttributeDescriptor[0];
     }
 
@@ -69,37 +70,37 @@ public final class ViewElementDescriptor extends ElementDescriptor {
      * name of the class it represents, and its children list.
      * The UI name is build by capitalizing the XML name.
      * The UI nodes will be non-mandatory.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
-     * @param canonicalClassName The canonical class name the {@link ViewElementDescriptor} is
-     * representing.
+     * @param fullClassName The fully qualified class name the {@link ViewElementDescriptor} is
+     *          representing.
      * @param children The list of allowed children. Can be null or empty.
      * @param mandatory Whether this node must always exist (even for empty models). A mandatory
      *  UI node is never deleted and it may lack an actual XML node attached. A non-mandatory
      *  UI node MUST have an XML node attached and it will cease to exist when the XML node
      *  ceases to exist.
      */
-    public ViewElementDescriptor(String xml_name, String canonicalClassName,
+    public ViewElementDescriptor(String xml_name, String fullClassName,
             ElementDescriptor[] children,
             boolean mandatory) {
         super(xml_name, children, mandatory);
-        mCanonicalClassName = canonicalClassName;
+        mFullClassName = fullClassName;
     }
 
     /**
      * Constructs a new {@link ElementDescriptor} based on its XML name and children list.
      * The UI name is build by capitalizing the XML name.
      * The UI nodes will be non-mandatory.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
-     * @param canonicalClassName The canonical class name the {@link ViewElementDescriptor} is
+     * @param fullClassName The fully qualified class name the {@link ViewElementDescriptor} is
      * representing.
      * @param children The list of allowed children. Can be null or empty.
      */
-    public ViewElementDescriptor(String xml_name, String canonicalClassName,
+    public ViewElementDescriptor(String xml_name, String fullClassName,
             ElementDescriptor[] children) {
         super(xml_name, children);
-        mCanonicalClassName = canonicalClassName;
+        mFullClassName = fullClassName;
     }
 
     /**
@@ -107,23 +108,24 @@ public final class ViewElementDescriptor extends ElementDescriptor {
      * name of the class it represents.
      * The UI name is build by capitalizing the XML name.
      * The UI nodes will be non-mandatory.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
-     * @param canonicalClassName The canonical class name the {@link ViewElementDescriptor} is
+     * @param fullClassName The fully qualified class name the {@link ViewElementDescriptor} is
      * representing.
      */
-    public ViewElementDescriptor(String xml_name, String canonicalClassName) {
+    public ViewElementDescriptor(String xml_name, String fullClassName) {
         super(xml_name);
-        mCanonicalClassName = canonicalClassName;
+        mFullClassName = fullClassName;
     }
-    
+
     /**
-     * Returns the canonical name of the class represented by this element descriptor.
+     * Returns the fully qualified name of the View class represented by this element descriptor
+     * e.g. "android.view.View".
      */
-    public String getCanonicalClassName() {
-        return mCanonicalClassName;
+    public String getFullClassName() {
+        return mFullClassName;
     }
-    
+
     /** Returns the list of layout attributes. Can be empty but not null. */
     public AttributeDescriptor[] getLayoutAttributes() {
         return mLayoutAttributes;

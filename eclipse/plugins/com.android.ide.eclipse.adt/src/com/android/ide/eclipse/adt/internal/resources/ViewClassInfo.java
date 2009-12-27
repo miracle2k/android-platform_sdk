@@ -27,23 +27,23 @@ public class ViewClassInfo {
     /** Is this a layout class (i.e. ViewGroup) or just a view? */
     private boolean mIsLayout;
     /** FQCN e.g. android.view.View, never null. */
-    private String mCanonicalClassName;
+    private String mFullClassName;
     /** Short class name, e.g. View, never null. */
     private String mShortClassName;
     /** Super class. Can be null. */
     private ViewClassInfo mSuperClass;
     /** Short javadoc. Can be null. */
-    private String mJavaDoc;    
+    private String mJavaDoc;
     /** Attributes for this view or view group. Can be empty but never null. */
     private AttributeInfo[] mAttributes;
-    
+
     public static class LayoutParamsInfo {
         /** Short class name, e.g. LayoutData, never null. */
         private String mShortClassName;
         /** ViewLayout class info owning this layout data */
         private ViewClassInfo mViewLayoutClass;
         /** Super class. Can be null. */
-        private LayoutParamsInfo mSuperClass; 
+        private LayoutParamsInfo mSuperClass;
         /** Layout Data Attributes for layout classes. Can be empty but not null. */
         private AttributeInfo[] mAttributes;
 
@@ -54,7 +54,7 @@ public class ViewClassInfo {
             mSuperClass = superClassInfo;
             mAttributes = new AttributeInfo[0];
         }
-        
+
         /** Returns short class name, e.g. "LayoutData" */
         public String getShortClassName() {
             return mShortClassName;
@@ -82,22 +82,22 @@ public class ViewClassInfo {
     public LayoutParamsInfo mLayoutData;
 
     // --------
-    
-    public ViewClassInfo(boolean isLayout, String canonicalClassName, String shortClassName) {
+
+    public ViewClassInfo(boolean isLayout, String fullClassName, String shortClassName) {
         mIsLayout = isLayout;
-        mCanonicalClassName = canonicalClassName;
+        mFullClassName = fullClassName;
         mShortClassName = shortClassName;
         mAttributes = new AttributeInfo[0];
     }
-    
+
     /** Returns whether this is a layout class (i.e. ViewGroup) or just a View */
     public boolean isLayout() {
         return mIsLayout;
     }
 
     /** Returns FQCN e.g. "android.view.View" */
-    public String getCanonicalClassName() {
-        return mCanonicalClassName;
+    public String getFullClassName() {
+        return mFullClassName;
     }
 
     /** Returns short class name, e.g. "View" */
