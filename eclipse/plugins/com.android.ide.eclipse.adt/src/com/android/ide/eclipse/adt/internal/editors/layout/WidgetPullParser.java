@@ -19,17 +19,21 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.layoutlib.api.IXmlPullParser;
+import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 import com.android.sdklib.SdkConstants;
 
 import org.xmlpull.v1.XmlPullParserException;
 
 /**
  * {@link IXmlPullParser} implementation to render android widget bitmap.
- * <p/>The parser emulates a layout that contains just one widget, described by the
+ * <p/>
+ * The parser emulates a layout that contains just one widget, described by the
  * {@link ViewElementDescriptor} passed in the constructor.
+ * <p/>
+ * This pull parser generates {@link ILayoutViewInfo}s which key is a {@link ViewElementDescriptor}.
  */
 public class WidgetPullParser extends BasePullParser {
-    
+
     private final ViewElementDescriptor mDescriptor;
     private String[][] mAttributes = new String[][] {
             { "text", null },
@@ -39,8 +43,8 @@ public class WidgetPullParser extends BasePullParser {
 
     public WidgetPullParser(ViewElementDescriptor descriptor) {
         mDescriptor = descriptor;
-        
-        String[] segments = mDescriptor.getCanonicalClassName().split(AndroidConstants.RE_DOT);
+
+        String[] segments = mDescriptor.getFullClassName().split(AndroidConstants.RE_DOT);
         mAttributes[0][1] = segments[segments.length-1];
     }
 
@@ -57,7 +61,7 @@ public class WidgetPullParser extends BasePullParser {
         if (index < mAttributes.length) {
             return mAttributes[index][0];
         }
-        
+
         return null;
     }
 
@@ -74,7 +78,7 @@ public class WidgetPullParser extends BasePullParser {
         if (index < mAttributes.length) {
             return mAttributes[index][1];
         }
-        
+
         return null;
     }
 
@@ -86,7 +90,7 @@ public class WidgetPullParser extends BasePullParser {
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -118,7 +122,7 @@ public class WidgetPullParser extends BasePullParser {
         if (mParsingState == START_TAG) {
             return true;
         }
-        
+
         throw new XmlPullParserException("Call to isEmptyElementTag while not in START_TAG",
                 this, null);
     }

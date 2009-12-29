@@ -217,7 +217,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
 
         return new ViewElementDescriptor(xml_name,
                 xml_name, // ui_name
-                info.getCanonicalClassName(),
+                info.getFullClassName(),
                 tooltip,
                 null, // sdk_url
                 attributes.toArray(new AttributeDescriptor[attributes.size()]),
@@ -313,7 +313,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         for (ElementDescriptor desc : knownViews) {
             if (desc instanceof ViewElementDescriptor) {
                 ViewElementDescriptor viewDesc = (ViewElementDescriptor) desc;
-                if (viewFqcn.equals(viewDesc.getCanonicalClassName())) {
+                if (viewFqcn.equals(viewDesc.getFullClassName())) {
                     return viewDesc.getLayoutAttributes();
                 }
             }
