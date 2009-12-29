@@ -232,7 +232,7 @@ public class ApkBuilder extends BaseBuilder {
             mNativeLibs.clear();
             mNativeLibInteference = false;
         }
-    };
+    }
 
     private final JavaAndNativeResourceFilter mResourceFilter = new JavaAndNativeResourceFilter();
 
@@ -253,7 +253,7 @@ public class ApkBuilder extends BaseBuilder {
     }
 
     // build() returns a list of project from which this project depends for future compilation.
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     @Override
     protected IProject[] build(int kind, Map args, IProgressMonitor monitor)
             throws CoreException {

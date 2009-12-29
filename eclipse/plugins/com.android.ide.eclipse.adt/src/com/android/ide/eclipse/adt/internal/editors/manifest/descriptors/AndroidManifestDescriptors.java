@@ -55,7 +55,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
     private static final String ANDROID_MANIFEST_STYLEABLE = "AndroidManifest"; //$NON-NLS-1$
 
     // Public attributes names, attributes descriptors and elements descriptors
-    
+
     public static final String ANDROID_LABEL_ATTR = "label";    //$NON-NLS-1$
     public static final String ANDROID_NAME_ATTR  = "name";     //$NON-NLS-1$
     public static final String PACKAGE_ATTR       = "package";  //$NON-NLS-1$
@@ -81,7 +81,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
 
     /** Private package attribute for the manifest element. Needs to be handled manually. */
     private final TextAttributeDescriptor PACKAGE_ATTR_DESC;
-    
+
     public AndroidManifestDescriptors() {
         APPLICATION_ELEMENT = createElement("application", null, true); //$NON-NLS-1$ + no child & mandatory
         INTRUMENTATION_ELEMENT = createElement("instrumentation"); //$NON-NLS-1$
@@ -113,43 +113,43 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                 null /* nsUri */,
                 "This attribute gives a unique name for the package, using a Java-style naming convention to avoid name collisions.\nFor example, applications published by Google could have names of the form com.google.app.appname");
     }
-    
+
     public ElementDescriptor[] getRootElementDescriptors() {
         return new ElementDescriptor[] { MANIFEST_ELEMENT };
     }
-    
+
     public ElementDescriptor getDescriptor() {
         return getManifestElement();
     }
-    
+
     public ElementDescriptor getApplicationElement() {
         return APPLICATION_ELEMENT;
     }
-    
+
     public ElementDescriptor getManifestElement() {
         return MANIFEST_ELEMENT;
     }
-    
+
     public ElementDescriptor getUsesSdkElement() {
         return USES_SDK_ELEMENT;
     }
-    
+
     public ElementDescriptor getInstrumentationElement() {
         return INTRUMENTATION_ELEMENT;
     }
-    
+
     public ElementDescriptor getPermissionElement() {
         return PERMISSION_ELEMENT;
     }
-    
+
     public ElementDescriptor getUsesPermissionElement() {
         return USES_PERMISSION_ELEMENT;
     }
-    
+
     public ElementDescriptor getPermissionGroupElement() {
         return PERMISSION_GROUP_ELEMENT;
     }
-    
+
     public ElementDescriptor getPermissionTreeElement() {
         return PERMISSION_TREE_ELEMENT;
     }
@@ -159,7 +159,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
      * <p/>
      * It first computes the new children of the descriptor and then updates them
      * all at once.
-     * 
+     *
      * @param manifestMap The map style => attributes from the attrs_manifest.xml file
      */
     public synchronized void updateDescriptors(
@@ -167,18 +167,18 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
 
         XmlnsAttributeDescriptor xmlns = new XmlnsAttributeDescriptor(
                 "android", //$NON-NLS-1$
-                SdkConstants.NS_RESOURCES); 
+                SdkConstants.NS_RESOURCES);
 
         // -- setup the required attributes overrides --
-        
+
         Set<String> required = new HashSet<String>();
         required.add("provider/authorities");  //$NON-NLS-1$
-        
+
         // -- setup the various attribute format overrides --
-        
+
         // The key for each override is "element1,element2,.../attr-xml-local-name" or
         // "*/attr-xml-local-name" to match the attribute in any element.
-        
+
         Map<String, Object> overrides = new HashMap<String, Object>();
 
         overrides.put("*/icon", new DescriptorsUtils.ITextAttributeCreator() { //$NON-NLS-1$
@@ -190,11 +190,11 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                         tooltip);
             }
         });
-        
+
         overrides.put("*/theme",         ThemeAttributeDescriptor.class);   //$NON-NLS-1$
         overrides.put("*/permission",    ListAttributeDescriptor.class);    //$NON-NLS-1$
         overrides.put("*/targetPackage", ManifestPkgAttrDescriptor.class);  //$NON-NLS-1$
-        
+
         overrides.put("uses-library/name", ListAttributeDescriptor.class);       //$NON-NLS-1$
 
         overrides.put("action,category,uses-permission/" + ANDROID_NAME_ATTR,    //$NON-NLS-1$
@@ -210,7 +210,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
         // -- list element nodes already created --
         // These elements are referenced by already opened editors, so we want to update them
         // but not re-create them when reloading an SDK on the fly.
-        
+
         HashMap<String, ElementDescriptor> elementDescs =
             new HashMap<String, ElementDescriptor>();
         elementDescs.put(MANIFEST_ELEMENT.getXmlLocalName(),         MANIFEST_ELEMENT);
@@ -231,10 +231,10 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                 MANIFEST_ELEMENT,
                 "AndroidManifest"); //$NON-NLS-1$
         insertAttribute(MANIFEST_ELEMENT, PACKAGE_ATTR_DESC);
-        
+
         sanityCheck(manifestMap, MANIFEST_ELEMENT);
     }
-    
+
     /**
      * Sets up an attribute override for ANDROID_NAME_ATTR using a ClassAttributeDescriptor
      * with the specified class name.
@@ -301,7 +301,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
             boolean mandatory) {
         // Creates an element with no attribute overrides.
         String styleName = guessStyleName(xmlName);
-        String sdkUrl = DescriptorsUtils.MANIFEST_SDK_URL + styleName; 
+        String sdkUrl = DescriptorsUtils.MANIFEST_SDK_URL + styleName;
         String uiName = getUiName(xmlName);
 
         ElementDescriptor element = new ManifestElementDescriptor(xmlName, uiName, null, sdkUrl,
@@ -332,7 +332,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                 return;
             }
         }
-        
+
         AttributeDescriptor[] newArray = new AttributeDescriptor[attributes.length + 1];
         newArray[0] = newAttr;
         System.arraycopy(attributes, 0, newArray, 1, attributes.length);
@@ -345,7 +345,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
      * This first creates all the attributes for the given ElementDescriptor.
      * It then finds all children of the descriptor, inflate them recursively and set them
      * as child to this ElementDescriptor.
-     * 
+     *
      * @param styleMap The input styleable map for manifest elements & attributes.
      * @param overrides A list of attribute overrides (to customize the type of the attribute
      *          descriptors).
@@ -356,7 +356,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
      *          break these references).
      * @param elemDesc The current {@link ElementDescriptor} to inflate.
      * @param styleName The name of the {@link ElementDescriptor} to inflate. Its XML local name
-     *          will be guessed automatically from the style name. 
+     *          will be guessed automatically from the style name.
      */
     private void inflateElement(
             Map<String, DeclareStyleableInfo> styleMap,
@@ -367,7 +367,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
             String styleName) {
         assert elemDesc != null;
         assert styleName != null;
-        
+
         // define attributes
         DeclareStyleableInfo style = styleMap != null ? styleMap.get(styleName) : null;
         if (style != null) {
@@ -381,7 +381,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
             elemDesc.setTooltip(style.getJavaDoc());
             elemDesc.setAttributes(attrDescs.toArray(new AttributeDescriptor[attrDescs.size()]));
         }
-        
+
         // find all elements that have this one as parent
         ArrayList<ElementDescriptor> children = new ArrayList<ElementDescriptor>();
         for (Entry<String, DeclareStyleableInfo> entry : styleMap.entrySet()) {
@@ -399,7 +399,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
             if (isParent) {
                 String childStyleName = entry.getKey();
                 String childXmlName = guessXmlName(childStyleName);
-                
+
                 // create or re-use element
                 ElementDescriptor child = existingElementDescs.get(childXmlName);
                 if (child == null) {
@@ -407,7 +407,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                     existingElementDescs.put(childXmlName, child);
                 }
                 children.add(child);
-                
+
                 inflateElement(styleMap,
                         overrides,
                         requiredAttributes,
@@ -439,15 +439,15 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                 sb.append(c);
             }
         }
-        
+
         return sb.toString();
     }
 
     /**
      * Guesses the style name for a given XML element name.
-     * <p/> 
+     * <p/>
      * The rules are:
-     * - capitalize the first letter: 
+     * - capitalize the first letter:
      * - if there's a dash, skip it and capitalize the next one
      * - prefix AndroidManifest
      * The exception is "manifest" which just becomes AndroidManifest.
@@ -474,7 +474,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                 }
             }
         }
-        
+
         sb.insert(0, ANDROID_MANIFEST_STYLEABLE);
         return sb.toString();
     }
@@ -495,7 +495,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                 stylesDeclared.add(styleName);
             }
         }
-        
+
         for (Iterator<String> it = elementsDeclared.iterator(); it.hasNext();) {
             String xmlName = it.next();
             String styleName = guessStyleName(xmlName);
@@ -509,12 +509,12 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
             sb.append("Warning, ADT/SDK Mismatch! The following elements are declared by the SDK but unknown to ADT: ");
             for (String name : stylesDeclared) {
                 name = guessXmlName(name);
-                
+
                 if (name != stylesDeclared.last()) {
                     sb.append(", ");    //$NON-NLS-1$
                 }
             }
-            
+
             AdtPlugin.log(IStatus.WARNING, "%s", sb.toString());
             AdtPlugin.printToConsole((String)null, sb);
             sb.setLength(0);
@@ -537,8 +537,8 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
     /**
      * Performs an approximate translation of the style name into a potential
      * xml name. This is more or less the reverse from guessStyleName().
-     * 
-     * @return The XML local name for a given style name. 
+     *
+     * @return The XML local name for a given style name.
      */
     private String guessXmlName(String name) {
         StringBuilder sb = new StringBuilder();

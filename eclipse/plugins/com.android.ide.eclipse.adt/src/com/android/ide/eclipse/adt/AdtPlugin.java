@@ -115,6 +115,7 @@ import java.util.List;
 /**
  * The activator class controls the plug-in life cycle
  */
+@SuppressWarnings("deprecation")
 public class AdtPlugin extends AbstractUIPlugin {
     /** The plug-in ID */
     public static final String PLUGIN_ID = "com.android.ide.eclipse.adt"; //$NON-NLS-1$
@@ -222,7 +223,6 @@ public class AdtPlugin extends AbstractUIPlugin {
      * (non-Javadoc)
      * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
      */
-    @SuppressWarnings("deprecation")
     @Override
     public void start(BundleContext context) throws Exception {
         super.start(context);
@@ -1244,7 +1244,8 @@ public class AdtPlugin extends AbstractUIPlugin {
 
                                 IEditorPart oldEditor = page == null ? null :
                                                         page.findEditor(new FileEditorInput(file));
-                                if (oldEditor != null &&
+                                if (page != null &&
+                                        oldEditor != null &&
                                         AdtPlugin.displayPrompt("Android XML Editor",
                                             String.format("The file you just saved as been recognized as a file that could be better handled using the Android XML Editor. Do you want to edit '%1$s' using the Android XML editor instead?",
                                                     file.getFullPath()))) {

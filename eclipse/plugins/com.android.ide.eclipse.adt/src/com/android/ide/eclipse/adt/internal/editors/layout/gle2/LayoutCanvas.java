@@ -16,11 +16,19 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
+import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.layoutlib.api.ILayoutResult;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.DND;
+import org.eclipse.swt.dnd.DropTarget;
+import org.eclipse.swt.dnd.DropTargetEvent;
+import org.eclipse.swt.dnd.DropTargetListener;
+import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -68,10 +76,14 @@ public class LayoutCanvas extends Canvas {
      * width and height pseudo widgets.
      */
     private static final int IMAGE_MARGIN = 5;
+
     /**
      * Minimal size of the selection, in case an empty view or layout is selected.
      */
     private static final int SELECTION_MIN_SIZE = 6;
+
+    /** The Groovy Rules Engine, associated with the current project. */
+    private RulesEngine mRulesEngine;
 
     /*
      * The last valid ILayoutResult passed to {@link #setResult(ILayoutResult)}.
@@ -135,6 +147,9 @@ public class LayoutCanvas extends Canvas {
     /** When true, always display the outline of all views. */
     private boolean mShowOutline;
 
+    /** Drop target associated with this composite. */
+    private DropTarget mDropTarget;
+
 
     public LayoutCanvas(Composite parent, int style) {
         super(parent, style | SWT.DOUBLE_BUFFERED);
@@ -170,11 +185,34 @@ public class LayoutCanvas extends Canvas {
                 onDoubleClick(e);
             }
         });
+
+        mDropTarget = new DropTarget(this, DND.DROP_COPY | DND.DROP_MOVE);
+        mDropTarget.setTransfer(new Transfer[] { ElementDescTransfer.getInstance() });
+        mDropTarget.addDropListener(new CanvasDropListener());
     }
 
     @Override
     public void dispose() {
         super.dispose();
+
+        if (mHoverFgColor != null) {
+            mHoverFgColor.dispose();
+            mHoverFgColor = null;
+        }
+
+        if (mDropTarget != null) {
+            mDropTarget.dispose();
+            mDropTarget = null;
+        }
+
+        if (mRulesEngine != null) {
+            mRulesEngine.dispose();
+            mRulesEngine = null;
+        }
+    }
+
+    public void setRulesEngine(RulesEngine rulesEngine) {
+        mRulesEngine = rulesEngine;
     }
 
     /**
@@ -188,7 +226,6 @@ public class LayoutCanvas extends Canvas {
      * @param result The new rendering result, either valid or not.
      */
     public void setResult(ILayoutResult result) {
-
         // disable any hover
         mHoverRect = null;
 
@@ -205,7 +242,7 @@ public class LayoutCanvas extends Canvas {
                 Selection s = it.next();
 
                 // Check the if the selected object still exists
-                Object key = s.getViewInfo().getKey();
+                Object key = s.getViewInfo().getUiViewKey();
                 ViewInfo vi = findViewInfoKey(key, mLastValidViewInfoRoot);
 
                 // Remove the previous selection -- if the selected object still exists
@@ -539,7 +576,7 @@ public class LayoutCanvas extends Canvas {
      * Returns null if not found.
      */
     private ViewInfo findViewInfoKey(Object viewKey, ViewInfo viewInfo) {
-        if (viewInfo.getKey() == viewKey) {
+        if (viewInfo.getUiViewKey() == viewKey) {
             return viewInfo;
         }
 
@@ -642,7 +679,7 @@ public class LayoutCanvas extends Canvas {
         private final Rectangle mAbsRect;
         private final Rectangle mSelectionRect;
         private final String mName;
-        private final Object mKey;
+        private final UiViewElementNode mUiViewKey;
         private final ViewInfo mParent;
         private final ArrayList<ViewInfo> mChildren = new ArrayList<ViewInfo>();
 
@@ -658,8 +695,15 @@ public class LayoutCanvas extends Canvas {
 
         private ViewInfo(ILayoutViewInfo viewInfo, ViewInfo parent, int parentX, int parentY) {
             mParent = parent;
-            mKey  = viewInfo.getViewKey();
             mName = viewInfo.getName();
+
+            // The ILayoutViewInfo#getViewKey() method returns a key which depends on the
+            // IXmlPullParser used to parse the layout files. In this case, the parser is
+            // guaranteed to be an UiElementPullParser, which creates keys that are of type
+            // UiViewElementNode.
+            // We'll simply crash if the type is not right, as this is not supposed to happen
+            // and nothing could work if there's a type mismatch.
+            mUiViewKey  = (UiViewElementNode) viewInfo.getViewKey();
 
             int x = viewInfo.getLeft();
             int y = viewInfo.getTop();
@@ -717,10 +761,11 @@ public class LayoutCanvas extends Canvas {
 
         /**
          * Returns the view key. Could be null, although unlikely.
+         * @return An {@link UiViewElementNode} that uniquely identifies the object in the XML model.
          * @see ILayoutViewInfo#getViewKey()
          */
-        public Object getKey() {
-            return mKey;
+        public UiViewElementNode getUiViewKey() {
+            return mUiViewKey;
         }
 
         /**
@@ -756,7 +801,7 @@ public class LayoutCanvas extends Canvas {
     /**
      * Represents one selection.
      */
-    private static class Selection {
+    private class Selection {
         /** Current selected view info. Cannot be null. */
         private final ViewInfo mViewInfo;
 
@@ -783,30 +828,44 @@ public class LayoutCanvas extends Canvas {
                 mRect = new Rectangle(r.x + IMAGE_MARGIN, r.y + IMAGE_MARGIN, r.width, r.height);
             }
 
-            String name = viewInfo == null ? null : viewInfo.getName();
-            if (name != null) {
+            mName = getViewShortName(viewInfo);
+        }
+
+        private String getViewShortName(ViewInfo viewInfo) {
+            if (viewInfo == null) {
+                return null;
+            }
+
+            String fqcn = viewInfo.getName();
+            if (fqcn == null) {
+                return null;
+            }
+
+            String name = mRulesEngine.getDisplayName(viewInfo.getUiViewKey());
+
+            if (name == null) {
                 // The name is typically a fully-qualified class name. Let's make it a tad shorter.
 
-                if (name.startsWith("android.")) {                                      // $NON-NLS-1$
+                if (fqcn.startsWith("android.")) {                                      // $NON-NLS-1$
                     // For android classes, convert android.foo.Name to android...Name
-                    int first = name.indexOf('.');
-                    int last = name.lastIndexOf('.');
+                    int first = fqcn.indexOf('.');
+                    int last = fqcn.lastIndexOf('.');
                     if (last > first) {
-                        name = name.substring(0, first) + ".." + name.substring(last);   // $NON-NLS-1$
+                        name = fqcn.substring(0, first) + ".." + fqcn.substring(last);   // $NON-NLS-1$
                     }
                 } else {
                     // For custom non-android classes, it's best to keep the 2 first segments of
                     // the namespace, e.g. we want to get something like com.example...MyClass
-                    int first = name.indexOf('.');
-                    first = name.indexOf('.', first + 1);
-                    int last = name.lastIndexOf('.');
+                    int first = fqcn.indexOf('.');
+                    first = fqcn.indexOf('.', first + 1);
+                    int last = fqcn.lastIndexOf('.');
                     if (last > first) {
-                        name = name.substring(0, first) + ".." + name.substring(last);   // $NON-NLS-1$
+                        name = fqcn.substring(0, first) + ".." + fqcn.substring(last);   // $NON-NLS-1$
                     }
                 }
             }
 
-            mName = name;
+            return name;
         }
 
         /**
@@ -887,4 +946,101 @@ public class LayoutCanvas extends Canvas {
         }
     }
 
+    // --- drop support ----
+
+    private class CanvasDropListener implements DropTargetListener {
+
+        private ViewInfo mCurrentView;
+
+        /*
+         * The cursor has entered the drop target boundaries.
+         * {@inheritDoc}
+         */
+        public void dragEnter(DropTargetEvent event) {
+            AdtPlugin.printErrorToConsole("DEBUG", "drag enter", event);
+            updateDropInfo(event);
+        }
+
+        /*
+         * The cursor has left the drop target boundaries.
+         * {@inheritDoc}
+         */
+        public void dragLeave(DropTargetEvent event) {
+            AdtPlugin.printErrorToConsole("DEBUG", "drag leave");
+            clearDropInfo();
+        }
+
+        /*
+         * The operation being performed has changed (e.g. modifier key).
+         * {@inheritDoc}
+         */
+        public void dragOperationChanged(DropTargetEvent event) {
+            // TODO Auto-generated method stub
+            AdtPlugin.printErrorToConsole("DEBUG", "drag changed");
+
+        }
+
+        /*
+         * The cursor is moving over the drop target.
+         * {@inheritDoc}
+         */
+        public void dragOver(DropTargetEvent event) {
+            // TODO Auto-generated method stub
+            AdtPlugin.printErrorToConsole("DEBUG", "drag over", event);
+            updateDropInfo(event);
+        }
+
+        /*
+         * The drop is about to be performed.
+         * The drop target is given a last chance to change the nature of the drop
+         * {@inheritDoc}
+         */
+        public void dropAccept(DropTargetEvent event) {
+            // TODO Auto-generated method stub
+            AdtPlugin.printErrorToConsole("DEBUG", "drop accept");
+
+        }
+
+        /*
+         * The data is being dropped.
+         * {@inheritDoc}
+         */
+        public void drop(DropTargetEvent event) {
+            // TODO Auto-generated method stub
+            AdtPlugin.printErrorToConsole("DEBUG", "drop");
+
+        }
+
+        private void updateDropInfo(DropTargetEvent event) {
+            if (!mIsResultValid) {
+                // We don't allow drop on an invalid layout, even if we have some obsolete
+                // layout info for it.
+                clearDropInfo();
+                return;
+            }
+
+            int x = event.x - IMAGE_MARGIN;
+            int y = event.y - IMAGE_MARGIN;
+            ViewInfo vi = findViewInfoAt(x, y, mLastValidViewInfoRoot);
+
+            if (vi != mCurrentView) {
+                // We switched to a new view.
+                mCurrentView = vi;
+
+                // Query
+
+                redraw();
+            }
+        }
+
+        private void clearDropInfo() {
+            if (mCurrentView != null) {
+                mCurrentView = null;
+                // TODO
+                redraw();
+            }
+        }
+
+
+    }
 }

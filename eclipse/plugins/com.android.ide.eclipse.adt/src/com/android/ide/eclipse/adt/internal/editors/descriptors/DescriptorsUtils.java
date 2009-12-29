@@ -226,8 +226,8 @@ public final class DescriptorsUtils {
                         continue;
                     }
 
-                    boolean ok_element = elements.length < 1;
-                    if (!ok_element) {
+                    boolean ok_element = elements != null && elements.length < 1;
+                    if (!ok_element && elements != null) {
                         for (String element : elements) {
                             if (element.equals("*")              //$NON-NLS-1$
                                     || element.equals(elementXmlName)) {
@@ -242,7 +242,7 @@ public final class DescriptorsUtils {
                     }
 
                     Object override = entry.getValue();
-                    if (override instanceof Class) {
+                    if (override instanceof Class<?>) {
                         try {
                             // The override is instance of the class to create, which must
                             // have a constructor compatible with TextAttributeDescriptor.

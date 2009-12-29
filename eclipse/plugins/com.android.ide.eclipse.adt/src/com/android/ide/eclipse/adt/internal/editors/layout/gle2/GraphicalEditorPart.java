@@ -28,6 +28,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.configuration.Configu
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomToggle;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.ElementCreateCommand;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -110,7 +111,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
     /** Reference to the layout editor */
     private final LayoutEditor mLayoutEditor;
 
-    /** reference to the file being edited. */
+    /** reference to the file being edited. Can also be used to access the {@link IProject}. */
     private IFile mEditedFile;
 
     /** The current clipboard. Must be disposed later. */
@@ -126,8 +127,11 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
     /** The palette displayed on the left of the sash. */
     private PaletteComposite mPalette;
 
-    /** The layout canvas displayed o the right of the sash. */
+    /** The layout canvas displayed to the right of the sash. */
     private LayoutCanvas mLayoutCanvas;
+
+    /** The Groovy Rules Engine associated with this editor. It is project-specific. */
+    private RulesEngine mRulesEngine;
 
     private StyledText mErrorLabel;
 
@@ -177,6 +181,10 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
         if (mReloadListener == null) {
             mReloadListener = new ReloadListener();
             LayoutReloadMonitor.getMonitor().addListener(mEditedFile.getProject(), mReloadListener);
+        }
+
+        if (mRulesEngine == null) {
+            mRulesEngine = new RulesEngine(mEditedFile.getProject());
         }
     }
 
@@ -256,6 +264,8 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
         mSashError.setLayoutData(new GridData(GridData.FILL_BOTH));
 
         mLayoutCanvas = new LayoutCanvas(mSashError, SWT.NONE);
+        mLayoutCanvas.setRulesEngine(mRulesEngine);
+
         mErrorLabel = new StyledText(mSashError, SWT.READ_ONLY);
         mErrorLabel.setEditable(false);
         mErrorLabel.setBackground(d.getSystemColor(SWT.COLOR_INFO_BACKGROUND));

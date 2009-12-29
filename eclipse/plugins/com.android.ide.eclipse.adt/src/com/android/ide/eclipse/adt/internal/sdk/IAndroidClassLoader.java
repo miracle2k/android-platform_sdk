@@ -33,7 +33,7 @@ public interface IAndroidClassLoader {
      */
     public interface IClassDescriptor {
 
-        String getCanonicalName();
+        String getFullClassName();
 
         IClassDescriptor getSuperclass();
 
