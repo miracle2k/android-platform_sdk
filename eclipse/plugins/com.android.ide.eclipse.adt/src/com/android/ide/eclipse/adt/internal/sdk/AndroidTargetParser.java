@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -177,13 +178,14 @@ public final class AndroidTargetParser {
                 return Status.CANCEL_STATUS;
             }
 
-            ViewClassInfo[] layoutViewsInfo = mainList.toArray(new ViewClassInfo[mainList.size()]);
+            ViewClassInfo[] layoutViewsInfo = mainList.toArray(
+                    new ViewClassInfo[mainList.size()]);
             ViewClassInfo[] layoutGroupsInfo = groupList.toArray(
                     new ViewClassInfo[groupList.size()]);
-
-            // collect the preferences classes.
             mainList.clear();
             groupList.clear();
+
+            // collect the preferences classes.
             collectPreferenceClasses(classLoader, attrsXmlParser, mainList, groupList,
                     progress.newChild(1));
 
@@ -491,7 +493,8 @@ public final class AndroidTargetParser {
      */
     private void collectLayoutClasses(AndroidJarLoader classLoader,
             AttrsXmlParser attrsXmlParser,
-            Collection<ViewClassInfo> mainList, Collection<ViewClassInfo> groupList,
+            Collection<ViewClassInfo> mainList,
+            Collection<ViewClassInfo> groupList,
             IProgressMonitor monitor) {
         LayoutParamsParser ldp = null;
         try {
@@ -656,7 +659,8 @@ public final class AndroidTargetParser {
             if (f.isFile() == false) {
                 AdtPlugin.log(IStatus.ERROR, "layoutlib.jar is missing!"); //$NON-NLS-1$
             } else {
-                URL url = f.toURL();
+                URI uri = f.toURI();
+                URL url = uri.toURL();
 
                 // create a class loader. Because this jar reference interfaces
                 // that are in the editors plugin, it's important to provide

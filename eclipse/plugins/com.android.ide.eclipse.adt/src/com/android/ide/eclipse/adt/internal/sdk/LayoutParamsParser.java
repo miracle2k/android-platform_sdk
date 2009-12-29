@@ -48,10 +48,10 @@ import javax.management.InvalidAttributeValueException;
  * <li>Resource ID from <code>android.R</code></li>
  * <li>The list of permissions values from <code>android.Manifest$permission</code></li>
  * <li></li>
- * </ul> 
+ * </ul>
  */
 public class LayoutParamsParser {
-    
+
     /**
      * Class extending {@link ViewClassInfo} by adding the notion of instantiability.
      * {@link LayoutParamsParser#getViews()} and {@link LayoutParamsParser#getGroups()} should
@@ -66,33 +66,33 @@ public class LayoutParamsParser {
             super(isLayout, canonicalClassName, shortClassName);
             mIsInstantiable = instantiable;
         }
-        
+
         boolean isInstantiable() {
             return mIsInstantiable;
         }
     }
-    
+
     /* Note: protected members/methods are overridden in unit tests */
-    
+
     /** Reference to android.view.View */
     protected IClassDescriptor mTopViewClass;
     /** Reference to android.view.ViewGroup */
     protected IClassDescriptor mTopGroupClass;
     /** Reference to android.view.ViewGroup$LayoutParams */
     protected IClassDescriptor mTopLayoutParamsClass;
-    
+
     /** Input list of all classes deriving from android.view.View */
     protected ArrayList<IClassDescriptor> mViewList;
     /** Input list of all classes deriving from android.view.ViewGroup */
     protected ArrayList<IClassDescriptor> mGroupList;
-    
+
     /** Output map of FQCN => info on View classes */
     protected TreeMap<String, ExtViewClassInfo> mViewMap;
     /** Output map of FQCN => info on ViewGroup classes */
     protected TreeMap<String, ExtViewClassInfo> mGroupMap;
     /** Output map of FQCN => info on LayoutParams classes */
     protected HashMap<String, LayoutParamsInfo> mLayoutParamsMap;
-    
+
     /** The attrs.xml parser */
     protected AttrsXmlParser mAttrsXmlParser;
 
@@ -109,7 +109,7 @@ public class LayoutParamsParser {
         mClassLoader = classLoader;
         mAttrsXmlParser = attrsXmlParser;
     }
-    
+
     /** Returns the map of FQCN => info on View classes */
     public List<ViewClassInfo> getViews() {
         return getInstantiables(mViewMap);
@@ -119,7 +119,7 @@ public class LayoutParamsParser {
     public List<ViewClassInfo> getGroups() {
         return getInstantiables(mGroupMap);
     }
-    
+
     /**
      * TODO: doc here.
      * <p/>
@@ -142,7 +142,7 @@ public class LayoutParamsParser {
                 AndroidConstants.CLASS_PREFERENCEGROUP,
                 null /* paramsClassName */ );
     }
-    
+
     private void parseClasses(IProgressMonitor monitor,
             String rootClassName,
             String groupClassName,
@@ -172,17 +172,24 @@ public class LayoutParamsParser {
             if (mTopLayoutParamsClass != null) {
                 mLayoutParamsMap = new HashMap<String, LayoutParamsInfo>();
             }
-            
+
             // Add top classes to the maps since by design they are not listed in classes deriving
             // from themselves.
-            addGroup(mTopGroupClass);
-            addView(mTopViewClass);
+            if (mTopGroupClass != null) {
+                addGroup(mTopGroupClass);
+            }
+            if (mTopViewClass != null) {
+                addView(mTopViewClass);
+            }
 
             // ViewGroup derives from View
-            mGroupMap.get(groupClassName).setSuperClass(mViewMap.get(rootClassName));
+            ExtViewClassInfo vg = mGroupMap.get(groupClassName);
+            if (vg != null) {
+                vg.setSuperClass(mViewMap.get(rootClassName));
+            }
 
             progress.setWorkRemaining(mGroupList.size() + mViewList.size());
-            
+
             for (IClassDescriptor groupChild : mGroupList) {
                 addGroup(groupChild);
                 progress.worked(1);
@@ -211,7 +218,7 @@ public class LayoutParamsParser {
      * It calls itself recursively to handle super classes which are also Views.
      */
     private ExtViewClassInfo addView(IClassDescriptor viewClass) {
-        String fqcn = viewClass.getCanonicalName();
+        String fqcn = viewClass.getFullClassName();
         if (mViewMap.containsKey(fqcn)) {
             return mViewMap.get(fqcn);
         } else if (mGroupMap.containsKey(fqcn)) {
@@ -225,7 +232,7 @@ public class LayoutParamsParser {
         // All view classes derive from mTopViewClass by design.
         // Do not lookup the super class for mTopViewClass itself.
         if (viewClass.equals(mTopViewClass) == false) {
-            IClassDescriptor superClass = viewClass.getSuperclass(); 
+            IClassDescriptor superClass = viewClass.getSuperclass();
             ExtViewClassInfo superClassInfo = addView(superClass);
             info.setSuperClass(superClassInfo);
         }
@@ -239,7 +246,7 @@ public class LayoutParamsParser {
      * It calls itself recursively to handle super classes which are also ViewGroups.
      */
     private ExtViewClassInfo addGroup(IClassDescriptor groupClass) {
-        String fqcn = groupClass.getCanonicalName();
+        String fqcn = groupClass.getFullClassName();
         if (mGroupMap.containsKey(fqcn)) {
             return mGroupMap.get(fqcn);
         }
@@ -252,14 +259,14 @@ public class LayoutParamsParser {
         // android.view.View (i.e. mTopViewClass here). So the only group that can have View as
         // its super class is the ViewGroup base class and we don't try to resolve it since groups
         // are loaded before views.
-        IClassDescriptor superClass = groupClass.getSuperclass(); 
-        
+        IClassDescriptor superClass = groupClass.getSuperclass();
+
         // Assertion: at this point, we should have
         //   superClass != mTopViewClass || fqcn.equals(AndroidConstants.CLASS_VIEWGROUP);
 
         if (superClass != null && superClass.equals(mTopViewClass) == false) {
             ExtViewClassInfo superClassInfo = addGroup(superClass);
-            
+
             // Assertion: we should have superClassInfo != null && superClassInfo != info;
             if (superClassInfo != null && superClassInfo != info) {
                 info.setSuperClass(superClassInfo);
@@ -272,10 +279,10 @@ public class LayoutParamsParser {
         }
         return info;
     }
-    
+
     /**
      * Parses a ViewGroup class and returns an info object on its inner LayoutParams.
-     * 
+     *
      * @return The {@link LayoutParamsInfo} for the ViewGroup class or null.
      */
     private LayoutParamsInfo addLayoutParams(IClassDescriptor groupClass) {
@@ -298,7 +305,7 @@ public class LayoutParamsParser {
         if (layoutParamsClass != null) {
             return getLayoutParamsInfo(layoutParamsClass);
         }
-        
+
         return null;
     }
 
@@ -307,20 +314,20 @@ public class LayoutParamsParser {
      * It calls itself recursively to handle the super class of the LayoutParams.
      */
     private LayoutParamsInfo getLayoutParamsInfo(IClassDescriptor layoutParamsClass) {
-        String fqcn = layoutParamsClass.getCanonicalName();
+        String fqcn = layoutParamsClass.getFullClassName();
         LayoutParamsInfo layoutParamsInfo = mLayoutParamsMap.get(fqcn);
 
         if (layoutParamsInfo != null) {
             return layoutParamsInfo;
         }
-        
-        // Find the link on the LayoutParams super class 
+
+        // Find the link on the LayoutParams super class
         LayoutParamsInfo superClassInfo = null;
         if (layoutParamsClass.equals(mTopLayoutParamsClass) == false) {
-            IClassDescriptor superClass = layoutParamsClass.getSuperclass(); 
+            IClassDescriptor superClass = layoutParamsClass.getSuperclass();
             superClassInfo = getLayoutParamsInfo(superClass);
         }
-        
+
         // Find the link on the enclosing ViewGroup
         ExtViewClassInfo enclosingGroupInfo = addGroup(layoutParamsClass.getEnclosingClass());
 
@@ -338,7 +345,7 @@ public class LayoutParamsParser {
      * and if found returns its class definition.
      * <p/>
      * This uses the actual defined inner classes and does not look at inherited classes.
-     *  
+     *
      * @param groupClass The ViewGroup derived class
      * @return The Class of the inner LayoutParams or null if none is declared.
      */
@@ -351,7 +358,7 @@ public class LayoutParamsParser {
         }
         return null;
     }
-    
+
     /**
      * Computes and return a list of ViewClassInfo from a map by filtering out the class that
      * cannot be instantiated.
@@ -359,13 +366,13 @@ public class LayoutParamsParser {
     private List<ViewClassInfo> getInstantiables(SortedMap<String, ExtViewClassInfo> map) {
         Collection<ExtViewClassInfo> values = map.values();
         ArrayList<ViewClassInfo> list = new ArrayList<ViewClassInfo>();
-        
+
         for (ExtViewClassInfo info : values) {
             if (info.isInstantiable()) {
                 list.add(info);
             }
         }
-        
+
         return list;
     }
 }

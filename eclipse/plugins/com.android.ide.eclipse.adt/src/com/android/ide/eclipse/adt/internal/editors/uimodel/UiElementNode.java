@@ -98,7 +98,7 @@ public class UiElementNode implements IPropertySource {
     private ArrayList<UiElementNode> mUiChildren;
     /** The list of <em>all</em> UI attributes, as declared in the {@link ElementDescriptor}.
      *  The list is always defined and never null. Unlike the UiElementNode children list, this
-     *  is always defined, even for attributes that do not exist in the XML model -- that's because
+     *  is always defined, even for attributes that do not exist in the XML model - that's because
      *  "missing" attributes in the XML model simply mean a default value is used. Also note that
      *  the underlying collection is a map, so order is not respected. To get the desired attribute
      *  order, iterate through the {@link ElementDescriptor}'s attribute list. */

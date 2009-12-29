@@ -24,6 +24,22 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 /**
  * {@link ViewElementDescriptor} describes the properties expected for a given XML element node
  * representing a class in an XML Layout file.
+ * <p/>
+ * These descriptors describe Android views XML elements.
+ * <p/>
+ * The base class {@link ElementDescriptor} has a notion of "children", that is an XML element
+ * can produce another set of XML elements. Because of the flat nature of Android's layout
+ * XML files all possible views are children of the document and of themselves (that is any
+ * view group can contain any other view). This is an implied contract of this class that is
+ * enforces at construction by {@link LayoutDescriptors}. Note that by construction any code
+ * that deals with the children hierarchy must also deal with potential infinite loops since views
+ * <em>will</em> reference themselves (e.g. a ViewGroup can contain a ViewGroup).
+ * <p/>
+ * Since Views are also Java classes, they derive from each other. Here this is represented
+ * as the "super class", which denotes the fact that a given View java class derives from
+ * another class. These properties are also set at construction by {@link LayoutDescriptors}.
+ * The super class hierarchy is very different from the descriptor's children hierarchy: the
+ * format represents Java inheritance, the former represents an XML nesting capability.
  *
  * @see ElementDescriptor
  */
@@ -35,6 +51,8 @@ public final class ViewElementDescriptor extends ElementDescriptor {
     /** The list of layout attributes. Can be empty but not null. */
     private AttributeDescriptor[] mLayoutAttributes;
 
+    /** The super-class descriptor. Can be null. */
+    private ViewElementDescriptor mSuperClassDesc;
 
     /**
      * Constructs a new {@link ViewElementDescriptor} based on its XML name, UI name,
@@ -79,6 +97,8 @@ public final class ViewElementDescriptor extends ElementDescriptor {
      *  UI node is never deleted and it may lack an actual XML node attached. A non-mandatory
      *  UI node MUST have an XML node attached and it will cease to exist when the XML node
      *  ceases to exist.
+     *
+     *  @deprecated Never used. We should clean it up someday.
      */
     public ViewElementDescriptor(String xml_name, String fullClassName,
             ElementDescriptor[] children,
@@ -96,6 +116,8 @@ public final class ViewElementDescriptor extends ElementDescriptor {
      * @param fullClassName The fully qualified class name the {@link ViewElementDescriptor} is
      * representing.
      * @param children The list of allowed children. Can be null or empty.
+     *
+     *  @deprecated Never used. We should clean it up someday.
      */
     public ViewElementDescriptor(String xml_name, String fullClassName,
             ElementDescriptor[] children) {
@@ -112,6 +134,8 @@ public final class ViewElementDescriptor extends ElementDescriptor {
      * @param xml_name The XML element node name. Case sensitive.
      * @param fullClassName The fully qualified class name the {@link ViewElementDescriptor} is
      * representing.
+     *
+     *  @deprecated Never used. We should clean it up someday.
      */
     public ViewElementDescriptor(String xml_name, String fullClassName) {
         super(xml_name);
@@ -132,10 +156,26 @@ public final class ViewElementDescriptor extends ElementDescriptor {
     }
 
     /**
-     * @return A new {@link UiViewElementNode} linked to this descriptor.
+     * Returns a new {@link UiViewElementNode} linked to this descriptor.
      */
     @Override
     public UiElementNode createUiNode() {
         return new UiViewElementNode(this);
+    }
+
+    /**
+     * Returns the {@link ViewElementDescriptor} of the super-class of this View descriptor
+     * that matches the java View hierarchy. Can be null.
+     */
+    public ViewElementDescriptor getSuperClassDesc() {
+        return mSuperClassDesc;
+    }
+
+    /**
+     * Sets the {@link ViewElementDescriptor} of the super-class of this View descriptor
+     * that matches the java View hierarchy. Can be null.
+     */
+    public void setSuperClass(ViewElementDescriptor superClassDesc) {
+        mSuperClassDesc = superClassDesc;
     }
 }

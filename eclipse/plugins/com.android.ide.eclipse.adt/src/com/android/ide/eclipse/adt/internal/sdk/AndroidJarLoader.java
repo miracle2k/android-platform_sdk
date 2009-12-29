@@ -47,7 +47,7 @@ public class AndroidJarLoader extends ClassLoader implements IAndroidClassLoader
             mClass = clazz;
         }
 
-        public String getCanonicalName() {
+        public String getFullClassName() {
             return mClass.getCanonicalName();
         }
 

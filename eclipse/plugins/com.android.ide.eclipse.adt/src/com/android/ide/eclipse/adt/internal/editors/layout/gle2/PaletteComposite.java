@@ -21,13 +21,11 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
-import org.eclipse.swt.dnd.ByteArrayTransfer;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSource;
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.Transfer;
-import org.eclipse.swt.dnd.TransferData;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseTrackListener;
@@ -40,7 +38,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,8 +101,8 @@ public class PaletteComposite extends Composite {
         setGridLayout(mRoot, 0);
 
         if (targetData != null) {
-            addGroup(mRoot, "Layouts", targetData.getLayoutDescriptors().getLayoutDescriptors());
             addGroup(mRoot, "Views", targetData.getLayoutDescriptors().getViewDescriptors());
+            addGroup(mRoot, "Layouts", targetData.getLayoutDescriptors().getLayoutDescriptors());
         }
 
         layout(true);
@@ -358,94 +355,4 @@ public class PaletteComposite extends Composite {
         }
     }
 
-    // TODO move out of this scope once we need it on the other side.
-    /**
-     * A d'n'd {@link Transfer} class that can transfer {@link ElementDescriptor}s.
-     * <p/>
-     * The implementation is based on the {@link ByteArrayTransfer} and what we transfer
-     * is actually only the inner XML name of the element, which is unique enough.
-     * <p/>
-     * Drag source provides an {@link ElementDescriptor} object.
-     * Drog receivers get back a {@link String} object representing the
-     * {@link ElementDescriptor#getXmlName()}.
-     * <p/>
-     * Drop receivers can find the corresponding element by using
-     * {@link ElementDescriptor#findChildrenDescriptor(String, boolean)} with the
-     * XML name returned by this transfer operation and their root descriptor.
-     * <p/>
-     * Drop receivers must deal with the fact that this XML name may not exist in their
-     * own {@link ElementDescriptor} hierarchy -- e.g. if the drag came from a different
-     * GLE based on a different SDK platform or using custom widgets. In this case they
-     * must refuse the drop.
-     */
-    public static class ElementDescTransfer extends ByteArrayTransfer {
-
-        // Reference: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
-
-
-        private static final String TYPE_NAME = "android.ADT.element.desc.transfer.1";
-        private static final int TYPE_ID = registerType(TYPE_NAME);
-        private static ElementDescTransfer sInstance = new ElementDescTransfer();
-
-        private ElementDescTransfer() {
-            // pass
-        }
-
-        public static ElementDescTransfer getInstance() {
-            return sInstance;
-        }
-
-        @Override
-        protected int[] getTypeIds() {
-            return new int[] { TYPE_ID };
-        }
-
-        @Override
-        protected String[] getTypeNames() {
-            return new String[] { TYPE_NAME };
-        }
-
-        @Override
-        protected void javaToNative(Object object, TransferData transferData) {
-            if (object == null || !(object instanceof ElementDescriptor[])) {
-                return;
-            }
-
-            if (isSupportedType(transferData)) {
-                StringBuilder sb = new StringBuilder();
-                boolean needSeparator = false;
-                for (ElementDescriptor desc : (ElementDescriptor[]) object) {
-                    if (needSeparator) {
-                        sb.append(';');
-                    }
-                    sb.append(desc.getXmlName());
-                    needSeparator = true;
-                }
-                try {
-                    byte[] buf = sb.toString().getBytes("UTF-8");  //$NON-NLS-1$
-                    super.javaToNative(buf, transferData);
-                } catch (UnsupportedEncodingException e) {
-                    // unlikely; ignore
-                }
-            }
-        }
-
-        @Override
-        protected Object nativeToJava(TransferData transferData) {
-            if (isSupportedType(transferData)) {
-                byte[] buf = (byte[]) super.nativeToJava(transferData);
-                if (buf != null && buf.length > 0) {
-                    try {
-                        String s = new String(buf, "UTF-8"); //$NON-NLS-1$
-                        String[] names = s.split(";");  //$NON-NLS-1$
-                        return names;
-                    } catch (UnsupportedEncodingException e) {
-                        // unlikely to happen, but still possible
-                    }
-                }
-            }
-
-            return null;
-        }
-    }
 }

@@ -48,7 +48,7 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
      */
     private final static class ClassDescriptor implements IClassDescriptor {
         
-        private String mName;
+        private String mFqcn;
         private String mSimpleName;
         private ClassDescriptor mSuperClass;
         private ClassDescriptor mEnclosingClass;
@@ -57,12 +57,12 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
         private boolean mIsInstantiable = false;
 
         ClassDescriptor(String fqcn) {
-            mName = fqcn;
+            mFqcn = fqcn;
             mSimpleName = getSimpleName(fqcn);
         }
 
-        public String getCanonicalName() {
-            return mName;
+        public String getFullClassName() {
+            return mFqcn;
         }
 
         public String getSimpleName() {
@@ -90,7 +90,7 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
             
             // finally change the name of declared class to make sure it uses the
             // convention: package.enclosing$declared instead of package.enclosing.declared
-            mName = enclosingClass.mName + "$" + mName.substring(enclosingClass.mName.length() + 1);
+            mFqcn = enclosingClass.mFqcn + "$" + mFqcn.substring(enclosingClass.mFqcn.length() + 1);
         }
 
         public IClassDescriptor getSuperclass() {
@@ -104,14 +104,14 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
         @Override
         public boolean equals(Object clazz) {
             if (clazz instanceof ClassDescriptor) {
-                return mName.equals(((ClassDescriptor)clazz).mName);
+                return mFqcn.equals(((ClassDescriptor)clazz).mFqcn);
             }
             return super.equals(clazz);
         }
         
         @Override
         public int hashCode() {
-            return mName.hashCode();
+            return mFqcn.hashCode();
         }
         
         public boolean isInstantiable() {
@@ -264,7 +264,7 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
         Collection<ClassDescriptor> params = mLayoutParamsMap.values();
 
         for (ClassDescriptor param : params) {
-            String fqcn = param.getCanonicalName();
+            String fqcn = param.getFullClassName();
             
             // get the enclosed name.
             String enclosed = getEnclosedName(fqcn);
@@ -278,7 +278,7 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
                 
                 // remove the class from the map, and put it back with the fixed name
                 mMap.remove(fqcn);
-                mMap.put(param.getCanonicalName(), param);
+                mMap.put(param.getFullClassName(), param);
             }
         }
     }

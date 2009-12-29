@@ -30,10 +30,10 @@ import java.util.Set;
 
 /**
  * {@link ElementDescriptor} describes the properties expected for a given XML element node.
- * 
+ *
  * {@link ElementDescriptor} have an XML name, UI name, a tooltip, an SDK url,
  * an attributes list and a children list.
- * 
+ *
  * An UI node can be "mandatory", meaning the UI node is never deleted and it may lack
  * an actual XML node attached. A non-mandatory UI node MUST have an XML node attached
  * and it will cease to exist when the XML node ceases to exist.
@@ -57,7 +57,7 @@ public class ElementDescriptor {
     /**
      * Constructs a new {@link ElementDescriptor} based on its XML name, UI name,
      * tooltip, SDK url, attributes list, children list and mandatory.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      * @param ui_name The XML element name for the user interface, typically capitalized.
      * @param tooltip An optional tooltip. Can be null or empty.
@@ -86,7 +86,7 @@ public class ElementDescriptor {
      * Constructs a new {@link ElementDescriptor} based on its XML name and children list.
      * The UI name is build by capitalizing the XML name.
      * The UI nodes will be non-mandatory.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      * @param children The list of allowed children. Can be null or empty.
      * @param mandatory Whether this node must always exist (even for empty models). A mandatory
@@ -102,7 +102,7 @@ public class ElementDescriptor {
      * Constructs a new {@link ElementDescriptor} based on its XML name and children list.
      * The UI name is build by capitalizing the XML name.
      * The UI nodes will be non-mandatory.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      * @param children The list of allowed children. Can be null or empty.
      */
@@ -114,7 +114,7 @@ public class ElementDescriptor {
      * Constructs a new {@link ElementDescriptor} based on its XML name.
      * The UI name is build by capitalizing the XML name.
      * The UI nodes will be non-mandatory.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      */
     public ElementDescriptor(String xml_name) {
@@ -125,12 +125,12 @@ public class ElementDescriptor {
     public boolean isMandatory() {
         return mMandatory;
     }
-    
+
     /**
      * Returns the XML element node local name (case sensitive)
      */
     public final String getXmlLocalName() {
-        int pos = mXmlName.indexOf(':'); 
+        int pos = mXmlName.indexOf(':');
         if (pos != -1) {
             return mXmlName.substring(pos+1);
         }
@@ -141,7 +141,7 @@ public class ElementDescriptor {
     public String getXmlName() {
         return mXmlName;
     }
-    
+
     /**
      * Returns the namespace of the attribute.
      */
@@ -150,7 +150,7 @@ public class ElementDescriptor {
         if (mXmlName.startsWith("android:")) { //$NON-NLs-1$
             return SdkConstants.NS_RESOURCES;
         }
-        
+
         return ""; //$NON-NLs-1$
     }
 
@@ -160,13 +160,13 @@ public class ElementDescriptor {
         return mUiName;
     }
 
-    /** 
+    /**
      * Returns an optional icon for the element.
      * <p/>
      * By default this tries to return an icon based on the XML name of the element.
      * If this fails, it tries to return the default Android logo as defined in the
      * plugin. If all fails, it returns null.
-     * 
+     *
      * @return An icon for this element or null.
      */
     public Image getIcon() {
@@ -177,13 +177,13 @@ public class ElementDescriptor {
         return icon != null ? icon : AdtPlugin.getAndroidLogo();
     }
 
-    /** 
+    /**
      * Returns an optional ImageDescriptor for the element.
      * <p/>
      * By default this tries to return an image based on the XML name of the element.
      * If this fails, it tries to return the default Android logo as defined in the
      * plugin. If all fails, it returns null.
-     * 
+     *
      * @return An ImageDescriptor for this element or null.
      */
     public ImageDescriptor getImageDescriptor() {
@@ -198,7 +198,7 @@ public class ElementDescriptor {
     public AttributeDescriptor[] getAttributes() {
         return mAttributes;
     }
-    
+
     /* Sets the list of allowed attributes. */
     public void setAttributes(AttributeDescriptor[] attributes) {
         mAttributes = attributes;
@@ -222,7 +222,8 @@ public class ElementDescriptor {
         mChildren = newChildren;
     }
 
-    /** Sets the list of allowed children.
+    /**
+     * Sets the list of allowed children.
      * <p/>
      * This is just a convenience method that converts a Collection into an array and
      * calls {@link #setChildren(ElementDescriptor[])}.
@@ -254,7 +255,7 @@ public class ElementDescriptor {
     public void setTooltip(String tooltip) {
         mTooltip = tooltip;
     }
-    
+
     /** Sets the optional SDK URL. Can be null or empty. */
     public void setSdkUrl(String sdkUrl) {
         mSdkUrl = sdkUrl;
@@ -266,12 +267,12 @@ public class ElementDescriptor {
     public UiElementNode createUiNode() {
         return new UiElementNode(this);
     }
-    
+
     /**
-     * Returns the first children of this descriptor that describes the given XML element name. 
+     * Returns the first children of this descriptor that describes the given XML element name.
      * <p/>
      * In recursive mode, searches the direct children first before descending in the hierarchy.
-     * 
+     *
      * @return The ElementDescriptor matching the requested XML node element name or null.
      */
     public ElementDescriptor findChildrenDescriptor(String element_name, boolean recursive) {
@@ -316,7 +317,7 @@ public class ElementDescriptor {
     /**
      * Utility helper than pretty-formats an XML Name for the UI.
      * This is used by the simplified constructor that takes only an XML element name.
-     * 
+     *
      * @param xml_name The XML name to convert.
      * @return The XML name with dashes replaced by spaces and capitalized.
      */
