@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.editors.layout.gre;
-
-import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+package com.android.ide.eclipse.adt.gscripts;
 
 import java.util.ArrayList;
 
@@ -38,10 +36,6 @@ import java.util.ArrayList;
  * arguments that they might receive.
  */
 public interface IViewRule {
-
-    public class Rect {
-        public int x, y, w, h;
-    }
 
     /**
      * This method is called by the rule engine when the script is first loaded.
@@ -77,44 +71,39 @@ public interface IViewRule {
 
     // ==== Drag'n'drop support ====
 
-    public class DropZone {
-        /** The rectangle (in absolute coordinates) of the drop zone. */
-        public final Rect bounds = new Rect();
-        /** An opaque object that the script can use for its own purpose, e.g. some pre-computed
-         * data or a closure. */
-        public Object data;
-    }
 
     /**
-     * Called when a drop operation occurs to add a new element, typically dragged from
-     * the view/layout palette. The purpose of the drop operation is to create a new element.
+     * Called when a drop operation starts, whilst the d'n'd is dragging the cursor over the
+     * views. The purpose of the drop operation will be to create a new element.
      * <p/>
      * Drop targets that can't accept child views should always return null.
      * <p/>
-     * The method should return a list of drop zones, customized to the actual bounds
-     * of the target. The drop zones will be visually shown to the user. Once the user drops in
-     * one of the zone the {@link #afterDrop(ElementDescriptor, NodeProxy, DropZone)} method
-     * will be called.
+     * Drop targets that can accept child views must return a non-empty list of drop zones,
+     * customized to the actual bounds of the target.
+     * The drop zones will be visually shown to the user. Once the user releases the mouse
+     * in one of the drop zone, the dropAccept/dropFinish methods will be called.
+     * <p/>
+     * Note that at this stage, the drop operation does not offer a way to know what is going
+     * to be dropped. We just know it's a view descriptor, typically from the layout palette,
+     * but we don't know which view class yet.
      *
-     * @param source The {@link ElementDescriptor} of the drag source.
      * @param targetNode The XML view that is currently the target of the drop.
-     * @return Null if the rule rejects the drop, or a list of usage drop zones.
+     * @return Null or an empty list if the rule rejects the drop, or a list of usable drop zones.
      */
-    ArrayList<DropZone> beforeDrop(ElementDescriptor source, NodeProxy targetNode);
+    ArrayList<DropZone> dropStart(INodeProxy targetNode);
 
     /**
      * Called after the user selects to drop the given source into one of the drop zones.
-     * This method should use the methods from the {@link NodeProxy} to actually create the
+     * <p/>
+     * This method should use the methods from the {@link INodeProxy} to actually create the
      * new XML matching the source descriptor.
      *
-     * @param source The {@link ElementDescriptor} of the drag source.
+     * @param sourceFqcn The FQCN of the view being dropped.
      * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by
-     * {@link #beforeDrop(ElementDescriptor, NodeProxy)}
+     * @param selectedZone One of the drop zones returned by {@link #dropStart(INodeProxy)}.
      */
-    void afterDrop(ElementDescriptor source, NodeProxy targetNode, DropZone selectedZone);
+    void dropFinish(String sourceFqcn, INodeProxy targetNode, DropZone selectedZone);
 
-
-    ArrayList<DropZone> beforeMove(NodeProxy sourceNode, NodeProxy targetNode, boolean copy);
-    void afterMove(NodeProxy sourceNode, NodeProxy targetNode, boolean copy, DropZone selectedZone);
+    ArrayList<DropZone> moveStart(INodeProxy sourceNode, INodeProxy targetNode, boolean copy);
+    void moveFinish(INodeProxy sourceNode, INodeProxy targetNode, boolean copy, DropZone selectedZone);
 }

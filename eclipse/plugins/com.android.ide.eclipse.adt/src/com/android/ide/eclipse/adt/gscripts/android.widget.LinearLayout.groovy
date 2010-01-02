@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.editors.layout.gre;
+package com.android.adt.gscripts;
 
-import com.android.ide.eclipse.adt.internal.editors.layout.gre.IViewRule;
-import com.android.ide.eclipse.adt.internal.editors.layout.gre.IViewRule.Rect;
-import com.android.ide.eclipse.adt.internal.editors.layout.gre.IViewRule.DropZone;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.gscripts.IViewRule;
+import com.android.ide.eclipse.adt.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.gscripts.Rect;
+import com.android.ide.eclipse.adt.gscripts.DropZone;
 
 import java.util.ArrayList;
 
-
 /**
- * An {@link IViewRule} for android.view.View and all its derived classes.
- * This is the "root" rule, that is used whenever there is not more specific rule to apply.
+ * An {@link IViewRule} for android.widget.LinearLayout and all its derived classes.
  */
-public class AndroidViewViewRule implements IViewRule {
-
-    private String mFqcn;
+public class AndroidWidgetLinearLayourRule implements IViewRule {
 
     /**
      * This method is called by the rule engine when the script is first loaded.
@@ -44,8 +40,7 @@ public class AndroidViewViewRule implements IViewRule {
      *   given FQCN, in which case the rule engine will find another rule matching a parent clas.
      */
     public boolean onInitialize(String fqcn) {
-        // This rule can handle anything.
-        mFqcn = fqcn
+        // We can handle any class derived from LinearLayout
         return true;
     }
 
@@ -67,10 +62,7 @@ public class AndroidViewViewRule implements IViewRule {
      */
     public String getDisplayName() {
         // Use the default behavior.
-        //return null;
-        // DEBUG:
-        def f = mFqcn.split("\\.");
-        return "View:" + f[f.length-1];
+        return null;
     }
 
 
@@ -78,44 +70,67 @@ public class AndroidViewViewRule implements IViewRule {
     // ==== Drag'n'drop support ====
 
     /**
-     * Called when a drop operation occurs to add a new element, typically dragged from
-     * the view/layout palette. The purpose of the drop operation is to create a new element.
+     * Called when a drop operation starts, whilst the d'n'd is dragging the cursor over the
+     * views. The purpose of the drop operation will be to create a new element.
      * <p/>
      * Drop targets that can't accept child views should always return null.
      * <p/>
-     * The method should return a list of drop zones, customized to the actual bounds
-     * of the target. The drop zones will be visually shown to the user. Once the user drops in
-     * one of the zones the {@link #afterDrop(ElementDescriptor, NodeProxy, DropZone)} method
-     * will be called.
+     * Drop targets that can accept child views must return a non-empty list of drop zones,
+     * customized to the actual bounds of the target.
+     * The drop zones will be visually shown to the user. Once the user releases the mouse
+     * in one of the drop zone, the dropAccept/dropFinish methods will be called.
+     * <p/>
+     * Note that at this stage, the drop operation does not offer a way to know what is going
+     * to be dropped. We just know it's a view descriptor, typically from the layout palette,
+     * but we don't know which view class yet.
      *
-     * @param source The {@link ElementDescriptor} of the drag source.
      * @param targetNode The XML view that is currently the target of the drop.
-     * @return Null if the rule rejects the drop, or a list of usage drop zones.
+     * @return Null or an empty list if the rule rejects the drop, or a list of usable drop zones.
      */
-    public ArrayList<DropZone> beforeDrop(ElementDescriptor source, NodeProxy targetNode) {
-        // By default views do not accept child views.
-        return null;
+    public ArrayList<DropZone> dropStart(INodeProxy targetNode) {
+
+        // By default we accept one drop zone, which is the whole target.
+        DropZone d = new DropZone();
+        d.bounds.set(targetNode.getBounds());
+        d.data = null;
+        //return [ d ];
+
+        targetNode.debugPrint("dropStart " + d.toString());
+
+
+        // for testing, we're going to make 2 drop zones: top and bottom.
+        // TODO find inner elements bounds & orientation, add margings
+        def r = targetNode.getBounds();
+        DropZone d1 = new DropZone();
+        DropZone d2 = new DropZone();
+        r.h /= 2;
+        d1.bounds.set(r);
+        d2.bounds.set(r);
+        d2.bounds.y += r.h;
+
+        return [ d1, d2 ];
     }
 
     /**
      * Called after the user selects to drop the given source into one of the drop zones.
-     * This method should use the methods from the {@link NodeProxy} to actually create the
+     * <p/>
+     * This method should use the methods from the {@link INodeProxy} to actually create the
      * new XML matching the source descriptor.
      *
-     * @param source The {@link ElementDescriptor} of the drag source.
+     * @param sourceFqcn The FQCN of the view being dropped.
      * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by
-     * {@link #beforeDrop(ElementDescriptor, NodeProxy)}
+     * @param selectedZone One of the drop zones returned by {@link #dropStart(INodeProxy)}.
      */
-    public void afterDrop(ElementDescriptor source, NodeProxy targetNode, DropZone selectedZone) {
+    public void dropFinish(String sourceFqcn, INodeProxy targetNode, DropZone selectedZone) {
         // skip, we're not doing drag'n'drop here
     }
 
 
-    public ArrayList<DropZone> beforeMove(NodeProxy sourceNode, NodeProxy targetNode, boolean copy) {
-        // later
+    public ArrayList<DropZone> moveStart(INodeProxy sourceNode, INodeProxy targetNode, boolean copy) {
+        // TODO
     }
-    public void afterMove(NodeProxy sourceNode, NodeProxy targetNode, boolean copy, DropZone selectedZone) {
-        // later
+
+    public void moveFinish(INodeProxy sourceNode, INodeProxy targetNode, boolean copy, DropZone selectedZone) {
+        // TODO
     }
 }

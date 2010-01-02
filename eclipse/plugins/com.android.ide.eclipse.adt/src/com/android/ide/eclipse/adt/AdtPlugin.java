@@ -1382,6 +1382,8 @@ public class AdtPlugin extends AbstractUIPlugin {
             stream.print(" "); //$NON-NLS-1$
             if (obj instanceof String) {
                 stream.println((String)obj);
+            } else if (obj == null) {
+                stream.println("(null)");  //$NON-NLS-1$
             } else {
                 stream.println(obj.toString());
             }
