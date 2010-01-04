@@ -16,24 +16,39 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
-import com.android.ide.eclipse.adt.internal.editors.layout.gre.IViewRule.Rect;
-import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.gscripts.Rect;
+import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
+
+import org.eclipse.swt.graphics.Rectangle;
 
 /**
  *
  */
-public class NodeProxy {
+public class NodeProxy implements INodeProxy {
 
-    private final UiElementNode mNode;
+    private final UiViewElementNode mNode;
     private final Rect mBounds;
 
-    public NodeProxy(UiElementNode node, IViewRule.Rect bounds) {
+    public NodeProxy(UiViewElementNode node, Rectangle bounds) {
         mNode = node;
-        mBounds = bounds;
+        mBounds = new Rect(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
     public Rect getBounds() {
         return mBounds;
+    }
+
+    /* package */ UiViewElementNode getNode() {
+        return mNode;
+    }
+
+    public void debugPrint(String msg) {
+        AdtPlugin.printToConsole(
+                mNode == null ? "Groovy" : mNode.getDescriptor().getXmlLocalName() + ".groovy",
+                msg
+                );
     }
 
 }
