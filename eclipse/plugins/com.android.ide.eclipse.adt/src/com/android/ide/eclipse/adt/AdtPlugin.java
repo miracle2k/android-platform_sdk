@@ -102,6 +102,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -491,21 +492,10 @@ public class AdtPlugin extends AbstractUIPlugin {
      * @return null if the file could not be read
      */
     public static String readEmbeddedTextFile(String filepath) {
-        Bundle bundle = null;
-        synchronized (AdtPlugin.class) {
-            if (sPlugin != null) {
-                bundle = sPlugin.getBundle();
-            } else {
-                return null;
-            }
-        }
-
-        // attempt to get a file to one of the template.
         try {
-            URL url = bundle.getEntry(AndroidConstants.WS_SEP + filepath);
-            if (url != null) {
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(url.openStream()));
+            InputStream is = readEmbeddedFileAsStream(filepath);
+            if (is != null) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 
                 String line;
                 StringBuilder total = new StringBuilder(reader.readLine());
@@ -516,10 +506,8 @@ public class AdtPlugin extends AbstractUIPlugin {
 
                 return total.toString();
             }
-        } catch (MalformedURLException e) {
-            // we'll just return null.
         } catch (IOException e) {
-            // we'll just return null.
+            // we'll just return null;.
         }
 
         return null;
@@ -532,6 +520,36 @@ public class AdtPlugin extends AbstractUIPlugin {
      * @return null if the file could not be read
      */
     public static byte[] readEmbeddedFile(String filepath) {
+        try {
+            InputStream is = readEmbeddedFileAsStream(filepath);
+            if (is != null) {
+                // create a buffered reader to facilitate reading.
+                BufferedInputStream stream = new BufferedInputStream(is);
+
+                // get the size to read.
+                int avail = stream.available();
+
+                // create the buffer and reads it.
+                byte[] buffer = new byte[avail];
+                stream.read(buffer);
+
+                // and return.
+                return buffer;
+            }
+        } catch (IOException e) {
+            // we'll just return null;.
+        }
+
+        return null;
+    }
+
+    /**
+     * Reads and returns the content of a binary file embedded in the plugin jar
+     * file.
+     * @param filepath the file path to the text file
+     * @return null if the file could not be read
+     */
+    public static InputStream readEmbeddedFileAsStream(String filepath) {
         Bundle bundle = null;
         synchronized (AdtPlugin.class) {
             if (sPlugin != null) {
@@ -545,19 +563,7 @@ public class AdtPlugin extends AbstractUIPlugin {
         try {
             URL url = bundle.getEntry(AndroidConstants.WS_SEP + filepath);
             if (url != null) {
-                // create a buffered reader to facilitate reading.
-                BufferedInputStream stream = new BufferedInputStream(
-                        url.openStream());
-
-                // get the size to read.
-                int avail = stream.available();
-
-                // create the buffer and reads it.
-                byte[] buffer = new byte[avail];
-                stream.read(buffer);
-
-                // and return.
-                return buffer;
+                return url.openStream();
             }
         } catch (MalformedURLException e) {
             // we'll just return null.
