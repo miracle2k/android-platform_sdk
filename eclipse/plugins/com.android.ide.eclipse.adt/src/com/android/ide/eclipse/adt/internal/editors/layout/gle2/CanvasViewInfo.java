@@ -138,7 +138,6 @@ import java.util.ArrayList;
     /**
      * Returns the parent {@link CanvasViewInfo}.
      * It is null for the root and non-null for children.
-     * @deprecated TODO Remove if it's not going to be used
      */
     public CanvasViewInfo getParent() {
         return mParent;
