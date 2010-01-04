@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.gscripts.DropZone;
 import com.android.ide.eclipse.adt.gscripts.INodeProxy;
 import com.android.ide.eclipse.adt.gscripts.IViewRule;
@@ -49,7 +50,7 @@ import java.util.Map;
  */
 public class RulesEngine {
 
-    private static final String PROJECT_SCRIPT_DIR = "gscripts";
+    private static final String FD_GSCRIPTS = "gscripts";
     private static final String SCRIPT_EXT = ".groovy";  //$NON-NLS-1$
 
     private final GroovyClassLoader mClassLoader;
@@ -162,7 +163,7 @@ public class RulesEngine {
     private class ProjectFolderListener implements IFolderListener {
         public void folderChanged(IFolder folder, int kind) {
             if (folder.getProject() == mProject &&
-                    PROJECT_SCRIPT_DIR.equals(folder.getName())) {
+                    FD_GSCRIPTS.equals(folder.getName())) {
                 // Clear our whole rules cache, to not have to deal with dependencies.
                 clearCache();
             }
@@ -284,7 +285,8 @@ public class RulesEngine {
         String filename = realFqcn + SCRIPT_EXT;
 
         try {
-            InputStream is = IViewRule.class.getResourceAsStream(filename);
+            InputStream is = AdtPlugin.readEmbeddedFileAsStream(
+                    FD_GSCRIPTS + AndroidConstants.WS_SEP + filename);
             rule = loadStream(is, realFqcn);
             if (rule != null) {
                 return initializeRule(rule, targetFqcn);
@@ -294,7 +296,7 @@ public class RulesEngine {
         }
 
         // Then look for the file in the project
-        IResource r = mProject.findMember(PROJECT_SCRIPT_DIR);
+        IResource r = mProject.findMember(FD_GSCRIPTS);
         if (r != null && r.getType() == IResource.FOLDER) {
             r = ((IFolder) r).findMember(filename);
             if (r != null && r.getType() == IResource.FILE) {
