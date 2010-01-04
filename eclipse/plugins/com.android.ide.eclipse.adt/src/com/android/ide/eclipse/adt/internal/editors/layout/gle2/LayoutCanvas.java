@@ -457,7 +457,7 @@ import java.util.ListIterator;
             return;
         }
 
-        CanvasViewInfo vi = mDropListener.getCurrentView();
+        CanvasViewInfo vi = mDropListener.getTargetView();
         if (vi == null) {
             return;
         }

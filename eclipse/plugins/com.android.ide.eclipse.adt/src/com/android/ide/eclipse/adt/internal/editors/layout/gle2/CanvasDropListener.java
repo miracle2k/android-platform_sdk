@@ -39,13 +39,15 @@ import java.util.ArrayList;
     private CanvasViewInfo mCurrentView;
     private DropZone mCurrentZone;
     private ArrayList<DropZone> mZones;
+    private NodeProxy mTargetNode;
+    private CanvasViewInfo mTargetView;
 
     public CanvasDropListener(LayoutCanvas canvas) {
         mCanvas = canvas;
     }
 
-    public CanvasViewInfo getCurrentView() {
-        return mCurrentView;
+    public CanvasViewInfo getTargetView() {
+        return mTargetView;
     }
 
     public ArrayList<DropZone> getZones() {
@@ -141,6 +143,7 @@ import java.util.ArrayList;
     public void drop(DropTargetEvent event) {
         // TODO Auto-generated method stub
         AdtPlugin.printErrorToConsole("DEBUG", "drop");
+        clearDropInfo();
     }
 
     /**
@@ -221,25 +224,41 @@ import java.util.ArrayList;
 
     private void setCurrentView(CanvasViewInfo vi) {
         // We switched to a new view.
+        clearState();
         mCurrentView = vi;
-        mCurrentZone = null;
-        mZones = null;
 
         if (vi != null) {
-            // Query GRE for drop zones
-            NodeProxy target = new NodeProxy(vi.getUiViewKey(), vi.getAbsRect());
-            mZones = mCanvas.getRulesEngine().dropStart(target);
+            // Query GRE for drop zones. If the view that we found reports null for drop
+            // zones, we move on the parent view till we find one that has drop zones.
+            for (; vi != null && mZones == null; vi = vi.getParent()) {
+                mTargetView = vi;
+                mTargetNode = new NodeProxy(vi.getUiViewKey(), vi.getAbsRect());
+                mZones = mCanvas.getRulesEngine().dropStart(mTargetNode);
+            }
+
+            if (mZones == null) {
+                mTargetView = null;
+                mTargetNode = null;
+            }
+
             AdtPlugin.printErrorToConsole("ZONES", mZones);
         }
 
         mCanvas.redraw();
     }
 
+    private void clearState() {
+        mCurrentView = null;
+        mTargetView = null;
+        mTargetNode = null;
+
+        mCurrentZone = null;
+        mZones = null;
+    }
+
     private void clearDropInfo() {
         if (mCurrentView != null) {
-            mCurrentView = null;
-            mCurrentZone = null;
-            mZones = null;
+            clearState();
             mCanvas.redraw();
         }
     }

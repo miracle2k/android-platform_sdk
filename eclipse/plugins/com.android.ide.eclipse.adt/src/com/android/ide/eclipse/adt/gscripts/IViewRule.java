@@ -31,7 +31,7 @@ import java.util.ArrayList;
  * e.g. "android.widget.LinearLayout.groovy". If the rule engine can't find a groovy script
  * for a given element, it will use the closest matching parent (e.g. View instead of ViewGroup).
  * <p/>
- * Rules instances are stateless. They are created once per View class to handle and are shared
+ * Rule instances are stateless. They are created once per View class to handle and are shared
  * across platforms or editor instances. As such, rules methods should never cache editor-specific
  * arguments that they might receive.
  */
@@ -76,7 +76,8 @@ public interface IViewRule {
      * Called when a drop operation starts, whilst the d'n'd is dragging the cursor over the
      * views. The purpose of the drop operation will be to create a new element.
      * <p/>
-     * Drop targets that can't accept child views should always return null.
+     * Drop targets that can't accept child views should always return null, in which case
+     * the rule engine will ask the parent view (typically a layout).
      * <p/>
      * Drop targets that can accept child views must return a non-empty list of drop zones,
      * customized to the actual bounds of the target.
