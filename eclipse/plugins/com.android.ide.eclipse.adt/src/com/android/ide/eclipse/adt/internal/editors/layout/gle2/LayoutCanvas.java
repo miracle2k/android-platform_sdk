@@ -16,18 +16,16 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.gscripts.DropZone;
+import com.android.ide.eclipse.adt.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
-import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.layoutlib.api.ILayoutResult;
-import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DropTarget;
-import org.eclipse.swt.dnd.DropTargetEvent;
-import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
@@ -69,18 +67,14 @@ import java.util.ListIterator;
  * - handle context menu (depending on selection).
  * - selection synchronization with the outline (both ways).
  */
-public class LayoutCanvas extends Canvas {
+/* package */  class LayoutCanvas extends Canvas {
 
     /**
      * Margin around the rendered image. Should be enough space to display the layout
      * width and height pseudo widgets.
      */
-    private static final int IMAGE_MARGIN = 5;
+    static final int IMAGE_MARGIN = 5;
 
-    /**
-     * Minimal size of the selection, in case an empty view or layout is selected.
-     */
-    private static final int SELECTION_MIN_SIZE = 6;
 
     /** The Groovy Rules Engine, associated with the current project. */
     private RulesEngine mRulesEngine;
@@ -93,11 +87,11 @@ public class LayoutCanvas extends Canvas {
     private ILayoutResult mLastValidResult;
 
     /**
-     * The ViewInfo root created for the last update of {@link #mLastValidResult}.
+     * The CanvasViewInfo root created for the last update of {@link #mLastValidResult}.
      * This is null when {@link #mLastValidResult} is null.
      * When non null, {@link #mLastValidResult} is guaranteed to be non-null too.
      */
-    private ViewInfo mLastValidViewInfoRoot;
+    private CanvasViewInfo mLastValidViewInfoRoot;
 
     /**
      * True when the last {@link #setResult(ILayoutResult)} provided a valid {@link ILayoutResult}
@@ -114,12 +108,12 @@ public class LayoutCanvas extends Canvas {
     private Image mImage;
 
     /** The current selection list. The list is never null, however it can be empty. */
-    private final LinkedList<Selection> mSelections = new LinkedList<Selection>();
+    private final LinkedList<CanvasSelection> mSelections = new LinkedList<CanvasSelection>();
 
-    /** Selection border color. Do not dispose, it's a system color. */
+    /** CanvasSelection border color. Do not dispose, it's a system color. */
     private Color mSelectionFgColor;
 
-    /** Selection name font. Do not dispose, it's a system font. */
+    /** CanvasSelection name font. Do not dispose, it's a system font. */
     private Font mSelectionFont;
 
     /** Pixel height of the font displaying the selection name. Initially set to 0 and only
@@ -127,7 +121,7 @@ public class LayoutCanvas extends Canvas {
     private int mSelectionFontHeight;
 
     /** Current hover view info. Null when no mouse hover. */
-    private ViewInfo mHoverViewInfo;
+    private CanvasViewInfo mHoverViewInfo;
 
     /** Current mouse hover border rectangle. Null when there's no mouse hover. */
     private Rectangle mHoverRect;
@@ -142,13 +136,19 @@ public class LayoutCanvas extends Canvas {
      * The <em>current</em> alternate selection, if any, which changes when the Alt key is
      * used during a selection. Can be null.
      */
-    private AlternateSelection mAltSelection;
+    private CanvasAlternateSelection mAltSelection;
 
     /** When true, always display the outline of all views. */
     private boolean mShowOutline;
 
     /** Drop target associated with this composite. */
     private DropTarget mDropTarget;
+
+    /** Drop listener, with feedback from current drop */
+    private CanvasDropListener mDropListener;
+
+    /** Drop color. Do not dispose, it's a system color. */
+    private Color mDropFgColor;
 
 
     public LayoutCanvas(Composite parent, int style) {
@@ -159,6 +159,7 @@ public class LayoutCanvas extends Canvas {
         mHoverFgColor     = new Color(d, 0xFF, 0x99, 0x00); // orange
         mOutlineColor     = d.getSystemColor(SWT.COLOR_GREEN);
         mSelectionFont    = d.getSystemFont();
+        mDropFgColor      = d.getSystemColor(SWT.COLOR_YELLOW);
 
         addPaintListener(new PaintListener() {
             public void paintControl(PaintEvent e) {
@@ -186,9 +187,10 @@ public class LayoutCanvas extends Canvas {
             }
         });
 
-        mDropTarget = new DropTarget(this, DND.DROP_COPY | DND.DROP_MOVE);
+        mDropTarget = new DropTarget(this, DND.DROP_COPY | DND.DROP_MOVE | DND.DROP_DEFAULT);
         mDropTarget.setTransfer(new Transfer[] { ElementDescTransfer.getInstance() });
-        mDropTarget.addDropListener(new CanvasDropListener());
+        mDropListener = new CanvasDropListener(this);
+        mDropTarget.addDropListener(mDropListener);
     }
 
     @Override
@@ -211,7 +213,26 @@ public class LayoutCanvas extends Canvas {
         }
     }
 
-    public void setRulesEngine(RulesEngine rulesEngine) {
+    /**
+     * Returns true when the last {@link #setResult(ILayoutResult)} provided a valid
+     * {@link ILayoutResult} in which case it is also available in {@link #mLastValidResult}.
+     * When false this means the canvas is displaying an out-dated result image & bounds and some
+     * features should be disabled accordingly such a drag'n'drop.
+     * <p/>
+     * When this is false, {@link #mLastValidResult} can be non-null and points to an older
+     * layout result.
+     */
+    /* package */ boolean isResultValid() {
+        return mIsResultValid;
+    }
+
+    /** Returns the Groovy Rules Engine, associated with the current project. */
+    /* package */ RulesEngine getRulesEngine() {
+        return mRulesEngine;
+    }
+
+    /** Sets the Groovy Rules Engine, associated with the current project. */
+    /* package */ void setRulesEngine(RulesEngine rulesEngine) {
         mRulesEngine = rulesEngine;
     }
 
@@ -233,24 +254,24 @@ public class LayoutCanvas extends Canvas {
 
         if (mIsResultValid && result != null) {
             mLastValidResult = result;
-            mLastValidViewInfoRoot = new ViewInfo(result.getRootView());
+            mLastValidViewInfoRoot = new CanvasViewInfo(result.getRootView());
             setImage(result.getImage());
 
             // Check if the selection is still the same (based on the object keys)
             // and eventually recompute their bounds.
-            for (ListIterator<Selection> it = mSelections.listIterator(); it.hasNext(); ) {
-                Selection s = it.next();
+            for (ListIterator<CanvasSelection> it = mSelections.listIterator(); it.hasNext(); ) {
+                CanvasSelection s = it.next();
 
                 // Check the if the selected object still exists
                 Object key = s.getViewInfo().getUiViewKey();
-                ViewInfo vi = findViewInfoKey(key, mLastValidViewInfoRoot);
+                CanvasViewInfo vi = findViewInfoKey(key, mLastValidViewInfoRoot);
 
                 // Remove the previous selection -- if the selected object still exists
                 // we need to recompute its bounds in case it moved so we'll insert a new one
                 // at the same place.
                 it.remove();
                 if (vi != null) {
-                    it.add(new Selection(vi));
+                    it.add(new CanvasSelection(vi, mRulesEngine));
                 }
             }
 
@@ -339,6 +360,26 @@ public class LayoutCanvas extends Canvas {
     }
 
     /**
+     * Sets the alpha for the given GC.
+     * <p/>
+     * Alpha may not work on all platforms and may fail with an exception.
+     *
+     * @param gc the GC to change
+     * @param alpha the new alpha, 0 for transparent, 255 for opaque.
+     * @return True if the operation worked, false if it failed with an exception.
+     *
+     * @see GC#setAlpha(int)
+     */
+    private boolean gc_setAlpha(GC gc, int alpha) {
+        try {
+            gc.setAlpha(alpha);
+            return true;
+        } catch (SWTException e) {
+            return false;
+        }
+    }
+
+    /**
      * Paints the canvas in response to paint events.
      */
     private void onPaint(PaintEvent e) {
@@ -346,13 +387,13 @@ public class LayoutCanvas extends Canvas {
 
         if (mImage != null) {
             if (!mIsResultValid) {
-                gc.setAlpha(128);
+                gc_setAlpha(gc, 128);  // half-transparent
             }
 
             gc.drawImage(mImage, IMAGE_MARGIN, IMAGE_MARGIN);
 
             if (!mIsResultValid) {
-                gc.setAlpha(255);
+                gc_setAlpha(gc, 255);  // opaque
             }
         }
 
@@ -375,27 +416,29 @@ public class LayoutCanvas extends Canvas {
             mSelectionFontHeight = fm.getHeight();
         }
 
-        for (Selection s : mSelections) {
+        for (CanvasSelection s : mSelections) {
             drawSelection(gc, s);
         }
+
+        drawDropZones(gc);
     }
 
-    private void drawOutline(GC gc, ViewInfo info) {
+    private void drawOutline(GC gc, CanvasViewInfo info) {
 
         Rectangle r = info.getAbsRect();
         gc.drawRectangle(r.x + IMAGE_MARGIN, r.y + IMAGE_MARGIN, r.width, r.height);
 
-        for (ViewInfo vi : info.getChildren()) {
+        for (CanvasViewInfo vi : info.getChildren()) {
             drawOutline(gc, vi);
         }
     }
 
-    private void drawSelection(GC gc, Selection s) {
+    private void drawSelection(GC gc, CanvasSelection s) {
         Rectangle r = s.getRect();
 
         gc.setForeground(mSelectionFgColor);
         gc.setLineStyle(SWT.LINE_SOLID);
-        gc.drawRectangle(s.mRect);
+        gc.drawRectangle(s.getRect());
 
         String name = s.getName();
 
@@ -409,13 +452,62 @@ public class LayoutCanvas extends Canvas {
         }
     }
 
+    private void drawDropZones(GC gc) {
+        if (mDropListener == null) {
+            return;
+        }
+
+        CanvasViewInfo vi = mDropListener.getCurrentView();
+        if (vi == null) {
+            return;
+        }
+
+        gc.setForeground(mDropFgColor);
+
+        ArrayList<DropZone> zones = mDropListener.getZones();
+        if (zones != null) {
+
+            gc.setLineStyle(SWT.LINE_SOLID);
+            gc.setLineWidth(1);
+
+            DropZone curr = mDropListener.getCurrentZone();
+
+            for (DropZone zone : zones) {
+                Rect r = zone.bounds;
+                if (r != null && r.w > 0 && r.h > 0) {
+                    int x = r.x + IMAGE_MARGIN;
+                    int y = r.y + IMAGE_MARGIN;
+
+                    int alpha = 128;                        // half-transparent
+                    if (zone == curr) {
+                        alpha = 192;
+                    }
+
+                    if (gc_setAlpha(gc, alpha)) {
+                        gc.fillRectangle(x, y, r.w, r.h);
+                        gc_setAlpha(gc, 255);               // opaque
+                    }
+
+                    gc.drawRectangle(x, y, r.w, r.h);
+                }
+            }
+
+        }
+
+        gc.setLineStyle(SWT.LINE_DOT);
+        gc.setLineWidth(3);
+        Rectangle r = vi.getAbsRect();
+        gc.drawRectangle(r.x + IMAGE_MARGIN, r.y + IMAGE_MARGIN, r.width, r.height);
+        gc.setLineWidth(1);
+    }
+
     /**
      * Hover on top of a known child.
      */
     private void onMouseMove(MouseEvent e) {
         if (mLastValidResult != null) {
-            ViewInfo root = mLastValidViewInfoRoot;
-            ViewInfo vi = findViewInfoAt(e.x - IMAGE_MARGIN, e.y - IMAGE_MARGIN, root);
+            CanvasViewInfo root = mLastValidViewInfoRoot;
+            CanvasViewInfo vi = findViewInfoAt(e.x - IMAGE_MARGIN, e.y - IMAGE_MARGIN);
 
             // We don't hover on the root since it's not a widget per see and it is always there.
             if (vi == root) {
@@ -458,7 +550,7 @@ public class LayoutCanvas extends Canvas {
 
             int x = e.x - IMAGE_MARGIN;
             int y = e.y - IMAGE_MARGIN;
-            ViewInfo vi = findViewInfoAt(x, y, mLastValidViewInfoRoot);
+            CanvasViewInfo vi = findViewInfoAt(x, y);
 
             if (isShift && !isAlt) {
                 // Case where shift is pressed: pointed object is toggled.
@@ -477,7 +569,7 @@ public class LayoutCanvas extends Canvas {
                     }
 
                     // otherwise add it.
-                    mSelections.add(new Selection(vi));
+                    mSelections.add(new CanvasSelection(vi, mRulesEngine));
                     redraw();
                 }
 
@@ -492,27 +584,27 @@ public class LayoutCanvas extends Canvas {
                 // create one. If there's one but not for the same origin object, create a new
                 // one too.
                 if (mAltSelection == null || mAltSelection.getOriginatingView() != vi) {
-                    mAltSelection = new AlternateSelection(vi, findAltViewInfoAt(
+                    mAltSelection = new CanvasAlternateSelection(vi, findAltViewInfoAt(
                                                     x, y, mLastValidViewInfoRoot, null));
 
                     // deselect them all, in case they were partially selected
                     deselectAll(mAltSelection.getAltViews());
 
                     // select the current one
-                    ViewInfo vi2 = mAltSelection.getCurrent();
+                    CanvasViewInfo vi2 = mAltSelection.getCurrent();
                     if (vi2 != null) {
-                        mSelections.addFirst(new Selection(vi2));
+                        mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine));
                     }
                 } else {
                     // We're trying to cycle through the current alternate selection.
                     // First remove the current object.
-                    ViewInfo vi2 = mAltSelection.getCurrent();
+                    CanvasViewInfo vi2 = mAltSelection.getCurrent();
                     deselect(vi2);
 
                     // Now select the next one.
                     vi2 = mAltSelection.getNext();
                     if (vi2 != null) {
-                        mSelections.addFirst(new Selection(vi2));
+                        mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine));
                     }
                 }
                 redraw();
@@ -526,14 +618,14 @@ public class LayoutCanvas extends Canvas {
                 // reset (multi)selection if any
                 if (mSelections.size() > 0) {
                     if (mSelections.size() == 1 && mSelections.getFirst().getViewInfo() == vi) {
-                        // Selection remains the same, don't touch it.
+                        // CanvasSelection remains the same, don't touch it.
                         return;
                     }
                     mSelections.clear();
                 }
 
                 if (vi != null) {
-                    mSelections.add(new Selection(vi));
+                    mSelections.add(new CanvasSelection(vi, mRulesEngine));
                 }
                 redraw();
             }
@@ -541,14 +633,14 @@ public class LayoutCanvas extends Canvas {
     }
 
     /** Deselects a view info. Returns true if the object was actually selected. */
-    private boolean deselect(ViewInfo viewInfo) {
-        if (viewInfo == null) {
+    private boolean deselect(CanvasViewInfo canvasViewInfo) {
+        if (canvasViewInfo == null) {
             return false;
         }
 
-        for (ListIterator<Selection> it = mSelections.listIterator(); it.hasNext(); ) {
-            Selection s = it.next();
-            if (viewInfo == s.getViewInfo()) {
+        for (ListIterator<CanvasSelection> it = mSelections.listIterator(); it.hasNext(); ) {
+            CanvasSelection s = it.next();
+            if (canvasViewInfo == s.getViewInfo()) {
                 it.remove();
                 return true;
             }
@@ -558,10 +650,10 @@ public class LayoutCanvas extends Canvas {
     }
 
     /** Deselects multiple view infos, */
-    private void deselectAll(List<ViewInfo> viewInfos) {
-        for (ListIterator<Selection> it = mSelections.listIterator(); it.hasNext(); ) {
-            Selection s = it.next();
-            if (viewInfos.contains(s.getViewInfo())) {
+    private void deselectAll(List<CanvasViewInfo> canvasViewInfos) {
+        for (ListIterator<CanvasSelection> it = mSelections.listIterator(); it.hasNext(); ) {
+            CanvasSelection s = it.next();
+            if (canvasViewInfos.contains(s.getViewInfo())) {
                 it.remove();
             }
         }
@@ -575,14 +667,14 @@ public class LayoutCanvas extends Canvas {
      * Tries to find a child with the same view key in the view info sub-tree.
      * Returns null if not found.
      */
-    private ViewInfo findViewInfoKey(Object viewKey, ViewInfo viewInfo) {
-        if (viewInfo.getUiViewKey() == viewKey) {
-            return viewInfo;
+    private CanvasViewInfo findViewInfoKey(Object viewKey, CanvasViewInfo canvasViewInfo) {
+        if (canvasViewInfo.getUiViewKey() == viewKey) {
+            return canvasViewInfo;
         }
 
         // try to find a matching child
-        for (ViewInfo child : viewInfo.getChildren()) {
-            ViewInfo v = findViewInfoKey(viewKey, child);
+        for (CanvasViewInfo child : canvasViewInfo.getChildren()) {
+            CanvasViewInfo v = findViewInfoKey(viewKey, child);
             if (v != null) {
                 return v;
             }
@@ -591,37 +683,53 @@ public class LayoutCanvas extends Canvas {
         return null;
     }
 
+
+    /**
+     * Tries to find the inner most child matching the given x,y coordinates in the view
+     * info sub-tree, starting at the last know view info root.
+     * This uses the potentially-expanded selection bounds.
+     *
+     * Returns null if not found or if there's view info root.
+     */
+    /* package */ CanvasViewInfo findViewInfoAt(int x, int y) {
+        if (mLastValidViewInfoRoot == null) {
+            return null;
+        } else {
+            return findViewInfoAt(x, y, mLastValidViewInfoRoot);
+        }
+    }
+
     /**
      * Tries to find the inner most child matching the given x,y coordinates in the view
      * info sub-tree. This uses the potentially-expanded selection bounds.
      *
      * Returns null if not found.
      */
-    private ViewInfo findViewInfoAt(int x, int y, ViewInfo viewInfo) {
-        Rectangle r = viewInfo.getSelectionRect();
+    private CanvasViewInfo findViewInfoAt(int x, int y, CanvasViewInfo canvasViewInfo) {
+        Rectangle r = canvasViewInfo.getSelectionRect();
         if (r.contains(x, y)) {
 
             // try to find a matching child first
-            for (ViewInfo child : viewInfo.getChildren()) {
-                ViewInfo v = findViewInfoAt(x, y, child);
+            for (CanvasViewInfo child : canvasViewInfo.getChildren()) {
+                CanvasViewInfo v = findViewInfoAt(x, y, child);
                 if (v != null) {
                     return v;
                 }
             }
 
             // if no children matched, this is the view that we're looking for
-            return viewInfo;
+            return canvasViewInfo;
         }
 
         return null;
     }
 
-    private ArrayList<ViewInfo> findAltViewInfoAt(
-            int x, int y, ViewInfo parent, ArrayList<ViewInfo> outList) {
+    private ArrayList<CanvasViewInfo> findAltViewInfoAt(
+            int x, int y, CanvasViewInfo parent, ArrayList<CanvasViewInfo> outList) {
         Rectangle r;
 
         if (outList == null) {
-            outList = new ArrayList<ViewInfo>();
+            outList = new ArrayList<CanvasViewInfo>();
 
             // add the parent root only once
             r = parent.getSelectionRect();
@@ -632,7 +740,7 @@ public class LayoutCanvas extends Canvas {
 
         if (parent.getChildren().size() > 0) {
             // then add all children that match the position
-            for (ViewInfo child : parent.getChildren()) {
+            for (CanvasViewInfo child : parent.getChildren()) {
                 r = child.getSelectionRect();
                 if (r.contains(x, y)) {
                     outList.add(child);
@@ -640,7 +748,7 @@ public class LayoutCanvas extends Canvas {
             }
 
             // finally recurse in the children
-            for (ViewInfo child : parent.getChildren()) {
+            for (CanvasViewInfo child : parent.getChildren()) {
                 r = child.getSelectionRect();
                 if (r.contains(x, y)) {
                     findAltViewInfoAt(x, y, child, outList);
@@ -654,393 +762,13 @@ public class LayoutCanvas extends Canvas {
     /**
      * Used by {@link #onSelectAll()} to add all current view infos to the selection list.
      *
-     * @param viewInfo The root to add. This info and all its children will be added to the
+     * @param canvasViewInfo The root to add. This info and all its children will be added to the
      *                 selection list.
      */
-    private void selectAllViewInfos(ViewInfo viewInfo) {
-        mSelections.add(new Selection(viewInfo));
-        for (ViewInfo vi : viewInfo.getChildren()) {
+    private void selectAllViewInfos(CanvasViewInfo canvasViewInfo) {
+        mSelections.add(new CanvasSelection(canvasViewInfo, mRulesEngine));
+        for (CanvasViewInfo vi : canvasViewInfo.getChildren()) {
             selectAllViewInfos(vi);
         }
-    }
-
-    /**
-     * Maps a {@link ILayoutViewInfo} in a structure more adapted to our needs.
-     * The only large difference is that we keep both the original bounds of the view info
-     * and we pre-compute the selection bounds which are absolute to the rendered image (where
-     * as the original bounds are relative to the parent view.)
-     * <p/>
-     * Each view also know its parent, which should be handy later.
-     * <p/>
-     * We can't alter {@link ILayoutViewInfo} as it is part of the LayoutBridge and needs to
-     * have a fixed API.
-     */
-    private static class ViewInfo {
-        private final Rectangle mAbsRect;
-        private final Rectangle mSelectionRect;
-        private final String mName;
-        private final UiViewElementNode mUiViewKey;
-        private final ViewInfo mParent;
-        private final ArrayList<ViewInfo> mChildren = new ArrayList<ViewInfo>();
-
-        /**
-         * Constructs a {@link ViewInfo} hierarchy based on a given {@link ILayoutViewInfo}
-         * hierarchy. This call is recursive and builds a full tree.
-         *
-         * @param viewInfo The root of the {@link ILayoutViewInfo} hierarchy.
-         */
-        public ViewInfo(ILayoutViewInfo viewInfo) {
-            this(viewInfo, null /*parent*/, 0 /*parentX*/, 0 /*parentY*/);
-        }
-
-        private ViewInfo(ILayoutViewInfo viewInfo, ViewInfo parent, int parentX, int parentY) {
-            mParent = parent;
-            mName = viewInfo.getName();
-
-            // The ILayoutViewInfo#getViewKey() method returns a key which depends on the
-            // IXmlPullParser used to parse the layout files. In this case, the parser is
-            // guaranteed to be an UiElementPullParser, which creates keys that are of type
-            // UiViewElementNode.
-            // We'll simply crash if the type is not right, as this is not supposed to happen
-            // and nothing could work if there's a type mismatch.
-            mUiViewKey  = (UiViewElementNode) viewInfo.getViewKey();
-
-            int x = viewInfo.getLeft();
-            int y = viewInfo.getTop();
-            int w = viewInfo.getRight() - x;
-            int h = viewInfo.getBottom() - y;
-
-            if (parent != null) {
-                x += parentX;
-                y += parentY;
-            }
-
-            mAbsRect = new Rectangle(x, y, w - 1, h - 1);
-
-            if (viewInfo.getChildren() != null) {
-                for (ILayoutViewInfo child : viewInfo.getChildren()) {
-                    mChildren.add(new ViewInfo(child, this, x, y));
-                }
-            }
-
-            // adjust selection bounds for views which are too small to select
-
-            if (w < SELECTION_MIN_SIZE) {
-                int d = (SELECTION_MIN_SIZE - w) / 2;
-                x -= d;
-                w += SELECTION_MIN_SIZE - w;
-            }
-
-            if (h < SELECTION_MIN_SIZE) {
-                int d = (SELECTION_MIN_SIZE - h) / 2;
-                y -= d;
-                h += SELECTION_MIN_SIZE - h;
-            }
-
-            mSelectionRect = new Rectangle(x, y, w - 1, h - 1);
-        }
-
-        /**
-         * Returns the original {@link ILayoutResult} bounds in absolute coordinates
-         * over the whole graphic.
-         */
-        public Rectangle getAbsRect() {
-            return mAbsRect;
-        }
-
-        /*
-        * Returns the absolute selection bounds of the view info as a rectangle.
-        * The selection bounds will always have a size greater or equal to
-        * {@link #SELECTION_MIN_SIZE}.
-        * The width/height is inclusive (i.e. width = right-left-1).
-        * This is in absolute "screen" coordinates (relative to the rendered bitmap).
-        */
-        public Rectangle getSelectionRect() {
-            return mSelectionRect;
-        }
-
-        /**
-         * Returns the view key. Could be null, although unlikely.
-         * @return An {@link UiViewElementNode} that uniquely identifies the object in the XML model.
-         * @see ILayoutViewInfo#getViewKey()
-         */
-        public UiViewElementNode getUiViewKey() {
-            return mUiViewKey;
-        }
-
-        /**
-         * Returns the parent {@link ViewInfo}.
-         * It is null for the root and non-null for children.
-         * @deprecated TODO Remove if it's not going to be used
-         */
-        @SuppressWarnings("unused")
-        public ViewInfo getParent() {
-            return mParent;
-        }
-
-        /**
-         * Returns the list of children of this {@link ViewInfo}.
-         * The list is never null. It can be empty.
-         * By contract, this.getChildren().get(0..n-1).getParent() == this.
-         */
-        public ArrayList<ViewInfo> getChildren() {
-            return mChildren;
-        }
-
-        /**
-         * Returns the name of the {@link ViewInfo}.
-         * Could be null, although unlikely.
-         * Experience shows this is the full qualified Java name of the View.
-         * @see ILayoutViewInfo#getName()
-         */
-        public String getName() {
-            return mName;
-        }
-    }
-
-    /**
-     * Represents one selection.
-     */
-    private class Selection {
-        /** Current selected view info. Cannot be null. */
-        private final ViewInfo mViewInfo;
-
-        /** Current selection border rectangle. Cannot be null. */
-        private final Rectangle mRect;
-
-        /** The name displayed over the selection, typically the widget class name. Can be null. */
-        private final String mName;
-
-        /**
-         * Creates a new {@link Selection} object.
-         * @param viewInfo The view info being selected. Must not be null.
-         */
-        public Selection(ViewInfo viewInfo) {
-
-            assert viewInfo != null;
-
-            mViewInfo = viewInfo;
-
-            if (viewInfo == null) {
-                mRect = null;
-            } else {
-                Rectangle r = viewInfo.getSelectionRect();
-                mRect = new Rectangle(r.x + IMAGE_MARGIN, r.y + IMAGE_MARGIN, r.width, r.height);
-            }
-
-            mName = getViewShortName(viewInfo);
-        }
-
-        private String getViewShortName(ViewInfo viewInfo) {
-            if (viewInfo == null) {
-                return null;
-            }
-
-            String fqcn = viewInfo.getName();
-            if (fqcn == null) {
-                return null;
-            }
-
-            String name = mRulesEngine.getDisplayName(viewInfo.getUiViewKey());
-
-            if (name == null) {
-                // The name is typically a fully-qualified class name. Let's make it a tad shorter.
-
-                if (fqcn.startsWith("android.")) {                                      // $NON-NLS-1$
-                    // For android classes, convert android.foo.Name to android...Name
-                    int first = fqcn.indexOf('.');
-                    int last = fqcn.lastIndexOf('.');
-                    if (last > first) {
-                        name = fqcn.substring(0, first) + ".." + fqcn.substring(last);   // $NON-NLS-1$
-                    }
-                } else {
-                    // For custom non-android classes, it's best to keep the 2 first segments of
-                    // the namespace, e.g. we want to get something like com.example...MyClass
-                    int first = fqcn.indexOf('.');
-                    first = fqcn.indexOf('.', first + 1);
-                    int last = fqcn.lastIndexOf('.');
-                    if (last > first) {
-                        name = fqcn.substring(0, first) + ".." + fqcn.substring(last);   // $NON-NLS-1$
-                    }
-                }
-            }
-
-            return name;
-        }
-
-        /**
-         * Returns the selected view info. Cannot be null.
-         */
-        public ViewInfo getViewInfo() {
-            return mViewInfo;
-        }
-
-        /**
-         * Returns the selection border rectangle.
-         * Cannot be null.
-         */
-        public Rectangle getRect() {
-            return mRect;
-        }
-
-        /**
-         * The name displayed over the selection, typically the widget class name.
-         * Can be null.
-         */
-        public String getName() {
-            return mName;
-        }
-    }
-
-    /**
-     * Information for the current alternate selection, i.e. the possible selected items
-     * that are located at the same x/y as the original view, either sibling or parents.
-     */
-    private static class AlternateSelection {
-        private final ViewInfo mOriginatingView;
-        private final List<ViewInfo> mAltViews;
-        private int mIndex;
-
-        /**
-         * Creates a new alternate selection based on the given originating view and the
-         * given list of alternate views. Both cannot be null.
-         */
-        public AlternateSelection(ViewInfo originatingView, List<ViewInfo> altViews) {
-            assert originatingView != null;
-            assert altViews != null;
-            mOriginatingView = originatingView;
-            mAltViews = altViews;
-            mIndex = altViews.size() - 1;
-        }
-
-        /** Returns the list of alternate views. Cannot be null. */
-        public List<ViewInfo> getAltViews() {
-            return mAltViews;
-        }
-
-        /** Returns the originating view. Cannot be null. */
-        public ViewInfo getOriginatingView() {
-            return mOriginatingView;
-        }
-
-        /**
-         * Returns the current alternate view to select.
-         * Initially this is the top-most view.
-         */
-        public ViewInfo getCurrent() {
-            return mIndex >= 0 ? mAltViews.get(mIndex) : null;
-        }
-
-        /**
-         * Changes the current view to be the next one and then returns it.
-         * This loops through the alternate views.
-         */
-        public ViewInfo getNext() {
-            if (mIndex == 0) {
-                mIndex = mAltViews.size() - 1;
-            } else if (mIndex > 0) {
-                mIndex--;
-            }
-
-            return getCurrent();
-        }
-    }
-
-    // --- drop support ----
-
-    private class CanvasDropListener implements DropTargetListener {
-
-        private ViewInfo mCurrentView;
-
-        /*
-         * The cursor has entered the drop target boundaries.
-         * {@inheritDoc}
-         */
-        public void dragEnter(DropTargetEvent event) {
-            AdtPlugin.printErrorToConsole("DEBUG", "drag enter", event);
-            updateDropInfo(event);
-        }
-
-        /*
-         * The cursor has left the drop target boundaries.
-         * {@inheritDoc}
-         */
-        public void dragLeave(DropTargetEvent event) {
-            AdtPlugin.printErrorToConsole("DEBUG", "drag leave");
-            clearDropInfo();
-        }
-
-        /*
-         * The operation being performed has changed (e.g. modifier key).
-         * {@inheritDoc}
-         */
-        public void dragOperationChanged(DropTargetEvent event) {
-            // TODO Auto-generated method stub
-            AdtPlugin.printErrorToConsole("DEBUG", "drag changed");
-
-        }
-
-        /*
-         * The cursor is moving over the drop target.
-         * {@inheritDoc}
-         */
-        public void dragOver(DropTargetEvent event) {
-            // TODO Auto-generated method stub
-            AdtPlugin.printErrorToConsole("DEBUG", "drag over", event);
-            updateDropInfo(event);
-        }
-
-        /*
-         * The drop is about to be performed.
-         * The drop target is given a last chance to change the nature of the drop
-         * {@inheritDoc}
-         */
-        public void dropAccept(DropTargetEvent event) {
-            // TODO Auto-generated method stub
-            AdtPlugin.printErrorToConsole("DEBUG", "drop accept");
-
-        }
-
-        /*
-         * The data is being dropped.
-         * {@inheritDoc}
-         */
-        public void drop(DropTargetEvent event) {
-            // TODO Auto-generated method stub
-            AdtPlugin.printErrorToConsole("DEBUG", "drop");
-
-        }
-
-        private void updateDropInfo(DropTargetEvent event) {
-            if (!mIsResultValid) {
-                // We don't allow drop on an invalid layout, even if we have some obsolete
-                // layout info for it.
-                clearDropInfo();
-                return;
-            }
-
-            int x = event.x - IMAGE_MARGIN;
-            int y = event.y - IMAGE_MARGIN;
-            ViewInfo vi = findViewInfoAt(x, y, mLastValidViewInfoRoot);
-
-            if (vi != mCurrentView) {
-                // We switched to a new view.
-                mCurrentView = vi;
-
-                // Query
-
-                redraw();
-            }
-        }
-
-        private void clearDropInfo() {
-            if (mCurrentView != null) {
-                mCurrentView = null;
-                // TODO
-                redraw();
-            }
-        }
-
-
     }
 }

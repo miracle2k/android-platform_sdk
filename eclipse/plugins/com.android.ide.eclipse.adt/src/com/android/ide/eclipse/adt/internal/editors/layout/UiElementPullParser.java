@@ -149,7 +149,7 @@ public final class UiElementPullParser extends BasePullParser {
      * <p/>
      * Currently used by:
      * - private method GraphicalLayoutEditor#updateNodeWithBounds(ILayoutViewInfo).
-     * - private constructor of LayoutCanvas.ViewInfo.
+     * - private constructor of LayoutCanvas.CanvasViewInfo.
      */
     public Object getViewKey() {
         return getCurrentNode();
