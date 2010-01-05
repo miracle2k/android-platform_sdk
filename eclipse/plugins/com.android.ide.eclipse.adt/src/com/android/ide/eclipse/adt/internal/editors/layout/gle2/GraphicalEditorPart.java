@@ -954,7 +954,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
                             ILayoutResult result = computeLayout(bridge, parser,
                                     iProject /* projectKey */,
-                                    rect.width, rect.height, !mConfigComposite.getClipping(),
+                                    width, height, !mConfigComposite.getClipping(),
                                     density, xdpi, ydpi,
                                     theme, isProjectTheme,
                                     configuredProjectRes, frameworkResources, mProjectCallback,
