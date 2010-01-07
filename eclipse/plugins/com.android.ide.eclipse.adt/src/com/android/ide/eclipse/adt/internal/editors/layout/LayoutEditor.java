@@ -27,13 +27,12 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorP
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiActions;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.gef.ui.parts.TreeViewer;
 import org.eclipse.ui.IEditorInput;
@@ -151,11 +150,10 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
                 IEditorInput input = getEditorInput();
                 if (input instanceof FileEditorInput) {
                     FileEditorInput fileInput = (FileEditorInput)input;
-                    ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(
-                            fileInput.getFile());
-                    if (resFolder != null) {
-                        mGraphicalEditor.editNewFile(resFolder.getConfiguration());
-                    }
+                    mGraphicalEditor.initWithFile(fileInput.getFile());
+                } else {
+                    AdtPlugin.log(IStatus.ERROR, "Input is not of type FileEditorInput: %1$s",
+                            input.toString());
                 }
 
                 // put in place the listener to handle layout recompute only when needed.
@@ -414,8 +412,7 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
         if (mGraphicalEditor != null) {
             mGraphicalEditor.reloadEditor();
             mGraphicalEditor.reloadPalette();
-            mGraphicalEditor.reloadConfigurationUi(true /*notify listener */);
-            mGraphicalEditor.recomputeLayout();
+            mGraphicalEditor.onTargetChange();
         }
     }
 
