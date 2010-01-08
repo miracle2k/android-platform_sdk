@@ -480,6 +480,8 @@ public class Sdk implements IProjectListener, IFileListener {
                 if (project != null) {
                     bundle.projecsToReload.add(project);
                 }
+
+                return bundle.status;
             } else if (bundle.status == LoadStatus.LOADED || bundle.status == LoadStatus.FAILED) {
                 return bundle.status;
             }
@@ -538,7 +540,9 @@ public class Sdk implements IProjectListener, IFileListener {
             job.schedule();
         }
 
-        return null;
+        // The only way to go through here is when the loading starts through the Job.
+        // Therefore the current status of the target is LOADING.
+        return LoadStatus.LOADING;
     }
 
     /**

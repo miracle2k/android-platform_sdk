@@ -25,16 +25,18 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.RegionQuali
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenDimensionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier;
-import com.android.ide.eclipse.adt.internal.resources.configurations.VersionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier.Density;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier.ScreenOrientation;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
+import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.LanguageRegionVerifier;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IStyleResourceValue;
+import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.swt.SWT;
@@ -55,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.Map.Entry;
 
 /**
  * A composite that displays the current configuration displayed in a Graphical Layout Editor.
@@ -66,12 +69,11 @@ public class ConfigurationComposite extends Composite {
     private Button mClippingButton;
     private Label mCurrentLayoutLabel;
 
-    private Combo mDeviceCombot;
+    private Combo mDeviceCombo;
     private Combo mDeviceConfigCombo;
     private Combo mLocaleCombo;
     private Combo mThemeCombo;
     private Button mCreateButton;
-
 
     private int mPlatformThemeCount = 0;
     private boolean mDisableUpdates = false;
@@ -91,6 +93,9 @@ public class ConfigurationComposite extends Composite {
     /** The config listener given to the constructor. Never null. */
     private final IConfigListener mListener;
 
+    private FolderConfiguration mEditedConfig;
+    private IAndroidTarget mTarget;
+
     /**
      * Interface implemented by the part which owns a {@link ConfigurationComposite}.
      * This notifies the owners when the configuration change.
@@ -107,6 +112,18 @@ public class ConfigurationComposite extends Composite {
         ProjectResources getFrameworkResources();
         Map<String, Map<String, IResourceValue>> getConfiguredProjectResources();
         Map<String, Map<String, IResourceValue>> getConfiguredFrameworkResources();
+    }
+
+    /**
+     * State of the config selection. This is used during UI reset to attempt to return the
+     * rendering to its original configuration.
+     */
+    private static class SelectionState {
+        String deviceName;
+        String configName;
+        int locale;
+        String theme;
+        boolean clipping;
     }
 
     /**
@@ -226,10 +243,10 @@ public class ConfigurationComposite extends Composite {
         gl.horizontalSpacing = 0;
 
         new Label(this, SWT.NONE).setText("Devices");
-        mDeviceCombot = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-        mDeviceCombot.setLayoutData(new GridData(
+        mDeviceCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+        mDeviceCombo.setLayoutData(new GridData(
                 GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
-        mDeviceCombot.addSelectionListener(new SelectionAdapter() {
+        mDeviceCombo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 onDeviceChange(true /* recomputeLayout*/);
@@ -269,7 +286,9 @@ public class ConfigurationComposite extends Composite {
 
         mThemeCombo = new Combo(this, SWT.READ_ONLY | SWT.DROP_DOWN);
         mThemeCombo.setEnabled(false);
-        updateUIFromResources();
+
+        updateThemesAndLocales();
+
         mThemeCombo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -295,104 +314,225 @@ public class ConfigurationComposite extends Composite {
             }
         });
 
-        initUiWithDevices();
-
-        onDeviceConfigChange();
+        // load the devices from the SDK and fill the device combo.
+        initDeviceCombos();
     }
 
+    // ---- Init and reset/reload methods ----
 
-    public FolderConfiguration getCurrentConfig() {
-        return mCurrentConfig;
-    }
+    /**
+     * Init the UI with a given file configuration and project target.
+     * <p/>This will NOT trigger a redraw event (will not call
+     * {@link IConfigListener#onConfigurationChange()}.)
+     * The state of the selection of the various combos will have default values. To keep the
+     * current selection (useful for themes/locales), use
+     * {@link #resetUi(FolderConfiguration, IAndroidTarget)}.
+     *
+     * @param fileConfig The {@link FolderConfiguration} of the opened file.
+     * @param target the {@link IAndroidTarget} of the file's project.
+     */
+    public void initWith(FolderConfiguration fileConfig, IAndroidTarget target) {
+        SelectionState state = null;
+        if (mEditedConfig != null) {
+            state = getState();
+        }
 
-    public void getCurrentConfig(FolderConfiguration config) {
-        config.set(mCurrentConfig);
+        doInitWith(fileConfig, target, state);
     }
 
     /**
-     * Returns the currently selected {@link Density}. This is guaranteed to be non null.
+     * Init the UI with a given file configuration and project target.
+     * <p/>This will NOT trigger a redraw event (will not call
+     * {@link IConfigListener#onConfigurationChange()}.)
+     * The state of the selection of the various combos will have default values. To keep the
+     * current selection (useful for themes/locales), use
+     * {@link #resetUi(FolderConfiguration, IAndroidTarget)}.
+     *
+     * @param fileConfig The {@link FolderConfiguration} of the opened file.
+     * @param target the {@link IAndroidTarget} of the file's project.
      */
-    public Density getDensity() {
-        if (mCurrentConfig != null) {
-            PixelDensityQualifier qual = mCurrentConfig.getPixelDensityQualifier();
-            if (qual != null) {
-                // just a sanity check
-                Density d = qual.getValue();
-                if (d != Density.NODPI) {
-                    return d;
+    private void doInitWith(FolderConfiguration fileConfig, IAndroidTarget target,
+            SelectionState state) {
+        mEditedConfig = fileConfig;
+        mTarget = target;
+
+        AndroidTargetData data = Sdk.getCurrent().getTargetData(mTarget);
+        if (data != null) {
+            LayoutBridge bridge = data.getLayoutBridge();
+            setClippingSupport(bridge.apiLevel >= 4);
+        }
+
+        mDisableUpdates = true; // we do not want to trigger onXXXChange when setting
+                                // new values in the widgets.
+
+        LayoutDevice deviceMatch = null;
+        String configMatchName = null;
+
+        if (state != null) {
+            // try to find the same device/config
+            mainloop: for (LayoutDevice device : mDeviceList) {
+                if (state.deviceName.equals(device.getName())) {
+                    // found a device match, look for the config
+                    FolderConfiguration testConfig = device.getConfigs().get(state.configName);
+                    if (testConfig != null && fileConfig.isMatchFor(testConfig)) {
+                        deviceMatch = device;
+                        configMatchName = state.configName;
+                        break mainloop;
+                    }
+
+                    // let's look for a compatible config in the same device.
+                    for (Entry<String, FolderConfiguration> entry :
+                            device.getConfigs().entrySet()) {
+                        if (fileConfig.isMatchFor(entry.getValue())) {
+                            // this is what we want.
+                            deviceMatch = device;
+                            configMatchName = entry.getKey();
+                            break mainloop;
+                        }
+                    }
+
+                    // still nothing, let's give up and look for any compatible device/config below
+                    break mainloop;
+                }
+            }
+
+            // apply the theme
+            if (state.theme != null) {
+                final int count = mThemeCombo.getItemCount();
+                for (int i = 0 ; i < count ; i++) {
+                    if (state.theme.equals(mThemeCombo.getItem(i))) {
+                        mThemeCombo.select(i);
+                        break;
+                    }
                 }
             }
         }
 
-        // no config? return medium as the default density.
-        return Density.MEDIUM;
-    }
+        if (deviceMatch == null) {
+            // attempt find a device that can display this particular config.
+            mainloop: for (LayoutDevice device : mDeviceList) {
+                for (Entry<String, FolderConfiguration> entry : device.getConfigs().entrySet()) {
+                    if (fileConfig.isMatchFor(entry.getValue())) {
+                        // this is what we want.
+                        deviceMatch = device;
+                        configMatchName = entry.getKey();
+                        break mainloop;
+                    }
 
-    /**
-     * Returns the current device xdpi.
-     */
-    public float getXDpi() {
-        if (mCurrentDevice != null) {
-            float dpi = mCurrentDevice.getXDpi();
-            if (Float.isNaN(dpi) == false) {
-                return dpi;
+                }
             }
         }
 
-        // get the pixel density as the density.
-        return getDensity().getDpiValue();
-    }
-
-    /**
-     * Returns the current device ydpi.
-     */
-    public float getYDpi() {
-        if (mCurrentDevice != null) {
-            float dpi = mCurrentDevice.getYDpi();
-            if (Float.isNaN(dpi) == false) {
-                return dpi;
-            }
-        }
-
-        // get the pixel density as the density.
-        return getDensity().getDpiValue();
-    }
-
-    public Rectangle getScreenBounds() {
-        // get the orientation from the current device config
-        ScreenOrientationQualifier qual = mCurrentConfig.getScreenOrientationQualifier();
-        ScreenOrientation orientation = ScreenOrientation.PORTRAIT;
-        if (qual != null) {
-            orientation = qual.getValue();
-        }
-
-        // get the device screen dimension
-        ScreenDimensionQualifier qual2 = mCurrentConfig.getScreenDimensionQualifier();
-        int s1, s2;
-        if (qual2 != null) {
-            s1 = qual2.getValue1();
-            s2 = qual2.getValue2();
+        if (deviceMatch == null) {
+            // TODO: there is no device/config able to display the layout, create one.
+            // For the base config values, we'll take the first device and config,
+            // and replace whatever qualifier required by the layout file.
         } else {
-            s1 = 480;
-            s2 = 320;
+            selectDevice(mCurrentDevice = deviceMatch);
+            fillConfigCombo(configMatchName);
         }
 
-        switch (orientation) {
-            default:
-            case PORTRAIT:
-                return new Rectangle(0, 0, s2, s1);
-            case LANDSCAPE:
-                return new Rectangle(0, 0, s1, s2);
-            case SQUARE:
-                return new Rectangle(0, 0, s1, s1);
+        // compute the current config.
+        computeCurrentConfig();
+
+        // now that we have a the base config, try to find a good locale selection.
+        // 1. look for an exact match
+
+        // apply the locale, from the state (if applicable),
+        // making sure this matches the file config.
+        boolean stateLocalIsCompatible = false;
+        if (state != null && state.locale != -1) {
+            // get the local values.
+            ResourceQualifier[] locale = mLocaleList.get(state.locale);
+
+            // apply it to the current config.
+            mCurrentConfig.setLanguageQualifier((LanguageQualifier)locale[0]); // language
+            mCurrentConfig.setRegionQualifier((RegionQualifier)locale[1]); // region
+
+            // make sure this is compatible
+            if (fileConfig.isMatchFor(mCurrentConfig)) {
+                mLocaleCombo.select(state.locale);
+                stateLocalIsCompatible = true;
+            }
         }
+
+        // no state, or state doesn't match, look for a match
+        if (stateLocalIsCompatible == false) {
+            // loop on all locale and stop on the first compatible one.
+            final int count = mLocaleList.size();
+            for (int i = 0 ; i < count ; i++) {
+                ResourceQualifier[] locale = mLocaleList.get(i);
+
+                // apply it to the current config.
+                mCurrentConfig.setLanguageQualifier((LanguageQualifier)locale[0]); // language
+                mCurrentConfig.setRegionQualifier((RegionQualifier)locale[1]); // region
+
+                if (fileConfig.isMatchFor(mCurrentConfig)) {
+                    mLocaleCombo.select(i);
+                    break;
+                }
+            }
+        }
+
+        // compute the final current config
+        computeCurrentConfig();
+
+        // update the string showing the folder name
+        String current = fileConfig.toDisplayString();
+        mCurrentLayoutLabel.setText(current != null ? current : "(Default)");
+
+        mDisableUpdates = false;
+    }
+
+    /**
+     * Resets the UI by reloading the target content and possibly the list of devices.
+     * <p/>This method will attempt to keep the same selection in the various combos (device,
+     * config, locale, theme).
+     * <p/>This will NOT trigger a redraw event (will not call
+     * {@link IConfigListener#onConfigurationChange()}.)
+     */
+    public void resetUi(FolderConfiguration config, IAndroidTarget target, boolean resetDevices) {
+        if (resetDevices) {
+            initDeviceCombos();
+        }
+
+        SelectionState state = getState();
+
+        doInitWith(config, target, state);
+    }
+
+    private SelectionState getState() {
+        if (mCurrentDevice != null) {
+            SelectionState state = new SelectionState();
+
+            state.deviceName = mCurrentDevice.getName();
+
+            int index = mDeviceConfigCombo.getSelectionIndex();
+            if (index != -1) {
+                state.configName = mDeviceConfigCombo.getItem(index);
+            }
+
+            // since the locales are relative to the project, only keeping the index is enough
+            state.locale = mLocaleCombo.getSelectionIndex();
+
+            index = mThemeCombo.getSelectionIndex();
+            if (index != -1) {
+                state.theme = mThemeCombo.getItem(index);
+            }
+
+            state.clipping = mClipping;
+
+            return state;
+        }
+
+        return null;
     }
 
     /**
      * Updates the UI from values in the resources, such as languages, regions, themes, etc...
      * This must be called from the UI thread.
      */
-    public void updateUIFromResources() {
+    public void updateThemesAndLocales() {
         if (mListener == null) {
             return; // can't do anything w/o it.
         }
@@ -491,18 +631,27 @@ public class ConfigurationComposite extends Composite {
             for (String language : languages) {
                 hasLocale = true;
 
-                // first the language alone
-                mLocaleCombo.add(language);
-                LanguageQualifier qual = new LanguageQualifier(language);
-                mLocaleList.add(new ResourceQualifier[] { qual, null });
+                LanguageQualifier langQual = new LanguageQualifier(language);
 
-                // now find the matching regions and add them
+                // find the matching regions and add them
                 SortedSet<String> regions = project.getRegions(language);
                 for (String region : regions) {
-                    mLocaleCombo.add(String.format("%1$s_%2$s", language, region)); //$NON-NLS-1$
-                    RegionQualifier qual2 = new RegionQualifier(region);
-                    mLocaleList.add(new ResourceQualifier[] { qual, qual2 });
+                    mLocaleCombo.add(String.format("%1$s / %2$s", language, region)); //$NON-NLS-1$
+                    RegionQualifier regionQual = new RegionQualifier(region);
+                    mLocaleList.add(new ResourceQualifier[] { langQual, regionQual });
                 }
+
+                // now the entry for the other regions the language alone
+                if (regions.size() > 0) {
+                    mLocaleCombo.add(String.format("%1$s / Other", language)); //$NON-NLS-1$
+                } else {
+                    mLocaleCombo.add(String.format("%1$s / Any", language)); //$NON-NLS-1$
+                }
+                // create a region qualifier that will never be matched by qualified resources.
+                mLocaleList.add(new ResourceQualifier[] {
+                        langQual,
+                        new RegionQualifier("__")  //$NON-NLS-1$
+                });
             }
         }
 
@@ -513,12 +662,14 @@ public class ConfigurationComposite extends Composite {
         } else {
             mLocaleCombo.add("Any");
         }
+
+        // create language/region qualifier that will never be matched by qualified resources.
         mLocaleList.add(new ResourceQualifier[] {
-                new LanguageQualifier("__"),
-                new RegionQualifier("__")
+                new LanguageQualifier("__"), //$NON-NLS-1$
+                new RegionQualifier("__")    //$NON-NLS-1$
         });
 
-        mDisableUpdates = false;
+        mLocaleCombo.select(0);
 
         // handle default selection of themes
         if (mThemeCombo.getItemCount() > 0) {
@@ -537,7 +688,99 @@ public class ConfigurationComposite extends Composite {
         }
 
         mThemeCombo.getParent().layout();
+
+        mDisableUpdates = false;
     }
+
+    // ---- getters for the config selection values ----
+
+    public FolderConfiguration getCurrentConfig() {
+        return mCurrentConfig;
+    }
+
+    public void getCurrentConfig(FolderConfiguration config) {
+        config.set(mCurrentConfig);
+    }
+
+    /**
+     * Returns the currently selected {@link Density}. This is guaranteed to be non null.
+     */
+    public Density getDensity() {
+        if (mCurrentConfig != null) {
+            PixelDensityQualifier qual = mCurrentConfig.getPixelDensityQualifier();
+            if (qual != null) {
+                // just a sanity check
+                Density d = qual.getValue();
+                if (d != Density.NODPI) {
+                    return d;
+                }
+            }
+        }
+
+        // no config? return medium as the default density.
+        return Density.MEDIUM;
+    }
+
+    /**
+     * Returns the current device xdpi.
+     */
+    public float getXDpi() {
+        if (mCurrentDevice != null) {
+            float dpi = mCurrentDevice.getXDpi();
+            if (Float.isNaN(dpi) == false) {
+                return dpi;
+            }
+        }
+
+        // get the pixel density as the density.
+        return getDensity().getDpiValue();
+    }
+
+    /**
+     * Returns the current device ydpi.
+     */
+    public float getYDpi() {
+        if (mCurrentDevice != null) {
+            float dpi = mCurrentDevice.getYDpi();
+            if (Float.isNaN(dpi) == false) {
+                return dpi;
+            }
+        }
+
+        // get the pixel density as the density.
+        return getDensity().getDpiValue();
+    }
+
+    public Rectangle getScreenBounds() {
+        // get the orientation from the current device config
+        ScreenOrientationQualifier qual = mCurrentConfig.getScreenOrientationQualifier();
+        ScreenOrientation orientation = ScreenOrientation.PORTRAIT;
+        if (qual != null) {
+            orientation = qual.getValue();
+        }
+
+        // get the device screen dimension
+        ScreenDimensionQualifier qual2 = mCurrentConfig.getScreenDimensionQualifier();
+        int s1, s2;
+        if (qual2 != null) {
+            s1 = qual2.getValue1();
+            s2 = qual2.getValue2();
+        } else {
+            s1 = 480;
+            s2 = 320;
+        }
+
+        switch (orientation) {
+            default:
+            case PORTRAIT:
+                return new Rectangle(0, 0, s2, s1);
+            case LANDSCAPE:
+                return new Rectangle(0, 0, s1, s2);
+            case SQUARE:
+                return new Rectangle(0, 0, s1, s1);
+        }
+    }
+
 
     /**
      * Returns the current theme, or null if the combo has no selection.
@@ -564,11 +807,7 @@ public class ConfigurationComposite extends Composite {
         return mClipping;
     }
 
-    public void setEnabledCreate(boolean enabled) {
-        mCreateButton.setEnabled(enabled);
-    }
-
-    public void setClippingSupport(boolean b) {
+    private void setClippingSupport(boolean b) {
         mClippingButton.setEnabled(b);
         if (b) {
             mClippingButton.setToolTipText("Toggles screen clipping on/off");
@@ -577,38 +816,6 @@ public class ConfigurationComposite extends Composite {
             mClippingButton.setSelection(true);
             mClippingButton.setToolTipText("Non clipped rendering is not supported");
         }
-    }
-
-    /**
-     * Update the UI controls state with a given {@link FolderConfiguration}.
-     * <p/>If <var>force</var> is set to <code>true</code> the UI will be changed to exactly reflect
-     * <var>config</var>, otherwise, if a qualifier is not present in <var>config</var>,
-     * the UI control is not modified. However if the value in the control is not the default value,
-     * a warning icon is shown.
-     * @param config The {@link FolderConfiguration} to set.
-     * @param force Whether the UI should be changed to exactly match the received configuration.
-     */
-    public void setConfiguration(FolderConfiguration config, boolean force) {
-        mDisableUpdates = true; // we do not want to trigger onXXXChange when setting new values in the widgets.
-
-        // TODO: find a device that can display this particular config or create a custom one if needed.
-
-
-        // update the string showing the folder name
-        String current = config.toDisplayString();
-        mCurrentLayoutLabel.setText(current != null ? current : "(Default)");
-
-        mDisableUpdates = false;
-    }
-
-    /**
-     * Reloads the list of {@link LayoutDevice} from the {@link Sdk}.
-     * @param notifyListener
-     */
-    public void reloadDevices(boolean notifyListener) {
-        loadDevices();
-        initUiWithDevices();
-        onDeviceChange(notifyListener);
     }
 
     private void loadDevices() {
@@ -622,19 +829,21 @@ public class ConfigurationComposite extends Composite {
     }
 
     /**
-     * Init the UI with the list of Devices.
+     * Loads the list of {@link LayoutDevice} and inits the UI with it.
      */
-    private void initUiWithDevices() {
+    private void initDeviceCombos() {
+        loadDevices();
+
         // remove older devices if applicable
-        mDeviceCombot.removeAll();
+        mDeviceCombo.removeAll();
         mDeviceConfigCombo.removeAll();
 
         // fill with the devices
         if (mDeviceList != null) {
             for (LayoutDevice device : mDeviceList) {
-                mDeviceCombot.add(device.getName());
+                mDeviceCombo.add(device.getName());
             }
-            mDeviceCombot.select(0);
+            mDeviceCombo.select(0);
 
             if (mDeviceList.size() > 0) {
                 Map<String, FolderConfiguration> configs = mDeviceList.get(0).getConfigs();
@@ -650,7 +859,193 @@ public class ConfigurationComposite extends Composite {
         }
 
         // add the custom item
-        mDeviceCombot.add("Custom...");
+        mDeviceCombo.add("Custom...");
+    }
+
+    private void selectDevice(LayoutDevice device) {
+        int index = -1;
+        final int count = mDeviceList.size();
+        for (int i = 0 ; i < count ; i++) {
+            // since device comes from mDeviceList, we can use the == operator.
+            if (device == mDeviceList.get(i)) {
+                index = i;
+                break;
+            }
+        }
+
+        mDeviceCombo.select(index);
+    }
+
+    /**
+     * Called when the selection of the device combo changes.
+     * @param recomputeLayout
+     */
+    private void onDeviceChange(boolean recomputeLayout) {
+        // because changing the content of a combo triggers a change event, respect the
+        // mDisableUpdates flag
+        if (mDisableUpdates == true) {
+            return;
+        }
+
+        String newConfigName = null;
+
+        int deviceIndex = mDeviceCombo.getSelectionIndex();
+        if (deviceIndex != -1) {
+            // check if the user is asking for the custom item
+            if (deviceIndex == mDeviceCombo.getItemCount() - 1) {
+                ConfigManagerDialog dialog = new ConfigManagerDialog(getShell());
+                dialog.open();
+
+                // save the user devices
+                Sdk.getCurrent().getLayoutDeviceManager().save();
+
+                // reload the combo with the new content.
+                initWith(mEditedConfig, mTarget);
+
+                // at this point we need to reset the combo to something (hopefully) valid.
+                // look for the previous selected device
+                int index = mDeviceList.indexOf(mCurrentDevice);
+                if (index != -1) {
+                    mDeviceCombo.select(index);
+                } else {
+                    // we should at least have one built-in device, so we select it
+                    mDeviceCombo.select(0);
+                }
+
+                // force a redraw
+                onDeviceChange(true /*recomputeLayout*/);
+
+                return;
+            }
+
+            // get the previous config, so that we can look for a close match
+            if (mCurrentDevice != null) {
+                int index = mDeviceConfigCombo.getSelectionIndex();
+                if (index != -1) {
+                    FolderConfiguration oldConfig = mCurrentDevice.getConfigs().get(
+                            mDeviceConfigCombo.getItem(index));
+
+                    LayoutDevice newDevice = mDeviceList.get(deviceIndex);
+
+                    newConfigName = getClosestMatch(oldConfig, newDevice.getConfigs());
+                }
+            }
+
+            mCurrentDevice = mDeviceList.get(deviceIndex);
+        } else {
+            mCurrentDevice = null;
+        }
+
+        fillConfigCombo(newConfigName);
+        if (recomputeLayout) {
+            onDeviceConfigChange();
+        }
+    }
+
+    /**
+     * Attemps for find a close config among a list
+     * @param oldConfig the reference config.
+     * @param configs the list of config to search through
+     * @return the name of the closest config match, or possibly null if no config are compatible
+     * (this can only happen if the configs don't have a single qualifier that is the same).
+     */
+    private String getClosestMatch(FolderConfiguration oldConfig,
+            Map<String, FolderConfiguration> configs) {
+
+        // create 2 lists as we're going to go through one and put the candidates in the other.
+        ArrayList<Entry<String, FolderConfiguration>> list1 =
+            new ArrayList<Entry<String,FolderConfiguration>>();
+        ArrayList<Entry<String, FolderConfiguration>> list2 =
+            new ArrayList<Entry<String,FolderConfiguration>>();
+
+        list1.addAll(configs.entrySet());
+
+        final int count = FolderConfiguration.getQualifierCount();
+        for (int i = 0 ; i < count ; i++) {
+            // compute the new candidate list by only taking configs that have
+            // the same i-th qualifier as the old config
+            for (Entry<String, FolderConfiguration> entry : list1) {
+                ResourceQualifier oldQualifier = oldConfig.getQualifier(i);
+
+                FolderConfiguration config = entry.getValue();
+                ResourceQualifier newQualifier = config.getQualifier(i);
+
+                if (oldQualifier == null) {
+                    if (newQualifier == null) {
+                        list2.add(entry);
+                    }
+                } else if (oldQualifier.equals(newQualifier)) {
+                    list2.add(entry);
+                }
+            }
+
+            // at any moment if the new candidate list contains only one match, its name
+            // is returned.
+            if (list2.size() == 1) {
+                return list2.get(0).getKey();
+            }
+
+            // if the list is empty, then all the new configs failed. It is considered ok, and
+            // we move to the next qualifier anyway. This way, if a qualifier is different for
+            // all new configs it is simply ignored.
+            if (list2.size() != 0) {
+                // move the candidates back into list1.
+                list1.clear();
+                list1.addAll(list2);
+                list2.clear();
+            }
+        }
+
+        // the only way to reach this point is if there's an exact match.
+        // (if there are more than one, then there's a duplicate config and it doesn't matter,
+        // we take the first one).
+        if (list1.size() > 0) {
+            return list1.get(0).getKey();
+        }
+
+        return null;
+    }
+
+    /**
+     * fills the config combo with new values based on {@link #mCurrentDevice}.
+     * @param refName an optional name. if set the selection will match this name (if found)
+     */
+    private void fillConfigCombo(String refName) {
+        mDeviceConfigCombo.removeAll();
+
+        if (mCurrentDevice != null) {
+            Set<String> configNames = mCurrentDevice.getConfigs().keySet();
+
+            int selectionIndex = 0;
+            int i = 0;
+
+            for (String name : configNames) {
+                mDeviceConfigCombo.add(name);
+
+                if (name.equals(refName)) {
+                    selectionIndex = i;
+                }
+                i++;
+            }
+
+            mDeviceConfigCombo.select(selectionIndex);
+            mDeviceConfigCombo.setEnabled(configNames.size() > 1);
+        }
+    }
+
+    /**
+     * Called when the device config selection changes.
+     */
+    private void onDeviceConfigChange() {
+        // because changing the content of a combo triggers a change event, respect the
+        // mDisableUpdates flag
+        if (mDisableUpdates == true) {
+            return;
+        }
+
+        if (computeCurrentConfig() && mListener != null) {
+            mListener.onConfigurationChange();
+        }
     }
 
     /**
@@ -663,93 +1058,37 @@ public class ConfigurationComposite extends Composite {
             return;
         }
 
-        int localeIndex = mLocaleCombo.getSelectionIndex();
-        ResourceQualifier[] localeQualifiers = mLocaleList.get(localeIndex);
-
-        mCurrentConfig.setLanguageQualifier((LanguageQualifier)localeQualifiers[0]); // language
-        mCurrentConfig.setRegionQualifier((RegionQualifier)localeQualifiers[1]); // region
-
-        if (mListener != null) {
+        if (computeCurrentConfig() &&  mListener != null) {
             mListener.onConfigurationChange();
         }
     }
 
-    private void onDeviceChange(boolean recomputeLayout) {
-
-        int deviceIndex = mDeviceCombot.getSelectionIndex();
-        if (deviceIndex != -1) {
-            // check if the user is ask for the custom item
-            if (deviceIndex == mDeviceCombot.getItemCount() - 1) {
-                ConfigManagerDialog dialog = new ConfigManagerDialog(getShell());
-                dialog.open();
-
-                // save the user devices
-                Sdk.getCurrent().getLayoutDeviceManager().save();
-
-                // reload the combo with the new content.
-                loadDevices();
-                initUiWithDevices();
-
-                // at this point we need to reset the combo to something (hopefully) valid.
-                // look for the previous selected device
-                int index = mDeviceList.indexOf(mCurrentDevice);
-                if (index != -1) {
-                    mDeviceCombot.select(index);
-                } else {
-                    // we should at least have one built-in device, so we select it
-                    mDeviceCombot.select(0);
-                }
-
-                // force a redraw
-                onDeviceChange(true /*recomputeLayout*/);
-
-                return;
-            }
-
-            mCurrentDevice = mDeviceList.get(deviceIndex);
-        } else {
-            mCurrentDevice = null;
-        }
-
-        mDeviceConfigCombo.removeAll();
-
+    private boolean computeCurrentConfig() {
         if (mCurrentDevice != null) {
-            Set<String> configNames = mCurrentDevice.getConfigs().keySet();
-            for (String name : configNames) {
-                mDeviceConfigCombo.add(name);
-            }
-
-            mDeviceConfigCombo.select(0);
-            mDeviceConfigCombo.setEnabled(configNames.size() > 1);
-        }
-        if (recomputeLayout) {
-            onDeviceConfigChange();
-        }
-    }
-
-    private void onDeviceConfigChange() {
-        if (mCurrentDevice != null) {
+            // get the device config from the device/config combos.
             int configIndex = mDeviceConfigCombo.getSelectionIndex();
             String name = mDeviceConfigCombo.getItem(configIndex);
             FolderConfiguration config = mCurrentDevice.getConfigs().get(name);
 
-            // get the current qualifiers from the current config
-            LanguageQualifier lang = mCurrentConfig.getLanguageQualifier();
-            RegionQualifier region = mCurrentConfig.getRegionQualifier();
-            VersionQualifier version = mCurrentConfig.getVersionQualifier();
-
             // replace the config with the one from the device
             mCurrentConfig.set(config);
 
-            // and put back the rest of the qualifiers
-            mCurrentConfig.addQualifier(lang);
-            mCurrentConfig.addQualifier(region);
-            mCurrentConfig.addQualifier(version);
+            // replace the locale qualifiers with the one coming from the locale combo
+            int localeIndex = mLocaleCombo.getSelectionIndex();
+            if (localeIndex != -1) {
+                ResourceQualifier[] localeQualifiers = mLocaleList.get(localeIndex);
 
-            if (mListener != null) {
-                mListener.onConfigurationChange();
+                mCurrentConfig.setLanguageQualifier((LanguageQualifier)localeQualifiers[0]); // language
+                mCurrentConfig.setRegionQualifier((RegionQualifier)localeQualifiers[1]); // region
             }
+
+            // update the create button.
+            checkCreateEnable();
+
+            return true;
         }
+
+        return false;
     }
 
     private void onThemeChange() {
@@ -830,5 +1169,10 @@ public class ConfigurationComposite extends Composite {
 
         return false;
     }
+
+    private void checkCreateEnable() {
+        mCreateButton.setEnabled(mEditedConfig.equals(mCurrentConfig) == false);
+    }
+
 }
 

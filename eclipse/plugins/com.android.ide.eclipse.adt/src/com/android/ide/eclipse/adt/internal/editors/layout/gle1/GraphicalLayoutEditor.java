@@ -43,9 +43,11 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
+import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
@@ -156,6 +158,8 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
     /** Listener to update the root node if the target of the file is changed because of a
      * SDK location change or a project target change */
     private ITargetChangeListener mTargetListener = new TargetChangeListener() {
+        boolean mSdkLoaded = true; // indicates whether we got a sdk loaded event.
+
         @Override
         public IProject getProject() {
             return getLayoutEditor().getProject();
@@ -163,22 +167,34 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
         @Override
         public void reload() {
-            // because the SDK changed we must reset the configured framework resource.
-            mConfiguredFrameworkRes = null;
-
-            mConfigComposite.updateUIFromResources();
-
-            // updateUiFromFramework will reset language/region combo, so we must call
-            // setConfiguration after, or the settext on language/region will be lost.
-            if (mEditedConfig != null) {
-                setConfiguration(mEditedConfig, false /*force*/);
-            }
+            // because the target changed we must reset the configured resources.
+            mConfiguredFrameworkRes = mConfiguredProjectRes = null;
 
             // make sure we remove the custom view loader, since its parent class loader is the
             // bridge class loader.
             mProjectCallback = null;
 
-            recomputeLayout();
+            // update the themes and locales since the target change could have changed the
+            // theme list.
+            mConfigComposite.updateThemesAndLocales();
+
+            // reset the config selector UI to match the new target (and possibly sdk).
+            if (mEditedConfig != null) {
+                if (mSdkLoaded) {
+                    onSdkChange();
+                } else {
+                    onTargetChange();
+                }
+            }
+
+            // SDK change has been handled, reset the flag.
+            mSdkLoaded = false;
+        }
+
+        @Override
+        public void onSdkLoaded() {
+            mSdkLoaded = true; // this will be reset when we get the target loaded event
+                               // which always comes after.
         }
     };
 
@@ -194,7 +210,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
     private final Runnable mUiUpdateFromResourcesRunnable = new Runnable() {
         public void run() {
-            mConfigComposite.updateUIFromResources();
+            mConfigComposite.updateThemesAndLocales();
         }
     };
 
@@ -400,8 +416,6 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
             FileEditorInput fileInput = (FileEditorInput)input;
             mEditedFile = fileInput.getFile();
 
-            mConfigComposite.updateUIFromResources();
-
             LayoutReloadMonitor.getMonitor().addListener(mEditedFile.getProject(), this);
         } else {
             // really this shouldn't happen! Log it in case it happens
@@ -574,17 +588,46 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
     /**
      * Sets the UI for the edition of a new file.
-     * @param configuration the configuration of the new file.
+     * @param iFile the file being edited.
      */
-    public void editNewFile(FolderConfiguration configuration) {
-        // update the configuration UI
-        setConfiguration(configuration, true /*force*/);
+    public void initWithFile(IFile file) {
+        mEditedFile = file;
 
-        // enable the create button if the current and edited config are not equals
-        mConfigComposite.setEnabledCreate(
-                mEditedConfig.equals(mConfigComposite.getCurrentConfig()) == false);
+        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
+        mEditedConfig = resFolder.getConfiguration();
 
-        reloadConfigurationUi(false /*notifyListener*/);
+        mConfigComposite.updateThemesAndLocales();
+
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk != null) {
+            IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
+            if (target != null) {
+                mConfigComposite.initWith(mEditedConfig, target);
+            }
+        }
+    }
+
+    public void onTargetChange() {
+        onTargetOrSdkChange(false /* reloadDevices */);
+    }
+
+    public void onSdkChange() {
+        onTargetOrSdkChange(true /* reloadDevices */);
+    }
+
+    /**
+     * Reloads the configuration selector.
+     * @param reloadDevices whether the {@link LayoutDevice} objects should be reloaded.
+     */
+    private void onTargetOrSdkChange(boolean reloadDevices) {
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk != null) {
+            IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
+            if (target != null) {
+                mConfigComposite.resetUi(mEditedConfig, target, reloadDevices);
+                onConfigurationChange();
+            }
+        }
     }
 
     public Rectangle getBounds() {
@@ -694,16 +737,6 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
         IEditorInput input = mLayoutEditor.getEditorInput();
         setInput(input);
-
-        if (input instanceof FileEditorInput) {
-            FileEditorInput fileInput = (FileEditorInput)input;
-            mEditedFile = fileInput.getFile();
-        } else {
-            // really this shouldn't happen! Log it in case it happens
-            mEditedFile = null;
-            AdtPlugin.log(IStatus.ERROR, "Input is not of type FileEditorInput: %1$s",
-                    input.toString());
-        }
     }
 
     /**
@@ -740,44 +773,12 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         }
     }
 
-    /**
-     * Update the UI controls state with a given {@link FolderConfiguration}.
-     * <p/>If <var>force</var> is set to <code>true</code> the UI will be changed to exactly reflect
-     * <var>config</var>, otherwise, if a qualifier is not present in <var>config</var>,
-     * the UI control is not modified. However if the value in the control is not the default value,
-     * a warning icon is shown.
-     * @param config The {@link FolderConfiguration} to set.
-     * @param force Whether the UI should be changed to exactly match the received configuration.
-     */
-    void setConfiguration(FolderConfiguration config, boolean force) {
-        mEditedConfig = config;
-        mConfiguredFrameworkRes = mConfiguredProjectRes = null;
-
-        mConfigComposite.setConfiguration(config, force);
-
-    }
-
-
     public UiDocumentNode getModel() {
         return mLayoutEditor.getUiRootNode();
     }
 
     public void reloadPalette() {
         PaletteFactory.createPaletteRoot(mPaletteRoot, mLayoutEditor.getTargetData());
-    }
-
-    public void reloadConfigurationUi(boolean notifyListener) {
-        // enable the clipping button if it's supported.
-        Sdk currentSdk = Sdk.getCurrent();
-        if (currentSdk != null) {
-            IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
-            AndroidTargetData data = currentSdk.getTargetData(target);
-            if (data != null) {
-                LayoutBridge bridge = data.getLayoutBridge();
-                mConfigComposite.reloadDevices(notifyListener);
-                mConfigComposite.setClippingSupport(bridge.apiLevel >= 4);
-            }
-        }
     }
 
     /**
@@ -819,20 +820,10 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
             // at this point, we have not opened a new file.
 
-            // update the configuration icons with the new edited config.
-            setConfiguration(mEditedConfig, false /*force*/);
-
-            // enable the create button if the current and edited config are not equals
-            mConfigComposite.setEnabledCreate(
-                    mEditedConfig.equals(mConfigComposite.getCurrentConfig()) == false);
-
             // Even though the layout doesn't change, the config changed, and referenced
             // resources need to be updated.
             recomputeLayout();
         } else {
-            // enable the Create button
-            mConfigComposite.setEnabledCreate(true);
-
             // display the error.
             FolderConfiguration currentConfig = mConfigComposite.getCurrentConfig();
             String message = String.format(
@@ -908,16 +899,25 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
                 AndroidTargetData data = currentSdk.getTargetData(target);
                 if (data == null) {
-                    // It can happen that the workspace refreshes while the SDK is loading its
+                    // It can happen that the workspace refreshes while the target is loading its
                     // data, which could trigger a redraw of the opened layout if some resources
                     // changed while Eclipse is closed.
                     // In this case data could be null, but this is not an error.
                     // We can just silently return, as all the opened editors are automatically
                     // refreshed once the SDK finishes loading.
-                    if (AdtPlugin.getDefault().getSdkLoadStatus() != LoadStatus.LOADING) {
-                        showErrorInEditor(String.format(
-                                "The project target (%s) was not properly loaded.",
-                                target.getName()));
+                    LoadStatus targetLoadStatus = currentSdk.checkAndLoadTargetData(target, null);
+                    switch (targetLoadStatus) {
+                        case LOADING:
+                            showErrorInEditor(String.format(
+                                    "The project target (%1$s) is still loading.\n%2$s will refresh automatically once the process is finished.",
+                                    target.getName(), mEditedFile.getName()));
+                            break;
+                        case FAILED: // known failure
+                        case LOADED: // success but data isn't loaded?!?!
+                            showErrorInEditor(String.format(
+                                    "The project target (%s) was not properly loaded.",
+                                    target.getName()));
+                            break;
                     }
                     return;
                 }

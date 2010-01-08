@@ -19,8 +19,8 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.ElementCreateCommand;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.gef.ui.parts.SelectionSynchronizer;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.ui.IEditorPart;
@@ -34,9 +34,19 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
 
     /**
      * Sets the UI for the edition of a new file.
-     * @param configuration the configuration of the new file.
+     * @param iFile the file being edited.
      */
-    abstract void editNewFile(FolderConfiguration configuration);
+    abstract void initWithFile(IFile iFile);
+
+    /**
+     * Responds to a target change for the project of the edited file
+     */
+    abstract void onTargetChange();
+
+    /**
+     * Responds to an SDK reload/change.
+     */
+    abstract void onSdkChange();
 
     /**
      * Reloads this editor, by getting the new model from the {@link LayoutEditor}.
@@ -81,7 +91,4 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
     abstract LayoutEditor getLayoutEditor();
 
     abstract Clipboard getClipboard();
-
-    abstract void reloadConfigurationUi(boolean notifyListener);
-
 }
