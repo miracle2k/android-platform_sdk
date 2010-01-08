@@ -23,6 +23,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor;
 import com.android.ide.eclipse.adt.internal.editors.layout.ProjectCallback;
 import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ChangeFlags;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ILayoutReloadListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
@@ -1120,15 +1121,25 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
     private class ReloadListener implements ILayoutReloadListener {
         /*
-         * (non-Javadoc)
-         * @see com.android.ide.eclipse.editors.layout.LayoutReloadMonitor.ILayoutReloadListener#reloadLayout(boolean, boolean, boolean)
-         *
          * Called when the file changes triggered a redraw of the layout
          */
-        public void reloadLayout(boolean codeChange, boolean rChange, boolean resChange) {
-            boolean recompute = rChange;
+        public void reloadLayout(ChangeFlags flags) {
+            boolean recompute = flags.rClass;
 
-            if (resChange) {
+            if (flags.localeList) {
+                // the locale list *potentially* changed so we update the locale in the
+                // config composite.
+                // However there's no recompute, as it could not be needed
+                // (for instance a new layout)
+                // If a resource that's not a layout changed this will trigger a recompute anyway.
+                mLayoutCanvas.getDisplay().asyncExec(new Runnable() {
+                    public void run() {
+                        mConfigComposite.updateLocales();
+                    }
+                });
+            }
+
+            if (flags.resources) {
                 recompute = true;
 
                 // TODO: differentiate between single and multi resource file changed, and whether the resource change affects the cache.
@@ -1149,15 +1160,9 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                         }
                     }
                 }
-
-                mLayoutCanvas.getDisplay().asyncExec(new Runnable() {
-                    public void run() {
-                        mConfigComposite.updateLocales();
-                    }
-                });
             }
 
-            if (codeChange) {
+            if (flags.code) {
                 // only recompute if the custom view loader was used to load some code.
                 if (mProjectCallback != null && mProjectCallback.isUsed()) {
                     mProjectCallback = null;

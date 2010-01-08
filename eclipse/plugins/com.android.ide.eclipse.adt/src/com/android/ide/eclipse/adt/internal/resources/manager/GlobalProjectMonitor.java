@@ -37,12 +37,18 @@ import org.eclipse.jdt.core.JavaCore;
 import java.util.ArrayList;
 
 /**
- * Resource Monitor for the whole editor plugin. Other, more simple, listeners can register to
- * that one.
+ * The Global Project Monitor tracks project file changes, and forward them to simple project,
+ * file, and folder listeners.
+ * Those listeners can be setup with masks to listen to particular events.
+ * <p/>
+ * To track project resource changes, use the monitor in the {@link ResourceManager}. It is more
+ * efficient and while the global ProjectMonitor can track any file, deleted resource files
+ * cannot be match to previous {@link ResourceFile} or {@link ResourceFolder} objects by the
+ * time the listeners get the event notifications.
  */
-public class ResourceMonitor implements IResourceChangeListener {
+public class GlobalProjectMonitor implements IResourceChangeListener {
 
-    private final static ResourceMonitor sThis = new ResourceMonitor();
+    private final static GlobalProjectMonitor sThis = new GlobalProjectMonitor();
 
     /**
      * Classes which implement this interface provide a method that deals
@@ -207,7 +213,7 @@ public class ResourceMonitor implements IResourceChangeListener {
         }
     }
 
-    public static ResourceMonitor getMonitor() {
+    public static GlobalProjectMonitor getMonitor() {
         return sThis;
     }
 
@@ -217,7 +223,7 @@ public class ResourceMonitor implements IResourceChangeListener {
      * @param ws The current workspace.
      * @return The monitor object.
      */
-    public static ResourceMonitor startMonitoring(IWorkspace ws) {
+    public static GlobalProjectMonitor startMonitoring(IWorkspace ws) {
         if (sThis != null) {
             ws.addResourceChangeListener(sThis,
                     IResourceChangeEvent.POST_CHANGE | IResourceChangeEvent.PRE_DELETE);

@@ -38,8 +38,8 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFileListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
@@ -152,7 +152,7 @@ public class AdtPlugin extends AbstractUIPlugin {
      * Any access MUST be in a synchronized(mPostLoadProjectsToResolve) block */
     private final ArrayList<IJavaProject> mPostLoadProjectsToCheck = new ArrayList<IJavaProject>();
 
-    private ResourceMonitor mResourceMonitor;
+    private GlobalProjectMonitor mResourceMonitor;
     private ArrayList<ITargetChangeListener> mTargetChangeListeners =
             new ArrayList<ITargetChangeListener>();
 
@@ -1068,7 +1068,7 @@ public class AdtPlugin extends AbstractUIPlugin {
 
         // Add a resource listener to handle compiled resources.
         IWorkspace ws = ResourcesPlugin.getWorkspace();
-        mResourceMonitor = ResourceMonitor.startMonitoring(ws);
+        mResourceMonitor = GlobalProjectMonitor.startMonitoring(ws);
 
         if (mResourceMonitor != null) {
             try {
@@ -1097,7 +1097,7 @@ public class AdtPlugin extends AbstractUIPlugin {
 
         // Remove the resource listener that handles compiled resources.
         IWorkspace ws = ResourcesPlugin.getWorkspace();
-        ResourceMonitor.stopMonitoring(ws);
+        GlobalProjectMonitor.stopMonitoring(ws);
 
         mRed.dispose();
     }
@@ -1123,7 +1123,7 @@ public class AdtPlugin extends AbstractUIPlugin {
     /**
      * Returns the ResourceMonitor object.
      */
-    public ResourceMonitor getResourceMonitor() {
+    public GlobalProjectMonitor getResourceMonitor() {
         return mResourceMonitor;
     }
 
@@ -1134,7 +1134,7 @@ public class AdtPlugin extends AbstractUIPlugin {
      *
      * @param monitor The main Resource Monitor object.
      */
-    public void setupDefaultEditor(ResourceMonitor monitor) {
+    public void setupDefaultEditor(GlobalProjectMonitor monitor) {
         monitor.addFileListener(new IFileListener() {
 
             private static final String UNKNOWN_EDITOR = "unknown-editor"; //$NON-NLS-1$
