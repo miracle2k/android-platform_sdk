@@ -4,7 +4,7 @@
 //
 // Conditions:
 // - The node has a ScrollView parent
-// - The node has a height set to fill_parent
+// - The node has a height set to match_parent
 
 if (node.'..'.is("ScrollView") && node.isHeightFillParent()) {
     analysis << "This ${node.name()} tag should use android:layout_height=\"wrap_content\""
