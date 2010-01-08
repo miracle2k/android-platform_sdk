@@ -39,11 +39,10 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
-import com.android.ide.eclipse.adt.internal.sdk.Sdk.TargetChangeListener;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.layoutlib.api.ILayoutBridge;
 import com.android.layoutlib.api.ILayoutLog;
 import com.android.layoutlib.api.ILayoutResult;
@@ -181,13 +180,6 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
         }
     }
 
-    /**
-     * Reloads this editor, by getting the new model from the {@link LayoutEditor}.
-     */
-    public void reloadEditor() {
-        // nothing to be done here. the edited file is now set by initWithFile(IFile)
-    }
-
     private void useNewEditorInput(IEditorInput input) throws PartInitException {
         // The contract of init() mentions we need to fail if we can't understand the input.
         if (!(input instanceof FileEditorInput)) {
@@ -234,7 +226,6 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
         mConfigListener = new ConfigListener();
         mConfigComposite = new ConfigurationComposite(mConfigListener, toggles, parent, SWT.BORDER);
-        mConfigComposite.updateThemesAndLocales();
 
         mSashPalette = new SashForm(parent, SWT.HORIZONTAL);
         mSashPalette.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -367,6 +358,10 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
             if (match != null) {
                 if (match.getFile().equals(mEditedFile) == false) {
                     try {
+                        // tell the editor that the next replacement file is due to a config change.
+                        mLayoutEditor.setNewFileOnConfigChange(true);
+
+                        // ask the IDE to open the replacement file.
                         IDE.openEditor(
                                 getSite().getWorkbenchWindow().getActivePage(),
                                 match.getFile().getIFile());
@@ -602,16 +597,35 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
     /**
      * Listens to target changed in the current project, to trigger a new layout rendering.
      */
-    private class TargetListener extends TargetChangeListener {
-        boolean mSdkLoaded = false; // indicates whether we got a sdk loaded event.
+    private class TargetListener implements ITargetChangeListener {
 
-        @Override
-        public IProject getProject() {
-            return getLayoutEditor().getProject();
+        public void onProjectTargetChange(IProject changedProject) {
+            if (changedProject != null && changedProject.equals(getProject())) {
+                updateEditor();
+            }
         }
 
-        @Override
-        public void reload() {
+        public void onTargetLoaded(IAndroidTarget target) {
+            IProject project = getProject();
+            if (target != null && target.equals(Sdk.getCurrent().getTarget(project))) {
+                updateEditor();
+            }
+        }
+
+        public void onSdkLoaded() {
+            Sdk currentSdk = Sdk.getCurrent();
+            if (currentSdk != null) {
+                IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
+                if (target != null) {
+                    mConfigComposite.onSdkLoaded(target);
+                    mConfigListener.onConfigurationChange();
+                }
+            }
+        }
+
+        private void updateEditor() {
+            mLayoutEditor.commitPages(false /* onSave */);
+
             // because the target changed we must reset the configured resources.
             mConfiguredFrameworkRes = mConfiguredProjectRes = null;
 
@@ -619,27 +633,13 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
             // bridge class loader.
             mProjectCallback = null;
 
-            // update the themes and locales since the target change could have changed the
-            // theme list.
-            mConfigComposite.updateThemesAndLocales();
-
-            // reset the config selector UI to match the new target (and possibly sdk).
-            if (mEditedConfig != null) {
-                if (mSdkLoaded) {
-                    onSdkChange();
-                } else {
-                    onTargetChange();
-                }
-            }
-
-            // SDK change has been handled, reset the flag.
-            mSdkLoaded = false;
+            // recreate the ui root node always, this will also call onTargetChange
+            // on the config composite
+            mLayoutEditor.initUiRootNode(true /*force*/);
         }
 
-        @Override
-        public void onSdkLoaded() {
-            mSdkLoaded = true; // this will be reset when we get the target loaded event
-                               // which always comes after.
+        private IProject getProject() {
+            return getLayoutEditor().getProject();
         }
     }
 
@@ -720,24 +720,22 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
     }
 
     /**
-     * Sets the UI for the edition of a new file.
-     * @param iFile the file being edited.
+     * Opens and initialize the editor with a new file.
+     * @param file the file being edited.
      */
-    public void initWithFile(IFile file) {
+    public void openFile(IFile file) {
         mEditedFile = file;
 
         ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
         mEditedConfig = resFolder.getConfiguration();
 
-        mConfigComposite.updateThemesAndLocales();
-
+        IAndroidTarget target = null;
         Sdk currentSdk = Sdk.getCurrent();
         if (currentSdk != null) {
-            IAndroidTarget target = currentSdk.getTarget(file.getProject());
-            if (target != null) {
-                mConfigComposite.initWith(mEditedConfig, target);
-            }
+            target = currentSdk.getTarget(mEditedFile.getProject());
         }
+
+        mConfigComposite.openFile(mEditedConfig, target);
 
         if (mReloadListener == null) {
             mReloadListener = new ReloadListener();
@@ -749,24 +747,46 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
         }
     }
 
-    public void onTargetChange() {
-        onTargetOrSdkChange(false /* reloadDevices */);
-    }
+    /**
+     * Resets the editor with a replacement file.
+     * @param file the replacement file.
+     */
+    public void replaceFile(IFile file) {
+        mEditedFile = file;
 
-    public void onSdkChange() {
-        onTargetOrSdkChange(true /* reloadDevices */);
+        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
+        mEditedConfig = resFolder.getConfiguration();
+
+        mConfigComposite.replaceFile(mEditedConfig);
     }
 
     /**
-     * Reloads the configuration selector.
-     * @param reloadDevices whether the {@link LayoutDevice} objects should be reloaded.
+     * Resets the editor with a replacement file coming from a config change in the config
+     * selector.
+     * @param file the replacement file.
      */
-    private void onTargetOrSdkChange(boolean reloadDevices) {
+    public void changeFileOnNewConfig(IFile file) {
+        mEditedFile = file;
+
+        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
+        mEditedConfig = resFolder.getConfiguration();
+
+        mConfigComposite.changeFileOnNewConfig(mEditedConfig);
+    }
+
+
+
+    public void onTargetChange() {
+        mConfigComposite.onTargetChange();
+        mConfigListener.onConfigurationChange();
+    }
+
+    public void onSdkChange() {
         Sdk currentSdk = Sdk.getCurrent();
         if (currentSdk != null) {
             IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
             if (target != null) {
-                mConfigComposite.resetUi(mEditedConfig, target, reloadDevices);
+                mConfigComposite.onSdkLoaded(target);
                 mConfigListener.onConfigurationChange();
             }
         }
@@ -1132,7 +1152,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
                 mLayoutCanvas.getDisplay().asyncExec(new Runnable() {
                     public void run() {
-                        mConfigComposite.updateThemesAndLocales();
+                        mConfigComposite.updateLocales();
                     }
                 });
             }

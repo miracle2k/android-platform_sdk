@@ -33,10 +33,23 @@ import org.eclipse.ui.IEditorPart;
 public interface IGraphicalLayoutEditor extends IEditorPart {
 
     /**
-     * Sets the UI for the edition of a new file.
-     * @param iFile the file being edited.
+     * Opens and initialize the editor with a new file.
+     * @param file the file being edited.
      */
-    abstract void initWithFile(IFile iFile);
+    abstract void openFile(IFile file);
+
+    /**
+     * Resets the editor with a replacement file.
+     * @param file the replacement file.
+     */
+    abstract void replaceFile(IFile file);
+
+    /**
+     * Resets the editor with a replacement file coming from a config change in the config
+     * selector.
+     * @param file the replacement file.
+     */
+    abstract void changeFileOnNewConfig(IFile file);
 
     /**
      * Responds to a target change for the project of the edited file
@@ -47,11 +60,6 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
      * Responds to an SDK reload/change.
      */
     abstract void onSdkChange();
-
-    /**
-     * Reloads this editor, by getting the new model from the {@link LayoutEditor}.
-     */
-    abstract void reloadEditor();
 
     /**
      * Callback for XML model changed. Only update/recompute the layout if the editor is visible

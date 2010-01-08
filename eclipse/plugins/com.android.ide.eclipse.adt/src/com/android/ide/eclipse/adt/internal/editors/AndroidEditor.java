@@ -20,6 +20,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.TargetChangeListener;
 import com.android.sdklib.IAndroidTarget;
 
@@ -100,30 +101,45 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
     private XmlModelStateListener mXmlModelStateListener;
     /** Listener to update the root node if the target of the file is changed because of a
      * SDK location change or a project target change */
-    private TargetChangeListener mTargetListener;
+    private TargetChangeListener mTargetListener = null;
 
     /**
      * Creates a form editor.
+     * <p/>The editor will setup a {@link ITargetChangeListener} and call
+     * {@link #initUiRootNode(boolean)}, when the SDK or the target changes.
+     *
+     * @see #AndroidEditor(boolean)
      */
     public AndroidEditor() {
+        this(true);
+    }
+
+    /**
+     * Creates a form editor.
+     * @param addTargetListener whether to create an {@link ITargetChangeListener}.
+     */
+    public AndroidEditor(boolean addTargetListener) {
         super();
-        ResourcesPlugin.getWorkspace().addResourceChangeListener(this);
 
-        mTargetListener = new TargetChangeListener() {
-            @Override
-            public IProject getProject() {
-                return AndroidEditor.this.getProject();
-            }
+        if (addTargetListener) {
+            ResourcesPlugin.getWorkspace().addResourceChangeListener(this);
 
-            @Override
-            public void reload() {
-                commitPages(false /* onSave */);
+            mTargetListener = new TargetChangeListener() {
+                @Override
+                public IProject getProject() {
+                    return AndroidEditor.this.getProject();
+                }
 
-                // recreate the ui root node always
-                initUiRootNode(true /*force*/);
-            }
-        };
-        AdtPlugin.getDefault().addTargetListener(mTargetListener);
+                @Override
+                public void reload() {
+                    commitPages(false /* onSave */);
+
+                    // recreate the ui root node always
+                    initUiRootNode(true /*force*/);
+                }
+            };
+            AdtPlugin.getDefault().addTargetListener(mTargetListener);
+        }
     }
 
     // ---- Abstract Methods ----

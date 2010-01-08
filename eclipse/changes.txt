@@ -6,6 +6,7 @@
 - Fixed issue where add-on with no optional library would not show up as valid targets for application launches.
 - Loads the SDK content only when a project requires it. This will make Eclipse use less resources when the SDK contains many versions of Android.
 - DDMS plug-in now contains the Allocation Tracker view.
+- Lots of fixes in the configuration selector of the Visual Layout Editor.
 
 0.9.5:
 - misc fixes in the SDK Updater
