@@ -27,6 +27,7 @@ package com.android.ide.eclipse.adt.gscripts;
  * No strong ordering properties are defined if zones overlap each other.
  */
 public class DropZone {
+
     /**
      * The rectangle (in absolute coordinates) of the drop zone.
      * Never null, but the rectangle can be invalid.
@@ -38,6 +39,20 @@ public class DropZone {
      * data or a closure that can be computed in dropStart() and used in dropFinish().
      */
     public Object data;
+
+    /**
+     * Creates a new DropZone with an invalid bounds rectangle and a null data object.
+     */
+    public DropZone() {
+    }
+
+    /**
+     * Creates a new DropZone with a copy of the bounds rectangle and the given data object.
+     */
+    public DropZone(Rect bounds, Object data) {
+        this.bounds.set(bounds);
+        this.data = data;
+    }
 
     @Override
     public String toString() {

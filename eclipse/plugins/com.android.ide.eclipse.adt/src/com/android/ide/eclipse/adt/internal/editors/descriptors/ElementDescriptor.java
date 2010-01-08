@@ -137,7 +137,23 @@ public class ElementDescriptor {
         return mXmlName;
     }
 
-    /** Returns the XML element node name. Case sensitive. */
+    /**
+     * Returns the XML element node name, including the prefix.
+     * Case sensitive.
+     * <p/>
+     * In Android resources, the element node name for Android resources typically does not
+     * have a prefix and is typically the simple Java class name (e.g. "View"), whereas for
+     * custom views it is generally the fully qualified class name of the view (e.g.
+     * "com.mycompany.myapp.MyView").
+     * <p/>
+     * Most of the time you'll probably want to use {@link #getXmlLocalName()} to get a local
+     * name guaranteed without a prefix.
+     * <p/>
+     * Note that the prefix that <em>may</em> be available in this descriptor has nothing to
+     * do with the actual prefix the node might have (or needs to have) in the actual XML file
+     * since descriptors are fixed and do not depend on any current namespace defined in the
+     * target XML.
+     */
     public String getXmlName() {
         return mXmlName;
     }

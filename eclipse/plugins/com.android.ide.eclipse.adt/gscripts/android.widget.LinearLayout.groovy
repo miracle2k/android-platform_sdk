@@ -18,9 +18,11 @@ package com.android.adt.gscripts;
 
 import com.android.ide.eclipse.adt.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.gscripts.INodeProxy;
-import com.android.ide.eclipse.adt.gscripts.Rect;
 import com.android.ide.eclipse.adt.gscripts.DropZone;
+import com.android.ide.eclipse.adt.gscripts.Rect;
+import com.android.ide.eclipse.adt.gscripts.Point;
 
+import java.util.Map;
 import java.util.ArrayList;
 
 /**
@@ -66,6 +68,21 @@ public class AndroidWidgetLinearLayourRule implements IViewRule {
     }
 
 
+    // ==== XML Creation ====
+
+
+    /**
+     * Returns the default attributes that a new XML element of this type should have
+     * when added to an XML layout file. Note that these defaults can be overridden by the
+     * specific code performing the insertion.
+     *
+     * @return A map of attribute:values for a new element of this type. Can be null or empty.
+     */
+    public Map<?, ?> getDefaultAttributes() {
+        return null;
+    }
+
+
 
     // ==== Drag'n'drop support ====
 
@@ -88,15 +105,6 @@ public class AndroidWidgetLinearLayourRule implements IViewRule {
      * @return Null or an empty list if the rule rejects the drop, or a list of usable drop zones.
      */
     public ArrayList<DropZone> dropStart(INodeProxy targetNode) {
-
-        // By default we accept one drop zone, which is the whole target.
-        DropZone d = new DropZone();
-        d.bounds.set(targetNode.getBounds());
-        d.data = null;
-        //return [ d ];
-
-        targetNode.debugPrint("dropStart " + d.toString());
-
 
         // for testing, we're going to make 2 drop zones: top and bottom.
         // TODO find inner elements bounds & orientation, add margings
@@ -121,7 +129,11 @@ public class AndroidWidgetLinearLayourRule implements IViewRule {
      * @param targetNode The XML view that is currently the target of the drop.
      * @param selectedZone One of the drop zones returned by {@link #dropStart(INodeProxy)}.
      */
-    public void dropFinish(String sourceFqcn, INodeProxy targetNode, DropZone selectedZone) {
+    public void dropFinish(
+            String sourceFqcn,
+            INodeProxy targetNode,
+            DropZone selectedZone,
+            Point where) {
         // skip, we're not doing drag'n'drop here
     }
 
