@@ -68,10 +68,16 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
     private UiEditorActions mUiEditorActions;
 
     /**
+     * Flag indicating if the replacement file is due to a config change.
+     * If false, it means the new file is due to an "open action" from the user.
+     */
+    private boolean mNewFileOnConfigChange = false;
+
+    /**
      * Creates the form editor for resources XML files.
      */
     public LayoutEditor() {
-        super();
+        super(false /* addTargetListener */);
     }
 
     /**
@@ -132,6 +138,21 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
             // In case there's an issue we provide a way to disable it using an
             // env variable.
             if (System.getenv("ANDROID_DISABLE_LAYOUT") == null) {      //$NON-NLS-1$
+                // get the file being edited so that it can be passed to the layout editor.
+                IFile editedFile = null;
+                IEditorInput input = getEditorInput();
+                if (input instanceof FileEditorInput) {
+                    FileEditorInput fileInput = (FileEditorInput)input;
+                    editedFile = fileInput.getFile();
+                } else {
+                    AdtPlugin.log(IStatus.ERROR,
+                            "Input is not of type FileEditorInput: %1$s",  //$NON-NLS-1$
+                            input.toString());
+                }
+
+                // It is possible that the Layout Editor alreadys exits if a different version
+                // of the same layout is being opened (either through "open" action from
+                // the user, or through a configuration change in the configuration selector.)
                 if (mGraphicalEditor == null) {
 
                     if (System.getenv("USE_GLE2") != null) {            //$NON-NLS-1$ //$NON-NLS-2$
@@ -142,18 +163,15 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
 
                     mGraphicalEditorIndex = addPage(mGraphicalEditor, getEditorInput());
                     setPageText(mGraphicalEditorIndex, mGraphicalEditor.getTitle());
-                } else {
-                    mGraphicalEditor.reloadEditor();
-                }
 
-                // update the config based on the opened file.
-                IEditorInput input = getEditorInput();
-                if (input instanceof FileEditorInput) {
-                    FileEditorInput fileInput = (FileEditorInput)input;
-                    mGraphicalEditor.initWithFile(fileInput.getFile());
+                    mGraphicalEditor.openFile(editedFile);
                 } else {
-                    AdtPlugin.log(IStatus.ERROR, "Input is not of type FileEditorInput: %1$s",
-                            input.toString());
+                    if (mNewFileOnConfigChange) {
+                        mGraphicalEditor.changeFileOnNewConfig(editedFile);
+                        mNewFileOnConfigChange = false;
+                    } else {
+                        mGraphicalEditor.replaceFile(editedFile);
+                    }
                 }
 
                 // put in place the listener to handle layout recompute only when needed.
@@ -372,7 +390,7 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
     }
 
     @Override
-    protected void initUiRootNode(boolean force) {
+    public void initUiRootNode(boolean force) {
         // The root UI node is always created, even if there's no corresponding XML node.
         if (mUiRootNode == null || force) {
             // get the target data from the opened file (and its project)
@@ -410,9 +428,8 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
         }
 
         if (mGraphicalEditor != null) {
-            mGraphicalEditor.reloadEditor();
-            mGraphicalEditor.reloadPalette();
             mGraphicalEditor.onTargetChange();
+            mGraphicalEditor.reloadPalette();
         }
     }
 
@@ -427,5 +444,9 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
             setPartName(String.format("%1$s",
                     file.getName()));
         }
+    }
+
+    public void setNewFileOnConfigChange(boolean state) {
+        mNewFileOnConfigChange = state;
     }
 }

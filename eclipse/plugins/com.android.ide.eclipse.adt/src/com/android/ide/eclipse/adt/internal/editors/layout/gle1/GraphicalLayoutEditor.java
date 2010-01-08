@@ -47,12 +47,10 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
-import com.android.ide.eclipse.adt.internal.sdk.Sdk.TargetChangeListener;
 import com.android.layoutlib.api.ILayoutBridge;
 import com.android.layoutlib.api.ILayoutLog;
 import com.android.layoutlib.api.ILayoutResult;
@@ -157,16 +155,34 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
     /** Listener to update the root node if the target of the file is changed because of a
      * SDK location change or a project target change */
-    private ITargetChangeListener mTargetListener = new TargetChangeListener() {
-        boolean mSdkLoaded = true; // indicates whether we got a sdk loaded event.
-
-        @Override
-        public IProject getProject() {
-            return getLayoutEditor().getProject();
+    private ITargetChangeListener mTargetListener = new ITargetChangeListener() {
+        public void onProjectTargetChange(IProject changedProject) {
+            if (changedProject != null && changedProject.equals(getProject())) {
+                updateEditor();
+            }
         }
 
-        @Override
-        public void reload() {
+        public void onTargetLoaded(IAndroidTarget target) {
+            IProject project = getProject();
+            if (target != null && target.equals(Sdk.getCurrent().getTarget(project))) {
+                updateEditor();
+            }
+        }
+
+        public void onSdkLoaded() {
+            Sdk currentSdk = Sdk.getCurrent();
+            if (currentSdk != null) {
+                IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
+                if (target != null) {
+                    mConfigComposite.onSdkLoaded(target);
+                    onConfigurationChange();
+                }
+            }
+        }
+
+        private void updateEditor() {
+            mLayoutEditor.commitPages(false /* onSave */);
+
             // because the target changed we must reset the configured resources.
             mConfiguredFrameworkRes = mConfiguredProjectRes = null;
 
@@ -174,27 +190,13 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
             // bridge class loader.
             mProjectCallback = null;
 
-            // update the themes and locales since the target change could have changed the
-            // theme list.
-            mConfigComposite.updateThemesAndLocales();
-
-            // reset the config selector UI to match the new target (and possibly sdk).
-            if (mEditedConfig != null) {
-                if (mSdkLoaded) {
-                    onSdkChange();
-                } else {
-                    onTargetChange();
-                }
-            }
-
-            // SDK change has been handled, reset the flag.
-            mSdkLoaded = false;
+            // recreate the ui root node always, this will also call onTargetChange
+            // on the config composite
+            mLayoutEditor.initUiRootNode(true /*force*/);
         }
 
-        @Override
-        public void onSdkLoaded() {
-            mSdkLoaded = true; // this will be reset when we get the target loaded event
-                               // which always comes after.
+        private IProject getProject() {
+            return getLayoutEditor().getProject();
         }
     };
 
@@ -208,9 +210,9 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         }
     };
 
-    private final Runnable mUiUpdateFromResourcesRunnable = new Runnable() {
+    private final Runnable mLocaleUpdaterFromUiRunnable = new Runnable() {
         public void run() {
-            mConfigComposite.updateThemesAndLocales();
+            mConfigComposite.updateLocales();
         }
     };
 
@@ -587,48 +589,85 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
     }
 
     /**
-     * Sets the UI for the edition of a new file.
-     * @param iFile the file being edited.
+     * Opens and initialize the editor with a new file.
+     * @param file the file being edited.
      */
-    public void initWithFile(IFile file) {
+    public void openFile(IFile file) {
         mEditedFile = file;
 
         ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
         mEditedConfig = resFolder.getConfiguration();
 
-        mConfigComposite.updateThemesAndLocales();
-
+        IAndroidTarget target = null;
         Sdk currentSdk = Sdk.getCurrent();
         if (currentSdk != null) {
-            IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
-            if (target != null) {
-                mConfigComposite.initWith(mEditedConfig, target);
-            }
+            target = currentSdk.getTarget(mEditedFile.getProject());
         }
-    }
 
-    public void onTargetChange() {
-        onTargetOrSdkChange(false /* reloadDevices */);
-    }
-
-    public void onSdkChange() {
-        onTargetOrSdkChange(true /* reloadDevices */);
+        mConfigComposite.openFile(mEditedConfig, target);
     }
 
     /**
-     * Reloads the configuration selector.
-     * @param reloadDevices whether the {@link LayoutDevice} objects should be reloaded.
+     * Resets the editor with a replacement file.
+     * @param file the replacement file.
      */
-    private void onTargetOrSdkChange(boolean reloadDevices) {
+    public void replaceFile(IFile file) {
+        resetInput();
+
+        mEditedFile = file;
+
+        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
+        mEditedConfig = resFolder.getConfiguration();
+
+        mConfigComposite.replaceFile(mEditedConfig);
+        onConfigurationChange();
+    }
+
+    /**
+     * Resets the editor with a replacement file coming from a config change in the config
+     * selector.
+     * @param file the replacement file.
+     */
+    public void changeFileOnNewConfig(IFile file) {
+        resetInput();
+
+        mEditedFile = file;
+
+        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
+        mEditedConfig = resFolder.getConfiguration();
+
+        mConfigComposite.changeFileOnNewConfig(mEditedConfig);
+        onConfigurationChange();
+    }
+
+    public void onTargetChange() {
+        resetInput();
+        mConfigComposite.onTargetChange();
+        onConfigurationChange();
+    }
+
+    public void onSdkChange() {
         Sdk currentSdk = Sdk.getCurrent();
         if (currentSdk != null) {
             IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
             if (target != null) {
-                mConfigComposite.resetUi(mEditedConfig, target, reloadDevices);
+                mConfigComposite.onSdkLoaded(target);
                 onConfigurationChange();
             }
         }
     }
+
+    /**
+     * Resets the editor's input and the viewer model.
+     */
+    private void resetInput() {
+        GraphicalViewer viewer = getGraphicalViewer();
+        viewer.setContents(getModel());
+
+        IEditorInput input = mLayoutEditor.getEditorInput();
+        setInput(input);
+    }
+
 
     public Rectangle getBounds() {
         return mConfigComposite.getScreenBounds();
@@ -729,17 +768,6 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
     }
 
     /**
-     * Reloads this editor, by getting the new model from the {@link LayoutEditor}.
-     */
-    public void reloadEditor() {
-        GraphicalViewer viewer = getGraphicalViewer();
-        viewer.setContents(getModel());
-
-        IEditorInput input = mLayoutEditor.getEditorInput();
-        setInput(input);
-    }
-
-    /**
      * Callback for XML model changed. Only update/recompute the layout if the editor is visible
      */
     public void onXmlModelChanged() {
@@ -807,6 +835,10 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         if (match != null) {
             if (match.getFile().equals(mEditedFile) == false) {
                 try {
+                    // tell the editor that the next replacement file is due to a config change.
+                    mLayoutEditor.setNewFileOnConfigChange(true);
+
+                    // ask the IDE to open the replacement file.
                     IDE.openEditor(
                             getSite().getWorkbenchWindow().getActivePage(),
                             match.getFile().getIFile());
@@ -1136,7 +1168,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
                 }
             }
 
-            mParent.getDisplay().asyncExec(mUiUpdateFromResourcesRunnable);
+            mParent.getDisplay().asyncExec(mLocaleUpdaterFromUiRunnable);
         }
 
         if (codeChange) {
