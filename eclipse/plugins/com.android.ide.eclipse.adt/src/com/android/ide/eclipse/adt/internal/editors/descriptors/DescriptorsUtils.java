@@ -711,7 +711,7 @@ public final class DescriptorsUtils {
      * This does not override attributes which are not empty.
      */
     public static void setDefaultLayoutAttributes(UiElementNode ui_node, boolean updateLayout) {
-        // if this ui_node is a layout and we're adding it to a document, use fill_parent for
+        // if this ui_node is a layout and we're adding it to a document, use match_parent for
         // both W/H. Otherwise default to wrap_layout.
         boolean fill = ui_node.getDescriptor().hasChildren() &&
                        ui_node.getUiParent() instanceof UiDocumentNode;

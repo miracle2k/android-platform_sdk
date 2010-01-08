@@ -56,7 +56,7 @@ public class LayoutConstants {
     public static final String ATTR_LAYOUT_X = "layout_x";                      //$NON-NLS-1$
 
     public static final String VALUE_WRAP_CONTENT = "wrap_content";             //$NON-NLS-1$
-    public static final String VALUE_FILL_PARENT = "fill_parent";               //$NON-NLS-1$
+    public static final String VALUE_FILL_PARENT = "match_parent";               //$NON-NLS-1$
     public static final String VALUE_TRUE = "true";                             //$NON-NLS-1$
     public static final String VALUE_N_DIP = "%ddip";                           //$NON-NLS-1$
 

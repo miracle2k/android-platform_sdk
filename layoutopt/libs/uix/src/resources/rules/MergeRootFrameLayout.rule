@@ -6,7 +6,7 @@
 // Conditions:
 // - The node is the root of the document
 // - The node is a FrameLayout
-// - The node is fill_parent in both orientation *or* it has no layout_gravity
+// - The node is match_parent in both orientation *or* it has no layout_gravity
 // - The node does not have a background nor a foreground
 // - The node does not have padding
 
