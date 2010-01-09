@@ -228,7 +228,7 @@
              the special constants. -->
         <attr name="layout_width" format="dimension">
             <!-- The view should be as big as its parent (minus padding). -->
-            <enum name="fill_parent" value="-1" />
+            <enum name="match_parent" value="-1" />
             <!-- The view should be only big enough to enclose its content (plus padding). -->
             <enum name="wrap_content" value="-2" />
         </attr>
@@ -239,7 +239,7 @@
              the special constants. -->
         <attr name="layout_height" format="dimension">
             <!-- The view should be as big as its parent (minus padding). -->
-            <enum name="fill_parent" value="-1" />
+            <enum name="match_parent" value="-1" />
             <!-- The view should be only big enough to enclose its content (plus padding). -->
             <enum name="wrap_content" value="-2" />
         </attr>
