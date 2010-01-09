@@ -103,6 +103,9 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
      * SDK location change or a project target change */
     private TargetChangeListener mTargetListener = null;
 
+    /** flag set during page creation */
+    private boolean mIsCreatingPage = false;
+
     /**
      * Creates a form editor.
      * <p/>The editor will setup a {@link ITargetChangeListener} and call
@@ -190,10 +193,19 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
      * Creates the page for the Android Editors
      */
     protected void createAndroidPages() {
+        mIsCreatingPage = true;
         createFormPages();
         createTextEditor();
 
         createUndoRedoActions();
+        mIsCreatingPage = false;
+    }
+
+    /**
+     * Returns whether the editor is currently creating its pages.
+     */
+    public boolean isCreatingPages() {
+        return mIsCreatingPage;
     }
 
     /**
