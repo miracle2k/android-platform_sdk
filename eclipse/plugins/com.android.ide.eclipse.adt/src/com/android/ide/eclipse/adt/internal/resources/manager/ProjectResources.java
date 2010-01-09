@@ -119,8 +119,9 @@ public class ProjectResources implements IResourceRepository {
      * Removes a {@link ResourceFolder} associated with the specified {@link IAbstractFolder}.
      * @param type The type of the folder
      * @param folder the IFolder object.
+     * @return the {@link ResourceFolder} that was removed, or null if no matches were found.
      */
-    protected void removeFolder(ResourceFolderType type, IFolder folder) {
+    protected ResourceFolder removeFolder(ResourceFolderType type, IFolder folder) {
         // get the list of folders for the resource type.
         List<ResourceFolder> list = mFolderMap.get(type);
 
@@ -174,10 +175,12 @@ public class ProjectResources implements IResourceRepository {
                     }
 
                     // we're done updating/touching, we can stop
-                    break;
+                    return resFolder;
                 }
             }
         }
+
+        return null;
     }
 
 
@@ -598,7 +601,7 @@ public class ProjectResources implements IResourceRepository {
             }
         }
 
-        // Because we accept resources whose configuration have qualifiers where the reference 
+        // Because we accept resources whose configuration have qualifiers where the reference
         // configuration doesn't, we can end up with more than one match. In this case, we just
         // take the first one.
         if (matchingResources.size() == 0) {

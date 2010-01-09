@@ -27,8 +27,8 @@ import com.android.ide.eclipse.adt.internal.editors.manifest.pages.OverviewPage;
 import com.android.ide.eclipse.adt.internal.editors.manifest.pages.PermissionPage;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFileListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.sdklib.xml.AndroidXPathFactory;
 
@@ -85,7 +85,7 @@ public final class ManifestEditor extends AndroidEditor {
     public void dispose() {
         super.dispose();
 
-        ResourceMonitor.getMonitor().removeFileListener(mMarkerMonitor);
+        GlobalProjectMonitor.getMonitor().removeFileListener(mMarkerMonitor);
     }
 
     /**
@@ -223,7 +223,7 @@ public final class ManifestEditor extends AndroidEditor {
                 }
             };
             
-            ResourceMonitor.getMonitor().addFileListener(mMarkerMonitor, IResourceDelta.CHANGED);
+            GlobalProjectMonitor.getMonitor().addFileListener(mMarkerMonitor, IResourceDelta.CHANGED);
         }
     }
 

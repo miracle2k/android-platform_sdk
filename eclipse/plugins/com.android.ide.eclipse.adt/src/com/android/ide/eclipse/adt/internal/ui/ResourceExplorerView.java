@@ -22,7 +22,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResourceIte
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IResourceEventListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IResourceEventListener;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;

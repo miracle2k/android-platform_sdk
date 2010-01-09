@@ -17,12 +17,14 @@
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFileListener;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IResourceEventListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IResourceEventListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager.IResourceListener;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
@@ -37,9 +39,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Monitor for file changes triggering a layout redraw.
+ * Monitor for file changes that could trigger a layout redraw, or a UI update
  */
-public final class LayoutReloadMonitor implements IFileListener, IResourceEventListener {
+public final class LayoutReloadMonitor {
 
     // singleton, enforced by private constructor.
     private final static LayoutReloadMonitor sThis = new LayoutReloadMonitor();
@@ -50,17 +52,21 @@ public final class LayoutReloadMonitor implements IFileListener, IResourceEventL
     private final Map<IProject, List<ILayoutReloadListener>> mListenerMap =
         new HashMap<IProject, List<ILayoutReloadListener>>();
 
-    private final static int CHANGE_CODE = 0;
-    private final static int CHANGE_RESOURCES = 1;
-    private final static int CHANGE_R = 2;
-    private final static int CHANGE_COUNT = 3;
+    public final static class ChangeFlags {
+        public boolean code = false;
+        public boolean resources = false;
+        public boolean rClass = false;
+        public boolean localeList = false;
+
+        boolean isAllTrue() {
+            return code && resources && rClass && localeList;
+        }
+    }
+
     /**
-     * List of projects having received a file change. the boolean[] contains 3 values:
-     * <ul><li>CHANGE_CODE: code change flag.</li>
-     * <li>CHANGE_RESOURCES: resource change flag.</li>
-     * <li>CHANGE_R: R clas change flag</li></ul>
+     * List of projects having received a resource change.
      */
-    private final Map<IProject, boolean[]> mChangedProjects = new HashMap<IProject, boolean[]>();
+    private final Map<IProject, ChangeFlags> mProjectFlags = new HashMap<IProject, ChangeFlags>();
 
     /**
      * Classes which implement this interface provide a method to respond to resource changes
@@ -69,11 +75,9 @@ public final class LayoutReloadMonitor implements IFileListener, IResourceEventL
     public interface ILayoutReloadListener {
         /**
          * Sent when the layout needs to be redrawn
-         * @param codeChange The trigger happened due to a code change.
-         * @param rChange The trigger happened due to a change in the R class.
-         * @param resChange The trigger happened due to a resource change.
+         * @param flags a {@link ChangeFlags} object indicating what type of resource changed.
          */
-        void reloadLayout(boolean codeChange, boolean rChange, boolean resChange);
+        void reloadLayout(ChangeFlags flags);
     }
 
     /**
@@ -84,9 +88,16 @@ public final class LayoutReloadMonitor implements IFileListener, IResourceEventL
     }
 
     private LayoutReloadMonitor() {
-        ResourceMonitor monitor = ResourceMonitor.getMonitor();
-        monitor.addFileListener(this, IResourceDelta.ADDED | IResourceDelta.CHANGED);
-        monitor.addResourceEventListener(this);
+        // listen to resource changes. Used for non-layout resource (trigger a redraw), or
+        // any resource folder (trigger a locale list refresh)
+        ResourceManager.getInstance().addListener(mResourceListener);
+
+        // also listen for .class file changed in case the layout has custom view classes.
+        GlobalProjectMonitor monitor = GlobalProjectMonitor.getMonitor();
+        monitor.addFileListener(mFileListener,
+                IResourceDelta.ADDED | IResourceDelta.CHANGED | IResourceDelta.REMOVED);
+
+        monitor.addResourceEventListener(mResourceEventListener);
     }
 
     /**
@@ -136,96 +147,132 @@ public final class LayoutReloadMonitor implements IFileListener, IResourceEventL
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.android.ide.eclipse.editors.resources.manager.ResourceMonitor.IFileListener#fileChanged(org.eclipse.core.resources.IFile, org.eclipse.core.resources.IMarkerDelta[], int)
-     *
-     * Callback for ResourceMonitor.IFileListener. Called when a file changed.
-     * This records the changes for each project, but does not notify listeners.
-     * @see #resourceChangeEventEnd
+    /**
+     * Implementation of the {@link IFileListener} as an internal class so that the methods
+     * do not appear in the public API of {@link LayoutReloadMonitor}.
      */
-    public void fileChanged(IFile file, IMarkerDelta[] markerDeltas, int kind) {
-        // get the file project
-        IProject project = file.getProject();
+    private IFileListener mFileListener = new IFileListener() {
+        /*
+         * Callback for IFileListener. Called when a file changed.
+         * This records the changes for each project, but does not notify listeners.
+         */
+        public void fileChanged(IFile file, IMarkerDelta[] markerDeltas, int kind) {
+            // get the file project
+            IProject project = file.getProject();
 
-        // if this project has already been marked as modified, we do nothing.
-        boolean[] changeFlags = mChangedProjects.get(project);
-        if (changeFlags != null && changeFlags[CHANGE_CODE] && changeFlags[CHANGE_RESOURCES] &&
-                changeFlags[CHANGE_R]) {
-            return;
-        }
-
-        // now check that the file is *NOT* a layout file (those automatically trigger a layout
-        // reload and we don't want to do it twice.
-        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
-        if (resFolder != null) {
-            if (resFolder.getType() != ResourceFolderType.LAYOUT) {
-                // this is a resource change!
-                if (changeFlags == null) {
-                    changeFlags = new boolean[CHANGE_COUNT];
-                    mChangedProjects.put(project, changeFlags);
-                }
-
-                changeFlags[CHANGE_RESOURCES] = true;
+            // if this project has already been marked as modified, we do nothing.
+            ChangeFlags changeFlags = mProjectFlags.get(project);
+            if (changeFlags != null && changeFlags.isAllTrue()) {
+                return;
             }
-        } else if (AndroidConstants.EXT_CLASS.equals(file.getFileExtension())) {
-            if (file.getName().matches("R[\\$\\.](.*)")) {
-                // this is a R change!
-                if (changeFlags == null) {
-                    changeFlags = new boolean[CHANGE_COUNT];
-                    mChangedProjects.put(project, changeFlags);
-                }
 
-                changeFlags[CHANGE_R] = true;
-            } else {
-                // this is a code change!
-                if (changeFlags == null) {
-                    changeFlags = new boolean[CHANGE_COUNT];
-                    mChangedProjects.put(project, changeFlags);
-                }
+            // here we only care about code change (so change for .class files).
+            // Resource changes is handled by the IResourceListener.
+            if (AndroidConstants.EXT_CLASS.equals(file.getFileExtension())) {
+                if (file.getName().matches("R[\\$\\.](.*)")) {
+                    // this is a R change!
+                    if (changeFlags == null) {
+                        changeFlags = new ChangeFlags();
+                        mProjectFlags.put(project, changeFlags);
+                    }
 
-                changeFlags[CHANGE_CODE] = true;
+                    changeFlags.rClass = true;
+                } else {
+                    // this is a code change!
+                    if (changeFlags == null) {
+                        changeFlags = new ChangeFlags();
+                        mProjectFlags.put(project, changeFlags);
+                    }
+
+                    changeFlags.code = true;
+                }
             }
         }
-    }
+    };
 
-    /*
-     * (non-Javadoc)
-     * @see com.android.ide.eclipse.editors.resources.manager.ResourceMonitor.IResourceEventListener#resourceChangeEventStart()
-     *
-     * Callback for ResourceMonitor.IResourceEventListener. Called at the beginning of a resource
-     * change event. This is called once, while fileChanged can be called several times.
-     *
+    /**
+     * Implementation of the {@link IResourceEventListener} as an internal class so that the methods
+     * do not appear in the public API of {@link LayoutReloadMonitor}.
      */
-    public void resourceChangeEventStart() {
-        // nothing to be done here, it all happens in the resourceChangeEventEnd
-    }
+    private IResourceEventListener mResourceEventListener = new IResourceEventListener() {
+        /*
+         * Callback for ResourceMonitor.IResourceEventListener. Called at the beginning of a
+         * resource change event. This is called once, while fileChanged can be
+         * called several times.
+         *
+         */
+        public void resourceChangeEventStart() {
+            // nothing to be done here, it all happens in the resourceChangeEventEnd
+        }
 
-    /*
-     * (non-Javadoc)
-     * @see com.android.ide.eclipse.editors.resources.manager.ResourceMonitor.IResourceEventListener#resourceChangeEventEnd()
-     *
-     * Callback for ResourceMonitor.IResourceEventListener. Called at the end of a resource
-     * change event. This is where we notify the listeners.
-     */
-    public void resourceChangeEventEnd() {
-        // for each IProject that was changed, we notify all the listeners.
-        synchronized (mListenerMap) {
-            for (Entry<IProject, boolean[]> project : mChangedProjects.entrySet()) {
-                List<ILayoutReloadListener> listeners = mListenerMap.get(project.getKey());
+        /*
+         * Callback for ResourceMonitor.IResourceEventListener. Called at the end of a resource
+         * change event. This is where we notify the listeners.
+         */
+        public void resourceChangeEventEnd() {
+            // for each IProject that was changed, we notify all the listeners.
+            synchronized (mListenerMap) {
+                for (Entry<IProject, ChangeFlags> project : mProjectFlags.entrySet()) {
+                    List<ILayoutReloadListener> listeners = mListenerMap.get(project.getKey());
 
-                boolean[] flags = project.getValue();
+                    ChangeFlags flags = project.getValue();
 
-                if (listeners != null) {
-                    for (ILayoutReloadListener listener : listeners) {
-                        listener.reloadLayout(flags[CHANGE_CODE], flags[CHANGE_R],
-                                flags[CHANGE_RESOURCES]);
+                    if (listeners != null) {
+                        for (ILayoutReloadListener listener : listeners) {
+                            listener.reloadLayout(flags);
+                        }
                     }
                 }
             }
+
+            // empty the list.
+            mProjectFlags.clear();
+        }
+    };
+
+    /**
+     * Implementation of the {@link IResourceListener} as an internal class so that the methods
+     * do not appear in the public API of {@link LayoutReloadMonitor}.
+     */
+    private IResourceListener mResourceListener = new IResourceListener() {
+
+        public void folderChanged(IProject project, ResourceFolder folder, int eventType) {
+            // if this project has already been marked as modified, we do nothing.
+            ChangeFlags changeFlags = mProjectFlags.get(project);
+            if (changeFlags != null && changeFlags.isAllTrue()) {
+                return;
+            }
+
+            // this means a new resource folder was added or removed, which can impact the
+            // locale list.
+            if (changeFlags == null) {
+                changeFlags = new ChangeFlags();
+                mProjectFlags.put(project, changeFlags);
+            }
+
+            changeFlags.localeList = true;
         }
 
-        // empty the list.
-        mChangedProjects.clear();
-    }
+        public void fileChanged(IProject project, ResourceFile file, int eventType) {
+            // if this project has already been marked as modified, we do nothing.
+            ChangeFlags changeFlags = mProjectFlags.get(project);
+            if (changeFlags != null && changeFlags.isAllTrue()) {
+                return;
+            }
+
+            // now check that the file is *NOT* a layout file (those automatically trigger a layout
+            // reload and we don't want to do it twice.)
+            ResourceType[] resTypes = file.getResourceTypes();
+            // files that generates > 1 types cannot be layout files.
+            if (resTypes.length > 1 || resTypes[0] != ResourceType.LAYOUT) {
+                // this is a resource change, that may require a layout redraw!
+                if (changeFlags == null) {
+                    changeFlags = new ChangeFlags();
+                    mProjectFlags.put(project, changeFlags);
+                }
+
+                changeFlags.resources = true;
+            }
+        }
+    };
 }

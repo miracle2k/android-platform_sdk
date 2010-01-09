@@ -21,8 +21,8 @@ import com.android.ddmlib.IDevice;
 import com.android.ddmlib.MultiLineReceiver;
 import com.android.ddmlib.AndroidDebugBridge.IDebugBridgeChangeListener;
 import com.android.ddmlib.AndroidDebugBridge.IDeviceChangeListener;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IProjectListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 
 import org.eclipse.core.resources.IProject;
 
@@ -182,7 +182,7 @@ public class ApkInstallManager implements IDeviceChangeListener, IDebugBridgeCha
     private ApkInstallManager() {
         AndroidDebugBridge.addDeviceChangeListener(this);
         AndroidDebugBridge.addDebugBridgeChangeListener(this);
-        ResourceMonitor.getMonitor().addProjectListener(this);
+        GlobalProjectMonitor.getMonitor().addProjectListener(this);
     }
 
     /*

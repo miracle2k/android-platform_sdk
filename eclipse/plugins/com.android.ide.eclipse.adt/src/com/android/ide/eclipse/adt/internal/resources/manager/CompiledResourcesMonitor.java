@@ -20,8 +20,8 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFileListener;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IProjectListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
@@ -48,7 +48,7 @@ public final class CompiledResourcesMonitor implements IFileListener, IProjectLi
      * Sets up the monitoring system.
      * @param monitor The main Resource Monitor.
      */
-    public static void setupMonitor(ResourceMonitor monitor) {
+    public static void setupMonitor(GlobalProjectMonitor monitor) {
         monitor.addFileListener(sThis, IResourceDelta.ADDED | IResourceDelta.CHANGED);
         monitor.addProjectListener(sThis);
     }

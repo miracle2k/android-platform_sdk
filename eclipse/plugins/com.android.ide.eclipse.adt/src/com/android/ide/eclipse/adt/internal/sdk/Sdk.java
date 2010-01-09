@@ -20,9 +20,9 @@ import com.android.ddmlib.IDevice;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFileListener;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IProjectListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion;
@@ -609,7 +609,7 @@ public class Sdk implements IProjectListener, IFileListener {
         mAvdManager = avdManager;
 
         // listen to projects closing
-        ResourceMonitor monitor = ResourceMonitor.getMonitor();
+        GlobalProjectMonitor monitor = GlobalProjectMonitor.getMonitor();
         monitor.addProjectListener(this);
         monitor.addFileListener(this, IResourceDelta.CHANGED);
 
@@ -627,7 +627,7 @@ public class Sdk implements IProjectListener, IFileListener {
      *  Cleans and unloads the SDK.
      */
     private void dispose() {
-        ResourceMonitor monitor = ResourceMonitor.getMonitor();
+        GlobalProjectMonitor monitor = GlobalProjectMonitor.getMonitor();
         monitor.removeProjectListener(this);
         monitor.removeFileListener(this);
     }

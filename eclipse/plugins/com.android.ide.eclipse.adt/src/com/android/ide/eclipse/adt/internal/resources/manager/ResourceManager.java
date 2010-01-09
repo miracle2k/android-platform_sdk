@@ -20,9 +20,9 @@ import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFileListener;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFolderListener;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IProjectListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFolderListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.FileWrapper;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.FolderWrapper;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFile;
@@ -44,9 +44,27 @@ import org.eclipse.core.runtime.IPath;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
-public final class ResourceManager implements IProjectListener, IFolderListener, IFileListener {
+/**
+ * The ResourceManager tracks resources for all opened projects.
+ * <p/>
+ * It provide direct access to all the resources of a project as a {@link ProjectResources}
+ * object that allows accessing the resources through their file representation or as Android
+ * resources (similar to what is seen by an Android application).
+ * <p/>
+ * The ResourceManager automatically tracks file changes to update its internal representation
+ * of the resources so that they are always up to date.
+ * <p/>
+ * It also gives access to a monitor that is more resource oriented than the
+ * {@link GlobalProjectMonitor}.
+ * This monitor will let you track resource changes by giving you direct access to
+ * {@link ResourceFile}, or {@link ResourceFolder}.
+ *
+ * @see ProjectResources
+ */
+public final class ResourceManager {
 
     private final static ResourceManager sThis = new ResourceManager();
 
@@ -60,14 +78,39 @@ public final class ResourceManager implements IProjectListener, IFolderListener,
         new HashMap<IProject, ProjectResources>();
 
     /**
-     * Sets up the resource manager with the global resource monitor.
-     * @param monitor The global resource monitor
+     * Interface to be notified of resource changes.
+     *
+     * @see ResourceManager#addListener(IResourceListener)
+     * @see ResourceManager#removeListener(IResource)
      */
-    public static void setup(ResourceMonitor monitor) {
-        monitor.addProjectListener(sThis);
+    public interface IResourceListener {
+        /**
+         * Notification for resource file change.
+         * @param project the project of the file.
+         * @param file the {@link ResourceFile} representing the file.
+         * @param eventType the type of event. See {@link IResourceDelta}.
+         */
+        void fileChanged(IProject project, ResourceFile file, int eventType);
+        /**
+         * Notification for resource folder change.
+         * @param project the project of the file.
+         * @param folder the {@link ResourceFolder} representing the folder.
+         * @param eventType the type of event. See {@link IResourceDelta}.
+         */
+        void folderChanged(IProject project, ResourceFolder folder, int eventType);
+    }
+
+    private final ArrayList<IResourceListener> mListeners = new ArrayList<IResourceListener>();
+
+    /**
+     * Sets up the resource manager with the global project monitor.
+     * @param monitor The global project monitor
+     */
+    public static void setup(GlobalProjectMonitor monitor) {
+        monitor.addProjectListener(sThis.mProjectListener);
         int mask = IResourceDelta.ADDED | IResourceDelta.REMOVED | IResourceDelta.CHANGED;
-        monitor.addFolderListener(sThis, mask);
-        monitor.addFileListener(sThis, mask);
+        monitor.addFolderListener(sThis.mFolderListener, mask);
+        monitor.addFileListener(sThis.mFileListener, mask);
 
         CompiledResourcesMonitor.setupMonitor(monitor);
     }
@@ -80,6 +123,22 @@ public final class ResourceManager implements IProjectListener, IFolderListener,
     }
 
     /**
+     * Adds a new {@link IResourceListener} to be notified of resource changes.
+     * @param listener the listener to be added.
+     */
+    public void addListener(IResourceListener listener) {
+        mListeners.add(listener);
+    }
+
+    /**
+     * Removes an {@link IResourceListener}, so that it's not notified of resource changes anymore.
+     * @param listener the listener to be removed.
+     */
+    public void removeListener(IResource listener) {
+        mListeners.remove(listener);
+    }
+
+    /**
      * Returns the resources of a project.
      * @param project The project
      * @return a ProjectResources object or null if none was found.
@@ -89,166 +148,201 @@ public final class ResourceManager implements IProjectListener, IFolderListener,
     }
 
     /**
-     * Processes folder event.
+     * Implementation of the {@link IFolderListener} as an internal class so that the methods
+     * do not appear in the public API of {@link ResourceManager}.
      */
-    public void folderChanged(IFolder folder, int kind) {
-        ProjectResources resources;
+    private IFolderListener mFolderListener = new IFolderListener() {
+        public void folderChanged(IFolder folder, int kind) {
+            ProjectResources resources;
 
-        final IProject project = folder.getProject();
+            final IProject project = folder.getProject();
 
-        try {
-            if (project.hasNature(AndroidConstants.NATURE) == false) {
+            try {
+                if (project.hasNature(AndroidConstants.NATURE) == false) {
+                    return;
+                }
+            } catch (CoreException e) {
+                // can't get the project nature? return!
                 return;
             }
-        } catch (CoreException e) {
-            // can't get the project nature? return!
-            return;
-        }
 
-        switch (kind) {
-            case IResourceDelta.ADDED:
-                // checks if the folder is under res.
-                IPath path = folder.getFullPath();
+            switch (kind) {
+                case IResourceDelta.ADDED:
+                    // checks if the folder is under res.
+                    IPath path = folder.getFullPath();
 
-                // the path will be project/res/<something>
-                if (path.segmentCount() == 3) {
-                    if (isInResFolder(path)) {
-                        // get the project and its resource object.
-                        resources = mMap.get(project);
+                    // the path will be project/res/<something>
+                    if (path.segmentCount() == 3) {
+                        if (isInResFolder(path)) {
+                            // get the project and its resource object.
+                            resources = mMap.get(project);
 
-                        // if it doesn't exist, we create it.
-                        if (resources == null) {
-                            resources = new ProjectResources(false /* isFrameworkRepository */);
-                            mMap.put(project, resources);
+                            // if it doesn't exist, we create it.
+                            if (resources == null) {
+                                resources = new ProjectResources(false /* isFrameworkRepository */);
+                                mMap.put(project, resources);
+                            }
+
+                            ResourceFolder newFolder = processFolder(new IFolderWrapper(folder),
+                                    resources);
+                            if (newFolder != null) {
+                                notifyListenerOnFolderChange(project, newFolder, kind);
+                            }
                         }
-
-                        processFolder(new IFolderWrapper(folder), resources);
                     }
-                }
-                break;
-            case IResourceDelta.CHANGED:
-                resources = mMap.get(folder.getProject());
-                if (resources != null) {
-                    ResourceFolder resFolder = resources.getResourceFolder(folder);
-                    if (resFolder != null) {
-                        resFolder.touch();
+                    break;
+                case IResourceDelta.CHANGED:
+                    resources = mMap.get(folder.getProject());
+                    if (resources != null) {
+                        ResourceFolder resFolder = resources.getResourceFolder(folder);
+                        if (resFolder != null) {
+                            resFolder.touch();
+                            notifyListenerOnFolderChange(project, resFolder, kind);
+                        }
                     }
-                }
-                break;
-            case IResourceDelta.REMOVED:
-                resources = mMap.get(folder.getProject());
-                if (resources != null) {
-                    // lets get the folder type
-                    ResourceFolderType type = ResourceFolderType.getFolderType(folder.getName());
+                    break;
+                case IResourceDelta.REMOVED:
+                    resources = mMap.get(folder.getProject());
+                    if (resources != null) {
+                        // lets get the folder type
+                        ResourceFolderType type = ResourceFolderType.getFolderType(
+                                folder.getName());
 
-                    resources.removeFolder(type, folder);
-                }
-                break;
+                        ResourceFolder removedFolder = resources.removeFolder(type, folder);
+                        if (removedFolder != null) {
+                            notifyListenerOnFolderChange(project, removedFolder, kind);
+                        }
+                    }
+                    break;
+            }
         }
-    }
+    };
 
-    /* (non-Javadoc)
-     * Sent when a file changed. Depending on the file being changed, and the type of change (ADDED,
-     * REMOVED, CHANGED), the file change is processed to update the resource manager data.
-     *
-     * @param file The file that changed.
-     * @param markerDeltas The marker deltas for the file.
-     * @param kind The change kind. This is equivalent to
-     * {@link IResourceDelta#accept(IResourceDeltaVisitor)}
-     *
-     * @see IFileListener#fileChanged
+    /**
+     * Implementation of the {@link IFileListener} as an internal class so that the methods
+     * do not appear in the public API of {@link ResourceManager}.
      */
-    public void fileChanged(IFile file, IMarkerDelta[] markerDeltas, int kind) {
-        ProjectResources resources;
+    private IFileListener mFileListener = new IFileListener() {
+        /* (non-Javadoc)
+         * Sent when a file changed. Depending on the file being changed, and the type of change
+         * (ADDED, REMOVED, CHANGED), the file change is processed to update the resource
+         * manager data.
+         *
+         * @param file The file that changed.
+         * @param markerDeltas The marker deltas for the file.
+         * @param kind The change kind. This is equivalent to
+         * {@link IResourceDelta#accept(IResourceDeltaVisitor)}
+         *
+         * @see IFileListener#fileChanged
+         */
+        public void fileChanged(IFile file, IMarkerDelta[] markerDeltas, int kind) {
+            ProjectResources resources;
 
-        final IProject project = file.getProject();
+            final IProject project = file.getProject();
 
-        try {
-            if (project.hasNature(AndroidConstants.NATURE) == false) {
+            try {
+                if (project.hasNature(AndroidConstants.NATURE) == false) {
+                    return;
+                }
+            } catch (CoreException e) {
+                // can't get the project nature? return!
                 return;
             }
-        } catch (CoreException e) {
-            // can't get the project nature? return!
-            return;
-        }
 
-        switch (kind) {
-            case IResourceDelta.ADDED:
-                // checks if the file is under res/something.
-                IPath path = file.getFullPath();
+            switch (kind) {
+                case IResourceDelta.ADDED:
+                    // checks if the file is under res/something.
+                    IPath path = file.getFullPath();
 
-                if (path.segmentCount() == 4) {
-                    if (isInResFolder(path)) {
-                        // get the project and its resources
-                        resources = mMap.get(project);
+                    if (path.segmentCount() == 4) {
+                        if (isInResFolder(path)) {
+                            // get the project and its resources
+                            resources = mMap.get(project);
 
+                            IContainer container = file.getParent();
+                            if (container instanceof IFolder && resources != null) {
+
+                                ResourceFolder folder = resources.getResourceFolder(
+                                        (IFolder)container);
+
+                                if (folder != null) {
+                                    ResourceFile resFile = processFile(
+                                            new IFileWrapper(file), folder);
+                                    notifyListenerOnFileChange(project, resFile, kind);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case IResourceDelta.CHANGED:
+                    // try to find a matching ResourceFile
+                    resources = mMap.get(project);
+                    if (resources != null) {
                         IContainer container = file.getParent();
-                        if (container instanceof IFolder && resources != null) {
+                        if (container instanceof IFolder) {
+                            ResourceFolder resFolder = resources.getResourceFolder(
+                                    (IFolder)container);
 
-                            ResourceFolder folder = resources.getResourceFolder((IFolder)container);
-
-                            if (folder != null) {
-                                processFile(new IFileWrapper(file), folder);
+                            // we get the delete on the folder before the file, so it is possible
+                            // the associated ResourceFolder doesn't exist anymore.
+                            if (resFolder != null) {
+                                // get the resourceFile, and touch it.
+                                ResourceFile resFile = resFolder.getFile(file);
+                                if (resFile != null) {
+                                    resFile.touch();
+                                    notifyListenerOnFileChange(project, resFile, kind);
+                                }
                             }
                         }
                     }
-                }
-                break;
-            case IResourceDelta.CHANGED:
-                // try to find a matching ResourceFile
-                resources = mMap.get(project);
-                if (resources != null) {
-                    IContainer container = file.getParent();
-                    if (container instanceof IFolder) {
-                        ResourceFolder resFolder = resources.getResourceFolder((IFolder)container);
+                    break;
+                case IResourceDelta.REMOVED:
+                    // try to find a matching ResourceFile
+                    resources = mMap.get(project);
+                    if (resources != null) {
+                        IContainer container = file.getParent();
+                        if (container instanceof IFolder) {
+                            ResourceFolder resFolder = resources.getResourceFolder(
+                                    (IFolder)container);
 
-                        // we get the delete on the folder before the file, so it is possible
-                        // the associated ResourceFolder doesn't exist anymore.
-                        if (resFolder != null) {
-                            // get the resourceFile, and touch it.
-                            ResourceFile resFile = resFolder.getFile(file);
-                            if (resFile != null) {
-                                resFile.touch();
+                            // we get the delete on the folder before the file, so it is possible
+                            // the associated ResourceFolder doesn't exist anymore.
+                            if (resFolder != null) {
+                                // remove the file
+                                ResourceFile resFile = resFolder.removeFile(file);
+                                if (resFile != null) {
+                                    notifyListenerOnFileChange(project, resFile, kind);
+                                }
                             }
                         }
                     }
-                }
-                break;
-            case IResourceDelta.REMOVED:
-                // try to find a matching ResourceFile
-                resources = mMap.get(project);
-                if (resources != null) {
-                    IContainer container = file.getParent();
-                    if (container instanceof IFolder) {
-                        ResourceFolder resFolder = resources.getResourceFolder((IFolder)container);
-
-                        // we get the delete on the folder before the file, so it is possible
-                        // the associated ResourceFolder doesn't exist anymore.
-                        if (resFolder != null) {
-                            // remove the file
-                            resFolder.removeFile(file);
-                        }
-                    }
-                }
-                break;
+                    break;
+            }
         }
-    }
+    };
 
-    public void projectClosed(IProject project) {
-        mMap.remove(project);
-    }
 
-    public void projectDeleted(IProject project) {
-        mMap.remove(project);
-    }
+    /**
+     * Implementation of the {@link IProjectListener} as an internal class so that the methods
+     * do not appear in the public API of {@link ResourceManager}.
+     */
+    private IProjectListener mProjectListener = new IProjectListener() {
+        public void projectClosed(IProject project) {
+            mMap.remove(project);
+        }
 
-    public void projectOpened(IProject project) {
-        createProject(project);
-    }
+        public void projectDeleted(IProject project) {
+            mMap.remove(project);
+        }
 
-    public void projectOpenedWithWorkspace(IProject project) {
-        createProject(project);
-    }
+        public void projectOpened(IProject project) {
+            createProject(project);
+        }
+
+        public void projectOpenedWithWorkspace(IProject project) {
+            createProject(project);
+        }
+    };
 
     /**
      * Returns the {@link ResourceFolder} for the given file or <code>null</code> if none exists.
@@ -263,6 +357,20 @@ public final class ResourceManager implements IProjectListener, IFolderListener,
             if (resources != null) {
                 return resources.getResourceFolder(parent);
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the {@link ResourceFolder} for the given folder or <code>null</code> if none exists.
+     */
+    public ResourceFolder getResourceFolder(IFolder folder) {
+        IProject project = folder.getProject();
+
+        ProjectResources resources = getProjectResources(project);
+        if (resources != null) {
+            return resources.getResourceFolder(folder);
         }
 
         return null;
@@ -460,10 +568,11 @@ public final class ResourceManager implements IProjectListener, IFolderListener,
 
     /**
      * Processes a file and adds it to its parent folder resource.
-     * @param file
-     * @param folder
+     * @param file the underlying resource file.
+     * @param folder the parent of the resource file.
+     * @return the {@link ResourceFile} that was created.
      */
-    private void processFile(IAbstractFile file, ResourceFolder folder) {
+    private ResourceFile processFile(IAbstractFile file, ResourceFolder folder) {
         // get the type of the folder
         ResourceFolderType type = folder.getType();
 
@@ -493,6 +602,8 @@ public final class ResourceManager implements IProjectListener, IFolderListener,
             // add it to the folder
             folder.addFile(resFile);
         }
+
+        return resFile;
     }
 
     /**
@@ -504,10 +615,23 @@ public final class ResourceManager implements IProjectListener, IFolderListener,
         return SdkConstants.FD_RESOURCES.equalsIgnoreCase(path.segment(1));
     }
 
+    private void notifyListenerOnFolderChange(IProject project, ResourceFolder folder,
+            int eventType) {
+        for (IResourceListener listener : mListeners) {
+            listener.folderChanged(project, folder, eventType);
+        }
+    }
+
+    private void notifyListenerOnFileChange(IProject project, ResourceFile file, int eventType) {
+        for (IResourceListener listener : mListeners) {
+            listener.fileChanged(project, file, eventType);
+        }
+    }
+
     /**
      * Private constructor to enforce singleton design.
      */
-    ResourceManager() {
+    private ResourceManager() {
         // get the default qualifiers.
         FolderConfiguration defaultConfig = new FolderConfiguration();
         defaultConfig.createDefault();
