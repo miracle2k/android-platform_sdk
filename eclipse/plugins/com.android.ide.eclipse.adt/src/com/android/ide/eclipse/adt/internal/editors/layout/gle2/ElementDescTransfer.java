@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 
 import org.eclipse.swt.dnd.ByteArrayTransfer;
 import org.eclipse.swt.dnd.Transfer;
@@ -25,7 +26,7 @@ import org.eclipse.swt.dnd.TransferData;
 import java.io.UnsupportedEncodingException;
 
 /**
- * A d'n'd {@link Transfer} class that can transfer {@link ElementDescriptor}s.
+ * A d'n'd {@link Transfer} class that can transfer a <em>single</em> {@link ElementDescriptor}.
  * <p/>
  * The implementation is based on the {@link ByteArrayTransfer} and what we transfer
  * is actually only the inner XML name of the element, which is unique enough.
@@ -72,25 +73,25 @@ public class ElementDescTransfer extends ByteArrayTransfer {
 
     @Override
     protected void javaToNative(Object object, TransferData transferData) {
-        if (object == null || !(object instanceof ElementDescriptor[])) {
+        if (object == null || !(object instanceof ElementDescriptor)) {
             return;
         }
 
         if (isSupportedType(transferData)) {
-            StringBuilder sb = new StringBuilder();
-            boolean needSeparator = false;
-            for (ElementDescriptor desc : (ElementDescriptor[]) object) {
-                if (needSeparator) {
-                    sb.append(';');
-                }
-                sb.append(desc.getXmlName());
-                needSeparator = true;
+            String data = null;
+            ElementDescriptor desc = (ElementDescriptor)object;
+            if (desc instanceof ViewElementDescriptor) {
+                data = ((ViewElementDescriptor) desc).getFullClassName();
+            } else if (desc != null) {
+                data = desc.getXmlName();
             }
-            try {
-                byte[] buf = sb.toString().getBytes("UTF-8");  //$NON-NLS-1$
-                super.javaToNative(buf, transferData);
-            } catch (UnsupportedEncodingException e) {
-                // unlikely; ignore
+            if (data != null) {
+                try {
+                    byte[] buf = data.getBytes("UTF-8");  //$NON-NLS-1$
+                    super.javaToNative(buf, transferData);
+                } catch (UnsupportedEncodingException e) {
+                    // unlikely; ignore
+                }
             }
         }
     }
@@ -102,8 +103,7 @@ public class ElementDescTransfer extends ByteArrayTransfer {
             if (buf != null && buf.length > 0) {
                 try {
                     String s = new String(buf, "UTF-8"); //$NON-NLS-1$
-                    String[] names = s.split(";");  //$NON-NLS-1$
-                    return names;
+                    return s;
                 } catch (UnsupportedEncodingException e) {
                     // unlikely to happen, but still possible
                 }

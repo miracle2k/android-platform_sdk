@@ -21,6 +21,7 @@ import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.gscripts.DropZone;
 import com.android.ide.eclipse.adt.gscripts.INodeProxy;
 import com.android.ide.eclipse.adt.gscripts.IViewRule;
+import com.android.ide.eclipse.adt.gscripts.Point;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
@@ -133,22 +134,23 @@ public class RulesEngine {
     }
 
     /**
-     * Invokes {@link IViewRule#dropFinish(String, INodeProxy, DropZone)} on the
+     * Invokes {@link IViewRule#dropFinish(String, INodeProxy, DropZone, Point)} on the
      * rule matching the specified target node.
      *
      * @param source The {@link ViewElementDescriptor} of the drag source.
      * @param targetNode The XML view that is currently the target of the drop.
      * @param selectedZone One of the drop zones returned by {@link #dropStart(NodeProxy)}.
      */
-    public void dropFinish(ViewElementDescriptor source,
+    public void dropFinish(String viewFqcn,
             NodeProxy targetNode,
-            DropZone selectedZone) {
+            DropZone selectedZone,
+            Point where) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
-                rule.dropFinish(source.getFullClassName(), targetNode, selectedZone);
+                rule.dropFinish(viewFqcn, targetNode, selectedZone, where);
 
             } catch (Exception e) {
                 logError("%s.dropFinish() failed: %s",
