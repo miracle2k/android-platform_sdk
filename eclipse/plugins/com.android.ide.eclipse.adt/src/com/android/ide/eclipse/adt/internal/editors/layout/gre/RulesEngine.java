@@ -24,8 +24,8 @@ import com.android.ide.eclipse.adt.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceMonitor.IFolderListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFolderListener;
 
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.eclipse.core.resources.IFile;
@@ -64,7 +64,7 @@ public class RulesEngine {
         mClassLoader = new GroovyClassLoader(cl);
 
         mProjectFolderListener = new ProjectFolderListener();
-        ResourceMonitor.getMonitor().addFolderListener(
+        GlobalProjectMonitor.getMonitor().addFolderListener(
                 mProjectFolderListener,
                 IResourceDelta.ADDED | IResourceDelta.REMOVED | IResourceDelta.CHANGED);
     }
@@ -75,7 +75,7 @@ public class RulesEngine {
      */
     public void dispose() {
         if (mProjectFolderListener != null) {
-            ResourceMonitor.getMonitor().removeFolderListener(mProjectFolderListener);
+            GlobalProjectMonitor.getMonitor().removeFolderListener(mProjectFolderListener);
             mProjectFolderListener = null;
         }
         clearCache();

@@ -155,7 +155,7 @@ public class ConfigurationComposite extends Composite {
     private static class SelectionState {
         String deviceName;
         String configName;
-        int locale;
+        ResourceQualifier[] locale;
         String theme;
     }
 
@@ -393,7 +393,8 @@ public class ConfigurationComposite extends Composite {
                 findAndSetCompatibleConfig(fileConfig);
 
                 // find a locale matching this file config
-                findAndSetCompatibleLocale(fileConfig);
+                findAndSetCompatibleLocale(fileConfig.getLanguageQualifier(),
+                        fileConfig.getRegionQualifier());
 
                 // compute the final current config
                 computeCurrentConfig();
@@ -445,7 +446,8 @@ public class ConfigurationComposite extends Composite {
                 adaptConfigSelectionToNewConfig(fileConfig);
 
                 // find a locale matching this file config
-                findAndSetCompatibleLocale(fileConfig);
+                findAndSetCompatibleLocale(fileConfig.getLanguageQualifier(),
+                        fileConfig.getRegionQualifier());
 
                 // compute the final current config
                 computeCurrentConfig();
@@ -513,7 +515,8 @@ public class ConfigurationComposite extends Composite {
         mDisableUpdates = true; // we do not want to trigger onXXXChange when setting
                                 // new values in the widgets.
 
-        // update the themes.
+        // update the themes. The locales need not be updated as they are stricly based on the
+        // content of the project
         updateThemes();
 
         // at this point, this means the target of the project was changed, or the whole SDK
@@ -613,9 +616,10 @@ public class ConfigurationComposite extends Composite {
 
     /**
      * Finds a locale matching the config from a file.
-     * @param fileConfig
+     * @param language the language qualifier or null if none is set.
+     * @param region the region qualifier or null if none is set.
      */
-    private void findAndSetCompatibleLocale(FolderConfiguration fileConfig) {
+    private void findAndSetCompatibleLocale(ResourceQualifier language, ResourceQualifier region) {
         // find the locale match. Since the locale list is based on the content of the
         // project resources there must be an exact match.
         // The only trick is that the region could be null in the fileConfig but in our
@@ -625,9 +629,9 @@ public class ConfigurationComposite extends Composite {
         for (int i = 0 ; i < count ; i++) {
             ResourceQualifier[] locale = mLocaleList.get(i);
 
-            if (locale[LOCALE_LANG].equals(fileConfig.getLanguageQualifier())) {
-                // region comparison is more complex:
-                RegionQualifier region = fileConfig.getRegionQualifier();
+            // the language qualifier in the locale list is never null.
+            if (locale[LOCALE_LANG].equals(language)) {
+                // region comparison is more complex, as the region could be null.
                 if (region == null) {
                     if (FAKE_LOCALE_VALUE.equals(
                             ((RegionQualifier)locale[LOCALE_REGION]).getValue())) {
@@ -649,145 +653,6 @@ public class ConfigurationComposite extends Composite {
         mCurrentLayoutLabel.setText(current != null ? current : "(Default)");
     }
 
-    /**
-     * Init the UI with a given file configuration and project target.
-     * <p/>This will NOT trigger a redraw event (will not call
-     * {@link IConfigListener#onConfigurationChange()}.)
-     * The state of the selection of the various combos will have default values. To keep the
-     * current selection (useful for themes/locales), use
-     * {@link #resetUi(FolderConfiguration, IAndroidTarget)}.
-     *
-     * @param fileConfig The {@link FolderConfiguration} of the opened file.
-     * @param target the {@link IAndroidTarget} of the file's project.
-     */
-    private void doInitWith(FolderConfiguration fileConfig, IAndroidTarget target,
-            SelectionState state) {
-
-        // FIXME: delete when onTargetLoaded is fully implemented.
-
-        AndroidTargetData data = Sdk.getCurrent().getTargetData(mTarget);
-        if (data != null) {
-            LayoutBridge bridge = data.getLayoutBridge();
-            setClippingSupport(bridge.apiLevel >= 4);
-        }
-
-        LayoutDevice deviceMatch = null;
-        String configMatchName = null;
-
-        if (state != null) {
-            // try to find the same device/config
-            mainloop: for (LayoutDevice device : mDeviceList) {
-                if (state.deviceName.equals(device.getName())) {
-                    // found a device match, look for the config
-                    FolderConfiguration testConfig = device.getConfigs().get(state.configName);
-                    if (testConfig != null && fileConfig.isMatchFor(testConfig)) {
-                        deviceMatch = device;
-                        configMatchName = state.configName;
-                        break mainloop;
-                    }
-
-                    // let's look for a compatible config in the same device.
-                    for (Entry<String, FolderConfiguration> entry :
-                            device.getConfigs().entrySet()) {
-                        if (fileConfig.isMatchFor(entry.getValue())) {
-                            // this is what we want.
-                            deviceMatch = device;
-                            configMatchName = entry.getKey();
-                            break mainloop;
-                        }
-                    }
-
-                    // still nothing, let's give up and look for any compatible device/config below
-                    break mainloop;
-                }
-            }
-
-            // apply the theme
-            if (state.theme != null) {
-                final int count = mThemeCombo.getItemCount();
-                for (int i = 0 ; i < count ; i++) {
-                    if (state.theme.equals(mThemeCombo.getItem(i))) {
-                        mThemeCombo.select(i);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (deviceMatch == null) {
-            // attempt to find a device that can display this particular config.
-            mainloop: for (LayoutDevice device : mDeviceList) {
-                for (Entry<String, FolderConfiguration> entry :
-                        device.getConfigs().entrySet()) {
-                    if (fileConfig.isMatchFor(entry.getValue())) {
-                        // this is what we want.
-                        deviceMatch = device;
-                        configMatchName = entry.getKey();
-                        break mainloop;
-                    }
-                }
-            }
-        }
-
-        if (deviceMatch == null) {
-            // TODO: there is no device/config able to display the layout, create one.
-            // For the base config values, we'll take the first device and config,
-            // and replace whatever qualifier required by the layout file.
-        } else {
-            selectDevice(mCurrentDevice = deviceMatch);
-            fillConfigCombo(configMatchName);
-        }
-
-        // compute the current config.
-        computeCurrentConfig();
-
-        // now that we have a the base config, try to find a good locale selection.
-        // 1. look for an exact match
-
-        // apply the locale, from the state (if applicable),
-        // making sure this matches the file config.
-        boolean stateLocalIsCompatible = false;
-        if (state != null && state.locale != -1) {
-            // get the local values.
-            ResourceQualifier[] locale = mLocaleList.get(state.locale);
-
-            // apply it to the current config.
-            mCurrentConfig.setLanguageQualifier((LanguageQualifier)locale[LOCALE_LANG]);
-            mCurrentConfig.setRegionQualifier((RegionQualifier)locale[LOCALE_REGION]);
-
-            // make sure this is compatible
-            if (fileConfig.isMatchFor(mCurrentConfig)) {
-                mLocaleCombo.select(state.locale);
-                stateLocalIsCompatible = true;
-            }
-        }
-
-        // no state, or state doesn't match, look for a match
-        if (stateLocalIsCompatible == false) {
-            // loop on all locale and stop on the first compatible one.
-            final int count = mLocaleList.size();
-            for (int i = 0 ; i < count ; i++) {
-                ResourceQualifier[] locale = mLocaleList.get(i);
-
-                // apply it to the current config.
-                mCurrentConfig.setLanguageQualifier((LanguageQualifier)locale[LOCALE_LANG]);
-                mCurrentConfig.setRegionQualifier((RegionQualifier)locale[LOCALE_REGION]);
-
-                if (fileConfig.isMatchFor(mCurrentConfig)) {
-                    mLocaleCombo.select(i);
-                    break;
-                }
-            }
-        }
-
-        // compute the final current config
-        computeCurrentConfig();
-
-        updateConfigDisplay(fileConfig);
-
-        mDisableUpdates = false;
-    }
-
     private void saveState() {
         if (mCurrentDevice != null) {
             if (mCurrentState == null) {
@@ -799,10 +664,17 @@ public class ConfigurationComposite extends Composite {
             int index = mDeviceConfigCombo.getSelectionIndex();
             if (index != -1) {
                 mCurrentState.configName = mDeviceConfigCombo.getItem(index);
+            } else {
+                mCurrentState.configName = null;
             }
 
             // since the locales are relative to the project, only keeping the index is enough
-            mCurrentState.locale = mLocaleCombo.getSelectionIndex();
+            index = mLocaleCombo.getSelectionIndex();
+            if (index != -1) {
+                mCurrentState.locale = mLocaleList.get(index);
+            } else {
+                mCurrentState.locale = null;
+            }
 
             index = mThemeCombo.getSelectionIndex();
             if (index != -1) {
@@ -878,7 +750,12 @@ public class ConfigurationComposite extends Composite {
                 new RegionQualifier(FAKE_LOCALE_VALUE)
         });
 
-        mLocaleCombo.select(0);
+        if (mCurrentState != null && mCurrentState.locale != null) {
+            findAndSetCompatibleLocale(mCurrentState.locale[LOCALE_LANG],
+                    mCurrentState.locale[LOCALE_REGION]);
+        } else {
+            mLocaleCombo.select(0);
+        }
 
         mThemeCombo.getParent().layout();
 
