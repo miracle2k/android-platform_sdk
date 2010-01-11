@@ -647,6 +647,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, CountryCodeQualifier.NAME);
 
             mText = new Text(this, SWT.BORDER);
+            mText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mText.addVerifyListener(new MobileCodeVerifier());
             mText.addModifyListener(new ModifyListener() {
                 public void modifyText(ModifyEvent e) {
@@ -712,6 +713,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, NetworkCodeQualifier.NAME);
 
             mText = new Text(this, SWT.BORDER);
+            mText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mText.addVerifyListener(new MobileCodeVerifier());
             mText.addModifyListener(new ModifyListener() {
                 public void modifyText(ModifyEvent e) {
@@ -1399,11 +1401,13 @@ public class ConfigurationSelector extends Composite {
             };
 
             mSize1 = new Text(this, SWT.BORDER);
+            mSize1.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mSize1.addVerifyListener(new DimensionVerifier());
             mSize1.addModifyListener(modifyListener);
             mSize1.addFocusListener(focusListener);
 
             mSize2 = new Text(this, SWT.BORDER);
+            mSize2.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mSize2.addVerifyListener(new DimensionVerifier());
             mSize2.addModifyListener(modifyListener);
             mSize2.addFocusListener(focusListener);
@@ -1457,6 +1461,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, VersionQualifier.NAME);
 
             mText = new Text(this, SWT.BORDER);
+            mText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mText.addVerifyListener(new MobileCodeVerifier());
             mText.addModifyListener(new ModifyListener() {
                 public void modifyText(ModifyEvent e) {

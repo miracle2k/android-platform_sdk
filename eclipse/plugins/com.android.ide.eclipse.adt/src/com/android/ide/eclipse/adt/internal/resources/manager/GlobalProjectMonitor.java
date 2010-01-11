@@ -240,8 +240,10 @@ public class GlobalProjectMonitor implements IResourceChangeListener {
         if (sThis != null) {
             ws.removeResourceChangeListener(sThis);
 
-            sThis.mFileListeners.clear();
-            sThis.mProjectListeners.clear();
+            synchronized (sThis) {
+                sThis.mFileListeners.clear();
+                sThis.mProjectListeners.clear();
+            }
         }
     }
 
@@ -349,7 +351,7 @@ public class GlobalProjectMonitor implements IResourceChangeListener {
     /**
      * Processes the workspace resource change events.
      */
-    public void resourceChanged(IResourceChangeEvent event) {
+    public synchronized void resourceChanged(IResourceChangeEvent event) {
         // notify the event listeners of a start.
         for (IResourceEventListener listener : mEventListeners) {
             listener.resourceChangeEventStart();
