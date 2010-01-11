@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
@@ -127,7 +128,9 @@ public final class ResourceManager {
      * @param listener the listener to be added.
      */
     public void addListener(IResourceListener listener) {
-        mListeners.add(listener);
+        synchronized (mListeners) {
+            mListeners.add(listener);
+        }
     }
 
     /**
@@ -135,7 +138,9 @@ public final class ResourceManager {
      * @param listener the listener to be removed.
      */
     public void removeListener(IResource listener) {
-        mListeners.remove(listener);
+        synchronized (mListeners) {
+            mListeners.remove(listener);
+        }
     }
 
     /**
@@ -617,14 +622,28 @@ public final class ResourceManager {
 
     private void notifyListenerOnFolderChange(IProject project, ResourceFolder folder,
             int eventType) {
-        for (IResourceListener listener : mListeners) {
-            listener.folderChanged(project, folder, eventType);
+        synchronized (mListeners) {
+            for (IResourceListener listener : mListeners) {
+                try {
+                    listener.folderChanged(project, folder, eventType);
+                } catch (Throwable t) {
+                    AdtPlugin.log(t,
+                            "Failed to execute ResourceManager.IResouceListener.folderChanged()"); //$NON-NLS-1$
+                }
+            }
         }
     }
 
     private void notifyListenerOnFileChange(IProject project, ResourceFile file, int eventType) {
-        for (IResourceListener listener : mListeners) {
-            listener.fileChanged(project, file, eventType);
+        synchronized (mListeners) {
+            for (IResourceListener listener : mListeners) {
+                try {
+                    listener.fileChanged(project, file, eventType);
+                } catch (Throwable t) {
+                    AdtPlugin.log(t,
+                            "Failed to execute ResourceManager.IResouceListener.fileChanged()"); //$NON-NLS-1$
+                }
+            }
         }
     }
 

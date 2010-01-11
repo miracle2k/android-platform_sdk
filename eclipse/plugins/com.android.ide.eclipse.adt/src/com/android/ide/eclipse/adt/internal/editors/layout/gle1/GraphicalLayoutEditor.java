@@ -44,7 +44,6 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
-import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
@@ -140,9 +139,6 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
     private ConfigurationComposite mConfigComposite;
 
     private PaletteRoot mPaletteRoot;
-
-    /** The {@link FolderConfiguration} being edited. */
-    private FolderConfiguration mEditedConfig;
 
     private Map<String, Map<String, IResourceValue>> mConfiguredFrameworkRes;
     private Map<String, Map<String, IResourceValue>> mConfiguredProjectRes;
@@ -595,17 +591,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
      */
     public void openFile(IFile file) {
         mEditedFile = file;
-
-        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
-        mEditedConfig = resFolder.getConfiguration();
-
-        IAndroidTarget target = null;
-        Sdk currentSdk = Sdk.getCurrent();
-        if (currentSdk != null) {
-            target = currentSdk.getTarget(mEditedFile.getProject());
-        }
-
-        mConfigComposite.openFile(mEditedConfig, target);
+        mConfigComposite.openFile(mEditedFile);
     }
 
     /**
@@ -616,12 +602,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         resetInput();
 
         mEditedFile = file;
-
-        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
-        mEditedConfig = resFolder.getConfiguration();
-
-        mConfigComposite.replaceFile(mEditedConfig);
-        onConfigurationChange();
+        mConfigComposite.replaceFile(mEditedFile);
     }
 
     /**
@@ -633,12 +614,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         resetInput();
 
         mEditedFile = file;
-
-        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
-        mEditedConfig = resFolder.getConfiguration();
-
-        mConfigComposite.changeFileOnNewConfig(mEditedConfig);
-        onConfigurationChange();
+        mConfigComposite.changeFileOnNewConfig(mEditedFile);
     }
 
     public void onTargetChange() {
@@ -817,55 +793,69 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
     public void onConfigurationChange() {
         mConfiguredFrameworkRes = mConfiguredProjectRes = null;
 
-        if (mEditedFile == null || mEditedConfig == null) {
+        if (mEditedFile == null || mConfigComposite.getEditedConfig() == null) {
             return;
         }
 
-        // get the resources of the file's project.
-        ProjectResources resources = ResourceManager.getInstance().getProjectResources(
-                mEditedFile.getProject());
-
-        // from the resources, look for a matching file
-        ResourceFile match = null;
-        if (resources != null) {
-            match = resources.getMatchingFile(mEditedFile.getName(),
-                                              ResourceFolderType.LAYOUT,
-                                              mConfigComposite.getCurrentConfig());
-        }
-
-        if (match != null) {
-            if (match.getFile().equals(mEditedFile) == false) {
-                try {
-                    // tell the editor that the next replacement file is due to a config change.
-                    mLayoutEditor.setNewFileOnConfigChange(true);
-
-                    // ask the IDE to open the replacement file.
-                    IDE.openEditor(
-                            getSite().getWorkbenchWindow().getActivePage(),
-                            match.getFile().getIFile());
-
-                    // we're done!
-                    return;
-                } catch (PartInitException e) {
-                    // FIXME: do something!
-                }
-            }
-
-            // at this point, we have not opened a new file.
-
-            // Even though the layout doesn't change, the config changed, and referenced
-            // resources need to be updated.
+        // Before doing the normal process, test for the following case.
+        // - the editor is being opened (or reset for a new input)
+        // - the file being opened is not the best match for any possible configuration
+        // - another random compatible config was chosen in the config composite.
+        // The result is that match will not be the file being edited, but because this is not
+        // due to a config change, we should not trigger opening the actual best match (also,
+        // because the editor is still opening the MatchingStrategy woudln't answer true
+        // and the best match file would open in a different editor).
+        // So the solution is that if the editor is being created, we just call recomputeLayout
+        // without looking for a better matching layout file.
+        if (mLayoutEditor.isCreatingPages()) {
             recomputeLayout();
         } else {
-            // display the error.
-            FolderConfiguration currentConfig = mConfigComposite.getCurrentConfig();
-            String message = String.format(
-                    "No resources match the configuration\n \n\t%1$s\n \nChange the configuration or create:\n \n\tres/%2$s/%3$s\n \nYou can also click the 'Create' button above.",
-                    currentConfig.toDisplayString(),
-                    currentConfig.getFolderName(ResourceFolderType.LAYOUT,
-                            Sdk.getCurrent().getTarget(mEditedFile.getProject())),
-                    mEditedFile.getName());
-            showErrorInEditor(message);
+            // get the resources of the file's project.
+            ProjectResources resources = ResourceManager.getInstance().getProjectResources(
+                    mEditedFile.getProject());
+
+            // from the resources, look for a matching file
+            ResourceFile match = null;
+            if (resources != null) {
+                match = resources.getMatchingFile(mEditedFile.getName(),
+                                                  ResourceFolderType.LAYOUT,
+                                                  mConfigComposite.getCurrentConfig());
+            }
+
+            if (match != null) {
+                if (match.getFile().equals(mEditedFile) == false) {
+                    try {
+                        // tell the editor that the next replacement file is due to a config change.
+                        mLayoutEditor.setNewFileOnConfigChange(true);
+
+                        // ask the IDE to open the replacement file.
+                        IDE.openEditor(
+                                getSite().getWorkbenchWindow().getActivePage(),
+                                match.getFile().getIFile());
+
+                        // we're done!
+                        return;
+                    } catch (PartInitException e) {
+                        // FIXME: do something!
+                    }
+                }
+
+                // at this point, we have not opened a new file.
+
+                // Even though the layout doesn't change, the config changed, and referenced
+                // resources need to be updated.
+                recomputeLayout();
+            } else {
+                // display the error.
+                FolderConfiguration currentConfig = mConfigComposite.getCurrentConfig();
+                String message = String.format(
+                        "No resources match the configuration\n \n\t%1$s\n \nChange the configuration or create:\n \n\tres/%2$s/%3$s\n \nYou can also click the 'Create' button above.",
+                        currentConfig.toDisplayString(),
+                        currentConfig.getFolderName(ResourceFolderType.LAYOUT,
+                                Sdk.getCurrent().getTarget(mEditedFile.getProject())),
+                        mEditedFile.getName());
+                showErrorInEditor(message);
+            }
         }
     }
 

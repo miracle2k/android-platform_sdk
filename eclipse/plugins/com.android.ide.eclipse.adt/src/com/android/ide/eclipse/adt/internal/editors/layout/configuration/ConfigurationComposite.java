@@ -29,6 +29,10 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrien
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier.Density;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier.ScreenOrientation;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
@@ -40,6 +44,10 @@ import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IStyleResourceValue;
 import com.android.sdklib.IAndroidTarget;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -101,9 +109,6 @@ public class ConfigurationComposite extends Composite {
     private int mPlatformThemeCount = 0;
     private boolean mDisableUpdates = false;
 
-    /** The {@link FolderConfiguration} representing the state of the UI controls */
-    private final FolderConfiguration mCurrentConfig = new FolderConfiguration();
-
     private List<LayoutDevice> mDeviceList;
 
     private final ArrayList<ResourceQualifier[] > mLocaleList =
@@ -120,15 +125,24 @@ public class ConfigurationComposite extends Composite {
      */
     private LayoutDevice mCurrentDevice;
 
-    /** The config listener given to the constructor. Never null. */
-    private final IConfigListener mListener;
-
-    private FolderConfiguration mEditedConfig;
-    private IAndroidTarget mTarget;
-
     private SelectionState mCurrentState = null;
 
     private boolean mSdkChanged = false;
+
+    /** The config listener given to the constructor. Never null. */
+    private final IConfigListener mListener;
+
+    /** The {@link FolderConfiguration} representing the state of the UI controls */
+    private final FolderConfiguration mCurrentConfig = new FolderConfiguration();
+
+    /** The file being edited */
+    private IFile mEditedFile;
+    /** The {@link ProjectResources} for the edited file's project */
+    private ProjectResources mResources;
+    /** The target of the project of the file being edited. */
+    private IAndroidTarget mTarget;
+    /** The {@link FolderConfiguration} being edited. */
+    private FolderConfiguration mEditedConfig;
 
     /**
      * Interface implemented by the part which owns a {@link ConfigurationComposite}.
@@ -356,15 +370,14 @@ public class ConfigurationComposite extends Composite {
      * The state of the selection of the various combos will be initialized to default values that
      * are compatible with the opened file.
      *
-     * @param fileConfig The {@link FolderConfiguration} of the opened file.
-     * @param target the {@link IAndroidTarget} of the file's project.
+     * @param file the file being opened
      *
      * @see #replaceFile(FolderConfiguration)
      * @see #changeFileOnNewConfig(FolderConfiguration)
      */
-    public void openFile(FolderConfiguration fileConfig, IAndroidTarget target) {
-        mTarget = target;
-        mEditedConfig = fileConfig;
+    public void openFile(IFile file) {
+        mEditedFile = file;
+        IProject iProject = mEditedFile.getProject();
 
         mDisableUpdates = true; // we do not want to trigger onXXXChange when setting
                                 // new values in the widgets.
@@ -375,9 +388,18 @@ public class ConfigurationComposite extends Composite {
             // init the devices since the SDK is loaded.
             initDevices();
 
-            LoadStatus targetStatus = Sdk.getCurrent().checkAndLoadTargetData(target, null);
+            Sdk currentSdk = Sdk.getCurrent();
+            if (currentSdk != null) {
+                mTarget = currentSdk.getTarget(iProject);
+            }
+
+            LoadStatus targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
 
             if (targetStatus == LoadStatus.LOADED) {
+                mResources = ResourceManager.getInstance().getProjectResources(iProject);
+                ResourceFolder resFolder = mResources.getResourceFolder((IFolder)file.getParent());
+                mEditedConfig = resFolder.getConfiguration();
+
                 // update the themes and locales.
                 updateThemes();
                 updateLocales();
@@ -389,18 +411,14 @@ public class ConfigurationComposite extends Composite {
                     setClippingSupport(bridge.apiLevel >= 4);
                 }
 
-                // attempt to find a device that can display this particular config.
-                findAndSetCompatibleConfig(fileConfig);
-
-                // find a locale matching this file config
-                findAndSetCompatibleLocale(fileConfig.getLanguageQualifier(),
-                        fileConfig.getRegionQualifier());
+                // attempt to find a device/locale that can display this particular config.
+                findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
 
                 // compute the final current config
                 computeCurrentConfig();
 
                 // update the string showing the config value
-                updateConfigDisplay(fileConfig);
+                updateConfigDisplay(mEditedConfig);
 
                 saveState();
             }
@@ -409,27 +427,31 @@ public class ConfigurationComposite extends Composite {
         mDisableUpdates = false;
     }
 
-
     /**
      * Replaces the UI with a given file configuration. This is meant to answer the user
      * Explicitly opening a different version of the same layout from the Package Explorer.
      * <p/>This attempts to keep the current config, but may change it if it's not compatible.
      * <p/>This will NOT trigger a redraw event (will not call
      * {@link IConfigListener#onConfigurationChange()}.)
-     *
+     * @param file the file being opened.
      * @param fileConfig The {@link FolderConfiguration} of the opened file.
      * @param target the {@link IAndroidTarget} of the file's project.
      *
      * @see #replaceFile(FolderConfiguration)
      */
-    public void replaceFile(FolderConfiguration fileConfig) {
+    public void replaceFile(IFile file) {
         // if there is no previous selection, revert to default mode.
         if (mCurrentDevice == null) {
-            openFile(fileConfig, mTarget);
+            openFile(file);
             return;
         }
 
-        mEditedConfig = fileConfig;
+        mEditedFile = file;
+        IProject iProject = mEditedFile.getProject();
+        mResources = ResourceManager.getInstance().getProjectResources(iProject);
+
+        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
+        mEditedConfig = resFolder.getConfiguration();
 
         mDisableUpdates = true; // we do not want to trigger onXXXChange when setting
         // new values in the widgets.
@@ -443,17 +465,13 @@ public class ConfigurationComposite extends Composite {
 
                 // update the current config selection to make sure it's
                 // compatible with the new file
-                adaptConfigSelectionToNewConfig(fileConfig);
-
-                // find a locale matching this file config
-                findAndSetCompatibleLocale(fileConfig.getLanguageQualifier(),
-                        fileConfig.getRegionQualifier());
+                adaptConfigSelection();
 
                 // compute the final current config
                 computeCurrentConfig();
 
                 // update the string showing the config value
-                updateConfigDisplay(fileConfig);
+                updateConfigDisplay(mEditedConfig);
 
                 saveState();
             }
@@ -464,18 +482,22 @@ public class ConfigurationComposite extends Composite {
 
     /**
      * Updates the UI with a new file that was opened in response to a config change.
-     * @param fileConfig the file being opened.
+     * @param file the file being opened.
      *
      * @see #openFile(FolderConfiguration, IAndroidTarget)
      * @see #replaceFile(FolderConfiguration)
      */
-    public void changeFileOnNewConfig(FolderConfiguration fileConfig) {
-        // there really isn't much to do since the combos were set by the user, and we don't want
-        // to touch them.
-        mEditedConfig = fileConfig;
+    public void changeFileOnNewConfig(IFile file) {
+        mEditedFile = file;
+        IProject iProject = mEditedFile.getProject();
+        mResources = ResourceManager.getInstance().getProjectResources(iProject);
 
-        // update the string showing the config value
-        updateConfigDisplay(fileConfig);
+        ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
+        mEditedConfig = resFolder.getConfiguration();
+
+        // All that's needed is to update the string showing the config value
+        // (since the config combo were chosen by the user).
+        updateConfigDisplay(mEditedConfig);
     }
 
     /**
@@ -508,8 +530,20 @@ public class ConfigurationComposite extends Composite {
         if (mCurrentState == null) {
             // this means the file was opened before the target finished loaded.
             // This is basically an initial call to openFile that's delayed.
-            openFile(mEditedConfig, mTarget);
+            openFile(mEditedFile);
             return;
+        }
+
+        // update the resource and config if they are not present
+        if (mResources == null) {
+            mResources = ResourceManager.getInstance().getProjectResources(
+                    mEditedFile.getProject());
+        }
+
+        if (mEditedConfig == null) {
+            ResourceFolder resFolder = mResources.getResourceFolder(
+                    (IFolder)mEditedFile.getParent());
+            mEditedConfig = resFolder.getConfiguration();
         }
 
         mDisableUpdates = true; // we do not want to trigger onXXXChange when setting
@@ -524,9 +558,9 @@ public class ConfigurationComposite extends Composite {
         // The former means the devices/configs are still there, the latter means they've
         // been reloaded (in #onSdkLoaded).
         if (mSdkChanged) {
-            findAndSetCompatibleConfig(mEditedConfig);
+            findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
         } else {
-            adaptConfigSelectionToNewConfig(mEditedConfig);
+            adaptConfigSelection();
         }
 
         // update the clipping state
@@ -542,84 +576,171 @@ public class ConfigurationComposite extends Composite {
     }
 
     /**
-     * Finds a device/config that can display the given config.
+     * Finds a device/config that can display {@link #mEditedConfig}.
      * <p/>Once found the device and config combos are set to the config.
-     * <p/>If there is no compatible comfiguration, a custom one is created.
-     * @param fileConfig
+     * <p/>If there is no compatible configuration, a custom one is created.
+     * @param favorCurrentConfig if true, and no best match is found, don't change
+     * the current config. This must only be true if the current config is compatible.
      */
-    private void findAndSetCompatibleConfig(FolderConfiguration fileConfig) {
-        LayoutDevice deviceMatch = null;
-        String configMatchName = null;
+    private void findAndSetCompatibleConfig(boolean favorCurrentConfig) {
+        LayoutDevice anyDeviceMatch = null; // a compatible device/config/locale
+        String anyConfigMatchName = null;
+        int anyLocaleIndex = -1;
+
+        LayoutDevice bestDeviceMatch = null; // an actual best match
+        String bestConfigMatchName = null;
+        int bestLocaleIndex = -1;
+
+        FolderConfiguration testConfig = new FolderConfiguration();
 
         mainloop: for (LayoutDevice device : mDeviceList) {
             for (Entry<String, FolderConfiguration> entry :
                     device.getConfigs().entrySet()) {
-                if (fileConfig.isMatchFor(entry.getValue())) {
-                    // this is what we want.
-                    deviceMatch = device;
-                    configMatchName = entry.getKey();
-                    break mainloop;
+                testConfig.set(entry.getValue());
+
+                // look on the locales.
+                for (int i = 0 ; i < mLocaleList.size() ; i++) {
+                    ResourceQualifier[] locale = mLocaleList.get(i);
+
+                    // update the test config with the locale qualifiers
+                    testConfig.setLanguageQualifier((LanguageQualifier)locale[LOCALE_LANG]);
+                    testConfig.setRegionQualifier((RegionQualifier)locale[LOCALE_REGION]);
+
+                    if (mEditedConfig.isMatchFor(testConfig)) {
+                        // this is a basic match. record it in case we don't find a match
+                        // where the edited file is a best config.
+                        if (anyDeviceMatch == null) {
+                            anyDeviceMatch = device;
+                            anyConfigMatchName = entry.getKey();
+                            anyLocaleIndex = i;
+                        }
+
+                        if (isCurrentFileBestMatchFor(testConfig)) {
+                            // this is what we want.
+                            bestDeviceMatch = device;
+                            bestConfigMatchName = entry.getKey();
+                            bestLocaleIndex = i;
+                            break mainloop;
+                        }
+                    }
                 }
             }
         }
 
-        if (deviceMatch == null) {
-            // TODO: there is no device/config able to display the layout, create one.
-            // For the base config values, we'll take the first device and config,
-            // and replace whatever qualifier required by the layout file.
+        if (bestDeviceMatch == null) {
+            if (favorCurrentConfig) {
+                // quick check
+                if (mEditedConfig.isMatchFor(mCurrentConfig) == false) {
+                    AdtPlugin.log(IStatus.ERROR,
+                            "favorCurrentConfig can only be true if the current config is compatible");
+                }
+
+                // just display the warning
+                AdtPlugin.printErrorToConsole(mEditedFile.getProject(),
+                        String.format(
+                                "'%1$s' is not a best match for any device/locale combination.",
+                                mEditedConfig.toDisplayString()),
+                        String.format(
+                                "Displaying it with '%1$s'",
+                                mCurrentConfig.toDisplayString()));
+            } else if (anyDeviceMatch != null) {
+                // select the device anyway.
+                selectDevice(mCurrentDevice = anyDeviceMatch);
+                fillConfigCombo(anyConfigMatchName);
+                mLocaleCombo.select(anyLocaleIndex);
+
+                // TODO: display a better warning!
+                computeCurrentConfig();
+                AdtPlugin.printErrorToConsole(mEditedFile.getProject(),
+                        String.format(
+                                "'%1$s' is not a best match for any device/locale combination.",
+                                mEditedConfig.toDisplayString()),
+                        String.format(
+                                "Displaying it with '%1$s'",
+                                mCurrentConfig.toDisplayString()));
+
+            } else {
+                // TODO: there is no device/config able to display the layout, create one.
+                // For the base config values, we'll take the first device and config,
+                // and replace whatever qualifier required by the layout file.
+            }
         } else {
-            selectDevice(mCurrentDevice = deviceMatch);
-            fillConfigCombo(configMatchName);
+            selectDevice(mCurrentDevice = bestDeviceMatch);
+            fillConfigCombo(bestConfigMatchName);
+            mLocaleCombo.select(bestLocaleIndex);
         }
     }
 
     /**
-     * Adapts the current device/config selection so that it's compatible with a given config.
+     * Adapts the current device/config selection so that it's compatible with
+     * {@link #mEditedConfig}.
      * <p/>If the current selection is compatible, nothing is changed.
      * <p/>If it's not compatible, configs from the current devices are tested.
      * <p/>If none are compatible, it reverts to
      * {@link #findAndSetCompatibleConfig(FolderConfiguration)}
-     * @param fileConfig
      */
-    private void adaptConfigSelectionToNewConfig(FolderConfiguration fileConfig) {
+    private void adaptConfigSelection() {
         // check the device config (ie sans locale)
         boolean needConfigChange = true; // if still true, we need to find another config.
+        boolean currentConfigIsCompatible = false;
         int configIndex = mDeviceConfigCombo.getSelectionIndex();
         if (configIndex != -1) {
             String configName = mDeviceConfigCombo.getItem(configIndex);
             FolderConfiguration currentConfig = mCurrentDevice.getConfigs().get(configName);
-            if (fileConfig.isMatchFor(currentConfig)) {
-                needConfigChange = false;
+            if (mEditedConfig.isMatchFor(currentConfig)) {
+                currentConfigIsCompatible = true; // current config is compatible
+                if (isCurrentFileBestMatchFor(currentConfig)) {
+                    needConfigChange = false;
+                }
             }
         }
 
         if (needConfigChange) {
+            // if the current config/locale isn't a correct match, then
+            // look for another config/locale in the same device.
+            FolderConfiguration testConfig = new FolderConfiguration();
+
             // first look in the current device.
             String matchName = null;
+            int localeIndex = -1;
             Map<String, FolderConfiguration> configs = mCurrentDevice.getConfigs();
-            for (Entry<String, FolderConfiguration> entry : configs.entrySet()) {
-                if (fileConfig.isMatchFor(entry.getValue())) {
-                    matchName = entry.getKey();
-                    break;
+            mainloop: for (Entry<String, FolderConfiguration> entry : configs.entrySet()) {
+                testConfig.set(entry.getValue());
+
+                // loop on the locales.
+                for (int i = 0 ; i < mLocaleList.size() ; i++) {
+                    ResourceQualifier[] locale = mLocaleList.get(i);
+
+                    // update the test config with the locale qualifiers
+                    testConfig.setLanguageQualifier((LanguageQualifier)locale[LOCALE_LANG]);
+                    testConfig.setRegionQualifier((RegionQualifier)locale[LOCALE_REGION]);
+
+                    if (mEditedConfig.isMatchFor(testConfig) &&
+                            isCurrentFileBestMatchFor(testConfig)) {
+                        matchName = entry.getKey();
+                        localeIndex = i;
+                        break mainloop;
+                    }
                 }
             }
 
             if (matchName != null) {
                 selectConfig(matchName);
+                mLocaleCombo.select(localeIndex);
             } else {
-                // attempt to find a device that can display this particular config.
-                findAndSetCompatibleConfig(fileConfig);
+                // no match in current device with any config/locale
+                // attempt to find another device that can display this particular config.
+                findAndSetCompatibleConfig(currentConfigIsCompatible);
             }
         }
     }
-
 
     /**
      * Finds a locale matching the config from a file.
      * @param language the language qualifier or null if none is set.
      * @param region the region qualifier or null if none is set.
      */
-    private void findAndSetCompatibleLocale(ResourceQualifier language, ResourceQualifier region) {
+    private void setLocaleCombo(ResourceQualifier language, ResourceQualifier region) {
         // find the locale match. Since the locale list is based on the content of the
         // project resources there must be an exact match.
         // The only trick is that the region could be null in the fileConfig but in our
@@ -751,7 +872,9 @@ public class ConfigurationComposite extends Composite {
         });
 
         if (mCurrentState != null && mCurrentState.locale != null) {
-            findAndSetCompatibleLocale(mCurrentState.locale[LOCALE_LANG],
+            // FIXME: this may fails if the layout was deleted (and was the last one to have that local.
+            // (we have other problem in this case though)
+            setLocaleCombo(mCurrentState.locale[LOCALE_LANG],
                     mCurrentState.locale[LOCALE_REGION]);
         } else {
             mLocaleCombo.select(0);
@@ -873,6 +996,10 @@ public class ConfigurationComposite extends Composite {
     }
 
     // ---- getters for the config selection values ----
+
+    public FolderConfiguration getEditedConfig() {
+        return mEditedConfig;
+    }
 
     public FolderConfiguration getCurrentConfig() {
         return mCurrentConfig;
@@ -1146,11 +1273,11 @@ public class ConfigurationComposite extends Composite {
 
             // reset the UI as if it was just a replacement file, since we can keep
             // the current device (and possibly config).
-            adaptConfigSelectionToNewConfig(mEditedConfig);
+            adaptConfigSelection();
 
         } else {
             // find a new device/config to match the current file.
-            findAndSetCompatibleConfig(mEditedConfig);
+            findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
         }
 
         mDisableUpdates = false;
@@ -1403,5 +1530,28 @@ public class ConfigurationComposite extends Composite {
         mCreateButton.setEnabled(mEditedConfig.equals(mCurrentConfig) == false);
     }
 
+    /**
+     * Checks whether the current edited file is the best match for a given config.
+     * <p/>
+     * This tests against other versions of the same layout in the project.
+     * <p/>
+     * The given config must be compatible with the current edited file.
+     * @param config the config to test.
+     * @return true if the current edited file is the best match in the project for the
+     * given config.
+     */
+    private boolean isCurrentFileBestMatchFor(FolderConfiguration config) {
+        ResourceFile match = mResources.getMatchingFile(mEditedFile.getName(),
+                ResourceFolderType.LAYOUT, config);
+
+        if (match != null) {
+            return match.getFile().equals(mEditedFile);
+        } else {
+            // if we stop here that means the current file is not even a match!
+            AdtPlugin.log(IStatus.ERROR, "Current file is not a match for the given config.");
+        }
+
+        return false;
+    }
 }
 
