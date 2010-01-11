@@ -143,6 +143,28 @@ import java.util.ArrayList;
     public void drop(DropTargetEvent event) {
         // TODO Auto-generated method stub
         AdtPlugin.printErrorToConsole("DEBUG", "drop");
+
+        String viewFqcn = null;
+
+        ElementDescTransfer edt = ElementDescTransfer.getInstance();
+
+        if (edt.isSupportedType(event.currentDataType)) {
+            // DropTarget already invoked Tranfer#nativeToJava() and stored the result
+            // in event.data
+            if (event.data instanceof String) {
+                viewFqcn = (String) event.data;
+            }
+        }
+
+        if (viewFqcn == null) {
+            AdtPlugin.printErrorToConsole("DEBUG", "drop missing drop data");
+            return;
+        }
+
+        Point p = eventToCanvasPoint(event);
+        mCanvas.getRulesEngine().dropFinish(viewFqcn, mTargetNode, mCurrentZone,
+                new com.android.ide.eclipse.adt.gscripts.Point(p.x, p.y));
+
         clearDropInfo();
     }
 
@@ -188,11 +210,9 @@ import java.util.ArrayList;
             return;
         }
 
-        int x = event.x;
-        int y = event.y;
-        Point p = mCanvas.toControl(x, y);
-        x = p.x - LayoutCanvas.IMAGE_MARGIN;
-        y = p.y - LayoutCanvas.IMAGE_MARGIN;
+        Point p = eventToCanvasPoint(event);
+        int x = p.x;
+        int y = p.y;
 
         CanvasViewInfo vi = mCanvas.findViewInfoAt(x, y);
 
@@ -220,6 +240,13 @@ import java.util.ArrayList;
         if (needRedraw) {
             mCanvas.redraw();
         }
+    }
+
+    private Point eventToCanvasPoint(DropTargetEvent event) {
+        Point p = mCanvas.toControl(event.x, event.y);
+        p.x -= LayoutCanvas.IMAGE_MARGIN;
+        p.y -= LayoutCanvas.IMAGE_MARGIN;
+        return p;
     }
 
     private void setCurrentView(CanvasViewInfo vi) {

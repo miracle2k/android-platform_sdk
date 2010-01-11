@@ -17,6 +17,8 @@
 package com.android.ide.eclipse.adt.gscripts;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 
 /**
@@ -68,6 +70,19 @@ public interface IViewRule {
     String getDisplayName();
 
 
+    // ==== XML Creation ====
+
+
+    /**
+     * Returns the default attributes that a new XML element of this type should have
+     * when added to an XML layout file. Note that these defaults can be overridden by the
+     * specific code performing the insertion.
+     *
+     * @return A map of attribute:values for a new element of this type. Can be null or empty.
+     */
+    Map<?, ?> getDefaultAttributes();
+
+
 
     // ==== Drag'n'drop support ====
 
@@ -102,8 +117,13 @@ public interface IViewRule {
      * @param sourceFqcn The FQCN of the view being dropped.
      * @param targetNode The XML view that is currently the target of the drop.
      * @param selectedZone One of the drop zones returned by {@link #dropStart(INodeProxy)}.
+     * @param where The location, in the selected zone, of the drop.
      */
-    void dropFinish(String sourceFqcn, INodeProxy targetNode, DropZone selectedZone);
+    void dropFinish(
+            String sourceFqcn,
+            INodeProxy targetNode,
+            DropZone selectedZone,
+            Point where);
 
     ArrayList<DropZone> moveStart(INodeProxy sourceNode, INodeProxy targetNode, boolean copy);
     void moveFinish(INodeProxy sourceNode, INodeProxy targetNode, boolean copy, DropZone selectedZone);

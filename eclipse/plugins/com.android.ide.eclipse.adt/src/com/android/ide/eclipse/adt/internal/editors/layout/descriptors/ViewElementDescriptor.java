@@ -39,7 +39,7 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
  * as the "super class", which denotes the fact that a given View java class derives from
  * another class. These properties are also set at construction by {@link LayoutDescriptors}.
  * The super class hierarchy is very different from the descriptor's children hierarchy: the
- * format represents Java inheritance, the former represents an XML nesting capability.
+ * later represents Java inheritance, the former represents an XML nesting capability.
  *
  * @see ElementDescriptor
  */
