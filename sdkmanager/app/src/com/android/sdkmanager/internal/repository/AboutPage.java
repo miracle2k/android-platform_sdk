@@ -17,6 +17,8 @@
 package com.android.sdkmanager.internal.repository;
 
 
+import com.android.sdklib.SdkConstants;
+import com.android.sdklib.internal.repository.Package;
 import com.android.sdkmanager.*;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
@@ -52,7 +54,7 @@ public class AboutPage extends Composite {
         parent.setLayout(new GridLayout(2, false));
 
         Label logo = new Label(parent, SWT.NONE);
-        InputStream imageStream = this.getClass().getResourceAsStream("logo.png");
+        InputStream imageStream = this.getClass().getResourceAsStream("logo.png"); //$NON-NLS-1$
 
         if (imageStream != null) {
             Image img = new Image(parent.getShell().getDisplay(), imageStream);
@@ -90,12 +92,12 @@ public class AboutPage extends Composite {
             String toolsdir = System.getProperty(Main.TOOLSDIR);
             File sourceProp;
             if (toolsdir == null || toolsdir.length() == 0) {
-                sourceProp = new File("source.properties"); //$NON-NLS-1$
+                sourceProp = new File(SdkConstants.FN_SOURCE_PROP);
             } else {
-                sourceProp = new File(toolsdir, "source.properties"); //$NON-NLS-1$
+                sourceProp = new File(toolsdir, SdkConstants.FN_SOURCE_PROP);
             }
             p.load(new FileInputStream(sourceProp));
-            String revision = p.getProperty("Pkg.Revision"); //$NON-NLS-1$
+            String revision = p.getProperty(Package.PROP_REVISION);
             if (revision != null) {
                 return revision;
             }
