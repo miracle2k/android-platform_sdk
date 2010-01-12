@@ -266,4 +266,8 @@ final class PlatformTarget implements IAndroidTarget {
     void setSkins(String[] skins) {
         mSkins = skins;
     }
+
+    void setSamplesPath(String osLocation) {
+        mPaths.put(SAMPLES, osLocation);
+    }
 }

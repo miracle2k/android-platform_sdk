@@ -18,6 +18,7 @@ package com.android.sdklib;
 
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
+import com.android.sdklib.AndroidVersion.AndroidVersionException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -115,6 +117,9 @@ public final class SdkManager {
             Collections.sort(list);
 
             manager.setTargets(list.toArray(new IAndroidTarget[list.size()]));
+
+            // load the samples, after the targets have been set.
+            manager.loadSamples(log);
 
             return manager;
         } catch (IllegalArgumentException e) {
@@ -222,6 +227,9 @@ public final class SdkManager {
         // sort the targets/add-ons
         Collections.sort(list);
         setTargets(list.toArray(new IAndroidTarget[list.size()]));
+
+        // load the samples, after the targets have been set.
+        loadSamples(log);
     }
 
     /**
@@ -674,4 +682,50 @@ public final class SdkManager {
 
         return new String[0];
     }
+
+    private void loadSamples(ISdkLog log) {
+        File sampleFolder = new File(mSdkLocation, SdkConstants.FD_SAMPLES);
+        if (sampleFolder.isDirectory()) {
+            File[] platforms  = sampleFolder.listFiles();
+
+            for (File platform : platforms) {
+                if (platform.isDirectory()) {
+                    // load the source.properties file and get an AndroidVersion object from it.
+                    AndroidVersion version = getSamplesVersion(platform, log);
+
+                    if (version != null) {
+                        // locate the platform matching this version
+                        for (IAndroidTarget target : mTargets) {
+                            if (target.isPlatform() && target.getVersion().equals(version)) {
+                                ((PlatformTarget)target).setSamplesPath(platform.getAbsolutePath());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private AndroidVersion getSamplesVersion(File folder, ISdkLog log) {
+        File sourceProp = new File(folder, SdkConstants.FN_SOURCE_PROP);
+        try {
+            Properties p = new Properties();
+            p.load(new FileInputStream(sourceProp));
+
+            return new AndroidVersion(p);
+        } catch (FileNotFoundException e) {
+            log.warning("Ignoring sample '%1$s': does not contain %2$s.", //$NON-NLS-1$
+                    folder.getName(), SdkConstants.FN_SOURCE_PROP);
+        } catch (IOException e) {
+            log.warning("Ignoring sample '%1$s': failed reading %2$s.", //$NON-NLS-1$
+                    folder.getName(), SdkConstants.FN_SOURCE_PROP);
+        } catch (AndroidVersionException e) {
+            log.warning("Ignoring sample '%1$s': no android version found in %2$s.", //$NON-NLS-1$
+                    folder.getName(), SdkConstants.FN_SOURCE_PROP);
+        }
+
+        return null;
+    }
+
 }

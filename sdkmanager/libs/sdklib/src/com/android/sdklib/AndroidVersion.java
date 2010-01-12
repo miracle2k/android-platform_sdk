@@ -46,6 +46,18 @@ public final class AndroidVersion implements Comparable<AndroidVersion> {
     private final String mCodename;
 
     /**
+     * Thrown when an {@link AndroidVersion} object could not be created.
+     * @see AndroidVersion#AndroidVersion(Properties)
+     */
+    public final static class AndroidVersionException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        AndroidVersionException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
      * Creates an {@link AndroidVersion} with the given api level and codename.
      * Codename should be null for a release version, otherwise it's a preview codename.
      */
@@ -69,6 +81,31 @@ public final class AndroidVersion implements Comparable<AndroidVersion> {
                     Integer.toString(defaultApiLevel)));
             mCodename = properties.getProperty(PROP_CODENAME, defaultCodeName);
         }
+    }
+
+    /**
+     * Creates an {@link AndroidVersion} from {@link Properties}. The properties must contain
+     * android version information, or an exception will be thrown.
+     * @throws AndroidVersionException if no Android version information have been found
+     *
+     * @see #saveProperties(Properties)
+     */
+    public AndroidVersion(Properties properties) throws AndroidVersionException {
+        Exception error = null;
+
+        String apiLevel = properties.getProperty(PROP_API_LEVEL, null /*defaultValue*/);
+        if (apiLevel != null) {
+            try {
+                mApiLevel = Integer.parseInt(apiLevel);
+                mCodename = properties.getProperty(PROP_CODENAME, null /*defaultValue*/);
+                return;
+            } catch (NumberFormatException e) {
+                error = e;
+            }
+        }
+
+        // reaching here means the Properties object did not contain the apiLevel which is required.
+        throw new AndroidVersionException(PROP_API_LEVEL + " not found!", error);
     }
 
     public void saveProperties(Properties props) {

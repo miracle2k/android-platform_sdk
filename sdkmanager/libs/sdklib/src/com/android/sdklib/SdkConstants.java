@@ -116,6 +116,9 @@ public final class SdkConstants {
     public final static String FN_ZIPALIGN = (CURRENT_PLATFORM == PLATFORM_WINDOWS) ?
             "zipalign.exe" : "zipalign"; //$NON-NLS-1$ //$NON-NLS-2$
 
+    /** properties file for SDK Updater packages */
+    public final static String FN_SOURCE_PROP = "source.properties"; //$NON-NLS-1$
+
     /* Folder Names for Android Projects . */
 
     /** Resources folder name, i.e. "res". */
