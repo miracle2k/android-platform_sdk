@@ -837,6 +837,21 @@ public final class AvdSelector {
         // get the current Display
         final Display display = mTable.getDisplay();
 
+        // check if the AVD is running
+        if (avdInfo.isRunning()) {
+            display.asyncExec(new Runnable() {
+                public void run() {
+                    Shell shell = display.getActiveShell();
+                    MessageDialog.openError(shell,
+                            "Delete Android Virtual Device",
+                            String.format(
+                                    "The Android Virtual Device '%1$s' is currently running in an emulator and cannot be deleted.",
+                                    avdInfo.getName()));
+                }
+            });
+            return;
+        }
+
         // Confirm you want to delete this AVD
         final boolean[] result = new boolean[1];
         display.syncExec(new Runnable() {
