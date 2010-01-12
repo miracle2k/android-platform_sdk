@@ -487,7 +487,11 @@ public final class AvdManager {
                 if (removePrevious) {
                     // AVD already exists and removePrevious is set, try to remove the
                     // directory's content first (but not the directory itself).
-                    recursiveDelete(avdFolder);
+                    try {
+                        deleteContentOf(avdFolder);
+                    } catch (SecurityException e) {
+                        log.error(e, "Failed to delete %1$s", avdFolder.getAbsolutePath());
+                    }
                 } else {
                     // AVD shouldn't already exist if removePrevious is false.
                     log.error(null,
@@ -712,8 +716,12 @@ public final class AvdManager {
                 log.warning("Removing previous AVD directory at %s", oldAvdInfo.getPath());
                 // Remove the old data directory
                 File dir = new File(oldAvdInfo.getPath());
-                recursiveDelete(dir);
-                dir.delete();
+                try {
+                    deleteContentOf(dir);
+                    dir.delete();
+                } catch (SecurityException e) {
+                    log.error(e, "Failed to delete %1$s", dir.getAbsolutePath());
+                }
             }
 
             return newAvdInfo;
@@ -721,14 +729,20 @@ public final class AvdManager {
             log.error(e, null);
         } catch (IOException e) {
             log.error(e, null);
+        } catch (SecurityException e) {
+            log.error(e, null);
         } finally {
             if (needCleanup) {
                 if (iniFile != null && iniFile.exists()) {
                     iniFile.delete();
                 }
 
-                recursiveDelete(avdFolder);
-                avdFolder.delete();
+                try {
+                    deleteContentOf(avdFolder);
+                    avdFolder.delete();
+                } catch (SecurityException e) {
+                    log.error(e, "Failed to delete %1$s", avdFolder.getAbsolutePath());
+                }
             }
         }
 
@@ -896,8 +910,7 @@ public final class AvdManager {
                 f = new File(path);
                 if (f.exists()) {
                     log.printf("Deleting folder %1$s\n", f.getCanonicalPath());
-                    recursiveDelete(f);
-                    if (!f.delete()) {
+                    if (deleteContentOf(f) == false || f.delete() == false) {
                         log.error(null, "Failed to delete %1$s\n", f.getCanonicalPath());
                         error = true;
                     }
@@ -917,6 +930,8 @@ public final class AvdManager {
         } catch (AndroidLocationException e) {
             log.error(e, null);
         } catch (IOException e) {
+            log.error(e, null);
+        } catch (SecurityException e) {
             log.error(e, null);
         }
         return false;
@@ -991,13 +1006,20 @@ public final class AvdManager {
      *
      * @throws SecurityException like {@link File#delete()} does if file/folder is not writable.
      */
-    public void recursiveDelete(File folder) {
+    private boolean deleteContentOf(File folder) throws SecurityException {
         for (File f : folder.listFiles()) {
             if (f.isDirectory()) {
-                recursiveDelete(folder);
+                if (deleteContentOf(f) == false) {
+                    return false;
+                }
             }
-            f.delete();
+            if (f.delete() == false) {
+                return false;
+            }
+
         }
+
+        return true;
     }
 
     /**
