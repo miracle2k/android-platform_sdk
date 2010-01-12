@@ -1039,7 +1039,7 @@ public class Archive implements IDescription {
 
         FileOutputStream fos = null;
         try {
-            File f = new File(unzipDestFolder, LocalSdkParser.SOURCE_PROPERTIES);
+            File f = new File(unzipDestFolder, SdkConstants.FN_SOURCE_PROP);
 
             fos = new FileOutputStream(f);
 

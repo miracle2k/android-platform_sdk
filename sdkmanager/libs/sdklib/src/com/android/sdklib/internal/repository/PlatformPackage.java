@@ -35,7 +35,7 @@ import java.util.Properties;
  */
 public class PlatformPackage extends MinToolsPackage implements IPackageVersion {
 
-    protected static final String PROP_VERSION       = "Platform.Version";      //$NON-NLS-1$
+    public static final String PROP_VERSION       = "Platform.Version";      //$NON-NLS-1$
 
     /** The package version, for platform, add-on and doc packages. */
     private final AndroidVersion mVersion;

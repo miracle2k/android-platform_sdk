@@ -36,7 +36,6 @@ import java.util.Set;
  */
 public class LocalSdkParser {
 
-    static final String SOURCE_PROPERTIES = "source.properties";  //$NON-NLS-1$
     private Package[] mPackages;
 
     public LocalSdkParser() {
@@ -94,7 +93,8 @@ public class LocalSdkParser {
         // for platforms and add-ons, rely on the SdkManager parser
         for(IAndroidTarget target : sdkManager.getTargets()) {
 
-            Properties props = parseProperties(new File(target.getLocation(), SOURCE_PROPERTIES));
+            Properties props = parseProperties(new File(target.getLocation(),
+                    SdkConstants.FN_SOURCE_PROP));
 
             try {
                 if (target.isPlatform()) {
@@ -131,7 +131,7 @@ public class LocalSdkParser {
         for (File dir : root.listFiles()) {
             if (dir.isDirectory() && !visited.contains(dir)) {
 
-                Properties props = parseProperties(new File(dir, SOURCE_PROPERTIES));
+                Properties props = parseProperties(new File(dir, SdkConstants.FN_SOURCE_PROP));
                 if (props != null) {
                     try {
                         ExtraPackage pkg = new ExtraPackage(
@@ -165,7 +165,7 @@ public class LocalSdkParser {
      */
     private Package scanTools(File toolFolder, ISdkLog log) {
         // Can we find some properties?
-        Properties props = parseProperties(new File(toolFolder, SOURCE_PROPERTIES));
+        Properties props = parseProperties(new File(toolFolder, SdkConstants.FN_SOURCE_PROP));
 
         // We're not going to check that all tools are present. At the very least
         // we should expect to find adb, android and an emulator adapted to the current OS.
@@ -206,7 +206,7 @@ public class LocalSdkParser {
      */
     private Package scanDoc(File docFolder, ISdkLog log) {
         // Can we find some properties?
-        Properties props = parseProperties(new File(docFolder, SOURCE_PROPERTIES));
+        Properties props = parseProperties(new File(docFolder, SdkConstants.FN_SOURCE_PROP));
 
         // To start with, a doc folder should have an "index.html" to be acceptable.
         // We don't actually check the content of the file.
