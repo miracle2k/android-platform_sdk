@@ -308,6 +308,14 @@ public final class AvdManager {
         }
 
         /**
+         * Returns whether an emulator is currently running the AVD.
+         */
+        public boolean isRunning() {
+            File f = new File(mPath, "userdata-qemu.img.lock");
+            return f.isFile();
+        }
+
+        /**
          * Compares this object with the specified object for order. Returns a
          * negative integer, zero, or a positive integer as this object is less
          * than, equal to, or greater than the specified object.
