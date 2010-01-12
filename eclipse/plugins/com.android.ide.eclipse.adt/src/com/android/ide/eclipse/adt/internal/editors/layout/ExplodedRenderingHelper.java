@@ -110,8 +110,7 @@ public final class ExplodedRenderingHelper {
                 } else if ("TableRow".equals(localName)) {
                     combineLinearLayout(childrenPadding, padding, true);
                 } else {
-                    // TODO: need to figure out what we do here
-                    throw new UnsupportedOperationException();
+                    // unknown layouts are not exploded.
                 }
             }
         }
