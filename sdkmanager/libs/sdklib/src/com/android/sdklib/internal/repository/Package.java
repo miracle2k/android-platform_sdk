@@ -43,14 +43,15 @@ import java.util.Properties;
  */
 public abstract class Package implements IDescription, Comparable<Package> {
 
-    private static final String PROP_REVISION     = "Pkg.Revision";     //$NON-NLS-1$
-    private static final String PROP_LICENSE      = "Pkg.License";      //$NON-NLS-1$
-    private static final String PROP_DESC         = "Pkg.Desc";         //$NON-NLS-1$
-    private static final String PROP_DESC_URL     = "Pkg.DescUrl";      //$NON-NLS-1$
-    private static final String PROP_RELEASE_NOTE = "Pkg.RelNote";      //$NON-NLS-1$
-    private static final String PROP_RELEASE_URL  = "Pkg.RelNoteUrl";   //$NON-NLS-1$
-    private static final String PROP_SOURCE_URL   = "Pkg.SourceUrl";    //$NON-NLS-1$
-    private static final String PROP_USER_SOURCE  = "Pkg.UserSrc";      //$NON-NLS-1$
+    public static final String PROP_REVISION     = "Pkg.Revision";     //$NON-NLS-1$
+    public static final String PROP_LICENSE      = "Pkg.License";      //$NON-NLS-1$
+    public static final String PROP_DESC         = "Pkg.Desc";         //$NON-NLS-1$
+    public static final String PROP_DESC_URL     = "Pkg.DescUrl";      //$NON-NLS-1$
+    public static final String PROP_RELEASE_NOTE = "Pkg.RelNote";      //$NON-NLS-1$
+    public static final String PROP_RELEASE_URL  = "Pkg.RelNoteUrl";   //$NON-NLS-1$
+    public static final String PROP_SOURCE_URL   = "Pkg.SourceUrl";    //$NON-NLS-1$
+    public static final String PROP_USER_SOURCE  = "Pkg.UserSrc";      //$NON-NLS-1$
+
     private final int mRevision;
     private final String mLicense;
     private final String mDescription;
