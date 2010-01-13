@@ -48,7 +48,6 @@ public final class ProjectCallback implements IProjectCallback {
         mProject = project;
     }
 
-
     /**
      * {@inheritDoc}
      *

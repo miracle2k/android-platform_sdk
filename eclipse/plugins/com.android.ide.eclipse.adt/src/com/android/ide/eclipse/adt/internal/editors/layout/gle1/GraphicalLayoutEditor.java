@@ -1132,7 +1132,15 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
      * Called when the file changes triggered a redraw of the layout
      */
     public void reloadLayout(ChangeFlags flags) {
-        boolean recompute = flags.rClass;
+        boolean recompute = false;
+
+        if (flags.rClass) {
+            recompute = true;
+            ProjectResources projectRes = getProjectResources();
+            if (projectRes != null) {
+                projectRes.resetDynamicIds();
+            }
+        }
 
         if (flags.localeList) {
             // the locale list *potentially* changed so we update the locale list in the
