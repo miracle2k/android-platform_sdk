@@ -44,6 +44,10 @@ import java.util.TreeSet;
  * for the alternate resource types. For a compiled view use CompiledResources.
  */
 public class ProjectResources implements IResourceRepository {
+    private final static int DYNAMIC_ID_SEED_START = 0; // this should not conflict with any
+                                                        // project IDs that start at a much higher
+                                                        // value
+
     private final HashMap<ResourceFolderType, List<ResourceFolder>> mFolderMap =
         new HashMap<ResourceFolderType, List<ResourceFolder>>();
 
@@ -56,6 +60,9 @@ public class ProjectResources implements IResourceRepository {
     private Map<Integer, String[]> mResIdValueToNameMap;
     /** Map of (int[], name) for styleable resources coming from R.java */
     private Map<IntArrayWrapper, String> mStyleableValueToNameMap;
+
+    private final Map<String, Integer> mDynamicIds = new HashMap<String, Integer>();
+    private int mDynamicSeed = DYNAMIC_ID_SEED_START;
 
     /** Cached list of {@link IdResourceItem}. This is mix of IdResourceItem created by
      * {@link MultiResourceFile} for ids coming from XML files under res/values and
@@ -410,12 +417,24 @@ public class ProjectResources implements IResourceRepository {
 
     /**
      * Returns the value of a resource by its type and name.
+     * <p/>If the resource is of type {@link ResourceType#ID} and does not exist in the
+     * internal map, then new id values are dynamically generated (and stored so that queries
+     * with the same names will return the same value).
      */
     public Integer getResourceValue(String type, String name) {
         if (mResourceValueMap != null) {
             Map<String, Integer> map = mResourceValueMap.get(type);
             if (map != null) {
-                return map.get(name);
+                Integer value = map.get(name);
+
+                // if no value
+                if (value == null && ResourceType.ID.getName().equals(type)) {
+                    return getDynamicId(name);
+                }
+
+                return value;
+            } else if (ResourceType.ID.getName().equals(type)) {
+                return getDynamicId(name);
             }
         }
 
@@ -466,6 +485,20 @@ public class ProjectResources implements IResourceRepository {
         }
 
         return set;
+    }
+
+    /**
+     * Resets the list of dynamic Ids. This list is used by
+     * {@link #getResourceValue(String, String)} when the resource query is an ID that doesn't
+     * exist (for example for ID automatically generated in layout files that are not saved.
+     * <p/>This method resets those dynamic ID and must be called whenever the actual list of IDs
+     * change.
+     */
+    public void resetDynamicIds() {
+        synchronized (mDynamicIds) {
+            mDynamicIds.clear();
+            mDynamicSeed = DYNAMIC_ID_SEED_START;
+        }
     }
 
     /**
@@ -721,6 +754,18 @@ public class ProjectResources implements IResourceRepository {
         } else {
             // else this is the list that will actually be displayed, so we sort it.
             Collections.sort(items);
+        }
+    }
+
+    private Integer getDynamicId(String name) {
+        synchronized (mDynamicIds) {
+            Integer value = mDynamicIds.get(name);
+            if (value == null) {
+                value = new Integer(++mDynamicSeed);
+                mDynamicIds.put(name, value);
+            }
+
+            return value;
         }
     }
 
