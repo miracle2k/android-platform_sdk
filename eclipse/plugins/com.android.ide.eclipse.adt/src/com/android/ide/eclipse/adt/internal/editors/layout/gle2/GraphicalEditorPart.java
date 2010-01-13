@@ -1115,7 +1115,19 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
          * Called when the file changes triggered a redraw of the layout
          */
         public void reloadLayout(ChangeFlags flags) {
-            boolean recompute = flags.rClass;
+            boolean recompute = false;
+
+            if (flags.rClass) {
+                recompute = true;
+                if (mEditedFile != null) {
+                    ProjectResources projectRes = ResourceManager.getInstance().getProjectResources(
+                            mEditedFile.getProject());
+
+                    if (projectRes != null) {
+                        projectRes.resetDynamicIds();
+                    }
+                }
+            }
 
             if (flags.localeList) {
                 // the locale list *potentially* changed so we update the locale in the
