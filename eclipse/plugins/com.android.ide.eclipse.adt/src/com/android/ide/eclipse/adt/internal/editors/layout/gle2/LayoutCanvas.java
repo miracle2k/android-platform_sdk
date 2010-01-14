@@ -151,8 +151,9 @@ import java.util.ListIterator;
     private Color mDropFgColor;
 
 
-    public LayoutCanvas(Composite parent, int style) {
+    public LayoutCanvas(RulesEngine rulesEngine, Composite parent, int style) {
         super(parent, style | SWT.DOUBLE_BUFFERED);
+        mRulesEngine = rulesEngine;
 
         Display d = getDisplay();
         mSelectionFgColor = d.getSystemColor(SWT.COLOR_RED);
