@@ -25,14 +25,12 @@ import org.w3c.dom.UserDataHandler;
 
 import java.util.HashMap;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 
 /**
  * A mock XML node with only a minimal set of information.
  */
 public class MockXmlNode implements Node {
-   
+
     MockNodeList mNodeList;
     private String mLocalName;
     private String mNamespace;
@@ -42,14 +40,14 @@ public class MockXmlNode implements Node {
     private MockXmlNode mNextSibling;
     private String mAttrValue;
     private MockNamedNodeMap mAttributes;
-    
+
     // namespace stuff only set in the root node
     /** map from namespace to prefix. */
     private HashMap<String, String> mNsMap = null;
-    
+
     /**
      * Constructs a node from a given children list.
-     * 
+     *
      * @param namespace The namespace of the node or null if none
      * @param localName The XML local node name.
      * @param node_type One of Node.xxx_NODE constants, e.g. Node.ELEMENT_NODE
@@ -66,7 +64,7 @@ public class MockXmlNode implements Node {
 
     /**
      * Constructs an attribute node
-     * 
+     *
      * @param namespace The namespace of the node or null if none
      * @param localName The XML local node name.
      * @param value the value of the attribute
@@ -92,16 +90,16 @@ public class MockXmlNode implements Node {
             prev = n;
         }
     }
-    
+
     public void addAttributes(String namespaceURI, String localName, String value) {
         if (mAttributes == null) {
             mAttributes = new MockNamedNodeMap();
         }
-        
+
         MockXmlNode node = mAttributes.addAttribute(namespaceURI, localName, value);
         node.mParent = this;
     }
-    
+
     public void setPrefix(String namespace, String prefix) {
         if (mNsMap == null) {
             mNsMap = new HashMap<String, String>();
@@ -109,16 +107,16 @@ public class MockXmlNode implements Node {
 
         mNsMap.put(namespace, prefix);
     }
-    
+
     public String getPrefix(String namespace) {
         if (mNsMap != null) {
             return mNsMap.get(namespace);
         }
-        
+
         return mParent.getPrefix(namespace);
     }
 
-    
+
     // ----------- Node methods
 
     public Node appendChild(Node newChild) throws DOMException {
@@ -155,7 +153,7 @@ public class MockXmlNode implements Node {
     public String getNodeName() {
         return mLocalName;
     }
-    
+
     public String getLocalName() {
         return mLocalName;
     }
@@ -177,19 +175,17 @@ public class MockXmlNode implements Node {
     }
 
     public boolean hasAttributes() {
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        //return false;
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public boolean isSameNode(Node other) {
         return this == other;
     }
-    
+
     public String getNodeValue() throws DOMException {
         return mAttrValue;
     }
-    
+
     public String getPrefix() {
         return getPrefix(getNamespaceURI());
     }
@@ -200,87 +196,87 @@ public class MockXmlNode implements Node {
 
 
     // --- methods not implemented ---
-    
+
     public Node cloneNode(boolean deep) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public short compareDocumentPosition(Node other) throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public String getBaseURI() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Object getFeature(String feature, String version) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Document getOwnerDocument() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public String getTextContent() throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Object getUserData(String key) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Node insertBefore(Node newChild, Node refChild)
             throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public boolean isDefaultNamespace(String namespaceURI) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public boolean isEqualNode(Node arg) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public boolean isSupported(String feature, String version) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public String lookupNamespaceURI(String prefix) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public String lookupPrefix(String namespaceURI) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public void normalize() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Node removeChild(Node oldChild) throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Node replaceChild(Node newChild, Node oldChild)
             throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public void setNodeValue(String nodeValue) throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public void setPrefix(String prefix) throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public void setTextContent(String textContent) throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Object setUserData(String key, Object data,
             UserDataHandler handler) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 }
