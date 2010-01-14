@@ -53,6 +53,13 @@ public abstract class SdkTestCase extends TestCase {
      */
     private Sdk loadSdk() {
         AdtPlugin adt = AdtPlugin.getDefault();
+
+        // We'll never get an AdtPlugin object when running this with the
+        // non-Eclipse jUnit test runner.
+        if (adt == null) {
+            return null;
+        }
+
         Object sdkLock = adt.getSdkLockObject();
         LoadStatus loadStatus = LoadStatus.LOADING;
         // wait for ADT to load the SDK on a separate thread
