@@ -18,10 +18,10 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.gscripts.DropZone;
-import com.android.ide.eclipse.adt.gscripts.INodeProxy;
-import com.android.ide.eclipse.adt.gscripts.IViewRule;
-import com.android.ide.eclipse.adt.gscripts.Point;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;

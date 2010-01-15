@@ -17,8 +17,8 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.gscripts.INodeProxy;
-import com.android.ide.eclipse.adt.gscripts.Rect;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;

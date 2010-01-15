@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.gscripts.DropZone;
-import com.android.ide.eclipse.adt.gscripts.Rect;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.layoutlib.api.ILayoutResult;
 

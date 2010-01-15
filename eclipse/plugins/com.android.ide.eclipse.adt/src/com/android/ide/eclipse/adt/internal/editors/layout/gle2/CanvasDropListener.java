@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.gscripts.DropZone;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 
 import org.eclipse.swt.dnd.DND;
@@ -163,7 +163,7 @@ import java.util.ArrayList;
 
         Point p = eventToCanvasPoint(event);
         mCanvas.getRulesEngine().dropFinish(viewFqcn, mTargetNode, mCurrentZone,
-                new com.android.ide.eclipse.adt.gscripts.Point(p.x, p.y));
+                new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(p.x, p.y));
 
         clearDropInfo();
     }
