@@ -16,7 +16,7 @@
 
 package com.android.adt.gscripts;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.BaseViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
@@ -28,44 +28,7 @@ import java.util.ArrayList;
 /**
  * An {@link IViewRule} for android.widget.AbsoluteLayout and all its derived classes.
  */
-public class AndroidWidgetAbsoluteLayourRule implements IViewRule {
-
-    /**
-     * This method is called by the rule engine when the script is first loaded.
-     * Returns true, we can handle any AbsoluteLayout or derived class.
-     */
-    public boolean onInitialize(String fqcn) {
-        return true;
-    }
-
-    /**
-     * This method is called by the rules engine just before the script is unloaded.
-     */
-    public void onDispose() {
-    }
-
-    /**
-     * Returns the class name to display when an element is selected in the GLE.
-     * Returns null to use the default display behavior.
-     */
-    public String getDisplayName() {
-        return null;
-    }
-
-
-    // ==== XML Creation ====
-
-    /**
-     * Returns the default attributes that a new XML element of this type should have
-     * when added to an XML layout file. Note that these defaults can be overridden by the
-     * specific code performing the insertion.
-     *
-     * @return A map of attribute:values for a new element of this type. Can be null or empty.
-     */
-    public Map<?, ?> getDefaultAttributes() {
-        return null;
-    }
-
+public class AndroidWidgetAbsoluteLayourRule extends BaseViewRule {
 
     // ==== Drag'n'drop support ====
 
@@ -96,14 +59,5 @@ public class AndroidWidgetAbsoluteLayourRule implements IViewRule {
         INodeProxy e = targetNode.createChild(sourceFqcn);
         e.setAttribute("layout_x", "${x}dip");
         e.setAttribute("layout_y", "${y}dip");
-    }
-
-
-    public ArrayList<DropZone> moveStart(INodeProxy sourceNode, INodeProxy targetNode, boolean copy) {
-        // TODO
-    }
-
-    public void moveFinish(INodeProxy sourceNode, INodeProxy targetNode, boolean copy, DropZone selectedZone) {
-        // TODO
     }
 }
