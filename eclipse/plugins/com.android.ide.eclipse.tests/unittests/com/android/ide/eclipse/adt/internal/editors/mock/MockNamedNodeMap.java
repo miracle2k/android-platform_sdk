@@ -20,41 +20,39 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 
 class MockNamedNodeMap implements NamedNodeMap {
-    
+
     /** map for access by namespace/name */
     private final HashMap<String, HashMap<String, Node>> mNodeMap =
         new HashMap<String, HashMap<String, Node>>();
-    
+
     /** list for access by index */
     private final ArrayList<Node> mNodeList = new ArrayList<Node>();
-     
+
     public MockXmlNode addAttribute(String namespace, String localName, String value) {
         MockXmlNode node = new MockXmlNode(namespace, localName, value);
 
         if (namespace == null) {
             namespace = ""; // no namespace
         }
-        
+
         // get the map for the namespace
         HashMap<String, Node> map = mNodeMap.get(namespace);
         if (map == null) {
             map = new HashMap<String, Node>();
             mNodeMap.put(namespace, map);
         }
-        
-        
+
+
         map.put(localName, node);
         mNodeList.add(node);
-        
+
         return node;
     }
-    
+
     // --------- NamedNodeMap -------
 
     public int getLength() {
@@ -66,7 +64,7 @@ class MockNamedNodeMap implements NamedNodeMap {
         if (map != null) {
             return map.get(name);
         }
-        
+
         return null;
     }
 
@@ -74,12 +72,12 @@ class MockNamedNodeMap implements NamedNodeMap {
         if (namespaceURI == null) {
             namespaceURI = ""; //no namespace
         }
-        
+
         HashMap<String, Node> map = mNodeMap.get(namespaceURI);
         if (map != null) {
             return map.get(localName);
         }
-        
+
         return null;
     }
 
@@ -88,19 +86,19 @@ class MockNamedNodeMap implements NamedNodeMap {
     }
 
     public Node removeNamedItem(String name) throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Node removeNamedItemNS(String namespaceURI, String localName) throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Node setNamedItem(Node arg) throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
     public Node setNamedItemNS(Node arg) throws DOMException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Operation not implemented.");  //$NON-NLS-1$
     }
 
 }
