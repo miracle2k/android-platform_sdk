@@ -126,35 +126,21 @@ public final class ApkBuilderImpl {
                     throw new WrongOptionException("Missing value for -rf");
                 }
 
-                processSourceFolderForResource(args[index++], javaResources);
+                processSourceFolderForResource(new File(args[index++]), javaResources);
             } else if ("-rj". equals(argument)) {
                 // quick check on the next argument.
                 if (index == args.length) {
                     throw new WrongOptionException("Missing value for -rj");
                 }
 
-                File f = new File(args[index]);
-                if (f.isDirectory()) {
-                    processJarFolder(args[index++], resourcesJars);
-                } else if (f.isFile()) {
-                    processJarFile(args[index++], resourcesJars);
-                }
+                processJar(new File(args[index++]), resourcesJars);
             } else if ("-nf".equals(argument)) {
                 // quick check on the next argument.
                 if (index == args.length) {
                     throw new WrongOptionException("Missing value for -nf");
                 }
 
-                String parameter = args[index++];
-                File f = new File(parameter);
-
-                // compute the offset to get the relative path
-                int offset = parameter.length();
-                if (parameter.endsWith(File.separator) == false) {
-                    offset++;
-                }
-
-                processNativeFolder(offset, f, nativeLibraries);
+                processNativeFolder(new File(args[index++]), nativeLibraries);
             } else if ("-storetype".equals(argument)) {
                 // quick check on the next argument.
                 if (index == args.length) {
@@ -170,7 +156,6 @@ public final class ApkBuilderImpl {
         createPackage(outFile, zipArchives, archiveFiles, javaResources, resourcesJars,
                 nativeLibraries);
     }
-
 
     private File getOutFile(String filepath) throws ApkCreationException {
         File f = new File(filepath);
@@ -197,6 +182,14 @@ public final class ApkBuilderImpl {
         return f;
     }
 
+    /**
+     * Returns a {@link File} representing a given file path. The path must represent
+     * an actual existing file (not a directory). The path may be relative.
+     * @param filepath the path to a file.
+     * @return the File representing the path.
+     * @throws ApkCreationException if the path represents a directory or if the file does not
+     * exist, or cannot be read.
+     */
     public static File getInputFile(String filepath) throws ApkCreationException {
         File f = new File(filepath);
 
@@ -217,15 +210,12 @@ public final class ApkBuilderImpl {
 
     /**
      * Processes a source folder and adds its java resources to a given list of {@link ApkFile}.
-     * @param folderPath the path to the source folder.
+     * @param folder the folder representing the source folder.
      * @param javaResources the list of {@link ApkFile} to fill.
      * @throws ApkCreationException
      */
-    public static void processSourceFolderForResource(String folderPath,
+    public static void processSourceFolderForResource(File folder,
             ArrayList<ApkFile> javaResources) throws ApkCreationException {
-
-        File folder = new File(folderPath);
-
         if (folder.isDirectory()) {
             // file is a directory, process its content.
             File[] files = folder.listFiles();
@@ -235,35 +225,40 @@ public final class ApkBuilderImpl {
         } else {
             // not a directory? output error and quit.
             if (folder.exists()) {
-                throw new ApkCreationException(folderPath + " is not a folder!");
+                throw new ApkCreationException(folder.getAbsolutePath() + " is not a folder!");
             } else {
-                throw new ApkCreationException(folderPath + " does not exist!");
+                throw new ApkCreationException(folder.getAbsolutePath() + " does not exist!");
             }
         }
     }
 
-    public static void processJarFolder(String parameter, Collection<FileInputStream> resourcesJars)
+    /**
+     * Process a jar file or a jar folder
+     * @param file the {@link File} to process
+     * @param resourcesJars the collection of FileInputStream to fill up with jar files.
+     * @throws FileNotFoundException
+     */
+    public static void processJar(File file, Collection<FileInputStream> resourcesJars)
             throws FileNotFoundException {
-        File f = new File(parameter);
-        if (f.isDirectory()) {
-            String[] files = f.list(new FilenameFilter() {
+        if (file.isDirectory()) {
+            String[] filenames = file.list(new FilenameFilter() {
                 public boolean accept(File dir, String name) {
                     return PATTERN_JAR_EXT.matcher(name).matches();
                 }
             });
 
-            for (String file : files) {
-                String path = f.getAbsolutePath() + File.separator + file;
-                processJarFile(path, resourcesJars);
+            for (String filename : filenames) {
+                File f = new File(file, filename);
+                processJarFile(f, resourcesJars);
             }
         } else {
-            processJarFile(parameter, resourcesJars);
+            processJarFile(file, resourcesJars);
         }
     }
 
-    public static void processJarFile(String jarfilePath, Collection<FileInputStream> resourcesJars)
+    public static void processJarFile(File file, Collection<FileInputStream> resourcesJars)
             throws FileNotFoundException {
-        FileInputStream input = new FileInputStream(jarfilePath);
+        FileInputStream input = new FileInputStream(file);
         resourcesJars.add(input);
     }
 
@@ -311,26 +306,35 @@ public final class ApkBuilderImpl {
 
     /**
      * Process a {@link File} for native library inclusion.
-     * @param offset the length of the root folder (used to compute relative path)
-     * @param f the {@link File} to process
+     * <p/>The root folder must include folders that include .so files.
+     * @param root the native root folder.
      * @param nativeLibraries the collection to add native libraries to.
+     * @throws ApkCreationException
      */
-    public static void processNativeFolder(int offset, File f,
-            Collection<ApkFile> nativeLibraries) {
-        if (f.isDirectory()) {
-            File[] children = f.listFiles();
+    public static void processNativeFolder(File root, Collection<ApkFile> nativeLibraries)
+            throws ApkCreationException {
+        if (root.isDirectory() == false) {
+            throw new ApkCreationException(root.getAbsolutePath() + " is not a folder!");
+        }
 
-            if (children != null) {
-                for (File child : children) {
-                    processNativeFolder(offset, child, nativeLibraries);
+        File[] abiList = root.listFiles();
+
+        if (abiList != null) {
+            for (File abi : abiList) {
+                if (abi.isDirectory()) { // ignore files
+                    File[] libs = abi.listFiles();
+                    if (libs != null) {
+                        for (File lib : libs) {
+                            if (lib.isFile() && // ignore folders
+                                    PATTERN_NATIVELIB_EXT.matcher(lib.getName()).matches()) {
+                                String path =
+                                    NATIVE_LIB_ROOT + abi.getName() + "/" + lib.getName();
+
+                                nativeLibraries.add(new ApkFile(lib, path));
+                            }
+                        }
+                    }
                 }
-            }
-        } else if (f.isFile()) {
-            if (PATTERN_NATIVELIB_EXT.matcher(f.getName()).matches()) {
-                String path = NATIVE_LIB_ROOT +
-                        f.getAbsolutePath().substring(offset).replace('\\', '/');
-
-                nativeLibraries.add(new ApkFile(f, path));
             }
         }
     }
