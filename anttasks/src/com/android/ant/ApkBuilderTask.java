@@ -189,17 +189,17 @@ public class ApkBuilderTask extends Task {
 
             // now go through the list of file to directly add the to the list.
             for (Value v : mSourceList) {
-                ApkBuilderImpl.processSourceFolderForResource(v.mPath, mJavaResources);
+                ApkBuilderImpl.processSourceFolderForResource(new File(v.mPath), mJavaResources);
             }
 
             // now go through the list of jar folders.
             for (Value v : mJarfolderList) {
-                ApkBuilderImpl.processJarFolder(v.mPath, mResourcesJars);
+                ApkBuilderImpl.processJar(new File(v.mPath), mResourcesJars);
             }
 
             // now go through the list of jar files.
             for (Value v : mJarfileList) {
-                ApkBuilderImpl.processJarFile(v.mPath, mResourcesJars);
+                ApkBuilderImpl.processJar(new File(v.mPath), mResourcesJars);
             }
 
             // now the native lib folder.
@@ -207,13 +207,7 @@ public class ApkBuilderTask extends Task {
                 String parameter = v.mPath;
                 File f = new File(parameter);
 
-                // compute the offset to get the relative path
-                int offset = parameter.length();
-                if (parameter.endsWith(File.separator) == false) {
-                    offset++;
-                }
-
-                ApkBuilderImpl.processNativeFolder(offset, f, mNativeLibraries);
+                ApkBuilderImpl.processNativeFolder(f, mNativeLibraries);
             }
 
             // create the Path item that will contain all the generated APKs
