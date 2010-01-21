@@ -528,7 +528,8 @@ public class Main {
 
         String projectDir = getProjectLocation(mSdkCommandLine.getParamLocationPath());
 
-        creator.updateTestProject(projectDir, mSdkCommandLine.getParamTestProjectMain());
+        creator.updateTestProject(projectDir, mSdkCommandLine.getParamTestProjectMain(),
+                mSdkManager);
     }
 
     /**
