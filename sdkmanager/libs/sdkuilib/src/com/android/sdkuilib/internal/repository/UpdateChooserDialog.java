@@ -286,10 +286,10 @@ final class UpdateChooserDialog extends GridDialog {
         // Automatically accept those with an empty license or no license
         for (ArchiveInfo ai : mArchives) {
             Archive a = ai.getNewArchive();
-            assert a != null;
-
-            String license = a.getParentPackage().getLicense();
-            ai.setAccepted(license == null || license.trim().length() == 0);
+            if (a != null) {
+                String license = a.getParentPackage().getLicense();
+                ai.setAccepted(license == null || license.trim().length() == 0);
+            }
         }
 
         // Fill the list with the replacement packages
@@ -391,6 +391,12 @@ final class UpdateChooserDialog extends GridDialog {
 
     /**
      * Updates the package description and license text depending on the selected package.
+     * <p/>
+     * Note that right now there is no logic to support more than one level of dependencies
+     * (e.g. A <- B <- C and A is disabled so C should be disabled; currently C's state depends
+     * solely on B's state). We currently don't need this. It would be straightforward to add
+     * if we had a need for it, though. This would require changes to {@link ArchiveInfo} and
+     * {@link UpdaterLogic}.
      */
     private void displayInformation(ArchiveInfo ai) {
         if (ai == null) {
@@ -399,12 +405,17 @@ final class UpdateChooserDialog extends GridDialog {
         }
 
         Archive aNew = ai.getNewArchive();
+        if (aNew == null) {
+            // Only missing archives have a null archive, so we shouldn't be here.
+            return;
+        }
+
         Package pNew = aNew.getParentPackage();
 
-        mPackageText.setText("");                                                //$NON-NLS-1$
+        mPackageText.setText("");                   //$NON-NLS-1$
 
         addSectionTitle("Package Description\n");
-        addText(pNew.getLongDescription(), "\n\n");          //$NON-NLS-1$
+        addText(pNew.getLongDescription(), "\n\n"); //$NON-NLS-1$
 
         Archive aOld = ai.getReplaced();
         if (aOld != null) {
@@ -439,18 +450,20 @@ final class UpdateChooserDialog extends GridDialog {
         if ((aDeps != null && aDeps.length > 0) || ai.isDependencyFor()) {
             addSectionTitle("Dependencies\n");
 
-            if (aDeps != null) {
+            if (aDeps != null && aDeps.length > 0) {
+                addText("This package depends on:");
                 for (ArchiveInfo aDep : aDeps) {
-                    addText(String.format("This package depends on %1$s.\n\n",
-                            aDep.getNewArchive().getParentPackage().getShortDescription()));
+                    addText(String.format("\n- %1$s",
+                            aDep.getShortDescription()));
                 }
+                addText("\n\n");
             }
 
             if (ai.isDependencyFor()) {
                 addText("This package is a dependency for:");
                 for (ArchiveInfo ai2 : ai.getDependenciesFor()) {
-                    addText("\n- " +
-                            ai2.getNewArchive().getParentPackage().getShortDescription());
+                    addText(String.format("\n- %1$s",
+                            ai2.getShortDescription()));
                 }
                 addText("\n\n");
             }
@@ -486,7 +499,7 @@ final class UpdateChooserDialog extends GridDialog {
                         // It only matters if the blocked one is accepted
                         if (ai2.isAccepted()) {
                             error = String.format("Package '%1$s' depends on this one.",
-                                    ai2.getNewArchive().getParentPackage().getShortDescription());
+                                    ai2.getShortDescription());
                             return;
                         }
                     }
@@ -497,7 +510,7 @@ final class UpdateChooserDialog extends GridDialog {
                         for (ArchiveInfo adep : adeps) {
                             if (!adep.isAccepted()) {
                                 error = String.format("This package depends on '%1$s'.",
-                                        adep.getNewArchive().getParentPackage().getShortDescription());
+                                        adep.getShortDescription());
                                 return;
                             }
                         }
@@ -514,8 +527,8 @@ final class UpdateChooserDialog extends GridDialog {
                         for (ArchiveInfo adep : adeps) {
                             if (!adep.isAccepted()) {
                                 error = String.format("Package '%1$s' depends on '%2$s'",
-                                        ai2.getNewArchive().getParentPackage().getShortDescription(),
-                                        adep.getNewArchive().getParentPackage().getShortDescription());
+                                        ai2.getShortDescription(),
+                                        adep.getShortDescription());
                                 return;
                             }
                         }
@@ -677,7 +690,7 @@ final class UpdateChooserDialog extends GridDialog {
             assert element instanceof ArchiveInfo;
             ArchiveInfo ai = (ArchiveInfo) element;
 
-            String desc = ai.getNewArchive().getParentPackage().getShortDescription();
+            String desc = ai.getShortDescription();
 
             if (ai.isDependencyFor()) {
                 desc += " [*]";
