@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.gscripts;
+package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 
 /**

@@ -16,11 +16,11 @@
 
 package com.android.adt.gscripts;
 
-import com.android.ide.eclipse.adt.gscripts.IViewRule;
-import com.android.ide.eclipse.adt.gscripts.INodeProxy;
-import com.android.ide.eclipse.adt.gscripts.DropZone;
-import com.android.ide.eclipse.adt.gscripts.Rect;
-import com.android.ide.eclipse.adt.gscripts.Point;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 
 import java.util.Map;
 import java.util.ArrayList;

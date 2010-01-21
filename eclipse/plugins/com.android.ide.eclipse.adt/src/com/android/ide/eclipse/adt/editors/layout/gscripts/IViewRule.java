@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.gscripts;
+package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 

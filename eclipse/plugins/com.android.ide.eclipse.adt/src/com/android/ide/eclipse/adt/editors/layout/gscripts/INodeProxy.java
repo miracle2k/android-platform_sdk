@@ -15,7 +15,7 @@
  */
 
 
-package com.android.ide.eclipse.adt.gscripts;
+package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 import groovy.lang.Closure;
 
