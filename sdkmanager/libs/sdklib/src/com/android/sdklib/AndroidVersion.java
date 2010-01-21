@@ -248,28 +248,41 @@ public final class AndroidVersion implements Comparable<AndroidVersion> {
      *         less than, equal to, or greater than the specified object.
      */
     public int compareTo(AndroidVersion o) {
+        return compareTo(o.mApiLevel, o.mCodename);
+    }
+
+    private int compareTo(int apiLevel, String codename) {
         if (mCodename == null) {
-            if (o.mCodename == null) {
-                return mApiLevel - o.mApiLevel;
+            if (codename == null) {
+                return mApiLevel - apiLevel;
             } else {
-                if (mApiLevel == o.mApiLevel) {
-                    return -1; // same api level but o is a preview for next version
+                if (mApiLevel == apiLevel) {
+                    return -1; // same api level but argument is a preview for next version
                 }
 
-                return mApiLevel - o.mApiLevel;
+                return mApiLevel - apiLevel;
             }
         } else {
             // 'this' is a preview
-            if (mApiLevel == o.mApiLevel) {
-                if (o.mCodename == null) {
+            if (mApiLevel == apiLevel) {
+                if (codename == null) {
                     return +1;
                 } else {
-                    return mCodename.compareTo(o.mCodename); // strange case where the 2 previews
+                    return mCodename.compareTo(codename);    // strange case where the 2 previews
                                                              // have different codename?
                 }
             } else {
-                return mApiLevel - o.mApiLevel;
+                return mApiLevel - apiLevel;
             }
         }
+    }
+
+    /**
+     * Compares this version with the specified API and returns true if this version
+     * is greater or equal than the requested API -- that is the current version is a
+     * suitable min-api-level for the argument API.
+     */
+    public boolean isGreaterOrEqualThan(int api) {
+        return compareTo(api, null /*codename*/) >= 0;
     }
 }

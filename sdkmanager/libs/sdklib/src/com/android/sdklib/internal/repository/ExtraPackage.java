@@ -34,6 +34,7 @@ import java.util.Properties;
 public class ExtraPackage extends MinToolsPackage {
 
     private static final String PROP_PATH          = "Extra.Path";         //$NON-NLS-1$
+    private static final String PROP_MIN_API_LEVEL = "Extra.MinApiLevel";  //$NON-NLS-1$
 
     /**
      * The install folder name. It must be a single-segment path.
@@ -44,6 +45,18 @@ public class ExtraPackage extends MinToolsPackage {
     private final String mPath;
 
     /**
+     * The minimal API level required by this extra package, if > 0,
+     * or {@link #MIN_API_LEVEL_NOT_SPECIFIED} if there is no such requirement.
+     */
+    private final int mMinApiLevel;
+
+    /**
+     * The value of {@link #mMinApiLevel} when the {@link SdkRepository#NODE_MIN_TOOLS_REV}
+     * was not specified in the XML source.
+     */
+    public static final int MIN_API_LEVEL_NOT_SPECIFIED = 0;
+
+    /**
      * Creates a new tool package from the attributes and elements of the given XML node.
      * <p/>
      * This constructor should throw an exception if the package cannot be created.
@@ -52,6 +65,9 @@ public class ExtraPackage extends MinToolsPackage {
         super(source, packageNode, licenses);
 
         mPath = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_PATH);
+
+        mMinApiLevel = XmlParserUtils.getXmlInt(packageNode, SdkRepository.NODE_MIN_API_LEVEL,
+                MIN_API_LEVEL_NOT_SPECIFIED);
     }
 
     /**
@@ -83,6 +99,13 @@ public class ExtraPackage extends MinToolsPackage {
 
         // The path argument comes before whatever could be in the properties
         mPath = path != null ? path : getProperty(props, PROP_PATH, path);
+
+        mMinApiLevel = Integer.parseInt(
+            getProperty(props, PROP_MIN_API_LEVEL, Integer.toString(MIN_API_LEVEL_NOT_SPECIFIED)));
+    }
+
+    public int getMinApiLevel() {
+        return mMinApiLevel;
     }
 
     /**
@@ -95,8 +118,8 @@ public class ExtraPackage extends MinToolsPackage {
 
         props.setProperty(PROP_PATH, mPath);
 
-        if (getMinToolsRevision() != MIN_TOOLS_REV_NOT_SPECIFIED) {
-            props.setProperty(PROP_MIN_TOOLS_REV, Integer.toString(getMinToolsRevision()));
+        if (getMinApiLevel() != MIN_API_LEVEL_NOT_SPECIFIED) {
+            props.setProperty(PROP_MIN_API_LEVEL, Integer.toString(getMinApiLevel()));
         }
     }
 
@@ -174,6 +197,10 @@ public class ExtraPackage extends MinToolsPackage {
 
         if (getMinToolsRevision() != MIN_TOOLS_REV_NOT_SPECIFIED) {
             s += String.format("\nRequires tools revision %1$d", getMinToolsRevision());
+        }
+
+        if (getMinApiLevel() != MIN_API_LEVEL_NOT_SPECIFIED) {
+            s += String.format("\nRequires SDK Platform Android API %1$s", getMinApiLevel());
         }
 
         return s;

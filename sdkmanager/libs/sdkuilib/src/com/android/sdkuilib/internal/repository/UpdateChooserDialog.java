@@ -435,13 +435,15 @@ final class UpdateChooserDialog extends GridDialog {
             }
         }
 
-        ArchiveInfo aDep = ai.getDependsOn();
-        if (aDep != null || ai.isDependencyFor()) {
+        ArchiveInfo[] aDeps = ai.getDependsOn();
+        if ((aDeps != null && aDeps.length > 0) || ai.isDependencyFor()) {
             addSectionTitle("Dependencies\n");
 
-            if (aDep != null) {
-                addText(String.format("This package depends on %1$s.\n\n",
-                        aDep.getNewArchive().getParentPackage().getShortDescription()));
+            if (aDeps != null) {
+                for (ArchiveInfo aDep : aDeps) {
+                    addText(String.format("This package depends on %1$s.\n\n",
+                            aDep.getNewArchive().getParentPackage().getShortDescription()));
+                }
             }
 
             if (ai.isDependencyFor()) {
@@ -490,11 +492,15 @@ final class UpdateChooserDialog extends GridDialog {
                     }
                 } else {
                     // Case where this package is accepted but blocked by another non-accepted one
-                    ArchiveInfo adep = ai.getDependsOn();
-                    if (adep != null && !adep.isAccepted()) {
-                        error = String.format("This package depends on '%1$s'.",
-                                adep.getNewArchive().getParentPackage().getShortDescription());
-                        return;
+                    ArchiveInfo[] adeps = ai.getDependsOn();
+                    if (adeps != null) {
+                        for (ArchiveInfo adep : adeps) {
+                            if (!adep.isAccepted()) {
+                                error = String.format("This package depends on '%1$s'.",
+                                        adep.getNewArchive().getParentPackage().getShortDescription());
+                                return;
+                            }
+                        }
                     }
                 }
             }
@@ -503,12 +509,16 @@ final class UpdateChooserDialog extends GridDialog {
             // package.
             for (ArchiveInfo ai2 : mArchives) {
                 if (ai2.isAccepted()) {
-                    ArchiveInfo adep = ai2.getDependsOn();
-                    if (adep != null && !adep.isAccepted()) {
-                        error = String.format("Package '%1$s' depends on '%2$s'",
-                                ai2.getNewArchive().getParentPackage().getShortDescription(),
-                                adep.getNewArchive().getParentPackage().getShortDescription());
-                        return;
+                    ArchiveInfo[] adeps = ai2.getDependsOn();
+                    if (adeps != null) {
+                        for (ArchiveInfo adep : adeps) {
+                            if (!adep.isAccepted()) {
+                                error = String.format("Package '%1$s' depends on '%2$s'",
+                                        ai2.getNewArchive().getParentPackage().getShortDescription(),
+                                        adep.getNewArchive().getParentPackage().getShortDescription());
+                                return;
+                            }
+                        }
                     }
                 }
             }
