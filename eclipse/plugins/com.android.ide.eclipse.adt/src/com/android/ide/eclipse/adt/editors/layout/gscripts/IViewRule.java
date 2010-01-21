@@ -82,7 +82,6 @@ public interface IViewRule {
     Map<?, ?> getDefaultAttributes();
 
 
-
     // ==== Drag'n'drop support ====
 
 
@@ -123,7 +122,4 @@ public interface IViewRule {
             INodeProxy targetNode,
             DropZone selectedZone,
             Point where);
-
-    ArrayList<DropZone> moveStart(INodeProxy sourceNode, INodeProxy targetNode, boolean copy);
-    void moveFinish(INodeProxy sourceNode, INodeProxy targetNode, boolean copy, DropZone selectedZone);
 }
