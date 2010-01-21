@@ -40,7 +40,7 @@ public class SdkRepository {
 
     /** The latest version of the sdk-repository XML Schema.
      *  Valid version numbers are between 1 and this number, included. */
-    public static final int NS_LATEST_VERSION = 1;
+    public static final int NS_LATEST_VERSION = 2;
 
     /** The XML namespace of the latest sdk-repository XML. */
     public static final String NS_SDK_REPOSITORY = getSchemaUri(NS_LATEST_VERSION);
@@ -75,6 +75,8 @@ public class SdkRepository {
     public static final String NODE_RELEASE_URL   = "release-url";              //$NON-NLS-1$
     /** The optional minimal tools revision required by platform & extra packages. */
     public static final String NODE_MIN_TOOLS_REV = "min-tools-rev";            //$NON-NLS-1$
+    /** The optional minimal API level required by extra packages. */
+    public static final String NODE_MIN_API_LEVEL = "min-api-level";            //$NON-NLS-1$
 
     /** The version, a string, for platform packages. */
     public static final String NODE_VERSION   = "version";                      //$NON-NLS-1$

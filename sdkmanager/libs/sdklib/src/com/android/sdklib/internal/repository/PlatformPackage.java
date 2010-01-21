@@ -97,10 +97,6 @@ public class PlatformPackage extends MinToolsPackage implements IPackageVersion 
         if (mVersionName != null) {
             props.setProperty(PROP_VERSION, mVersionName);
         }
-
-        if (getMinToolsRevision() != MIN_TOOLS_REV_NOT_SPECIFIED) {
-            props.setProperty(PROP_MIN_TOOLS_REV, Integer.toString(getMinToolsRevision()));
-        }
     }
 
     /** Returns the version, a string, for platform packages. */
