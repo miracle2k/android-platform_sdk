@@ -298,7 +298,7 @@ class UpdaterData {
                 }
 
                 int numInstalled = 0;
-                for (ArchiveInfo ai : result) {
+                nextArchive: for (ArchiveInfo ai : result) {
                     Archive archive = ai.getNewArchive();
 
                     int nextProgress = monitor.getProgress() + progressPerArchive;
@@ -307,13 +307,18 @@ class UpdaterData {
                             break;
                         }
 
-                        ArchiveInfo adep = ai.getDependsOn();
-                        if (adep != null && !installedArchives.contains(adep.getNewArchive())) {
-                            // This archive depends on another one that was not installed.
-                            // Skip it.
-                            monitor.setResult("Skipping '%1$s'; it depends on '%2$s' which was not installed.",
-                                    archive.getParentPackage().getShortDescription(),
-                                    adep.getNewArchive().getParentPackage().getShortDescription());
+                        ArchiveInfo[] adeps = ai.getDependsOn();
+                        if (adeps != null) {
+                            for (ArchiveInfo adep : adeps) {
+                                if (!installedArchives.contains(adep.getNewArchive())) {
+                                    // This archive depends on another one that was not installed.
+                                    // Skip it.
+                                    monitor.setResult("Skipping '%1$s'; it depends on '%2$s' which was not installed.",
+                                            archive.getParentPackage().getShortDescription(),
+                                            adep.getNewArchive().getParentPackage().getShortDescription());
+                                    continue nextArchive;
+                                }
+                            }
                         }
 
                         if (archive.install(mOsSdkRoot, forceHttp, mSdkManager, monitor)) {
