@@ -64,6 +64,7 @@ public class ApkBuilderTask extends Task {
     private String mBaseName;
     private boolean mVerbose = false;
     private boolean mSigned = true;
+    private boolean mDebug = false;
 
     private final ArrayList<Value> mZipList = new ArrayList<Value>();
     private final ArrayList<Value> mFileList = new ArrayList<Value>();
@@ -108,6 +109,14 @@ public class ApkBuilderTask extends Task {
      */
     public void setSigned(boolean signed) {
         mSigned = signed;
+    }
+
+    /**
+     * Sets the value of the "debug" attribute.
+     * @param debug the debug mode value.
+     */
+    public void setDebug(boolean debug) {
+        mDebug = debug;
     }
 
     /**
@@ -171,6 +180,7 @@ public class ApkBuilderTask extends Task {
         ApkBuilderImpl apkBuilder = new ApkBuilderImpl();
         apkBuilder.setVerbose(mVerbose);
         apkBuilder.setSignedPackage(mSigned);
+        apkBuilder.setDebugMode(mDebug);
 
         try {
             // setup the list of everything that needs to go in the archive.
@@ -207,7 +217,7 @@ public class ApkBuilderTask extends Task {
                 String parameter = v.mPath;
                 File f = new File(parameter);
 
-                ApkBuilderImpl.processNativeFolder(f, mNativeLibraries);
+                ApkBuilderImpl.processNativeFolder(f, mDebug, mNativeLibraries);
             }
 
             // create the Path item that will contain all the generated APKs

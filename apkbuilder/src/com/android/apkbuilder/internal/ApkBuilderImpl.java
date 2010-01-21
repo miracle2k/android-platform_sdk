@@ -49,6 +49,7 @@ public final class ApkBuilderImpl {
             Pattern.CASE_INSENSITIVE);
 
     private final static String NATIVE_LIB_ROOT = "lib/";
+    private final static String GDBSERVER_NAME = "gdbserver";
 
     /**
      * A File to be added to the APK archive.
@@ -67,6 +68,7 @@ public final class ApkBuilderImpl {
     private JavaResourceFilter mResourceFilter = new JavaResourceFilter();
     private boolean mVerbose = false;
     private boolean mSignedPackage = true;
+    private boolean mDebugMode = false;
     /** the optional type of the debug keystore. If <code>null</code>, the default */
     private String mStoreType = null;
 
@@ -76,6 +78,10 @@ public final class ApkBuilderImpl {
 
     public void setSignedPackage(boolean signedPackage) {
         mSignedPackage = signedPackage;
+    }
+
+    public void setDebugMode(boolean debugMode) {
+        mDebugMode = debugMode;
     }
 
     public void run(String[] args) throws WrongOptionException, FileNotFoundException,
@@ -99,6 +105,8 @@ public final class ApkBuilderImpl {
 
             if ("-v".equals(argument)) {
                 mVerbose = true;
+            } else if ("-d".equals(argument)) {
+                mDebugMode = true;
             } else if ("-u".equals(argument)) {
                 mSignedPackage = false;
             } else if ("-z".equals(argument)) {
@@ -140,7 +148,7 @@ public final class ApkBuilderImpl {
                     throw new WrongOptionException("Missing value for -nf");
                 }
 
-                processNativeFolder(new File(args[index++]), nativeLibraries);
+                processNativeFolder(new File(args[index++]), mDebugMode, nativeLibraries);
             } else if ("-storetype".equals(argument)) {
                 // quick check on the next argument.
                 if (index == args.length) {
@@ -311,8 +319,8 @@ public final class ApkBuilderImpl {
      * @param nativeLibraries the collection to add native libraries to.
      * @throws ApkCreationException
      */
-    public static void processNativeFolder(File root, Collection<ApkFile> nativeLibraries)
-            throws ApkCreationException {
+    public static void processNativeFolder(File root, boolean debugMode,
+            Collection<ApkFile> nativeLibraries) throws ApkCreationException {
         if (root.isDirectory() == false) {
             throw new ApkCreationException(root.getAbsolutePath() + " is not a folder!");
         }
@@ -325,8 +333,11 @@ public final class ApkBuilderImpl {
                     File[] libs = abi.listFiles();
                     if (libs != null) {
                         for (File lib : libs) {
-                            if (lib.isFile() && // ignore folders
-                                    PATTERN_NATIVELIB_EXT.matcher(lib.getName()).matches()) {
+                            // only consider files that are .so or, if in debug mode, that
+                            // are gdbserver executables
+                            if (lib.isFile() &&
+                                    (PATTERN_NATIVELIB_EXT.matcher(lib.getName()).matches() ||
+                                            (debugMode && GDBSERVER_NAME.equals(lib.getName())))) {
                                 String path =
                                     NATIVE_LIB_ROOT + abi.getName() + "/" + lib.getName();
 
