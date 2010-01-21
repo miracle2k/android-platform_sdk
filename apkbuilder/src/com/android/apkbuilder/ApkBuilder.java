@@ -85,6 +85,7 @@ public final class ApkBuilder {
         System.err.println("            [-f inputfile] [-rf input-folder] [-rj -input-path]");
         System.err.println("");
         System.err.println("    -v      Verbose.");
+        System.err.println("    -d      Debug Mode: Includes debug files in the APK file.");
         System.err.println("    -u      Creates an unsigned package.");
         System.err.println("    -storetype Forces the KeyStore type. If ommited the default is used.");
         System.err.println("");

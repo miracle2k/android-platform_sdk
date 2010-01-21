@@ -134,7 +134,7 @@
 
     <!-- This is macro that enable passing variable list of external jar files to ApkBuilder
          Example of use:
-         <package-helper>
+         <package-helper sign.package="true" debug.mode="true">
              <extra-jars>
                 <jarfolder path="my_jars" />
                 <jarfile path="foo/bar.jar" />
@@ -143,12 +143,14 @@
          </package-helper> -->
     <macrodef name="package-helper">
         <attribute name="sign.package" />
+        <attribute name="debug.mode" />
         <element name="extra-jars" optional="yes" />
         <sequential>
             <apkbuilder
                     outfolder="${out.absolute.dir}"
                     basename="${ant.project.name}"
                     signed="@{sign.package}"
+                    debug="@{debug.mode}"
                     verbose="${verbose}">
                 <file path="${intermediate.dex.file}" />
                 <sourcefolder path="${source.absolute.dir}" />
@@ -278,12 +280,12 @@
 
     <!-- Packages the application and sign it with a debug key. -->
     <target name="-package-debug-sign" depends="-dex, -package-resources">
-        <package-helper sign.package="true" />
+        <package-helper sign.package="true" debug.mode="true" />
     </target>
 
     <!-- Packages the application without signing it. -->
-    <target name="-package-no-sign" depends="-dex, -package-resources">
-        <package-helper sign.package="false" />
+    <target name="-package-release" depends="-dex, -package-resources">
+        <package-helper sign.package="false" debug.mode="false" />
     </target>
 
     <target name="-compile-tested-if-test" if="tested.project.dir" unless="do.not.compile.again">
@@ -315,7 +317,7 @@
         <echo>and run zipalign from the Android SDK tools.</echo>
     </target>
 
-    <target name="release" depends="-package-no-sign, -release-nosign" if="release.sign"
+    <target name="release" depends="-package-release, -release-nosign" if="release.sign"
                 description="Builds the application. The generated apk file must be signed before
                             it is published.">
         <!-- Gets passwords -->
@@ -408,7 +410,7 @@
 
     <!-- Invoked from external files for code coverage purposes -->
     <target name="-package-with-emma" depends="-dex-instrumented, -package-resources">
-        <package-helper sign.package="true">
+        <package-helper sign.package="true" debug.mode="true">
             <extra-jars>
                 <!-- Injected from external file -->
                 <jarfile path="${emma.dir}/emma_device.jar" />
