@@ -401,7 +401,10 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
                     if (projectTarget.isPlatform()) { // means this can run on any device as long
                                                       // as api level is high enough
                         AndroidVersion deviceVersion = Sdk.getDeviceVersion(d);
-                        if (deviceVersion.canRun(projectTarget.getVersion())) {
+                        // the deviceVersion may be null if it wasn't yet queried (device just
+                        // plugged in or emulator just booting up.
+                        if (deviceVersion != null &&
+                                deviceVersion.canRun(projectTarget.getVersion())) {
                             // device is compatible with project
                             compatibleRunningAvds.put(d, null);
                             continue;
