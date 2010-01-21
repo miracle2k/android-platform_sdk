@@ -62,9 +62,17 @@ public class UpdaterLogicTest extends TestCase {
         ArrayList<Package> remote = new ArrayList<Package>();
 
         // a2 depends on p2, which is not in the locals
-        Package[] locals = { p1, a1 };
+        Package[] localPkgs = { p1, a1 };
+        ArchiveInfo[] locals = mul.createLocalArchives(localPkgs);
+
         RepoSource[] sources = null;
-        assertNull(mul.findPlatformDependency(a2, out, selected, remote, sources, locals));
+
+        // a2 now depends on a "fake" archive info with no newArchive that wraps the missing
+        // underlying platform
+        ArchiveInfo fai = mul.findPlatformDependency(a2, out, selected, remote, sources, locals);
+        assertNotNull(fai);
+        assertNull(fai.getNewArchive());
+        assertTrue(fai.isRejected());
         assertEquals(0, out.size());
 
         // p2 is now selected, and should be scheduled for install in out
@@ -90,9 +98,17 @@ public class UpdaterLogicTest extends TestCase {
         ArrayList<Package> remote = new ArrayList<Package>();
 
         // p2 depends on t2, which is not locally installed
-        Package[] locals = { t1 };
+        Package[] localPkgs = { t1 };
+        ArchiveInfo[] locals = mul.createLocalArchives(localPkgs);
+
         RepoSource[] sources = null;
-        assertNull(mul.findToolsDependency(p2, out, selected, remote, sources, locals));
+
+        // p2 now depends on a "fake" archive info with no newArchive that wraps the missing
+        // underlying tool
+        ArchiveInfo fai = mul.findToolsDependency(p2, out, selected, remote, sources, locals);
+        assertNotNull(fai);
+        assertNull(fai.getNewArchive());
+        assertTrue(fai.isRejected());
         assertEquals(0, out.size());
 
         // t2 is now selected and can be used as a dependency
