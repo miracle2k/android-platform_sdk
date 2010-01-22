@@ -264,7 +264,22 @@ public final class SetupTask extends ImportTask {
 
             XPath xPath = AndroidXPathFactory.newXPath();
 
+            // check the package name.
             String value = xPath.evaluate(
+                    "/"  + AndroidManifest.NODE_MANIFEST +
+                    "/@" + AndroidManifest.ATTRIBUTE_PACKAGE,
+                    new InputSource(new FileInputStream(manifest)));
+            if (value != null) { // aapt will complain if it's missing.
+                // only need to check that the package has 2 segments
+                if (value.indexOf('.') == -1) {
+                    throw new BuildException(String.format(
+                            "Application package '%1$s' must have a minimum of 2 segments.",
+                            value));
+                }
+            }
+
+            // check the minSdkVersion value
+            value = xPath.evaluate(
                     "/"  + AndroidManifest.NODE_MANIFEST +
                     "/"  + AndroidManifest.NODE_USES_SDK +
                     "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX + ":" +
