@@ -35,7 +35,8 @@ import java.util.Properties;
 /**
  * Represents an add-on XML node in an SDK repository.
  */
-public class AddonPackage extends Package implements IPackageVersion {
+public class AddonPackage extends Package
+    implements IPackageVersion, IPlatformDependency {
 
     private static final String PROP_NAME      = "Addon.Name";      //$NON-NLS-1$
     private static final String PROP_VENDOR    = "Addon.Vendor";    //$NON-NLS-1$
@@ -177,7 +178,11 @@ public class AddonPackage extends Package implements IPackageVersion {
         return mName;
     }
 
-    /** Returns the version, for platform, add-on and doc packages. */
+    /**
+     * Returns the version of the platform dependency of this package.
+     * <p/>
+     * An add-on has the same {@link AndroidVersion} as the platform it depends on.
+     */
     public AndroidVersion getVersion() {
         return mVersion;
     }
