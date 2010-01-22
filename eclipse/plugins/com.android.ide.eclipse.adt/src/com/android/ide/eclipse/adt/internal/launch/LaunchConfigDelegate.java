@@ -45,7 +45,7 @@ import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
  */
 public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
     final static int INVALID_DEBUG_PORT = -1;
-    
+
     public final static String ANDROID_LAUNCH_TYPE_ID =
         "com.android.ide.eclipse.adt.debug.LaunchConfigType"; //$NON-NLS-1$
 
@@ -62,7 +62,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
      * </ul>
      */
     public final static String ATTR_LAUNCH_ACTION = AdtPlugin.PLUGIN_ID + ".action"; //$NON-NLS-1$
-    
+
     /** Default launch action. This launches the activity that is setup to be found in the HOME
      * screen.
      */
@@ -80,7 +80,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
     public static final String ATTR_ACTIVITY = AdtPlugin.PLUGIN_ID + ".activity"; //$NON-NLS-1$
 
     public static final String ATTR_AVD_NAME = AdtPlugin.PLUGIN_ID + ".avd"; //$NON-NLS-1$
-    
+
     public static final String ATTR_SPEED = AdtPlugin.PLUGIN_ID + ".speed"; //$NON-NLS-1$
 
     /**
@@ -105,7 +105,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
     public static final String ATTR_NO_BOOT_ANIM = AdtPlugin.PLUGIN_ID + ".nobootanim"; //$NON-NLS-1$
     public static final boolean DEFAULT_NO_BOOT_ANIM = false;
 
-    public static final String ATTR_DEBUG_PORT = 
+    public static final String ATTR_DEBUG_PORT =
         AdtPlugin.PLUGIN_ID + ".debugPort"; //$NON-NLS-1$
 
     public void launch(ILaunchConfiguration configuration, String mode,
@@ -174,7 +174,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                 // We need to ask the user to restart eclipse.
                 // This shouldn't happen, but it's better to let the user know in case it does.
                 if (connections == -1 || restarts == -1) {
-                    AdtPlugin.printErrorToConsole(project, 
+                    AdtPlugin.printErrorToConsole(project,
                             "The connection to adb is down, and a severe error has occured.",
                             "You must restart adb and Eclipse.",
                             String.format(
@@ -182,7 +182,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                                     AdtPlugin.getOsAbsoluteAdb()));
                     return;
                 }
-                
+
                 if (restarts == 0) {
                     AdtPlugin.printErrorToConsole(project,
                             "Connection with adb was interrupted.",
@@ -193,14 +193,14 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                             "Connection with adb was interrupted, and attempts to reconnect have failed.",
                             String.format("%1$s attempts have been made to restart adb.", restarts),
                             "You may want to manually restart adb from the Devices view.");
-                    
+
                 }
                 return;
             } finally {
                 androidLaunch.stopLaunch();
             }
         }
-        
+
         // since adb is working, we let the user know
         // TODO have a verbose mode for launch with more info (or some of the less useful info we now have).
         AdtPlugin.printToConsole(project, "adb is running normally.");
@@ -225,7 +225,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
         AndroidManifestParser manifestParser = AndroidManifestParser.parse(
                 BaseProjectHelper.getJavaProject(project), null /* errorListener */,
                 true /* gatherData */, false /* markErrors */);
-        
+
         if (manifestParser == null) {
             AdtPlugin.printErrorToConsole(project, "Failed to parse AndroidManifest: aborting!");
             androidLaunch.stopLaunch();
@@ -240,16 +240,16 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
             IProgressMonitor monitor, IProject project, AndroidLaunch androidLaunch,
             AndroidLaunchConfiguration config, AndroidLaunchController controller,
             IFile applicationPackage, AndroidManifestParser manifestParser) {
-        
+
        String activityName = null;
-        
-        if (config.mLaunchAction == ACTION_ACTIVITY) { 
+
+        if (config.mLaunchAction == ACTION_ACTIVITY) {
             // Get the activity name defined in the config
             activityName = getActivityName(configuration);
-    
+
             // Get the full activity list and make sure the one we got matches.
             Activity[] activities = manifestParser.getActivities();
-    
+
             // first we check that there are, in fact, activities.
             if (activities.length == 0) {
                 // if the activities list is null, then the manifest is empty
@@ -272,7 +272,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                     revertToNoActionLaunch(project, config);
                 }
             } else {
-    
+
                 // check the one we got from the config matches any from the list
                 boolean match = false;
                 for (Activity a : activities) {
@@ -281,7 +281,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                         break;
                     }
                 }
-    
+
                 // if we didn't find a match, we revert to the default activity if any.
                 if (match == false) {
                     AdtPlugin.printErrorToConsole(project,
@@ -289,10 +289,8 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                     Activity launcherActivity = manifestParser.getLauncherActivity();
                     if (launcherActivity != null) {
                         activityName = launcherActivity.getName();
-                    }
-            
-                    // if there's no default activity. We revert to a sync-only launch.
-                    if (activityName == null) {
+                    } else {
+                        // if there's no default activity. We revert to a sync-only launch.
                         revertToNoActionLaunch(project, config);
                     }
                 }
@@ -302,15 +300,17 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
             if (launcherActivity != null) {
                 activityName = launcherActivity.getName();
             }
-            
+
             // if there's no default activity. We revert to a sync-only launch.
             if (activityName == null) {
                 revertToNoActionLaunch(project, config);
             }
         }
 
-        IAndroidLaunchAction launchAction = new EmptyLaunchAction();
-        if (activityName != null) {
+        IAndroidLaunchAction launchAction = null;
+        if (config.mLaunchAction == ACTION_DO_NOTHING || activityName == null) {
+            launchAction = new EmptyLaunchAction();
+        } else {
             launchAction = new ActivityLaunchAction(activityName, controller);
         }
 
@@ -321,7 +321,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                 manifestParser.getApiLevelRequirement(), launchAction, config, androidLaunch,
                 monitor);
     }
-    
+
     @Override
     public boolean buildForLaunch(ILaunchConfiguration configuration,
             String mode, IProgressMonitor monitor) throws CoreException {
@@ -411,7 +411,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
 
         return (activityName != empty) ? activityName : null;
     }
-    
+
     private final void revertToNoActionLaunch(IProject project, AndroidLaunchConfiguration config) {
         AdtPlugin.printErrorToConsole(project,
                 "No Launcher activity found!",
