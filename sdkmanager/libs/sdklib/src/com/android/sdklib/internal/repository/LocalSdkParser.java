@@ -106,17 +106,17 @@ public class LocalSdkParser {
                         // Get the samples dir for a platform if it is located in the new
                         // root /samples dir. We purposely ignore "old" samples that are
                         // located under the platform dir.
-                        String s = target.getPath(IAndroidTarget.SAMPLES);
-                        File f = new File(s);
-                        if (f.exists() && f.getParentFile().equals(samplesRoot)) {
-                            Properties props2 = parseProperties(
-                                    new File(f, SdkConstants.FN_SOURCE_PROP));
-                            SamplePackage pkg2 = new SamplePackage(target, props2);
-                            packages.add(pkg2);
-                            visited.add(f);
+                        File samplesDir = new File(target.getPath(IAndroidTarget.SAMPLES));
+                        if (samplesDir.exists() && samplesDir.getParentFile().equals(samplesRoot)) {
+                            Properties samplesProps = parseProperties(
+                                    new File(samplesDir, SdkConstants.FN_SOURCE_PROP));
+                            if (samplesProps != null) {
+                                SamplePackage pkg2 = new SamplePackage(target, samplesProps);
+                                packages.add(pkg2);
+                            }
+                            visited.add(samplesDir);
                         }
                     }
-
                 } else {
                     pkg = new AddonPackage(target, props);
                 }
@@ -130,28 +130,30 @@ public class LocalSdkParser {
             }
         }
 
-        scanExtra(osSdkRoot, visited, packages, log);
-
-        // TODO scanSample folder for samples that have not been visited yet
-        // (e.g. for platforms that are not installed)
+        scanMissingSamples(osSdkRoot, visited, packages, log);
+        scanExtras(osSdkRoot, visited, packages, log);
 
         mPackages = packages.toArray(new Package[packages.size()]);
         return mPackages;
     }
 
     /**
-     * Find any other directory what we haven't successfully visited and
-     * assume they contain extra packages.
-     * @param log
+     * Find any other directory <em>at the top level</em> that hasn't been visited yet
+     * and assume they contain extra packages. This is <em>not</em> a recursive search.
      */
-    private void scanExtra(String osSdkRoot,
+    private void scanExtras(String osSdkRoot,
             HashSet<File> visited,
             ArrayList<Package> packages,
             ISdkLog log) {
         File root = new File(osSdkRoot);
+
+        if (!root.isDirectory()) {
+            // This should not happen. It makes listFiles() return null so let's avoid it.
+            return;
+        }
+
         for (File dir : root.listFiles()) {
             if (dir.isDirectory() && !visited.contains(dir)) {
-
                 Properties props = parseProperties(new File(dir, SdkConstants.FN_SOURCE_PROP));
                 if (props != null) {
                     try {
@@ -171,7 +173,42 @@ public class LocalSdkParser {
                         // We only accept this as an extra package if it has a valid local path.
                         if (pkg.isPathValid()) {
                             packages.add(pkg);
+                            visited.add(dir);
                         }
+                    } catch (Exception e) {
+                        log.error(e, null);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Find any other sub-directories under the /samples root that hasn't been visited yet
+     * and assume they contain sample packages. This is <em>not</em> a recursive search.
+     * <p/>
+     * The use case is to find samples dirs under /samples when their target isn't loaded.
+     */
+    private void scanMissingSamples(String osSdkRoot,
+            HashSet<File> visited,
+            ArrayList<Package> packages,
+            ISdkLog log) {
+        File root = new File(osSdkRoot);
+        root = new File(root, SdkConstants.FD_SAMPLES);
+
+        if (!root.isDirectory()) {
+            // It makes listFiles() return null so let's avoid it.
+            return;
+        }
+
+        for (File dir : root.listFiles()) {
+            if (dir.isDirectory() && !visited.contains(dir)) {
+                Properties props = parseProperties(new File(dir, SdkConstants.FN_SOURCE_PROP));
+                if (props != null) {
+                    try {
+                        SamplePackage pkg = new SamplePackage(dir.getAbsolutePath(), props);
+                        packages.add(pkg);
+                        visited.add(dir);
                     } catch (Exception e) {
                         log.error(e, null);
                     }
