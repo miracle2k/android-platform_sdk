@@ -90,7 +90,9 @@ public class LocalSdkParser {
             visited.add(dir);
         }
 
-        // for platforms and add-ons, rely on the SdkManager parser
+        File samplesRoot = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
+
+        // for platforms, add-ons and samples, rely on the SdkManager parser
         for(IAndroidTarget target : sdkManager.getTargets()) {
 
             Properties props = parseProperties(new File(target.getLocation(),
@@ -99,6 +101,22 @@ public class LocalSdkParser {
             try {
                 if (target.isPlatform()) {
                     pkg = new PlatformPackage(target, props);
+
+                    if (samplesRoot.isDirectory()) {
+                        // Get the samples dir for a platform if it is located in the new
+                        // root /samples dir. We purposely ignore "old" samples that are
+                        // located under the platform dir.
+                        String s = target.getPath(IAndroidTarget.SAMPLES);
+                        File f = new File(s);
+                        if (f.exists() && f.getParentFile().equals(samplesRoot)) {
+                            Properties props2 = parseProperties(
+                                    new File(f, SdkConstants.FN_SOURCE_PROP));
+                            SamplePackage pkg2 = new SamplePackage(target, props2);
+                            packages.add(pkg2);
+                            visited.add(f);
+                        }
+                    }
+
                 } else {
                     pkg = new AddonPackage(target, props);
                 }
@@ -113,6 +131,9 @@ public class LocalSdkParser {
         }
 
         scanExtra(osSdkRoot, visited, packages, log);
+
+        // TODO scanSample folder for samples that have not been visited yet
+        // (e.g. for platforms that are not installed)
 
         mPackages = packages.toArray(new Package[packages.size()]);
         return mPackages;

@@ -289,4 +289,19 @@
         <sdk:min-api-level>42</sdk:min-api-level>
     </sdk:extra>
 
+    <sdk:sample>
+        <sdk:api-level>14</sdk:api-level>
+        <sdk:revision>24</sdk:revision>
+        <sdk:archives>
+            <sdk:archive os="any" arch="any">
+                <sdk:size>65537</sdk:size>
+                <sdk:checksum type="sha1">3822ae37115ebf13412bbef91339ee0d9454525e</sdk:checksum>
+                <sdk:url>distrib/sample_duff.zip</sdk:url>
+            </sdk:archive>
+        </sdk:archives>
+        <sdk:description>Some sample package</sdk:description>
+        <sdk:desc-url>http://www.example.com/sample.html</sdk:desc-url>
+        <sdk:min-tools-rev>5</sdk:min-tools-rev>
+    </sdk:sample>
+
 </sdk:sdk-repository>

@@ -723,6 +723,8 @@ public class RepoSource implements IDescription {
                                 p = new DocPackage(this, child, licenses);
                             } else if (SdkRepository.NODE_TOOL.equals(name)) {
                                 p = new ToolPackage(this, child, licenses);
+                            } else if (SdkRepository.NODE_SAMPLE.equals(name)) {
+                                p = new SamplePackage(this, child, licenses);
                             }
                         }
 

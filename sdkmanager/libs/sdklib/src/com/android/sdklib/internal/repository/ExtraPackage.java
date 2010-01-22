@@ -31,7 +31,8 @@ import java.util.Properties;
 /**
  * Represents a extra XML node in an SDK repository.
  */
-public class ExtraPackage extends MinToolsPackage {
+public class ExtraPackage extends MinToolsPackage
+    implements IMinApiLevelDependency {
 
     private static final String PROP_PATH          = "Extra.Path";         //$NON-NLS-1$
     private static final String PROP_MIN_API_LEVEL = "Extra.MinApiLevel";  //$NON-NLS-1$
@@ -49,12 +50,6 @@ public class ExtraPackage extends MinToolsPackage {
      * or {@link #MIN_API_LEVEL_NOT_SPECIFIED} if there is no such requirement.
      */
     private final int mMinApiLevel;
-
-    /**
-     * The value of {@link #mMinApiLevel} when the {@link SdkRepository#NODE_MIN_TOOLS_REV}
-     * was not specified in the XML source.
-     */
-    public static final int MIN_API_LEVEL_NOT_SPECIFIED = 0;
 
     /**
      * Creates a new tool package from the attributes and elements of the given XML node.
@@ -104,10 +99,6 @@ public class ExtraPackage extends MinToolsPackage {
             getProperty(props, PROP_MIN_API_LEVEL, Integer.toString(MIN_API_LEVEL_NOT_SPECIFIED)));
     }
 
-    public int getMinApiLevel() {
-        return mMinApiLevel;
-    }
-
     /**
      * Save the properties of the current packages in the given {@link Properties} object.
      * These properties will later be give the constructor that takes a {@link Properties} object.
@@ -121,6 +112,14 @@ public class ExtraPackage extends MinToolsPackage {
         if (getMinApiLevel() != MIN_API_LEVEL_NOT_SPECIFIED) {
             props.setProperty(PROP_MIN_API_LEVEL, Integer.toString(getMinApiLevel()));
         }
+    }
+
+    /**
+     * Returns the minimal API level required by this extra package, if > 0,
+     * or {@link #MIN_API_LEVEL_NOT_SPECIFIED} if there is no such requirement.
+     */
+    public int getMinApiLevel() {
+        return mMinApiLevel;
     }
 
     /**

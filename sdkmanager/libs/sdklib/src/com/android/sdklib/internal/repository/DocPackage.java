@@ -31,6 +31,10 @@ import java.util.Properties;
 
 /**
  * Represents a doc XML node in an SDK repository.
+ * <p/>
+ * Note that a doc package has a version and thus implements {@link IPackageVersion}.
+ * However there is no mandatory dependency that limits installation so this does not
+ * implement {@link IPlatformDependency}.
  */
 public class DocPackage extends Package implements IPackageVersion {
 
