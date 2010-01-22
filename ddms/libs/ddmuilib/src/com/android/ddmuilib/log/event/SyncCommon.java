@@ -152,7 +152,8 @@ abstract public class SyncCommon extends EventDisplay {
      * @return number series number associated with the authority
      */
     protected int getAuth(String authname) throws InvalidTypeException {
-        if ("calendar".equals(authname) || "cl".equals(authname)) {
+        if ("calendar".equals(authname) || "cl".equals(authname) ||
+                "com.android.calendar".equals(authname)) {
             return CALENDAR;
         } else if ("contacts".equals(authname) || "cp".equals(authname) ||
                 "com.android.contacts".equals(authname)) {
