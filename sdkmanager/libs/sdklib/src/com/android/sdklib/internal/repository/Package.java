@@ -31,8 +31,7 @@ import java.util.Properties;
 
 /**
  * A {@link Package} is the base class for "something" that can be downloaded from
- * the SDK repository -- subclasses include {@link PlatformPackage}, {@link AddonPackage},
- * {@link DocPackage} and {@link ToolPackage}.
+ * the SDK repository.
  * <p/>
  * A package has some attributes (revision, description) and a list of archives
  * which represent the downloadable bits.

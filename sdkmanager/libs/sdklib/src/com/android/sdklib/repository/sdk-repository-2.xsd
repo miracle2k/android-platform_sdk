@@ -47,6 +47,7 @@
             <xsd:element name="add-on"   type="sr2:addonType"    />
             <xsd:element name="tool"     type="sr2:toolType"     />
             <xsd:element name="doc"      type="sr2:docType"      />
+            <xsd:element name="sample"   type="sr2:sampleType"   />
             <xsd:element name="extra"    type="sr2:extraType"    />
             <xsd:element name="license"  type="sr2:licenseType"  />
         </xsd:choice>
@@ -199,6 +200,41 @@
             <xsd:element name="release-url"  type="xsd:token"       minOccurs="0" />
             <!-- A list of file archives for this package. -->
             <xsd:element name="archives"     type="sr2:archivesType" />
+        </xsd:all>
+    </xsd:complexType>
+
+
+    <!-- The definition of an SDK sample package. -->
+
+    <xsd:complexType name="sampleType" >
+        <xsd:annotation>
+            <xsd:documentation>An SDK sample package.</xsd:documentation>
+        </xsd:annotation>
+        <xsd:all>
+            <!-- The Android API Level for the documentation. An int > 0. -->
+            <xsd:element name="api-level" type="xsd:positiveInteger"  />
+            <!-- The optional codename for this doc, if it's a preview. -->
+            <xsd:element name="codename"  type="xsd:string" minOccurs="0" />
+
+            <!-- The revision, an int > 0, incremented each time a new
+                 package is generated. -->
+            <xsd:element name="revision"     type="xsd:positiveInteger" />
+            <!-- The optional license of this package. If present, users will have
+                 to agree to it before downloading. -->
+            <xsd:element name="uses-license" type="sr2:usesLicenseType" minOccurs="0" />
+            <!-- The optional description of this package. -->
+            <xsd:element name="description"  type="xsd:string"      minOccurs="0" />
+            <!-- The optional description URL of this package -->
+            <xsd:element name="desc-url"     type="xsd:token"       minOccurs="0" />
+            <!-- The optional release note for this package. -->
+            <xsd:element name="release-note" type="xsd:string"      minOccurs="0" />
+            <!-- The optional release note URL of this package -->
+            <xsd:element name="release-url"  type="xsd:token"       minOccurs="0" />
+            <!-- A list of file archives for this package. -->
+            <xsd:element name="archives"     type="sr2:archivesType" />
+            <!-- The minimal revision of tools required by this package.
+                 Optional. If present, must be an int > 0. -->
+            <xsd:element name="min-tools-rev" type="xsd:positiveInteger" minOccurs="0" />
         </xsd:all>
     </xsd:complexType>
 

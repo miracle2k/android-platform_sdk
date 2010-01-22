@@ -56,6 +56,8 @@ public class SdkRepository {
     public static final String NODE_TOOL     = "tool";                          //$NON-NLS-1$
     /** A doc package. */
     public static final String NODE_DOC      = "doc";                           //$NON-NLS-1$
+    /** A sample package. */
+    public static final String NODE_SAMPLE   = "sample";                        //$NON-NLS-1$
     /** An extra package. */
     public static final String NODE_EXTRA    = "extra";                         //$NON-NLS-1$
 
