@@ -44,12 +44,40 @@ class XmlParserUtils {
 
     /**
      * Retrieves the value of that XML element as a string.
-     * Returns an empty string when the element is missing.
+     * Returns an empty string whether the element is missing or empty,
+     * so you can't tell the difference.
+     * <p/>
+     * Note: use {@link #getOptionalXmlString(Node, String)} if you need to know when the
+     * element is missing versus empty.
+     *
+     * @param node The XML <em>parent</em> node to parse.
+     * @param xmlLocalName The XML local name to find in the parent node.
+     * @return The text content of the element. Returns an empty string whether the element
+     *         is missing or empty, so you can't tell the difference.
      */
     public static String getXmlString(Node node, String xmlLocalName) {
         Node child = getFirstChild(node, xmlLocalName);
 
         return child == null ? "" : child.getTextContent();  //$NON-NLS-1$
+    }
+
+    /**
+     * Retrieves the value of that XML element as a string.
+     * Returns null when the element is missing, so you can tell between a missing element
+     * and an empty one.
+     * <p/>
+     * Note: use {@link #getXmlString(Node, String)} if you don't need to know when the
+     * element is missing versus empty.
+     *
+     * @param node The XML <em>parent</em> node to parse.
+     * @param xmlLocalName The XML local name to find in the parent node.
+     * @return The text content of the element. Returns null when the element is missing.
+     *         Returns an empty string whether the element is present but empty.
+     */
+    public static String getOptionalXmlString(Node node, String xmlLocalName) {
+        Node child = getFirstChild(node, xmlLocalName);
+
+        return child == null ? null : child.getTextContent();  //$NON-NLS-1$
     }
 
     /**

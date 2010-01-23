@@ -170,9 +170,10 @@ public class ExtraPackage extends MinToolsPackage
             }
         }
 
-        String s = String.format("%1$s package, revision %2$d",
+        String s = String.format("%1$s package, revision %2$d%3$s",
                 name,
-                getRevision());
+                getRevision(),
+                isObsolete() ? " (Obsolete)" : "");
 
         return s;
     }
@@ -191,7 +192,9 @@ public class ExtraPackage extends MinToolsPackage
         }
 
         if (s.indexOf("revision") == -1) {
-            s += String.format("\nRevision %1$d", getRevision());
+            s += String.format("\nRevision %1$d%2$s",
+                    getRevision(),
+                    isObsolete() ? " (Obsolete)" : "");
         }
 
         if (getMinToolsRevision() != MIN_TOOLS_REV_NOT_SPECIFIED) {
