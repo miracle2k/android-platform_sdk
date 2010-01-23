@@ -923,6 +923,15 @@ public class NewProjectCreationPage extends WizardPage {
 
         String minSdkVersion = mInfo.getMinSdkVersion();
 
+        // If there's a current target defined, we do not allow to change it when
+        // operating in the create-from-sample mode -- since the available sample list
+        // is tied to the current target, so changing it would invalidate the project we're
+        // trying to load in the first place.
+        IAndroidTarget currentTarget = mInfo.getSdkTarget();
+        if (currentTarget != null && mInfo.isCreateFromSample()) {
+            return;
+        }
+
         // Before changing, compare with the currently selected one, if any.
         // There can be multiple targets with the same sdk api version, so don't change
         // it if it's already at the right version.
@@ -1100,44 +1109,51 @@ public class NewProjectCreationPage extends WizardPage {
 
         // Select the target matching the manifest's sdk or build properties, if any
         IAndroidTarget foundTarget = null;
+        // This is the target currently in the UI
         IAndroidTarget currentTarget = mInfo.getSdkTarget();
 
-        ProjectProperties p = ProjectProperties.create(projectLocation, null);
-        if (p != null) {
-            // Check the {build|default}.properties files if present
-            p.merge(PropertyType.BUILD).merge(PropertyType.DEFAULT);
-            String v = p.getProperty(ProjectProperties.PROPERTY_TARGET);
-            IAndroidTarget target = Sdk.getCurrent().getTargetFromHashString(v);
-            // We can change the current target if:
-            // - we found a new target
-            // - there is no current target
-            // - there is a current target but the new target is not <= to the current one.
-            if (target != null &&
-                    (currentTarget == null || !target.isCompatibleBaseFor(currentTarget))) {
-                foundTarget = target;
-            }
-        }
-
-        if (foundTarget == null && minSdkVersion != null) {
-            // Otherwise try to match the requested sdk version
-            for (IAndroidTarget target : mSdkTargetSelector.getTargets()) {
-                if (target != null &&
-                        target.getVersion().equals(minSdkVersion) &&
-                        (currentTarget == null || !target.isCompatibleBaseFor(currentTarget))) {
-                    foundTarget = target;
-                    break;
+        // If there's a current target defined, we do not allow to change it when
+        // operating in the create-from-sample mode -- since the available sample list
+        // is tied to the current target, so changing it would invalidate the project we're
+        // trying to load in the first place.
+        if (currentTarget == null || !mInfo.isCreateFromSample()) {
+            ProjectProperties p = ProjectProperties.create(projectLocation, null);
+            if (p != null) {
+                // Check the {build|default}.properties files if present
+                p.merge(PropertyType.BUILD).merge(PropertyType.DEFAULT);
+                String v = p.getProperty(ProjectProperties.PROPERTY_TARGET);
+                IAndroidTarget desiredTarget = Sdk.getCurrent().getTargetFromHashString(v);
+                // We can change the current target if:
+                // - we found a new desired target
+                // - there is no current target
+                // - or the current target can't run the desired target
+                if (desiredTarget != null &&
+                        (currentTarget == null || !desiredTarget.canRunOn(currentTarget))) {
+                    foundTarget = desiredTarget;
                 }
             }
-        }
 
-        if (foundTarget == null) {
-            // Or last attemp, try to match a sample project location
-            for (IAndroidTarget target : mSdkTargetSelector.getTargets()) {
-                if (target != null &&
-                        projectLocation.startsWith(target.getLocation()) &&
-                        (currentTarget == null || !target.isCompatibleBaseFor(currentTarget))) {
-                    foundTarget = target;
-                    break;
+            if (foundTarget == null && minSdkVersion != null) {
+                // Otherwise try to match the requested min-sdk-version if we find an
+                // exact match, regardless of the currently selected target.
+                for (IAndroidTarget existingTarget : mSdkTargetSelector.getTargets()) {
+                    if (existingTarget != null &&
+                            existingTarget.getVersion().equals(minSdkVersion)) {
+                        foundTarget = existingTarget;
+                        break;
+                    }
+                }
+            }
+
+            if (foundTarget == null) {
+                // Or last attempt, try to match a sample project location and use it
+                // if we find an exact match, regardless of the currently selected target.
+                for (IAndroidTarget existingTarget : mSdkTargetSelector.getTargets()) {
+                    if (existingTarget != null &&
+                            projectLocation.startsWith(existingTarget.getLocation())) {
+                        foundTarget = existingTarget;
+                        break;
+                    }
                 }
             }
         }
@@ -1146,9 +1162,8 @@ public class NewProjectCreationPage extends WizardPage {
             mSdkTargetSelector.setSelection(foundTarget);
         } else {
             mInternalMinSdkVersionUpdate = true;
-            if (minSdkVersion != null) {
-                mMinSdkVersionField.setText(minSdkVersion);
-            }
+            // It's OK for an import to not a minSdkVersion and we should respect it.
+            mMinSdkVersionField.setText(minSdkVersion == null ? "" : minSdkVersion);  //$NON-NLS-1$
             mInternalMinSdkVersionUpdate = false;
         }
     }
