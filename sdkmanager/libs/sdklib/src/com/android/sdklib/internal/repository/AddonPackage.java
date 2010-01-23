@@ -195,11 +195,12 @@ public class AddonPackage extends Package
     /** Returns a short description for an {@link IDescription}. */
     @Override
     public String getShortDescription() {
-        return String.format("%1$s by %2$s, Android API %3$s, revision %4$s",
+        return String.format("%1$s by %2$s, Android API %3$s, revision %4$s%5$s",
                 getName(),
                 getVendor(),
                 mVersion.getApiString(),
-                getRevision());
+                getRevision(),
+                isObsolete() ? " (Obsolete)" : "");
     }
 
     /**
@@ -216,7 +217,9 @@ public class AddonPackage extends Package
         }
 
         if (s.indexOf("revision") == -1) {
-            s += String.format("\nRevision %1$d", getRevision());
+            s += String.format("\nRevision %1$d%2$s",
+                    getRevision(),
+                    isObsolete() ? " (Obsolete)" : "");
         }
 
         s += String.format("\nRequires SDK Platform Android API %1$s",

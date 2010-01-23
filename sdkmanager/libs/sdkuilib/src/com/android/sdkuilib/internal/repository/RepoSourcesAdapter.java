@@ -235,6 +235,7 @@ public class RepoSourcesAdapter {
             Archive[] archives = pkg.getArchives();
             if (mUpdaterData.getSettingsController().getShowUpdateOnly()) {
                 for (Archive archive : archives) {
+
                     // if we only want the compatible archives, then we just take the first
                     // one. it's unlikely there are 2 compatible archives for the same
                     // package
@@ -294,8 +295,13 @@ public class RepoSourcesAdapter {
         for (Package remotePkg : remotePackages) {
             boolean newPkg = true;
 
-            // For all potential packages, we also make sure that there's an archive for the current
-            // platform, or we simply skip them.
+            // We're not going to offer obsolete packages as updates.
+            if (remotePkg.isObsolete()) {
+                continue;
+            }
+
+            // For all potential packages, we also make sure that there's an archive for
+            // the current platform, or we simply skip them.
             if (remotePkg.hasCompatibleArchive()) {
                 for (Package installedPkg : installedPackages) {
                     UpdateInfo info = installedPkg.canBeUpdatedBy(remotePkg);

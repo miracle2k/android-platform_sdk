@@ -50,8 +50,10 @@ public abstract class Package implements IDescription, Comparable<Package> {
     public static final String PROP_RELEASE_URL  = "Pkg.RelNoteUrl";   //$NON-NLS-1$
     public static final String PROP_SOURCE_URL   = "Pkg.SourceUrl";    //$NON-NLS-1$
     public static final String PROP_USER_SOURCE  = "Pkg.UserSrc";      //$NON-NLS-1$
+    public static final String PROP_OBSOLETE     = "Pkg.Obsolete";     //$NON-NLS-1$
 
     private final int mRevision;
+    private final String mObsolete;
     private final String mLicense;
     private final String mDescription;
     private final String mDescUrl;
@@ -87,6 +89,8 @@ public abstract class Package implements IDescription, Comparable<Package> {
         mDescUrl     = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_DESC_URL);
         mReleaseNote = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_RELEASE_NOTE);
         mReleaseUrl  = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_RELEASE_URL);
+        mObsolete    = XmlParserUtils.getOptionalXmlString(
+                                                   packageNode, SdkRepository.NODE_OBSOLETE);
 
         mLicense  = parseLicense(packageNode, licenses);
         mArchives = parseArchives(XmlParserUtils.getFirstChild(
@@ -126,6 +130,7 @@ public abstract class Package implements IDescription, Comparable<Package> {
         mDescUrl     = getProperty(props, PROP_DESC_URL,     descUrl);
         mReleaseNote = getProperty(props, PROP_RELEASE_NOTE, "");
         mReleaseUrl  = getProperty(props, PROP_RELEASE_URL,  "");
+        mObsolete    = getProperty(props, PROP_OBSOLETE,     null);
 
         // If source is null and we can find a source URL in the properties, generate
         // a dummy source just to store the URL. This allows us to easily remember where
@@ -179,6 +184,9 @@ public abstract class Package implements IDescription, Comparable<Package> {
         }
         if (mReleaseUrl != null && mReleaseUrl.length() > 0) {
             props.setProperty(PROP_RELEASE_URL, mReleaseUrl);
+        }
+        if (mObsolete != null) {
+            props.setProperty(PROP_OBSOLETE, mObsolete);
         }
 
         if (mSource != null) {
@@ -251,6 +259,14 @@ public abstract class Package implements IDescription, Comparable<Package> {
      */
     public RepoSource getParentSource() {
         return mSource;
+    }
+
+    /**
+     * Returns true if the package is deemed obsolete, that is it contains an
+     * actual <code>&lt;obsolete&gt;</code> element.
+     */
+    public boolean isObsolete() {
+        return mObsolete != null;
     }
 
     /**
@@ -344,7 +360,9 @@ public abstract class Package implements IDescription, Comparable<Package> {
             sb.append("\n");
         }
 
-        sb.append(String.format("Revision %1$d", getRevision()));
+        sb.append(String.format("Revision %1$d%2$s",
+                getRevision(),
+                isObsolete() ? " (Obsolete)" : ""));
 
         s = getDescUrl();
         if (s != null && s.length() > 0) {

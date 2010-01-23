@@ -107,13 +107,15 @@ public class DocPackage extends Package implements IPackageVersion {
     @Override
     public String getShortDescription() {
         if (mVersion.isPreview()) {
-            return String.format("Documentation for Android '%1$s' Preview SDK, revision %2$s",
+            return String.format("Documentation for Android '%1$s' Preview SDK, revision %2$s%3$s",
                     mVersion.getCodename(),
-                    getRevision());
+                    getRevision(),
+                    isObsolete() ? " (Obsolete)" : "");
         } else {
-            return String.format("Documentation for Android SDK, API %1$d, revision %2$s",
+            return String.format("Documentation for Android SDK, API %1$d, revision %2$s%3$s",
                     mVersion.getApiLevel(),
-                    getRevision());
+                    getRevision(),
+                    isObsolete() ? " (Obsolete)" : "");
         }
     }
 
@@ -131,7 +133,9 @@ public class DocPackage extends Package implements IPackageVersion {
         }
 
         if (s.indexOf("revision") == -1) {
-            s += String.format("\nRevision %1$d", getRevision());
+            s += String.format("\nRevision %1$d%2$s",
+                    getRevision(),
+                    isObsolete() ? " (Obsolete)" : "");
         }
 
         return s;

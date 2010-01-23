@@ -72,7 +72,9 @@ public class ToolPackage extends Package {
     /** Returns a short description for an {@link IDescription}. */
     @Override
     public String getShortDescription() {
-        return String.format("Android SDK Tools, revision %1$d", getRevision());
+        return String.format("Android SDK Tools, revision %1$d%2$s",
+                getRevision(),
+                isObsolete() ? " (Obsolete)" : "");
     }
 
     /** Returns a long description for an {@link IDescription}. */
@@ -84,7 +86,9 @@ public class ToolPackage extends Package {
         }
 
         if (s.indexOf("revision") == -1) {
-            s += String.format("\nRevision %1$d", getRevision());
+            s += String.format("\nRevision %1$d%2$s",
+                    getRevision(),
+                    isObsolete() ? " (Obsolete)" : "");
         }
 
         return s;
