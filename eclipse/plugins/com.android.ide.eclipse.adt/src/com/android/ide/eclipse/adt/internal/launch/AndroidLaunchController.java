@@ -347,7 +347,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
             AvdInfo preferredAvd = null;
             if (config.mAvdName != null) {
                 preferredAvd = avdManager.getAvd(config.mAvdName, true /*validAvdOnly*/);
-                if (projectTarget.isCompatibleBaseFor(preferredAvd.getTarget()) == false) {
+                if (projectTarget.canRunOn(preferredAvd.getTarget()) == false) {
                     preferredAvd = null;
 
                     AdtPlugin.printErrorToConsole(project, String.format(
@@ -394,7 +394,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
                 String deviceAvd = d.getAvdName();
                 if (deviceAvd != null) { // physical devices return null.
                     AvdInfo info = avdManager.getAvd(deviceAvd, true /*validAvdOnly*/);
-                    if (info != null && projectTarget.isCompatibleBaseFor(info.getTarget())) {
+                    if (info != null && projectTarget.canRunOn(info.getTarget())) {
                         compatibleRunningAvds.put(d, info);
                     }
                 } else {
@@ -547,9 +547,9 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
         AvdInfo[] avds = avdManager.getValidAvds();
         AvdInfo defaultAvd = null;
         for (AvdInfo avd : avds) {
-            if (projectTarget.isCompatibleBaseFor(avd.getTarget())) {
+            if (projectTarget.canRunOn(avd.getTarget())) {
                 // at this point we can ignore the code name issue since
-                // IAndroidTarget.isCompatibleBaseFor() will already have filtered the non
+                // IAndroidTarget.canRunOn() will already have filtered the non
                 // compatible AVDs.
                 if (defaultAvd == null ||
                         avd.getTarget().getVersion().getApiLevel() <
@@ -1212,6 +1212,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
      * @return false if cancelled by the monitor
      * @throws CoreException
      */
+    @SuppressWarnings("deprecation")
     public static boolean connectRemoteDebugger(int debugPort,
             AndroidLaunch launch, IProgressMonitor monitor)
                 throws CoreException {

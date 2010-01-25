@@ -156,7 +156,7 @@ public class MockPlatformPackage extends PlatformPackage {
             return true;
         }
 
-        public boolean isCompatibleBaseFor(IAndroidTarget target) {
+        public boolean canRunOn(IAndroidTarget target) {
             throw new UnsupportedOperationException("Implement this as needed for tests");
         }
 
