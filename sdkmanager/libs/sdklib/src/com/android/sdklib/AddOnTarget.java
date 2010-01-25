@@ -212,7 +212,7 @@ final class AddOnTarget implements IAndroidTarget {
         return mVendorId;
     }
 
-    public boolean isCompatibleBaseFor(IAndroidTarget target) {
+    public boolean canRunOn(IAndroidTarget target) {
         // basic test
         if (target == this) {
             return true;
@@ -228,7 +228,7 @@ final class AddOnTarget implements IAndroidTarget {
         // The receiver is an add-on. There are 2 big use cases: The add-on has libraries
         // or the add-on doesn't (in which case we consider it a platform).
         if (mLibraries == null || mLibraries.length == 0) {
-            return mBasePlatform.isCompatibleBaseFor(target);
+            return mBasePlatform.canRunOn(target);
         } else {
             // the only targets that can run the receiver are the same add-on in the same or later
             // versions.
@@ -241,7 +241,7 @@ final class AddOnTarget implements IAndroidTarget {
             // now check the version. At this point since we checked the add-on part,
             // we can revert to the basic check on version/codename which are done by the
             // base platform already.
-            return mBasePlatform.isCompatibleBaseFor(target);
+            return mBasePlatform.canRunOn(target);
         }
 
     }

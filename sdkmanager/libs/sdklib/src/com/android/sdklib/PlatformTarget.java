@@ -191,7 +191,7 @@ final class PlatformTarget implements IAndroidTarget {
         return NO_USB_ID;
     }
 
-    public boolean isCompatibleBaseFor(IAndroidTarget target) {
+    public boolean canRunOn(IAndroidTarget target) {
         // basic test
         if (target == this) {
             return true;

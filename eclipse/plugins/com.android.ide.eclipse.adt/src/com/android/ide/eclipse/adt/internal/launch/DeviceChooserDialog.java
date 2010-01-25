@@ -146,7 +146,7 @@ public class DeviceChooserDialog extends Dialog implements IDeviceChangeListener
                             if (info == null) {
                                 return mWarningImage;
                             }
-                            return mProjectTarget.isCompatibleBaseFor(info.getTarget()) ?
+                            return mProjectTarget.canRunOn(info.getTarget()) ?
                                     mMatchImage : mNoMatchImage;
                         }
                 }
@@ -687,7 +687,7 @@ public class DeviceChooserDialog extends Dialog implements IDeviceChangeListener
         public boolean accept(AvdInfo avd) {
             if (mDevices != null) {
                 for (IDevice d : mDevices) {
-                    if (mProjectTarget.isCompatibleBaseFor(avd.getTarget()) == false ||
+                    if (mProjectTarget.canRunOn(avd.getTarget()) == false ||
                             avd.getName().equals(d.getAvdName())) {
                         return false;
                     }

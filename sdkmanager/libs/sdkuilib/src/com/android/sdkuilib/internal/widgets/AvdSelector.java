@@ -169,7 +169,7 @@ public final class AvdSelector {
 
         public boolean accept(AvdInfo avd) {
             if (avd != null) {
-                return mTarget.isCompatibleBaseFor(avd.getTarget());
+                return mTarget.canRunOn(avd.getTarget());
             }
 
             return false;
