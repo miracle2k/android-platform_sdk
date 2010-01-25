@@ -179,9 +179,23 @@ public class PlatformPackage extends MinToolsPackage implements IPackageVersion 
         }
 
         File platforms = new File(osSdkRoot, SdkConstants.FD_PLATFORMS);
-        File folder = new File(platforms, String.format("android-%s", getVersionName())); //$NON-NLS-1$
+        File folder = new File(platforms,
+                String.format("android-%s", getVersion().getApiString())); //$NON-NLS-1$
 
         return folder;
+    }
+
+    /**
+     * Makes sure the base /platforms folder exists before installing.
+     */
+    @Override
+    public void preInstallHook(String osSdkRoot, Archive archive) {
+        super.preInstallHook(osSdkRoot, archive);
+
+        File platformsRoot = new File(osSdkRoot, SdkConstants.FD_PLATFORMS);
+        if (!platformsRoot.isDirectory()) {
+            platformsRoot.mkdir();
+        }
     }
 
     @Override
