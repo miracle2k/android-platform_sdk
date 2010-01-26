@@ -206,6 +206,9 @@ public class SamplePackage extends MinToolsPackage
     @Override
     public File getInstallFolder(String osSdkRoot, String suggestedDir, SdkManager sdkManager) {
 
+        // The /samples dir at the root of the SDK
+        File samplesRoot = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
+
         // First find if this platform is already installed. If so, reuse the same directory.
         for (IAndroidTarget target : sdkManager.getTargets()) {
             if (target.isPlatform() &&
@@ -213,23 +216,40 @@ public class SamplePackage extends MinToolsPackage
                 String p = target.getPath(IAndroidTarget.SAMPLES);
                 File f = new File(p);
                 if (f.isDirectory()) {
-                    return f;
+                    // We *only* use this directory if it's using the "new" location
+                    // under SDK/samples. We explicitly do not reuse the "old" location
+                    // under SDK/platform/android-N/samples.
+                    if (f.getParentFile().equals(samplesRoot)) {
+                        return f;
+                    }
                 }
             }
         }
 
         // Otherwise, get a suitable default
-        File samples = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
-        File folder = new File(samples,
-                String.format("android-%d", getVersion().getApiLevel())); //$NON-NLS-1$
+        File folder = new File(samplesRoot,
+                String.format("android-%s", getVersion().getApiString())); //$NON-NLS-1$
 
         for (int n = 1; folder.exists(); n++) {
             // Keep trying till we find an unused directory.
-            folder = new File(samples,
-                    String.format("android-%d_%d", getVersion().getApiLevel(), n)); //$NON-NLS-1$
+            folder = new File(samplesRoot,
+                    String.format("android-%s_%d", getVersion().getApiString(), n)); //$NON-NLS-1$
         }
 
         return folder;
+    }
+
+    /**
+     * Makes sure the base /samples folder exists before installing.
+     */
+    @Override
+    public void preInstallHook(String osSdkRoot, Archive archive) {
+        super.preInstallHook(osSdkRoot, archive);
+
+        File samplesRoot = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
+        if (!samplesRoot.isDirectory()) {
+            samplesRoot.mkdir();
+        }
     }
 
     @Override
