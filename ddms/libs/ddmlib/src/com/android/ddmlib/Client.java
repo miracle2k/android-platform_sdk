@@ -241,13 +241,22 @@ public class Client {
     }
 
     public void toggleMethodProfiling() {
+        boolean canStream = false; //mClientData.hasFeature(ClientData.FEATURE_PROFILING_STREAMING);
         try {
             if (mClientData.getMethodProfilingStatus() == MethodProfilingStatus.ON) {
-                HandleProfiling.sendMPRE(this);
+                if (canStream) {
+                    HandleProfiling.sendMPSE(this);
+                } else {
+                    HandleProfiling.sendMPRE(this);
+                }
             } else {
-                String file = "/sdcard/" + mClientData.getClientDescription().replaceAll("\\:.*", "") +
-                ".trace";
-                HandleProfiling.sendMPRS(this, file, 8*1024*1024, 0 /*flags*/);
+                if (canStream) {
+                    HandleProfiling.sendMPSS(this, 8*1024*1024, 0 /*flags*/);
+                } else {
+                    String file = "/sdcard/" + mClientData.getClientDescription().replaceAll("\\:.*", "") +
+                    ".trace";
+                    HandleProfiling.sendMPRS(this, file, 8*1024*1024, 0 /*flags*/);
+                }
             }
         } catch (IOException e) {
             Log.w("ddms", "Toggle method profiling failed");
