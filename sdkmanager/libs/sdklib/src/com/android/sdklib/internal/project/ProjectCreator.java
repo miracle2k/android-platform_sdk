@@ -19,6 +19,7 @@ package com.android.sdklib.internal.project;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.AndroidXPathFactory;
@@ -42,6 +43,7 @@ import java.util.regex.Pattern;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 /**
  * Creates the basic files needed to get an Android project up and running.
@@ -393,12 +395,13 @@ public class ProjectCreator {
      * @param folderPath the folder of the project to update. This folder must exist.
      * @param target the project target. Can be null.
      * @param projectName The project name from --name. Can be null.
+     * @return true if the project was successfully updated.
      */
-    public void updateProject(String folderPath, IAndroidTarget target, String projectName) {
+    public boolean updateProject(String folderPath, IAndroidTarget target, String projectName) {
         // since this is an update, check the folder does point to a project
         File androidManifest = checkProjectFolder(folderPath);
         if (androidManifest == null) {
-            return;
+            return false;
         }
 
         // get the parent File.
@@ -413,7 +416,7 @@ public class ProjectCreator {
                     PropertyType.DEFAULT.getFilename(),
                     folderPath,
                     SdkConstants.androidCmdName());
-                return;
+                return false;
             }
         }
 
@@ -433,7 +436,7 @@ public class ProjectCreator {
                 mLog.error(e, "Failed to write %1$s file in '%2$s'",
                         PropertyType.DEFAULT.getFilename(),
                         folderPath);
-                return;
+                return false;
             }
         }
 
@@ -454,7 +457,7 @@ public class ProjectCreator {
             mLog.error(e, "Failed to write %1$s file in '%2$s'",
                     PropertyType.LOCAL.getFilename(),
                     folderPath);
-            return;
+            return false;
         }
 
         // Build.xml: create if not present or no <androidinit/> in it
@@ -472,7 +475,9 @@ public class ProjectCreator {
             needsBuildXml = !checkFileContainsRegexp(buildXml, "<setup(?:\\s|/|$)");  //$NON-NLS-1$
         }
         if (needsBuildXml) {
-            println("File %1$s is too old and needs to be updated.", SdkConstants.FN_BUILD_XML);
+            if (buildXml.exists()) {
+                println("File %1$s is too old and needs to be updated.", SdkConstants.FN_BUILD_XML);
+            }
         }
 
         if (needsBuildXml) {
@@ -514,8 +519,11 @@ public class ProjectCreator {
                         keywords);
             } catch (ProjectCreateException e) {
                 mLog.error(e, null);
+                return false;
             }
         }
+
+        return true;
     }
 
     /**
@@ -523,7 +531,8 @@ public class ProjectCreator {
      * @param folderPath the path of the test project.
      * @param pathToMainProject the path to the main project, relative to the test project.
      */
-    public void updateTestProject(final String folderPath, final String pathToMainProject) {
+    public void updateTestProject(final String folderPath, final String pathToMainProject,
+            final SdkManager sdkManager) {
         // since this is an update, check the folder does point to a project
         if (checkProjectFolder(folderPath) == null) {
             return;
@@ -548,15 +557,81 @@ public class ProjectCreator {
 
         // check the main project exists
         if (checkProjectFolder(resolvedPath) == null) {
+            mLog.error(null, "No Android Manifest at: %1$s", resolvedPath);
             return;
         }
 
-        ProjectProperties props = ProjectProperties.create(folderPath, PropertyType.BUILD);
+        // now get the target from the main project
+        ProjectProperties defaultProp = ProjectProperties.load(resolvedPath, PropertyType.DEFAULT);
+        if (defaultProp == null) {
+            mLog.error(null, "No %1$s at: %2$s", PropertyType.DEFAULT.getFilename(), resolvedPath);
+            return;
+        }
+
+        String targetHash = defaultProp.getProperty(ProjectProperties.PROPERTY_TARGET);
+        if (targetHash == null) {
+            mLog.error(null, "%1$s in the main project has no target property.",
+                    PropertyType.DEFAULT.getFilename());
+            return;
+        }
+
+        IAndroidTarget target = sdkManager.getTargetFromHashString(targetHash);
+        if (target == null) {
+            mLog.error(null, "Main project target %1$s is not a valid target.", targetHash);
+            return;
+        }
+
+        // look for the name of the project. If build.xml does not exist,
+        // query the main project build.xml for its name
+        String projectName = null;
+        XPathFactory factory = XPathFactory.newInstance();
+        XPath xpath = factory.newXPath();
+
+        File testBuildXml = new File(folderPath, "build.xml");
+        if (testBuildXml.isFile()) {
+            try {
+                projectName = xpath.evaluate("/project/@name",
+                        new InputSource(new FileInputStream(testBuildXml)));
+            } catch (XPathExpressionException e) {
+                // looks like the build.xml is wrong, we'll create a new one, and get its name
+                // from the parent.
+            } catch (FileNotFoundException e) {
+                // looks like the build.xml is wrong, we'll create a new one, and get its name
+                // from the parent.
+            }
+        }
+
+        // if the project name is still unknown, get it from the parent.
+        if (projectName == null) {
+            try {
+                String mainProjectName = xpath.evaluate("/project/@name",
+                        new InputSource(new FileInputStream(new File(resolvedPath, "build.xml"))));
+                projectName = mainProjectName + "Test";
+            } catch (XPathExpressionException e) {
+                mLog.error(e, "Unable to query main project name.");
+                return;
+            } catch (FileNotFoundException e) {
+                mLog.error(e, "Unable to query main project name.");
+                return;
+            }
+        }
+
+        // now update the project as if it's a normal project
+        if (updateProject(folderPath, target, projectName) == false) {
+            // error message has already been displayed.
+            return;
+        }
+
+        // add the test project specific properties.
+        ProjectProperties buildProps = ProjectProperties.load(folderPath, PropertyType.BUILD);
+        if (buildProps == null) {
+            buildProps = ProjectProperties.create(folderPath, PropertyType.BUILD);
+        }
 
         // set or replace the path to the main project
-        props.setProperty(ProjectProperties.PROPERTY_TESTED_PROJECT, pathToMainProject);
+        buildProps.setProperty(ProjectProperties.PROPERTY_TESTED_PROJECT, pathToMainProject);
         try {
-            props.save();
+            buildProps.save();
             println("Updated %1$s", PropertyType.BUILD.getFilename());
         } catch (IOException e) {
             mLog.error(e, "Failed to write %1$s file in '%2$s'",
@@ -564,6 +639,7 @@ public class ProjectCreator {
                     folderPath);
             return;
         }
+
     }
 
     /**
