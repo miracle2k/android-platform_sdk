@@ -124,6 +124,12 @@ public class ClientData {
     public final static String FEATURE_PROFILING = "method-trace-profiling"; // $NON-NLS-1$
 
     /**
+     * String for feature enabling direct streaming of method profiling data
+     * @see #hasFeature(String)
+     */
+    public final static String FEATURE_PROFILING_STREAMING = "method-trace-profiling-streaming"; // $NON-NLS-1$
+
+    /**
      * String for feature allowing to dump hprof files
      * @see #hasFeature(String)
      */
