@@ -47,7 +47,7 @@ class UpdaterLogic {
      * Compute which packages to install by taking the user selection
      * and adding dependent packages as needed.
      *
-     * When the user doesn't provide a selection, looks at local package to find
+     * When the user doesn't provide a selection, looks at local packages to find
      * those that can be updated and compute dependencies too.
      */
     public ArrayList<ArchiveInfo> computeUpdates(
@@ -230,8 +230,8 @@ class UpdaterLogic {
             }
         }
 
-        // find dependencies
-        ArchiveInfo dep = findDependency(p,
+        // Find dependencies
+        ArchiveInfo[] deps = findDependency(p,
                 outArchives,
                 selectedArchives,
                 remotePkgs,
@@ -250,21 +250,23 @@ class UpdaterLogic {
 
         if (ai == null) {
             ai = new ArchiveInfo(
-                archive, //newArchive
+                archive,        //newArchive
                 updatedArchive, //replaced
-                dep //dependsOn
+                deps            //dependsOn
                 );
             outArchives.add(ai);
         }
 
-        if (dep != null) {
-            dep.addDependencyFor(ai);
+        if (deps != null) {
+            for (ArchiveInfo d : deps) {
+                d.addDependencyFor(ai);
+            }
         }
 
         return ai;
     }
 
-    private ArchiveInfo findDependency(Package pkg,
+    private ArchiveInfo[] findDependency(Package pkg,
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
@@ -274,11 +276,12 @@ class UpdaterLogic {
         // Current dependencies can be:
         // - addon: *always* depends on platform of same API level
         // - platform: *might* depends on tools of rev >= min-tools-rev
+        // - extra: *might* depends on platform with api >= min-api-level
 
         if (pkg instanceof AddonPackage) {
             AddonPackage addon = (AddonPackage) pkg;
 
-            return findPlatformDependency(
+            ArchiveInfo ai = findPlatformDependency(
                     addon,
                     outArchives,
                     selectedArchives,
@@ -286,16 +289,43 @@ class UpdaterLogic {
                     remoteSources,
                     localPkgs);
 
+            if (ai != null) {
+                return new ArchiveInfo[] { ai };
+            }
+
         } else if (pkg instanceof MinToolsPackage) {
             MinToolsPackage platformOrExtra = (MinToolsPackage) pkg;
 
-            return findToolsDependency(
+            int n = 0;
+            ArchiveInfo ai1 = findToolsDependency(
                     platformOrExtra,
                     outArchives,
                     selectedArchives,
                     remotePkgs,
                     remoteSources,
                     localPkgs);
+
+            n += ai1 == null ? 0 : 1;
+
+            ArchiveInfo ai2 = null;
+            if (pkg instanceof ExtraPackage) {
+                ai2 = findExtraPlatformDependency(
+                        (ExtraPackage) pkg,
+                        outArchives,
+                        selectedArchives,
+                        remotePkgs,
+                        remoteSources,
+                        localPkgs);
+            }
+
+            n += ai2 == null ? 0 : 1;
+
+            if (n > 0) {
+                ArchiveInfo[] ais = new ArchiveInfo[n];
+                ais[0] = ai1 != null ? ai1 : ai2;
+                if (n > 1) ais[1] = ai2;
+                return ais;
+            }
         }
 
         return null;
@@ -323,7 +353,7 @@ class UpdaterLogic {
             return null;
         }
 
-        // First look in local packages.
+        // First look in locally installed packages.
         for (Package p : localPkgs) {
             if (p instanceof ToolPackage) {
                 if (((ToolPackage) p).getRevision() >= rev) {
@@ -387,11 +417,13 @@ class UpdaterLogic {
     /**
      * Resolves dependencies on platform.
      *
-     * An addon depends on having a platform with the same API version.
+     * An addon depends on having a platform with the same API level.
+     *
      * Finds the platform dependency. If found, add it to the list of things to install.
      * Returns the archive info dependency, if any.
      */
-    protected ArchiveInfo findPlatformDependency(AddonPackage addon,
+    protected ArchiveInfo findPlatformDependency(
+            AddonPackage addon,
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
@@ -402,7 +434,7 @@ class UpdaterLogic {
 
         // Find a platform that would satisfy the requirement.
 
-        // First look in local packages.
+        // First look in locally installed packages.
         for (Package p : localPkgs) {
             if (p instanceof PlatformPackage) {
                 if (v.equals(((PlatformPackage) p).getVersion())) {
@@ -465,6 +497,118 @@ class UpdaterLogic {
         return null;
     }
 
+    /**
+     * Resolves platform dependencies for extras.
+     * An extra depends on having a platform with a minimun API level.
+     *
+     * We try to return the highest API level available above the specified minimum.
+     * Note that installed packages have priority so if one installed platform satisfies
+     * the dependency, we'll use it even if there's a higher API platform available but
+     * not installed yet.
+     *
+     * Finds the platform dependency. If found, add it to the list of things to install.
+     * Returns the archive info dependency, if any.
+     */
+    protected ArchiveInfo findExtraPlatformDependency(
+            ExtraPackage extra,
+            ArrayList<ArchiveInfo> outArchives,
+            Collection<Archive> selectedArchives,
+            ArrayList<Package> remotePkgs,
+            RepoSource[] remoteSources,
+            Package[] localPkgs) {
+
+        int api = extra.getMinApiLevel();
+
+        if (api == ExtraPackage.MIN_API_LEVEL_NOT_SPECIFIED) {
+            return null;
+        }
+
+        // Find a platform that would satisfy the requirement.
+
+        // First look in locally installed packages.
+        for (Package p : localPkgs) {
+            if (p instanceof PlatformPackage) {
+                if (((PlatformPackage) p).getVersion().isGreaterOrEqualThan(api)) {
+                    // We found one already installed. We don't report this dependency
+                    // as the UI only cares about resolving "newly added dependencies".
+                    return null;
+                }
+            }
+        }
+
+        // Look in archives already scheduled for install
+        int foundApi = 0;
+        ArchiveInfo foundAi = null;
+
+        for (ArchiveInfo ai : outArchives) {
+            Package p = ai.getNewArchive().getParentPackage();
+            if (p instanceof PlatformPackage) {
+                if (((PlatformPackage) p).getVersion().isGreaterOrEqualThan(api)) {
+                    if (api > foundApi) {
+                        foundApi = api;
+                        foundAi = ai;
+                    }
+                }
+            }
+        }
+
+        if (foundAi != null) {
+            // The dependency is already scheduled for install, nothing else to do.
+            return foundAi;
+        }
+
+        // Otherwise look in the selected archives *or* available remote packages
+        // and takes the best out of the two sets.
+        foundApi = 0;
+        Archive foundArchive = null;
+        if (selectedArchives != null) {
+            for (Archive a : selectedArchives) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformPackage) {
+                    if (((PlatformPackage) p).getVersion().isGreaterOrEqualThan(api)) {
+                        if (api > foundApi) {
+                            foundApi = api;
+                            foundArchive = a;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Finally nothing matched, so let's look at all available remote packages
+        fetchRemotePackages(remotePkgs, remoteSources);
+        for (Package p : remotePkgs) {
+            if (p instanceof PlatformPackage) {
+                if (((PlatformPackage) p).getVersion().isGreaterOrEqualThan(api)) {
+                    if (api > foundApi) {
+                        // It's not already in the list of things to install, so add the
+                        // first compatible archive we can find.
+                        for (Archive a : p.getArchives()) {
+                            if (a.isCompatible()) {
+                                foundApi = api;
+                                foundArchive = a;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (foundArchive != null) {
+            // It's not already in the list of things to install, so add it now
+            return insertArchive(foundArchive, outArchives,
+                    selectedArchives, remotePkgs, remoteSources, localPkgs,
+                    true /*automated*/);
+        }
+
+        // We end up here if nothing matches. We don't have a good platform to match.
+        // Seriously, that can't happens unless the repository contains a bogus extra
+        // entry that does not match any existing platform API level.
+        // It's conceivable that a 3rd part addon repo might have error, in which case
+        // we'll let this one go through anyway.
+        return null;
+    }
+
     /** Fetch all remote packages only if really needed. */
     protected void fetchRemotePackages(ArrayList<Package> remotePkgs, RepoSource[] remoteSources) {
         if (remotePkgs.size() > 0) {
@@ -486,5 +630,4 @@ class UpdaterLogic {
             }
         }
     }
-
 }

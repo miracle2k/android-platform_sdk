@@ -79,8 +79,8 @@ public abstract class MinToolsPackage extends Package {
         super(source, props, revision, license, description, descUrl,
                 archiveOs, archiveArch, archiveOsPath);
 
-        mMinToolsRevision = Integer.parseInt(getProperty(props, PROP_MIN_TOOLS_REV,
-                Integer.toString(MIN_TOOLS_REV_NOT_SPECIFIED)));
+        mMinToolsRevision = Integer.parseInt(
+            getProperty(props, PROP_MIN_TOOLS_REV, Integer.toString(MIN_TOOLS_REV_NOT_SPECIFIED)));
     }
 
     /**
@@ -89,5 +89,14 @@ public abstract class MinToolsPackage extends Package {
      */
     public int getMinToolsRevision() {
         return mMinToolsRevision;
+    }
+
+    @Override
+    void saveProperties(Properties props) {
+        super.saveProperties(props);
+
+        if (getMinToolsRevision() != MIN_TOOLS_REV_NOT_SPECIFIED) {
+            props.setProperty(PROP_MIN_TOOLS_REV, Integer.toString(getMinToolsRevision()));
+        }
     }
 }

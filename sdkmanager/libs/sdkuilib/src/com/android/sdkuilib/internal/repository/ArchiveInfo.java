@@ -31,13 +31,13 @@ import java.util.Collection;
  * (new or local) archive, which means the dependent archive needs to be successfully
  * installed first. Finally this archive can also be a dependency for another one.
  *
- * @see ArchiveInfo#ArchiveInfo(Archive, Archive, ArchiveInfo)
+ * @see ArchiveInfo#ArchiveInfo(Archive, Archive, ArchiveInfo[])
  */
 class ArchiveInfo {
 
     private final Archive mNewArchive;
     private final Archive mReplaced;
-    private final ArchiveInfo mDependsOn;
+    private final ArchiveInfo[] mDependsOn;
     private final ArrayList<ArchiveInfo> mDependencyFor = new ArrayList<ArchiveInfo>();
     private boolean mAccepted;
     private boolean mRejected;
@@ -51,9 +51,10 @@ class ArchiveInfo {
      * @param dependsOn An optional new or local dependency, that is an archive that
      *          <em>this</em> archive depends upon. In other words, we can only install
      *          this archive if the dependency has been successfully installed. It also
-     *          means we need to install the dependency first.
+     *          means we need to install the dependency first. Can be null or empty.
+     *          However it cannot contain nulls.
      */
-    public ArchiveInfo(Archive newArchive, Archive replaced, ArchiveInfo dependsOn) {
+    public ArchiveInfo(Archive newArchive, Archive replaced, ArchiveInfo[] dependsOn) {
         mNewArchive = newArchive;
         mReplaced = replaced;
         mDependsOn = dependsOn;
@@ -80,8 +81,9 @@ class ArchiveInfo {
      * archive depends upon. In other words, we can only install this archive if the
      * dependency has been successfully installed. It also means we need to install the
      * dependency first.
+     * This array can be null or empty. It can't contain nulls though.
      */
-    public ArchiveInfo getDependsOn() {
+    public ArchiveInfo[] getDependsOn() {
         return mDependsOn;
     }
 
