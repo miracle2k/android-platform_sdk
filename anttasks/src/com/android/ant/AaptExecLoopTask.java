@@ -28,6 +28,7 @@ import org.apache.tools.ant.taskdefs.ExecTask;
 import org.apache.tools.ant.types.Path;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -39,6 +40,25 @@ import java.util.Map.Entry;
  */
 public final class AaptExecLoopTask extends Task {
 
+    /**
+     * Class representing a &lt;nocompress&gt; node in the main task XML.
+     * This let the developers prevent compression of some files in assets/ and res/raw/
+     * by extension.
+     * If the extension is null, this will disable compression for all  files in assets/ and
+     * res/raw/
+     */
+    public final static class NoCompress {
+        String mExtension;
+
+        /**
+         * Sets the value of the "extension" attribute.
+         * @param extention the extension.
+         */
+        public void setExtension(String extention) {
+            mExtension = extention;
+        }
+    }
+
     private String mExecutable;
     private String mCommand;
     private String mManifest;
@@ -47,6 +67,7 @@ public final class AaptExecLoopTask extends Task {
     private String mAndroidJar;
     private String mOutFolder;
     private String mBaseName;
+    private final ArrayList<NoCompress> mNoCompressList = new ArrayList<NoCompress>();
 
     /**
      * Sets the value of the "executable" attribute.
@@ -112,6 +133,15 @@ public final class AaptExecLoopTask extends Task {
         mBaseName = baseName;
     }
 
+    /**
+     * Returns an object representing a nested <var>nocompress</var> element.
+     */
+    public Object createNocompress() {
+        NoCompress nc = new NoCompress();
+        mNoCompressList.add(nc);
+        return nc;
+    }
+
     /*
      * (non-Javadoc)
      *
@@ -171,14 +201,33 @@ public final class AaptExecLoopTask extends Task {
         // aapt command. Only "package" is supported at this time really.
         task.createArg().setValue(mCommand);
 
+        // force flag
+        task.createArg().setValue("-f");
+
         // filters if needed
         if (configName != null && resourceFilter != null) {
             task.createArg().setValue("-c");
             task.createArg().setValue(resourceFilter);
         }
 
-        // force flag
-        task.createArg().setValue("-f");
+        // no compress flag
+        // first look to see if there's a NoCompress object with no specified extension
+        boolean compressNothing = false;
+        for (NoCompress nc : mNoCompressList) {
+            if (nc.mExtension == null) {
+                task.createArg().setValue("-0");
+                task.createArg().setValue("");
+                compressNothing = true;
+                break;
+            }
+        }
+
+        if (compressNothing == false) {
+            for (NoCompress nc : mNoCompressList) {
+                task.createArg().setValue("-0");
+                task.createArg().setValue(nc.mExtension);
+            }
+        }
 
         // manifest location
         task.createArg().setValue("-M");
