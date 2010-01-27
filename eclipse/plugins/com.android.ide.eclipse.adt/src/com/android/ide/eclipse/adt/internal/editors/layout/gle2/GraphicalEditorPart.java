@@ -86,6 +86,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -963,15 +964,18 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                             int height = rect.height;
                             if (mUseExplodeMode) {
                                 // compute how many padding in x and y will bump the screen size
-                                ExplodedRenderingHelper helper = new ExplodedRenderingHelper(
-                                        getModel(), iProject);
+                                List<UiElementNode> children = getModel().getUiChildren();
+                                if (children.size() == 1) {
+                                    ExplodedRenderingHelper helper = new ExplodedRenderingHelper(
+                                            children.get(0).getXmlNode(), iProject);
 
-                                // there are 2 paddings for each view
-                                // left and right, or top and bottom.
-                                int paddingValue = ExplodedRenderingHelper.PADDING_VALUE * 2;
+                                    // there are 2 paddings for each view
+                                    // left and right, or top and bottom.
+                                    int paddingValue = ExplodedRenderingHelper.PADDING_VALUE * 2;
 
-                                width += helper.getWidthPadding() * paddingValue;
-                                height += helper.getHeightPadding() * paddingValue;
+                                    width += helper.getWidthPadding() * paddingValue;
+                                    height += helper.getHeightPadding() * paddingValue;
+                                }
                             }
 
                             int density = mConfigComposite.getDensity().getDpiValue();
