@@ -21,14 +21,13 @@ import com.android.sdklib.SdkConstants;
 
 import org.w3c.dom.Node;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 
 import junit.framework.TestCase;
 
 public class ExplodeRenderingHelperTest extends TestCase {
 
-    private final List<String> mLayoutNames = new ArrayList<String>();
+    private final HashSet<String> mLayoutNames = new HashSet<String>();
 
     @Override
     protected void setUp() throws Exception {
