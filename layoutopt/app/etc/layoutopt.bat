@@ -24,6 +24,11 @@ rem Change current directory and drive to where the script is, to avoid
 rem issues with directories containing whitespaces.
 cd /d %~dp0
 
+rem Check we have a valid Java.exe in the path.
+set java_exe=
+call find_java.bat
+if not defined java_exe goto :EOF
+
 set jarfile=layoutopt.jar
 set frameworkdir=
 
@@ -44,5 +49,5 @@ set jarpath=%frameworkdir%%jarfile%
 
 set javaextdirs=%swt_path%;%frameworkdir%
 
-call java %java_debug% -Djava.ext.dirs=%javaextdirs% -jar %jarpath% %*
+call %java_exe% %java_debug% -Djava.ext.dirs=%javaextdirs% -jar %jarpath% %*
 

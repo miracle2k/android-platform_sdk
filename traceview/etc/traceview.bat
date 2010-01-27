@@ -24,6 +24,11 @@ rem Change current directory and drive to where the script is, to avoid
 rem issues with directories containing whitespaces.
 cd /d %~dp0
 
+rem Check we have a valid Java.exe in the path.
+set java_exe=
+call find_java.bat
+if not defined java_exe goto :EOF
+
 set jarfile=traceview.jar
 set frameworkdir=
 
@@ -43,7 +48,7 @@ if not defined ANDROID_SWT goto QueryArch
 
 :QueryArch
 
-    for /f %%a in ('java -jar %frameworkdir%archquery.jar') do set swt_path=%frameworkdir%%%a
+    for /f %%a in ('%java_exe% -jar %frameworkdir%archquery.jar') do set swt_path=%frameworkdir%%%a
 
 :SwtDone
 
@@ -55,4 +60,4 @@ if exist %swt_path% goto SetPath
 :SetPath
 set javaextdirs=%swt_path%;%frameworkdir%
 
-call java -Djava.ext.dirs=%javaextdirs% -Dcom.android.traceview.toolsdir= -jar %jarpath% %*
+call %java_exe% -Djava.ext.dirs=%javaextdirs% -Dcom.android.traceview.toolsdir= -jar %jarpath% %*

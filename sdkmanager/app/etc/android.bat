@@ -32,13 +32,10 @@ rem issues with directories containing whitespaces.
 cd /d %~dp0
 
 
-rem Check we have a valid Java.exe in the path. The return code will
-rem be 0 if the command worked or 9009 if the exec failed (program not found).
-rem Java itself will return 1 if the argument is not understood.
-set java_exe=java
-%java_exe% -version 2>nul
-if ERRORLEVEL 1 goto SearchForJava
-:JavaFound
+rem Check we have a valid Java.exe in the path.
+set java_exe=
+call find_java.bat
+if not defined java_exe goto :EOF
 
 set jar_path=lib\sdkmanager.jar
 
@@ -83,55 +80,5 @@ set java_ext_dirs=%swt_path%;lib\
 
 rem Finally exec the java program and end here.
 call %java_exe% -Djava.ext.dirs=%java_ext_dirs% -Dcom.android.sdkmanager.toolsdir="%tools_dir%" -Dcom.android.sdkmanager.workdir="%work_dir%" -jar %jar_path% %*
-goto :EOF
-
-rem ---------------
-:SearchForJava
-rem We get here if the default %java_exe% was not found in the path.
-rem Search for an alternative in %ProgramFiles%\Java\*\bin\java.exe
-
-echo.
-echo Java not found in your path.
-echo Checking it it's installed in %ProgramFiles%\Java instead.
-echo.
-
-set java_exe=
-for /D %%a in ( "%ProgramFiles%\Java\*" ) do call :TestJavaDir "%%a"
-if defined java_exe goto JavaFound
-
-echo.
-echo No suitable Java found. In order to properly use the Android Developer Tools,
-echo you need a suitable version of Java installed on your system. We recommend
-echo that you install the JDK version of JavaSE, available here:
-echo   http://java.sun.com/javase/downloads/
-echo.
-echo You can find the complete Android SDK requirements here:
-echo   http://developer.android.com/sdk/requirements.html
-echo.
-goto :EOF
-
-rem ---------------
-:TestJavaDir
-rem This is a "subrountine" for the for /D above. It tests the short version
-rem of the %1 path (i.e. the path with only short names and no spaces).
-rem However we use the full version without quotes (e.g. %~1) for pretty print.
-if defined java_exe goto :EOF
-set full_path=%~1\bin\java.exe
-set short_path=%~s1\bin\java.exe
-rem [for debugging] echo Testing %full_path%
-
-%short_path% -version 2>nul
-if ERRORLEVEL 1 goto :EOF
-set java_exe=%short_path%
-
-echo.
-echo Java was found at %full_path%.
-echo Please consider adding it to your path:
-echo - Under Windows XP, open Control Panel / System / Advanced / Environment Variables
-echo - Under Windows Vista, open Control Panel / System / Advanced System Settings
-echo                                                    / Environment Variables
-echo At the end of the "Path" entry in "User variables", add the following:
-echo   ;%full_path%
-echo.
 
 rem EOF
