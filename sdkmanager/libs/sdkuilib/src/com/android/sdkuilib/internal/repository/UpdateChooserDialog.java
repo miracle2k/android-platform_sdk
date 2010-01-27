@@ -612,6 +612,12 @@ final class UpdateChooserDialog extends GridDialog {
         mInternalLicenseRadioUpdate = true;
 
         ArchiveInfo ai = getSelectedArchive();
+
+        if (ai == null) {
+            // Should never happen.
+            return;
+        }
+
         boolean needUpdate = true;
 
         if (!mLicenseAcceptAll && mLicenseRadioAcceptAll.getSelection()) {
@@ -656,6 +662,11 @@ final class UpdateChooserDialog extends GridDialog {
      */
     private void onPackageDoubleClick() {
         ArchiveInfo ai = getSelectedArchive();
+
+        if (ai == null) {
+            // Should never happen.
+            return;
+        }
 
         boolean wasAccepted = ai.isAccepted();
         ai.setAccepted(!wasAccepted);
