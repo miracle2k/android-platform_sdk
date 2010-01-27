@@ -24,6 +24,11 @@ rem Change current directory and drive to where the script is, to avoid
 rem issues with directories containing whitespaces.
 cd /d %~dp0
 
+rem Check we have a valid Java.exe in the path.
+set java_exe=
+call find_java.bat
+if not defined java_exe goto :EOF
+
 set jarfile=apkbuilder.jar
 set frameworkdir=
 set libdir=
@@ -40,4 +45,4 @@ if exist %frameworkdir%%jarfile% goto JarFileOk
 
 set jarpath=%frameworkdir%%jarfile%
 
-call java -Djava.ext.dirs=%frameworkdir% -Djava.library.path=%libdir% -jar %jarpath% %*
+call %java_exe% -Djava.ext.dirs=%frameworkdir% -Djava.library.path=%libdir% -jar %jarpath% %*
