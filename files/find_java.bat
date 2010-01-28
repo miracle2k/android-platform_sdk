@@ -36,7 +36,7 @@ rem We get here if the default %java_exe% was not found in the path.
 rem Search for an alternative in %ProgramFiles%\Java\*\bin\java.exe
 
 echo.
-echo Java not found in your path.
+echo WARNING: Java not found in your path.
 echo Checking it it's installed in %ProgramFiles%\Java instead.
 echo.
 
@@ -45,9 +45,9 @@ for /D %%a in ( "%ProgramFiles%\Java\*" ) do call :TestJavaDir "%%a"
 if defined java_exe goto :EOF
 
 echo.
-echo No suitable Java found. In order to properly use the Android Developer Tools,
-echo you need a suitable version of Java installed on your system. We recommend
-echo that you install the JDK version of JavaSE, available here:
+echo ERROR: No suitable Java found. In order to properly use the Android Developer
+echo Tools, you need a suitable version of Java installed on your system. We
+echo recommend that you install the JDK version of JavaSE, available here:
 echo   http://java.sun.com/javase/downloads/
 echo.
 echo You can find the complete Android SDK requirements here:
@@ -74,7 +74,7 @@ echo Java was found at %full_path%.
 echo Please consider adding it to your path:
 echo - Under Windows XP, open Control Panel / System / Advanced / Environment Variables
 echo - Under Windows Vista, open Control Panel / System / Advanced System Settings
-echo                                                    / Environment Variables
+echo                             / Environment Variables
 echo At the end of the "Path" entry in "User variables", add the following:
 echo   ;%full_path%
 echo.
