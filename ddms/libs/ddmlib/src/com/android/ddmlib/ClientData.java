@@ -18,6 +18,7 @@ package com.android.ddmlib;
 
 import com.android.ddmlib.HeapSegment.HeapSegmentElement;
 
+import java.io.File;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -315,10 +316,29 @@ public class ClientData {
         void onSuccess(String remoteFilePath, Client client);
 
         /**
-         * Called when method tracing failed.
+         * Called when a method tracing was successful.
+         * @param remoteFilePath the device-side path of the trace file.
          * @param client the client that was profiled.
          */
-        void onFailure(Client client);
+        void onSuccess(File localFile, Client client);
+
+        /**
+         * Called when method tracing failed to start
+         * @param client the client that was profiled.
+         */
+        void onStartFailure(Client client);
+
+        /**
+         * Called when method tracing failed to end on the VM side
+         * @param client the client that was profiled.
+         */
+        void onEndFailure(Client client);
+
+        /**
+         * Called when method tracing failed to end locally.
+         * @param client the client that was profiled.
+         */
+        void onEndLocalFailure(Client client, String message);
     }
 
     /**
