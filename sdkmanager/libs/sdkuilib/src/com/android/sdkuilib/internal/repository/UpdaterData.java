@@ -300,6 +300,10 @@ class UpdaterData {
                 int numInstalled = 0;
                 nextArchive: for (ArchiveInfo ai : result) {
                     Archive archive = ai.getNewArchive();
+                    if (archive == null) {
+                        // This is not supposed to happen.
+                        continue nextArchive;
+                    }
 
                     int nextProgress = monitor.getProgress() + progressPerArchive;
                     try {
@@ -310,12 +314,21 @@ class UpdaterData {
                         ArchiveInfo[] adeps = ai.getDependsOn();
                         if (adeps != null) {
                             for (ArchiveInfo adep : adeps) {
-                                if (!installedArchives.contains(adep.getNewArchive())) {
+                                Archive na = adep.getNewArchive();
+                                if (na == null) {
+                                    // This archive depends on a missing archive.
+                                    // We shouldn't get here.
+                                    // Skip it.
+                                    monitor.setResult("Skipping '%1$s'; it depends on a missing package.",
+                                            archive.getParentPackage().getShortDescription());
+                                    continue nextArchive;
+                                } else if (!installedArchives.contains(na)) {
                                     // This archive depends on another one that was not installed.
+                                    // We shouldn't get here.
                                     // Skip it.
                                     monitor.setResult("Skipping '%1$s'; it depends on '%2$s' which was not installed.",
                                             archive.getParentPackage().getShortDescription(),
-                                            adep.getNewArchive().getParentPackage().getShortDescription());
+                                            adep.getShortDescription());
                                     continue nextArchive;
                                 }
                             }

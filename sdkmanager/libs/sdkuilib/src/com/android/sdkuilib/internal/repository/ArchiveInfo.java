@@ -17,6 +17,8 @@
 package com.android.sdkuilib.internal.repository;
 
 import com.android.sdklib.internal.repository.Archive;
+import com.android.sdklib.internal.repository.IDescription;
+import com.android.sdklib.internal.repository.Package;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,10 +32,17 @@ import java.util.Collection;
  * installed. It can replace an existing local one. It can also depends on another
  * (new or local) archive, which means the dependent archive needs to be successfully
  * installed first. Finally this archive can also be a dependency for another one.
+ * <p/>
+ * The accepted and rejected flags are used by {@link UpdateChooserDialog} to follow
+ * user choices. The installer should never install something that is not accepted.
+ * <p/>
+ * <em>Note</em>: There is currently no logic to support more than one level of
+ * dependency, either here or in the {@link UpdateChooserDialog}, since we currently
+ * have no need for it.
  *
  * @see ArchiveInfo#ArchiveInfo(Archive, Archive, ArchiveInfo[])
  */
-class ArchiveInfo {
+class ArchiveInfo implements IDescription {
 
     private final Archive mNewArchive;
     private final Archive mReplaced;
@@ -45,7 +54,7 @@ class ArchiveInfo {
     /**
      *
      * @param newArchive A "new archive" to be installed. This is always an archive
-     *          that comes from a remote site. This can not be null.
+     *          that comes from a remote site. This <em>may</em> be null.
      * @param replaced An optional local archive that the new one will replace.
      *          Can be null if this archive does not replace anything.
      * @param dependsOn An optional new or local dependency, that is an archive that
@@ -62,7 +71,7 @@ class ArchiveInfo {
 
     /**
      * Returns the "new archive" to be installed.
-     * This is always an archive that comes from a remote site.
+     * This <em>may</em> be null for missing archives.
      */
     public Archive getNewArchive() {
         return mNewArchive;
@@ -139,5 +148,33 @@ class ArchiveInfo {
      */
     public boolean isRejected() {
         return mRejected;
+    }
+
+    /**
+     * Returns the long description of the parent package of the new archive, if not null.
+     * Otherwise returns an empty string.
+     */
+    public String getLongDescription() {
+        if (mNewArchive != null) {
+            Package p = mNewArchive.getParentPackage();
+            if (p != null) {
+                return p.getLongDescription();
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Returns the short description of the parent package of the new archive, if not null.
+     * Otherwise returns an empty string.
+     */
+    public String getShortDescription() {
+        if (mNewArchive != null) {
+            Package p = mNewArchive.getParentPackage();
+            if (p != null) {
+                return p.getShortDescription();
+            }
+        }
+        return "";
     }
 }

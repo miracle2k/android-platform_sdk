@@ -59,8 +59,11 @@ class UpdaterLogic {
         ArrayList<Package> remotePkgs = new ArrayList<Package>();
         RepoSource[] remoteSources = sources.getSources();
 
+        // Create ArchiveInfos out of local (installed) packages.
+        ArchiveInfo[] localArchives = createLocalArchives(localPkgs);
+
         if (selectedArchives == null) {
-            selectedArchives = findUpdates(localPkgs, remotePkgs, remoteSources);
+            selectedArchives = findUpdates(localArchives, remotePkgs, remoteSources);
         }
 
         for (Archive a : selectedArchives) {
@@ -69,7 +72,7 @@ class UpdaterLogic {
                     selectedArchives,
                     remotePkgs,
                     remoteSources,
-                    localPkgs,
+                    localArchives,
                     false /*automated*/);
         }
 
@@ -83,6 +86,9 @@ class UpdaterLogic {
     public void addNewPlatforms(ArrayList<ArchiveInfo> archives,
             RepoSources sources,
             Package[] localPkgs) {
+
+        // Create ArchiveInfos out of local (installed) packages.
+        ArchiveInfo[] localArchives = createLocalArchives(localPkgs);
 
         // Find the highest platform installed
         float currentPlatformScore = 0;
@@ -159,7 +165,7 @@ class UpdaterLogic {
                                 null /*selectedArchives*/,
                                 remotePkgs,
                                 remoteSources,
-                                localPkgs,
+                                localArchives,
                                 true /*automated*/);
                     }
                 }
@@ -175,7 +181,7 @@ class UpdaterLogic {
                             null /*selectedArchives*/,
                             remotePkgs,
                             remoteSources,
-                            localPkgs,
+                            localArchives,
                             true /*automated*/);
                 }
             }
@@ -184,16 +190,53 @@ class UpdaterLogic {
     }
 
     /**
+     * Create a array of {@link ArchiveInfo} based on all local (already installed)
+     * packages. The array is always non-null but may be empty.
+     * <p/>
+     * The local {@link ArchiveInfo} are guaranteed to have one non-null archive
+     * that you can retrieve using {@link ArchiveInfo#getNewArchive()}.
+     */
+    protected ArchiveInfo[] createLocalArchives(Package[] localPkgs) {
+
+        if (localPkgs != null) {
+            ArrayList<ArchiveInfo> list = new ArrayList<ArchiveInfo>();
+            for (Package p : localPkgs) {
+                // Only accept packages that have one compatible archive.
+                // Local package should have 1 and only 1 compatible archive anyway.
+                for (Archive a : p.getArchives()) {
+                    if (a != null && a.isCompatible()) {
+                        // We create an "installed" archive info to wrap the local package.
+                        // Note that dependencies are not computed since right now we don't
+                        // deal with more than one level of dependencies and installed archives
+                        // are deemed implicitly accepted anyway.
+                        list.add(new LocalArchiveInfo(a));
+                    }
+                }
+            }
+
+            return list.toArray(new ArchiveInfo[list.size()]);
+        }
+
+        return new ArchiveInfo[0];
+    }
+
+    /**
      * Find suitable updates to all current local packages.
      */
-    private Collection<Archive> findUpdates(Package[] localPkgs,
+    private Collection<Archive> findUpdates(ArchiveInfo[] localArchives,
             ArrayList<Package> remotePkgs,
             RepoSource[] remoteSources) {
         ArrayList<Archive> updates = new ArrayList<Archive>();
 
         fetchRemotePackages(remotePkgs, remoteSources);
 
-        for (Package localPkg : localPkgs) {
+        for (ArchiveInfo ai : localArchives) {
+            Archive na = ai.getNewArchive();
+            if (na == null) {
+                continue;
+            }
+            Package localPkg = na.getParentPackage();
+
             for (Package remotePkg : remotePkgs) {
                 if (localPkg.canBeUpdatedBy(remotePkg) == UpdateInfo.UPDATE) {
                     // Found a suitable update. Only accept the remote package
@@ -217,16 +260,20 @@ class UpdaterLogic {
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
             RepoSource[] remoteSources,
-            Package[] localPkgs,
+            ArchiveInfo[] localArchives,
             boolean automated) {
         Package p = archive.getParentPackage();
 
         // Is this an update?
         Archive updatedArchive = null;
-        for (Package lp : localPkgs) {
-            assert lp.getArchives().length == 1;
-            if (lp.getArchives().length > 0 && lp.canBeUpdatedBy(p) == UpdateInfo.UPDATE) {
-                updatedArchive = lp.getArchives()[0];
+        for (ArchiveInfo ai : localArchives) {
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package lp = a.getParentPackage();
+
+                if (lp.canBeUpdatedBy(p) == UpdateInfo.UPDATE) {
+                    updatedArchive = a;
+                }
             }
         }
 
@@ -236,13 +283,14 @@ class UpdaterLogic {
                 selectedArchives,
                 remotePkgs,
                 remoteSources,
-                localPkgs);
+                localArchives);
 
         // Make sure it's not a dup
         ArchiveInfo ai = null;
 
         for (ArchiveInfo ai2 : outArchives) {
-            if (ai2.getNewArchive().getParentPackage().sameItemAs(archive.getParentPackage())) {
+            Archive a2 = ai2.getNewArchive();
+            if (a2 != null && a2.getParentPackage().sameItemAs(archive.getParentPackage())) {
                 ai = ai2;
                 break;
             }
@@ -271,7 +319,7 @@ class UpdaterLogic {
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
             RepoSource[] remoteSources,
-            Package[] localPkgs) {
+            ArchiveInfo[] localArchives) {
 
         // Current dependencies can be:
         // - addon: *always* depends on platform of same API level
@@ -287,7 +335,7 @@ class UpdaterLogic {
                     selectedArchives,
                     remotePkgs,
                     remoteSources,
-                    localPkgs);
+                    localArchives);
 
             if (ai != null) {
                 return new ArchiveInfo[] { ai };
@@ -303,7 +351,7 @@ class UpdaterLogic {
                     selectedArchives,
                     remotePkgs,
                     remoteSources,
-                    localPkgs);
+                    localArchives);
 
             n += ai1 == null ? 0 : 1;
 
@@ -315,7 +363,7 @@ class UpdaterLogic {
                         selectedArchives,
                         remotePkgs,
                         remoteSources,
-                        localPkgs);
+                        localArchives);
             }
 
             n += ai2 == null ? 0 : 1;
@@ -344,7 +392,7 @@ class UpdaterLogic {
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
             RepoSource[] remoteSources,
-            Package[] localPkgs) {
+            ArchiveInfo[] localArchives) {
         // This is the requirement to match.
         int rev = platformOrExtra.getMinToolsRevision();
 
@@ -354,23 +402,29 @@ class UpdaterLogic {
         }
 
         // First look in locally installed packages.
-        for (Package p : localPkgs) {
-            if (p instanceof ToolPackage) {
-                if (((ToolPackage) p).getRevision() >= rev) {
-                    // We found one already installed. We don't report this dependency
-                    // as the UI only cares about resolving "newly added dependencies".
-                    return null;
+        for (ArchiveInfo ai : localArchives) {
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof ToolPackage) {
+                    if (((ToolPackage) p).getRevision() >= rev) {
+                        // We found one already installed.
+                        return ai;
+                    }
                 }
             }
         }
 
         // Look in archives already scheduled for install
         for (ArchiveInfo ai : outArchives) {
-            Package p = ai.getNewArchive().getParentPackage();
-            if (p instanceof ToolPackage) {
-                if (((ToolPackage) p).getRevision() >= rev) {
-                    // The dependency is already scheduled for install, nothing else to do.
-                    return ai;
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof ToolPackage) {
+                    if (((ToolPackage) p).getRevision() >= rev) {
+                        // The dependency is already scheduled for install, nothing else to do.
+                        return ai;
+                    }
                 }
             }
         }
@@ -382,8 +436,12 @@ class UpdaterLogic {
                 if (p instanceof ToolPackage) {
                     if (((ToolPackage) p).getRevision() >= rev) {
                         // It's not already in the list of things to install, so add it now
-                        return insertArchive(a, outArchives,
-                                selectedArchives, remotePkgs, remoteSources, localPkgs,
+                        return insertArchive(a,
+                                outArchives,
+                                selectedArchives,
+                                remotePkgs,
+                                remoteSources,
+                                localArchives,
                                 true /*automated*/);
                     }
                 }
@@ -399,8 +457,12 @@ class UpdaterLogic {
                     // first compatible archive we can find.
                     for (Archive a : p.getArchives()) {
                         if (a.isCompatible()) {
-                            return insertArchive(a, outArchives,
-                                    selectedArchives, remotePkgs, remoteSources, localPkgs,
+                            return insertArchive(a,
+                                    outArchives,
+                                    selectedArchives,
+                                    remotePkgs,
+                                    remoteSources,
+                                    localArchives,
                                     true /*automated*/);
                         }
                     }
@@ -408,14 +470,14 @@ class UpdaterLogic {
             }
         }
 
-        // We end up here if nothing matches. We don't have a good tools to match.
-        // Seriously, that can't happens unless we totally screwed our repo manifest.
-        // We'll let this one go through anyway.
-        return null;
+        // We end up here if nothing matches. We don't have a good platform to match.
+        // We need to indicate this extra depends on a missing platform archive
+        // so that it can be impossible to install later on.
+        return new MissingToolArchiveInfo(rev);
     }
 
     /**
-     * Resolves dependencies on platform.
+     * Resolves dependencies on platform for an addon.
      *
      * An addon depends on having a platform with the same API level.
      *
@@ -428,30 +490,36 @@ class UpdaterLogic {
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
             RepoSource[] remoteSources,
-            Package[] localPkgs) {
+            ArchiveInfo[] localArchives) {
         // This is the requirement to match.
         AndroidVersion v = addon.getVersion();
 
         // Find a platform that would satisfy the requirement.
 
         // First look in locally installed packages.
-        for (Package p : localPkgs) {
-            if (p instanceof PlatformPackage) {
-                if (v.equals(((PlatformPackage) p).getVersion())) {
-                    // We found one already installed. We don't report this dependency
-                    // as the UI only cares about resolving "newly added dependencies".
-                    return null;
+        for (ArchiveInfo ai : localArchives) {
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformPackage) {
+                    if (v.equals(((PlatformPackage) p).getVersion())) {
+                        // We found one already installed.
+                        return ai;
+                    }
                 }
             }
         }
 
         // Look in archives already scheduled for install
         for (ArchiveInfo ai : outArchives) {
-            Package p = ai.getNewArchive().getParentPackage();
-            if (p instanceof PlatformPackage) {
-                if (v.equals(((PlatformPackage) p).getVersion())) {
-                    // The dependency is already scheduled for install, nothing else to do.
-                    return ai;
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformPackage) {
+                    if (v.equals(((PlatformPackage) p).getVersion())) {
+                        // The dependency is already scheduled for install, nothing else to do.
+                        return ai;
+                    }
                 }
             }
         }
@@ -463,8 +531,12 @@ class UpdaterLogic {
                 if (p instanceof PlatformPackage) {
                     if (v.equals(((PlatformPackage) p).getVersion())) {
                         // It's not already in the list of things to install, so add it now
-                        return insertArchive(a, outArchives,
-                                selectedArchives, remotePkgs, remoteSources, localPkgs,
+                        return insertArchive(a,
+                                outArchives,
+                                selectedArchives,
+                                remotePkgs,
+                                remoteSources,
+                                localArchives,
                                 true /*automated*/);
                     }
                 }
@@ -480,8 +552,12 @@ class UpdaterLogic {
                     // first compatible archive we can find.
                     for (Archive a : p.getArchives()) {
                         if (a.isCompatible()) {
-                            return insertArchive(a, outArchives,
-                                    selectedArchives, remotePkgs, remoteSources, localPkgs,
+                            return insertArchive(a,
+                                    outArchives,
+                                    selectedArchives,
+                                    remotePkgs,
+                                    remoteSources,
+                                    localArchives,
                                     true /*automated*/);
                         }
                     }
@@ -490,11 +566,9 @@ class UpdaterLogic {
         }
 
         // We end up here if nothing matches. We don't have a good platform to match.
-        // Seriously, that can't happens unless the repository contains a bogus addon
-        // entry that does not match any existing platform API level.
-        // It's conceivable that a 3rd part addon repo might have error, in which case
-        // we'll let this one go through anyway.
-        return null;
+        // We need to indicate this addon depends on a missing platform archive
+        // so that it can be impossible to install later on.
+        return new MissingPlatformArchiveInfo(addon.getVersion());
     }
 
     /**
@@ -515,7 +589,7 @@ class UpdaterLogic {
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
             RepoSource[] remoteSources,
-            Package[] localPkgs) {
+            ArchiveInfo[] localArchives) {
 
         int api = extra.getMinApiLevel();
 
@@ -526,12 +600,15 @@ class UpdaterLogic {
         // Find a platform that would satisfy the requirement.
 
         // First look in locally installed packages.
-        for (Package p : localPkgs) {
-            if (p instanceof PlatformPackage) {
-                if (((PlatformPackage) p).getVersion().isGreaterOrEqualThan(api)) {
-                    // We found one already installed. We don't report this dependency
-                    // as the UI only cares about resolving "newly added dependencies".
-                    return null;
+        for (ArchiveInfo ai : localArchives) {
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformPackage) {
+                    if (((PlatformPackage) p).getVersion().isGreaterOrEqualThan(api)) {
+                        // We found one already installed.
+                        return ai;
+                    }
                 }
             }
         }
@@ -541,12 +618,15 @@ class UpdaterLogic {
         ArchiveInfo foundAi = null;
 
         for (ArchiveInfo ai : outArchives) {
-            Package p = ai.getNewArchive().getParentPackage();
-            if (p instanceof PlatformPackage) {
-                if (((PlatformPackage) p).getVersion().isGreaterOrEqualThan(api)) {
-                    if (api > foundApi) {
-                        foundApi = api;
-                        foundAi = ai;
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformPackage) {
+                    if (((PlatformPackage) p).getVersion().isGreaterOrEqualThan(api)) {
+                        if (api > foundApi) {
+                            foundApi = api;
+                            foundAi = ai;
+                        }
                     }
                 }
             }
@@ -596,17 +676,19 @@ class UpdaterLogic {
 
         if (foundArchive != null) {
             // It's not already in the list of things to install, so add it now
-            return insertArchive(foundArchive, outArchives,
-                    selectedArchives, remotePkgs, remoteSources, localPkgs,
+            return insertArchive(foundArchive,
+                    outArchives,
+                    selectedArchives,
+                    remotePkgs,
+                    remoteSources,
+                    localArchives,
                     true /*automated*/);
         }
 
         // We end up here if nothing matches. We don't have a good platform to match.
-        // Seriously, that can't happens unless the repository contains a bogus extra
-        // entry that does not match any existing platform API level.
-        // It's conceivable that a 3rd part addon repo might have error, in which case
-        // we'll let this one go through anyway.
-        return null;
+        // We need to indicate this extra depends on a missing platform archive
+        // so that it can be impossible to install later on.
+        return new MissingPlatformArchiveInfo(new AndroidVersion(api, null /*codename*/));
     }
 
     /** Fetch all remote packages only if really needed. */
@@ -628,6 +710,120 @@ class UpdaterLogic {
                     }
                 }
             }
+        }
+    }
+
+
+    /**
+     * A {@link LocalArchiveInfo} is an {@link ArchiveInfo} that wraps an already installed
+     * "local" package/archive.
+     * <p/>
+     * In this case, the "new Archive" is still expected to be non null and the
+     * "replaced Archive" isnull. Installed archives are always accepted and never
+     * rejected.
+     * <p/>
+     * Dependencies are not set.
+     */
+    private static class LocalArchiveInfo extends ArchiveInfo {
+
+        public LocalArchiveInfo(Archive localArchive) {
+            super(localArchive, null /*replaced*/, null /*dependsOn*/);
+        }
+
+        /** Installed archives are always accepted. */
+        @Override
+        public boolean isAccepted() {
+            return true;
+        }
+
+        /** Installed archives are never rejected. */
+        @Override
+        public boolean isRejected() {
+            return false;
+        }
+    }
+
+    /**
+     * A {@link MissingPlatformArchiveInfo} is an {@link ArchiveInfo} that represents a
+     * package/archive that we <em>really</em> need as a dependency but that we don't have.
+     * <p/>
+     * This is currently used for addons and extras in case we can't find a matching base platform.
+     * <p/>
+     * This kind of archive has specific properties: the new archive to install is null,
+     * there are no dependencies and no archive is being replaced. The info can never be
+     * accepted and is always rejected.
+     */
+    private static class MissingPlatformArchiveInfo extends ArchiveInfo {
+
+        private final AndroidVersion mVersion;
+
+        /**
+         * Constructs a {@link MissingPlatformArchiveInfo} that will indicate the
+         * given platform version is missing.
+         */
+        public MissingPlatformArchiveInfo(AndroidVersion version) {
+            super(null /*newArchive*/, null /*replaced*/, null /*dependsOn*/);
+            mVersion = version;
+        }
+
+        /** Missing archives are never accepted. */
+        @Override
+        public boolean isAccepted() {
+            return false;
+        }
+
+        /** Missing archives are always rejected. */
+        @Override
+        public boolean isRejected() {
+            return true;
+        }
+
+        @Override
+        public String getShortDescription() {
+            return String.format("Missing SDK Platform Android%1$s, API %2$d",
+                    mVersion.isPreview() ? " Preview" : "",
+                    mVersion.getApiLevel());
+        }
+    }
+
+    /**
+     * A {@link MissingToolArchiveInfo} is an {@link ArchiveInfo} that represents a
+     * package/archive that we <em>really</em> need as a dependency but that we don't have.
+     * <p/>
+     * This is currently used for extras in case we can't find a matching tool revision.
+     * <p/>
+     * This kind of archive has specific properties: the new archive to install is null,
+     * there are no dependencies and no archive is being replaced. The info can never be
+     * accepted and is always rejected.
+     */
+    private static class MissingToolArchiveInfo extends ArchiveInfo {
+
+        private final int mRevision;
+
+        /**
+         * Constructs a {@link MissingPlatformArchiveInfo} that will indicate the
+         * given platform version is missing.
+         */
+        public MissingToolArchiveInfo(int revision) {
+            super(null /*newArchive*/, null /*replaced*/, null /*dependsOn*/);
+            mRevision = revision;
+        }
+
+        /** Missing archives are never accepted. */
+        @Override
+        public boolean isAccepted() {
+            return false;
+        }
+
+        /** Missing archives are always rejected. */
+        @Override
+        public boolean isRejected() {
+            return true;
+        }
+
+        @Override
+        public String getShortDescription() {
+            return String.format("Missing Android SDK Tools, revision %1$d", mRevision);
         }
     }
 }
