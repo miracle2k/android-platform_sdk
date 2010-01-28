@@ -406,18 +406,29 @@ public class PreCompilerBuilder extends BaseBuilder {
                 String msg = String.format(Messages.s_Doesnt_Declare_Package_Error,
                         AndroidConstants.FN_ANDROID_MANIFEST);
                 AdtPlugin.printErrorToConsole(project, msg);
-                markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+                BaseProjectHelper.markResource(manifest, AndroidConstants.MARKER_ADT,
+                        msg, IMarker.SEVERITY_ERROR);
 
                 // This interrupts the build. The next builders will not run.
+                // This also throws an exception and nothing beyond this line will run.
                 stopBuild(msg);
+            } else if (javaPackage.indexOf('.') == -1) {
+                // The application package name does not contain 2+ segments!
+                String msg = String.format(
+                        "Application package '%1$s' must have a minimum of 2 segments.",
+                        AndroidConstants.FN_ANDROID_MANIFEST);
+                AdtPlugin.printErrorToConsole(project, msg);
+                BaseProjectHelper.markResource(manifest, AndroidConstants.MARKER_ADT,
+                        msg, IMarker.SEVERITY_ERROR);
 
-                // TODO: document whether code below that uses javaPackage (which is now guaranteed
-                // to be null) will actually be executed or not.
+                // This interrupts the build. The next builders will not run.
+                // This also throws an exception and nothing beyond this line will run.
+                stopBuild(msg);
             }
 
             // at this point we have the java package. We need to make sure it's not a different
             // package than the previous one that were built.
-            if (javaPackage != null && javaPackage.equals(mManifestPackage) == false) {
+            if (javaPackage.equals(mManifestPackage) == false) {
                 // The manifest package has changed, the user may want to update
                 // the launch configuration
                 if (mManifestPackage != null) {
