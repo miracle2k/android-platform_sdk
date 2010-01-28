@@ -46,7 +46,7 @@ for /f %%a in ('%java_exe% -jar lib\archquery.jar') do set swt_path=lib\%%a
 if "%1 %2"=="update sdk" goto StartUi
 if not "%1"=="" goto EndTempCopy
 :StartUi
-    echo Starting Android SDK and AVD Manager
+    echo [INFO] Starting Android SDK and AVD Manager
 
     rem We're now going to create a temp dir to hold all the Jar files needed
     rem to run the android tool, copy them in the temp dir and finally execute
@@ -71,9 +71,9 @@ rem The global ANDROID_SWT always override the SWT.Jar path
 if defined ANDROID_SWT set swt_path=%ANDROID_SWT%
 
 if exist %swt_path% goto SetPath
-    echo SWT folder '%swt_path%' does not exist.
+    echo ERROR: SWT folder '%swt_path%' does not exist.
     echo Please set ANDROID_SWT to point to the folder containing swt.jar for your platform.
-    exit /B
+    goto :EOF
 
 :SetPath
 set java_ext_dirs=%swt_path%;lib\
