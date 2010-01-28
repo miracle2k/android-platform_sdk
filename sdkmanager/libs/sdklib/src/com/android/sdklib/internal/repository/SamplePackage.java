@@ -111,16 +111,16 @@ public class SamplePackage extends MinToolsPackage
      *                                 from properties.
      */
     SamplePackage(String archiveOsPath, Properties props) throws AndroidVersionException {
-        super(  null,                                   //source
-                props,                                  //properties
-                0,                                      //revision will be taken from props
-                null,                                   //license
-                null,                                   //description
-                null,                                   //descUrl
-                Os.ANY,                                 //archiveOs
-                Arch.ANY,                               //archiveArch
-                archiveOsPath                           //archiveOsPath
-                );
+        super(null,                                   //source
+              props,                                  //properties
+              0,                                      //revision will be taken from props
+              null,                                   //license
+              null,                                   //description
+              null,                                   //descUrl
+              Os.ANY,                                 //archiveOs
+              Arch.ANY,                               //archiveArch
+              archiveOsPath                           //archiveOsPath
+              );
 
         mVersion = new AndroidVersion(props);
 

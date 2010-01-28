@@ -16,14 +16,9 @@
 
 package com.android.sdkuilib.internal.repository.icons;
 
-import com.android.sdklib.internal.repository.AddonPackage;
 import com.android.sdklib.internal.repository.Archive;
-import com.android.sdklib.internal.repository.DocPackage;
-import com.android.sdklib.internal.repository.ExtraPackage;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.PlatformPackage;
 import com.android.sdklib.internal.repository.RepoSource;
-import com.android.sdklib.internal.repository.ToolPackage;
 import com.android.sdkuilib.internal.repository.RepoSourcesAdapter;
 
 import org.eclipse.swt.SWTException;
@@ -90,6 +85,18 @@ public class ImageFactory {
      *  expected file is missing.
      */
     public Image getImageForObject(Object object) {
+
+        if (object == null) {
+            return null;
+        }
+
+        String clz = object.getClass().getSimpleName();
+        if (clz.endsWith(Package.class.getSimpleName())) {
+            String name = clz.replaceFirst(Package.class.getSimpleName(), "").toLowerCase() + //$NON-NLS-1$
+                            "_pkg_16.png";                                      //$NON-NLS-1$
+            return getImageByName(name);
+        }
+
         if (object instanceof RepoSource) {
             return getImageByName("source_icon16.png");                         //$NON-NLS-1$
 
@@ -98,29 +105,16 @@ public class ImageFactory {
 
         } else if (object instanceof RepoSourcesAdapter.RepoSourceEmpty) {
             return getImageByName("nopkg_icon16.png");                          //$NON-NLS-1$
+        }
 
-        } else if (object instanceof PlatformPackage) {
-            return getImageByName("android_icon_16.png");                       //$NON-NLS-1$
-
-        } else if (object instanceof AddonPackage) {
-            return getImageByName("addon_icon16.png");                          //$NON-NLS-1$
-
-        } else if (object instanceof ToolPackage) {
-            return getImageByName("tool_icon16.png");                           //$NON-NLS-1$
-
-        } else if (object instanceof DocPackage) {
-            return getImageByName("doc_icon16.png");                            //$NON-NLS-1$
-
-        } else if (object instanceof ExtraPackage) {
-            return getImageByName("extra_icon16.png");                          //$NON-NLS-1$
-
-        } else if (object instanceof Archive) {
+        if (object instanceof Archive) {
             if (((Archive) object).isCompatible()) {
                 return getImageByName("archive_icon16.png");                    //$NON-NLS-1$
             } else {
                 return getImageByName("incompat_icon16.png");                   //$NON-NLS-1$
             }
         }
+
         return null;
     }
 
