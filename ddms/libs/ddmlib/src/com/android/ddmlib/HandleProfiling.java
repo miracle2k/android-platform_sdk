@@ -29,6 +29,8 @@ final class HandleProfiling extends ChunkHandler {
 
     public static final int CHUNK_MPRS = type("MPRS");
     public static final int CHUNK_MPRE = type("MPRE");
+    public static final int CHUNK_MPSS = type("MPSS");
+    public static final int CHUNK_MPSE = type("MPSE");
     public static final int CHUNK_MPRQ = type("MPRQ");
     public static final int CHUNK_FAIL = type("FAIL");
 
@@ -41,6 +43,7 @@ final class HandleProfiling extends ChunkHandler {
      */
     public static void register(MonitorThread mt) {
         mt.registerChunkHandler(CHUNK_MPRE, mInst);
+        mt.registerChunkHandler(CHUNK_MPSE, mInst);
         mt.registerChunkHandler(CHUNK_MPRQ, mInst);
     }
 
@@ -67,6 +70,8 @@ final class HandleProfiling extends ChunkHandler {
 
         if (type == CHUNK_MPRE) {
             handleMPRE(client, data);
+        } else if (type == CHUNK_MPSE) {
+            handleMPSE(client, data);
         } else if (type == CHUNK_MPRQ) {
             handleMPRQ(client, data);
         } else if (type == CHUNK_FAIL) {
@@ -157,6 +162,63 @@ final class HandleProfiling extends ChunkHandler {
 
         client.getClientData().setMethodProfilingStatus(MethodProfilingStatus.OFF);
         client.update(Client.CHANGE_METHOD_PROFILING_STATUS);
+    }
+
+    /**
+     * Send a MPSS (Method Profiling Streaming Start) request to the client.
+     *
+     * The arguments to this method will eventually be passed to
+     * android.os.Debug.startMethodTracing() on the device.
+     *
+     * @param bufferSize is the desired buffer size in bytes (8MB is good)
+     * @param flags see startMethodTracing() docs; use 0 for default behavior
+     */
+    public static void sendMPSS(Client client, int bufferSize,
+        int flags) throws IOException {
+
+        ByteBuffer rawBuf = allocBuffer(2*4);
+        JdwpPacket packet = new JdwpPacket(rawBuf);
+        ByteBuffer buf = getChunkDataBuf(rawBuf);
+
+        buf.putInt(bufferSize);
+        buf.putInt(flags);
+
+        finishChunkPacket(packet, CHUNK_MPSS, buf.position());
+        Log.d("ddm-prof", "Sending " + name(CHUNK_MPSS)
+            + "', size=" + bufferSize + ", flags=" + flags);
+        client.sendAndConsume(packet, mInst);
+
+        // send a status query. this ensure that the status is properly updated if for some
+        // reason starting the tracing failed.
+        sendMPRQ(client);
+    }
+
+    /**
+     * Send a MPSE (Method Profiling Streaming End) request to the client.
+     */
+    public static void sendMPSE(Client client) throws IOException {
+        ByteBuffer rawBuf = allocBuffer(0);
+        JdwpPacket packet = new JdwpPacket(rawBuf);
+        ByteBuffer buf = getChunkDataBuf(rawBuf);
+
+        // no data
+
+        finishChunkPacket(packet, CHUNK_MPSE, buf.position());
+        Log.d("ddm-prof", "Sending " + name(CHUNK_MPSE));
+        client.sendAndConsume(packet, mInst);
+    }
+
+    /**
+     * Handle incoming profiling data.  The MPSE packet includes the
+     * complete .trace file.
+     */
+    private void handleMPSE(Client client, ByteBuffer data) {
+        // TODO
+        byte[] stuff = new byte[Math.min(100, data.capacity())];
+        data.get(stuff, 0, stuff.length);
+        String sample = new String(stuff);
+        Log.e("ddm-prof", "GOT MPSE (" + data.capacity() + " bytes): '" +
+            sample + "' ...");
     }
 
     /**
