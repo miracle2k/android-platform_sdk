@@ -19,6 +19,8 @@ package com.android.ddmlib;
 import com.android.ddmlib.ClientData.IMethodProfilingHandler;
 import com.android.ddmlib.ClientData.MethodProfilingStatus;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -154,7 +156,7 @@ final class HandleProfiling extends ChunkHandler {
 
                 Log.d("ddm-prof", "Method profiling has finished");
             } else {
-                handler.onFailure(client);
+                handler.onEndFailure(client);
 
                 Log.w("ddm-prof", "Method profiling has failed (check device log)");
             }
@@ -213,12 +215,42 @@ final class HandleProfiling extends ChunkHandler {
      * complete .trace file.
      */
     private void handleMPSE(Client client, ByteBuffer data) {
-        // TODO
-        byte[] stuff = new byte[Math.min(100, data.capacity())];
-        data.get(stuff, 0, stuff.length);
-        String sample = new String(stuff);
-        Log.e("ddm-prof", "GOT MPSE (" + data.capacity() + " bytes): '" +
-            sample + "' ...");
+        IMethodProfilingHandler handler = ClientData.getMethodProfilingHandler();
+        if (handler != null) {
+            FileOutputStream fos = null;
+            try {
+                File f = File.createTempFile(client.getClientData().getClientDescription(),
+                        ".trace");
+                fos = new FileOutputStream(f);
+
+                byte[] stuff = new byte[data.capacity()];
+                data.get(stuff, 0, stuff.length);
+
+                fos.write(stuff);
+                fos.close();
+                fos = null;
+
+                Log.d("ddm-prof", "got trace file, size: " + data.capacity() + " bytes");
+
+                handler.onSuccess(f, client);
+            } catch (IOException e) {
+                handler.onEndLocalFailure(client, e.getMessage());
+
+                Log.e("ddm-prof", "fail to write trace file: " + e.getMessage());
+                Log.e("ddm-prof", e);
+            } finally {
+                if (fos != null) {
+                    try {
+                        fos.close();
+                    } catch (IOException e) {
+                         //ignore
+                    }
+                }
+            }
+        }
+
+        client.getClientData().setMethodProfilingStatus(MethodProfilingStatus.OFF);
+        client.update(Client.CHANGE_METHOD_PROFILING_STATUS);
     }
 
     /**
@@ -255,7 +287,9 @@ final class HandleProfiling extends ChunkHandler {
     }
 
     private void handleFAIL(Client client, ByteBuffer data) {
-        // this can be sent if MPRS failed (like wrong permission)
+        // this can be sent if
+        // - MPRS failed (like wrong permission)
+        // - MPSE failed for whatever reason
 
         String filename = client.getClientData().getPendingMethodProfiling();
         if (filename != null) {
@@ -265,9 +299,15 @@ final class HandleProfiling extends ChunkHandler {
             // and notify of failure
             IMethodProfilingHandler handler = ClientData.getMethodProfilingHandler();
             if (handler != null) {
-                handler.onFailure(client);
+                handler.onStartFailure(client);
             }
-
+        } else {
+            // this is MPRE
+            // notify of failure
+            IMethodProfilingHandler handler = ClientData.getMethodProfilingHandler();
+            if (handler != null) {
+                handler.onEndFailure(client);
+            }
         }
 
         // send a query to know the current status

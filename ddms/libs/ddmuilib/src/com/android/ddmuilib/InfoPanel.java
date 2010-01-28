@@ -164,10 +164,22 @@ public class InfoPanel extends TablePanel {
             item.setText(1, isDdmAware);
             item = mTable.getItem(ENT_PROCESS_ID);
             item.setText(1, pid);
+
             item = mTable.getItem(ENT_SUPPORTS_PROFILING);
-            item.setText(1, Boolean.toString(cd.hasFeature(ClientData.FEATURE_PROFILING)));
+            if (cd.hasFeature(ClientData.FEATURE_PROFILING_STREAMING)) {
+                item.setText(1, "Yes");
+            } else if (cd.hasFeature(ClientData.FEATURE_PROFILING)) {
+                item.setText(1, "Yes (Application must be able to write on the SD Card)");
+            } else {
+                item.setText(1, "No");
+            }
+
             item = mTable.getItem(ENT_SUPPORTS_HPROF);
-            item.setText(1, Boolean.toString(cd.hasFeature(ClientData.FEATURE_HPROF)));
+            if (cd.hasFeature(ClientData.FEATURE_HPROF)) {
+                item.setText(1, "Yes (Application must be able to write on the SD Card)");
+            } else {
+                item.setText(1, "No");
+            }
         }
 
         mCol2.pack();

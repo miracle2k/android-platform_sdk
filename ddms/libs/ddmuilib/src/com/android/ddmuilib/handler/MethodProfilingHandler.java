@@ -45,13 +45,35 @@ public class MethodProfilingHandler extends BaseFileHandler
         super(parentShell);
     }
 
-    public void onFailure(final Client client) {
+    public void onStartFailure(final Client client) {
         mParentShell.getDisplay().asyncExec(new Runnable() {
             public void run() {
                 displayError(
                         "Unable to create Method Profiling file for application '%1$s'.\n" +
                         "Check logcat for more information.",
                         client.getClientData().getClientDescription());
+            }
+        });
+    }
+
+    public void onEndFailure(final Client client) {
+        mParentShell.getDisplay().asyncExec(new Runnable() {
+            public void run() {
+                displayError(
+                        "Unable to finish Method Profiling for application '%1$s'.\n" +
+                        "Check logcat for more information.",
+                        client.getClientData().getClientDescription());
+            }
+        });
+    }
+
+    public void onEndLocalFailure(final Client client, final String message) {
+        mParentShell.getDisplay().asyncExec(new Runnable() {
+            public void run() {
+                displayError(String.format(
+                        "Unable to write trace file locally for application\n\t%1$s\n\n%2$s",
+                        client.getClientData().getClientDescription(),
+                        message));
             }
         });
     }
@@ -83,6 +105,10 @@ public class MethodProfilingHandler extends BaseFileHandler
             }
 
         });
+    }
+
+    public void onSuccess(File localFile, final Client client) {
+        openInTraceview(localFile.getAbsolutePath());
     }
 
     private void pullAndOpen(SyncService sync, String remoteFilePath)
