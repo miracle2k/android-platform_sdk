@@ -325,18 +325,21 @@ public class ClientData {
         /**
          * Called when method tracing failed to start
          * @param client the client that was profiled.
+         * @param message an optional (<code>null<code> ok) error message to be displayed.
          */
-        void onStartFailure(Client client);
+        void onStartFailure(Client client, String message);
 
         /**
          * Called when method tracing failed to end on the VM side
          * @param client the client that was profiled.
+         * @param message an optional (<code>null<code> ok) error message to be displayed.
          */
-        void onEndFailure(Client client);
+        void onEndFailure(Client client, String message);
 
         /**
          * Called when method tracing failed to end locally.
          * @param client the client that was profiled.
+         * @param message the mandatory message to display.
          */
         void onEndLocalFailure(Client client, String message);
     }

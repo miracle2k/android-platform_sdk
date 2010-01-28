@@ -45,24 +45,26 @@ public class MethodProfilingHandler extends BaseFileHandler
         super(parentShell);
     }
 
-    public void onStartFailure(final Client client) {
+    public void onStartFailure(final Client client, final String message) {
         mParentShell.getDisplay().asyncExec(new Runnable() {
             public void run() {
                 displayError(
-                        "Unable to create Method Profiling file for application '%1$s'.\n" +
+                        "Unable to create Method Profiling file for application '%1$s'\n\n%2$s" +
                         "Check logcat for more information.",
-                        client.getClientData().getClientDescription());
+                        client.getClientData().getClientDescription(),
+                        message != null ? message + "\n\n" : "");
             }
         });
     }
 
-    public void onEndFailure(final Client client) {
+    public void onEndFailure(final Client client, final String message) {
         mParentShell.getDisplay().asyncExec(new Runnable() {
             public void run() {
                 displayError(
-                        "Unable to finish Method Profiling for application '%1$s'.\n" +
+                        "Unable to finish Method Profiling for application '%1$s'\n\n%2$s" +
                         "Check logcat for more information.",
-                        client.getClientData().getClientDescription());
+                        client.getClientData().getClientDescription(),
+                        message != null ? message + "\n\n" : "");
             }
         });
     }
@@ -70,10 +72,10 @@ public class MethodProfilingHandler extends BaseFileHandler
     public void onEndLocalFailure(final Client client, final String message) {
         mParentShell.getDisplay().asyncExec(new Runnable() {
             public void run() {
-                displayError(String.format(
-                        "Unable to write trace file locally for application\n\t%1$s\n\n%2$s",
+                displayError(
+                        "Unable to write trace file locally for application '%1$s'\n\n%2$s",
                         client.getClientData().getClientDescription(),
-                        message));
+                        message);
             }
         });
     }

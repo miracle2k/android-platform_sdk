@@ -156,7 +156,7 @@ final class HandleProfiling extends ChunkHandler {
 
                 Log.d("ddm-prof", "Method profiling has finished");
             } else {
-                handler.onEndFailure(client);
+                handler.onEndFailure(client, null /*message*/);
 
                 Log.w("ddm-prof", "Method profiling has failed (check device log)");
             }
@@ -287,6 +287,15 @@ final class HandleProfiling extends ChunkHandler {
     }
 
     private void handleFAIL(Client client, ByteBuffer data) {
+        /*int errorCode =*/ data.getInt();
+        int length = data.getInt() * 2;
+        String message = null;
+        if (length > 0) {
+            byte[] messageBuffer = new byte[length];
+            data.get(messageBuffer, 0, length);
+            message = new String(messageBuffer);
+        }
+
         // this can be sent if
         // - MPRS failed (like wrong permission)
         // - MPSE failed for whatever reason
@@ -299,14 +308,14 @@ final class HandleProfiling extends ChunkHandler {
             // and notify of failure
             IMethodProfilingHandler handler = ClientData.getMethodProfilingHandler();
             if (handler != null) {
-                handler.onStartFailure(client);
+                handler.onStartFailure(client, message);
             }
         } else {
             // this is MPRE
             // notify of failure
             IMethodProfilingHandler handler = ClientData.getMethodProfilingHandler();
             if (handler != null) {
-                handler.onEndFailure(client);
+                handler.onEndFailure(client, message);
             }
         }
 
