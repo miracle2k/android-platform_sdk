@@ -85,6 +85,8 @@ public class ApkBuilder extends BaseBuilder {
 
     private static final String DX_PREFIX = "Dx"; //$NON-NLS-1$
 
+    private final static String GDBSERVER_NAME = "gdbserver";
+
     /**
      * Dex conversion flag. This is set to true if one of the changed/added/removed
      * file is a .class file. Upon visiting all the delta resource, if this
@@ -253,7 +255,7 @@ public class ApkBuilder extends BaseBuilder {
     }
 
     // build() returns a list of project from which this project depends for future compilation.
-    @SuppressWarnings({"unchecked", "unused"})
+    @SuppressWarnings({"unchecked"})
     @Override
     protected IProject[] build(int kind, Map args, IProgressMonitor monitor)
             throws CoreException {
@@ -986,7 +988,7 @@ public class ApkBuilder extends BaseBuilder {
             if (libFolder != null && libFolder.exists() &&
                     libFolder.getType() == IResource.FOLDER) {
                 // look inside and put .so in lib/* by keeping the relative folder path.
-                writeNativeLibraries(libFolder.getFullPath().segmentCount(), builder, libFolder);
+                writeNativeLibraries((IFolder) libFolder, builder);
             }
 
             // close the jar file and write the manifest and sign it.
@@ -1060,44 +1062,45 @@ public class ApkBuilder extends BaseBuilder {
 
     /**
      * Writes native libraries into a {@link SignedJarBuilder}.
-     * <p/>This recursively go through folder and writes .so files.
-     * The path in the archive is based on the root folder containing the libraries in the project.
-     * Its segment count is passed to the method to compute the resources path relative to the root
-     * folder.
-     * Native libraries in the archive must be in a "lib" folder. Everything in the project native
-     * lib folder directly goes in this "lib" folder in the archive.
+     * <p/>The native libraries must be located in a given main folder. Under this folder, it is
+     * expected that the libraries are under a sub-folder that represents the ABI of the library.
      *
+     * The path in the archive is based on the ABI folder name, and located under a main
+     * folder called "lib".
      *
-     * @param rootSegmentCount The number of segment of the path of the folder containing the
-     * libraries. This is used to compute the path in the archive.
+     * This method also packages any "gdbserver" executable it finds in the ABI folders.
+     *
+     * @param rootFolder The folder containing the native libraries.
      * @param jarBuilder the {@link SignedJarBuilder} used to create the archive.
-     * @param resource the IResource to write.
      * @throws CoreException
      * @throws IOException
      */
-    private void writeNativeLibraries(int rootSegmentCount, SignedJarBuilder jarBuilder,
-            IResource resource) throws CoreException, IOException {
-        if (resource.getType() == IResource.FILE) {
-            IPath path = resource.getFullPath();
+    private void writeNativeLibraries(IFolder rootFolder, SignedJarBuilder jarBuilder)
+            throws CoreException, IOException {
+        // the native files must be under a single sub-folder under the main root folder.
+        // the sub-folder represents the abi for the native libs
+        IResource[] abis = rootFolder.members();
+        for (IResource abi : abis) {
+            if (abi.getType() == IResource.FOLDER) { // ignore non folders.
+                IResource[] libs = ((IFolder)abi).members();
 
-            // check the extension.
-            String ext = path.getFileExtension();
-            if (ext != null && ext.equalsIgnoreCase(AndroidConstants.EXT_NATIVE_LIB)) {
-                // remove the first segment to build the path inside the archive.
-                path = path.removeFirstSegments(rootSegmentCount);
+                for (IResource lib : libs) {
+                    if (lib.getType() == IResource.FILE) { // ignore non files.
+                        IPath path = lib.getFullPath();
 
-                // add it to the archive.
-                IPath apkPath = new Path(SdkConstants.FD_APK_NATIVE_LIBS);
-                apkPath = apkPath.append(path);
+                        // check the extension.
+                        String ext = path.getFileExtension();
+                        if (AndroidConstants.EXT_NATIVE_LIB.equalsIgnoreCase(ext) ||
+                                GDBSERVER_NAME.equals(lib.getName())) {
+                            // compute the path inside the archive.
+                            IPath apkPath = new Path(SdkConstants.FD_APK_NATIVE_LIBS);
+                            apkPath = apkPath.append(abi.getName()).append(lib.getName());
 
-                // writes the file in the apk.
-                jarBuilder.writeFile(resource.getLocation().toFile(), apkPath.toString());
-            }
-        } else if (resource.getType() == IResource.FOLDER &&
-                checkFolderForPackaging((IFolder)resource)) {
-            IResource[] members = ((IFolder)resource).members();
-            for (IResource member : members) {
-                writeNativeLibraries(rootSegmentCount, jarBuilder, member);
+                            // writes the file in the apk.
+                            jarBuilder.writeFile(lib.getLocation().toFile(), apkPath.toString());
+                        }
+                    }
+                }
             }
         }
     }
