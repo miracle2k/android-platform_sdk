@@ -241,7 +241,7 @@ public class Client {
     }
 
     public void toggleMethodProfiling() {
-        boolean canStream = false; //mClientData.hasFeature(ClientData.FEATURE_PROFILING_STREAMING);
+        boolean canStream = mClientData.hasFeature(ClientData.FEATURE_PROFILING_STREAMING);
         try {
             if (mClientData.getMethodProfilingStatus() == MethodProfilingStatus.ON) {
                 if (canStream) {
