@@ -115,14 +115,16 @@ public class PlatformPackage extends MinToolsPackage implements IPackageVersion 
         String s;
 
         if (mVersion.isPreview()) {
-            s = String.format("SDK Platform Android %1$s Preview, revision %2$s",
+            s = String.format("SDK Platform Android %1$s Preview, revision %2$s%3$s",
                     getVersionName(),
-                    getRevision());
+                    getRevision(),
+                    isObsolete() ? " (Obsolete)" : "");
         } else {
-            s = String.format("SDK Platform Android %1$s, API %2$d, revision %3$s",
+            s = String.format("SDK Platform Android %1$s, API %2$d, revision %3$s%4$s",
                 getVersionName(),
                 mVersion.getApiLevel(),
-                getRevision());
+                getRevision(),
+                isObsolete() ? " (Obsolete)" : "");
         }
 
         return s;
@@ -142,7 +144,9 @@ public class PlatformPackage extends MinToolsPackage implements IPackageVersion 
         }
 
         if (s.indexOf("revision") == -1) {
-            s += String.format("\nRevision %1$d", getRevision());
+            s += String.format("\nRevision %1$d%2$s",
+                    getRevision(),
+                    isObsolete() ? " (Obsolete)" : "");
         }
 
         return s;

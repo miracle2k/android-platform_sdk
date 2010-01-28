@@ -270,6 +270,7 @@
         <sdk:description>An Extra package for the USB driver, it will install in $SDK/usb_driver</sdk:description>
         <sdk:desc-url>http://www.example.com/extra.html</sdk:desc-url>
         <sdk:min-tools-rev>3</sdk:min-tools-rev>
+        <sdk:obsolete/>
     </sdk:extra>
 
     <sdk:extra>
@@ -287,6 +288,7 @@
         <sdk:desc-url>http://www.example.com/extra.html</sdk:desc-url>
         <sdk:min-tools-rev>3</sdk:min-tools-rev>
         <sdk:min-api-level>42</sdk:min-api-level>
+        <sdk:obsolete></sdk:obsolete>
     </sdk:extra>
 
     <sdk:sample>
@@ -302,6 +304,7 @@
         <sdk:description>Some sample package</sdk:description>
         <sdk:desc-url>http://www.example.com/sample.html</sdk:desc-url>
         <sdk:min-tools-rev>5</sdk:min-tools-rev>
+        <sdk:obsolete>This is obsolete</sdk:obsolete>
     </sdk:sample>
 
 </sdk:sdk-repository>

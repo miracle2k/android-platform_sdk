@@ -159,10 +159,11 @@ public class SamplePackage extends MinToolsPackage
     /** Returns a short description for an {@link IDescription}. */
     @Override
     public String getShortDescription() {
-        String s = String.format("Samples for SDK API %1$s%2$s, revision %3$d",
+        String s = String.format("Samples for SDK API %1$s%2$s, revision %3$d%4$s",
                 mVersion.getApiString(),
                 mVersion.isPreview() ? " Preview" : "",
-                getRevision());
+                getRevision(),
+                isObsolete() ? " (Obsolete)" : "");
         return s;
     }
 
@@ -180,7 +181,9 @@ public class SamplePackage extends MinToolsPackage
         }
 
         if (s.indexOf("revision") == -1) {
-            s += String.format("\nRevision %1$d", getRevision());
+            s += String.format("\nRevision %1$d%2$s",
+                    getRevision(),
+                    isObsolete() ? " (Obsolete)" : "");
         }
 
         return s;

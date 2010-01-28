@@ -63,18 +63,21 @@ public class SdkRepository {
 
     /** The license definition. */
     public static final String NODE_LICENSE       = "license";                  //$NON-NLS-1$
-    /** The optional uses-license for all packages (platform, add-on, tool, doc) or for a lib. */
+    /** The optional uses-license for all packages or for a lib. */
     public static final String NODE_USES_LICENSE  = "uses-license";             //$NON-NLS-1$
-    /** The revision, an int > 0, for all packages (platform, add-on, tool, doc). */
+    /** The revision, an int > 0, for all packages. */
     public static final String NODE_REVISION      = "revision";                 //$NON-NLS-1$
-    /** The optional description for all packages (platform, add-on, tool, doc) or for a lib. */
+    /** The optional description for all packages or for a lib. */
     public static final String NODE_DESCRIPTION   = "description";              //$NON-NLS-1$
-    /** The optional description URL for all packages (platform, add-on, tool, doc). */
+    /** The optional description URL for all packages. */
     public static final String NODE_DESC_URL      = "desc-url";                 //$NON-NLS-1$
-    /** The optional release note for all packages (platform, add-on, tool, doc). */
+    /** The optional release note for all packages. */
     public static final String NODE_RELEASE_NOTE  = "release-note";             //$NON-NLS-1$
-    /** The optional release note URL for all packages (platform, add-on, tool, doc). */
+    /** The optional release note URL for all packages. */
     public static final String NODE_RELEASE_URL   = "release-url";              //$NON-NLS-1$
+    /** The optional obsolete qualifier for all packages. */
+    public static final String NODE_OBSOLETE      = "obsolete";                 //$NON-NLS-1$
+
     /** The optional minimal tools revision required by platform & extra packages. */
     public static final String NODE_MIN_TOOLS_REV = "min-tools-rev";            //$NON-NLS-1$
     /** The optional minimal API level required by extra packages. */

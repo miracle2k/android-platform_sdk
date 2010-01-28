@@ -86,6 +86,10 @@
             <!-- The minimal revision of tools required by this package.
                  Optional. If present, must be an int > 0. -->
             <xsd:element name="min-tools-rev" type="xsd:positiveInteger" minOccurs="0" />
+
+            <!-- An optional element indicating the package is obsolete.
+                 The string content is however currently not defined and ignored. -->
+            <xsd:element name="obsolete"  type="xsd:string" minOccurs="0" />
         </xsd:all>
     </xsd:complexType>
 
@@ -122,6 +126,10 @@
             <xsd:element name="release-url"  type="xsd:token"       minOccurs="0" />
             <!-- A list of file archives for this package. -->
             <xsd:element name="archives"     type="sr2:archivesType" />
+
+            <!-- An optional element indicating the package is obsolete.
+                 The string content is however currently not defined and ignored. -->
+            <xsd:element name="obsolete"  type="xsd:string" minOccurs="0" />
 
             <!-- An add-on can declare 0 or more libraries. -->
 
@@ -168,6 +176,10 @@
             <xsd:element name="release-url"  type="xsd:token"       minOccurs="0" />
             <!-- A list of file archives for this package. -->
             <xsd:element name="archives"     type="sr2:archivesType" />
+
+            <!-- An optional element indicating the package is obsolete.
+                 The string content is however currently not defined and ignored. -->
+            <xsd:element name="obsolete"  type="xsd:string" minOccurs="0" />
         </xsd:all>
     </xsd:complexType>
 
@@ -200,6 +212,10 @@
             <xsd:element name="release-url"  type="xsd:token"       minOccurs="0" />
             <!-- A list of file archives for this package. -->
             <xsd:element name="archives"     type="sr2:archivesType" />
+
+            <!-- An optional element indicating the package is obsolete.
+                 The string content is however currently not defined and ignored. -->
+            <xsd:element name="obsolete"  type="xsd:string" minOccurs="0" />
         </xsd:all>
     </xsd:complexType>
 
@@ -235,6 +251,10 @@
             <!-- The minimal revision of tools required by this package.
                  Optional. If present, must be an int > 0. -->
             <xsd:element name="min-tools-rev" type="xsd:positiveInteger" minOccurs="0" />
+
+            <!-- An optional element indicating the package is obsolete.
+                 The string content is however currently not defined and ignored. -->
+            <xsd:element name="obsolete"  type="xsd:string" minOccurs="0" />
         </xsd:all>
     </xsd:complexType>
 
@@ -289,6 +309,10 @@
             <!-- The minimal API level required by this package.
                  Optional. If present, must be an int > 0. -->
             <xsd:element name="min-api-level" type="xsd:positiveInteger" minOccurs="0" />
+
+            <!-- An optional element indicating the package is obsolete.
+                 The string content is however currently not defined and ignored. -->
+            <xsd:element name="obsolete"  type="xsd:string" minOccurs="0" />
         </xsd:all>
     </xsd:complexType>
 
@@ -409,6 +433,5 @@
             </xsd:extension>
         </xsd:simpleContent>
     </xsd:complexType>
-
 
 </xsd:schema>
