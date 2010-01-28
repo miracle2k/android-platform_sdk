@@ -405,11 +405,18 @@ public class Archive implements IDescription {
 
         archiveFile = downloadFile(osSdkRoot, monitor, forceHttp);
         if (archiveFile != null) {
-            if (unarchive(osSdkRoot, archiveFile, sdkManager, monitor)) {
-                monitor.setResult("Installed %1$s", name);
-                // Delete the temp archive if it exists, only on success
-                deleteFileOrFolder(archiveFile);
-                return true;
+            boolean installSuccess = false;
+            try {
+                pkg.preInstallHook(osSdkRoot, this);
+                if (unarchive(osSdkRoot, archiveFile, sdkManager, monitor)) {
+                    monitor.setResult("Installed %1$s", name);
+                    // Delete the temp archive if it exists, only on success
+                    deleteFileOrFolder(archiveFile);
+                    installSuccess = true;
+                    return true;
+                }
+            } finally {
+                pkg.postInstallHook(this, installSuccess);
             }
         }
 

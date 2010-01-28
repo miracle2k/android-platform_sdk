@@ -403,6 +403,28 @@ public abstract class Package implements IDescription, Comparable<Package> {
             String osSdkRoot, String suggestedDir, SdkManager sdkManager);
 
     /**
+     * Hook called right before an archive is installed. The archive has already
+     * been downloaded succesfully and will be installed in the directory specified by
+     * {@link #getInstallFolder(String, String, SdkManager)} when this call returns.
+     *
+     * @param osSdkRoot The OS path of the SDK root folder.
+     * @param archive The archive that will be installed
+     */
+    public void preInstallHook(String osSdkRoot, Archive archive) {
+        // Nothing to do in base class.
+    }
+
+    /**
+     * Hook called right after an archive has been installed.
+     *
+     * @param archive The archive that has been installed
+     * @param installSuccess True if the archive was successfully installed.
+     */
+    public void postInstallHook(Archive archive, boolean installSuccess) {
+        // Nothing to do in base class.
+    }
+
+    /**
      * Returns whether the give package represents the same item as the current package.
      * <p/>
      * Two packages are considered the same if they represent the same thing, except for the
