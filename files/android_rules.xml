@@ -275,7 +275,10 @@
                 assets="${asset.absolute.dir}"
                 androidjar="${android.jar}"
                 outfolder="${out.absolute.dir}"
-                basename="${ant.project.name}" />
+                basename="${ant.project.name}">
+            <!-- <nocompress /> forces no compression on any files in assets or res/raw -->
+            <!-- <nocompress extension="xml" /> forces no compression on specific file extensions in assets and res/raw -->
+        </aaptexec>
     </target>
 
     <!-- Packages the application and sign it with a debug key. -->
