@@ -7,6 +7,11 @@
 - Loads the SDK content only when a project requires it. This will make Eclipse use less resources when the SDK contains many versions of Android.
 - DDMS plug-in now contains the Allocation Tracker view.
 - Lots of fixes in the configuration selector of the Visual Layout Editor.
+- Explode mode in the Visual Layout Editor adds a margin to all layout objects so that it's easier to see embedded layouts
+- Outline mode in the Visual Layout Editor draws layout outline to make it easier to see layout objects.
+- Fixed issues with the New Project Wizard when selecting samples.
+- Fixed possible crash when launching applications
+- New action in the Logcat view: "Go to problem" lets you go directly from an exception trace output to the code.
 
 0.9.5:
 - misc fixes in the SDK Updater
