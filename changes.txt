@@ -1,0 +1,11 @@
+Change log for Android SDK Tools.
+
+Revision 5 (02/2010):
+- AVD/SDK Manager:
+	- Add support for samples components.
+	- improved support for dependency between components.
+	- AVDs now sorted by API level.
+	- Prevent deletion of running AVD.
+- Emulator now requires sd card to be 9MB and above.
+- Fixed layoutopt.bat to correctly execute on Windows.
+
