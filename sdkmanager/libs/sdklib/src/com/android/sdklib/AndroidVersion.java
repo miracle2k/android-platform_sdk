@@ -161,7 +161,7 @@ public final class AndroidVersion implements Comparable<AndroidVersion> {
      * <p/>
      * Be aware that this is not a perfect test, as other properties could break compatibility
      * despite this method returning true. For a more comprehensive test, see
-     * {@link IAndroidTarget#isCompatibleBaseFor(IAndroidTarget)}.
+     * {@link IAndroidTarget#canRunOn(IAndroidTarget)}.
      * <p/>
      * Nevertheless, when testing if an application can run on a device (where there is no
      * access to the list of optional libraries), this method can give a good indication of whether

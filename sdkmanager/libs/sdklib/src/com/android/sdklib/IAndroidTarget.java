@@ -180,12 +180,17 @@ public interface IAndroidTarget extends Comparable<IAndroidTarget> {
 
     /**
      * Returns whether the given target is compatible with the receiver.
-     * <p/>A target is considered compatible if applications developed for the receiver can run on
-     * the given target.
+     * <p/>
+     * This means that a project using the receiver's target can run on the given target.
+     * <br/>
+     * Example:
+     * <pre>
+     * CupcakeTarget.canRunOn(DonutTarget) == true
+     * </pre>.
      *
      * @param target the IAndroidTarget to test.
      */
-    boolean isCompatibleBaseFor(IAndroidTarget target);
+    boolean canRunOn(IAndroidTarget target);
 
     /**
      * Returns a string able to uniquely identify a target.

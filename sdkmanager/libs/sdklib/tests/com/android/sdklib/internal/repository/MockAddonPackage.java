@@ -123,7 +123,7 @@ public class MockAddonPackage extends AddonPackage {
             return false;
         }
 
-        public boolean isCompatibleBaseFor(IAndroidTarget target) {
+        public boolean canRunOn(IAndroidTarget target) {
             throw new UnsupportedOperationException("Implement this as needed for tests");
         }
 
