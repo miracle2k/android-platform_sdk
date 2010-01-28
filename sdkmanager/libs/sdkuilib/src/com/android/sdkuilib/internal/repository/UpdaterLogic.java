@@ -21,12 +21,16 @@ import com.android.sdklib.internal.repository.AddonPackage;
 import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.DocPackage;
 import com.android.sdklib.internal.repository.ExtraPackage;
+import com.android.sdklib.internal.repository.IMinApiLevelDependency;
+import com.android.sdklib.internal.repository.IMinToolsDependency;
 import com.android.sdklib.internal.repository.IPackageVersion;
+import com.android.sdklib.internal.repository.IPlatformDependency;
 import com.android.sdklib.internal.repository.MinToolsPackage;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.PlatformPackage;
 import com.android.sdklib.internal.repository.RepoSource;
 import com.android.sdklib.internal.repository.RepoSources;
+import com.android.sdklib.internal.repository.SamplePackage;
 import com.android.sdklib.internal.repository.ToolPackage;
 import com.android.sdklib.internal.repository.Package.UpdateInfo;
 
@@ -80,7 +84,7 @@ class UpdaterLogic {
     }
 
     /**
-     * Finds new platforms that the user does not have in his/her local SDK
+     * Finds new packages that the user does not have in his/her local SDK
      * and adds them to the list of archives to install.
      */
     public void addNewPlatforms(ArrayList<ArchiveInfo> archives,
@@ -92,6 +96,7 @@ class UpdaterLogic {
 
         // Find the highest platform installed
         float currentPlatformScore = 0;
+        float currentSampleScore = 0;
         float currentAddonScore = 0;
         float currentDocScore = 0;
         HashMap<String, Float> currentExtraScore = new HashMap<String, Float>();
@@ -99,7 +104,7 @@ class UpdaterLogic {
             int rev = p.getRevision();
             int api = 0;
             boolean isPreview = false;
-            if (p instanceof  IPackageVersion) {
+            if (p instanceof IPackageVersion) {
                 AndroidVersion vers = ((IPackageVersion) p).getVersion();
                 api = vers.getApiLevel();
                 isPreview = vers.isPreview();
@@ -112,6 +117,8 @@ class UpdaterLogic {
 
             if (p instanceof PlatformPackage) {
                 currentPlatformScore = Math.max(currentPlatformScore, score);
+            } else if (p instanceof SamplePackage) {
+                currentSampleScore = Math.max(currentSampleScore, score);
             } else if (p instanceof AddonPackage) {
                 currentAddonScore = Math.max(currentAddonScore, score);
             } else if (p instanceof ExtraPackage) {
@@ -142,6 +149,8 @@ class UpdaterLogic {
             boolean shouldAdd = false;
             if (p instanceof PlatformPackage) {
                 shouldAdd = score > currentPlatformScore;
+            } else if (p instanceof SamplePackage) {
+                shouldAdd = score > currentSampleScore;
             } else if (p instanceof AddonPackage) {
                 shouldAdd = score > currentAddonScore;
             } else if (p instanceof ExtraPackage) {
@@ -186,7 +195,6 @@ class UpdaterLogic {
                 }
             }
         }
-
     }
 
     /**
@@ -314,6 +322,13 @@ class UpdaterLogic {
         return ai;
     }
 
+    /**
+     * Resolves dependencies for a given package.
+     *
+     * Returns null if no dependencies were found.
+     * Otherwise return an array of {@link ArchiveInfo}, which is guaranteed to have
+     * at least size 1 and contain no null elements.
+     */
     private ArchiveInfo[] findDependency(Package pkg,
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
@@ -326,11 +341,11 @@ class UpdaterLogic {
         // - platform: *might* depends on tools of rev >= min-tools-rev
         // - extra: *might* depends on platform with api >= min-api-level
 
-        if (pkg instanceof AddonPackage) {
-            AddonPackage addon = (AddonPackage) pkg;
+        ArrayList<ArchiveInfo> list = new ArrayList<ArchiveInfo>();
 
+        if (pkg instanceof IPlatformDependency) {
             ArchiveInfo ai = findPlatformDependency(
-                    addon,
+                    (IPlatformDependency) pkg,
                     outArchives,
                     selectedArchives,
                     remotePkgs,
@@ -338,42 +353,42 @@ class UpdaterLogic {
                     localArchives);
 
             if (ai != null) {
-                return new ArchiveInfo[] { ai };
+                list.add(ai);
             }
+        }
 
-        } else if (pkg instanceof MinToolsPackage) {
-            MinToolsPackage platformOrExtra = (MinToolsPackage) pkg;
+        if (pkg instanceof IMinToolsDependency) {
 
-            int n = 0;
-            ArchiveInfo ai1 = findToolsDependency(
-                    platformOrExtra,
+            ArchiveInfo ai = findToolsDependency(
+                    (IMinToolsDependency) pkg,
                     outArchives,
                     selectedArchives,
                     remotePkgs,
                     remoteSources,
                     localArchives);
 
-            n += ai1 == null ? 0 : 1;
-
-            ArchiveInfo ai2 = null;
-            if (pkg instanceof ExtraPackage) {
-                ai2 = findExtraPlatformDependency(
-                        (ExtraPackage) pkg,
-                        outArchives,
-                        selectedArchives,
-                        remotePkgs,
-                        remoteSources,
-                        localArchives);
+            if (ai != null) {
+                list.add(ai);
             }
+        }
 
-            n += ai2 == null ? 0 : 1;
+        if (pkg instanceof IMinApiLevelDependency) {
 
-            if (n > 0) {
-                ArchiveInfo[] ais = new ArchiveInfo[n];
-                ais[0] = ai1 != null ? ai1 : ai2;
-                if (n > 1) ais[1] = ai2;
-                return ais;
+            ArchiveInfo ai = findMinApiLevelDependency(
+                    (IMinApiLevelDependency) pkg,
+                    outArchives,
+                    selectedArchives,
+                    remotePkgs,
+                    remoteSources,
+                    localArchives);
+
+            if (ai != null) {
+                list.add(ai);
             }
+        }
+
+        if (list.size() > 0) {
+            return list.toArray(new ArchiveInfo[list.size()]);
         }
 
         return null;
@@ -387,14 +402,15 @@ class UpdaterLogic {
      * Finds the tools dependency. If found, add it to the list of things to install.
      * Returns the archive info dependency, if any.
      */
-    protected ArchiveInfo findToolsDependency(MinToolsPackage platformOrExtra,
+    protected ArchiveInfo findToolsDependency(
+            IMinToolsDependency pkg,
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
             RepoSource[] remoteSources,
             ArchiveInfo[] localArchives) {
         // This is the requirement to match.
-        int rev = platformOrExtra.getMinToolsRevision();
+        int rev = pkg.getMinToolsRevision();
 
         if (rev == MinToolsPackage.MIN_TOOLS_REV_NOT_SPECIFIED) {
             // Well actually there's no requirement.
@@ -485,14 +501,14 @@ class UpdaterLogic {
      * Returns the archive info dependency, if any.
      */
     protected ArchiveInfo findPlatformDependency(
-            AddonPackage addon,
+            IPlatformDependency pkg,
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
             RepoSource[] remoteSources,
             ArchiveInfo[] localArchives) {
         // This is the requirement to match.
-        AndroidVersion v = addon.getVersion();
+        AndroidVersion v = pkg.getVersion();
 
         // Find a platform that would satisfy the requirement.
 
@@ -568,7 +584,7 @@ class UpdaterLogic {
         // We end up here if nothing matches. We don't have a good platform to match.
         // We need to indicate this addon depends on a missing platform archive
         // so that it can be impossible to install later on.
-        return new MissingPlatformArchiveInfo(addon.getVersion());
+        return new MissingPlatformArchiveInfo(pkg.getVersion());
     }
 
     /**
@@ -583,15 +599,15 @@ class UpdaterLogic {
      * Finds the platform dependency. If found, add it to the list of things to install.
      * Returns the archive info dependency, if any.
      */
-    protected ArchiveInfo findExtraPlatformDependency(
-            ExtraPackage extra,
+    protected ArchiveInfo findMinApiLevelDependency(
+            IMinApiLevelDependency pkg,
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
             RepoSource[] remoteSources,
             ArchiveInfo[] localArchives) {
 
-        int api = extra.getMinApiLevel();
+        int api = pkg.getMinApiLevel();
 
         if (api == ExtraPackage.MIN_API_LEVEL_NOT_SPECIFIED) {
             return null;
