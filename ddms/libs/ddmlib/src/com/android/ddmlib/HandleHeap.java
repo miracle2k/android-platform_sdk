@@ -36,6 +36,7 @@ final class HandleHeap extends ChunkHandler {
     public static final int CHUNK_HPSG = type("HPSG");
     public static final int CHUNK_HPGC = type("HPGC");
     public static final int CHUNK_HPDU = type("HPDU");
+    public static final int CHUNK_HPDS = type("HPDS");
     public static final int CHUNK_REAE = type("REAE");
     public static final int CHUNK_REAQ = type("REAQ");
     public static final int CHUNK_REAL = type("REAL");
@@ -64,6 +65,7 @@ final class HandleHeap extends ChunkHandler {
         mt.registerChunkHandler(CHUNK_HPST, mInst);
         mt.registerChunkHandler(CHUNK_HPEN, mInst);
         mt.registerChunkHandler(CHUNK_HPSG, mInst);
+        mt.registerChunkHandler(CHUNK_HPDS, mInst);
         mt.registerChunkHandler(CHUNK_REAQ, mInst);
         mt.registerChunkHandler(CHUNK_REAL, mInst);
     }
@@ -102,6 +104,8 @@ final class HandleHeap extends ChunkHandler {
             handleHPSG(client, data);
         } else if (type == CHUNK_HPDU) {
             handleHPDU(client, data);
+        } else if (type == CHUNK_HPDS) {
+            handleHPDS(client, data);
         } else if (type == CHUNK_REAQ) {
             handleREAQ(client, data);
         } else if (type == CHUNK_REAL) {
@@ -247,6 +251,30 @@ final class HandleHeap extends ChunkHandler {
         client.getClientData().setPendingHprofDump(fileName);
     }
 
+    /**
+     * Sends an HPDS request to the client.
+     *
+     * We will get an HPDS response when the heap dump has completed.  On
+     * failure we get a generic failure response.
+     *
+     * This is more expensive for the device than HPDU, because the entire
+     * heap dump is held in RAM instead of spooled out to a temp file.  On
+     * the other hand, permission to write to /sdcard is not required.
+     *
+     * @param fileName name of output file (on device)
+     */
+    public static void sendHPDS(Client client)
+        throws IOException {
+        ByteBuffer rawBuf = allocBuffer(0);
+        JdwpPacket packet = new JdwpPacket(rawBuf);
+        ByteBuffer buf = getChunkDataBuf(rawBuf);
+
+        finishChunkPacket(packet, CHUNK_HPDS, buf.position());
+        Log.d("ddm-heap", "Sending " + name(CHUNK_HPDS));
+        client.sendAndConsume(packet, mInst);
+        client.getClientData().setPendingHprofDump("[streaming]");
+    }
+
     /*
      * Handle notification of completion of a HeaP DUmp.
      */
@@ -272,6 +300,14 @@ final class HandleHeap extends ChunkHandler {
                 Log.w("ddm-heap", "Heap dump request failed (check device log)");
             }
         }
+    }
+
+    /*
+     * Handle HeaP Dump Streaming response.  "data" contains the full
+     * hprof dump.
+     */
+    private void handleHPDS(Client client, ByteBuffer data) {
+        Log.w("ddm-prof", "got hprof file, size: " + data.capacity() + " bytes");
     }
 
     /**
