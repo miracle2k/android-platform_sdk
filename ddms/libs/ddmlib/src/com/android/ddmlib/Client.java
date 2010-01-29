@@ -230,10 +230,15 @@ public class Client {
      * Makes the VM dump an HPROF file
      */
     public void dumpHprof() {
+        boolean canStream = false; //mClientData.hasFeature(ClientData.FEATURE_HPROF_STREAMING);
         try {
-            String file = "/sdcard/" + mClientData.getClientDescription().replaceAll("\\:.*", "") +
-                ".hprof";
-            HandleHeap.sendHPDU(this, file);
+            if (canStream) {
+                HandleHeap.sendHPDS(this);
+            } else {
+                String file = "/sdcard/" + mClientData.getClientDescription().replaceAll("\\:.*", "") +
+                    ".hprof";
+                HandleHeap.sendHPDU(this, file);
+            }
         } catch (IOException e) {
             Log.w("ddms", "Send of HPDU message failed");
             // ignore
