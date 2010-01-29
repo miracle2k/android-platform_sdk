@@ -2,6 +2,7 @@ Change log for Android SDK Tools.
 
 Revision 5 (02/2010):
 - AVD/SDK Manager:
+	- Fixed SSL download for the standalone version of the SDK Updater.
 	- Add support for samples components.
 	- improved support for dependency between components.
 	- AVDs now sorted by API level.
