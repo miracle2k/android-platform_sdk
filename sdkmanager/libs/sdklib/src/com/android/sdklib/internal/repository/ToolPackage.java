@@ -23,7 +23,10 @@ import com.android.sdklib.internal.repository.Archive.Os;
 
 import org.w3c.dom.Node;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.Properties;
 
@@ -115,5 +118,138 @@ public class ToolPackage extends Package {
     public boolean sameItemAs(Package pkg) {
         // only one tool package so any tool package is the same item.
         return pkg instanceof ToolPackage;
+    }
+
+    /**
+     * The tool package executes tools/lib/post_tools_install[.bat|.sh]
+     * {@inheritDoc}
+     */
+    @Override
+    public void postInstallHook(Archive archive, ITaskMonitor monitor, File installFolder) {
+        super.postInstallHook(archive, monitor, installFolder);
+
+        if (installFolder == null) {
+            return;
+        }
+
+        File libDir = new File(installFolder, SdkConstants.FD_LIB);
+        if (!libDir.isDirectory()) {
+            return;
+        }
+
+        String scriptName = "post_tools_install";   //$NON-NLS-1$
+        String shell = "";
+        if (SdkConstants.currentPlatform() == SdkConstants.PLATFORM_WINDOWS) {
+            shell = "cmd.exe /c ";
+            scriptName += ".bat";                   //$NON-NLS-1$
+        } else {
+            scriptName += ".sh";                    //$NON-NLS-1$
+        }
+
+        File scriptFile = new File(libDir, scriptName);
+        if (!scriptFile.isFile()) {
+            return;
+        }
+
+        Process proc;
+        int status = -1;
+
+        try {
+            proc = Runtime.getRuntime().exec(
+                    shell + scriptName, // command
+                    null,       // environment
+                    libDir);    // working dir
+
+            status = grabProcessOutput(proc, monitor, scriptName);
+
+        } catch (Exception e) {
+            monitor.setResult("Exception: %s", e.toString());
+        }
+
+        if (status != 0) {
+            monitor.setResult("Failed to execute %s", scriptName);
+            return;
+        }
+    }
+
+    /**
+     * Get the stderr/stdout outputs of a process and return when the process is done.
+     * Both <b>must</b> be read or the process will block on windows.
+     * @param process The process to get the ouput from.
+     * @param monitor The monitor where to output errors.
+     * @param scriptName The name of script being executed.
+     * @return the process return code.
+     * @throws InterruptedException
+     */
+    private int grabProcessOutput(final Process process,
+            final ITaskMonitor monitor,
+            final String scriptName)
+                throws InterruptedException {
+        // read the lines as they come. if null is returned, it's
+        // because the process finished
+        Thread t1 = new Thread("") { //$NON-NLS-1$
+            @Override
+            public void run() {
+                // create a buffer to read the stderr output
+                InputStreamReader is = new InputStreamReader(process.getErrorStream());
+                BufferedReader errReader = new BufferedReader(is);
+
+                try {
+                    while (true) {
+                        String line = errReader.readLine();
+                        if (line != null) {
+                            monitor.setResult("[%1$s] Error: %2$s", scriptName, line);
+                        } else {
+                            break;
+                        }
+                    }
+                } catch (IOException e) {
+                    // do nothing.
+                }
+            }
+        };
+
+        Thread t2 = new Thread("") { //$NON-NLS-1$
+            @Override
+            public void run() {
+                InputStreamReader is = new InputStreamReader(process.getInputStream());
+                BufferedReader outReader = new BufferedReader(is);
+
+                try {
+                    while (true) {
+                        String line = outReader.readLine();
+                        if (line != null) {
+                            monitor.setResult("[%1$s] %2$s", scriptName, line);
+                        } else {
+                            break;
+                        }
+                    }
+                } catch (IOException e) {
+                    // do nothing.
+                }
+            }
+        };
+
+        t1.start();
+        t2.start();
+
+        // it looks like on windows process#waitFor() can return
+        // before the thread have filled the arrays, so we wait for both threads and the
+        // process itself.
+        /* Disabled since not used. Do we really need this?
+        if (waitforReaders) {
+            try {
+                t1.join();
+            } catch (InterruptedException e) {
+            }
+            try {
+                t2.join();
+            } catch (InterruptedException e) {
+            }
+        }
+        */
+
+        // get the return code from the process
+        return process.waitFor();
     }
 }
