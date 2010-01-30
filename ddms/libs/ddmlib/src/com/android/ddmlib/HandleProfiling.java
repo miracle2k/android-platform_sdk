@@ -19,8 +19,6 @@ package com.android.ddmlib;
 import com.android.ddmlib.ClientData.IMethodProfilingHandler;
 import com.android.ddmlib.ClientData.MethodProfilingStatus;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -217,36 +215,12 @@ final class HandleProfiling extends ChunkHandler {
     private void handleMPSE(Client client, ByteBuffer data) {
         IMethodProfilingHandler handler = ClientData.getMethodProfilingHandler();
         if (handler != null) {
-            FileOutputStream fos = null;
-            try {
-                File f = File.createTempFile(client.getClientData().getClientDescription(),
-                        ".trace");
-                fos = new FileOutputStream(f);
+            byte[] stuff = new byte[data.capacity()];
+            data.get(stuff, 0, stuff.length);
 
-                byte[] stuff = new byte[data.capacity()];
-                data.get(stuff, 0, stuff.length);
+            Log.d("ddm-prof", "got trace file, size: " + stuff.length + " bytes");
 
-                fos.write(stuff);
-                fos.close();
-                fos = null;
-
-                Log.d("ddm-prof", "got trace file, size: " + data.capacity() + " bytes");
-
-                handler.onSuccess(f, client);
-            } catch (IOException e) {
-                handler.onEndLocalFailure(client, e.getMessage());
-
-                Log.e("ddm-prof", "fail to write trace file: " + e.getMessage());
-                Log.e("ddm-prof", e);
-            } finally {
-                if (fos != null) {
-                    try {
-                        fos.close();
-                    } catch (IOException e) {
-                         //ignore
-                    }
-                }
-            }
+            handler.onSuccess(stuff, client);
         }
 
         client.getClientData().setMethodProfilingStatus(MethodProfilingStatus.OFF);

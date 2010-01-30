@@ -95,13 +95,21 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
             super(parentShell);
         }
 
-        public void onFailure(final Client client) {
+        @Override
+        protected String getDialogTitle() {
+            return "HPROF Error";
+        }
+
+
+        public void onEndFailure(final Client client, final String message) {
             mParentShell.getDisplay().asyncExec(new Runnable() {
                 public void run() {
                     try {
-                        displayError("Unable to create HPROF file for application '%1$s'.\n" +
+                        displayErrorFromUiThread(
+                                "Unable to create HPROF file for application '%1$s'.\n\n%2$s" +
                                 "Check logcat for more information.",
-                                client.getClientData().getClientDescription());
+                                client.getClientData().getClientDescription(),
+                                message != null ? message + "\n\n" : "");
                     } finally {
                         // this will make sure the dump hprof button is re-enabled for the
                         // current selection. as the client is finished dumping an hprof file
@@ -140,22 +148,48 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
                             }
 
                             if (result != null && result.getCode() != SyncService.RESULT_OK) {
-                                displayError(
+                                displayErrorFromUiThread(
                                         "Unable to download HPROF file from device '%1$s'.\n\n%2$s",
                                         device.getSerialNumber(), result.getMessage());
                             }
                         } else {
-                            displayError("Unable to download HPROF file from device '%1$s'.",
+                            displayErrorFromUiThread("Unable to download HPROF file from device '%1$s'.",
                                     device.getSerialNumber());
                         }
                     } catch (Exception e) {
-                        displayError("Unable to download HPROF file from device '%1$s'.",
+                        displayErrorFromUiThread("Unable to download HPROF file from device '%1$s'.",
                                 device.getSerialNumber());
 
                     } finally {
                         // this will make sure the dump hprof button is re-enabled for the
                         // current selection. as the client is finished dumping an hprof file
                         doSelectionChanged(mDeviceList.getSelectedClient());
+                    }
+                }
+            });
+        }
+
+        public void onSuccess(final byte[] data, final Client client) {
+            mParentShell.getDisplay().asyncExec(new Runnable() {
+                public void run() {
+                    // get from the preference what action to take
+                    IPreferenceStore store = DdmsPlugin.getDefault().getPreferenceStore();
+                    String value = store.getString(PreferenceInitializer.ATTR_HPROF_ACTION);
+
+                    if (ACTION_OPEN.equals(value)) {
+                        try {
+                            File tempFile = saveTempFile(data);
+                            open(tempFile.getAbsolutePath());
+                        } catch (Exception e) {
+                            String errorMsg = e.getMessage();
+                            displayErrorFromUiThread(
+                                    "Failed to save hprof data into temp file%1$s",
+                                    errorMsg != null ? ":\n" + errorMsg : ".");
+                        }
+                    } else {
+                        // default action is ACTION_SAVE
+                        promptAndSave(client.getClientData().getClientDescription() + DOT_HPROF,
+                                data, "Save HPROF file");
                     }
                 }
             });
@@ -181,11 +215,6 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
                         getSite().getWorkbenchWindow().getActivePage(),
                         fileStore);
             }
-        }
-
-        private void displayError(String format, Object... args) {
-            MessageDialog.openError(mParentShell, "HPROF Error",
-                    String.format(format, args));
         }
     }
 

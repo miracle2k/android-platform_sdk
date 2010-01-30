@@ -175,7 +175,9 @@ public class InfoPanel extends TablePanel {
             }
 
             item = mTable.getItem(ENT_SUPPORTS_HPROF);
-            if (cd.hasFeature(ClientData.FEATURE_HPROF)) {
+            if (cd.hasFeature(ClientData.FEATURE_HPROF_STREAMING)) {
+                item.setText(1, "Yes");
+            } else if (cd.hasFeature(ClientData.FEATURE_HPROF)) {
                 item.setText(1, "Yes (Application must be able to write on the SD Card)");
             } else {
                 item.setText(1, "No");
