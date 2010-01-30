@@ -405,18 +405,13 @@ public class Archive implements IDescription {
 
         archiveFile = downloadFile(osSdkRoot, monitor, forceHttp);
         if (archiveFile != null) {
-            boolean installSuccess = false;
-            try {
-                pkg.preInstallHook(osSdkRoot, this);
-                if (unarchive(osSdkRoot, archiveFile, sdkManager, monitor)) {
-                    monitor.setResult("Installed %1$s", name);
-                    // Delete the temp archive if it exists, only on success
-                    deleteFileOrFolder(archiveFile);
-                    installSuccess = true;
-                    return true;
-                }
-            } finally {
-                pkg.postInstallHook(this, installSuccess);
+            pkg.preInstallHook(osSdkRoot, this);
+            // Unarchive will call the postInstallHook on completion.
+            if (unarchive(osSdkRoot, archiveFile, sdkManager, monitor)) {
+                monitor.setResult("Installed %1$s", name);
+                // Delete the temp archive if it exists, only on success
+                deleteFileOrFolder(archiveFile);
+                return true;
             }
         }
 
@@ -699,7 +694,9 @@ public class Archive implements IDescription {
             File archiveFile,
             SdkManager sdkManager,
             ITaskMonitor monitor) {
-        String pkgName = getParentPackage().getShortDescription();
+        boolean success = false;
+        Package pkg = getParentPackage();
+        String pkgName = pkg.getShortDescription();
         String pkgDesc = String.format("Installing %1$s", pkgName);
         monitor.setDescription(pkgDesc);
         monitor.setResult(pkgDesc);
@@ -709,11 +706,11 @@ public class Archive implements IDescription {
         // If the destination folder exists, it will be renamed and deleted at the very
         // end if everything succeeded.
 
-        String pkgKind = getParentPackage().getClass().getSimpleName();
+        String pkgKind = pkg.getClass().getSimpleName();
 
         File destFolder = null;
         File unzipDestFolder = null;
-        File renamedDestFolder = null;
+        File oldDestFolder = null;
 
         try {
             // Find a new temp folder that doesn't exist yet
@@ -742,8 +739,7 @@ public class Archive implements IDescription {
             }
 
             // Compute destination directory
-            destFolder = getParentPackage().getInstallFolder(
-                    osSdkRoot, zipRootFolder[0], sdkManager);
+            destFolder = pkg.getInstallFolder(osSdkRoot, zipRootFolder[0], sdkManager);
 
             if (destFolder == null) {
                 // this should not seriously happen.
@@ -763,19 +759,19 @@ public class Archive implements IDescription {
                 if (!move1done) {
                     if (destFolder.isDirectory()) {
                         // Create a new temp/old dir
-                        if (renamedDestFolder == null) {
-                            renamedDestFolder = createTempFolder(osSdkRoot, pkgKind, "old");  //$NON-NLS-1$
+                        if (oldDestFolder == null) {
+                            oldDestFolder = createTempFolder(osSdkRoot, pkgKind, "old");  //$NON-NLS-1$
                         }
-                        if (renamedDestFolder == null) {
+                        if (oldDestFolder == null) {
                             // this should not seriously happen.
                             monitor.setResult("Failed to find a temp directory in %1$s.", osSdkRoot);
                             return false;
                         }
 
                         // try to move the current dest dir to the temp/old one
-                        if (!destFolder.renameTo(renamedDestFolder)) {
+                        if (!destFolder.renameTo(oldDestFolder)) {
                             monitor.setResult("Failed to rename directory %1$s to %2$s.",
-                                    destFolder.getPath(), renamedDestFolder.getPath());
+                                    destFolder.getPath(), oldDestFolder.getPath());
                             renameFailedForDir = destFolder;
                         }
                     }
@@ -784,7 +780,7 @@ public class Archive implements IDescription {
                 }
 
                 // Case where there's no dest dir or we successfully moved it to temp/old
-                // We not try to move the temp/unzip to the dest dir
+                // We now try to move the temp/unzip to the dest dir
                 if (move1done && !move2done) {
                     if (renameFailedForDir == null && !unzipDestFolder.renameTo(destFolder)) {
                         monitor.setResult("Failed to rename directory %1$s to %2$s",
@@ -821,12 +817,19 @@ public class Archive implements IDescription {
             }
 
             unzipDestFolder = null;
+            success = true;
+            pkg.postInstallHook(this, monitor, destFolder);
             return true;
 
         } finally {
             // Cleanup if the unzip folder is still set.
-            deleteFileOrFolder(renamedDestFolder);
+            deleteFileOrFolder(oldDestFolder);
             deleteFileOrFolder(unzipDestFolder);
+
+            // In case of failure, we call the postInstallHool with a null directory
+            if (!success) {
+                pkg.postInstallHook(this, monitor, null /*installDir*/);
+            }
         }
     }
 
