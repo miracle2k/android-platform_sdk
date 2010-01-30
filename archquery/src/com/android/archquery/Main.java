@@ -47,7 +47,7 @@ public final class Main {
     public static void main(String[] args) {
 
         for (String arg : args) {
-            System.out.println(String.format("%1$s: %2$s", arg, System.getProperty(arg)));
+            System.out.println(System.getProperty(arg));
         }
 
         if (args.length == 0) {
