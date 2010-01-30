@@ -25,7 +25,6 @@ import com.android.ddmlib.SyncService.SyncResult;
 import com.android.ddmuilib.DdmUiPreferences;
 import com.android.ddmuilib.console.DdmConsole;
 
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
 
 import java.io.BufferedReader;
@@ -45,46 +44,32 @@ public class MethodProfilingHandler extends BaseFileHandler
         super(parentShell);
     }
 
+    @Override
+    protected String getDialogTitle() {
+        return "Method Profiling Error";
+    }
+
     public void onStartFailure(final Client client, final String message) {
-        mParentShell.getDisplay().asyncExec(new Runnable() {
-            public void run() {
-                displayError(
-                        "Unable to create Method Profiling file for application '%1$s'\n\n%2$s" +
-                        "Check logcat for more information.",
-                        client.getClientData().getClientDescription(),
-                        message != null ? message + "\n\n" : "");
-            }
-        });
+        displayErrorInUiThread(
+                "Unable to create Method Profiling file for application '%1$s'\n\n%2$s" +
+                "Check logcat for more information.",
+                client.getClientData().getClientDescription(),
+                message != null ? message + "\n\n" : "");
     }
 
     public void onEndFailure(final Client client, final String message) {
-        mParentShell.getDisplay().asyncExec(new Runnable() {
-            public void run() {
-                displayError(
-                        "Unable to finish Method Profiling for application '%1$s'\n\n%2$s" +
-                        "Check logcat for more information.",
-                        client.getClientData().getClientDescription(),
-                        message != null ? message + "\n\n" : "");
-            }
-        });
-    }
-
-    public void onEndLocalFailure(final Client client, final String message) {
-        mParentShell.getDisplay().asyncExec(new Runnable() {
-            public void run() {
-                displayError(
-                        "Unable to write trace file locally for application '%1$s'\n\n%2$s",
-                        client.getClientData().getClientDescription(),
-                        message);
-            }
-        });
+        displayErrorInUiThread(
+                "Unable to finish Method Profiling for application '%1$s'\n\n%2$s" +
+                "Check logcat for more information.",
+                client.getClientData().getClientDescription(),
+                message != null ? message + "\n\n" : "");
     }
 
     public void onSuccess(final String remoteFilePath, final Client client) {
         mParentShell.getDisplay().asyncExec(new Runnable() {
             public void run() {
                 if (remoteFilePath == null) {
-                    displayError(
+                    displayErrorFromUiThread(
                             "Unable to download trace file: unknown file name.\n" +
                             "This can happen if you disconnected the device while recording the trace.");
                     return;
@@ -97,11 +82,11 @@ public class MethodProfilingHandler extends BaseFileHandler
                     if (sync != null) {
                         pullAndOpen(sync, remoteFilePath);
                     } else {
-                        displayError("Unable to download trace file from device '%1$s'.",
+                        displayErrorFromUiThread("Unable to download trace file from device '%1$s'.",
                                 device.getSerialNumber());
                     }
                 } catch (Exception e) {
-                    displayError("Unable to download trace file from device '%1$s'.",
+                    displayErrorFromUiThread("Unable to download trace file from device '%1$s'.",
                             device.getSerialNumber());
                 }
             }
@@ -109,10 +94,21 @@ public class MethodProfilingHandler extends BaseFileHandler
         });
     }
 
-    public void onSuccess(File localFile, final Client client) {
-        openInTraceview(localFile.getAbsolutePath());
+    public void onSuccess(byte[] data, final Client client) {
+        try {
+            File tempFile = saveTempFile(data);
+            openInTraceview(tempFile.getAbsolutePath());
+        } catch (IOException e) {
+            String errorMsg = e.getMessage();
+            displayErrorInUiThread(
+                    "Failed to save trace data into temp file%1$s",
+                    errorMsg != null ? ":\n" + errorMsg : ".");
+        }
     }
 
+    /**
+     * pulls and open a file. This is run from the UI thread.
+     */
     private void pullAndOpen(SyncService sync, String remoteFilePath)
             throws InvocationTargetException, InterruptedException, IOException {
         // get a temp file
@@ -126,12 +122,12 @@ public class MethodProfilingHandler extends BaseFileHandler
                 // open the temp file in traceview
                 openInTraceview(tempPath);
             } else {
-                displayError("Unable to download trace file:\n\n%1$s",
+                displayErrorFromUiThread("Unable to download trace file:\n\n%1$s",
                         result.getMessage());
             }
         } else {
             // this really shouldn't happen.
-            displayError("Unable to download trace file.");
+            displayErrorFromUiThread("Unable to download trace file.");
         }
     }
 
@@ -173,10 +169,5 @@ public class MethodProfilingHandler extends BaseFileHandler
         } catch (IOException e) {
             Log.e("traceview", e);
         }
-    }
-
-    private void displayError(String format, Object... args) {
-        MessageDialog.openError(mParentShell, "Method Profiling Error",
-                String.format(format, args));
     }
 }

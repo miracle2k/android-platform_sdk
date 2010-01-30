@@ -292,7 +292,6 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
                 mCurrentActivator.selectAll();
             }
         }
-
     }
 
     /**
@@ -305,13 +304,15 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
             super(parentShell);
         }
 
-        public void onFailure(final Client client) {
+        public void onEndFailure(final Client client, final String message) {
             mDisplay.asyncExec(new Runnable() {
                 public void run() {
                     try {
-                        displayError("Unable to create HPROF file for application '%1$s'.\n" +
+                        displayErrorFromUiThread(
+                                "Unable to create HPROF file for application '%1$s'\n\n%2$s" +
                                 "Check logcat for more information.",
-                                client.getClientData().getClientDescription());
+                                client.getClientData().getClientDescription(),
+                                message != null ? message + "\n\n" : "");
                     } finally {
                         // this will make sure the dump hprof button is re-enabled for the
                         // current selection. as the client is finished dumping an hprof file
@@ -333,16 +334,16 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
                                     client.getClientData().getClientDescription() + ".hprof",
                                     remoteFilePath, "Save HPROF file");
                             if (result != null && result.getCode() != SyncService.RESULT_OK) {
-                                displayError(
+                                displayErrorFromUiThread(
                                         "Unable to download HPROF file from device '%1$s'.\n\n%2$s",
                                         device.getSerialNumber(), result.getMessage());
                             }
                         } else {
-                            displayError("Unable to download HPROF file from device '%1$s'.",
+                            displayErrorFromUiThread("Unable to download HPROF file from device '%1$s'.",
                                     device.getSerialNumber());
                         }
                     } catch (Exception e) {
-                        displayError("Unable to download HPROF file from device '%1$s'.",
+                        displayErrorFromUiThread("Unable to download HPROF file from device '%1$s'.",
                                 device.getSerialNumber());
 
                     } finally {
@@ -354,9 +355,18 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
             });
         }
 
-        private void displayError(String format, Object... args) {
-            MessageDialog.openError(mParentShell, "HPROF Error",
-                    String.format(format, args));
+        public void onSuccess(final byte[] data, final Client client) {
+            mDisplay.asyncExec(new Runnable() {
+                public void run() {
+                    promptAndSave(client.getClientData().getClientDescription() + ".hprof", data,
+                            "Save HPROF file");
+                }
+            });
+        }
+
+        @Override
+        protected String getDialogTitle() {
+            return "HPROF Error";
         }
     }
 

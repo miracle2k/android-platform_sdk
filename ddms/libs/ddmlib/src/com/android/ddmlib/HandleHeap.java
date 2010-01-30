@@ -272,7 +272,6 @@ final class HandleHeap extends ChunkHandler {
         finishChunkPacket(packet, CHUNK_HPDS, buf.position());
         Log.d("ddm-heap", "Sending " + name(CHUNK_HPDS));
         client.sendAndConsume(packet, mInst);
-        client.getClientData().setPendingHprofDump("[streaming]");
     }
 
     /*
@@ -296,7 +295,7 @@ final class HandleHeap extends ChunkHandler {
 
                 Log.d("ddm-heap", "Heap dump request has finished");
             } else {
-                handler.onFailure(client);
+                handler.onEndFailure(client, null);
                 Log.w("ddm-heap", "Heap dump request failed (check device log)");
             }
         }
@@ -307,7 +306,15 @@ final class HandleHeap extends ChunkHandler {
      * hprof dump.
      */
     private void handleHPDS(Client client, ByteBuffer data) {
-        Log.w("ddm-prof", "got hprof file, size: " + data.capacity() + " bytes");
+        IHprofDumpHandler handler = ClientData.getHprofDumpHandler();
+        if (handler != null) {
+            byte[] stuff = new byte[data.capacity()];
+            data.get(stuff, 0, stuff.length);
+
+            Log.d("ddm-hprof", "got hprof file, size: " + data.capacity() + " bytes");
+
+            handler.onSuccess(stuff, client);
+        }
     }
 
     /**

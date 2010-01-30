@@ -230,13 +230,13 @@ public class Client {
      * Makes the VM dump an HPROF file
      */
     public void dumpHprof() {
-        boolean canStream = false; //mClientData.hasFeature(ClientData.FEATURE_HPROF_STREAMING);
+        boolean canStream = mClientData.hasFeature(ClientData.FEATURE_HPROF_STREAMING);
         try {
             if (canStream) {
                 HandleHeap.sendHPDS(this);
             } else {
-                String file = "/sdcard/" + mClientData.getClientDescription().replaceAll("\\:.*", "") +
-                    ".hprof";
+                String file = "/sdcard/" + mClientData.getClientDescription().replaceAll(
+                        "\\:.*", "") + ".hprof";
                 HandleHeap.sendHPDU(this, file);
             }
         } catch (IOException e) {
