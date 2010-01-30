@@ -189,13 +189,16 @@ public class PlatformPackage extends MinToolsPackage implements IPackageVersion 
      * Makes sure the base /platforms folder exists before installing.
      */
     @Override
-    public void preInstallHook(String osSdkRoot, Archive archive) {
-        super.preInstallHook(osSdkRoot, archive);
-
+    public boolean preInstallHook(Archive archive,
+            ITaskMonitor monitor,
+            String osSdkRoot,
+            File installFolder) {
         File platformsRoot = new File(osSdkRoot, SdkConstants.FD_PLATFORMS);
         if (!platformsRoot.isDirectory()) {
             platformsRoot.mkdir();
         }
+
+        return super.preInstallHook(archive, monitor, osSdkRoot, installFolder);
     }
 
     @Override
