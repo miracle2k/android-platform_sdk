@@ -746,10 +746,12 @@ public class NewProjectCreationPage extends WizardPage {
      * A sample was selected. Update the location field, manifest and validate.
      */
     private void onSampleSelected() {
-        // Note that getProjectLocation() is automatically updated to use the currently
-        // selected sample. We just need to refresh the manifest data & validate.
-        extractNamesFromAndroidManifest();
-        validatePageComplete();
+        if (mInfo.isCreateFromSample()) {
+            // Note that getProjectLocation() is automatically updated to use the currently
+            // selected sample. We just need to refresh the manifest data & validate.
+            extractNamesFromAndroidManifest();
+            validatePageComplete();
+        }
     }
 
     /**
@@ -921,31 +923,34 @@ public class NewProjectCreationPage extends WizardPage {
             return;
         }
 
-        String minSdkVersion = mInfo.getMinSdkVersion();
-
-        // If there's a current target defined, we do not allow to change it when
-        // operating in the create-from-sample mode -- since the available sample list
-        // is tied to the current target, so changing it would invalidate the project we're
-        // trying to load in the first place.
-        IAndroidTarget currentTarget = mInfo.getSdkTarget();
-        if (currentTarget != null && mInfo.isCreateFromSample()) {
-            return;
-        }
-
-        // Before changing, compare with the currently selected one, if any.
-        // There can be multiple targets with the same sdk api version, so don't change
-        // it if it's already at the right version.
-        IAndroidTarget curr_target = mInfo.getSdkTarget();
-        if (curr_target != null && curr_target.getVersion().equals(minSdkVersion)) {
-            return;
-        }
-
-        for (IAndroidTarget target : mSdkTargetSelector.getTargets()) {
-            if (target.getVersion().equals(minSdkVersion)) {
-                mSdkTargetSelector.setSelection(target);
-                break;
-            }
-        }
+// Disable automatic selection of the android target based on minSdkVersion.
+// This creates issues in most cases, such as using existing samples.
+// TODO: remove this in next version if we really don't want it.
+//        String minSdkVersion = mInfo.getMinSdkVersion();
+//
+//        // If there's a current target defined, we do not allow to change it when
+//        // operating in the create-from-sample mode -- since the available sample list
+//        // is tied to the current target, so changing it would invalidate the project we're
+//        // trying to load in the first place.
+//        IAndroidTarget currentTarget = mInfo.getSdkTarget();
+//        if (currentTarget != null && mInfo.isCreateFromSample()) {
+//            return;
+//        }
+//
+//        // Before changing, compare with the currently selected one, if any.
+//        // There can be multiple targets with the same sdk api version, so don't change
+//        // it if it's already at the right version.
+//        IAndroidTarget curr_target = mInfo.getSdkTarget();
+//        if (curr_target != null && curr_target.getVersion().equals(minSdkVersion)) {
+//            return;
+//        }
+//
+//        for (IAndroidTarget target : mSdkTargetSelector.getTargets()) {
+//            if (target.getVersion().equals(minSdkVersion)) {
+//                mSdkTargetSelector.setSelection(target);
+//                break;
+//            }
+//        }
     }
 
     /**
@@ -957,11 +962,14 @@ public class NewProjectCreationPage extends WizardPage {
     private void onSdkTargetModified() {
         IAndroidTarget target = mInfo.getSdkTarget();
 
-        if (target != null) {
-            mInternalMinSdkVersionUpdate = true;
-            mMinSdkVersionField.setText(target.getVersion().getApiString());
-            mInternalMinSdkVersionUpdate = false;
-        }
+// Disable automatic selection of minSdkVersion based on android target.
+// This creates issues in most cases, such as using existing samples.
+// TODO: remove this in next version if we really don't want it.
+//        if (target != null) {
+//            mInternalMinSdkVersionUpdate = true;
+//            mMinSdkVersionField.setText(target.getVersion().getApiString());
+//            mInternalMinSdkVersionUpdate = false;
+//        }
 
         loadSamplesForTarget(target);
         enableLocationWidgets();
@@ -1160,12 +1168,12 @@ public class NewProjectCreationPage extends WizardPage {
 
         if (foundTarget != null) {
             mSdkTargetSelector.setSelection(foundTarget);
-        } else {
-            mInternalMinSdkVersionUpdate = true;
-            // It's OK for an import to not a minSdkVersion and we should respect it.
-            mMinSdkVersionField.setText(minSdkVersion == null ? "" : minSdkVersion);  //$NON-NLS-1$
-            mInternalMinSdkVersionUpdate = false;
         }
+
+        mInternalMinSdkVersionUpdate = true;
+        // It's OK for an import to not a minSdkVersion and we should respect it.
+        mMinSdkVersionField.setText(minSdkVersion == null ? "" : minSdkVersion);  //$NON-NLS-1$
+        mInternalMinSdkVersionUpdate = false;
     }
 
     /**
