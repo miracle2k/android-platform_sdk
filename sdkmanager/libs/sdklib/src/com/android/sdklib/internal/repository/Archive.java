@@ -405,8 +405,7 @@ public class Archive implements IDescription {
 
         archiveFile = downloadFile(osSdkRoot, monitor, forceHttp);
         if (archiveFile != null) {
-            pkg.preInstallHook(osSdkRoot, this);
-            // Unarchive will call the postInstallHook on completion.
+            // Unarchive calls the pre/postInstallHook methods.
             if (unarchive(osSdkRoot, archiveFile, sdkManager, monitor)) {
                 monitor.setResult("Installed %1$s", name);
                 // Delete the temp archive if it exists, only on success
@@ -744,6 +743,11 @@ public class Archive implements IDescription {
             if (destFolder == null) {
                 // this should not seriously happen.
                 monitor.setResult("Failed to compute installation directory for %1$s.", pkgName);
+                return false;
+            }
+
+            if (!pkg.preInstallHook(this, monitor, osSdkRoot, destFolder)) {
+                monitor.setResult("Skipping archive: %1$s", pkgName);
                 return false;
             }
 

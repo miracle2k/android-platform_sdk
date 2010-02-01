@@ -404,14 +404,27 @@ public abstract class Package implements IDescription, Comparable<Package> {
 
     /**
      * Hook called right before an archive is installed. The archive has already
-     * been downloaded succesfully and will be installed in the directory specified by
-     * {@link #getInstallFolder(String, String, SdkManager)} when this call returns.
+     * been downloaded successfully and will be installed in the directory specified by
+     * <var>installFolder</var> when this call returns.
+     * <p/>
+     * The hook lets the package decide if installation of this specific archive should
+     * be continue. The installer will still install the remaining packages if possible.
+     * <p/>
+     * The base implementation always return true.
      *
-     * @param osSdkRoot The OS path of the SDK root folder.
      * @param archive The archive that will be installed
+     * @param monitor The {@link ITaskMonitor} to display errors.
+     * @param osSdkRoot The OS path of the SDK root folder.
+     * @param installFolder The folder where the archive will be installed. Note that this
+     *                      is <em>not</em> the folder where the archive was temporary
+     *                      unzipped. The installFolder, if it exists, contains the old
+     *                      archive that will soon be replaced by the new one.
+     * @return True if installing this archive shall continue, false if it should be skipped.
      */
-    public void preInstallHook(String osSdkRoot, Archive archive) {
+    public boolean preInstallHook(Archive archive, ITaskMonitor monitor,
+            String osSdkRoot, File installFolder) {
         // Nothing to do in base class.
+        return true;
     }
 
     /**

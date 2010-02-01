@@ -118,6 +118,8 @@ public final class SdkConstants {
 
     /** properties file for SDK Updater packages */
     public final static String FN_SOURCE_PROP = "source.properties"; //$NON-NLS-1$
+    /** properties file for content hash of installed packages */
+    public final static String FN_CONTENT_HASH_PROP = "content_hash.properties"; //$NON-NLS-1$
 
     /* Folder Names for Android Projects . */
 

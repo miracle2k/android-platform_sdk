@@ -28,6 +28,12 @@ import com.android.sdklib.repository.SdkRepository;
 import org.w3c.dom.Node;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Properties;
 
@@ -239,19 +245,6 @@ public class SamplePackage extends MinToolsPackage
         return folder;
     }
 
-    /**
-     * Makes sure the base /samples folder exists before installing.
-     */
-    @Override
-    public void preInstallHook(String osSdkRoot, Archive archive) {
-        super.preInstallHook(osSdkRoot, archive);
-
-        File samplesRoot = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
-        if (!samplesRoot.isDirectory()) {
-            samplesRoot.mkdir();
-        }
-    }
-
     @Override
     public boolean sameItemAs(Package pkg) {
         if (pkg instanceof SamplePackage) {
@@ -262,5 +255,215 @@ public class SamplePackage extends MinToolsPackage
         }
 
         return false;
+    }
+
+    /**
+     * Makes sure the base /samples folder exists before installing.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean preInstallHook(Archive archive,
+            ITaskMonitor monitor,
+            String osSdkRoot,
+            File installFolder) {
+        File samplesRoot = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
+        if (!samplesRoot.isDirectory()) {
+            samplesRoot.mkdir();
+        }
+
+        if (installFolder != null && installFolder.isDirectory()) {
+            // Get the hash computed during the last installation
+            String storedHash = readContentHash(installFolder);
+            if (storedHash != null && storedHash.length() > 0) {
+
+                // Get the hash of the folder now
+                String currentHash = computeContentHash(installFolder);
+
+                if (!storedHash.equals(currentHash)) {
+                    // The hashes differ. The content was modified.
+                    // Ask the user if we should still wipe the old samples.
+
+                    String pkgName = archive.getParentPackage().getShortDescription();
+
+                    String msg = String.format(
+                            "-= Warning ! =-\n" +
+                            "You are about to replace the content of the folder:\n " +
+                            "  %1$s\n" +
+                            "by the new package:\n" +
+                            "  %2$s.\n" +
+                            "\n" +
+                            "However it seems that the content of the existing samples " +
+                            "has been modified since it was last installed. Are you sure " +
+                            "you want to DELETE the existing samples? This cannot be undone.\n" +
+                            "Please select YES to delete the existing sample and replace them " +
+                            "by the new ones.\n" +
+                            "Please select NO to skip this package. You can always install it later.",
+                            installFolder.getAbsolutePath(),
+                            pkgName);
+
+                    // Returns true if we can wipe & replace.
+                    return monitor.displayPrompt("SDK Manager: overwrite samples?", msg);
+                }
+            }
+        }
+
+        // The default is to allow installation
+        return super.preInstallHook(archive, monitor, osSdkRoot, installFolder);
+    }
+
+    /**
+     * Computes a hash of the installed content (in case of successful install.)
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public void postInstallHook(Archive archive, ITaskMonitor monitor, File installFolder) {
+        super.postInstallHook(archive, monitor, installFolder);
+
+        if (installFolder == null) {
+            return;
+        }
+
+        String h = computeContentHash(installFolder);
+        saveContentHash(installFolder, h);
+    }
+
+    /**
+     * Reads the hash from the properties file, if it exists.
+     * Returns null if something goes wrong, e.g. there's no property file or
+     * it doesn't contain our hash. Returns an empty string if the hash wasn't
+     * correctly computed last time by {@link #saveContentHash(File, String)}.
+     */
+    private String readContentHash(File folder) {
+        Properties props = new Properties();
+
+        FileInputStream fis = null;
+        try {
+            File f = new File(folder, SdkConstants.FN_CONTENT_HASH_PROP);
+            if (f.isFile()) {
+                fis = new FileInputStream(f);
+                props.load(fis);
+                return props.getProperty("content-hash", null);  //$NON-NLS-1$
+            }
+        } catch (Exception e) {
+            // ignore
+        } finally {
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Saves the hash using a properties file
+     */
+    private void saveContentHash(File folder, String hash) {
+        Properties props = new Properties();
+
+        props.setProperty("content-hash", hash == null ? "" : hash);  //$NON-NLS-1$ //$NON-NLS-2$
+
+        FileOutputStream fos = null;
+        try {
+            File f = new File(folder, SdkConstants.FN_CONTENT_HASH_PROP);
+            fos = new FileOutputStream(f);
+            props.store( fos, "## Android - hash of this archive.");  //$NON-NLS-1$
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+    }
+
+    /**
+     * Computes a hash of the files names and sizes installed in the folder
+     * using the SHA-1 digest.
+     * Returns null if the digest algorithm is not available.
+     */
+    private String computeContentHash(File installFolder) {
+        MessageDigest md = null;
+        try {
+            // SHA-1 is a standard algorithm.
+            // http://java.sun.com/j2se/1.4.2/docs/guide/security/CryptoSpec.html#AppB
+            md = MessageDigest.getInstance("SHA-1");    //$NON-NLS-1$
+        } catch (NoSuchAlgorithmException e) {
+            // We're unlikely to get there unless this JVM is not spec conforming
+            // in which case there won't be any hash available.
+        }
+
+        if (md != null) {
+            hashDirectoryContent(installFolder, md);
+            return getDigestHexString(md);
+        }
+
+        return null;
+    }
+
+    /**
+     * Computes a hash of the *content* of this directory. The hash only uses
+     * the files names and the file sizes.
+     */
+    private void hashDirectoryContent(File folder, MessageDigest md) {
+        if (folder == null || md == null || !folder.isDirectory()) {
+            return;
+        }
+
+        for (File f : folder.listFiles()) {
+            if (f.isDirectory()) {
+                hashDirectoryContent(f, md);
+
+            } else {
+                String name = f.getName();
+
+                // Skip the file we use to store the content hash
+                if (name == null || SdkConstants.FN_CONTENT_HASH_PROP.equals(name)) {
+                    continue;
+                }
+
+                try {
+                    md.update(name.getBytes("UTF-8"));   //$NON-NLS-1$
+                } catch (UnsupportedEncodingException e) {
+                    // There is no valid reason for UTF-8 to be unsupported. Ignore.
+                }
+                try {
+                    long len = f.length();
+                    md.update((byte) (len & 0x0FF));
+                    md.update((byte) ((len >> 8) & 0x0FF));
+                    md.update((byte) ((len >> 16) & 0x0FF));
+                    md.update((byte) ((len >> 24) & 0x0FF));
+
+                } catch (SecurityException e) {
+                    // Might happen if file is not readable. Ignore.
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns a digest as an hex string.
+     */
+    private String getDigestHexString(MessageDigest digester) {
+        // Create an hex string from the digest
+        byte[] digest = digester.digest();
+        int n = digest.length;
+        String hex = "0123456789abcdef";                     //$NON-NLS-1$
+        char[] hexDigest = new char[n * 2];
+        for (int i = 0; i < n; i++) {
+            int b = digest[i] & 0x0FF;
+            hexDigest[i*2 + 0] = hex.charAt(b >>> 4);
+            hexDigest[i*2 + 1] = hex.charAt(b & 0x0f);
+        }
+
+        return new String(hexDigest);
     }
 }
