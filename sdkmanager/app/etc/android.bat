@@ -57,11 +57,11 @@ if not "%1"=="" goto EndTempCopy
     rem update the tools directory where the updater itself is located.
 
     set tmp_dir=%TEMP%\temp-android-tool
-    xcopy lib\x86 %tmp_dir%\lib\x86 /I /E /C /G /R /Y /Q > nul
-    copy /B /D /Y lib\androidprefs.jar   %tmp_dir%\lib\       > nul
-    copy /B /D /Y lib\org.eclipse.*      %tmp_dir%\lib\       > nul
-    copy /B /D /Y lib\sdk*               %tmp_dir%\lib\       > nul
-    copy /B /D /Y lib\commons-compress*  %tmp_dir%\lib\       > nul
+    xcopy %swt_path% %tmp_dir%\%swt_path% /I /E /C /G /R /Y /Q > nul
+    copy /B /D /Y lib\androidprefs.jar   %tmp_dir%\lib\        > nul
+    copy /B /D /Y lib\org.eclipse.*      %tmp_dir%\lib\        > nul
+    copy /B /D /Y lib\sdk*               %tmp_dir%\lib\        > nul
+    copy /B /D /Y lib\commons-compress*  %tmp_dir%\lib\        > nul
 
     rem jar_path and swt_path are relative to PWD so we don't need to adjust them, just change dirs.
     set tools_dir=%cd%
