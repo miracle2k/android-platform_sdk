@@ -414,6 +414,12 @@ public class Main {
         // now get the target hash
         ProjectProperties p = ProjectProperties.load(parentProject.getAbsolutePath(),
                 PropertyType.DEFAULT);
+        if (p == null) {
+            errorAndExit("Unable to load the main project's %1$s",
+                    PropertyType.DEFAULT.getFilename());
+            return;
+        }
+
         String targetHash = p.getProperty(ProjectProperties.PROPERTY_TARGET);
         if (targetHash == null) {
             errorAndExit("Couldn't find the main project target");
@@ -511,7 +517,7 @@ public class Main {
         }
 
         if (couldHaveDone) {
-            mSdkLog.printf("It seems that there are sub-projects. If you want to update them\nplease use the --%1$s parameter.",
+            mSdkLog.printf("It seems that there are sub-projects. If you want to update them\nplease use the --%1$s parameter.\n",
                     SdkCommandLine.KEY_SUBPROJECTS);
         }
     }
