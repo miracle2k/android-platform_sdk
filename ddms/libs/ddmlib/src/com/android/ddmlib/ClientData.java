@@ -136,6 +136,12 @@ public class ClientData {
      */
     public final static String FEATURE_HPROF = "hprof-heap-dump"; // $NON-NLS-1$
 
+    /**
+     * String for feature allowing direct streaming of hprof dumps
+     * @see #hasFeature(String)
+     */
+    public final static String FEATURE_HPROF_STREAMING = "hprof-heap-dump-streaming"; // $NON-NLS-1$
+
     private static IHprofDumpHandler sHprofDumpHandler;
     private static IMethodProfilingHandler sMethodProfilingHandler;
 
