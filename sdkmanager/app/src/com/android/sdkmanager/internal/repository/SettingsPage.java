@@ -42,7 +42,6 @@ public class SettingsPage extends Composite implements ISettingsPage {
     // UI widgets
     private Group mProxySettingsGroup;
     private Group mMiscGroup;
-    private Button mApplyButton;
     private Label mProxyServerLabel;
     private Label mProxyPortLabel;
     private Text mProxyServerText;
@@ -50,12 +49,18 @@ public class SettingsPage extends Composite implements ISettingsPage {
     private Button mForceHttpCheck;
     private Button mAskAdbRestartCheck;
 
-    private ModifyListener mSetApplyDirty = new ModifyListener() {
-        public void modifyText(ModifyEvent e) {
-            mApplyButton.setEnabled(true);
+    private SelectionAdapter mApplyOnSelected = new SelectionAdapter() {
+        @Override
+        public void widgetSelected(SelectionEvent e) {
+            applyNewSettings(); //$hide$
         }
     };
 
+    private ModifyListener mApplyOnModified = new ModifyListener() {
+        public void modifyText(ModifyEvent e) {
+            applyNewSettings(); //$hide$
+        }
+    };
 
     /**
      * Create the composite.
@@ -80,7 +85,7 @@ public class SettingsPage extends Composite implements ISettingsPage {
 
         mProxyServerText = new Text(mProxySettingsGroup, SWT.BORDER);
         mProxyServerText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        mProxyServerText.addModifyListener(mSetApplyDirty);
+        mProxyServerText.addModifyListener(mApplyOnModified);
         mProxyServerText.setToolTipText(tooltip);
 
         mProxyPortLabel = new Label(mProxySettingsGroup, SWT.NONE);
@@ -92,7 +97,7 @@ public class SettingsPage extends Composite implements ISettingsPage {
 
         mProxyPortText = new Text(mProxySettingsGroup, SWT.BORDER);
         mProxyPortText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        mProxyPortText.addModifyListener(mSetApplyDirty);
+        mProxyPortText.addModifyListener(mApplyOnModified);
         mProxyPortText.setToolTipText(tooltip);
 
         mMiscGroup = new Group(this, SWT.NONE);
@@ -105,34 +110,14 @@ public class SettingsPage extends Composite implements ISettingsPage {
         mForceHttpCheck.setText("Force https://... sources to be fetched using http://...");
         mForceHttpCheck.setToolTipText("If you are not able to connect to the official Android repository " +
                 "using HTTPS, enable this setting to force accessing it via HTTP.");
-        mForceHttpCheck.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                onForceHttpSelected();  //$hide$
-            }
-        });
+        mForceHttpCheck.addSelectionListener(mApplyOnSelected);
 
         mAskAdbRestartCheck = new Button(mMiscGroup, SWT.CHECK);
         mAskAdbRestartCheck.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
         mAskAdbRestartCheck.setText("Ask before restarting ADB");
         mAskAdbRestartCheck.setToolTipText("When checked, the user will be asked for permission " +
                 "to restart ADB after updating an addon-on package or a tool package.");
-        mAskAdbRestartCheck.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                onForceHttpSelected();  //$hide$
-            }
-        });
-
-        mApplyButton = new Button(this, SWT.NONE);
-        mApplyButton.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        mApplyButton.setText("Save && Apply");
-        mApplyButton.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                onApplySelected(); //$hide$
-            }
-        });
+        mAskAdbRestartCheck.addSelectionListener(mApplyOnSelected);
 
         postCreate();  //$hide$
     }
@@ -164,9 +149,6 @@ public class SettingsPage extends Composite implements ISettingsPage {
         mProxyPortText.setText(  in_settings.getProperty(KEY_HTTP_PROXY_PORT, ""));  //$NON-NLS-1$
         mForceHttpCheck.setSelection(Boolean.parseBoolean(in_settings.getProperty(KEY_FORCE_HTTP)));
         mAskAdbRestartCheck.setSelection(Boolean.parseBoolean(in_settings.getProperty(KEY_ASK_ADB_RESTART)));
-
-        // We loaded fresh settings so there's nothing dirty to apply
-        mApplyButton.setEnabled(false);
     }
 
     /** Called by the application to retrieve settings from the UI and store them in
@@ -193,18 +175,10 @@ public class SettingsPage extends Composite implements ISettingsPage {
      * Callback invoked when user presses the "Save and Apply" button.
      * Notify the application that settings have changed.
      */
-    private void onApplySelected() {
+    private void applyNewSettings() {
         if (mSettingsChangedCallback != null) {
             mSettingsChangedCallback.onSettingsChanged(this);
-            mApplyButton.setEnabled(false);
         }
-    }
-
-    /**
-     * Callback invoked when the users presses the Force HTTPS checkbox.
-     */
-    private void onForceHttpSelected() {
-        mSetApplyDirty.modifyText(null);
     }
 
     // End of hiding from SWT Designer
