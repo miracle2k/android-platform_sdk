@@ -18,7 +18,6 @@ package com.android.ddmlib;
 
 import com.android.ddmlib.HeapSegment.HeapSegmentElement;
 
-import java.io.File;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -304,10 +303,18 @@ public class ClientData {
         void onSuccess(String remoteFilePath, Client client);
 
         /**
-         * Called when the HPROF dump failed.
-         * @param client the client for which the HPROF file was.
+         * Called when a HPROF dump was successful.
+         * @param data the data containing the HPROF file, streamed from the VM
+         * @param client the client that was profiled.
          */
-        void onFailure(Client client);
+        void onSuccess(byte[] data, Client client);
+
+        /**
+         * Called when a hprof dump failed to end on the VM side
+         * @param client the client that was profiled.
+         * @param message an optional (<code>null<code> ok) error message to be displayed.
+         */
+        void onEndFailure(Client client, String message);
     }
 
     /**
@@ -323,10 +330,10 @@ public class ClientData {
 
         /**
          * Called when a method tracing was successful.
-         * @param remoteFilePath the device-side path of the trace file.
+         * @param data the data containing the trace file, streamed from the VM
          * @param client the client that was profiled.
          */
-        void onSuccess(File localFile, Client client);
+        void onSuccess(byte[] data, Client client);
 
         /**
          * Called when method tracing failed to start
@@ -341,13 +348,6 @@ public class ClientData {
          * @param message an optional (<code>null<code> ok) error message to be displayed.
          */
         void onEndFailure(Client client, String message);
-
-        /**
-         * Called when method tracing failed to end locally.
-         * @param client the client that was profiled.
-         * @param message the mandatory message to display.
-         */
-        void onEndLocalFailure(Client client, String message);
     }
 
     /**

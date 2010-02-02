@@ -23,12 +23,17 @@ import com.android.ddmlib.SyncService.SyncResult;
 import com.android.ddmuilib.SyncProgressMonitor;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
 /**
@@ -37,13 +42,15 @@ import java.lang.reflect.InvocationTargetException;
  * @see IHprofDumpHandler
  * @see IMethodProfilingHandler
  */
-public class BaseFileHandler {
+public abstract class BaseFileHandler {
 
     protected final Shell mParentShell;
 
     public BaseFileHandler(Shell parentShell) {
         mParentShell = parentShell;
     }
+
+    protected abstract String getDialogTitle();
 
     /**
      * Prompts the user for a save location and pulls the remote files into this location.
@@ -74,7 +81,39 @@ public class BaseFileHandler {
     }
 
     /**
-     * Pulls a file off of a device
+     * Prompts the user for a save location and copies a temp file into it.
+     * <p/>This <strong>must</strong> be called from the UI Thread.
+     * @param localFileName The default local name
+     * @param tempFilePath The name of the temp file to copy.
+     * @param title The title of the File Save dialog.
+     * @return true if success, false on error or cancel.
+     */
+    protected boolean promptAndSave(String localFileName, byte[] data, String title) {
+        FileDialog fileDialog = new FileDialog(mParentShell, SWT.SAVE);
+
+        fileDialog.setText(title);
+        fileDialog.setFileName(localFileName);
+
+        String localFilePath = fileDialog.open();
+        if (localFilePath != null) {
+            try {
+                saveFile(data, new File(localFilePath));
+                return true;
+            } catch (IOException e) {
+                String errorMsg = e.getMessage();
+                displayErrorInUiThread(
+                        "Failed to save file '%1$s'%2$s",
+                        localFilePath,
+                        errorMsg != null ? ":\n" + errorMsg : ".");
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Pulls a file off of a device. This displays a {@link ProgressMonitorDialog} and therefore
+     * must be run from the UI Thread.
      * @param sync the {@link SyncService} to use to pull the file.
      * @param localFilePath the path of the local file to create
      * @param remoteFilePath the path of the remote file to pull
@@ -99,5 +138,62 @@ public class BaseFileHandler {
         });
 
         return res[0];
+    }
+
+    /**
+     * Display an error message.
+     * <p/>This will call about to {@link Display} to run this in an async {@link Runnable} in the
+     * UI Thread. This is safe to be called from a non-UI Thread.
+     * @param format the string to display
+     * @param args the string arguments
+     */
+    protected void displayErrorInUiThread(final String format, final Object... args) {
+        mParentShell.getDisplay().asyncExec(new Runnable() {
+            public void run() {
+                MessageDialog.openError(mParentShell, getDialogTitle(),
+                        String.format(format, args));
+            }
+        });
+    }
+
+    /**
+     * Display an error message.
+     * This must be called from the UI Thread.
+     * @param format the string to display
+     * @param args the string arguments
+     */
+    protected void displayErrorFromUiThread(final String format, final Object... args) {
+        MessageDialog.openError(mParentShell, getDialogTitle(),
+                String.format(format, args));
+    }
+
+    /**
+     * Saves a given data into a temp file and returns its corresponding {@link File} object.
+     * @param data the data to save
+     * @return the File into which the data was written or null if it failed.
+     * @throws IOException
+     */
+    protected File saveTempFile(byte[] data) throws IOException {
+        File f = File.createTempFile("ddms", null);
+        saveFile(data, f);
+        return f;
+    }
+
+    /**
+     * Saves some data into a given File.
+     * @param data the data to save
+     * @param output the file into the data is saved.
+     * @throws IOException
+     */
+    protected void saveFile(byte[] data, File output) throws IOException {
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(output);
+            fos.write(data);
+        } finally {
+            if (fos != null) {
+                fos.close();
+            }
+        }
     }
 }
