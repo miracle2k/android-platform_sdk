@@ -138,7 +138,7 @@
          point="org.eclipse.debug.ui.launchConfigurationTypeImages">
       <launchConfigurationTypeImage
             configTypeID="com.android.ide.eclipse.adt.debug.LaunchConfigType"
-            icon="icons/android.png"
+            icon="icons/android_app.png"
             id="com.android.ide.eclipse.adt.debug.LaunchConfigTypeImage"/>
    </extension>
    <extension
@@ -154,7 +154,7 @@
       <shortcut
             category="com.android.ide.eclipse.adt.launch.LaunchConfigType"
             class="com.android.ide.eclipse.adt.internal.launch.LaunchShortcut"
-            icon="icons/android.png"
+            icon="icons/android_app.png"
             id="com.android.ide.eclipse.adt.debug.launching.LaunchShortcut"
             label="Android Application"
             modes="debug, run">
@@ -411,7 +411,7 @@
             class="com.android.ide.eclipse.adt.internal.editors.manifest.ManifestEditor"
             default="true"
             filenames="AndroidManifest.xml"
-            icon="icons/android.png"
+            icon="icons/android_file.png"
             id="com.android.ide.eclipse.editors.manifest.ManifestEditor"
             name="Android Manifest Editor">
       </editor>
@@ -419,7 +419,7 @@
             class="com.android.ide.eclipse.adt.internal.editors.resources.ResourcesEditor"
             default="false"
             extensions="xml"
-            icon="icons/android.png"
+            icon="icons/android_file.png"
             id="com.android.ide.eclipse.editors.resources.ResourcesEditor"
             name="Android Resource Editor">
       </editor>
@@ -427,7 +427,7 @@
             class="com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor"
             default="false"
             extensions="xml"
-            icon="icons/android.png"
+            icon="icons/android_file.png"
             id="com.android.ide.eclipse.editors.layout.LayoutEditor"
             matchingStrategy="com.android.ide.eclipse.adt.internal.editors.layout.MatchingStrategy"
             name="Android Layout Editor">
@@ -436,7 +436,7 @@
             class="com.android.ide.eclipse.adt.internal.editors.menu.MenuEditor"
             default="false"
             extensions="xml"
-            icon="icons/android.png"
+            icon="icons/android_file.png"
             id="com.android.ide.eclipse.editors.menu.MenuEditor"
             name="Android Menu Editor">
       </editor>
@@ -444,7 +444,7 @@
             class="com.android.ide.eclipse.adt.internal.editors.xml.XmlEditor"
             default="false"
             extensions="xml"
-            icon="icons/android.png"
+            icon="icons/android_file.png"
             id="com.android.ide.eclipse.editors.xml.XmlEditor"
             name="Android Xml Resources Editor">
       </editor>
