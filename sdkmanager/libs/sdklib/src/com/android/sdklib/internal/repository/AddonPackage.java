@@ -284,13 +284,16 @@ public class AddonPackage extends Package
      * Makes sure the base /add-ons folder exists before installing.
      */
     @Override
-    public void preInstallHook(String osSdkRoot, Archive archive) {
-        super.preInstallHook(osSdkRoot, archive);
-
+    public boolean preInstallHook(Archive archive,
+            ITaskMonitor monitor,
+            String osSdkRoot,
+            File installFolder) {
         File addonsRoot = new File(osSdkRoot, SdkConstants.FD_ADDONS);
         if (!addonsRoot.isDirectory()) {
             addonsRoot.mkdir();
         }
+
+        return super.preInstallHook(archive, monitor, osSdkRoot, installFolder);
     }
 
     @Override
