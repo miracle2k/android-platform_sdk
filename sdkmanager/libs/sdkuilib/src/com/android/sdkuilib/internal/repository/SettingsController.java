@@ -243,13 +243,20 @@ public class SettingsController {
             return;
         }
 
+        String oldHttpsSetting = mProperties.getProperty(ISettingsPage.KEY_FORCE_HTTP,
+                Boolean.FALSE.toString());
+
         mSettingsPage.retrieveSettings(mProperties);
         applySettings();
         saveSettings();
 
-        // In case the HTTP/HTTPS setting change, force sources to be reloaded
-        // (this only refreshes sources that the user has already tried to open.)
-        mUpdaterData.refreshSources(false /*forceFetching*/);
+        String newHttpsSetting = mProperties.getProperty(ISettingsPage.KEY_FORCE_HTTP,
+                Boolean.FALSE.toString());
+        if (!newHttpsSetting.equals(oldHttpsSetting)) {
+            // In case the HTTP/HTTPS setting change, force sources to be reloaded
+            // (this only refreshes sources that the user has already tried to open.)
+            mUpdaterData.refreshSources(false /*forceFetching*/);
+        }
     }
 
     /**
