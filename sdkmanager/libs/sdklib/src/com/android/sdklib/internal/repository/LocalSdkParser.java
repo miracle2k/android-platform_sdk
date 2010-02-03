@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -132,6 +133,8 @@ public class LocalSdkParser {
 
         scanMissingSamples(osSdkRoot, visited, packages, log);
         scanExtras(osSdkRoot, visited, packages, log);
+
+        Collections.sort(packages);
 
         mPackages = packages.toArray(new Package[packages.size()]);
         return mPackages;
