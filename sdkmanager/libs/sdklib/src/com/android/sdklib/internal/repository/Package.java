@@ -510,12 +510,14 @@ public abstract class Package implements IDescription, Comparable<Package> {
             type = 3;
         } else if (this instanceof DocPackage) {
             type = 2;
-        } else if (this instanceof PlatformPackage || this instanceof AddonPackage) {
+        } else if (this instanceof PlatformPackage || this instanceof AddonPackage ||
+                this instanceof SamplePackage) {
             type = 1;
             AndroidVersion v = ((IPackageVersion) this).getVersion();
             offset = v.getApiLevel();
             offset = offset * 2 + (v.isPreview() ? 1 : 0);
-            offset = offset * 2 + ((this instanceof AddonPackage) ? 0 : 1);
+            offset = offset * 2 + ((this instanceof AddonPackage) ? 0 :
+                    ((this instanceof SamplePackage) ? 1 : 2));
         } else {
             // extras and everything else
             type = 0;
