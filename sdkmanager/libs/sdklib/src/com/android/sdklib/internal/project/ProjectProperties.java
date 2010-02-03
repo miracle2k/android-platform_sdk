@@ -36,6 +36,9 @@ public final class ProjectProperties {
     /** The property name for the project target */
     public final static String PROPERTY_TARGET = "target";
 
+    public final static String PROPERTY_LIBRARY = "android.library";
+    public final static String PROPERTY_LIB_REF = "android.library.reference.";
+
     public final static String PROPERTY_SDK = "sdk.dir";
     // LEGACY - compatibility with 1.6 and before
     public final static String PROPERTY_SDK_LEGACY = "sdk-location";
@@ -47,6 +50,8 @@ public final class ProjectProperties {
     public final static String PROPERTY_SPLIT_BY_DENSITY = "split.density";
 
     public final static String PROPERTY_TESTED_PROJECT = "tested.project.dir";
+
+    public final static String PROPERTY_BUILD_SOURCE_DIR = "source.dir";
 
     public static enum PropertyType {
         BUILD("build.properties", BUILD_HEADER),
