@@ -3,10 +3,12 @@ Change log for Android SDK Tools.
 Revision 5 (02/2010):
 - AVD/SDK Manager:
 	- Fixed SSL download for the standalone version of the SDK Updater.
+	- Fixed issue with 64bit JVM on windows.
 	- Add support for samples components.
 	- improved support for dependency between components.
 	- AVDs now sorted by API level.
-	- Prevent deletion of running AVD.
+	- Prevent deletion of running AVDs.
+	- Settings are now automatically saved, no need to click Apply.
 - Emulator now requires sd card to be 9MB and above.
 - Fixed layoutopt.bat to correctly execute on Windows.
 
