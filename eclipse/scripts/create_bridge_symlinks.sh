@@ -19,18 +19,21 @@ elif [ "$HOST" == "Darwin" ]; then
 
 elif [ "${HOST:0:6}" == "CYGWIN" ]; then
     if [ "x$1" == "x" ] || [ `basename "$1"` != "layoutlib.jar" ]; then
-        echo "Usage: $0 yoursdk/platforms/xxx/data/layoutlib.jar"
-        echo "Argument 1 should be the path to the layoutlib.jar that should be updated."
-        exit 1
+        echo "Usage: $0 [yoursdk/platforms/xxx/data/layoutlib.jar]"
+        echo "WARNING: Argument 1 should be the SDK path to the layoutlib.jar to update."
     fi
 
     LIBS="layoutlib ninepatch"
     echo "Make java libs: $LIBS"
     make -j3 showcommands $LIBS || die "Bridge: Failed to build one of $LIBS."
 
-    echo "Updating your SDK in $1"
-    cp -vf  "out/host/windows-x86/framework/layoutlib.jar" "$1"
-    chmod -v a+rx "$1"
+    if [ "x$1" == "x" ] || [ `basename "$1"` != "layoutlib.jar" ]; then
+        echo "Skip updating layoutlib.jar from an SDK"
+    else
+        echo "Updating your SDK in $1"
+        cp -vf  "out/host/windows-x86/framework/layoutlib.jar" "$1"
+        chmod -v a+rx "$1"
+    fi
 
 else
     echo "Unsupported platform ($HOST). Nothing done."
