@@ -19,7 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -35,6 +35,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 
+import groovy.lang.Closure;
 import groovy.lang.GroovyClassLoader;
 
 import java.io.InputStream;
@@ -42,6 +43,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+
+/* TODO:
+ * - create a logger object and pass it around.
+ *
+ */
 
 /**
  * The rule engine manages the groovy rules files and interacts with them.
@@ -89,7 +95,7 @@ public class RulesEngine {
      * @return Null if the rule failed, there's no rule or the rule does not want to override
      *   the display name. Otherwise, a string as returned by the groovy script.
      */
-    public String getDisplayName(UiViewElementNode element) {
+    public String callGetDisplayName(UiViewElementNode element) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(element);
 
@@ -107,15 +113,35 @@ public class RulesEngine {
         return null;
     }
 
+    public Closure callOnSelected(NodeProxy selectedNode) {
+        // try to find a rule for this element's FQCN
+        IViewRule rule = loadRule(selectedNode.getNode());
+
+        if (rule != null) {
+            try {
+                return rule.onSelected(selectedNode);
+
+            } catch (Exception e) {
+                logError("%s.getDisplayName() failed: %s",
+                        rule.getClass().getSimpleName(),
+                        e.toString());
+            }
+        }
+
+        return null;
+
+    }
+
     /**
-     * Invokes {@link IViewRule#dropStart(INodeProxy)} on the rule matching
+     * Invokes {@link IViewRule#dropStart(INode)} on the rule matching
      * the specified target node.
      *
      * @param targetNode The XML view that is currently the target of the drop.
      * @return Null if the rule failed, there's no rule or the rule does not accept the drop.
      *   Otherwise a list of drop zones valid for this drop.
+     * @deprecated
      */
-    public ArrayList<DropZone> dropStart(NodeProxy targetNode) {
+    public ArrayList<DropZone> callDropStart(NodeProxy targetNode) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
@@ -134,14 +160,15 @@ public class RulesEngine {
     }
 
     /**
-     * Invokes {@link IViewRule#dropFinish(String, INodeProxy, DropZone, Point)} on the
+     * Invokes {@link IViewRule#dropFinish(String, INode, DropZone, Point)} on the
      * rule matching the specified target node.
      *
-     * @param source The {@link ViewElementDescriptor} of the drag source.
+     * @param viewFqcn The {@link ViewElementDescriptor} of the drag source.
      * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by {@link #dropStart(NodeProxy)}.
+     * @param selectedZone One of the drop zones returned by {@link #callDropStart(NodeProxy)}.
+     * @deprecated
      */
-    public void dropFinish(String viewFqcn,
+    public void callDropFinish(String viewFqcn,
             NodeProxy targetNode,
             DropZone selectedZone,
             Point where) {

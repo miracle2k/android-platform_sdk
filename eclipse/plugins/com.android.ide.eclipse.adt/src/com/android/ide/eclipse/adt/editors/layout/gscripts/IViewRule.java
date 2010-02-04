@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
+import groovy.lang.Closure;
+
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -69,6 +71,17 @@ public interface IViewRule {
     String getDisplayName();
 
 
+    /**
+     * Context: foreground color already set to selection color, full opaque.
+     * Returns: a closure that takes gc, display_name and node as arguments.
+     *
+     * @param selectedNode The node selected. Never null.
+     * @return Null or a closure that expected gc, name, currentNode as input arguments.
+     */
+    Closure onSelected(INode selectedNode);
+
+    Closure onChildSelected(INode parentNode, INode childNode);
+
     // ==== XML Creation ====
 
 
@@ -77,6 +90,11 @@ public interface IViewRule {
      * when added to an XML layout file. Note that these defaults can be overridden by the
      * specific code performing the insertion.
      *
+     * TODO:
+     * - added=>created
+     * - list tuple(uri, local name, str: value)
+     * - gen id
+     *
      * @return A map of attribute:values for a new element of this type. Can be null or empty.
      */
     Map<?, ?> getDefaultAttributes();
@@ -84,6 +102,17 @@ public interface IViewRule {
 
     // ==== Drag'n'drop support ====
 
+    /*
+     * TODO:
+     * - onDropEnter <- target node proxy, action => Object / Boolean.FALSE
+     * - onDropMove  <- proxy, action, Object, x/y
+     * - onDropLeave <- proxy, action, Object
+     * - onDrop      <- proxy, action, Object, x/y, source
+     *
+     * action:
+     * - drawRect/fillRect/drawLine x1,y1,x2,y2 / Line x,y / color [constants + rgba]
+     * - drawText x,y,col,text
+     */
 
     /**
      * Called when a drop operation starts, whilst the d'n'd is dragging the cursor over the
@@ -103,23 +132,25 @@ public interface IViewRule {
      *
      * @param targetNode The XML view that is currently the target of the drop.
      * @return Null or an empty list if the rule rejects the drop, or a list of usable drop zones.
+     * @deprecated
      */
-    ArrayList<DropZone> dropStart(INodeProxy targetNode);
+    ArrayList<DropZone> dropStart(INode targetNode);
 
     /**
      * Called after the user selects to drop the given source into one of the drop zones.
      * <p/>
-     * This method should use the methods from the {@link INodeProxy} to actually create the
+     * This method should use the methods from the {@link INode} to actually create the
      * new XML matching the source descriptor.
      *
      * @param sourceFqcn The FQCN of the view being dropped.
      * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by {@link #dropStart(INodeProxy)}.
+     * @param selectedZone One of the drop zones returned by {@link #dropStart(INode)}.
      * @param where The location, in the selected zone, of the drop.
+     * @deprecated
      */
     void dropFinish(
             String sourceFqcn,
-            INodeProxy targetNode,
+            INode targetNode,
             DropZone selectedZone,
             Point where);
 }

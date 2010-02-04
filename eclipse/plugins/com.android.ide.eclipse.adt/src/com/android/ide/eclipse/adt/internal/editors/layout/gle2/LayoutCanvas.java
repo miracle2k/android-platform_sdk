@@ -17,8 +17,11 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
+import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.layoutlib.api.ILayoutResult;
 
 import org.eclipse.swt.SWT;
@@ -34,7 +37,6 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.FontMetrics;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
@@ -113,12 +115,12 @@ import java.util.ListIterator;
     /** CanvasSelection border color. Do not dispose, it's a system color. */
     private Color mSelectionFgColor;
 
-    /** CanvasSelection name font. Do not dispose, it's a system font. */
-    private Font mSelectionFont;
+    /** GC wrapper given to the IViewRule methods. The GC itself is only defined in the
+     *  context of {@link #onPaint(PaintEvent)}; otherwise it is null. */
+    private GCWrapper mGCWrapper;
 
-    /** Pixel height of the font displaying the selection name. Initially set to 0 and only
-     * initialized in onPaint() when we have a GC. */
-    private int mSelectionFontHeight;
+    /** Default font used on the canvas. Do not dispose, it's a system font. */
+    private Font mFont;
 
     /** Current hover view info. Null when no mouse hover. */
     private CanvasViewInfo mHoverViewInfo;
@@ -150,17 +152,23 @@ import java.util.ListIterator;
     /** Drop color. Do not dispose, it's a system color. */
     private Color mDropFgColor;
 
+    /** Factory that can create {@link INode} proxies. */
+    private final NodeFactory mNodeFactory = new NodeFactory();
+
 
     public LayoutCanvas(RulesEngine rulesEngine, Composite parent, int style) {
         super(parent, style | SWT.DOUBLE_BUFFERED);
         mRulesEngine = rulesEngine;
 
+        mGCWrapper = new GCWrapper(IMAGE_MARGIN, IMAGE_MARGIN);
+
         Display d = getDisplay();
         mSelectionFgColor = d.getSystemColor(SWT.COLOR_RED);
         mHoverFgColor     = new Color(d, 0xFF, 0x99, 0x00); // orange
         mOutlineColor     = d.getSystemColor(SWT.COLOR_GREEN);
-        mSelectionFont    = d.getSystemFont();
         mDropFgColor      = d.getSystemColor(SWT.COLOR_YELLOW);
+
+        mFont = d.getSystemFont();
 
         addPaintListener(new PaintListener() {
             public void paintControl(PaintEvent e) {
@@ -238,6 +246,14 @@ import java.util.ListIterator;
     }
 
     /**
+     * Returns the factory to use to convert from {@link CanvasViewInfo} or from
+     * {@link UiViewElementNode} to {@link INode} proxies.
+     */
+    public NodeFactory getNodeFactory() {
+        return mNodeFactory;
+    }
+
+    /**
      * Sets the result of the layout rendering. The result object indicates if the layout
      * rendering succeeded. If it did, it contains a bitmap and the objects rectangles.
      *
@@ -263,7 +279,7 @@ import java.util.ListIterator;
             for (ListIterator<CanvasSelection> it = mSelections.listIterator(); it.hasNext(); ) {
                 CanvasSelection s = it.next();
 
-                // Check the if the selected object still exists
+                // Check if the selected object still exists
                 Object key = s.getViewInfo().getUiViewKey();
                 CanvasViewInfo vi = findViewInfoKey(key, mLastValidViewInfoRoot);
 
@@ -272,7 +288,7 @@ import java.util.ListIterator;
                 // at the same place.
                 it.remove();
                 if (vi != null) {
-                    it.add(new CanvasSelection(vi, mRulesEngine));
+                    it.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
                 }
             }
 
@@ -385,43 +401,44 @@ import java.util.ListIterator;
      */
     private void onPaint(PaintEvent e) {
         GC gc = e.gc;
+        gc.setFont(mFont);
+        mGCWrapper.setGC(gc);
+        try {
 
-        if (mImage != null) {
-            if (!mIsResultValid) {
-                gc_setAlpha(gc, 128);  // half-transparent
+            if (mImage != null) {
+                if (!mIsResultValid) {
+                    gc_setAlpha(gc, 128);  // half-transparent
+                }
+
+                gc.drawImage(mImage, IMAGE_MARGIN, IMAGE_MARGIN);
+
+                if (!mIsResultValid) {
+                    gc_setAlpha(gc, 255);  // opaque
+                }
             }
 
-            gc.drawImage(mImage, IMAGE_MARGIN, IMAGE_MARGIN);
-
-            if (!mIsResultValid) {
-                gc_setAlpha(gc, 255);  // opaque
+            if (mShowOutline) {
+                gc.setForeground(mOutlineColor);
+                gc.setLineStyle(SWT.LINE_DOT);
+                drawOutline(gc, mLastValidViewInfoRoot);
             }
-        }
 
-        if (mShowOutline) {
-            gc.setForeground(mOutlineColor);
-            gc.setLineStyle(SWT.LINE_DOT);
-            drawOutline(gc, mLastValidViewInfoRoot);
-        }
+            if (mHoverRect != null) {
+                gc.setForeground(mHoverFgColor);
+                gc.setLineStyle(SWT.LINE_DOT);
+                gc.drawRectangle(mHoverRect);
+            }
 
-        if (mHoverRect != null) {
-            gc.setForeground(mHoverFgColor);
-            gc.setLineStyle(SWT.LINE_DOT);
-            gc.drawRectangle(mHoverRect);
-        }
+            gc.setForeground(mSelectionFgColor);
+            for (CanvasSelection s : mSelections) {
+                s.paint(mGCWrapper);
+            }
 
-        // initialize the selection font height once. We need the GC to do that.
-        if (mSelectionFontHeight == 0) {
-            gc.setFont(mSelectionFont);
-            FontMetrics fm = gc.getFontMetrics();
-            mSelectionFontHeight = fm.getHeight();
-        }
+            drawDropZones(gc);
 
-        for (CanvasSelection s : mSelections) {
-            drawSelection(gc, s);
+        } finally {
+            mGCWrapper.setGC(null);
         }
-
-        drawDropZones(gc);
     }
 
     private void drawOutline(GC gc, CanvasViewInfo info) {
@@ -431,25 +448,6 @@ import java.util.ListIterator;
 
         for (CanvasViewInfo vi : info.getChildren()) {
             drawOutline(gc, vi);
-        }
-    }
-
-    private void drawSelection(GC gc, CanvasSelection s) {
-        Rectangle r = s.getRect();
-
-        gc.setForeground(mSelectionFgColor);
-        gc.setLineStyle(SWT.LINE_SOLID);
-        gc.drawRectangle(s.getRect());
-
-        String name = s.getName();
-
-        if (name != null) {
-            int xs = r.x + 2;
-            int ys = r.y - mSelectionFontHeight;
-            if (ys < 0) {
-                ys = r.y + r.height;
-            }
-            gc.drawString(name, xs, ys, true /*transparent*/);
         }
     }
 
@@ -570,7 +568,7 @@ import java.util.ListIterator;
                     }
 
                     // otherwise add it.
-                    mSelections.add(new CanvasSelection(vi, mRulesEngine));
+                    mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
                     redraw();
                 }
 
@@ -594,7 +592,7 @@ import java.util.ListIterator;
                     // select the current one
                     CanvasViewInfo vi2 = mAltSelection.getCurrent();
                     if (vi2 != null) {
-                        mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine));
+                        mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
                     }
                 } else {
                     // We're trying to cycle through the current alternate selection.
@@ -605,7 +603,7 @@ import java.util.ListIterator;
                     // Now select the next one.
                     vi2 = mAltSelection.getNext();
                     if (vi2 != null) {
-                        mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine));
+                        mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
                     }
                 }
                 redraw();
@@ -626,7 +624,7 @@ import java.util.ListIterator;
                 }
 
                 if (vi != null) {
-                    mSelections.add(new CanvasSelection(vi, mRulesEngine));
+                    mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
                 }
                 redraw();
             }
@@ -767,7 +765,7 @@ import java.util.ListIterator;
      *                 selection list.
      */
     private void selectAllViewInfos(CanvasViewInfo canvasViewInfo) {
-        mSelections.add(new CanvasSelection(canvasViewInfo, mRulesEngine));
+        mSelections.add(new CanvasSelection(canvasViewInfo, mRulesEngine, mNodeFactory));
         for (CanvasViewInfo vi : canvasViewInfo.getChildren()) {
             selectAllViewInfos(vi);
         }

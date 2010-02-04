@@ -18,11 +18,11 @@ package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 
 /**
- * A drop zone, as returned by {@link IViewRule#dropStart(INodeProxy)}.
+ * A drop zone, as returned by {@link IViewRule#dropStart(INode)}.
  * <p/>
  * A zone is characterized by its {@link #bounds} rectangle, which must be valid for the
  * zone to be useful (i.e. with w>0 and h>0). The zone must lie in the bounds given by
- * the {@link INodeProxy} and is in absolute canvas coordinates.
+ * the {@link INode} and is in absolute canvas coordinates.
  * <p/>
  * No strong ordering properties are defined if zones overlap each other.
  */
