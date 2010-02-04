@@ -210,11 +210,13 @@ public class NewProjectWizard extends Wizard implements INewWizard {
      */
     public void init(IWorkbench workbench, IStructuredSelection selection) {
         setHelpAvailable(false); // TODO have help
-        setWindowTitle("New Android Project");
         setImageDescriptor();
 
         if (mAvailablePages == AvailablePages.ANDROID_AND_TEST_PROJECT) {
             mMainPage = createMainPage();
+            setWindowTitle("New Android Project");
+        } else {
+            setWindowTitle("New Android Test Project");
         }
         mTestPage = createTestPage();
     }
