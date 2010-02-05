@@ -97,6 +97,7 @@ public final class AvdSelector {
     private ImageFactory mImageFactory;
     private Image mOkImage;
     private Image mBrokenImage;
+    private Image mInvalidImage;
 
     private SettingsController mController;
 
@@ -208,7 +209,8 @@ public final class AvdSelector {
         // get some bitmaps.
         mImageFactory = new ImageFactory(parent.getDisplay());
         mOkImage = mImageFactory.getImageByName("accept_icon16.png");
-        mBrokenImage = mImageFactory.getImageByName("reject_icon16.png");
+        mBrokenImage = mImageFactory.getImageByName("broken_16.png");
+        mInvalidImage = mImageFactory.getImageByName("reject_icon16.png");
 
         // Layout has 2 columns
         Composite group = new Composite(parent, SWT.NONE);
@@ -325,7 +327,7 @@ public final class AvdSelector {
             });
         } else {
             Composite legend = new Composite(group, SWT.NONE);
-            legend.setLayout(gl = new GridLayout(2, false /*makeColumnsEqualWidth*/));
+            legend.setLayout(gl = new GridLayout(4, false /*makeColumnsEqualWidth*/));
             gl.marginHeight = gl.marginWidth = 0;
             legend.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false,
                     NUM_COL, 1));
@@ -335,7 +337,13 @@ public final class AvdSelector {
             new Label(legend, SWT.NONE).setText("A valid Android Virtual Device.");
             new Label(legend, SWT.NONE).setImage(mBrokenImage);
             new Label(legend, SWT.NONE).setText(
-                    "An Android Virtual Device that failed to load. Click 'Details' to see the error.");
+                    "A repairable Android Virtual Device.");
+            new Label(legend, SWT.NONE).setImage(mInvalidImage);
+            Label l = new Label(legend, SWT.NONE);
+            l.setText("An Android Virtual Device that failed to load. Click 'Details' to see the error.");
+            GridData gd;
+            l.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
+            gd.horizontalSpan = 3;
         }
 
         // create the table columns
@@ -737,7 +745,9 @@ public final class AvdSelector {
                     item.setData(avd);
                     item.setText(0, avd.getName());
                     if (mDisplayMode == DisplayMode.MANAGER) {
-                        item.setImage(0, avd.getStatus() == AvdStatus.OK ? mOkImage : mBrokenImage);
+                        AvdStatus status = avd.getStatus();
+                        item.setImage(0, status == AvdStatus.OK ? mOkImage :
+                            isAvdRepairable(status) ? mBrokenImage : mInvalidImage);
                     }
                     IAndroidTarget target = avd.getTarget();
                     if (target != null) {
@@ -810,8 +820,7 @@ public final class AvdSelector {
                 mDeleteButton.setEnabled(hasSelection);
             }
             if (mRepairButton != null) {
-                mRepairButton.setEnabled(hasSelection &&
-                        selection.getStatus() == AvdStatus.ERROR_IMAGE_DIR);
+                mRepairButton.setEnabled(hasSelection && isAvdRepairable(selection.getStatus()));
             }
         }
     }
@@ -1109,5 +1118,9 @@ public final class AvdSelector {
                 });
             }
         }
+    }
+
+    private boolean isAvdRepairable(AvdStatus avdStatus) {
+        return avdStatus == AvdStatus.ERROR_IMAGE_DIR;
     }
 }
