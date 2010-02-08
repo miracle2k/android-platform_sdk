@@ -38,8 +38,9 @@ public class AndroidViewViewRule extends BaseViewRule {
     // Before that, make sure the engine can deal with the lack of a base class
     // fallback when navigating the hierarchy.
 
+    // TODO move all this to BaseViewRule
     Closure onSelected(INode node) {
-        def drawSelection = { gc, name, currentNode ->
+        def drawSelection = { gc, name, currentNode, isMultipleSelection ->
             Rect r = currentNode.getBounds();
 
             if (!r.isValid()) {
@@ -50,7 +51,7 @@ public class AndroidViewViewRule extends BaseViewRule {
             gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
             gc.drawRect(r);
 
-            if (name == null) {
+            if (name == null || isMultipleSelection) {
                 return;
             }
 

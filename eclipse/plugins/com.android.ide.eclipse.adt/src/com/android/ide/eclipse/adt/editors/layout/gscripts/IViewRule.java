@@ -72,11 +72,19 @@ public interface IViewRule {
 
 
     /**
+     * Called by the canvas when a view is being selected.
+     * The callback must return a closure that is used to draw the actual selection.
+     * <p/>
+     * The closure takes 4 arguments: <br/>
+     * - An {@link IGraphics} instance, to perform drawing operations.  <br/>
+     * - The name to display, as returned by {@link #getDisplayName()}. <br/>
+     * - The selected {@link INode}. <br/>
+     * - A boolean set to true if more than one element is selected.
+     * <p/>
      * Context: foreground color already set to selection color, full opaque.
-     * Returns: a closure that takes gc, display_name and node as arguments.
      *
      * @param selectedNode The node selected. Never null.
-     * @return Null or a closure that expects gc, name, currentNode as input arguments.
+     * @return Null or a closure that expects graphics, name, currentNode as input arguments.
      */
     Closure onSelected(INode selectedNode);
 

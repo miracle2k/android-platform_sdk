@@ -430,8 +430,9 @@ import java.util.ListIterator;
             }
 
             gc.setForeground(mSelectionFgColor);
+            boolean isMultipleSelection = mSelections.size() > 1;
             for (CanvasSelection s : mSelections) {
-                s.paint(mGCWrapper);
+                s.paint(mGCWrapper, isMultipleSelection);
             }
 
             drawDropZones(gc);

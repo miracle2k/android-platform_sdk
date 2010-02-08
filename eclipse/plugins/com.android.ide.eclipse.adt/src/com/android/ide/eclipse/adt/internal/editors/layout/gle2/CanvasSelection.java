@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
@@ -95,6 +96,24 @@ import groovy.lang.Closure;
         return mName;
     }
 
+    /**
+     * Calls the closure returned by
+     * {@link IViewRule#onSelected(com.android.ide.eclipse.adt.editors.layout.gscripts.INode)}.
+     *
+     * @param gcWrapper The GC to use for drawing.
+     * @param isMultipleSelection True if more than one view is selected.
+     */
+    /*package*/ void paint(GCWrapper gcWrapper, boolean isMultipleSelection) {
+        if (mPaintClosure != null) {
+            try {
+                mPaintClosure.call(
+                        new Object[] { gcWrapper, mName, mNodeProxy, isMultipleSelection });
+            } catch (Exception e) {
+                mNodeProxy.debugPrintf("Selection Paint Closure: %s", e.toString());
+            }
+        }
+    }
+
     //----
 
     private String initDisplayName(CanvasViewInfo canvasViewInfo, RulesEngine gre) {
@@ -142,15 +161,5 @@ import groovy.lang.Closure;
 
         mNodeProxy = proxy;
         mPaintClosure = result;
-    }
-
-    public void paint(GCWrapper gcWrapper) {
-        if (mPaintClosure != null) {
-            try {
-                mPaintClosure.call(new Object[] { gcWrapper, mName, mNodeProxy });
-            } catch (Exception e) {
-                mNodeProxy.debugPrintf("Selection Paint Closure: %s", e.toString());
-            }
-        }
     }
 }
