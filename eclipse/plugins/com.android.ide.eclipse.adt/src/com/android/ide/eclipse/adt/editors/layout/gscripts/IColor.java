@@ -16,30 +16,9 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
-
 /**
- * Mutable point.
+ * A color, to be used with {@link IGC} draw operations.
  */
-public class Point {
-    public int x, y;
-
-    public Point(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Point) {
-            Point rhs = (Point) obj;
-            return this.x == rhs.x && this.y == rhs.y;
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        int h = x ^ ((y >> 16) & 0x0FFFF) ^ ((y & 0x0FFFF) << 16);
-        return h;
-    }
+public interface IColor {
+    // pass
 }

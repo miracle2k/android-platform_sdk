@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * We can't alter {@link ILayoutViewInfo} as it is part of the LayoutBridge and needs to
  * have a fixed API.
  */
-/* package */ class CanvasViewInfo {
+public class CanvasViewInfo {
 
     /**
      * Minimal size of the selection, in case an empty view or layout is selected.

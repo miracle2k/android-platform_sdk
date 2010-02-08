@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
+import org.eclipse.swt.graphics.Rectangle;
+
 
 /**
  * Mutable rectangle bounds.
@@ -75,5 +77,29 @@ public class Rect {
     @Override
     public String toString() {
         return String.format("Rect [%dx%d - %dx%d]", x, y, w, h);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Rect) {
+            Rect rhs = (Rect) obj;
+            return this.x == rhs.x && this.y == rhs.y && this.w == rhs.w && this.h == rhs.h;
+
+        } else if (obj instanceof Rectangle) {
+            Rectangle rhs = (Rectangle) obj;
+            return this.x == rhs.x && this.y == rhs.y &&
+                   this.w == rhs.width && this.h == rhs.height;
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = x;
+        h ^= ((y >>  8) & 0x0FFFFFF) | ((y & 0x00000FF) << 24);
+        h ^= ((w >> 16) & 0x000FFFF) | ((w & 0x000FFFF) << 16);
+        h ^= ((h >> 24) & 0x00000FF) | ((h & 0x0FFFFFF) <<  8);
+        return h;
     }
 }

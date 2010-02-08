@@ -17,14 +17,16 @@
 package com.android.adt.gscripts;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.BaseViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IGC;
 
 import java.util.Map;
 import java.util.ArrayList;
 
+import groovy.lang.Closure;
 
 /**
  * An {@link IViewRule} for android.view.View and all its derived classes.
@@ -35,5 +37,36 @@ public class AndroidViewViewRule extends BaseViewRule {
     // TODO if there's nothing to implement here, I might as well remove it.
     // Before that, make sure the engine can deal with the lack of a base class
     // fallback when navigating the hierarchy.
+
+    Closure onSelected(INode node) {
+        def drawSelection = { gc, name, currentNode ->
+            Rect r = currentNode.getBounds();
+
+            if (!r.isValid()) {
+                return;
+            }
+
+            gc.setLineWidth(1);
+            gc.setLineStyle(IGC.LineStyle.LINE_SOLID);
+            gc.drawRect(r);
+
+            if (name == null) {
+                return;
+            }
+
+            int xs = r.x + 2;
+            int ys = r.y - gc.getFontHeight();
+            if (ys < 0) {
+                ys = r.y + r.h;
+            }
+            gc.drawString(name, xs, ys);
+        };
+
+        return drawSelection;
+    }
+
+    Closure onChildSelected(INode parentNode, INode childNode) {
+        return null;
+    }
 
 }

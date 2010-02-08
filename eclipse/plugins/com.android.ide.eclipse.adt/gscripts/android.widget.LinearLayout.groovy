@@ -17,7 +17,7 @@
 package com.android.adt.gscripts;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.BaseViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
@@ -47,7 +47,7 @@ public class AndroidWidgetLinearLayourRule extends BaseViewRule {
      * @param targetNode The XML view that is currently the target of the drop.
      * @return Null or an empty list if the rule rejects the drop, or a list of usable drop zones.
      */
-    public ArrayList<DropZone> dropStart(INodeProxy targetNode) {
+    public ArrayList<DropZone> dropStart(INode targetNode) {
 
         // for testing, we're going to make 2 drop zones: top and bottom.
         // TODO find inner elements bounds & orientation, add margings
@@ -65,16 +65,16 @@ public class AndroidWidgetLinearLayourRule extends BaseViewRule {
     /**
      * Called after the user selects to drop the given source into one of the drop zones.
      * <p/>
-     * This method should use the methods from the {@link INodeProxy} to actually create the
+     * This method should use the methods from the {@link INode} to actually create the
      * new XML matching the source descriptor.
      *
      * @param sourceFqcn The FQCN of the view being dropped.
      * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by {@link #dropStart(INodeProxy)}.
+     * @param selectedZone One of the drop zones returned by {@link #dropStart(INode)}.
      */
     public void dropFinish(
             String sourceFqcn,
-            INodeProxy targetNode,
+            INode targetNode,
             DropZone selectedZone,
             Point where) {
         // TODO

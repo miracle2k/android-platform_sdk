@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
@@ -44,24 +44,26 @@ import groovy.lang.Closure;
 /**
  *
  */
-public class NodeProxy implements INodeProxy {
+public class NodeProxy implements INode {
 
     private final UiViewElementNode mNode;
     private final Rect mBounds;
     private boolean mXmlEditOK;
+    private final NodeFactory mFactory;
 
     /**
-     * Creates a new {@link INodeProxy} that wraps an {@link UiViewElementNode} that is
+     * Creates a new {@link INode} that wraps an {@link UiViewElementNode} that is
      * actually valid in the current UI/XML model. The view may not be part of the canvas
      * yet (e.g. if it has just been dynamically added and the canvas hasn't reloaded yet.)
      *
-     * @param node The node to wrap.
+     * @param uiNode The node to wrap.
      * @param bounds The bounds of a the view in the canvas. Must be a valid rect for a view
      *   that is actually in the canvas and must be null (or an invalid rect) for a view
      *   that has just been added dynamically to the model.
      */
-    public NodeProxy(UiViewElementNode node, Rectangle bounds) {
-        mNode = node;
+    public NodeProxy(UiViewElementNode uiNode, Rectangle bounds, NodeFactory factory) {
+        mNode = uiNode;
+        mFactory = factory;
         if (bounds == null) {
             mBounds = new Rect();
         } else {
@@ -88,7 +90,7 @@ public class NodeProxy implements INodeProxy {
 
     public void editXml(String undoName, final Closure c) {
         if (mXmlEditOK) {
-            throw new RuntimeException("Error: nested calls to INodeProxy.editXml!");
+            throw new RuntimeException("Error: nested calls to INode.editXml!");
         }
         try {
             mXmlEditOK = true;
@@ -118,11 +120,11 @@ public class NodeProxy implements INodeProxy {
 
     private void checkEditOK() {
         if (!mXmlEditOK) {
-            throw new RuntimeException("Error: XML edit call without using INodeProxy.editXml!");
+            throw new RuntimeException("Error: XML edit call without using INode.editXml!");
         }
     }
 
-    public INodeProxy createChild(String viewFqcn) {
+    public INode createChild(String viewFqcn) {
         checkEditOK();
 
         // Find the descriptor for this FQCN
@@ -152,7 +154,7 @@ public class NodeProxy implements INodeProxy {
             throw new RuntimeException("XML node creation failed."); //$NON-NLS-1$
         }
 
-        return new NodeProxy((UiViewElementNode) uiNew, null);
+        return mFactory.create((UiViewElementNode) uiNew);
     }
 
     public boolean setAttribute(String attributeName, String value) {
@@ -172,6 +174,7 @@ public class NodeProxy implements INodeProxy {
      * @param attrName The local name of the attribute.
      * @return the attribute as a {@link String}, if it exists, or <code>null</code>
      */
+    @SuppressWarnings("unused")
     private String getStringAttr(String attrName) {
         // TODO this was just copy-pasted from the GLE1 edit code. Need to adapt to this context.
         UiElementNode uiNode = mNode;
