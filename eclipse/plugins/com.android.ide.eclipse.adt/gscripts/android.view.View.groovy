@@ -21,7 +21,7 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IGC;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 
 import java.util.Map;
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ public class AndroidViewViewRule extends BaseViewRule {
             }
 
             gc.setLineWidth(1);
-            gc.setLineStyle(IGC.LineStyle.LINE_SOLID);
+            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
             gc.drawRect(r);
 
             if (name == null) {

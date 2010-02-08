@@ -24,7 +24,7 @@ package com.android.ide.eclipse.adt.editors.layout.gscripts;
  * just about any time, it is only valid during a call that actually receives
  * the GC wrapper.
  */
-public interface IGC {
+public interface IGraphics {
 
     /**
      * Registers a color using 0x00rrggbb where each component is
@@ -67,7 +67,7 @@ public interface IGC {
     boolean setAlpha(int alpha);
 
     /**
-     * A line style for {@link IGC#setLineStyle(LineStyle)}.
+     * A line style for {@link IGraphics#setLineStyle(LineStyle)}.
      */
     enum LineStyle {
         /** Style for solid lines. */

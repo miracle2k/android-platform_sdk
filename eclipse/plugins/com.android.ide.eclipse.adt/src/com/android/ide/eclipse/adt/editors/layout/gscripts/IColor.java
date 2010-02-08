@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 /**
- * A color, to be used with {@link IGC} draw operations.
+ * A color, to be used with {@link IGraphics} draw operations.
  */
 public interface IColor {
     // pass

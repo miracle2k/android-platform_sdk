@@ -76,7 +76,7 @@ public interface IViewRule {
      * Returns: a closure that takes gc, display_name and node as arguments.
      *
      * @param selectedNode The node selected. Never null.
-     * @return Null or a closure that expected gc, name, currentNode as input arguments.
+     * @return Null or a closure that expects gc, name, currentNode as input arguments.
      */
     Closure onSelected(INode selectedNode);
 

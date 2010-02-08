@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IColor;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IGC;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
@@ -31,12 +31,12 @@ import org.eclipse.swt.graphics.GC;
 import java.util.HashMap;
 
 /**
- * Wraps an SWT {@link GC} into an {@link IGC} interface so that {@link IViewRule} objects
+ * Wraps an SWT {@link GC} into an {@link IGraphics} interface so that {@link IViewRule} objects
  * can directly draw on the canvas.
  * </p>
  * The actual wrapped GC object is only non-null during the context of a paint operation.
  */
-public class GCWrapper implements IGC {
+public class GCWrapper implements IGraphics {
 
     /**
      * The actual SWT {@link GC} being wrapped. This can change during the lifetime of the
@@ -87,7 +87,7 @@ public class GCWrapper implements IGC {
 
     void checkGC() {
         if (mGc == null) {
-            throw new RuntimeException("IGC used without a valid context.");
+            throw new RuntimeException("IGraphics used without a valid context.");
         }
     }
 
