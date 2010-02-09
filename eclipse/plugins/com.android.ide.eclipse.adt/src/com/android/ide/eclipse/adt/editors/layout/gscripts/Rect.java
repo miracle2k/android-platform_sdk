@@ -40,6 +40,16 @@ public class Rect {
     }
 
     /** Initialize rectangle to the given values. They can be invalid. */
+    public Rect(Rect r) {
+        set(r);
+    }
+
+    /** Initialize rectangle to the given values. They can be invalid. */
+    public Rect(Rectangle swtRect) {
+        set(swtRect);
+    }
+
+    /** Initialize rectangle to the given values. They can be invalid. */
     public void set(int x, int y, int w, int h) {
         this.x = x;
         this.y = y;
@@ -49,10 +59,12 @@ public class Rect {
 
     /** Initialize rectangle to match the given one. */
     public void set(Rect r) {
-        x = r.x;
-        y = r.y;
-        w = r.w;
-        h = r.h;
+        set(r.x, r.y, r.w, r.h);
+    }
+
+    /** Initialize rectangle to match the given one. */
+    public void set(Rectangle swtRect) {
+        set(swtRect.x, swtRect.y, swtRect.width, swtRect.height);
     }
 
     /** Returns a new instance of a rectangle with the same values. */

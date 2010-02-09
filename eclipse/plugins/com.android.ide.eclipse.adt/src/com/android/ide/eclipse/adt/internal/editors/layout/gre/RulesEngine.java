@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
@@ -35,7 +36,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 
-import groovy.lang.Closure;
 import groovy.lang.GroovyClassLoader;
 
 import java.io.InputStream;
@@ -113,23 +113,54 @@ public class RulesEngine {
         return null;
     }
 
-    public Closure callOnSelected(NodeProxy selectedNode) {
+    /**
+     * Invokes {@link IViewRule#onSelected(IGraphics, INode, String, boolean)}
+     * on the rule matching the specified element.
+     *
+     * @param gc An {@link IGraphics} instance, to perform drawing operations.
+     * @param selectedNode The node selected. Never null.
+     * @param displayName The name to display, as returned by {@link IViewRule#getDisplayName()}.
+     * @param isMultipleSelection A boolean set to true if more than one element is selected.
+     */
+    public void callOnSelected(IGraphics gc, NodeProxy selectedNode,
+            String displayName, boolean isMultipleSelection) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(selectedNode.getNode());
 
         if (rule != null) {
             try {
-                return rule.onSelected(selectedNode);
+                rule.onSelected(gc, selectedNode, displayName, isMultipleSelection);
 
             } catch (Exception e) {
-                logError("%s.getDisplayName() failed: %s",
+                logError("%s.onSelected() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
         }
+    }
 
-        return null;
+    /**
+     * Invokes {@link IViewRule#onChildSelected(IGraphics, INode, INode)}
+     * on the rule matching the specified element.
+     *
+     * @param gc An {@link IGraphics} instance, to perform drawing operations.
+     * @param parentNode The parent of the node selected. Never null.
+     * @param childNode The child node that was selected. Never null.
+     */
+    public void callOnChildSelected(IGraphics gc, NodeProxy parentNode, NodeProxy childNode) {
+        // try to find a rule for this element's FQCN
+        IViewRule rule = loadRule(parentNode.getNode());
 
+        if (rule != null) {
+            try {
+                rule.onChildSelected(gc, parentNode, childNode);
+
+            } catch (Exception e) {
+                logError("%s.onChildSelected() failed: %s",
+                        rule.getClass().getSimpleName(),
+                        e.toString());
+            }
+        }
     }
 
     /**

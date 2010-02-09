@@ -16,8 +16,6 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
-import groovy.lang.Closure;
-
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -73,22 +71,32 @@ public interface IViewRule {
 
     /**
      * Called by the canvas when a view is being selected.
-     * The callback must return a closure that is used to draw the actual selection.
      * <p/>
-     * The closure takes 4 arguments: <br/>
-     * - An {@link IGraphics} instance, to perform drawing operations.  <br/>
-     * - The name to display, as returned by {@link #getDisplayName()}. <br/>
-     * - The selected {@link INode}. <br/>
-     * - A boolean set to true if more than one element is selected.
-     * <p/>
-     * Context: foreground color already set to selection color, full opaque.
+     * Before the method is called, the canvas' Graphic Context is initialized
+     * with a foreground color already set to the desired selection color, fully
+     * opaque and with the default adequate font.
      *
+     * @param gc An {@link IGraphics} instance, to perform drawing operations.
      * @param selectedNode The node selected. Never null.
-     * @return Null or a closure that expects graphics, name, currentNode as input arguments.
+     * @param displayName The name to display, as returned by {@link #getDisplayName()}.
+     * @param isMultipleSelection A boolean set to true if more than one element is selected.
      */
-    Closure onSelected(INode selectedNode);
+    void onSelected(IGraphics gc, INode selectedNode,
+            String displayName, boolean isMultipleSelection);
 
-    Closure onChildSelected(INode parentNode, INode childNode);
+    /**
+     * Called by the canvas when a single child view is being selected.
+     * <p/>
+     * Note that this is called only for single selections.
+     * <p/>
+     * This allows a parent to draw stuff around its children, for example to display
+     * layout attributes graphically.
+     *
+     * @param gc An {@link IGraphics} instance, to perform drawing operations.
+     * @param parentNode The parent of the node selected. Never null.
+     * @param childNode The child node that was selected. Never null.
+     */
+    void onChildSelected(IGraphics gc, INode parentNode, INode childNode);
 
     // ==== XML Creation ====
 

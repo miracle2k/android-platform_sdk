@@ -16,33 +16,30 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 
 import org.eclipse.swt.graphics.Rectangle;
 
-import groovy.lang.Closure;
-
 /**
  * Represents one selection in {@link LayoutCanvas}.
  */
 /* package */ class CanvasSelection {
 
-    /** Current selected view info. Cannot be null. */
+    /** Current selected view info. Can be null. */
     private final CanvasViewInfo mCanvasViewInfo;
 
-    /** Current selection border rectangle. Cannot be null. */
+    /** Current selection border rectangle. Null when mCanvasViewInfo is null . */
     private final Rectangle mRect;
+
+    /** The node proxy for drawing the selection. Null when mCanvasViewInfo is null. */
+    private final NodeProxy mNodeProxy;
 
     /** The name displayed over the selection, typically the widget class name. Can be null. */
     private final String mName;
 
-    /** Closure to use to paint the selection. */
-    private Closure mPaintClosure;
-
-    private NodeProxy mNodeProxy;
 
     /**
      * Creates a new {@link CanvasSelection} object.
@@ -59,6 +56,7 @@ import groovy.lang.Closure;
 
         if (canvasViewInfo == null) {
             mRect = null;
+            mNodeProxy = null;
         } else {
             Rectangle r = canvasViewInfo.getSelectionRect();
             mRect = new Rectangle(
@@ -66,11 +64,10 @@ import groovy.lang.Closure;
                     r.y + LayoutCanvas.IMAGE_MARGIN,
                     r.width,
                     r.height);
+            mNodeProxy = nodeFactory.create(canvasViewInfo);
         }
 
         mName = initDisplayName(canvasViewInfo, gre);
-
-        initSelectedDisplay(canvasViewInfo, nodeFactory, gre);
     }
 
     /**
@@ -97,19 +94,29 @@ import groovy.lang.Closure;
     }
 
     /**
-     * Calls the closure returned by
-     * {@link IViewRule#onSelected(com.android.ide.eclipse.adt.editors.layout.gscripts.INode)}.
+     * Calls IViewRule.onSelected on the selected view.
      *
+     * @param gre The rules engines.
      * @param gcWrapper The GC to use for drawing.
      * @param isMultipleSelection True if more than one view is selected.
      */
-    /*package*/ void paint(GCWrapper gcWrapper, boolean isMultipleSelection) {
-        if (mPaintClosure != null) {
-            try {
-                mPaintClosure.call(
-                        new Object[] { gcWrapper, mName, mNodeProxy, isMultipleSelection });
-            } catch (Exception e) {
-                mNodeProxy.debugPrintf("Selection Paint Closure: %s", e.toString());
+    /*package*/ void paintSelection(RulesEngine gre, GCWrapper gcWrapper, boolean isMultipleSelection) {
+        if (mNodeProxy != null) {
+            gre.callOnSelected(gcWrapper, mNodeProxy, mName, isMultipleSelection);
+        }
+    }
+
+    /**
+     * Calls IViewRule.onChildSelected on the parent of the selected view, if it has one.
+     *
+     * @param gre The rules engines.
+     * @param gcWrapper The GC to use for drawing.
+     */
+    public void paintParentSelection(RulesEngine gre, GCWrapper gcWrapper) {
+        if (mNodeProxy != null) {
+            INode parent = mNodeProxy.getParent();
+            if (parent instanceof NodeProxy) {
+                gre.callOnChildSelected(gcWrapper, (NodeProxy)parent, mNodeProxy);
             }
         }
     }
@@ -151,15 +158,5 @@ import groovy.lang.Closure;
         }
 
         return name;
-    }
-
-    private void initSelectedDisplay(CanvasViewInfo canvasViewInfo,
-            NodeFactory nodeFactory,
-            RulesEngine gre) {
-        NodeProxy proxy = nodeFactory.create(canvasViewInfo);
-        Closure result = gre.callOnSelected(proxy);
-
-        mNodeProxy = proxy;
-        mPaintClosure = result;
     }
 }

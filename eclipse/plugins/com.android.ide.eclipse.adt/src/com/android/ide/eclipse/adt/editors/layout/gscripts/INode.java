@@ -49,6 +49,18 @@ public interface INode {
      */
     Rect getBounds();
 
+
+    // ---- Hierarchy handling ----
+
+
+    /**
+     * Returns the parent node of this node, corresponding to the parent view in the layout.
+     * The returned parent can be null when the node is the root element, or when the node is
+     * not yet or no longer attached to the hierarchy.
+     */
+    INode getParent();
+
+
     // ---- XML Editing ---
 
     /**

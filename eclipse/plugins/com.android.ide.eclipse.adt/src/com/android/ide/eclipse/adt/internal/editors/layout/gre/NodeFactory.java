@@ -61,9 +61,14 @@ public class NodeFactory {
     private NodeProxy create(UiViewElementNode uiNode, Rectangle bounds) {
         NodeProxy proxy = mNodeMap.get(uiNode);
 
-        if (proxy == null || !proxy.getBounds().equals(bounds)) {
+        if (proxy == null) {
+            // Create a new proxy if the key doesn't exist
             proxy = new NodeProxy(uiNode, bounds, this);
             mNodeMap.put(uiNode, proxy);
+
+        } else if (bounds != null && !proxy.getBounds().equals(bounds)) {
+            // Update the bounds if necessary
+            proxy.setBounds(bounds);
         }
 
         return proxy;

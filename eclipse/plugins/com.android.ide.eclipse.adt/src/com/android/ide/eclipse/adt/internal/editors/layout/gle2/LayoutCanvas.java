@@ -274,6 +274,8 @@ import java.util.ListIterator;
             mLastValidViewInfoRoot = new CanvasViewInfo(result.getRootView());
             setImage(result.getImage());
 
+            updateNodeProxies(mLastValidViewInfoRoot);
+
             // Check if the selection is still the same (based on the object keys)
             // and eventually recompute their bounds.
             for (ListIterator<CanvasSelection> it = mSelections.listIterator(); it.hasNext(); ) {
@@ -357,6 +359,33 @@ import java.util.ListIterator;
 
     //---
 
+
+    /**
+     * Creates or updates the node proxy for this canvas view info.
+     * <p/>
+     * Since proxies are reused, this will update the bounds of an existing proxy when the
+     * canvas is refreshed and a view changes position or size.
+     * <p/>
+     * This is a recursive call that updates the whole hierarchy starting at the given
+     * view info.
+     */
+    private void updateNodeProxies(CanvasViewInfo vi) {
+
+        if (vi == null) {
+            return;
+        }
+
+        UiViewElementNode key = vi.getUiViewKey();
+
+        if (key != null) {
+            mNodeFactory.create(vi);
+        }
+
+        for (CanvasViewInfo child : vi.getChildren()) {
+            updateNodeProxies(child);
+        }
+    }
+
     /**
      * Sets the image of the last *successful* rendering.
      * Converts the AWT image into an SWT image.
@@ -429,11 +458,21 @@ import java.util.ListIterator;
                 gc.drawRectangle(mHoverRect);
             }
 
-            gc.setForeground(mSelectionFgColor);
-            boolean isMultipleSelection = mSelections.size() > 1;
-            for (CanvasSelection s : mSelections) {
-                s.paint(mGCWrapper, isMultipleSelection);
+            int n = mSelections.size();
+            if (n > 0) {
+                boolean isMultipleSelection = n > 1;
+
+                if (n == 1) {
+                    gc.setForeground(mSelectionFgColor);
+                    mSelections.get(0).paintParentSelection(mRulesEngine, mGCWrapper);
+                }
+
+                for (CanvasSelection s : mSelections) {
+                    gc.setForeground(mSelectionFgColor);
+                    s.paintSelection(mRulesEngine, mGCWrapper, isMultipleSelection);
+                }
             }
+
 
             drawDropZones(gc);
 

@@ -17,16 +17,9 @@
 package com.android.adt.gscripts;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.BaseViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
-
-import java.util.Map;
-import java.util.ArrayList;
-
-import groovy.lang.Closure;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 
 /**
  * An {@link IViewRule} for android.view.View and all its derived classes.
@@ -39,35 +32,49 @@ public class AndroidViewViewRule extends BaseViewRule {
     // fallback when navigating the hierarchy.
 
     // TODO move all this to BaseViewRule
-    Closure onSelected(INode node) {
-        def drawSelection = { gc, name, currentNode, isMultipleSelection ->
-            Rect r = currentNode.getBounds();
+    void onSelected(IGraphics gc, INode selectedNode,
+            String displayName, boolean isMultipleSelection) {
+        Rect r = selectedNode.getBounds();
 
-            if (!r.isValid()) {
-                return;
-            }
+        if (!r.isValid()) {
+            return;
+        }
 
-            gc.setLineWidth(1);
-            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-            gc.drawRect(r);
+        gc.setLineWidth(1);
+        gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+        gc.drawRect(r);
 
-            if (name == null || isMultipleSelection) {
-                return;
-            }
+        if (displayName == null || isMultipleSelection) {
+            return;
+        }
 
-            int xs = r.x + 2;
-            int ys = r.y - gc.getFontHeight();
-            if (ys < 0) {
-                ys = r.y + r.h;
-            }
-            gc.drawString(name, xs, ys);
-        };
-
-        return drawSelection;
+        int xs = r.x + 2;
+        int ys = r.y - gc.getFontHeight();
+        if (ys < 0) {
+            ys = r.y + r.h;
+        }
+        gc.drawString(displayName, xs, ys);
     }
 
-    Closure onChildSelected(INode parentNode, INode childNode) {
-        return null;
+    void onChildSelected(IGraphics gc, INode parentNode, INode childNode) {
+        Rect rp = parentNode.getBounds();
+        Rect rc = childNode.getBounds();
+
+        if (rp.isValid() && rc.isValid()) {
+            gc.setLineWidth(1);
+            gc.setLineStyle(IGraphics.LineStyle.LINE_DOT);
+
+            // top line
+            int m = rc.x + rc.w / 2;
+            gc.drawLine(m, rc.y, m, rp.y);
+            // bottom line
+            gc.drawLine(m, rc.y + rc.h, m, rp.y + rp.h);
+            // left line
+            m = rc.y + rc.h / 2;
+            gc.drawLine(rc.x, m, rp.x, m);
+            // right line
+            gc.drawLine(rc.x + rc.w, m, rp.x + rp.w, m);
+        }
     }
 
 }
