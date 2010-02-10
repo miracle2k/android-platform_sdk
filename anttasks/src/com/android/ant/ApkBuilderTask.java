@@ -26,7 +26,6 @@ import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
-import org.apache.tools.ant.ProjectComponent;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.Path;
 import org.apache.tools.ant.types.Path.PathElement;
@@ -43,35 +42,18 @@ public class ApkBuilderTask extends Task {
     // ref id to the <path> object containing all the boot classpaths.
     private final static String REF_APK_PATH = "android.apks.path";
 
-    /**
-     * Class to represent nested elements. Since they all have only one attribute ('path'), the
-     * same class can be used for all the nested elements (zip, file, sourcefolder, jarfolder,
-     * nativefolder).
-     */
-    public final static class Value extends ProjectComponent {
-        String mPath;
-
-        /**
-         * Sets the value of the "path" attribute.
-         * @param path the value.
-         */
-        public void setPath(Path path) {
-            mPath = path.toString();
-        }
-    }
-
     private String mOutFolder;
     private String mBaseName;
     private boolean mVerbose = false;
     private boolean mSigned = true;
     private boolean mDebug = false;
 
-    private final ArrayList<Value> mZipList = new ArrayList<Value>();
-    private final ArrayList<Value> mFileList = new ArrayList<Value>();
-    private final ArrayList<Value> mSourceList = new ArrayList<Value>();
-    private final ArrayList<Value> mJarfolderList = new ArrayList<Value>();
-    private final ArrayList<Value> mJarfileList = new ArrayList<Value>();
-    private final ArrayList<Value> mNativeList = new ArrayList<Value>();
+    private final ArrayList<Path> mZipList = new ArrayList<Path>();
+    private final ArrayList<Path> mFileList = new ArrayList<Path>();
+    private final ArrayList<Path> mSourceList = new ArrayList<Path>();
+    private final ArrayList<Path> mJarfolderList = new ArrayList<Path>();
+    private final ArrayList<Path> mJarfileList = new ArrayList<Path>();
+    private final ArrayList<Path> mNativeList = new ArrayList<Path>();
 
     private final ArrayList<FileInputStream> mZipArchives = new ArrayList<FileInputStream>();
     private final ArrayList<File> mArchiveFiles = new ArrayList<File>();
@@ -84,7 +66,7 @@ public class ApkBuilderTask extends Task {
      * @param outFolder the value.
      */
     public void setOutfolder(Path outFolder) {
-        mOutFolder = outFolder.toString();
+        mOutFolder = TaskHelper.checkSinglePath("outfolder", outFolder);
     }
 
     /**
@@ -123,54 +105,54 @@ public class ApkBuilderTask extends Task {
      * Returns an object representing a nested <var>zip</var> element.
      */
     public Object createZip() {
-        Value zip = new Value();
-        mZipList.add(zip);
-        return zip;
+        Path path = new Path(getProject());
+        mZipList.add(path);
+        return path;
     }
 
     /**
      * Returns an object representing a nested <var>file</var> element.
      */
     public Object createFile() {
-        Value file = new Value();
-        mFileList.add(file);
-        return file;
+        Path path = new Path(getProject());
+        mFileList.add(path);
+        return path;
     }
 
     /**
      * Returns an object representing a nested <var>sourcefolder</var> element.
      */
     public Object createSourcefolder() {
-        Value file = new Value();
-        mSourceList.add(file);
-        return file;
+        Path path = new Path(getProject());
+        mSourceList.add(path);
+        return path;
     }
 
     /**
      * Returns an object representing a nested <var>jarfolder</var> element.
      */
     public Object createJarfolder() {
-        Value file = new Value();
-        mJarfolderList.add(file);
-        return file;
+        Path path = new Path(getProject());
+        mJarfolderList.add(path);
+        return path;
     }
 
     /**
      * Returns an object representing a nested <var>jarfile</var> element.
      */
     public Object createJarfile() {
-        Value file = new Value();
-        mJarfileList.add(file);
-        return file;
+        Path path = new Path(getProject());
+        mJarfileList.add(path);
+        return path;
     }
 
     /**
      * Returns an object representing a nested <var>nativefolder</var> element.
      */
     public Object createNativefolder() {
-        Value file = new Value();
-        mNativeList.add(file);
-        return file;
+        Path path = new Path(getProject());
+        mNativeList.add(path);
+        return path;
     }
 
     @Override
@@ -187,37 +169,48 @@ public class ApkBuilderTask extends Task {
 
             // go through the list of zip files to add. This will not include
             // the resource package, which is handled separaly for each apk to create.
-            for (Value v : mZipList) {
-                FileInputStream input = new FileInputStream(v.mPath);
-                mZipArchives.add(input);
+            for (Path pathList : mZipList) {
+                for (String path : pathList.list()) {
+                    FileInputStream input = new FileInputStream(path);
+                    mZipArchives.add(input);
+                }
             }
 
             // now go through the list of file to directly add the to the list.
-            for (Value v : mFileList) {
-                mArchiveFiles.add(ApkBuilderImpl.getInputFile(v.mPath));
+            for (Path pathList : mFileList) {
+                for (String path : pathList.list()) {
+                    mArchiveFiles.add(ApkBuilderImpl.getInputFile(path));
+                }
             }
 
             // now go through the list of file to directly add the to the list.
-            for (Value v : mSourceList) {
-                ApkBuilderImpl.processSourceFolderForResource(new File(v.mPath), mJavaResources);
+            for (Path pathList : mSourceList) {
+                for (String path : pathList.list()) {
+                    ApkBuilderImpl.processSourceFolderForResource(new File(path),
+                            mJavaResources);
+                }
             }
 
             // now go through the list of jar folders.
-            for (Value v : mJarfolderList) {
-                ApkBuilderImpl.processJar(new File(v.mPath), mResourcesJars);
+            for (Path pathList : mJarfolderList) {
+                for (String path : pathList.list()) {
+                    ApkBuilderImpl.processJar(new File(path), mResourcesJars);
+                }
             }
 
             // now go through the list of jar files.
-            for (Value v : mJarfileList) {
-                ApkBuilderImpl.processJar(new File(v.mPath), mResourcesJars);
+            for (Path pathList : mJarfileList) {
+                for (String path : pathList.list()) {
+                    ApkBuilderImpl.processJar(new File(path), mResourcesJars);
+                }
             }
 
             // now the native lib folder.
-            for (Value v : mNativeList) {
-                String parameter = v.mPath;
-                File f = new File(parameter);
-
-                ApkBuilderImpl.processNativeFolder(f, mDebug, mNativeLibraries);
+            for (Path pathList : mNativeList) {
+                for (String path : pathList.list()) {
+                    ApkBuilderImpl.processNativeFolder(new File(path), mDebug,
+                            mNativeLibraries);
+                }
             }
 
             // create the Path item that will contain all the generated APKs

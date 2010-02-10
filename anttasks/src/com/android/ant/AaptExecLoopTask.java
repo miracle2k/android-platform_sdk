@@ -34,9 +34,26 @@ import java.util.Map.Entry;
 
 /**
  * Task able to run an Exec task on aapt several times.
- * It does not follow the exec task format, instead it has its own parameters, which maps
- * directly to aapt.
+ * <p>It does not follow the exec task format, instead it has its own parameters, which maps
+ * directly to aapt.</p>
+ * <p>The following map shows how to use the task for each supported aapt command line
+ * parameter.</p>
  *
+ * <table border="1">
+ * <tr><td><b>Aapt Option</b></td><td><b>Ant Name</b></td><td><b>Type</b></td></tr>
+ * <tr><td>path to aapt</td><td>executable</td><td>attribute (Path)</td>
+ * <tr><td>command</td><td>command</td><td>attribute (String)</td>
+ * <tr><td>-v</td><td>verbose</td><td>attribute (boolean)</td></tr>
+ * <tr><td>-f</td><td>force</td><td>attribute (boolean)</td></tr>
+ * <tr><td>-M AndroidManifest.xml</td><td>manifest</td><td>attribute (Path)</td></tr>
+ * <tr><td>-I base-package</td><td>androidjar</td><td>attribute (Path)</td></tr>
+ * <tr><td>-A asset-source-dir</td><td>assets</td><td>attribute (Path</td></tr>
+ * <tr><td>-S resource-sources</td><td>&lt;res path=""&gt;</td><td>nested element(s)<br>with attribute (Path)</td></tr>
+ * <tr><td>-0 extension</td><td>&lt;nocompress extension=""&gt;<br>&lt;nocompress&gt;</td><td>nested element(s)<br>with attribute (String)</td></tr>
+ * <tr><td>-F apk-file</td><td>apkfolder<br>outfolder<br>apkbasename<br>basename</td><td>attribute (Path)<br>attribute (Path) deprecated<br>attribute (String)<br>attribute (String) deprecated</td></tr>
+ * <tr><td>-J R-file-dir</td><td>rfolder</td><td>attribute (Path)<br>-m always enabled</td></tr>
+ * <tr><td></td><td></td><td></td></tr>
+ * </table>
  */
 public final class AaptExecLoopTask extends Task {
 
@@ -61,20 +78,23 @@ public final class AaptExecLoopTask extends Task {
 
     private String mExecutable;
     private String mCommand;
+    private boolean mForce = true; // true due to legacy reasons
+    private boolean mVerbose = false;
     private String mManifest;
-    private String mResources;
+    private ArrayList<Path> mResources;
     private String mAssets;
     private String mAndroidJar;
-    private String mOutFolder;
-    private String mBaseName;
+    private String mApkFolder;
+    private String mApkBaseName;
+    private String mRFolder;
     private final ArrayList<NoCompress> mNoCompressList = new ArrayList<NoCompress>();
 
     /**
      * Sets the value of the "executable" attribute.
      * @param executable the value.
      */
-    public void setExecutable(String executable) {
-        mExecutable = executable;
+    public void setExecutable(Path executable) {
+        mExecutable = TaskHelper.checkSinglePath("executable", executable);
     }
 
     /**
@@ -86,19 +106,42 @@ public final class AaptExecLoopTask extends Task {
     }
 
     /**
+     * Sets the value of the "force" attribute.
+     * @param force the value.
+     */
+    public void setForce(boolean force) {
+        mForce = force;
+    }
+
+    /**
+     * Sets the value of the "verbose" attribute.
+     * @param verbose the value.
+     */
+    public void setVerbose(boolean verbose) {
+        mVerbose = verbose;
+    }
+
+    /**
      * Sets the value of the "manifest" attribute.
      * @param manifest the value.
      */
     public void setManifest(Path manifest) {
-        mManifest = manifest.toString();
+        mManifest = TaskHelper.checkSinglePath("manifest", manifest);
     }
 
     /**
      * Sets the value of the "resources" attribute.
      * @param resources the value.
+     *
+     * @deprecated Uses nested element(s) <res path="value" />
      */
+    @Deprecated
     public void setResources(Path resources) {
-        mResources = resources.toString();
+        if (mResources == null) {
+            mResources = new ArrayList<Path>();
+        }
+
+        mResources.add(new Path(getProject(), resources.toString()));
     }
 
     /**
@@ -106,7 +149,7 @@ public final class AaptExecLoopTask extends Task {
      * @param assets the value.
      */
     public void setAssets(Path assets) {
-        mAssets = assets.toString();
+        mAssets = TaskHelper.checkSinglePath("assets", assets);
     }
 
     /**
@@ -114,23 +157,51 @@ public final class AaptExecLoopTask extends Task {
      * @param androidJar the value.
      */
     public void setAndroidjar(Path androidJar) {
-        mAndroidJar = androidJar.toString();
+        mAndroidJar = TaskHelper.checkSinglePath("androidjar", androidJar);
     }
 
     /**
      * Sets the value of the "outfolder" attribute.
      * @param outFolder the value.
+     * @deprecated use {@link #setApkfolder(Path)}
      */
+    @Deprecated
     public void setOutfolder(Path outFolder) {
-        mOutFolder = outFolder.toString();
+        mApkFolder = TaskHelper.checkSinglePath("outfolder", outFolder);
+    }
+
+    /**
+     * Sets the value of the "apkfolder" attribute.
+     * @param apkFolder the value.
+     */
+    public void setApkfolder(Path apkFolder) {
+        mApkFolder = TaskHelper.checkSinglePath("apkfolder", apkFolder);
     }
 
     /**
      * Sets the value of the "basename" attribute.
      * @param baseName the value.
+     * @deprecated use {@link #setApkbasename(String)}
      */
+    @Deprecated
     public void setBasename(String baseName) {
-        mBaseName = baseName;
+        mApkBaseName = baseName;
+    }
+
+    /**
+     * Sets the value of the "apkbasename" attribute.
+     * @param apkbaseName the value.
+     */
+    public void setApkbasename(String apkbaseName) {
+        mApkBaseName = apkbaseName;
+    }
+
+    /**
+     * Sets the value of the "rfolder" attribute.
+     * @param rFolder the value.
+     */
+    public void setRfolder(Path rFolder) {
+        mRFolder = TaskHelper.checkSinglePath("rfolder", rFolder);
     }
 
     /**
@@ -140,6 +211,20 @@ public final class AaptExecLoopTask extends Task {
         NoCompress nc = new NoCompress();
         mNoCompressList.add(nc);
         return nc;
+    }
+
+    /**
+     * Returns an object representing a nested <var>res</var> element.
+     */
+    public Object createRes() {
+        if (mResources == null) {
+            mResources = new ArrayList<Path>();
+        }
+
+        Path path = new Path(getProject());
+        mResources.add(path);
+
+        return path;
     }
 
     /*
@@ -155,7 +240,25 @@ public final class AaptExecLoopTask extends Task {
         Project taskProject = getProject();
 
         // first do a full resource package
-        createPackage(null /*configName*/, null /*resourceFilter*/);
+        createPackage(null /*configName*/, null /*resourceFilter*/, null /*customPackage*/);
+
+        if (mRFolder != null && new File(mRFolder).isDirectory()) {
+            String libPkgProp = taskProject.getProperty("android.libraries.package");
+            if (libPkgProp != null) {
+                // get the main package to compare in case the libraries use the same
+                String mainPackage = taskProject.getProperty("manifest.package");
+
+                String[] libPkgs = libPkgProp.split(";");
+                for (String libPkg : libPkgs) {
+                    if (libPkg.length() > 0 && mainPackage.equals(libPkg) == false) {
+                        // FIXME: instead of recreating R.java from scratch, maybe copy
+                        // the files (R.java and manifest.java)? This would force to replace
+                        // the package line on the fly.
+                        createPackage(null, null, libPkg);
+                    }
+                }
+            }
+        }
 
         // now see if we need to create file with filtered resources.
         // Get the project base directory.
@@ -169,7 +272,7 @@ public final class AaptExecLoopTask extends Task {
             Map<String, String> apkFilters = apkSettings.getResourceFilters();
             if (apkFilters.size() > 0) {
                 for (Entry<String, String> entry : apkFilters.entrySet()) {
-                    createPackage(entry.getKey(), entry.getValue());
+                    createPackage(entry.getKey(), entry.getValue(), null /*custom package*/);
                 }
             }
         }
@@ -182,10 +285,13 @@ public final class AaptExecLoopTask extends Task {
      * @param resourceFilter the resource configuration filter to pass to aapt (if configName is
      * non null)
      */
-    private void createPackage(String configName, String resourceFilter) {
+    private void createPackage(String configName, String resourceFilter, String customPackage) {
         Project taskProject = getProject();
 
-        if (configName == null || resourceFilter == null) {
+        final boolean generateRClass = mRFolder != null && new File(mRFolder).isDirectory();
+
+        if (generateRClass) {
+        } else if (configName == null || resourceFilter == null) {
             System.out.println("Creating full resource package...");
         } else {
             System.out.println(String.format(
@@ -202,7 +308,18 @@ public final class AaptExecLoopTask extends Task {
         task.createArg().setValue(mCommand);
 
         // force flag
-        task.createArg().setValue("-f");
+        if (mForce) {
+            task.createArg().setValue("-f");
+        }
+
+        // verbose flag
+        if (mVerbose) {
+            task.createArg().setValue("-v");
+        }
+
+        if (generateRClass) {
+            task.createArg().setValue("-m");
+        }
 
         // filters if needed
         if (configName != null && resourceFilter != null) {
@@ -229,39 +346,81 @@ public final class AaptExecLoopTask extends Task {
             }
         }
 
-        // manifest location
-        task.createArg().setValue("-M");
-        task.createArg().setValue(mManifest);
+        if (customPackage != null) {
+            task.createArg().setValue("--custom-package");
+            task.createArg().setValue(customPackage);
+        }
 
-        // resources location. This may not exists, and aapt doesn't like it, so we check first.
-        File res = new File(mResources);
-        if (res.isDirectory()) {
-            task.createArg().setValue("-S");
-            task.createArg().setValue(mResources);
+        // if the project contains libraries, force auto-add-overlay
+        Object libSrc = taskProject.getReference("android.libraries.res");
+        if (libSrc != null) {
+            task.createArg().setValue("--auto-add-overlay");
+        }
+
+        // manifest location
+        if (mManifest != null) {
+            task.createArg().setValue("-M");
+            task.createArg().setValue(mManifest);
+        }
+
+        // resources locations.
+        if (mResources.size() > 0) {
+            for (Path pathList : mResources) {
+                for (String path : pathList.list()) {
+                    // This may not exists, and aapt doesn't like it, so we check first.
+                    File res = new File(path);
+                    if (res.isDirectory()) {
+                        task.createArg().setValue("-S");
+                        task.createArg().setValue(path);
+                    }
+                }
+            }
+        }
+
+        // add other resources coming from library project
+        Object libPath = taskProject.getReference("android.libraries.res");
+        if (libPath instanceof Path) {
+            for (String path : ((Path)libPath).list()) {
+                // This may not exists, and aapt doesn't like it, so we check first.
+                File res = new File(path);
+                if (res.isDirectory()) {
+                    task.createArg().setValue("-S");
+                    task.createArg().setValue(path);
+                }
+            }
         }
 
         // assets location. This may not exists, and aapt doesn't like it, so we check first.
-        File assets = new File(mAssets);
-        if (assets.isDirectory()) {
+        if (mAssets != null && new File(mAssets).isDirectory()) {
             task.createArg().setValue("-A");
             task.createArg().setValue(mAssets);
         }
 
         // android.jar
-        task.createArg().setValue("-I");
-        task.createArg().setValue(mAndroidJar);
-
-        // out file. This is based on the outFolder, baseName, and the configName (if applicable)
-        String filename;
-        if (configName != null && resourceFilter != null) {
-            filename = mBaseName + "-" + configName + ".ap_";
-        } else {
-            filename = mBaseName + ".ap_";
+        if (mAndroidJar != null) {
+            task.createArg().setValue("-I");
+            task.createArg().setValue(mAndroidJar);
         }
 
-        File file = new File(mOutFolder, filename);
-        task.createArg().setValue("-F");
-        task.createArg().setValue(file.getAbsolutePath());
+        // apk file. This is based on the apkFolder, apkBaseName, and the configName (if applicable)
+        if (mApkBaseName != null && mApkBaseName != null) {
+            String filename;
+            if (configName != null && resourceFilter != null) {
+                filename = mApkBaseName + "-" + configName + ".ap_";
+            } else {
+                filename = mApkBaseName + ".ap_";
+            }
+
+            File file = new File(mApkFolder, filename);
+            task.createArg().setValue("-F");
+            task.createArg().setValue(file.getAbsolutePath());
+        }
+
+        // R class generation
+        if (generateRClass) {
+            task.createArg().setValue("-J");
+            task.createArg().setValue(mRFolder);
+        }
 
         // final setup of the task
         task.setProject(taskProject);
