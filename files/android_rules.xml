@@ -126,6 +126,7 @@
              <arg line="${verbose.option}" />
              <arg path="${out.classes.absolute.dir}" />
              <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
+             <path refid="android.libraries.jars" />
              <external-libs />
          </apply>
        </sequential>
@@ -154,8 +155,10 @@
                 <file path="${intermediate.dex.file}" />
                 <sourcefolder path="${source.absolute.dir}" />
                 <sourcefolder refid="android.libraries.src" />
-                <nativefolder path="${native.libs.absolute.dir}" />
                 <jarfolder path="${external.libs.absolute.dir}" />
+                <jarfolder refid="android.libraries.libs" />
+                <nativefolder path="${native.libs.absolute.dir}" />
+                <nativefolder refid="android.libraries.libs" />
                 <extra-jars/>
             </apkbuilder>
         </sequential>
@@ -242,7 +245,8 @@
         <javac encoding="ascii" target="1.5" debug="true" extdirs=""
                 destdir="${out.classes.absolute.dir}"
                 bootclasspathref="android.target.classpath"
-                verbose="${verbose}" classpath="${extensible.classpath}">
+                verbose="${verbose}" classpath="${extensible.classpath}"
+                classpathref="android.libraries.jars">
             <src path="${source.absolute.dir}" />
             <src path="${gen.absolute.dir}" />
             <src refid="android.libraries.src" />

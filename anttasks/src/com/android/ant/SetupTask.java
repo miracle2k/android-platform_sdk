@@ -19,6 +19,7 @@ package com.android.ant;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.ISdkLog;
+import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 import com.android.sdklib.internal.project.ProjectProperties;
@@ -36,6 +37,7 @@ import org.xml.sax.InputSource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -278,7 +280,7 @@ public final class SetupTask extends ImportTask {
      */
     private void checkManifest(Project antProject, AndroidVersion androidVersion) {
         try {
-            File manifest = new File(antProject.getBaseDir(), "AndroidManifest.xml");
+            File manifest = new File(antProject.getBaseDir(), SdkConstants.FN_ANDROID_MANIFEST_XML);
 
             XPath xPath = AndroidXPathFactory.newXPath();
 
@@ -356,7 +358,15 @@ public final class SetupTask extends ImportTask {
         // prepare several paths for future tasks
         Path sourcePath = new Path(antProject);
         Path resPath = new Path(antProject);
+        Path libsPath = new Path(antProject);
+        Path jarsPath = new Path(antProject);
         StringBuilder sb = new StringBuilder();
+
+        FilenameFilter filter = new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(".jar");
+            }
+        };
 
         int index = 1;
         while (true) {
@@ -371,7 +381,7 @@ public final class SetupTask extends ImportTask {
             // "source.dir" in build.properties.
             PathElement element = sourcePath.createPathElement();
             ProjectProperties prop = ProjectProperties.load(rootPath, PropertyType.BUILD);
-            String sourceDir = "src";
+            String sourceDir = SdkConstants.FD_SOURCES;
             if (prop != null) {
                 String value = prop.getProperty(ProjectProperties.PROPERTY_BUILD_SOURCE_DIR);
                 if (value != null) {
@@ -383,10 +393,22 @@ public final class SetupTask extends ImportTask {
 
             // get the res path. Always $PROJECT/res
             element = resPath.createPathElement();
-            element.setPath(rootPath + "/res");
+            element.setPath(rootPath + "/" + SdkConstants.FD_RESOURCES);
+
+            // get the libs path. Always $PROJECT/libs
+            element = libsPath.createPathElement();
+            element.setPath(rootPath + "/" + SdkConstants.FD_NATIVE_LIBS);
+
+            // get the jars from it too
+            File libsFolder = new File(rootPath, SdkConstants.FD_NATIVE_LIBS);
+            File[] jarFiles = libsFolder.listFiles(filter);
+            for (File jarFile : jarFiles) {
+                element = jarsPath.createPathElement();
+                element.setPath(jarFile.getAbsolutePath());
+            }
 
             // get the package from the manifest.
-            File manifest = new File(rootPath, "AndroidManifest.xml");
+            File manifest = new File(rootPath, SdkConstants.FN_ANDROID_MANIFEST_XML);
             XPath xPath = AndroidXPathFactory.newXPath();
 
             // check the package name.
@@ -407,9 +429,11 @@ public final class SetupTask extends ImportTask {
 
         }
 
-        // even with no libraries, always setup android.libraries.src so that javac
-        // doesn't complain
+        // even with no libraries, always setup these so that various tasks in Ant don't complain
+        // (the task themselves can handle a ref to an empty Path)
         antProject.addReference("android.libraries.src", sourcePath);
+        antProject.addReference("android.libraries.jars", jarsPath);
+        antProject.addReference("android.libraries.libs", libsPath);
 
         // the rest is done only if there's a library.
         if (sourcePath.list().length > 0) {
