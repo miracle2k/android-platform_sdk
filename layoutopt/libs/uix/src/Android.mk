@@ -8,6 +8,6 @@ LOCAL_JAVA_RESOURCE_DIRS := resources
 
 LOCAL_MODULE := uix
 LOCAL_JAVA_LIBRARIES := \
-	groovy-all-1.6.5
+	groovy-all-1.7.0
 
 include $(BUILD_HOST_JAVA_LIBRARY)

@@ -13,6 +13,6 @@
 	<classpathentry kind="lib" path="sdklib.jar" sourcepath="/SdkLib"/>
 	<classpathentry kind="lib" path="sdkuilib.jar" sourcepath="/SdkUiLib"/>
 	<classpathentry kind="lib" path="commons-compress-1.0.jar"/>
-	<classpathentry kind="lib" path="groovy-all-1.6.5.jar"/>
+	<classpathentry kind="lib" path="groovy-all-1.7.0.jar" sourcepath="/GroovySrc/groovy-src-1.7.0.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
