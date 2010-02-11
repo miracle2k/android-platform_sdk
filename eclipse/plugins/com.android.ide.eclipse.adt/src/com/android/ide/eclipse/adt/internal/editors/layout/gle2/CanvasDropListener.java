@@ -162,7 +162,7 @@ import java.util.ArrayList;
         }
 
         Point p = eventToCanvasPoint(event);
-        mCanvas.getRulesEngine().dropFinish(viewFqcn, mTargetNode, mCurrentZone,
+        mCanvas.getRulesEngine().callDropFinish(viewFqcn, mTargetNode, mCurrentZone,
                 new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(p.x, p.y));
 
         clearDropInfo();
@@ -259,8 +259,8 @@ import java.util.ArrayList;
             // zones, we move on the parent view till we find one that has drop zones.
             for (; vi != null && mZones == null; vi = vi.getParent()) {
                 mTargetView = vi;
-                mTargetNode = new NodeProxy(vi.getUiViewKey(), vi.getAbsRect());
-                mZones = mCanvas.getRulesEngine().dropStart(mTargetNode);
+                mTargetNode = mCanvas.getNodeFactory().create(vi);
+                mZones = mCanvas.getRulesEngine().callDropStart(mTargetNode);
             }
 
             if (mZones == null) {

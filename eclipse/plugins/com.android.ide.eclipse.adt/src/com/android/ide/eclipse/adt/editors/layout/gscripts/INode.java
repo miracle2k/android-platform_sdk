@@ -20,8 +20,20 @@ package com.android.ide.eclipse.adt.editors.layout.gscripts;
 import groovy.lang.Closure;
 
 
-
-public interface INodeProxy {
+/**
+ * Represents a view in the XML layout being edited.
+ * Each view or layout maps to exactly one XML node, thus the name.
+ * <p/>
+ * The primordial characteristic of a node is the fully qualified View class name that
+ * it represents (a.k.a FQCN), for example "android.view.View" or "android.widget.Button".
+ * <p/>
+ * There are 2 kind of nodes:
+ * - Nodes matching a view actually rendered in the layout canvas have a valid "bounds"
+ *   rectangle that describe their position in pixels in the canvas. <br/>
+ * - Nodes created by IViewRule scripts but not yet rendered have an invalid bounds rectangle
+ *   since they only exist in the uncommitted XML model and not yet in the rendered View model.
+ */
+public interface INode {
 
     /**
      * Returns the bounds of this node.
@@ -36,6 +48,18 @@ public interface INodeProxy {
      * @return A non-null rectangle, in canvas coordinates.
      */
     Rect getBounds();
+
+
+    // ---- Hierarchy handling ----
+
+
+    /**
+     * Returns the parent node of this node, corresponding to the parent view in the layout.
+     * The returned parent can be null when the node is the root element, or when the node is
+     * not yet or no longer attached to the hierarchy.
+     */
+    INode getParent();
+
 
     // ---- XML Editing ---
 
@@ -63,7 +87,7 @@ public interface INodeProxy {
      *  depend on whether this is an Android view or a custom project view.
      * @return The node for the newly created element. Can be null if we failed to create it.
      */
-    INodeProxy createChild(String viewFqcn);
+    INode createChild(String viewFqcn);
 
     /**
      * Sets an attribute for the underlying XML element.

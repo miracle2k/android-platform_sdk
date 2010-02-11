@@ -17,14 +17,9 @@
 package com.android.adt.gscripts;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.BaseViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-
-import java.util.Map;
-import java.util.ArrayList;
-
 
 /**
  * An {@link IViewRule} for android.view.View and all its derived classes.
@@ -35,5 +30,51 @@ public class AndroidViewViewRule extends BaseViewRule {
     // TODO if there's nothing to implement here, I might as well remove it.
     // Before that, make sure the engine can deal with the lack of a base class
     // fallback when navigating the hierarchy.
+
+    // TODO move all this to BaseViewRule
+    void onSelected(IGraphics gc, INode selectedNode,
+            String displayName, boolean isMultipleSelection) {
+        Rect r = selectedNode.getBounds();
+
+        if (!r.isValid()) {
+            return;
+        }
+
+        gc.setLineWidth(1);
+        gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+        gc.drawRect(r);
+
+        if (displayName == null || isMultipleSelection) {
+            return;
+        }
+
+        int xs = r.x + 2;
+        int ys = r.y - gc.getFontHeight();
+        if (ys < 0) {
+            ys = r.y + r.h;
+        }
+        gc.drawString(displayName, xs, ys);
+    }
+
+    void onChildSelected(IGraphics gc, INode parentNode, INode childNode) {
+        Rect rp = parentNode.getBounds();
+        Rect rc = childNode.getBounds();
+
+        if (rp.isValid() && rc.isValid()) {
+            gc.setLineWidth(1);
+            gc.setLineStyle(IGraphics.LineStyle.LINE_DOT);
+
+            // top line
+            int m = rc.x + rc.w / 2;
+            gc.drawLine(m, rc.y, m, rp.y);
+            // bottom line
+            gc.drawLine(m, rc.y + rc.h, m, rp.y + rp.h);
+            // left line
+            m = rc.y + rc.h / 2;
+            gc.drawLine(rc.x, m, rp.x, m);
+            // right line
+            gc.drawLine(rc.x + rc.w, m, rp.x + rp.w, m);
+        }
+    }
 
 }

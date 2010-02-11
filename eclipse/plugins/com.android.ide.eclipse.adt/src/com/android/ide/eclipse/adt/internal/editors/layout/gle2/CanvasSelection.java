@@ -16,6 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 
 import org.eclipse.swt.graphics.Rectangle;
@@ -24,20 +27,28 @@ import org.eclipse.swt.graphics.Rectangle;
  * Represents one selection in {@link LayoutCanvas}.
  */
 /* package */ class CanvasSelection {
-    /** Current selected view info. Cannot be null. */
+
+    /** Current selected view info. Can be null. */
     private final CanvasViewInfo mCanvasViewInfo;
 
-    /** Current selection border rectangle. Cannot be null. */
+    /** Current selection border rectangle. Null when mCanvasViewInfo is null . */
     private final Rectangle mRect;
+
+    /** The node proxy for drawing the selection. Null when mCanvasViewInfo is null. */
+    private final NodeProxy mNodeProxy;
 
     /** The name displayed over the selection, typically the widget class name. Can be null. */
     private final String mName;
 
+
     /**
      * Creates a new {@link CanvasSelection} object.
      * @param canvasViewInfo The view info being selected. Must not be null.
+     * @param nodeFactory
      */
-    public CanvasSelection(CanvasViewInfo canvasViewInfo, RulesEngine gre) {
+    public CanvasSelection(CanvasViewInfo canvasViewInfo,
+            RulesEngine gre,
+            NodeFactory nodeFactory) {
 
         assert canvasViewInfo != null;
 
@@ -45,6 +56,7 @@ import org.eclipse.swt.graphics.Rectangle;
 
         if (canvasViewInfo == null) {
             mRect = null;
+            mNodeProxy = null;
         } else {
             Rectangle r = canvasViewInfo.getSelectionRect();
             mRect = new Rectangle(
@@ -52,12 +64,66 @@ import org.eclipse.swt.graphics.Rectangle;
                     r.y + LayoutCanvas.IMAGE_MARGIN,
                     r.width,
                     r.height);
+            mNodeProxy = nodeFactory.create(canvasViewInfo);
         }
 
-        mName = getViewShortName(canvasViewInfo, gre);
+        mName = initDisplayName(canvasViewInfo, gre);
     }
 
-    private String getViewShortName(CanvasViewInfo canvasViewInfo, RulesEngine gre) {
+    /**
+     * Returns the selected view info. Cannot be null.
+     */
+    public CanvasViewInfo getViewInfo() {
+        return mCanvasViewInfo;
+    }
+
+    /**
+     * Returns the selection border rectangle.
+     * Cannot be null.
+     */
+    public Rectangle getRect() {
+        return mRect;
+    }
+
+    /**
+     * The name displayed over the selection, typically the widget class name.
+     * Can be null.
+     */
+    public String getName() {
+        return mName;
+    }
+
+    /**
+     * Calls IViewRule.onSelected on the selected view.
+     *
+     * @param gre The rules engines.
+     * @param gcWrapper The GC to use for drawing.
+     * @param isMultipleSelection True if more than one view is selected.
+     */
+    /*package*/ void paintSelection(RulesEngine gre, GCWrapper gcWrapper, boolean isMultipleSelection) {
+        if (mNodeProxy != null) {
+            gre.callOnSelected(gcWrapper, mNodeProxy, mName, isMultipleSelection);
+        }
+    }
+
+    /**
+     * Calls IViewRule.onChildSelected on the parent of the selected view, if it has one.
+     *
+     * @param gre The rules engines.
+     * @param gcWrapper The GC to use for drawing.
+     */
+    public void paintParentSelection(RulesEngine gre, GCWrapper gcWrapper) {
+        if (mNodeProxy != null) {
+            INode parent = mNodeProxy.getParent();
+            if (parent instanceof NodeProxy) {
+                gre.callOnChildSelected(gcWrapper, (NodeProxy)parent, mNodeProxy);
+            }
+        }
+    }
+
+    //----
+
+    private String initDisplayName(CanvasViewInfo canvasViewInfo, RulesEngine gre) {
         if (canvasViewInfo == null) {
             return null;
         }
@@ -67,7 +133,7 @@ import org.eclipse.swt.graphics.Rectangle;
             return null;
         }
 
-        String name = gre.getDisplayName(canvasViewInfo.getUiViewKey());
+        String name = gre.callGetDisplayName(canvasViewInfo.getUiViewKey());
 
         if (name == null) {
             // The name is typically a fully-qualified class name. Let's make it a tad shorter.
@@ -92,28 +158,5 @@ import org.eclipse.swt.graphics.Rectangle;
         }
 
         return name;
-    }
-
-    /**
-     * Returns the selected view info. Cannot be null.
-     */
-    public CanvasViewInfo getViewInfo() {
-        return mCanvasViewInfo;
-    }
-
-    /**
-     * Returns the selection border rectangle.
-     * Cannot be null.
-     */
-    public Rectangle getRect() {
-        return mRect;
-    }
-
-    /**
-     * The name displayed over the selection, typically the widget class name.
-     * Can be null.
-     */
-    public String getName() {
-        return mName;
     }
 }

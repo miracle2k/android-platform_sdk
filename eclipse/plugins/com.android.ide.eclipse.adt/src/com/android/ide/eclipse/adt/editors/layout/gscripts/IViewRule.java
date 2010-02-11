@@ -69,6 +69,35 @@ public interface IViewRule {
     String getDisplayName();
 
 
+    /**
+     * Called by the canvas when a view is being selected.
+     * <p/>
+     * Before the method is called, the canvas' Graphic Context is initialized
+     * with a foreground color already set to the desired selection color, fully
+     * opaque and with the default adequate font.
+     *
+     * @param gc An {@link IGraphics} instance, to perform drawing operations.
+     * @param selectedNode The node selected. Never null.
+     * @param displayName The name to display, as returned by {@link #getDisplayName()}.
+     * @param isMultipleSelection A boolean set to true if more than one element is selected.
+     */
+    void onSelected(IGraphics gc, INode selectedNode,
+            String displayName, boolean isMultipleSelection);
+
+    /**
+     * Called by the canvas when a single child view is being selected.
+     * <p/>
+     * Note that this is called only for single selections.
+     * <p/>
+     * This allows a parent to draw stuff around its children, for example to display
+     * layout attributes graphically.
+     *
+     * @param gc An {@link IGraphics} instance, to perform drawing operations.
+     * @param parentNode The parent of the node selected. Never null.
+     * @param childNode The child node that was selected. Never null.
+     */
+    void onChildSelected(IGraphics gc, INode parentNode, INode childNode);
+
     // ==== XML Creation ====
 
 
@@ -77,6 +106,11 @@ public interface IViewRule {
      * when added to an XML layout file. Note that these defaults can be overridden by the
      * specific code performing the insertion.
      *
+     * TODO:
+     * - added=>created
+     * - list tuple(uri, local name, str: value)
+     * - gen id
+     *
      * @return A map of attribute:values for a new element of this type. Can be null or empty.
      */
     Map<?, ?> getDefaultAttributes();
@@ -84,6 +118,17 @@ public interface IViewRule {
 
     // ==== Drag'n'drop support ====
 
+    /*
+     * TODO:
+     * - onDropEnter <- target node proxy, action => Object / Boolean.FALSE
+     * - onDropMove  <- proxy, action, Object, x/y
+     * - onDropLeave <- proxy, action, Object
+     * - onDrop      <- proxy, action, Object, x/y, source
+     *
+     * action:
+     * - drawRect/fillRect/drawLine x1,y1,x2,y2 / Line x,y / color [constants + rgba]
+     * - drawText x,y,col,text
+     */
 
     /**
      * Called when a drop operation starts, whilst the d'n'd is dragging the cursor over the
@@ -103,23 +148,25 @@ public interface IViewRule {
      *
      * @param targetNode The XML view that is currently the target of the drop.
      * @return Null or an empty list if the rule rejects the drop, or a list of usable drop zones.
+     * @deprecated
      */
-    ArrayList<DropZone> dropStart(INodeProxy targetNode);
+    ArrayList<DropZone> dropStart(INode targetNode);
 
     /**
      * Called after the user selects to drop the given source into one of the drop zones.
      * <p/>
-     * This method should use the methods from the {@link INodeProxy} to actually create the
+     * This method should use the methods from the {@link INode} to actually create the
      * new XML matching the source descriptor.
      *
      * @param sourceFqcn The FQCN of the view being dropped.
      * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by {@link #dropStart(INodeProxy)}.
+     * @param selectedZone One of the drop zones returned by {@link #dropStart(INode)}.
      * @param where The location, in the selected zone, of the drop.
+     * @deprecated
      */
     void dropFinish(
             String sourceFqcn,
-            INodeProxy targetNode,
+            INode targetNode,
             DropZone selectedZone,
             Point where);
 }

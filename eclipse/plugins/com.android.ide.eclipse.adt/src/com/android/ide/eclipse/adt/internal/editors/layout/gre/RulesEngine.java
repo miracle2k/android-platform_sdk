@@ -19,7 +19,8 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeProxy;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -42,6 +43,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+
+/* TODO:
+ * - create a logger object and pass it around.
+ *
+ */
 
 /**
  * The rule engine manages the groovy rules files and interacts with them.
@@ -89,7 +95,7 @@ public class RulesEngine {
      * @return Null if the rule failed, there's no rule or the rule does not want to override
      *   the display name. Otherwise, a string as returned by the groovy script.
      */
-    public String getDisplayName(UiViewElementNode element) {
+    public String callGetDisplayName(UiViewElementNode element) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(element);
 
@@ -108,14 +114,65 @@ public class RulesEngine {
     }
 
     /**
-     * Invokes {@link IViewRule#dropStart(INodeProxy)} on the rule matching
+     * Invokes {@link IViewRule#onSelected(IGraphics, INode, String, boolean)}
+     * on the rule matching the specified element.
+     *
+     * @param gc An {@link IGraphics} instance, to perform drawing operations.
+     * @param selectedNode The node selected. Never null.
+     * @param displayName The name to display, as returned by {@link IViewRule#getDisplayName()}.
+     * @param isMultipleSelection A boolean set to true if more than one element is selected.
+     */
+    public void callOnSelected(IGraphics gc, NodeProxy selectedNode,
+            String displayName, boolean isMultipleSelection) {
+        // try to find a rule for this element's FQCN
+        IViewRule rule = loadRule(selectedNode.getNode());
+
+        if (rule != null) {
+            try {
+                rule.onSelected(gc, selectedNode, displayName, isMultipleSelection);
+
+            } catch (Exception e) {
+                logError("%s.onSelected() failed: %s",
+                        rule.getClass().getSimpleName(),
+                        e.toString());
+            }
+        }
+    }
+
+    /**
+     * Invokes {@link IViewRule#onChildSelected(IGraphics, INode, INode)}
+     * on the rule matching the specified element.
+     *
+     * @param gc An {@link IGraphics} instance, to perform drawing operations.
+     * @param parentNode The parent of the node selected. Never null.
+     * @param childNode The child node that was selected. Never null.
+     */
+    public void callOnChildSelected(IGraphics gc, NodeProxy parentNode, NodeProxy childNode) {
+        // try to find a rule for this element's FQCN
+        IViewRule rule = loadRule(parentNode.getNode());
+
+        if (rule != null) {
+            try {
+                rule.onChildSelected(gc, parentNode, childNode);
+
+            } catch (Exception e) {
+                logError("%s.onChildSelected() failed: %s",
+                        rule.getClass().getSimpleName(),
+                        e.toString());
+            }
+        }
+    }
+
+    /**
+     * Invokes {@link IViewRule#dropStart(INode)} on the rule matching
      * the specified target node.
      *
      * @param targetNode The XML view that is currently the target of the drop.
      * @return Null if the rule failed, there's no rule or the rule does not accept the drop.
      *   Otherwise a list of drop zones valid for this drop.
+     * @deprecated
      */
-    public ArrayList<DropZone> dropStart(NodeProxy targetNode) {
+    public ArrayList<DropZone> callDropStart(NodeProxy targetNode) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
@@ -134,14 +191,15 @@ public class RulesEngine {
     }
 
     /**
-     * Invokes {@link IViewRule#dropFinish(String, INodeProxy, DropZone, Point)} on the
+     * Invokes {@link IViewRule#dropFinish(String, INode, DropZone, Point)} on the
      * rule matching the specified target node.
      *
-     * @param source The {@link ViewElementDescriptor} of the drag source.
+     * @param viewFqcn The {@link ViewElementDescriptor} of the drag source.
      * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by {@link #dropStart(NodeProxy)}.
+     * @param selectedZone One of the drop zones returned by {@link #callDropStart(NodeProxy)}.
+     * @deprecated
      */
-    public void dropFinish(String viewFqcn,
+    public void callDropFinish(String viewFqcn,
             NodeProxy targetNode,
             DropZone selectedZone,
             Point where) {
