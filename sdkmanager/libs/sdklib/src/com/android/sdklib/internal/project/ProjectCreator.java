@@ -59,6 +59,7 @@ public class ProjectCreator {
     /** Activity name substitution string used in template files, i.e. "ACTIVITY_NAME".
      * @deprecated This is only used for older templates. For new ones see
      * {@link #PH_ACTIVITY_ENTRY_NAME}, and {@link #PH_ACTIVITY_CLASS_NAME}. */
+    @Deprecated
     private final static String PH_ACTIVITY_NAME = "ACTIVITY_NAME";
     /** Activity name substitution string used in manifest templates, i.e. "ACTIVITY_ENTRY_NAME".*/
     private final static String PH_ACTIVITY_ENTRY_NAME = "ACTIVITY_ENTRY_NAME";
@@ -152,11 +153,12 @@ public class ProjectCreator {
      *          null if no activity should be created. The name must match the
      *          {@link #RE_ACTIVITY_NAME} regex.
      * @param target the project target.
+     * @param library whether the project is a library.
      * @param pathToMainProject if non-null the project will be setup to test a main project
      * located at the given path.
      */
     public void createProject(String folderPath, String projectName,
-            String packageName, String activityEntry, IAndroidTarget target,
+            String packageName, String activityEntry, IAndroidTarget target, boolean library,
             String pathToMainProject) {
 
         // create project folder if it does not exist
@@ -211,6 +213,9 @@ public class ProjectCreator {
             ProjectProperties defaultProperties = ProjectProperties.create(folderPath,
                     PropertyType.DEFAULT);
             defaultProperties.setAndroidTarget(target);
+            if (library) {
+                defaultProperties.setProperty(ProjectProperties.PROPERTY_LIBRARY, "true");
+            }
             defaultProperties.save();
 
             // create a build.properties file with just the application package
@@ -395,9 +400,11 @@ public class ProjectCreator {
      * @param folderPath the folder of the project to update. This folder must exist.
      * @param target the project target. Can be null.
      * @param projectName The project name from --name. Can be null.
+     * @param libraryPath the path to a library to add to the references. Can be null.
      * @return true if the project was successfully updated.
      */
-    public boolean updateProject(String folderPath, IAndroidTarget target, String projectName) {
+    public boolean updateProject(String folderPath, IAndroidTarget target, String projectName,
+            String libraryPath) {
         // since this is an update, check the folder does point to a project
         File androidManifest = checkProjectFolder(folderPath);
         if (androidManifest == null) {
@@ -420,6 +427,8 @@ public class ProjectCreator {
             }
         }
 
+        boolean saveDefaultProps = false;
+
         // Update default.prop if --target was specified
         if (target != null) {
             // we already attempted to load the file earlier, if that failed, create it.
@@ -429,6 +438,55 @@ public class ProjectCreator {
 
             // set or replace the target
             props.setAndroidTarget(target);
+            saveDefaultProps = true;
+        }
+
+        if (libraryPath != null) {
+            // at this point, the default properties already exists, either because they were
+            // already there or because they were created with a new target
+
+            // check the reference is valid
+            File libProject = new File(libraryPath);
+            String resolvedPath;
+            if (libProject.isAbsolute() == false) {
+                libProject = new File(folderPath, libraryPath);
+                try {
+                    resolvedPath = libProject.getCanonicalPath();
+                } catch (IOException e) {
+                    mLog.error(e, "Unable to resolve path to library project: %1$s", libraryPath);
+                    return false;
+                }
+            } else {
+                resolvedPath = libProject.getAbsolutePath();
+            }
+
+            println("Resolved location of library project to: %1$s", resolvedPath);
+
+            // check the lib project exists
+            if (checkProjectFolder(resolvedPath) == null) {
+                mLog.error(null, "No Android Manifest at: %1$s", resolvedPath);
+                return false;
+            }
+
+            // look for other references to figure out the index
+            int index = 1;
+            while (true) {
+                String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index);
+                String ref = props.getProperty(propName);
+                if (ref == null) {
+                    break;
+                } else {
+                    index++;
+                }
+            }
+
+            String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index);
+            props.setProperty(propName, libraryPath);
+            saveDefaultProps = true;
+        }
+
+        // save the default props if needed.
+        if (saveDefaultProps) {
             try {
                 props.save();
                 println("Updated %1$s", PropertyType.DEFAULT.getFilename());
@@ -617,7 +675,7 @@ public class ProjectCreator {
         }
 
         // now update the project as if it's a normal project
-        if (updateProject(folderPath, target, projectName) == false) {
+        if (updateProject(folderPath, target, projectName, null /*libraryPath*/) == false) {
             // error message has already been displayed.
             return;
         }
