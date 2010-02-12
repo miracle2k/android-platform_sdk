@@ -14,5 +14,6 @@
 	<classpathentry kind="lib" path="sdkuilib.jar" sourcepath="/SdkUiLib"/>
 	<classpathentry kind="lib" path="commons-compress-1.0.jar"/>
 	<classpathentry kind="lib" path="groovy-all-1.6.5.jar"/>
+	<classpathentry kind="lib" path="builders.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -16,14 +16,14 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.builders.IAbstractFile;
+import com.android.builders.StreamException;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFile;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.utils.ResourceValue;
 import com.android.layoutlib.utils.ValueResourceParser;
 import com.android.layoutlib.utils.ValueResourceParser.IValueResourceRepository;
 
-import org.eclipse.core.runtime.CoreException;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
@@ -125,7 +125,7 @@ public final class MultiResourceFile extends ResourceFile implements IValueResou
         } catch (ParserConfigurationException e) {
         } catch (SAXException e) {
         } catch (IOException e) {
-        } catch (CoreException e) {
+        } catch (StreamException e) {
         }
     }
 

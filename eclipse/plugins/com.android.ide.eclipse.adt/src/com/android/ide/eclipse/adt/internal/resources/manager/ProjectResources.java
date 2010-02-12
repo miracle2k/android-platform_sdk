@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.builders.IAbstractFolder;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -23,7 +24,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfi
 import com.android.ide.eclipse.adt.internal.resources.configurations.LanguageQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.RegionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFolder;
+import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapper;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.utils.ResourceValue;
 
@@ -136,7 +137,9 @@ public class ProjectResources implements IResourceRepository {
             int count = list.size();
             for (int i = 0 ; i < count ; i++) {
                 ResourceFolder resFolder = list.get(i);
-                if (resFolder.getFolder().getIFolder().equals(folder)) {
+                // this is only used for Eclipse stuff so we know it's an IFolderWrapper
+                IFolderWrapper wrapper = (IFolderWrapper) resFolder.getFolder();
+                if (wrapper.getIFolder().equals(folder)) {
                     // we found the matching ResourceFolder. we need to remove it.
                     list.remove(i);
 
@@ -294,7 +297,9 @@ public class ProjectResources implements IResourceRepository {
     public ResourceFolder getResourceFolder(IFolder folder) {
         for (List<ResourceFolder> list : mFolderMap.values()) {
             for (ResourceFolder resFolder : list) {
-                if (resFolder.getFolder().getIFolder().equals(folder)) {
+                // this is only used for Eclipse stuff so we know it's an IFolderWrapper
+                IFolderWrapper wrapper = (IFolderWrapper) resFolder.getFolder();
+                if (wrapper.getIFolder().equals(folder)) {
                     return resFolder;
                 }
             }

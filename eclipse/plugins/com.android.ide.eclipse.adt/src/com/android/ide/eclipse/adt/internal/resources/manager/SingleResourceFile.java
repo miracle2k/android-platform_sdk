@@ -16,9 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.builders.IAbstractFile;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFile;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.utils.DensityBasedResourceValue;
 import com.android.layoutlib.utils.ResourceValue;

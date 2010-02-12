@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager.files;
 
+import com.android.builders.IAbstractFolder;
+
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -24,8 +26,8 @@ import org.eclipse.core.runtime.CoreException;
  * An implementation of {@link IAbstractFolder} on top of an {@link IFolder} object.
  */
 public class IFolderWrapper implements IAbstractFolder {
-    
-    private IFolder mFolder;
+
+    private final IFolder mFolder;
 
     public IFolderWrapper(IFolder folder) {
         mFolder = folder;
@@ -49,24 +51,28 @@ public class IFolderWrapper implements IAbstractFolder {
 
         return false;
     }
-    
+
+    /**
+     * Returns the {@link IFolder} object that the receiver could represent.
+     * Can be <code>null</code>
+     */
     public IFolder getIFolder() {
         return mFolder;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof IFolderWrapper) {
             return mFolder.equals(((IFolderWrapper)obj).mFolder);
         }
-        
+
         if (obj instanceof IFolder) {
             return mFolder.equals(obj);
         }
 
         return super.equals(obj);
     }
-    
+
     @Override
     public int hashCode() {
         return mFolder.hashCode();

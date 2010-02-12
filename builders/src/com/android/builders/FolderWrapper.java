@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
  *
- * Licensed under the Eclipse Public License, Version 1.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.eclipse.org/org/documents/epl-v10.php
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.resources.manager.files;
+package com.android.builders;
 
-import org.eclipse.core.resources.IFolder;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,20 +25,20 @@ import java.io.IOException;
  */
 public class FolderWrapper implements IAbstractFolder {
 
-    private File mFolder;
+    private final File mFolder;
 
     /**
      * Constructs a {@link FileWrapper} object. If {@link File#isDirectory()} returns
-     * <code>false</code> then an {@link IOException} is thrown. 
+     * <code>false</code> then an {@link IOException} is thrown.
      */
     public FolderWrapper(File folder) throws IOException {
         if (folder.isDirectory() == false) {
             throw new IOException("FileWrapper must wrap a File object representing an existing folder!"); //$NON-NLS-1$
         }
-        
+
         mFolder = folder;
     }
-    
+
     public boolean hasFile(String name) {
         return false;
     }
@@ -48,23 +47,19 @@ public class FolderWrapper implements IAbstractFolder {
         return mFolder.getName();
     }
 
-    public IFolder getIFolder() {
-        return null;
-    }
-
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof FolderWrapper) {
             return mFolder.equals(((FolderWrapper)obj).mFolder);
         }
-        
+
         if (obj instanceof File) {
             return mFolder.equals(obj);
         }
 
         return super.equals(obj);
     }
-    
+
     @Override
     public int hashCode() {
         return mFolder.hashCode();

@@ -14,7 +14,8 @@ Bundle-ClassPath: .,
  sdklib.jar,
  sdkuilib.jar,
  commons-compress-1.0.jar,
- groovy-all-1.6.5.jar
+ groovy-all-1.6.5.jar,
+ builders.jar
 Bundle-Activator: com.android.ide.eclipse.adt.AdtPlugin
 Bundle-Vendor: The Android Open Source Project
 Require-Bundle: com.android.ide.eclipse.ddms,
@@ -48,7 +49,8 @@ Require-Bundle: com.android.ide.eclipse.ddms,
  org.eclipse.ltk.ui.refactoring,
  org.eclipse.core.expressions
 Eclipse-LazyStart: true
-Export-Package: com.android.ide.eclipse.adt;x-friends:="com.android.ide.eclipse.tests",
+Export-Package: com.android.builders;x-friends:="com.android.ide.eclipse.tests",
+ com.android.ide.eclipse.adt;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.actions;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.build;x-friends:="com.android.ide.eclipse.tests",

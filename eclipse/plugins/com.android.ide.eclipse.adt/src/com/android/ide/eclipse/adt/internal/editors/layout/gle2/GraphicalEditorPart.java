@@ -38,6 +38,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
+import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
@@ -366,16 +367,17 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                 }
 
                 if (match != null) {
-                    if (match.getFile().equals(mEditedFile) == false) {
+                    // since this is coming from Eclipse, this is always an instance of IFileWrapper
+                    IFileWrapper iFileWrapper = (IFileWrapper) match.getFile();
+                    IFile iFile = iFileWrapper.getIFile();
+                    if (iFile.equals(mEditedFile) == false) {
                         try {
                             // tell the editor that the next replacement file is due to a config
                             // change.
                             mLayoutEditor.setNewFileOnConfigChange(true);
 
                             // ask the IDE to open the replacement file.
-                            IDE.openEditor(
-                                    getSite().getWorkbenchWindow().getActivePage(),
-                                    match.getFile().getIFile());
+                            IDE.openEditor(getSite().getWorkbenchWindow().getActivePage(), iFile);
 
                             // we're done!
                             return;

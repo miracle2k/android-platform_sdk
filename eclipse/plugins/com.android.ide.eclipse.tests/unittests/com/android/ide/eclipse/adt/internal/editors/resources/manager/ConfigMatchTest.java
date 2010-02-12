@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.resources.manager;
 
+import com.android.builders.IAbstractFolder;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier.KeyboardState;
@@ -29,7 +30,6 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.resources.manager.SingleResourceFile;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapper;
 import com.android.ide.eclipse.mock.FileMock;
