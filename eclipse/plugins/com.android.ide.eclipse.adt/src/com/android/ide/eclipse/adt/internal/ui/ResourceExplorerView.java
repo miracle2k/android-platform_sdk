@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.ui;
 
+import com.android.builders.IAbstractFile;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResourceItem;
@@ -23,6 +24,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IResourceEventListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -65,12 +67,12 @@ import java.util.Iterator;
  * The view listener to change in selection in the workbench, and update to show the resource
  * of the project of the current selected item (either item in the package explorer, or of the
  * current editor).
- * 
+ *
  * @see ResourceContentProvider
  */
 public class ResourceExplorerView extends ViewPart implements ISelectionListener,
         IResourceEventListener {
-    
+
     // Note: keep using the obsolete AndroidConstants.EDITORS_NAMESPACE (which used
     // to be the Editors Plugin ID) to keep existing preferences functional.
     private final static String PREFS_COLUMN_RES =
@@ -80,7 +82,7 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
 
     private Tree mTree;
     private TreeViewer mTreeViewer;
-    
+
     private IProject mCurrentProject;
 
     public ResourceExplorerView() {
@@ -103,18 +105,18 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
 
         // create the jface wrapper
         mTreeViewer = new TreeViewer(mTree);
-        
+
         mTreeViewer.setContentProvider(new ResourceContentProvider(true /* fullLevels */));
         mTreeViewer.setLabelProvider(new ResourceLabelProvider());
-        
+
         // listen to selection change in the workbench.
         IWorkbenchPage page = getSite().getPage();
-        
+
         page.addSelectionListener(this);
-        
+
         // init with current selection
         selectionChanged(getSite().getPart(), page.getSelection());
-        
+
         // add support for double click.
         mTreeViewer.addDoubleClickListener(new IDoubleClickListener() {
             public void doubleClick(DoubleClickEvent event) {
@@ -125,26 +127,32 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
 
                     if (selection.size() == 1) {
                         Object element = selection.getFirstElement();
-                        
+
                         // if it's a resourceFile, we directly open it.
                         if (element instanceof ResourceFile) {
                             try {
-                                IDE.openEditor(getSite().getWorkbenchWindow().getActivePage(),
-                                        ((ResourceFile)element).getFile().getIFile());
+                                IAbstractFile iAbstractFile = ((ResourceFile)element).getFile();
+                                if (iAbstractFile instanceof IFileWrapper) {
+                                    IDE.openEditor(getSite().getWorkbenchWindow().getActivePage(),
+                                            ((IFileWrapper)iAbstractFile).getIFile());
+                                }
                             } catch (PartInitException e) {
                             }
                         } else if (element instanceof ProjectResourceItem) {
                             // if it's a ResourceItem, we open the first file, but only if
                             // there's no alternate files.
                             ProjectResourceItem item = (ProjectResourceItem)element;
-                            
+
                             if (item.isEditableDirectly()) {
                                 ResourceFile[] files = item.getSourceFileArray();
                                 if (files[0] != null) {
                                     try {
-                                        IDE.openEditor(
-                                                getSite().getWorkbenchWindow().getActivePage(),
-                                                files[0].getFile().getIFile());
+                                        IAbstractFile iAbstractFile = files[0].getFile();
+                                        if (iAbstractFile instanceof IFileWrapper) {
+                                            IDE.openEditor(
+                                                    getSite().getWorkbenchWindow().getActivePage(),
+                                                    ((IFileWrapper)iAbstractFile).getIFile());
+                                        }
                                     } catch (PartInitException e) {
                                     }
                                 }
@@ -154,11 +162,11 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
                 }
             }
         });
-        
+
         // set up the resource manager to send us resource change notification
         AdtPlugin.getDefault().getResourceMonitor().addResourceEventListener(this);
     }
-    
+
     @Override
     public void dispose() {
         AdtPlugin.getDefault().getResourceMonitor().removeResourceEventListener(this);
@@ -179,14 +187,14 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
         if (part instanceof IEditorPart) {
             // if it is, we check if it's a file editor.
             IEditorInput input = ((IEditorPart)part).getEditorInput();
-            
+
             if (input instanceof IFileEditorInput) {
                 // from the file editor we can get the IFile object, and from it, the IProject.
                 IFile file = ((IFileEditorInput)input).getFile();
-                
+
                 // get the file project
                 IProject project = file.getProject();
-                
+
                 handleProjectSelection(project);
             }
         } else if (selection instanceof IStructuredSelection) {
@@ -195,7 +203,7 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
                     it.hasNext();) {
                 Object element = it.next();
                 IProject project = null;
-                
+
                 // if we are in the navigator or package explorer, the selection could contain a
                 // IResource object.
                 if (element instanceof IResource) {
@@ -245,10 +253,10 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
             }
         } catch (CoreException e) {
         }
-        
+
         return false;
     }
-    
+
     /**
      * Create a TreeColumn with the specified parameters. If a
      * <code>PreferenceStore</code> object and a preference entry name String
@@ -270,7 +278,7 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
 
         // create the column
         TreeColumn col = new TreeColumn(parent, style);
-        
+
         if (fixedSize != -1) {
             col.setWidth(fixedSize);
             col.setResizable(false);
@@ -281,7 +289,7 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
             if (prefs == null || prefs.contains(pref_name) == false) {
                 col.setText(sample_text);
                 col.pack();
-    
+
                 // init the prefs store with the current value
                 if (prefs != null) {
                     prefs.setValue(pref_name, col.getWidth());
@@ -289,18 +297,18 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
             } else {
                 col.setWidth(prefs.getInt(pref_name));
             }
-    
+
             // if there is a pref store and a pref entry name, then we setup a
             // listener to catch column resize to put the new width value into the store.
             if (prefs != null && pref_name != null) {
                 col.addControlListener(new ControlListener() {
                     public void controlMoved(ControlEvent e) {
                     }
-    
+
                     public void controlResized(ControlEvent e) {
                         // get the new width
                         int w = ((TreeColumn)e.widget).getWidth();
-    
+
                         // store in pref store
                         prefs.setValue(pref_name, w);
                     }

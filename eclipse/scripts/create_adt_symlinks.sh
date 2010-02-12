@@ -14,7 +14,7 @@ DEST="sdk/eclipse/plugins/com.android.ide.eclipse.adt"
 # computes "../.." from DEST to here (in /android)
 BACK=`echo $DEST | sed 's@[^/]*@..@g'`
 
-LIBS="sdkstats jarutils androidprefs layoutlib_api layoutlib_utils ninepatch sdklib sdkuilib"
+LIBS="sdkstats jarutils androidprefs layoutlib_api layoutlib_utils ninepatch sdklib sdkuilib builders"
 
 echo "make java libs ..."
 make -j3 showcommands $LIBS || die "ADT: Fail to build one of $LIBS."

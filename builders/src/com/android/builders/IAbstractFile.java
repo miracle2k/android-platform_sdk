@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
  *
- * Licensed under the Eclipse Public License, Version 1.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.eclipse.org/org/documents/epl-v10.php
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.resources.manager.files;
-
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.runtime.CoreException;
+package com.android.builders;
 
 import java.io.InputStream;
 
@@ -30,15 +27,10 @@ public interface IAbstractFile extends IAbstractResource {
      * Returns an {@link InputStream} object on the file content.
      * @throws CoreException
      */
-    InputStream getContents() throws CoreException;
+    InputStream getContents() throws StreamException;
 
     /**
      * Returns the OS path of the file location.
      */
     String getOsLocation();
-
-    /**
-     * Returns the {@link IFile} object that the receiver could represent. Can be <code>null</code>
-     */
-    IFile getIFile();
 }

@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
  *
- * Licensed under the Eclipse Public License, Version 1.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.eclipse.org/org/documents/epl-v10.php
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.resources.manager.files;
+package com.android.builders;
 
-import org.eclipse.core.resources.IFolder;
 
 /**
  *  A folder.
@@ -24,15 +23,9 @@ import org.eclipse.core.resources.IFolder;
 public interface IAbstractFolder extends IAbstractResource {
 
     /**
-     * Returns true if the receiver contains a file with a given name 
+     * Returns true if the receiver contains a file with a given name
      * @param name the name of the file. This is the name without the path leading to the
      * parent folder.
      */
     boolean hasFile(String name);
-
-    /**
-     * Returns the {@link IFolder} object that the receiver could represent.
-     * Can be <code>null</code>
-     */
-    IFolder getIFolder();
 }

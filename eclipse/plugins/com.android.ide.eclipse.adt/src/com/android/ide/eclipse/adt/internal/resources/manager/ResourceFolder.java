@@ -16,11 +16,12 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.builders.IAbstractFile;
+import com.android.builders.IAbstractFolder;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFile;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFolder;
+import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -77,11 +78,14 @@ public final class ResourceFolder extends Resource {
             for (int i = 0 ; i < count ; i++) {
                 ResourceFile resFile = mFiles.get(i);
                 if (resFile != null) {
-                    IFile iFile = resFile.getFile().getIFile();
-                    if (iFile != null && iFile.equals(file)) {
-                        mFiles.remove(i);
-                        touch();
-                        return resFile;
+                    IAbstractFile abstractFile = resFile.getFile();
+                    if (abstractFile instanceof IFileWrapper) {
+                        IFile iFile = ((IFileWrapper)resFile.getFile()).getIFile();
+                        if (iFile != null && iFile.equals(file)) {
+                            mFiles.remove(i);
+                            touch();
+                            return resFile;
+                        }
                     }
                 }
             }
@@ -177,9 +181,12 @@ public final class ResourceFolder extends Resource {
     public ResourceFile getFile(IFile file) {
         if (mFiles != null) {
             for (ResourceFile f : mFiles) {
-                IFile iFile = f.getFile().getIFile();
-                if (iFile != null && iFile.equals(file)) {
-                    return f;
+                IAbstractFile abstractFile = f.getFile();
+                if (abstractFile instanceof IFileWrapper) {
+                    IFile iFile = ((IFileWrapper)f.getFile()).getIFile();
+                    if (iFile != null && iFile.equals(file)) {
+                        return f;
+                    }
                 }
             }
         }

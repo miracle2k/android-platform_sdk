@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
  *
- * Licensed under the Eclipse Public License, Version 1.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.eclipse.org/org/documents/epl-v10.php
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.resources.manager.files;
+package com.android.builders;
 
-import org.eclipse.core.resources.IFile;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,33 +28,27 @@ import java.io.InputStream;
  *
  */
 public class FileWrapper implements IAbstractFile {
-    
-    private File mFile;
+
+    private final File mFile;
 
     /**
      * Constructs a {@link FileWrapper} object. If {@link File#isFile()} returns <code>false</code>
-     * then an {@link IOException} is thrown. 
+     * then an {@link IOException} is thrown.
      */
     public FileWrapper(File file) throws IOException {
         if (file.isFile() == false) {
             throw new IOException("FileWrapper must wrap a File object representing an existing file!"); //$NON-NLS-1$
         }
-        
+
         mFile = file;
     }
 
-    public InputStream getContents() {
+    public InputStream getContents() throws StreamException {
         try {
             return new FileInputStream(mFile);
         } catch (FileNotFoundException e) {
-            // we'll return null below.
+            throw new StreamException(e);
         }
-        
-        return null;
-    }
-
-    public IFile getIFile() {
-        return null;
     }
 
     public String getOsLocation() {
@@ -65,20 +58,20 @@ public class FileWrapper implements IAbstractFile {
     public String getName() {
         return mFile.getName();
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof FileWrapper) {
             return mFile.equals(((FileWrapper)obj).mFile);
         }
-        
+
         if (obj instanceof File) {
             return mFile.equals(obj);
         }
 
         return super.equals(obj);
     }
-    
+
     @Override
     public int hashCode() {
         return mFile.hashCode();

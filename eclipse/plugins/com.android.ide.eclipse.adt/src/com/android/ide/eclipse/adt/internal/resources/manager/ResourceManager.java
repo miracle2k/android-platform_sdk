@@ -16,6 +16,10 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.builders.FileWrapper;
+import com.android.builders.FolderWrapper;
+import com.android.builders.IAbstractFile;
+import com.android.builders.IAbstractFolder;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -24,10 +28,6 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQua
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFolderListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.FileWrapper;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.FolderWrapper;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFile;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapper;
 import com.android.sdklib.IAndroidTarget;

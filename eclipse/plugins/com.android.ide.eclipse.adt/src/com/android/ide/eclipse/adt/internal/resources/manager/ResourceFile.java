@@ -16,9 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.builders.IAbstractFile;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IAbstractFile;
 import com.android.layoutlib.api.IResourceValue;
 
 import java.util.Collection;

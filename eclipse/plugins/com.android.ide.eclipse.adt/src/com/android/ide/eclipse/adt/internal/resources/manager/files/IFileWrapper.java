@@ -16,6 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager.files;
 
+import com.android.builders.IAbstractFile;
+import com.android.builders.StreamException;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 
@@ -26,14 +29,18 @@ import java.io.InputStream;
  */
 public class IFileWrapper implements IAbstractFile {
 
-    private IFile mFile;
+    private final IFile mFile;
 
     public IFileWrapper(IFile file) {
         mFile = file;
     }
-    
-    public InputStream getContents() throws CoreException {
-        return mFile.getContents();
+
+    public InputStream getContents() throws StreamException {
+        try {
+            return mFile.getContents();
+        } catch (CoreException e) {
+            throw new StreamException(e);
+        }
     }
 
     public String getOsLocation() {
@@ -44,23 +51,26 @@ public class IFileWrapper implements IAbstractFile {
         return mFile.getName();
     }
 
+    /**
+     * Returns the {@link IFile} object that the receiver could represent. Can be <code>null</code>
+     */
     public IFile getIFile() {
         return mFile;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof IFileWrapper) {
             return mFile.equals(((IFileWrapper)obj).mFile);
         }
-        
+
         if (obj instanceof IFile) {
             return mFile.equals(obj);
         }
 
         return super.equals(obj);
     }
-    
+
     @Override
     public int hashCode() {
         return mFile.hashCode();
