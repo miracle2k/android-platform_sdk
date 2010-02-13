@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
@@ -10,7 +11,7 @@
 	<classpathentry kind="lib" path="/adt/ninepatch.jar"/>
 	<classpathentry kind="lib" path="layoutlib.jar"/>
 	<classpathentry kind="lib" path="kxml2-2.3.0.jar"/>
-	<classpathentry kind="lib" path="groovy-all-1.6.5.jar"/>
+	<classpathentry kind="lib" path="groovy-all-1.7.0.jar"/>
 	<classpathentry kind="lib" path="/adt/builders.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
