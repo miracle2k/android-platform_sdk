@@ -100,7 +100,9 @@ import org.eclipse.swt.graphics.Rectangle;
      * @param gcWrapper The GC to use for drawing.
      * @param isMultipleSelection True if more than one view is selected.
      */
-    /*package*/ void paintSelection(RulesEngine gre, GCWrapper gcWrapper, boolean isMultipleSelection) {
+    /*package*/ void paintSelection(RulesEngine gre,
+            GCWrapper gcWrapper,
+            boolean isMultipleSelection) {
         if (mNodeProxy != null) {
             gre.callOnSelected(gcWrapper, mNodeProxy, mName, isMultipleSelection);
         }
