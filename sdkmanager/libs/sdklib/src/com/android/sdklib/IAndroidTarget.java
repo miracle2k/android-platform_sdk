@@ -16,6 +16,8 @@
 
 package com.android.sdklib;
 
+import java.util.Map;
+
 
 
 /**
@@ -171,6 +173,19 @@ public interface IAndroidTarget extends Comparable<IAndroidTarget> {
      * @return an array of libraries provided by the platform or <code>null</code> if there is none.
      */
     String[] getPlatformLibraries();
+
+    /**
+     * Return the value of a given property for this target.
+     * @return the property value or <code>null</code> if it was not found.
+     */
+    String getProperty(String name);
+
+    /**
+     * Returns all the properties associated with this target. This can be null if the target has
+     * no properties.
+     */
+    Map<String, String> getProperties();
+
 
     /**
      * Returns the USB Vendor ID for the vendor of this target.

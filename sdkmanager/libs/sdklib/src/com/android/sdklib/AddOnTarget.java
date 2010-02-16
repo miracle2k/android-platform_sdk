@@ -208,6 +208,14 @@ final class AddOnTarget implements IAndroidTarget {
         return mBasePlatform.getPlatformLibraries();
     }
 
+    public String getProperty(String name) {
+        return mBasePlatform.getProperty(name);
+    }
+
+    public Map<String, String> getProperties() {
+        return mBasePlatform.getProperties();
+    }
+
     public int getUsbVendorId() {
         return mVendorId;
     }

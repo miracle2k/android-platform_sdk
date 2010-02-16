@@ -329,8 +329,28 @@ public final class SdkManager {
                                         // codename is irrelevant at this point.
                 }
 
+                // platform rev number
                 int revision = 1;
-                // FIXME: properly parse the platform revision.
+                File sourcePropFile = new File(platform, SdkConstants.FN_SOURCE_PROP);
+                Map<String, String> sourceProp = parsePropertyFile(sourcePropFile, log);
+                if (sourceProp != null) {
+                    try {
+                        revision = Integer.parseInt(sourceProp.get("Pkg.Revision"));
+                    } catch (NumberFormatException e) {
+                        // do nothing, we'll keep the default value of 1.
+                    }
+                    map.putAll(sourceProp);
+                }
+
+                // Ant properties
+                File templateFolder = new File(platform, SdkConstants.FD_TEMPLATES);
+                if (templateFolder.isDirectory()) {
+                    File antPropFile = new File(templateFolder, SdkConstants.FN_ANT_PROP);
+                    Map<String, String> antProp = parsePropertyFile(antPropFile, log);
+                    if (antProp != null) {
+                        map.putAll(antProp);
+                    }
+                }
 
                 // api number and name look valid, perform a few more checks
                 if (checkPlatformContent(platform, log) == false) {
@@ -358,6 +378,7 @@ public final class SdkManager {
 
         return null;
     }
+
 
     /**
      * Loads the Add-on from the SDK.
@@ -592,16 +613,17 @@ public final class SdkManager {
 
 
     /**
-     * Parses a property file (using UTF-8 encoding) and returns
-     * @param buildProp the property file to parse
+     * Parses a property file (using UTF-8 encoding) and returns a map of the content.
+     * <p/>If the file is not present, null is returned with no error messages sent to the log.
+     * @param propFile the property file to parse
      * @param log the ISdkLog object receiving warning/error from the parsing.
      * @return the map of (key,value) pairs, or null if the parsing failed.
      */
-    public static Map<String, String> parsePropertyFile(File buildProp, ISdkLog log) {
+    public static Map<String, String> parsePropertyFile(File propFile, ISdkLog log) {
         FileInputStream fis = null;
         BufferedReader reader = null;
         try {
-            fis = new FileInputStream(buildProp);
+            fis = new FileInputStream(propFile);
             reader = new BufferedReader(new InputStreamReader(fis, SdkConstants.INI_CHARSET));
 
             String line = null;
@@ -615,7 +637,7 @@ public final class SdkManager {
                     } else {
                         if (log != null) {
                             log.warning("Error parsing '%1$s': \"%2$s\" is not a valid syntax",
-                                    buildProp.getAbsolutePath(), line);
+                                    propFile.getAbsolutePath(), line);
                         }
                         return null;
                     }
@@ -629,7 +651,7 @@ public final class SdkManager {
             // Return null below.
         } catch (IOException e) {
             if (log != null) {
-                log.warning("Error parsing '%1$s': %2$s.", buildProp.getAbsolutePath(),
+                log.warning("Error parsing '%1$s': %2$s.", propFile.getAbsolutePath(),
                         e.getMessage());
             }
         } finally {
