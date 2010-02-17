@@ -550,18 +550,9 @@ public class AdtPlugin extends AbstractUIPlugin {
      * @return null if the file could not be read
      */
     public static InputStream readEmbeddedFileAsStream(String filepath) {
-        Bundle bundle = null;
-        synchronized (AdtPlugin.class) {
-            if (sPlugin != null) {
-                bundle = sPlugin.getBundle();
-            } else {
-                return null;
-            }
-        }
-
-        // attempt to get a file to one of the template.
+        // attempt to read an embedded file
         try {
-            URL url = bundle.getEntry(AndroidConstants.WS_SEP + filepath);
+            URL url = getEmbeddedFileUrl(AndroidConstants.WS_SEP + filepath);
             if (url != null) {
                 return url.openStream();
             }
@@ -572,6 +563,25 @@ public class AdtPlugin extends AbstractUIPlugin {
         }
 
         return null;
+    }
+
+    /**
+     * Returns the URL of a binary file embedded in the plugin jar file.
+     * @param filepath the file path to the text file
+     * @return null if the file was not found.
+     */
+    public static URL getEmbeddedFileUrl(String filepath) {
+        Bundle bundle = null;
+        synchronized (AdtPlugin.class) {
+            if (sPlugin != null) {
+                bundle = sPlugin.getBundle();
+            } else {
+                return null;
+            }
+        }
+
+        // attempt to get a file to one of the template.
+        return bundle.getEntry(AndroidConstants.WS_SEP + filepath);
     }
 
     /**

@@ -30,6 +30,10 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFolderListener;
 
 import org.codehaus.groovy.control.CompilationFailedException;
+import org.codehaus.groovy.control.CompilationUnit;
+import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.control.Phases;
+import org.codehaus.groovy.control.SourceUnit;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -37,8 +41,16 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 
 import groovy.lang.GroovyClassLoader;
+import groovy.lang.GroovyCodeSource;
+import groovy.lang.GroovyResourceLoader;
 
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,18 +69,49 @@ import java.util.Map;
  */
 public class RulesEngine {
 
-    private static final String FD_GSCRIPTS = "gscripts";
-    private static final String SCRIPT_EXT = ".groovy";  //$NON-NLS-1$
+    /**
+     * The project folder where the scripts are located.
+     * This is for both our unique ADT project folder and the user projects folders.
+     */
+    private static final String FD_GSCRIPTS = "gscripts";                       //$NON-NLS-1$
+    /**
+     * The extension we expect for the groovy scripts.
+     */
+    private static final String SCRIPT_EXT = ".groovy";                         //$NON-NLS-1$
+    /**
+     * The package we expect for our groovy scripts.
+     * User scripts do not need to use the same (and in fact should probably not.)
+     */
+    private static final String SCRIPT_PACKAGE = "com.android.adt.gscripts";    //$NON-NLS-1$
 
     private final GroovyClassLoader mClassLoader;
     private final IProject mProject;
     private final Map<Object, IViewRule> mRulesCache = new HashMap<Object, IViewRule>();
     private ProjectFolderListener mProjectFolderListener;
 
+
     public RulesEngine(IProject project) {
         mProject = project;
         ClassLoader cl = getClass().getClassLoader();
-        mClassLoader = new GroovyClassLoader(cl);
+
+        // Note: we could use the CompilerConfiguration to add an output log collector
+        CompilerConfiguration cc = new CompilerConfiguration();
+        cc.setDefaultScriptExtension(SCRIPT_EXT);
+
+        mClassLoader = new GreGroovyClassLoader(cl, cc);
+
+        // Add the project's gscript folder to the classpath, if it exists.
+        IResource f = project.findMember(FD_GSCRIPTS);
+        if ((f instanceof IFolder) && f.exists()) {
+            URI uri = ((IFolder) f).getLocationURI();
+            try {
+                URL url = uri.toURL();
+                mClassLoader.addURL(url);
+            } catch (MalformedURLException e) {
+                // ignore; it's not a valid URL, we obviously won't use it
+                // in the class path.
+            }
+        }
 
         mProjectFolderListener = new ProjectFolderListener();
         GlobalProjectMonitor.getMonitor().addFolderListener(
@@ -347,13 +390,14 @@ public class RulesEngine {
         try {
             InputStream is = AdtPlugin.readEmbeddedFileAsStream(
                     FD_GSCRIPTS + AndroidConstants.WS_SEP + filename);
-            rule = loadStream(is, realFqcn);
+            rule = loadStream(is, realFqcn, "ADT");     //$NON-NLS-1$
             if (rule != null) {
                 return initializeRule(rule, targetFqcn);
             }
         } catch (Exception e) {
-            logError("load rule error (%s): %s", filename, e.getMessage());
+            logError("load rule error (%s): %s", filename, e.toString());
         }
+
 
         // Then look for the file in the project
         IResource r = mProject.findMember(FD_GSCRIPTS);
@@ -362,7 +406,7 @@ public class RulesEngine {
             if (r != null && r.getType() == IResource.FILE) {
                 try {
                     InputStream is = ((IFile) r).getContents();
-                    rule = loadStream(is, realFqcn);
+                    rule = loadStream(is, realFqcn, mProject.getName());
                     if (rule != null) {
                         return initializeRule(rule, targetFqcn);
                     }
@@ -418,9 +462,13 @@ public class RulesEngine {
      *
      * @param is The input stream for the groovy script. Can be null.
      * @param fqcn The class name, for display purposes only.
+     * @param codeBase A string eventually passed to {@link CodeSource} to define some kind
+     *                 of security permission. Quite irrelevant in our case since it all
+     *                 comes from an input stream. However this method uses it to print
+     *                 the origin of the source in the exception errors.
      * @return A new {@link IViewRule} or null if loading failed for any reason.
      */
-    private IViewRule loadStream(InputStream is, String fqcn) {
+    private IViewRule loadStream(InputStream is, String fqcn, String codeBase) {
         try {
             if (is == null) {
                 // We handle this case for convenience. It typically means that the
@@ -429,18 +477,22 @@ public class RulesEngine {
                 return null;
             }
 
+            // We don't really now the character encoding, we're going to assume UTF-8.
+            InputStreamReader reader = new InputStreamReader(is, Charset.forName("UTF-8"));
+            GroovyCodeSource source = new GroovyCodeSource(reader, fqcn, codeBase);
+
             // Create a groovy class from it. Can fail to compile.
-            Class<?> c = mClassLoader.parseClass(is, fqcn);
+            Class<?> c = mClassLoader.parseClass(source);
 
             // Get an instance. This might throw ClassCastException.
             return (IViewRule) c.newInstance();
 
         } catch (CompilationFailedException e) {
-            logError("Compilation error in %s.groovy: %s", fqcn, e.toString());
+            logError("Compilation error in %1$s:%2$s.groovy: %3$s", codeBase, fqcn, e.toString());
         } catch (ClassCastException e) {
-            logError("Script %s.groovy does not implement IViewRule", fqcn);
+            logError("Script %1$s:%2$s.groovy does not implement IViewRule", codeBase, fqcn);
         } catch (Exception e) {
-            logError("Failed to use %s.groovy: %s", fqcn, e.getMessage());
+            logError("Failed to use %1$s:%2$s.groovy: %3$s", codeBase, fqcn, e.toString());
         }
 
         return null;
@@ -450,4 +502,82 @@ public class RulesEngine {
         String s = String.format(format, params);
         AdtPlugin.printErrorToConsole(mProject, s);
     }
+
+    // -----
+
+    /**
+     * A custom {@link GroovyClassLoader} that lets us override the {@link CompilationUnit}
+     * and the {@link GroovyResourceLoader}.
+     */
+    private static class GreGroovyClassLoader extends GroovyClassLoader {
+
+        public GreGroovyClassLoader(ClassLoader cl, CompilerConfiguration cc) {
+            super(cl, cc);
+
+            // Override the resource loader: when a class is not found, we try to find a class
+            // defined in our internal ADT groovy script, assuming it has our special package.
+            // Note that these classes do not have to implement IViewRule. That means we can
+            // create utility classes in groovy used by the other groovy rules.
+            final GroovyResourceLoader resLoader = getResourceLoader();
+            setResourceLoader(new GroovyResourceLoader() {
+                public URL loadGroovySource(String filename) throws MalformedURLException {
+                    URL url = resLoader.loadGroovySource(filename);
+                    if (url == null) {
+                        // We only try to load classes in our own groovy script package
+                        String p = SCRIPT_PACKAGE + ".";      //$NON-NLS-1$
+
+                        if (filename.startsWith(p)) {
+                            filename = filename.substring(p.length());
+
+                            // This will return null if the file doesn't exists.
+                            // The groovy resolver will actually load and verify the class
+                            // implemented matches the one it was expecting in the first place,
+                            // so we don't have anything to do here besides returning the URL to
+                            // the source file.
+                            url = AdtPlugin.getEmbeddedFileUrl(
+                                    AndroidConstants.WS_SEP +
+                                    FD_GSCRIPTS +
+                                    AndroidConstants.WS_SEP +
+                                    filename +
+                                    SCRIPT_EXT);
+                        }
+                    }
+                    return url;
+                }
+            });
+        }
+
+        @Override
+        protected CompilationUnit createCompilationUnit(
+                CompilerConfiguration config,
+                CodeSource source) {
+            return new GreCompilationUnit(config, source, this);
+        }
+    }
+
+    /**
+     * A custom {@link CompilationUnit} that lets us add default import for our base classes
+     * using the base package of {@link IViewRule} (e.g. "import com.android...gscripts.*")
+     */
+    private static class GreCompilationUnit extends CompilationUnit {
+
+        public GreCompilationUnit(
+                CompilerConfiguration config,
+                CodeSource source,
+                GroovyClassLoader loader) {
+            super(config, source, loader);
+
+            SourceUnitOperation op = new SourceUnitOperation() {
+                @Override
+                public void call(SourceUnit source) throws CompilationFailedException {
+                    // add the equivalent of "import com.android...gscripts.*" to the source.
+                    String p = IViewRule.class.getPackage().getName();
+                    source.getAST().addStarImport(p + ".");  //$NON-NLS-1$
+                }
+            };
+
+            addPhaseOperation(op, Phases.CONVERSION);
+        }
+    }
+
 }

@@ -16,19 +16,10 @@
 
 package com.android.adt.gscripts;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.BaseViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-
-import java.util.Map;
-import java.util.ArrayList;
-
 /**
  * An {@link IViewRule} for android.widget.AbsoluteLayout and all its derived classes.
  */
-public class AndroidWidgetAbsoluteLayourRule extends BaseViewRule {
+public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
 
     // ==== Drag'n'drop support ====
 

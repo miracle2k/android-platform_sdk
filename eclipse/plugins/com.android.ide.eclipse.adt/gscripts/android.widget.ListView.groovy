@@ -16,21 +16,12 @@
 
 package com.android.adt.gscripts;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.BaseViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-
-import java.util.Map;
-import java.util.ArrayList;
-
 
 /**
  * An {@link IViewRule} for android.widget.ListView and all its derived classes.
  * This is the "root" rule, that is used whenever there is not more specific rule to apply.
  */
-public class AndroidWidgetListViewRule extends BaseViewRule {
+public class AndroidWidgetListViewRule extends BaseView {
 
     // ==== XML Creation ====
 

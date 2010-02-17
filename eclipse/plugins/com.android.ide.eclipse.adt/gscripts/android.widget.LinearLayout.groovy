@@ -16,16 +16,10 @@
 
 package com.android.adt.gscripts;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.BaseViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-
 /**
  * An {@link IViewRule} for android.widget.LinearLayout and all its derived classes.
  */
-public class AndroidWidgetLinearLayourRule extends BaseViewRule {
+public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
     // ==== Drag'n'drop support ====
 
@@ -47,20 +41,20 @@ public class AndroidWidgetLinearLayourRule extends BaseViewRule {
      * @param targetNode The XML view that is currently the target of the drop.
      * @return Null or an empty list if the rule rejects the drop, or a list of usable drop zones.
      */
-    public ArrayList<DropZone> dropStart(INode targetNode) {
-
-        // for testing, we're going to make 2 drop zones: top and bottom.
-        // TODO find inner elements bounds & orientation, add margings
-        def r = targetNode.getBounds();
-        DropZone d1 = new DropZone();
-        DropZone d2 = new DropZone();
-        r.h /= 2;
-        d1.bounds.set(r);
-        d2.bounds.set(r);
-        d2.bounds.y += r.h;
-
-        return [ d1, d2 ];
-    }
+//    public ArrayList<DropZone> dropStart(INode targetNode) {
+//
+//        // for testing, we're going to make 2 drop zones: top and bottom.
+//        // TODO find inner elements bounds & orientation, add margings
+//        def r = targetNode.getBounds();
+//        DropZone d1 = new DropZone();
+//        DropZone d2 = new DropZone();
+//        r.h /= 2;
+//        d1.bounds.set(r);
+//        d2.bounds.set(r);
+//        d2.bounds.y += r.h;
+//
+//        return [ d1, d2 ];
+//    }
 
     /**
      * Called after the user selects to drop the given source into one of the drop zones.
@@ -72,11 +66,11 @@ public class AndroidWidgetLinearLayourRule extends BaseViewRule {
      * @param targetNode The XML view that is currently the target of the drop.
      * @param selectedZone One of the drop zones returned by {@link #dropStart(INode)}.
      */
-    public void dropFinish(
-            String sourceFqcn,
-            INode targetNode,
-            DropZone selectedZone,
-            Point where) {
-        // TODO
-    }
+//    public void dropFinish(
+//            String sourceFqcn,
+//            INode targetNode,
+//            DropZone selectedZone,
+//            Point where) {
+//        // TODO
+//    }
 }

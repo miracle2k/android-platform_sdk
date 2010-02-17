@@ -19,6 +19,7 @@ package com.android.sdklib.internal.repository;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
 
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -120,6 +121,14 @@ public class MockPlatformPackage extends PlatformPackage {
         }
 
         public String[] getPlatformLibraries() {
+            return null;
+        }
+
+        public String getProperty(String name) {
+            return null;
+        }
+
+        public Map<String, String> getProperties() {
             return null;
         }
 

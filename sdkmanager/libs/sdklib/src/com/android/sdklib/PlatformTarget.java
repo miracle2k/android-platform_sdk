@@ -253,7 +253,6 @@ final class PlatformTarget implements IAndroidTarget {
         return versionDiff;
     }
 
-    // ---- platform only methods.
 
     public String getProperty(String name) {
         return mProperties.get(name);
@@ -262,6 +261,8 @@ final class PlatformTarget implements IAndroidTarget {
     public Map<String, String> getProperties() {
         return mProperties; // mProperties is unmodifiable.
     }
+
+    // ---- platform only methods.
 
     void setSkins(String[] skins) {
         mSkins = skins;

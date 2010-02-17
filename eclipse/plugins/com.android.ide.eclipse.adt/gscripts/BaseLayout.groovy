@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,14 @@
 
 package com.android.adt.gscripts;
 
-/**
- * An {@link IViewRule} for android.view.View and all its derived classes.
- * This is the "root" rule, that is used whenever there is not more specific rule to apply.
- */
-public class AndroidViewViewRule extends BaseView {
+public class BaseLayout extends BaseView {
+
+    public boolean onInitialize(String fqcn) {
+        return super.onInitialize(fqcn);
+    }
+
+    public void onDispose() {
+        super.onDispose();
+    }
 
 }
