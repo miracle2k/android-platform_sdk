@@ -296,7 +296,7 @@ public class Main {
         }
         IAndroidTarget target = targets[targetId - 1];  // target id is 1-based
 
-        ProjectCreator creator = new ProjectCreator(mOsSdkFolder,
+        ProjectCreator creator = new ProjectCreator(mSdkManager, mOsSdkFolder,
                 mSdkCommandLine.isVerbose() ? OutputLevel.VERBOSE :
                     mSdkCommandLine.isSilent() ? OutputLevel.SILENT :
                         OutputLevel.NORMAL,
@@ -441,7 +441,7 @@ public class Main {
 
         mSdkLog.printf("Found main project target: %1$s\n", target.getFullName());
 
-        ProjectCreator creator = new ProjectCreator(mOsSdkFolder,
+        ProjectCreator creator = new ProjectCreator(mSdkManager, mOsSdkFolder,
                 mSdkCommandLine.isVerbose() ? OutputLevel.VERBOSE :
                     mSdkCommandLine.isSilent() ? OutputLevel.SILENT :
                         OutputLevel.NORMAL,
@@ -488,7 +488,7 @@ public class Main {
             target = targets[targetId - 1];  // target id is 1-based
         }
 
-        ProjectCreator creator = new ProjectCreator(mOsSdkFolder,
+        ProjectCreator creator = new ProjectCreator(mSdkManager, mOsSdkFolder,
                 mSdkCommandLine.isVerbose() ? OutputLevel.VERBOSE :
                     mSdkCommandLine.isSilent() ? OutputLevel.SILENT :
                         OutputLevel.NORMAL,
@@ -540,7 +540,7 @@ public class Main {
      * Updates an existing test project with a new path to the main project.
      */
     private void updateTestProject() {
-        ProjectCreator creator = new ProjectCreator(mOsSdkFolder,
+        ProjectCreator creator = new ProjectCreator(mSdkManager, mOsSdkFolder,
                 mSdkCommandLine.isVerbose() ? OutputLevel.VERBOSE :
                     mSdkCommandLine.isSilent() ? OutputLevel.SILENT :
                         OutputLevel.NORMAL,

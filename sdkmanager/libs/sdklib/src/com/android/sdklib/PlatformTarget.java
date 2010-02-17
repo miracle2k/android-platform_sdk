@@ -262,6 +262,28 @@ final class PlatformTarget implements IAndroidTarget {
         return mProperties; // mProperties is unmodifiable.
     }
 
+    public int getAntBuildRevision() {
+        try {
+            String value = getProperty("ant.build.revision");
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            // ignore, return 1;
+        }
+
+        return 1;
+    }
+
+    public int getAntTemplatesRevision() {
+        try {
+            String value = getProperty("ant.templates.revision");
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            // ignore, return 1;
+        }
+
+        return 1;
+    }
+
     // ---- platform only methods.
 
     void setSkins(String[] skins) {

@@ -216,6 +216,14 @@ final class AddOnTarget implements IAndroidTarget {
         return mBasePlatform.getProperties();
     }
 
+    public int getAntBuildRevision() {
+        return mBasePlatform.getAntBuildRevision();
+    }
+
+    public int getAntTemplatesRevision() {
+        return mBasePlatform.getAntTemplatesRevision();
+    }
+
     public int getUsbVendorId() {
         return mVendorId;
     }

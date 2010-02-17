@@ -167,7 +167,7 @@ public final class SetupTask extends ImportTask {
         }
 
         // look for referenced libraries.
-        processReferencedLibraries(antProject);
+        processReferencedLibraries(antProject, androidTarget);
 
         // display it
         System.out.println("Project Target: " + androidTarget.getName());
@@ -354,7 +354,7 @@ public final class SetupTask extends ImportTask {
         }
     }
 
-    private void processReferencedLibraries(Project antProject) {
+    private void processReferencedLibraries(Project antProject, IAndroidTarget androidTarget) {
         // prepare several paths for future tasks
         Path sourcePath = new Path(antProject);
         Path resPath = new Path(antProject);
@@ -368,6 +368,10 @@ public final class SetupTask extends ImportTask {
             }
         };
 
+        // get the build version for the current target. It'll be tested if there's at least
+        // one library.
+        int antBuildVersion = androidTarget.getAntBuildRevision();
+
         int index = 1;
         while (true) {
             String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index++);
@@ -375,6 +379,12 @@ public final class SetupTask extends ImportTask {
 
             if (rootPath == null) {
                 break;
+            }
+
+            if (antBuildVersion < SdkConstants.ANT_REV_LIBRARY) {
+                throw new BuildException(String.format(
+                        "The build system for this project target (%1$s) does not support libraries",
+                        androidTarget.getFullName()));
             }
 
             // get the source path. default is src but can be overriden by the property

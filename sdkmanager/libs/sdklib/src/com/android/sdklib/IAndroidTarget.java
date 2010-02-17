@@ -186,6 +186,15 @@ public interface IAndroidTarget extends Comparable<IAndroidTarget> {
      */
     Map<String, String> getProperties();
 
+    /**
+     * Returns the revision number of the Ant build system supported by this target.
+     */
+    int getAntBuildRevision();
+
+    /**
+     * Returns the revision number of the Ant templates supported by this target.
+     */
+    int getAntTemplatesRevision();
 
     /**
      * Returns the USB Vendor ID for the vendor of this target.

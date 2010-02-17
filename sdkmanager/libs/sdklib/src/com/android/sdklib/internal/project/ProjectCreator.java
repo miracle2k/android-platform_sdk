@@ -132,8 +132,10 @@ public class ProjectCreator {
 
     private final ISdkLog mLog;
     private final String mSdkFolder;
+    private final SdkManager mSdkManager;
 
-    public ProjectCreator(String sdkFolder, OutputLevel level, ISdkLog log) {
+    public ProjectCreator(SdkManager sdkManager, String sdkFolder, OutputLevel level, ISdkLog log) {
+        mSdkManager = sdkManager;
         mSdkFolder = sdkFolder;
         mLevel = level;
         mLog = log;
@@ -415,14 +417,28 @@ public class ProjectCreator {
         File projectFolder = androidManifest.getParentFile();
 
         // Check there's a default.properties with a target *or* --target was specified
+        IAndroidTarget originalTarget = null;
         ProjectProperties props = ProjectProperties.load(folderPath, PropertyType.DEFAULT);
-        if (props == null || props.getProperty(ProjectProperties.PROPERTY_TARGET) == null) {
-            if (target == null) {
+        if (props != null) {
+            String targetHash = props.getProperty(ProjectProperties.PROPERTY_TARGET);
+            originalTarget = mSdkManager.getTargetFromHashString(targetHash);
+        }
+
+        if (originalTarget == null && target == null) {
+            mLog.error(null,
+                "The project either has no target set or the target is invalid.\n" +
+                "Please provide a --target to the '%1$s update' command.",
+                SdkConstants.androidCmdName());
+            return false;
+        }
+
+        // before doing anything, make sure library (if present) can be applied.
+        if (libraryPath != null) {
+            IAndroidTarget finalTarget = target != null ? target : originalTarget;
+            if (finalTarget.getAntBuildRevision() < SdkConstants.ANT_REV_LIBRARY) {
                 mLog.error(null,
-                    "There is no %1$s file in '%2$s'. Please provide a --target to the '%3$s update' command.",
-                    PropertyType.DEFAULT.getFilename(),
-                    folderPath,
-                    SdkConstants.androidCmdName());
+                        "The build system for this project target (%1$s) does not support libraries",
+                        finalTarget.getFullName());
                 return false;
             }
         }
