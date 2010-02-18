@@ -16,9 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
@@ -149,9 +147,6 @@ import java.util.ListIterator;
     /** Drop listener, with feedback from current drop */
     private CanvasDropListener mDropListener;
 
-    /** Drop color. Do not dispose, it's a system color. */
-    private Color mDropFgColor;
-
     /** Factory that can create {@link INode} proxies. */
     private final NodeFactory mNodeFactory = new NodeFactory();
 
@@ -166,7 +161,6 @@ import java.util.ListIterator;
         mSelectionFgColor = d.getSystemColor(SWT.COLOR_RED);
         mHoverFgColor     = new Color(d, 0xFF, 0x99, 0x00); // orange
         mOutlineColor     = d.getSystemColor(SWT.COLOR_GREEN);
-        mDropFgColor      = d.getSystemColor(SWT.COLOR_YELLOW);
 
         mFont = d.getSystemFont();
 
@@ -473,8 +467,9 @@ import java.util.ListIterator;
                 }
             }
 
-
-            drawDropZones(gc);
+            if (mDropListener != null) {
+                mDropListener.paintFeedback(mGCWrapper);
+            }
 
         } finally {
             mGCWrapper.setGC(null);
@@ -489,55 +484,6 @@ import java.util.ListIterator;
         for (CanvasViewInfo vi : info.getChildren()) {
             drawOutline(gc, vi);
         }
-    }
-
-    private void drawDropZones(GC gc) {
-        if (mDropListener == null) {
-            return;
-        }
-
-        CanvasViewInfo vi = mDropListener.getTargetView();
-        if (vi == null) {
-            return;
-        }
-
-        gc.setForeground(mDropFgColor);
-
-        ArrayList<DropZone> zones = mDropListener.getZones();
-        if (zones != null) {
-
-            gc.setLineStyle(SWT.LINE_SOLID);
-            gc.setLineWidth(1);
-
-            DropZone curr = mDropListener.getCurrentZone();
-
-            for (DropZone zone : zones) {
-                Rect r = zone.bounds;
-                if (r != null && r.w > 0 && r.h > 0) {
-                    int x = r.x + IMAGE_MARGIN;
-                    int y = r.y + IMAGE_MARGIN;
-
-                    int alpha = 128;                        // half-transparent
-                    if (zone == curr) {
-                        alpha = 192;
-                    }
-
-                    if (gc_setAlpha(gc, alpha)) {
-                        gc.fillRectangle(x, y, r.w, r.h);
-                        gc_setAlpha(gc, 255);               // opaque
-                    }
-
-                    gc.drawRectangle(x, y, r.w, r.h);
-                }
-            }
-
-        }
-
-        gc.setLineStyle(SWT.LINE_DOT);
-        gc.setLineWidth(3);
-        Rectangle r = vi.getAbsRect();
-        gc.drawRectangle(r.x + IMAGE_MARGIN, r.y + IMAGE_MARGIN, r.width, r.height);
-        gc.setLineWidth(1);
     }
 
     /**

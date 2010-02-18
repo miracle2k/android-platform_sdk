@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
-import java.util.ArrayList;
 import java.util.Map;
 
 
@@ -100,7 +99,6 @@ public interface IViewRule {
 
     // ==== XML Creation ====
 
-
     /**
      * Returns the default attributes that a new XML element of this type should have
      * when added to an XML layout file. Note that these defaults can be overridden by the
@@ -118,55 +116,44 @@ public interface IViewRule {
 
     // ==== Drag'n'drop support ====
 
-    /*
-     * TODO:
-     * - onDropEnter <- target node proxy, action => Object / Boolean.FALSE
-     * - onDropMove  <- proxy, action, Object, x/y
-     * - onDropLeave <- proxy, action, Object
-     * - onDrop      <- proxy, action, Object, x/y, source
-     *
-     * action:
-     * - drawRect/fillRect/drawLine x1,y1,x2,y2 / Line x,y / color [constants + rgba]
-     * - drawText x,y,col,text
+    /**
+     * Called when the d'n'd starts dragging over the target node.
+     * If interested, returns a DropFeedback passed to onDrop/Move/Leave/Paint.
+     * If not interested in drop, return null.
+     * Followed by a paint.
      */
+    DropFeedback onDropEnter(INode targetNode);
 
     /**
-     * Called when a drop operation starts, whilst the d'n'd is dragging the cursor over the
-     * views. The purpose of the drop operation will be to create a new element.
-     * <p/>
-     * Drop targets that can't accept child views should always return null, in which case
-     * the rule engine will ask the parent view (typically a layout).
-     * <p/>
-     * Drop targets that can accept child views must return a non-empty list of drop zones,
-     * customized to the actual bounds of the target.
-     * The drop zones will be visually shown to the user. Once the user releases the mouse
-     * in one of the drop zone, the dropAccept/dropFinish methods will be called.
-     * <p/>
-     * Note that at this stage, the drop operation does not offer a way to know what is going
-     * to be dropped. We just know it's a view descriptor, typically from the layout palette,
-     * but we don't know which view class yet.
-     *
-     * @param targetNode The XML view that is currently the target of the drop.
-     * @return Null or an empty list if the rule rejects the drop, or a list of usable drop zones.
-     * @deprecated
+     * Called after onDropEnter.
+     * Returns a DropFeedback passed to onDrop/Move/Leave/Paint (typically same
+     * as input one).
+     * Returning null will invalidate the drop workflow.
      */
-    ArrayList<DropZone> dropStart(INode targetNode);
+    DropFeedback onDropMove(INode targetNode, DropFeedback feedback, Point where);
 
     /**
-     * Called after the user selects to drop the given source into one of the drop zones.
+     * Called when drop leaves the target without actually dropping.
      * <p/>
-     * This method should use the methods from the {@link INode} to actually create the
-     * new XML matching the source descriptor.
-     *
-     * @param sourceFqcn The FQCN of the view being dropped.
-     * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by {@link #dropStart(INode)}.
-     * @param where The location, in the selected zone, of the drop.
-     * @deprecated
+     * When switching between views, onDropLeave is called on the old node *after* onDropEnter
+     * is called after a new node that returned a non-null feedback. The feedback received here
+     * is the one given by the previous onDropEnter on the same target.
+     * <p/>
+     * E.g. call order is:
+     * <pre>
+     * - onDropEnter(node1) => feedback1
+     * <i>...user moves to new view...</i>
+     * - onDropEnter(node2) => feedback2
+     * - onDropLeave(node1, feedback1)
+     * <i>...user leaves canvas...</i>
+     * - onDropLeave(node2, feedback2)
+     * </pre>
      */
-    void dropFinish(
-            String sourceFqcn,
-            INode targetNode,
-            DropZone selectedZone,
-            Point where);
+    void onDropLeave(INode targetNode, DropFeedback feedback);
+
+    /**
+     * Called when drop is released over the target to perform the actual drop.
+     */
+    void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point where);
+
 }

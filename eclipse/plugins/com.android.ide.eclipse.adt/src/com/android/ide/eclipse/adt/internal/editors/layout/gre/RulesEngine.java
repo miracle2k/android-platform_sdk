@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
@@ -51,7 +51,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.security.CodeSource;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -206,25 +205,23 @@ public class RulesEngine {
         }
     }
 
+
     /**
-     * Invokes {@link IViewRule#dropStart(INode)} on the rule matching
-     * the specified target node.
-     *
-     * @param targetNode The XML view that is currently the target of the drop.
-     * @return Null if the rule failed, there's no rule or the rule does not accept the drop.
-     *   Otherwise a list of drop zones valid for this drop.
-     * @deprecated
+     * Called when the d'n'd starts dragging over the target node.
+     * If interested, returns a DropFeedback passed to onDrop/Move/Leave/Paint.
+     * If not interested in drop, return false.
+     * Followed by a paint.
      */
-    public ArrayList<DropZone> callDropStart(NodeProxy targetNode) {
+    public DropFeedback callOnDropEnter(NodeProxy targetNode) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
-                return rule.dropStart(targetNode);
+                return rule.onDropEnter(targetNode);
 
             } catch (Exception e) {
-                logError("%s.dropStart() failed: %s",
+                logError("%s.onDropEnter() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -234,28 +231,81 @@ public class RulesEngine {
     }
 
     /**
-     * Invokes {@link IViewRule#dropFinish(String, INode, DropZone, Point)} on the
-     * rule matching the specified target node.
-     *
-     * @param viewFqcn The {@link ViewElementDescriptor} of the drag source.
-     * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by {@link #callDropStart(NodeProxy)}.
-     * @deprecated
+     * Called after onDropEnter.
+     * Returns a DropFeedback passed to onDrop/Move/Leave/Paint (typically same
+     * as input one).
      */
-    public void callDropFinish(String viewFqcn,
-            NodeProxy targetNode,
-            DropZone selectedZone,
+    public DropFeedback callOnDropMove(NodeProxy targetNode,
+            DropFeedback feedback,
             Point where) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
-                rule.dropFinish(viewFqcn, targetNode, selectedZone, where);
+                return rule.onDropMove(targetNode, feedback, where);
 
             } catch (Exception e) {
-                logError("%s.dropFinish() failed: %s",
+                logError("%s.onDropMove() failed: %s",
                         rule.getClass().getSimpleName(),
+                        e.toString());
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Called when drop leaves the target without actually dropping
+     */
+    public void callOnDropLeave(NodeProxy targetNode, DropFeedback feedback) {
+        // try to find a rule for this element's FQCN
+        IViewRule rule = loadRule(targetNode.getNode());
+
+        if (rule != null) {
+            try {
+                rule.onDropLeave(targetNode, feedback);
+
+            } catch (Exception e) {
+                logError("%s.onDropLeave() failed: %s",
+                        rule.getClass().getSimpleName(),
+                        e.toString());
+            }
+        }
+    }
+
+    /**
+     * Called when drop is released over the target to perform the actual drop.
+     */
+    public void callOnDropped(String fqcn,
+            NodeProxy targetNode,
+            DropFeedback feedback,
+            Point where) {
+        // try to find a rule for this element's FQCN
+        IViewRule rule = loadRule(targetNode.getNode());
+
+        if (rule != null) {
+            try {
+                rule.onDropped(fqcn, targetNode, feedback, where);
+
+            } catch (Exception e) {
+                logError("%s.onDropped() failed: %s",
+                        rule.getClass().getSimpleName(),
+                        e.toString());
+            }
+        }
+    }
+
+    /**
+     * Called when a paint has been requested via DropFeedback.
+     * @param targetNode
+     */
+    public void callDropFeedbackPaint(IGraphics gc, NodeProxy targetNode, DropFeedback feedback) {
+        if (gc != null && feedback != null && feedback.paintClosure != null) {
+            try {
+                feedback.paintClosure.call(new Object[] { gc, targetNode, feedback });
+            } catch (Exception e) {
+                logError("DropFeedback.paintClosure failed: %s",
                         e.toString());
             }
         }
