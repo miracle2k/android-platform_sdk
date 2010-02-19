@@ -16,7 +16,6 @@
 
 package com.android.sdklib.internal.project;
 
-import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 
@@ -208,15 +207,6 @@ public final class ProjectProperties {
      */
     public void setProperty(String name, String value) {
         mProperties.put(name, value);
-    }
-
-    /**
-     * Sets the target property to the given {@link IAndroidTarget} object.
-     * @param target the Android target.
-     */
-    public void setAndroidTarget(IAndroidTarget target) {
-        assert mType == PropertyType.DEFAULT;
-        mProperties.put(PROPERTY_TARGET, target.hashString());
     }
 
     /**

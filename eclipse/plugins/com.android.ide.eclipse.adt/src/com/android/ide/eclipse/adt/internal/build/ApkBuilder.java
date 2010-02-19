@@ -23,6 +23,7 @@ import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.ApkInstallManager;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.DexWrapper;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
@@ -365,12 +366,15 @@ public class ApkBuilder extends BaseBuilder {
             }
 
             // get the APK configs for the project.
-            ApkSettings apkSettings = Sdk.getCurrent().getApkSettings(project);
+            ProjectState state = Sdk.getProject(project);
             Set<Entry<String, String>> apkfilters = null;
-            if (apkSettings != null) {
-                Map<String, String> filterMap = apkSettings.getResourceFilters();
-                if (filterMap != null && filterMap.size() > 0) {
-                    apkfilters = filterMap.entrySet();
+            if (state != null) {
+                ApkSettings apkSettings = state.getApkSettings();
+                if (apkSettings != null) {
+                    Map<String, String> filterMap = apkSettings.getResourceFilters();
+                    if (filterMap != null && filterMap.size() > 0) {
+                        apkfilters = filterMap.entrySet();
+                    }
                 }
             }
 

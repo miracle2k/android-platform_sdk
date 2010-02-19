@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.wizards.export;
 
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard.ExportWizardPage;
 import com.android.sdklib.internal.project.ApkSettings;
@@ -150,7 +151,10 @@ final class KeyCheckPage extends ExportWizardPage {
         if ((mProjectDataChanged & DATA_PROJECT) != 0) {
             // reset the destination from the content of the project
             IProject project = mWizard.getProject();
-            mApkSettings = Sdk.getCurrent().getApkSettings(project);
+            ProjectState state = Sdk.getProject(project);
+            if (state != null) {
+                mApkSettings = state.getApkSettings();
+            }
 
             String destination = ProjectHelper.loadStringProperty(project,
                     ExportWizard.PROPERTY_DESTINATION);

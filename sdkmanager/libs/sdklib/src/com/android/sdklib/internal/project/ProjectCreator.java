@@ -214,7 +214,7 @@ public class ProjectCreator {
             // target goes in default properties
             ProjectProperties defaultProperties = ProjectProperties.create(folderPath,
                     PropertyType.DEFAULT);
-            defaultProperties.setAndroidTarget(target);
+            defaultProperties.setProperty(ProjectProperties.PROPERTY_TARGET, target.hashString());
             if (library) {
                 defaultProperties.setProperty(ProjectProperties.PROPERTY_LIBRARY, "true");
             }
@@ -453,7 +453,7 @@ public class ProjectCreator {
             }
 
             // set or replace the target
-            props.setAndroidTarget(target);
+            props.setProperty(ProjectProperties.PROPERTY_TARGET, target.hashString());
             saveDefaultProps = true;
         }
 
