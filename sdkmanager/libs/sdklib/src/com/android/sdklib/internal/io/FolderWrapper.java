@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.builders;
+package com.android.sdklib.internal.io;
 
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * An implementation of {@link IAbstractFolder} on top of a {@link File} object.
@@ -28,14 +27,10 @@ public class FolderWrapper implements IAbstractFolder {
     private final File mFolder;
 
     /**
-     * Constructs a {@link FileWrapper} object. If {@link File#isDirectory()} returns
-     * <code>false</code> then an {@link IOException} is thrown.
+     * Constructs a {@link FileWrapper} object. The underlying {@link File} object needs not exists
+     * or be a valid directory.
      */
-    public FolderWrapper(File folder) throws IOException {
-        if (folder.isDirectory() == false) {
-            throw new IOException("FileWrapper must wrap a File object representing an existing folder!"); //$NON-NLS-1$
-        }
-
+    public FolderWrapper(File folder) {
         mFolder = folder;
     }
 
@@ -43,8 +38,16 @@ public class FolderWrapper implements IAbstractFolder {
         return false;
     }
 
+    public IAbstractFile getFile(String name) {
+        return new FileWrapper(new File(mFolder, name));
+    }
+
     public String getName() {
         return mFolder.getName();
+    }
+
+    public boolean exists() {
+        return mFolder.isDirectory();
     }
 
     @Override
@@ -64,5 +67,4 @@ public class FolderWrapper implements IAbstractFolder {
     public int hashCode() {
         return mFolder.hashCode();
     }
-
 }

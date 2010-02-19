@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.builders;
+package com.android.sdklib.internal.io;
 
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -32,14 +31,10 @@ public class FileWrapper implements IAbstractFile {
     private final File mFile;
 
     /**
-     * Constructs a {@link FileWrapper} object. If {@link File#isFile()} returns <code>false</code>
-     * then an {@link IOException} is thrown.
+     * Constructs a {@link FileWrapper} object. The underlying {@link File} object needs not
+     * exist or be a valid file.
      */
-    public FileWrapper(File file) throws IOException {
-        if (file.isFile() == false) {
-            throw new IOException("FileWrapper must wrap a File object representing an existing file!"); //$NON-NLS-1$
-        }
-
+    public FileWrapper(File file) {
         mFile = file;
     }
 
@@ -57,6 +52,10 @@ public class FileWrapper implements IAbstractFile {
 
     public String getName() {
         return mFile.getName();
+    }
+
+    public boolean exists() {
+        return mFile.isFile();
     }
 
     @Override

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.builders;
+package com.android.sdklib.internal.io;
 
 /**
  * Exception thrown when {@link IAbstractFile#getContents()} fails.

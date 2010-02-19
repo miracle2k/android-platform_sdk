@@ -952,26 +952,4 @@ public class AndroidManifestParser {
         }
         return (IFile) r;
     }
-
-    /**
-     * Given a fully qualified activity name (e.g. com.foo.test.MyClass) and given a project
-     * package base name (e.g. com.foo), returns the relative activity name that would be used
-     * the "name" attribute of an "activity" element.
-     *
-     * @param fullActivityName a fully qualified activity class name, e.g. "com.foo.test.MyClass"
-     * @param packageName The project base package name, e.g. "com.foo"
-     * @return The relative activity name if it can be computed or the original fullActivityName.
-     */
-    public static String extractActivityName(String fullActivityName, String packageName) {
-        if (packageName != null && fullActivityName != null) {
-            if (packageName.length() > 0 && fullActivityName.startsWith(packageName)) {
-                String name = fullActivityName.substring(packageName.length());
-                if (name.length() > 0 && name.charAt(0) == '.') {
-                    return name;
-                }
-            }
-        }
-
-        return fullActivityName;
-    }
 }

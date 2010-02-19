@@ -158,9 +158,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
         try {
             AdtPlugin plugin = AdtPlugin.getDefault();
 
-            // get the lock object for project manipulation during SDK load.
-            Object lock = plugin.getSdkLockObject();
-            synchronized (lock) {
+            synchronized (Sdk.getLock()) {
                 boolean sdkIsLoaded = plugin.getSdkLoadStatus() == LoadStatus.LOADED;
 
                 // check if the project has a valid target.
@@ -499,6 +497,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
      * @param projects the list of projects to check.
      */
     public static void checkProjectsCache(ArrayList<IJavaProject> projects) {
+        Sdk currentSdk = Sdk.getCurrent();
         int i = 0;
         projectLoop: while (i < projects.size()) {
             IJavaProject javaProject = projects.get(i);
@@ -513,8 +512,13 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 continue;
             }
 
+            // project that have been resolved before the sdk was loaded
+            // will have a ProjectState where the IAndroidTarget is null
+            // so we load the target now that the SDK is loaded.
+            currentSdk.loadTarget(Sdk.getProject(iProject));
+
             // get the target from the project and its paths
-            IAndroidTarget target = Sdk.getCurrent().getTarget(javaProject.getProject());
+            IAndroidTarget target = currentSdk.getTarget(javaProject.getProject());
             if (target == null) {
                 // this is really not supposed to happen. This would mean there are cached paths,
                 // but default.properties was deleted. Keep the project in the list to force

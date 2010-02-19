@@ -16,30 +16,45 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager.files;
 
-import com.android.builders.IAbstractFolder;
+import com.android.sdklib.internal.io.IAbstractFile;
+import com.android.sdklib.internal.io.IAbstractFolder;
 
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Path;
 
 /**
- * An implementation of {@link IAbstractFolder} on top of an {@link IFolder} object.
+ * An implementation of {@link IAbstractFolder} on top of either an {@link IFolder} or an
+ * {@link IContainer} object.
  */
 public class IFolderWrapper implements IAbstractFolder {
 
-    private final IFolder mFolder;
+    private final IFolder mFolder; // could be null.
+    private final IContainer mContainer; // never null.
 
     public IFolderWrapper(IFolder folder) {
-        mFolder = folder;
+        mContainer = mFolder = folder;
+    }
+
+    public IFolderWrapper(IContainer container) {
+        mFolder = container instanceof IFolder ? (IFolder)container : null;
+        mContainer = container;
     }
 
     public String getName() {
-        return mFolder.getName();
+        return mContainer.getName();
+    }
+
+    public boolean exists() {
+        return mContainer.exists();
     }
 
     public boolean hasFile(String name) {
         try {
-            IResource[] files = mFolder.members();
+            IResource[] files = mContainer.members();
             for (IResource file : files) {
                 if (name.equals(file.getName())) {
                     return true;
@@ -50,6 +65,16 @@ public class IFolderWrapper implements IAbstractFolder {
         }
 
         return false;
+    }
+
+    public IAbstractFile getFile(String name) {
+        if (mFolder != null) {
+            IFile file = mFolder.getFile(name);
+            return new IFileWrapper(file);
+        }
+
+        IFile file = mContainer.getFile(new Path(name));
+        return new IFileWrapper(file);
     }
 
     /**
@@ -75,6 +100,6 @@ public class IFolderWrapper implements IAbstractFolder {
 
     @Override
     public int hashCode() {
-        return mFolder.hashCode();
+        return mContainer.hashCode();
     }
 }

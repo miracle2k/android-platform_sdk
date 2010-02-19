@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package com.android.builders;
-
+package com.android.sdklib.internal.io;
 
 /**
- *  A folder.
+ * Base representation of a file system resource.<p/>
+ * This somewhat limited interface is designed to let classes use file-system resources, without
+ * having the manually handle either the standard Java file or the Eclipse file API..
  */
-public interface IAbstractFolder extends IAbstractResource {
+public interface IAbstractResource {
 
     /**
-     * Returns true if the receiver contains a file with a given name
-     * @param name the name of the file. This is the name without the path leading to the
-     * parent folder.
+     * Returns the name of the resource.
      */
-    boolean hasFile(String name);
+    String getName();
+
+    /**
+     * Returns whether the resource actually exists.
+     */
+    boolean exists();
 }

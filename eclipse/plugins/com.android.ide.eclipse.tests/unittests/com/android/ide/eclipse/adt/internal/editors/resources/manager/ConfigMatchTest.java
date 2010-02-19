@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.editors.resources.manager;
 
-import com.android.builders.IAbstractFolder;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier.KeyboardState;
@@ -35,6 +34,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapp
 import com.android.ide.eclipse.mock.FileMock;
 import com.android.ide.eclipse.mock.FolderMock;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.internal.io.IAbstractFolder;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
-import com.android.builders.IAbstractFolder;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -27,6 +26,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQua
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapper;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.utils.ResourceValue;
+import com.android.sdklib.internal.io.IAbstractFolder;
 
 import org.eclipse.core.resources.IFolder;
 

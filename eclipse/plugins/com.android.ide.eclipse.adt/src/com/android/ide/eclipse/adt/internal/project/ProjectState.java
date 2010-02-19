@@ -17,10 +17,15 @@
 package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.internal.project.ApkConfigurationHelper;
 import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
 
 import org.eclipse.core.resources.IProject;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Centralized state for Android Eclipse project.
@@ -30,14 +35,61 @@ import org.eclipse.core.resources.IProject;
  */
 public final class ProjectState {
 
+    public final class LibraryState {
+        private final String mRelativePath;
+        private IProject mProject;
+        private String mPath;
+
+        private LibraryState(String relativePath) {
+            mRelativePath = relativePath;
+        }
+
+        private void setProject(IProject project) {
+            mProject = project;
+            mPath = project.getLocation().toOSString();
+
+            updateLibraries();
+        }
+
+        public String getRelativePath() {
+            return mRelativePath;
+        }
+
+        public IProject getProject() {
+            return mProject;
+        }
+
+        public String getProjectLocation() {
+            return mPath;
+        }
+    }
+
     private final IProject mProject;
     private final ProjectProperties mProperties;
+    private final ArrayList<LibraryState> mLibraries = new ArrayList<LibraryState>();
     private IAndroidTarget mTarget;
     private ApkSettings mApkSettings;
+    private IProject[] mLibraryProjects;
 
     public ProjectState(IProject project, ProjectProperties properties) {
         mProject = project;
         mProperties = properties;
+
+        // load the ApkSettings
+        mApkSettings = ApkConfigurationHelper.getSettings(properties);
+
+        // load the libraries
+        int index = 1;
+        while (true) {
+            String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index++);
+            String rootPath = mProperties.getProperty(propName);
+
+            if (rootPath == null) {
+                break;
+            }
+
+            mLibraries.add(new LibraryState(convertPath(rootPath)));
+        }
     }
 
     public IProject getProject() {
@@ -82,5 +134,79 @@ public final class ProjectState {
 
     public ApkSettings getApkSettings() {
         return mApkSettings;
+    }
+
+    public IProject[] getLibraryProjects() {
+        return mLibraryProjects;
+    }
+
+    /**
+     * Returns whether this is a library project.
+     */
+    public boolean isLibrary() {
+        String value = mProperties.getProperty(ProjectProperties.PROPERTY_LIBRARY);
+        return value != null && Boolean.valueOf(value);
+    }
+
+    /**
+     * Returns whether the project is missing some required libraries.
+     */
+    public boolean isMissingLibraries() {
+        for (LibraryState state : mLibraries) {
+            if (state.getProject() == null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns whether a given library project is needed by the receiver.
+     * @param libraryProject the library project to check.
+     * @return a non null object if the project is a library dependency.
+     */
+    public LibraryState needs(IProject libraryProject) {
+        // compute current location
+        File projectFile = new File(mProject.getLocation().toOSString());
+
+        // get the location of the library.
+        File libraryFile = new File(libraryProject.getLocation().toOSString());
+
+        // loop on all libraries and check if the path match
+        for (LibraryState state : mLibraries) {
+            if (state.getProject() == null) {
+                File library = new File(projectFile, state.getRelativePath());
+                try {
+                    File absPath = library.getCanonicalFile();
+                    if (absPath.equals(libraryFile)) {
+                        state.setProject(libraryProject);
+                        return state;
+                    }
+                } catch (IOException e) {
+                    // ignore this library
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private void updateLibraries() {
+        ArrayList<IProject> list = new ArrayList<IProject>();
+        for (LibraryState state : mLibraries) {
+            if (state.getProject() != null) {
+                list.add(state.getProject());
+            }
+        }
+
+        mLibraryProjects = list.toArray(new IProject[list.size()]);
+    }
+
+    /**
+     * Converts a path containing only / by the proper platform separator.
+     */
+    private String convertPath(String path) {
+        return path.replaceAll("/", File.separator); //$NON-NLS-1$
     }
 }

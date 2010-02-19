@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.builders;
+package com.android.sdklib.internal.io;
+
+import java.io.InputStream;
 
 /**
- * Base representation of a file system resource.<p/>
- * This somewhat limited interface is designed to let classes use file-system resources, without
- * having the manually handle either the standard Java file or the Eclipse file API..
+ * A file.
  */
-public interface IAbstractResource {
+public interface IAbstractFile extends IAbstractResource {
 
     /**
-     * Returns the name of the resource.
+     * Returns an {@link InputStream} object on the file content.
+     * @throws CoreException
      */
-    String getName();
+    InputStream getContents() throws StreamException;
+
+    /**
+     * Returns the OS path of the file location.
+     */
+    String getOsLocation();
 }

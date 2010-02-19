@@ -34,11 +34,11 @@ import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ExportHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ExportHelper.IExportCallback;
+import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
-import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
@@ -817,17 +817,9 @@ public class AdtPlugin extends AbstractUIPlugin {
      * Returns whether the {@link IAndroidTarget}s have been loaded from the SDK.
      */
     public final LoadStatus getSdkLoadStatus() {
-        synchronized (getSdkLockObject()) {
+        synchronized (Sdk.getLock()) {
             return mSdkIsLoaded;
         }
-    }
-
-    /**
-     * Returns the lock object for SDK loading. If you wish to do things while the SDK is loading,
-     * you must synchronize on this object.
-     */
-    public final Object getSdkLockObject() {
-        return mPostLoadProjectsToResolve;
     }
 
     /**
@@ -835,7 +827,7 @@ public class AdtPlugin extends AbstractUIPlugin {
      * to load.
      */
     public final void setProjectToResolve(IJavaProject javaProject) {
-        synchronized (getSdkLockObject()) {
+        synchronized (Sdk.getLock()) {
             mPostLoadProjectsToResolve.add(javaProject);
         }
     }
@@ -847,7 +839,7 @@ public class AdtPlugin extends AbstractUIPlugin {
      */
     public final void setProjectToCheck(IJavaProject javaProject) {
         // only lock on
-        synchronized (getSdkLockObject()) {
+        synchronized (Sdk.getLock()) {
             mPostLoadProjectsToCheck.add(javaProject);
         }
     }
@@ -984,13 +976,18 @@ public class AdtPlugin extends AbstractUIPlugin {
                     if (sdk != null) {
 
                         ArrayList<IJavaProject> list = new ArrayList<IJavaProject>();
-                        synchronized (getSdkLockObject()) {
+                        synchronized (Sdk.getLock()) {
                             mSdkIsLoaded = LoadStatus.LOADED;
 
                             progress.setTaskName("Check Projects");
 
                             for (IJavaProject javaProject : mPostLoadProjectsToResolve) {
-                                if (javaProject.getProject().isOpen()) {
+                                IProject iProject = javaProject.getProject();
+                                if (iProject.isOpen()) {
+                                    // project that have been resolved before the sdk was loaded
+                                    // will have a ProjectState where the IAndroidTarget is null
+                                    // so we load the target now that the SDK is loaded.
+                                    sdk.loadTarget(Sdk.getProject(iProject));
                                     list.add(javaProject);
                                 }
                             }
@@ -1018,7 +1015,7 @@ public class AdtPlugin extends AbstractUIPlugin {
                     } else {
                         // SDK failed to Load!
                         // Sdk#loadSdk() has already displayed an error.
-                        synchronized (getSdkLockObject()) {
+                        synchronized (Sdk.getLock()) {
                             mSdkIsLoaded = LoadStatus.FAILED;
                         }
                     }
@@ -1372,7 +1369,7 @@ public class AdtPlugin extends AbstractUIPlugin {
     public void reparseSdk() {
         // add all the opened Android projects to the list of projects to be updated
         // after the SDK is reloaded
-        synchronized (getSdkLockObject()) {
+        synchronized (Sdk.getLock()) {
             // get the project to refresh.
             IJavaProject[] androidProjects = BaseProjectHelper.getAndroidProjects();
             mPostLoadProjectsToResolve.addAll(Arrays.asList(androidProjects));

@@ -22,6 +22,7 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
+import com.android.sdklib.internal.io.FileWrapper;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.xml.AndroidManifest;
@@ -419,24 +420,15 @@ public final class SetupTask extends ImportTask {
 
             // get the package from the manifest.
             File manifest = new File(rootPath, SdkConstants.FN_ANDROID_MANIFEST_XML);
-            XPath xPath = AndroidXPathFactory.newXPath();
-
-            // check the package name.
             try {
-                String value = xPath.evaluate(
-                        "/"  + AndroidManifest.NODE_MANIFEST +
-                        "/@" + AndroidManifest.ATTRIBUTE_PACKAGE,
-                        new InputSource(new FileInputStream(manifest)));
+                String value = AndroidManifest.getPackage(new FileWrapper(manifest));
                 if (value != null) { // aapt will complain if it's missing.
                     sb.append(';');
                     sb.append(value);
                 }
-            } catch (XPathExpressionException e) {
-                throw new BuildException(e);
-            } catch (FileNotFoundException e) {
+            } catch (Exception e) {
                 throw new BuildException(e);
             }
-
         }
 
         // even with no libraries, always setup these so that various tasks in Ant don't complain
