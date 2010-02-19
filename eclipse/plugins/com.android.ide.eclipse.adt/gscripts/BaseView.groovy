@@ -38,8 +38,7 @@ public class BaseView implements IViewRule {
     }
 
 
-    // ---- selection ----
-
+    // ==== Selection ====
 
     void onSelected(IGraphics gc, INode selectedNode,
                 String displayName, boolean isMultipleSelection) {
@@ -95,7 +94,6 @@ public class BaseView implements IViewRule {
     }
 
     DropFeedback onDropMove(INode targetNode, DropFeedback feedback, Point p) {
-        // ignore
         return null;
     }
 

@@ -68,6 +68,8 @@ public interface IViewRule {
     String getDisplayName();
 
 
+    // ==== Selection ====
+
     /**
      * Called by the canvas when a view is being selected.
      * <p/>
@@ -96,6 +98,7 @@ public interface IViewRule {
      * @param childNode The child node that was selected. Never null.
      */
     void onChildSelected(IGraphics gc, INode parentNode, INode childNode);
+
 
     // ==== XML Creation ====
 

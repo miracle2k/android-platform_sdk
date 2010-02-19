@@ -220,4 +220,8 @@ public class GCWrapper implements IGraphics {
         checkGC();
         getGc().drawString(string, x + mX, y + mY, true /*isTransparent*/);
     }
+
+    public void drawString(String string, Point topLeft) {
+        drawString(string, topLeft.x, topLeft.y);
+    }
 }
