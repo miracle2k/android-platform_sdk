@@ -398,7 +398,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         updateButtonsState();
     }
 
-    public void onSdkChange() {
+    public void onSdkChange(boolean init) {
         RepoSourcesAdapter sources = mUpdaterData.getSourcesAdapter();
         mTreeViewerSources.setContentProvider(sources.getContentProvider());
         mTreeViewerSources.setLabelProvider(  sources.getLabelProvider());

@@ -37,9 +37,10 @@ public class UpdaterWindow {
      */
     public interface ISdkListener {
         /**
-         * Sent when the content of the SDK changed
+         * Sent when the content of the SDK changed.
+         * @param init whether this is called on the initial load of the SDK.
          */
-        void onSdkChange();
+        void onSdkChange(boolean init);
     }
 
     /**

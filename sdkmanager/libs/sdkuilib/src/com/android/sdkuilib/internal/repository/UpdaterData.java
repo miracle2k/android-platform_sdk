@@ -81,13 +81,6 @@ class UpdaterData {
 
     // ----- getters, setters ----
 
-    public void setOsSdkRoot(String osSdkRoot) {
-        if (mOsSdkRoot == null || mOsSdkRoot.equals(osSdkRoot) == false) {
-            mOsSdkRoot = osSdkRoot;
-            initSdk();
-        }
-    }
-
     public String getOsSdkRoot() {
         return mOsSdkRoot;
     }
@@ -186,7 +179,7 @@ class UpdaterData {
         // TODO
 
         // notify listeners.
-        notifyListeners();
+        notifyListeners(false /*init*/);
     }
 
     /**
@@ -212,7 +205,7 @@ class UpdaterData {
         // TODO
 
         // notify listeners
-        notifyListeners();
+        notifyListeners(false /*init*/);
     }
 
     /**
@@ -249,14 +242,15 @@ class UpdaterData {
     /**
      * Notify the listeners ({@link ISdkListener}) that the SDK was reloaded.
      * <p/>This can be called from any thread.
+     * @param init whether the SDK loaded for the first time.
      */
-    public void notifyListeners() {
+    public void notifyListeners(final boolean init) {
         if (mWindowShell != null && mListeners.size() > 0) {
             mWindowShell.getDisplay().syncExec(new Runnable() {
                 public void run() {
                     for (ISdkListener listener : mListeners) {
                         try {
-                            listener.onSdkChange();
+                            listener.onSdkChange(init);
                         } catch (Throwable t) {
                             mSdkLog.error(t, null);
                         }
