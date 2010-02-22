@@ -25,29 +25,31 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
     // The AbsoluteLayout accepts any drag'n'drop anywhere on its surface.
 
     DropFeedback onDropEnter(INode targetNode) {
-        return new DropFeedback( [ "p": null ], {
-            gc, node, feedback ->
-            // Paint closure for the AbsoluteLayout.
+        return new DropFeedback(
+            [ "p": null ],      // Point: last cursor position
+            {
+                gc, node, feedback ->
+                // Paint closure for the AbsoluteLayout.
 
-            Rect b = node.getBounds();
-            if (!b.isValid()) {
-                return;
-            }
+                Rect b = node.getBounds();
+                if (!b.isValid()) {
+                    return;
+                }
 
-            gc.setForeground(gc.registerColor(0x00FFFF00));
-            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-            gc.setLineWidth(2);
-            gc.drawRect(b);
+                gc.setForeground(gc.registerColor(0x00FFFF00));
+                gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+                gc.setLineWidth(2);
+                gc.drawRect(b);
 
-            Point p = feedback.userData.p;
-            if (p != null) {
-                int x = p.x;
-                int y = p.y;
-                gc.drawLine(x - 10, y - 10, x + 10, y + 10);
-                gc.drawLine(x + 10, y - 10, x - 10, y + 10);
-                gc.drawRect(x - 10, y - 10, x + 10, y + 10);
-            }
-        })
+                Point p = feedback.userData.p;
+                if (p != null) {
+                    int x = p.x;
+                    int y = p.y;
+                    gc.drawLine(x - 10, y - 10, x + 10, y + 10);
+                    gc.drawLine(x + 10, y - 10, x - 10, y + 10);
+                    gc.drawRect(x - 10, y - 10, x + 10, y + 10);
+                }
+            });
     }
 
     DropFeedback onDropMove(INode targetNode, DropFeedback feedback, Point p) {

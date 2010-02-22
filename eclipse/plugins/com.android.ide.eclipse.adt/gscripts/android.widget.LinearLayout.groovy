@@ -54,12 +54,11 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         indexes.add( [v, -1] );
 
         return new DropFeedback(
-          [ "p": null,
-            "isVertical": isVertical,
-            "indexes": indexes,
-            "curr_x": null,
-            "curr_y": null,
-            "insert_pos": -1
+          [ "isVertical": isVertical,   // boolean: True if vertical linear layout
+            "indexes": indexes,         // list(tuple(0:int, 1:int)): Split points (pixels + index)
+            "curr_x": null,             // int: Current marker X position
+            "curr_y": null,             // int: Current marker Y position
+            "insert_pos": -1            // int: Current drop insert index (-1 for "at the end")
           ],
           {
             gc, node, feedback ->
@@ -108,7 +107,6 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
     DropFeedback onDropMove(INode targetNode, DropFeedback feedback, Point p) {
         def data = feedback.userData;
-        data.p = p;
 
         Rect b = targetNode.getBounds();
         if (!b.isValid()) {

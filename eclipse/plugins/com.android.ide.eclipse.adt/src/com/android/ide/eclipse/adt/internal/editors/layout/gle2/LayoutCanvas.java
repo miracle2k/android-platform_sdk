@@ -73,7 +73,7 @@ import java.util.ListIterator;
      * Margin around the rendered image. Should be enough space to display the layout
      * width and height pseudo widgets.
      */
-    static final int IMAGE_MARGIN = 5;
+    static final int IMAGE_MARGIN = 25;
 
 
     /** The Groovy Rules Engine, associated with the current project. */
