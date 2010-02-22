@@ -276,7 +276,7 @@ public class UpdaterWindowImpl {
 
         setupSources();
         initializeSettings();
-        mUpdaterData.notifyListeners();
+        mUpdaterData.notifyListeners(true /*init*/);
 
         if (mRequestAutoUpdate) {
             mUpdaterData.updateOrInstallAll(null /*selectedArchives*/);
@@ -414,7 +414,7 @@ public class UpdaterWindowImpl {
             }
         }
 
-        mRemotePackagesPage.onSdkChange();
+        mRemotePackagesPage.onSdkChange(false /*init*/);
     }
 
     /**

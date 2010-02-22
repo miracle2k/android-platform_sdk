@@ -306,7 +306,7 @@ public class LocalPackagesPage extends Composite implements ISdkListener {
         updateButtonsState();
     }
 
-    public void onSdkChange() {
+    public void onSdkChange(boolean init) {
         LocalSdkAdapter localSdkAdapter = mUpdaterData.getLocalSdkAdapter();
         mTableViewerPackages.setLabelProvider(  localSdkAdapter.getLabelProvider());
         mTableViewerPackages.setContentProvider(localSdkAdapter.getContentProvider());
