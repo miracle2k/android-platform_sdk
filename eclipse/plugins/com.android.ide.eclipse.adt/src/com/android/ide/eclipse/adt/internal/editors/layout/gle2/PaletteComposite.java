@@ -26,6 +26,8 @@ import org.eclipse.swt.dnd.DragSource;
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseTrackListener;
@@ -68,6 +70,9 @@ public class PaletteComposite extends Composite {
 
     /** The parent grid layout that contains all the {@link Toggle} and {@link Item} widgets. */
     private Composite mRoot;
+    private ScrollBar mVBar;
+    private ControlListener mControlListener;
+    private Listener mScrollbarListener;
 
     /**
      * Create the composite.
@@ -75,11 +80,52 @@ public class PaletteComposite extends Composite {
      */
     public PaletteComposite(Composite parent) {
         super(parent, SWT.BORDER | SWT.V_SCROLL);
+
+        mVBar = getVerticalBar();
+
+        mScrollbarListener = new Listener() {
+            public void handleEvent(Event event) {
+                scrollScrollbar();
+            }
+        };
+
+        mVBar.addListener(SWT.Selection, mScrollbarListener);
+
+
+        mControlListener = new ControlListener() {
+            public void controlMoved(ControlEvent e) {
+                // Ignore
+            }
+            public void controlResized(ControlEvent e) {
+                if (recomputeScrollbar()) {
+                    redraw();
+                }
+            }
+        };
+
+        addControlListener(mControlListener);
     }
 
     @Override
     protected void checkSubclass() {
         // Disable the check that prevents subclassing of SWT components
+    }
+
+    @Override
+    public void dispose() {
+        if (mControlListener != null) {
+            removeControlListener(mControlListener);
+            mControlListener = null;
+        }
+
+        if (mVBar != null && !mVBar.isDisposed()) {
+            if (mScrollbarListener != null) {
+                mVBar.removeListener(SWT.Selection, mScrollbarListener);
+            }
+            mVBar = null;
+        }
+
+        super.dispose();
     }
 
     /**
@@ -107,21 +153,69 @@ public class PaletteComposite extends Composite {
 
         layout(true);
 
-        final ScrollBar vbar = getVerticalBar();
+        recomputeScrollbar();
+    }
 
-        vbar.setMaximum(getSize().y);
+    // ----- private methods ----
 
-        for (Listener listener : vbar.getListeners(SWT.Selection)) {
-            vbar.removeListener(SWT.Selection, listener);
+    /** Returns true if scroolbar changed. */
+    private  boolean recomputeScrollbar() {
+        if (mVBar != null && mRoot != null) {
+
+            int sel = mVBar.getSelection();
+            int max = mVBar.getMaximum();
+            float current = max > 0 ? (float)sel / max : 0;
+
+            int ry = mRoot.getSize().y;
+
+            // The root contains composite groups
+            // which in turn contain Toggle/Item CLabel instances
+            Control[] children = mRoot.getChildren();
+            findVisibleItem: for (int i = children.length - 1; i >= 0; i--) {
+                Control ci = children[i];
+                if (ci.isVisible() && ci instanceof Composite) {
+                    Control[] children2 = ((Composite) ci).getChildren();
+                    for (int j = children2.length - 1; j >= 0; j--) {
+                        Control cj = children2[j];
+                        if (cj.isVisible()) {
+                            // This is the bottom-most visible item
+                            ry = ci.getLocation().y + cj.getLocation().y + cj.getSize().y;
+                            break findVisibleItem;
+                        }
+                    }
+                }
+            }
+
+
+            int vy = getSize().y;
+            // Scrollable size is the height of the root view
+            // less the current view visible height.
+            int y = ry > vy ? ry - vy + 2 : 0;
+            // Thumb size is the ratio between root view and visible height.
+            float ft = ry > 0 ? (float)vy / ry : 1;
+            int thumb = (int) Math.ceil(y * ft);
+            y += thumb;
+
+
+            if (y != max) {
+                mVBar.setEnabled(y > 0);
+                mVBar.setMaximum(y < 0 ? 1 : y);
+                mVBar.setSelection((int) (y * current));
+                mVBar.setThumb(thumb);
+                scrollScrollbar();
+                return true;
+            }
         }
 
-        vbar.addListener(SWT.Selection, new Listener() {
-            public void handleEvent(Event event) {
-                Point p = mRoot.getLocation();
-                p.y = - vbar.getSelection();
-                mRoot.setLocation(p);
-            }
-        });
+        return false;
+    }
+
+    private void scrollScrollbar() {
+        if (mVBar != null && mRoot != null) {
+            Point p = mRoot.getLocation();
+            p.y = - mVBar.getSelection();
+            mRoot.setLocation(p);
+        }
     }
 
     private void setGridLayout(Composite parent, int spacing) {
@@ -160,7 +254,7 @@ public class PaletteComposite extends Composite {
      * When clicked, the toggle will show/hide all the {@link Item} widgets that have been
      * added to it using {@link #addItem(Item)}.
      */
-    private static class Toggle extends CLabel implements MouseTrackListener, MouseListener {
+    private class Toggle extends CLabel implements MouseTrackListener, MouseListener {
         private boolean mMouseIn;
         private DragSource mSource;
         private ArrayList<Item> mItems = new ArrayList<Item>();
@@ -259,7 +353,10 @@ public class PaletteComposite extends Composite {
                 i.setVisible(!i.isVisible());
             }
 
-            getParent().getParent().layout(true /*changed*/);
+            // Tell the root composite that its content changed.
+            mRoot.layout(true /*changed*/);
+            // Force the top composite to recompute the scrollbar and refrehs it.
+            mControlListener.controlResized(null /*event*/);
         }
     }
 
@@ -354,5 +451,4 @@ public class PaletteComposite extends Composite {
             // Nothing to do here.
         }
     }
-
 }

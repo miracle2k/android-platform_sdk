@@ -152,7 +152,7 @@ import java.util.ListIterator;
 
 
     public LayoutCanvas(RulesEngine rulesEngine, Composite parent, int style) {
-        super(parent, style | SWT.DOUBLE_BUFFERED);
+        super(parent, style | SWT.DOUBLE_BUFFERED | SWT.V_SCROLL | SWT.H_SCROLL);
         mRulesEngine = rulesEngine;
 
         mGCWrapper = new GCWrapper(IMAGE_MARGIN, IMAGE_MARGIN);
