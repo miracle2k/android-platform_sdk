@@ -419,9 +419,9 @@ public final class SetupTask extends ImportTask {
             }
 
             // get the package from the manifest.
-            File manifest = new File(rootPath, SdkConstants.FN_ANDROID_MANIFEST_XML);
+            FileWrapper manifest = new FileWrapper(rootPath, SdkConstants.FN_ANDROID_MANIFEST_XML);
             try {
-                String value = AndroidManifest.getPackage(new FileWrapper(manifest));
+                String value = AndroidManifest.getPackage(manifest);
                 if (value != null) { // aapt will complain if it's missing.
                     sb.append(';');
                     sb.append(value);

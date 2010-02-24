@@ -20,6 +20,7 @@ import com.android.sdklib.internal.io.IAbstractFile;
 import com.android.sdklib.internal.io.StreamException;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 
 import java.io.InputStream;
@@ -38,6 +39,14 @@ public class IFileWrapper implements IAbstractFile {
     public InputStream getContents() throws StreamException {
         try {
             return mFile.getContents();
+        } catch (CoreException e) {
+            throw new StreamException(e);
+        }
+    }
+
+    public void setContents(InputStream source) throws StreamException {
+        try {
+            mFile.setContents(source, IResource.FORCE, null);
         } catch (CoreException e) {
             throw new StreamException(e);
         }

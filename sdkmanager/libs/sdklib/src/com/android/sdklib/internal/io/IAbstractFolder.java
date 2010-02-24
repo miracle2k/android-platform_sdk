@@ -35,4 +35,9 @@ public interface IAbstractFolder extends IAbstractResource {
      * @param name the name of the file.
      */
     IAbstractFile getFile(String name);
+
+    /**
+     * returns a list of existing members in this folder.
+     */
+    IAbstractResource[] listMembers();
 }

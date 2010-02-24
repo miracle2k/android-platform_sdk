@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.resources.manager.files;
 
 import com.android.sdklib.internal.io.IAbstractFile;
 import com.android.sdklib.internal.io.IAbstractFolder;
+import com.android.sdklib.internal.io.IAbstractResource;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -50,6 +51,29 @@ public class IFolderWrapper implements IAbstractFolder {
 
     public boolean exists() {
         return mContainer.exists();
+    }
+
+    public IAbstractResource[] listMembers() {
+        try {
+            IResource[] members = mContainer.members();
+            final int count = members.length;
+            IAbstractResource[] afiles = new IAbstractResource[count];
+
+            for (int i = 0 ; i < count ; i++) {
+                IResource f = members[i];
+                if (f instanceof IFile) {
+                    afiles[i] = new IFileWrapper((IFile) f);
+                } else {
+                    afiles[i] = new IFolderWrapper((IContainer) f);
+                }
+            }
+
+            return afiles;
+        } catch (CoreException e) {
+            // return empty array below
+        }
+
+        return new IAbstractResource[0];
     }
 
     public boolean hasFile(String name) {

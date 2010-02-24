@@ -30,6 +30,13 @@ public interface IAbstractFile extends IAbstractResource {
     InputStream getContents() throws StreamException;
 
     /**
+     * Sets the content of the file.
+     * @param source the content
+     * @throws StreamException
+     */
+    void setContents(InputStream source) throws StreamException;
+
+    /**
      * Returns the OS path of the file location.
      */
     String getOsLocation();

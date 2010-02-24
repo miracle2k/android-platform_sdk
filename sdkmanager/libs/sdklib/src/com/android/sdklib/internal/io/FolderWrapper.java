@@ -18,53 +18,102 @@ package com.android.sdklib.internal.io;
 
 
 import java.io.File;
+import java.io.FilenameFilter;
+import java.net.URI;
 
 /**
- * An implementation of {@link IAbstractFolder} on top of a {@link File} object.
+ * An implementation of {@link IAbstractFolder} extending {@link File}.
  */
-public class FolderWrapper implements IAbstractFolder {
+public class FolderWrapper extends File implements IAbstractFolder {
 
-    private final File mFolder;
+    private static final long serialVersionUID = 1L;
 
     /**
-     * Constructs a {@link FileWrapper} object. The underlying {@link File} object needs not exists
-     * or be a valid directory.
+     * Creates a new File instance from a parent abstract pathname and a child pathname string.
+     * @param parent the parent pathname
+     * @param child the child name
+     *
+     * @see File#File(File, String)
      */
-    public FolderWrapper(File folder) {
-        mFolder = folder;
+    public FolderWrapper(File parent, String child) {
+        super(parent, child);
     }
 
-    public boolean hasFile(String name) {
-        return false;
+    /**
+     * Creates a new File instance by converting the given pathname string into an abstract
+     * pathname.
+     * @param pathname the pathname
+     *
+     * @see File#File(String)
+     */
+    public FolderWrapper(String pathname) {
+        super(pathname);
+    }
+
+    /**
+     * Creates a new File instance from a parent abstract pathname and a child pathname string.
+     * @param parent the parent pathname
+     * @param child the child name
+     *
+     * @see File#File(String, String)
+     */
+    public FolderWrapper(String parent, String child) {
+        super(parent, child);
+    }
+
+    /**
+     * Creates a new File instance by converting the given <code>file:</code> URI into an
+     * abstract pathname.
+     * @param uri An absolute, hierarchical URI with a scheme equal to "file", a non-empty path
+     * component, and undefined authority, query, and fragment components
+     *
+     * @see File#File(URI)
+     */
+    public FolderWrapper(URI uri) {
+        super(uri);
+    }
+
+    /**
+     * Creates a new File instance matching a give {@link File} object.
+     * @param file the file to match
+     */
+    public FolderWrapper(File file) {
+        super(file.getAbsolutePath());
+    }
+
+    public IAbstractResource[] listMembers() {
+        File[] files = listFiles();
+        final int count = files.length;
+        IAbstractResource[] afiles = new IAbstractResource[count];
+
+        for (int i = 0 ; i < count ; i++) {
+            File f = files[i];
+            if (f.isFile()) {
+                afiles[i] = new FileWrapper(f);
+            } else {
+                afiles[i] = new FolderWrapper(f);
+            }
+        }
+
+        return afiles;
+    }
+
+    public boolean hasFile(final String name) {
+        String[] match = list(new FilenameFilter() {
+            public boolean accept(File dir, String filename) {
+                return name.equals(filename);
+            }
+        });
+
+        return match.length > 0;
     }
 
     public IAbstractFile getFile(String name) {
-        return new FileWrapper(new File(mFolder, name));
+        return new FileWrapper(this, name);
     }
 
-    public String getName() {
-        return mFolder.getName();
-    }
-
+    @Override
     public boolean exists() {
-        return mFolder.isDirectory();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof FolderWrapper) {
-            return mFolder.equals(((FolderWrapper)obj).mFolder);
-        }
-
-        if (obj instanceof File) {
-            return mFolder.equals(obj);
-        }
-
-        return super.equals(obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return mFolder.hashCode();
+        return isDirectory();
     }
 }
