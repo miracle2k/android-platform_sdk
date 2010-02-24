@@ -48,6 +48,7 @@ class SdkCommandLine extends CommandLineProcessor {
     public static final String OBJECT_TARGETS      = "targets";
     public static final String OBJECT_PROJECT      = "project";
     public static final String OBJECT_TEST_PROJECT = "test-project";
+    public static final String OBJECT_LIB_PROJECT  = "lib-project";
     public static final String OBJECT_ADB          = "adb";
 
     public static final String ARG_ALIAS        = "alias";
@@ -58,6 +59,7 @@ class SdkCommandLine extends CommandLineProcessor {
     public static final String KEY_MODE         = "mode";
     public static final String KEY_TARGET_ID    = OBJECT_TARGET;
     public static final String KEY_NAME         = "name";
+    public static final String KEY_LIBRARY      = "library";
     public static final String KEY_PATH         = "path";
     public static final String KEY_FILTER       = "filter";
     public static final String KEY_SKIN         = "skin";
@@ -110,6 +112,11 @@ class SdkCommandLine extends CommandLineProcessor {
                 "Creates a new Android Test Project." },
             { VERB_UPDATE, OBJECT_TEST_PROJECT,
                 "Updates an Android Test Project (must have an AndroidManifest.xml)." },
+
+            { VERB_CREATE, OBJECT_LIB_PROJECT,
+                "Creates a new Android Library Project." },
+            { VERB_UPDATE, OBJECT_LIB_PROJECT,
+                "Updates an Android Library Project (must have an AndroidManifest.xml)." },
 
             { VERB_UPDATE, OBJECT_ADB,
                 "Updates adb to support the USB devices declared in the SDK add-ons." },
@@ -207,6 +214,22 @@ class SdkCommandLine extends CommandLineProcessor {
                 VERB_CREATE, OBJECT_TEST_PROJECT, "m", KEY_MAIN_PROJECT,
                 "Location path of the project to test, relative to the new project", null);
 
+        // --- create lib-project ---
+
+        define(Mode.STRING, true,
+                VERB_CREATE, OBJECT_LIB_PROJECT,
+                "p", KEY_PATH,
+                "Location path of new project", null);
+        define(Mode.STRING, true,
+                VERB_CREATE, OBJECT_LIB_PROJECT, "t", KEY_TARGET_ID,
+                "Target id of the new project", null);
+        define(Mode.STRING, false,
+                VERB_CREATE, OBJECT_LIB_PROJECT, "n", KEY_NAME,
+                "Project name", null);
+        define(Mode.STRING, true,
+                VERB_CREATE, OBJECT_LIB_PROJECT, "k", KEY_PACKAGE,
+                "Package name", null);
+
         // --- update project ---
 
         define(Mode.STRING, true,
@@ -225,6 +248,10 @@ class SdkCommandLine extends CommandLineProcessor {
                 VERB_UPDATE, OBJECT_PROJECT,
                 "s", KEY_SUBPROJECTS,
                 "Also update any projects in sub-folders, such as test projects.", false);
+        define(Mode.STRING, false,
+                VERB_UPDATE, OBJECT_PROJECT,
+                "l", KEY_LIBRARY,
+                "Location path of an Android Library to add, relative to the main project", null);
 
         // --- update test project ---
 
@@ -236,6 +263,21 @@ class SdkCommandLine extends CommandLineProcessor {
                 VERB_UPDATE, OBJECT_TEST_PROJECT,
                 "m", KEY_MAIN_PROJECT,
                 "Location path of the project to test, relative to the new project", null);
+
+        // --- update lib project ---
+
+        define(Mode.STRING, true,
+                VERB_UPDATE, OBJECT_LIB_PROJECT,
+                "p", KEY_PATH,
+                "Location path of the project", null);
+        define(Mode.STRING, false,
+                VERB_UPDATE, OBJECT_LIB_PROJECT,
+                "t", KEY_TARGET_ID,
+                "Target id to set for the project", null);
+        define(Mode.STRING, false,
+                VERB_UPDATE, OBJECT_LIB_PROJECT,
+                "l", KEY_LIBRARY,
+                "Location path of an Android Library to add, relative to the main project", null);
     }
 
     @Override
@@ -292,15 +334,27 @@ class SdkCommandLine extends CommandLineProcessor {
 
     // -- some helpers for project action flags
 
-    /** Helper to retrieve the --package value. */
-    public String getParamProjectPackage() {
-        return ((String) getValue(null, OBJECT_PROJECT, KEY_PACKAGE));
+    /** Helper to retrieve the --package value.
+     * @param directObject the directObject of the action, either {@link #OBJECT_PROJECT}
+     * or {@link #OBJECT_LIB_PROJECT}.
+     */
+    public String getParamProjectPackage(String directObject) {
+        return ((String) getValue(null, directObject, KEY_PACKAGE));
     }
 
     /** Helper to retrieve the --activity for any project action. */
     public String getParamProjectActivity() {
         return ((String) getValue(null, OBJECT_PROJECT, KEY_ACTIVITY));
     }
+
+    /** Helper to retrieve the --library value.
+     * @param directObject the directObject of the action, either {@link #OBJECT_PROJECT}
+     * or {@link #OBJECT_LIB_PROJECT}.
+     */
+    public String getParamProjectLibrary(String directObject) {
+        return ((String) getValue(null, directObject, KEY_LIBRARY));
+    }
+
 
     /** Helper to retrieve the --subprojects for any project action. */
     public boolean getParamSubProject() {

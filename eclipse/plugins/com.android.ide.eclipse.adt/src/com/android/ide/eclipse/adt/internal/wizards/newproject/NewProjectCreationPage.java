@@ -33,6 +33,7 @@ import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
+import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdkuilib.internal.widgets.SdkTargetSelector;
 
 import org.eclipse.core.filesystem.URIUtil;
@@ -1052,7 +1053,7 @@ public class NewProjectCreationPage extends WizardPage {
         }
 
         if (activity != null) {
-            activityName = AndroidManifestParser.extractActivityName(activity.getName(),
+            activityName = AndroidManifest.extractActivityName(activity.getName(),
                     packageName);
         }
 

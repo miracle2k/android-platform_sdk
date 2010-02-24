@@ -14,18 +14,30 @@
  * limitations under the License.
  */
 
-package com.android.builders;
+package com.android.sdklib.internal.io;
 
+import java.io.InputStream;
 
 /**
- *  A folder.
+ * A file.
  */
-public interface IAbstractFolder extends IAbstractResource {
+public interface IAbstractFile extends IAbstractResource {
 
     /**
-     * Returns true if the receiver contains a file with a given name
-     * @param name the name of the file. This is the name without the path leading to the
-     * parent folder.
+     * Returns an {@link InputStream} object on the file content.
+     * @throws CoreException
      */
-    boolean hasFile(String name);
+    InputStream getContents() throws StreamException;
+
+    /**
+     * Sets the content of the file.
+     * @param source the content
+     * @throws StreamException
+     */
+    void setContents(InputStream source) throws StreamException;
+
+    /**
+     * Returns the OS path of the file location.
+     */
+    String getOsLocation();
 }

@@ -55,4 +55,18 @@ public class ApkSettings {
     public void setSplitByDensity(boolean split) {
         mSplitByDpi = split;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof ApkSettings) {
+            return mSplitByDpi == ((ApkSettings) obj).mSplitByDpi;
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Boolean.valueOf(mSplitByDpi).hashCode();
+    }
 }

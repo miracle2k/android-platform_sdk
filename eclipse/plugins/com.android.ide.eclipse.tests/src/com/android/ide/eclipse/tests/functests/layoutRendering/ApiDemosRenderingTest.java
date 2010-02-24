@@ -46,6 +46,7 @@ import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IXmlPullParser;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.internal.io.FolderWrapper;
 
 import org.kxml2.io.KXmlParser;
 import org.xmlpull.v1.XmlPullParser;
@@ -151,8 +152,8 @@ public class ApiDemosRenderingTest extends SdkTestCase {
             fail("Fail to load the bridge");
         }
 
-        File resFolder = new File(sampleProject, SdkConstants.FD_RES);
-        if (resFolder.isDirectory() == false) {
+        FolderWrapper resFolder = new FolderWrapper(sampleProject, SdkConstants.FD_RES);
+        if (resFolder.exists() == false) {
             fail("Sample project has no res folder!");
         }
 

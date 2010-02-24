@@ -3,7 +3,7 @@
 
     <!--
         This rules file is meant to be imported by the custom Ant task:
-            com.android.ant.AndroidInitTask
+            com.android.ant.SetupTask
 
         The following properties are put in place by the importing task:
             android.jar, android.aidl, aapt, aidl, and dx
@@ -89,7 +89,7 @@
     <condition property="verbosity" value="verbose" else="quiet">
         <istrue value="${verbose}" />
     </condition>
-    <!-- This is needed to switch verbosity of zipalign and aapt. Depends exclusively on 'verbose'
+    <!-- This is needed to switch verbosity of zipalign. Depends exclusively on 'verbose'
          -->
     <condition property="v.option" value="-v" else="">
         <istrue value="${verbose}" />
@@ -121,8 +121,7 @@
        <element name="external-libs" optional="yes" />
        <element name="extra-parameters" optional="yes" />
        <sequential>
-         <echo>Converting compiled files and external libraries into ${intermediate.dex.file}...
-         </echo>
+         <echo>Converting compiled files and external libraries into ${intermediate.dex.file}...</echo>
          <apply executable="${dx}" failonerror="true" parallel="true">
              <arg value="--dex" />
              <arg value="--output=${intermediate.dex.file}" />
@@ -130,6 +129,7 @@
              <arg line="${verbose.option}" />
              <arg path="${out.classes.absolute.dir}" />
              <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
+             <path refid="android.libraries.jars" />
              <external-libs />
          </apply>
        </sequential>
@@ -156,8 +156,11 @@
                     verbose="${verbose}">
                 <file path="${intermediate.dex.file}" />
                 <sourcefolder path="${source.absolute.dir}" />
-                <nativefolder path="${native.libs.absolute.dir}" />
+                <sourcefolder refid="android.libraries.src" />
                 <jarfolder path="${external.libs.absolute.dir}" />
+                <jarfolder refid="android.libraries.libs" />
+                <nativefolder path="${native.libs.absolute.dir}" />
+                <nativefolder refid="android.libraries.libs" />
                 <extra-jars/>
             </apkbuilder>
         </sequential>
@@ -209,19 +212,14 @@
     <!-- Generates the R.java file for this project's resources. -->
     <target name="-resource-src" depends="-dirs">
         <echo>Generating R.java / Manifest.java from the resources...</echo>
-        <exec executable="${aapt}" failonerror="true">
-            <arg value="package" />
-            <arg line="${v.option}" />
-            <arg value="-m" />
-            <arg value="-J" />
-            <arg path="${gen.absolute.dir}" />
-            <arg value="-M" />
-            <arg path="AndroidManifest.xml" />
-            <arg value="-S" />
-            <arg path="${resource.absolute.dir}" />
-            <arg value="-I" />
-            <arg path="${android.jar}" />
-        </exec>
+        <aaptexec executable="${aapt}"
+                command="package"
+                verbose="${verbose}"
+                manifest="AndroidManifest.xml"
+                androidjar="${android.jar}"
+                rfolder="${gen.absolute.dir}">
+            <res path="${resource.absolute.dir}" />
+        </aaptexec>
     </target>
 
     <!-- Generates java classes from .aidl files. -->
@@ -249,9 +247,11 @@
         <javac encoding="ascii" target="1.5" debug="true" extdirs=""
                 destdir="${out.classes.absolute.dir}"
                 bootclasspathref="android.target.classpath"
-                verbose="${verbose}" classpath="${extensible.classpath}">
+                verbose="${verbose}" classpath="${extensible.classpath}"
+                classpathref="android.libraries.jars">
             <src path="${source.absolute.dir}" />
             <src path="${gen.absolute.dir}" />
+            <src refid="android.libraries.src" />
             <classpath>
                 <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
             </classpath>
@@ -273,11 +273,11 @@
         <aaptexec executable="${aapt}"
                 command="package"
                 manifest="AndroidManifest.xml"
-                resources="${resource.absolute.dir}"
                 assets="${asset.absolute.dir}"
                 androidjar="${android.jar}"
-                outfolder="${out.absolute.dir}"
-                basename="${ant.project.name}">
+                apkfolder="${out.absolute.dir}"
+                apkbasename="${ant.project.name}">
+            <res path="${resource.absolute.dir}" />
             <!-- <nocompress /> forces no compression on any files in assets or res/raw -->
             <!-- <nocompress extension="xml" /> forces no compression on specific file extensions in assets and res/raw -->
         </aaptexec>

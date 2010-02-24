@@ -16,12 +16,12 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
-import com.android.builders.IAbstractFile;
-import com.android.builders.IAbstractFolder;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper;
+import com.android.sdklib.internal.io.IAbstractFile;
+import com.android.sdklib.internal.io.IAbstractFolder;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;

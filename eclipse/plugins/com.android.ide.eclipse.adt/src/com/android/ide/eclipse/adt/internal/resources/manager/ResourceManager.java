@@ -16,10 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
-import com.android.builders.FileWrapper;
-import com.android.builders.FolderWrapper;
-import com.android.builders.IAbstractFile;
-import com.android.builders.IAbstractFolder;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -32,6 +28,10 @@ import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapper;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.internal.io.FolderWrapper;
+import com.android.sdklib.internal.io.IAbstractFile;
+import com.android.sdklib.internal.io.IAbstractFolder;
+import com.android.sdklib.internal.io.IAbstractResource;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -388,8 +388,8 @@ public final class ResourceManager {
     public ProjectResources loadFrameworkResources(IAndroidTarget androidTarget) {
         String osResourcesPath = androidTarget.getPath(IAndroidTarget.RESOURCES);
 
-        File frameworkRes = new File(osResourcesPath);
-        if (frameworkRes.isDirectory()) {
+        FolderWrapper frameworkRes = new FolderWrapper(osResourcesPath);
+        if (frameworkRes.exists()) {
             ProjectResources resources = new ProjectResources(true /* isFrameworkRepository */);
 
             try {
@@ -421,28 +421,28 @@ public final class ResourceManager {
      *
      * @param resources The {@link ProjectResources} files to load. It is expected that the
      * framework flag has been properly setup. This is filled up with the content of the folder.
-     * @param folder The folder to read the resources from. This is the top level resource folder
-     * (res/)
+     * @param rootFolder The folder to read the resources from. This is the top level
+     * resource folder (res/)
      * @throws IOException
      */
-    public void loadResources(ProjectResources resources, File folder) throws IOException {
-        File[] files = folder.listFiles();
-        for (File file : files) {
-            if (file.isDirectory()) {
-                ResourceFolder resFolder = processFolder(new FolderWrapper(file),
-                        resources);
+    public void loadResources(ProjectResources resources, IAbstractFolder rootFolder)
+            throws IOException {
+        IAbstractResource[] files = rootFolder.listMembers();
+        for (IAbstractResource file : files) {
+            if (file instanceof IAbstractFolder) {
+                IAbstractFolder folder = (IAbstractFolder) file;
+                ResourceFolder resFolder = processFolder(folder, resources);
 
                 if (resFolder != null) {
                     // now we process the content of the folder
-                    File[] children = file.listFiles();
+                    IAbstractResource[] children = folder.listMembers();
 
-                    for (File childRes : children) {
-                        if (childRes.isFile()) {
-                            processFile(new FileWrapper(childRes), resFolder);
+                    for (IAbstractResource childRes : children) {
+                        if (childRes instanceof IAbstractFile) {
+                            processFile((IAbstractFile) childRes, resFolder);
                         }
                     }
                 }
-
             }
         }
 

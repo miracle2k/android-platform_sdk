@@ -60,7 +60,7 @@ public abstract class SdkTestCase extends TestCase {
             return null;
         }
 
-        Object sdkLock = adt.getSdkLockObject();
+        Object sdkLock = Sdk.getLock();
         LoadStatus loadStatus = LoadStatus.LOADING;
         // wait for ADT to load the SDK on a separate thread
         // loop max of 600 times * 200 ms =  2 minutes

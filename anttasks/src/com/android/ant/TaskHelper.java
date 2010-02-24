@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package com.android.builders;
+package com.android.ant;
 
-import java.io.InputStream;
+import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.types.Path;
 
-/**
- * A file.
- */
-public interface IAbstractFile extends IAbstractResource {
+public class TaskHelper {
 
-    /**
-     * Returns an {@link InputStream} object on the file content.
-     * @throws CoreException
-     */
-    InputStream getContents() throws StreamException;
+    public static String checkSinglePath(String attribute, Path path) {
+        String[] paths = path.list();
+        if (paths.length != 1) {
+            throw new BuildException(String.format("Path value for '%1$s' is not valid.", attribute));
+        }
 
-    /**
-     * Returns the OS path of the file location.
-     */
-    String getOsLocation();
+        return paths[0];
+    }
+
 }

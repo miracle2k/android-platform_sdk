@@ -211,10 +211,26 @@ public class Main {
                 displayAvdList();
             }
 
-        } else if (SdkCommandLine.VERB_CREATE.equals(verb) &&
-                SdkCommandLine.OBJECT_AVD.equals(directObject)) {
-            createAvd();
-
+        } else if (SdkCommandLine.VERB_CREATE.equals(verb)) {
+            if (SdkCommandLine.OBJECT_AVD.equals(directObject)) {
+                createAvd();
+            } else if (SdkCommandLine.OBJECT_PROJECT.equals(directObject)) {
+                createProject(false /*library*/);
+            } else if (SdkCommandLine.OBJECT_TEST_PROJECT.equals(directObject)) {
+                createTestProject();
+            } else if (SdkCommandLine.OBJECT_LIB_PROJECT.equals(directObject)) {
+                createProject(true /*library*/);
+            }
+        } else if (SdkCommandLine.VERB_UPDATE.equals(verb)) {
+            if (SdkCommandLine.OBJECT_AVD.equals(directObject)) {
+                updateAvd();
+            } else if (SdkCommandLine.OBJECT_PROJECT.equals(directObject)) {
+                updateProject(false /*library*/);
+            } else if (SdkCommandLine.OBJECT_TEST_PROJECT.equals(directObject)) {
+                updateTestProject();
+            } else if (SdkCommandLine.OBJECT_LIB_PROJECT.equals(directObject)) {
+                updateProject(true /*library*/);
+            }
         } else if (SdkCommandLine.VERB_DELETE.equals(verb) &&
                 SdkCommandLine.OBJECT_AVD.equals(directObject)) {
             deleteAvd();
@@ -222,26 +238,6 @@ public class Main {
         } else if (SdkCommandLine.VERB_MOVE.equals(verb) &&
                 SdkCommandLine.OBJECT_AVD.equals(directObject)) {
             moveAvd();
-
-        } else if (SdkCommandLine.VERB_UPDATE.equals(verb) &&
-                SdkCommandLine.OBJECT_AVD.equals(directObject)) {
-            updateAvd();
-
-        } else if (SdkCommandLine.VERB_CREATE.equals(verb) &&
-                SdkCommandLine.OBJECT_PROJECT.equals(directObject)) {
-            createProject();
-
-        } else if (SdkCommandLine.VERB_CREATE.equals(verb) &&
-                SdkCommandLine.OBJECT_TEST_PROJECT.equals(directObject)) {
-            createTestProject();
-
-        } else if (SdkCommandLine.VERB_UPDATE.equals(verb) &&
-                SdkCommandLine.OBJECT_PROJECT.equals(directObject)) {
-            updateProject();
-
-        } else if (SdkCommandLine.VERB_UPDATE.equals(verb) &&
-                SdkCommandLine.OBJECT_TEST_PROJECT.equals(directObject)) {
-            updateTestProject();
 
         } else if (verb == null && directObject == null) {
             showMainWindow(false /*autoUpdate*/);
@@ -287,7 +283,10 @@ public class Main {
     /**
      * Creates a new Android project based on command-line parameters
      */
-    private void createProject() {
+    private void createProject(boolean library) {
+        String directObject = library? SdkCommandLine.OBJECT_LIB_PROJECT :
+                SdkCommandLine.OBJECT_PROJECT;
+
         // get the target and try to resolve it.
         int targetId = resolveTargetName(mSdkCommandLine.getParamTargetId());
         IAndroidTarget[] targets = mSdkManager.getTargets();
@@ -297,7 +296,7 @@ public class Main {
         }
         IAndroidTarget target = targets[targetId - 1];  // target id is 1-based
 
-        ProjectCreator creator = new ProjectCreator(mOsSdkFolder,
+        ProjectCreator creator = new ProjectCreator(mSdkManager, mOsSdkFolder,
                 mSdkCommandLine.isVerbose() ? OutputLevel.VERBOSE :
                     mSdkCommandLine.isSilent() ? OutputLevel.SILENT :
                         OutputLevel.NORMAL,
@@ -306,8 +305,11 @@ public class Main {
         String projectDir = getProjectLocation(mSdkCommandLine.getParamLocationPath());
 
         String projectName = mSdkCommandLine.getParamName();
-        String packageName = mSdkCommandLine.getParamProjectPackage();
-        String activityName = mSdkCommandLine.getParamProjectActivity();
+        String packageName = mSdkCommandLine.getParamProjectPackage(directObject);
+        String activityName = null;
+        if (library == false) {
+            activityName = mSdkCommandLine.getParamProjectActivity();
+        }
 
         if (projectName != null &&
                 !ProjectCreator.RE_PROJECT_NAME.matcher(projectName).matches()) {
@@ -316,6 +318,7 @@ public class Main {
                 projectName, ProjectCreator.CHARS_PROJECT_NAME);
             return;
         }
+
 
         if (activityName != null &&
                 !ProjectCreator.RE_ACTIVITY_NAME.matcher(activityName).matches()) {
@@ -340,6 +343,7 @@ public class Main {
                 packageName,
                 activityName,
                 target,
+                library,
                 null /*pathToMain*/);
     }
 
@@ -437,7 +441,7 @@ public class Main {
 
         mSdkLog.printf("Found main project target: %1$s\n", target.getFullName());
 
-        ProjectCreator creator = new ProjectCreator(mOsSdkFolder,
+        ProjectCreator creator = new ProjectCreator(mSdkManager, mOsSdkFolder,
                 mSdkCommandLine.isVerbose() ? OutputLevel.VERBOSE :
                     mSdkCommandLine.isSilent() ? OutputLevel.SILENT :
                         OutputLevel.NORMAL,
@@ -458,14 +462,16 @@ public class Main {
                 packageName,
                 activityName,
                 target,
+                false /* library*/,
                 pathToMainProject);
     }
 
 
     /**
      * Updates an existing Android project based on command-line parameters
+     * @param library whether the project is a library project.
      */
-    private void updateProject() {
+    private void updateProject(boolean library) {
         // get the target and try to resolve it.
         IAndroidTarget target = null;
         String targetStr = mSdkCommandLine.getParamTargetId();
@@ -482,7 +488,7 @@ public class Main {
             target = targets[targetId - 1];  // target id is 1-based
         }
 
-        ProjectCreator creator = new ProjectCreator(mOsSdkFolder,
+        ProjectCreator creator = new ProjectCreator(mSdkManager, mOsSdkFolder,
                 mSdkCommandLine.isVerbose() ? OutputLevel.VERBOSE :
                     mSdkCommandLine.isSilent() ? OutputLevel.SILENT :
                         OutputLevel.NORMAL,
@@ -490,35 +496,43 @@ public class Main {
 
         String projectDir = getProjectLocation(mSdkCommandLine.getParamLocationPath());
 
+        String libraryPath = mSdkCommandLine.getParamProjectLibrary(
+                library ? SdkCommandLine.OBJECT_LIB_PROJECT : SdkCommandLine.OBJECT_PROJECT);
+
         creator.updateProject(projectDir,
                 target,
-                mSdkCommandLine.getParamName());
+                mSdkCommandLine.getParamName(),
+                libraryPath);
 
-        boolean doSubProjects = mSdkCommandLine.getParamSubProject();
-        boolean couldHaveDone = false;
+        if (library == false) {
+            boolean doSubProjects = mSdkCommandLine.getParamSubProject();
+            boolean couldHaveDone = false;
 
-        // If there are any sub-folders with a manifest, try to update them as projects
-        // too. This will take care of updating any underlying test project even if the
-        // user changed the folder name.
-        File[] files = new File(projectDir).listFiles();
-        if (files != null) {
-            for (File dir : files) {
-                if (dir.isDirectory() &&
-                        new File(dir, SdkConstants.FN_ANDROID_MANIFEST_XML).isFile()) {
-                    if (doSubProjects) {
-                        creator.updateProject(dir.getPath(),
-                                target,
-                                mSdkCommandLine.getParamName());
-                    } else {
-                        couldHaveDone = true;
+            // If there are any sub-folders with a manifest, try to update them as projects
+            // too. This will take care of updating any underlying test project even if the
+            // user changed the folder name.
+            File[] files = new File(projectDir).listFiles();
+            if (files != null) {
+                for (File dir : files) {
+                    if (dir.isDirectory() &&
+                            new File(dir, SdkConstants.FN_ANDROID_MANIFEST_XML).isFile()) {
+                        if (doSubProjects) {
+                            creator.updateProject(dir.getPath(),
+                                    target,
+                                    mSdkCommandLine.getParamName(),
+                                    null /*libraryPath*/);
+                        } else {
+                            couldHaveDone = true;
+                        }
                     }
                 }
             }
-        }
 
-        if (couldHaveDone) {
-            mSdkLog.printf("It seems that there are sub-projects. If you want to update them\nplease use the --%1$s parameter.\n",
-                    SdkCommandLine.KEY_SUBPROJECTS);
+            if (couldHaveDone) {
+                mSdkLog.printf(
+                        "It seems that there are sub-projects. If you want to update them\nplease use the --%1$s parameter.\n",
+                        SdkCommandLine.KEY_SUBPROJECTS);
+            }
         }
     }
 
@@ -526,7 +540,7 @@ public class Main {
      * Updates an existing test project with a new path to the main project.
      */
     private void updateTestProject() {
-        ProjectCreator creator = new ProjectCreator(mOsSdkFolder,
+        ProjectCreator creator = new ProjectCreator(mSdkManager, mOsSdkFolder,
                 mSdkCommandLine.isVerbose() ? OutputLevel.VERBOSE :
                     mSdkCommandLine.isSilent() ? OutputLevel.SILENT :
                         OutputLevel.NORMAL,

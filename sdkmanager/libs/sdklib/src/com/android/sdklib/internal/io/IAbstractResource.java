@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.builders;
+package com.android.sdklib.internal.io;
 
 /**
  * Base representation of a file system resource.<p/>
@@ -27,4 +27,9 @@ public interface IAbstractResource {
      * Returns the name of the resource.
      */
     String getName();
+
+    /**
+     * Returns whether the resource actually exists.
+     */
+    boolean exists();
 }

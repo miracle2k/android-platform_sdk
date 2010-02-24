@@ -141,6 +141,12 @@ public class MockAddonPackage extends AddonPackage {
             throw new UnsupportedOperationException("Implement this as needed for tests");
         }
 
-    }
+        public int getAntBuildRevision() {
+            return 1;
+        }
 
+        public int getAntTemplatesRevision() {
+            return 1;
+        }
+    }
 }

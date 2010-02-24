@@ -16,10 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager.files;
 
-import com.android.builders.IAbstractFile;
-import com.android.builders.StreamException;
+import com.android.sdklib.internal.io.IAbstractFile;
+import com.android.sdklib.internal.io.StreamException;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 
 import java.io.InputStream;
@@ -43,12 +44,24 @@ public class IFileWrapper implements IAbstractFile {
         }
     }
 
+    public void setContents(InputStream source) throws StreamException {
+        try {
+            mFile.setContents(source, IResource.FORCE, null);
+        } catch (CoreException e) {
+            throw new StreamException(e);
+        }
+    }
+
     public String getOsLocation() {
         return mFile.getLocation().toOSString();
     }
 
     public String getName() {
         return mFile.getName();
+    }
+
+    public boolean exists() {
+        return mFile.exists();
     }
 
     /**

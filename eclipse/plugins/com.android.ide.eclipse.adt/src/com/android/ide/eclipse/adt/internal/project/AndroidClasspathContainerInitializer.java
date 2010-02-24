@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.project;
 
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
@@ -158,76 +158,79 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
         try {
             AdtPlugin plugin = AdtPlugin.getDefault();
 
-            // get the lock object for project manipulation during SDK load.
-            Object lock = plugin.getSdkLockObject();
-            synchronized (lock) {
+            synchronized (Sdk.getLock()) {
                 boolean sdkIsLoaded = plugin.getSdkLoadStatus() == LoadStatus.LOADED;
 
                 // check if the project has a valid target.
-                IAndroidTarget target = null;
-                if (sdkIsLoaded) {
-                    target = Sdk.getCurrent().getTarget(iProject);
-                }
-
-                // if we are loaded and the target is non null, we create a valid ClassPathContainer
-                if (sdkIsLoaded && target != null) {
-                    // first make sure the target has loaded its data
-                    Sdk.getCurrent().checkAndLoadTargetData(target, null /*project*/);
-
-                    String targetName = target.getClasspathName();
-
-                    return new AndroidClasspathContainer(
-                            createClasspathEntries(iProject, target, targetName),
-                            new Path(CONTAINER_ID), targetName);
-                }
-
-                // In case of error, we'll try different thing to provide the best error message
-                // possible.
-                // Get the project's target's hash string (if it exists)
-                String hashString = Sdk.getProjectTargetHashString(iProject);
-
-                if (hashString == null || hashString.length() == 0) {
-                    // if there is no hash string we only show this if the SDK is loaded.
-                    // For a project opened at start-up with no target, this would be displayed
-                    // twice, once when the project is opened, and once after the SDK has
-                    // finished loading.
-                    // By testing the sdk is loaded, we only show this once in the console.
-                    if (sdkIsLoaded) {
-                        markerMessage = String.format(
-                                "Project has no target set. Edit the project properties to set one.");
-                    }
-                } else if (sdkIsLoaded) {
+                ProjectState state = Sdk.getProject(iProject);
+                if (state == null) {
+                    // looks like the project state (default.properties) couldn't be read!
                     markerMessage = String.format(
-                            "Unable to resolve target '%s'", hashString);
+                            "Project has no default.properties file! Edit the project properties to set one.");
                 } else {
-                    // this is the case where there is a hashString but the SDK is not yet
-                    // loaded and therefore we can't get the target yet.
-                    // We check if there is a cache of the needed information.
-                    AndroidClasspathContainer container = getContainerFromCache(iProject);
+                    // this might be null if the sdk is not yet loaded.
+                    IAndroidTarget target = state.getTarget();
 
-                    if (container == null) {
-                        // either the cache was wrong (ie folder does not exists anymore), or
-                        // there was no cache. In this case we need to make sure the project
-                        // is resolved again after the SDK is loaded.
-                        plugin.setProjectToResolve(javaProject);
+                    // if we are loaded and the target is non null, we create a valid
+                    // ClassPathContainer
+                    if (sdkIsLoaded && target != null) {
+                        // first make sure the target has loaded its data
+                        Sdk.getCurrent().checkAndLoadTargetData(target, null /*project*/);
 
-                        markerMessage = String.format(
-                                "Unable to resolve target '%s' until the SDK is loaded.",
-                                hashString);
+                        String targetName = target.getClasspathName();
 
-                        // let's not log this one to the console as it will happen at every boot,
-                        // and it's expected. (we do keep the error marker though).
-                        outputToConsole = false;
-
-                    } else {
-                        // we created a container from the cache, so we register the project
-                        // to be checked for cache validity once the SDK is loaded
-                        plugin.setProjectToCheck(javaProject);
-
-                        // and return the container
-                        return container;
+                        return new AndroidClasspathContainer(
+                                createClasspathEntries(iProject, target, targetName),
+                                new Path(CONTAINER_ID), targetName);
                     }
 
+                    // In case of error, we'll try different thing to provide the best error message
+                    // possible.
+                    // Get the project's target's hash string (if it exists)
+                    String hashString = state.getTargetHashString();
+
+                    if (hashString == null || hashString.length() == 0) {
+                        // if there is no hash string we only show this if the SDK is loaded.
+                        // For a project opened at start-up with no target, this would be displayed
+                        // twice, once when the project is opened, and once after the SDK has
+                        // finished loading.
+                        // By testing the sdk is loaded, we only show this once in the console.
+                        if (sdkIsLoaded) {
+                            markerMessage = String.format(
+                                    "Project has no target set. Edit the project properties to set one.");
+                        }
+                    } else if (sdkIsLoaded) {
+                        markerMessage = String.format(
+                                "Unable to resolve target '%s'", hashString);
+                    } else {
+                        // this is the case where there is a hashString but the SDK is not yet
+                        // loaded and therefore we can't get the target yet.
+                        // We check if there is a cache of the needed information.
+                        AndroidClasspathContainer container = getContainerFromCache(iProject);
+
+                        if (container == null) {
+                            // either the cache was wrong (ie folder does not exists anymore), or
+                            // there was no cache. In this case we need to make sure the project
+                            // is resolved again after the SDK is loaded.
+                            plugin.setProjectToResolve(javaProject);
+
+                            markerMessage = String.format(
+                                    "Unable to resolve target '%s' until the SDK is loaded.",
+                                    hashString);
+
+                            // let's not log this one to the console as it will happen at
+                            // every boot, and it's expected. (we do keep the error marker though).
+                            outputToConsole = false;
+
+                        } else {
+                            // we created a container from the cache, so we register the project
+                            // to be checked for cache validity once the SDK is loaded
+                            plugin.setProjectToCheck(javaProject);
+
+                            // and return the container
+                            return container;
+                        }
+                    }
                 }
 
                 // return a dummy container to replace the one we may have had before.
@@ -494,6 +497,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
      * @param projects the list of projects to check.
      */
     public static void checkProjectsCache(ArrayList<IJavaProject> projects) {
+        Sdk currentSdk = Sdk.getCurrent();
         int i = 0;
         projectLoop: while (i < projects.size()) {
             IJavaProject javaProject = projects.get(i);
@@ -508,8 +512,13 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 continue;
             }
 
+            // project that have been resolved before the sdk was loaded
+            // will have a ProjectState where the IAndroidTarget is null
+            // so we load the target now that the SDK is loaded.
+            currentSdk.loadTarget(Sdk.getProject(iProject));
+
             // get the target from the project and its paths
-            IAndroidTarget target = Sdk.getCurrent().getTarget(javaProject.getProject());
+            IAndroidTarget target = currentSdk.getTarget(javaProject.getProject());
             if (target == null) {
                 // this is really not supposed to happen. This would mean there are cached paths,
                 // but default.properties was deleted. Keep the project in the list to force
@@ -604,7 +613,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
      * </ul>
      * Additionally, if there are optional libraries, the array will contain:
      * <ul>
-     * <li>Path to the librairies javadoc</li>
+     * <li>Path to the libraries javadoc</li>
      * <li>Path to the first .jar file</li>
      * <li>(more .jar as needed)</li>
      * </ul>

@@ -268,9 +268,12 @@ public final class SdkConstants {
      *  This is an OS path, ending with a separator. */
     public final static String OS_ADDON_LIBS_FOLDER = FD_ADDON_LIBS + File.separator;
 
-
     /** Skin default **/
     public final static String SKIN_DEFAULT = "default";
+
+    /** Ant revision value: Library support introduction */
+    public final static int ANT_REV_LIBRARY = 2;
+
 
     /** Returns the appropriate name for the 'android' command, which is 'android.bat' for
      * Windows and 'android' for all other platforms. */

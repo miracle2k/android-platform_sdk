@@ -191,7 +191,7 @@ public class GlobalProjectMonitor implements IResourceChangeListener {
             } else if (type == IResource.PROJECT) {
                 int flags = delta.getFlags();
 
-                if (flags == IResourceDelta.OPEN) {
+                if ((flags & IResourceDelta.OPEN) != 0) {
                     // the project is opening or closing.
                     IProject project = (IProject)r;
 

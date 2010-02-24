@@ -19,11 +19,14 @@ package com.android.ant;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.ISdkLog;
+import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
+import com.android.sdklib.internal.io.FileWrapper;
 import com.android.sdklib.internal.project.ProjectProperties;
-import com.android.sdklib.xml.AndroidXPathFactory;
+import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.xml.AndroidManifest;
+import com.android.sdklib.xml.AndroidXPathFactory;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
@@ -35,6 +38,7 @@ import org.xml.sax.InputSource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -61,6 +65,8 @@ public final class SetupTask extends ImportTask {
     private final static String ANDROID_RULES = "android_rules.xml";
     // additional android rules for test project - depends on android_rules.xml
     private final static String ANDROID_TEST_RULES = "android_test_rules.xml";
+    // additional android rules for test project - depends on android_rules.xml
+    private final static String ANDROID_LIBRARY_RULES = "android_lib_rules.xml";
     // ant property with the path to the android.jar
     private final static String PROPERTY_ANDROID_JAR = "android.jar";
     // LEGACY - compatibility with 1.6 and before
@@ -153,8 +159,22 @@ public final class SetupTask extends ImportTask {
                     "Unable to resolve target '%s'", targetHashString));
         }
 
+        // check if the project is a library
+        boolean isLibrary = false;
+
+        String libraryProp = antProject.getProperty(ProjectProperties.PROPERTY_LIBRARY);
+        if (libraryProp != null) {
+            isLibrary = Boolean.valueOf(libraryProp).booleanValue();
+        }
+
+        // look for referenced libraries.
+        processReferencedLibraries(antProject, androidTarget);
+
         // display it
         System.out.println("Project Target: " + androidTarget.getName());
+        if (isLibrary) {
+            System.out.println("Type: Android Library");
+        }
         if (androidTarget.isPlatform() == false) {
             System.out.println("Vendor: " + androidTarget.getVendor());
             System.out.println("Platform Version: " + androidTarget.getVersionName());
@@ -227,7 +247,8 @@ public final class SetupTask extends ImportTask {
                         templateFolder));
             }
 
-            String importedRulesFileName = isTestProject ? ANDROID_TEST_RULES : ANDROID_RULES;
+            String importedRulesFileName = isLibrary ? ANDROID_LIBRARY_RULES :
+                    isTestProject ? ANDROID_TEST_RULES : ANDROID_RULES;
 
             // now check the rules file exists.
             File rules = new File(templateFolder, importedRulesFileName);
@@ -260,7 +281,7 @@ public final class SetupTask extends ImportTask {
      */
     private void checkManifest(Project antProject, AndroidVersion androidVersion) {
         try {
-            File manifest = new File(antProject.getBaseDir(), "AndroidManifest.xml");
+            File manifest = new File(antProject.getBaseDir(), SdkConstants.FN_ANDROID_MANIFEST_XML);
 
             XPath xPath = AndroidXPathFactory.newXPath();
 
@@ -331,6 +352,95 @@ public final class SetupTask extends ImportTask {
             throw new BuildException(e);
         } catch (FileNotFoundException e) {
             throw new BuildException(e);
+        }
+    }
+
+    private void processReferencedLibraries(Project antProject, IAndroidTarget androidTarget) {
+        // prepare several paths for future tasks
+        Path sourcePath = new Path(antProject);
+        Path resPath = new Path(antProject);
+        Path libsPath = new Path(antProject);
+        Path jarsPath = new Path(antProject);
+        StringBuilder sb = new StringBuilder();
+
+        FilenameFilter filter = new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(".jar");
+            }
+        };
+
+        // get the build version for the current target. It'll be tested if there's at least
+        // one library.
+        int antBuildVersion = androidTarget.getAntBuildRevision();
+
+        int index = 1;
+        while (true) {
+            String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index++);
+            String rootPath = antProject.getProperty(propName);
+
+            if (rootPath == null) {
+                break;
+            }
+
+            if (antBuildVersion < SdkConstants.ANT_REV_LIBRARY) {
+                throw new BuildException(String.format(
+                        "The build system for this project target (%1$s) does not support libraries",
+                        androidTarget.getFullName()));
+            }
+
+            // get the source path. default is src but can be overriden by the property
+            // "source.dir" in build.properties.
+            PathElement element = sourcePath.createPathElement();
+            ProjectProperties prop = ProjectProperties.load(rootPath, PropertyType.BUILD);
+            String sourceDir = SdkConstants.FD_SOURCES;
+            if (prop != null) {
+                String value = prop.getProperty(ProjectProperties.PROPERTY_BUILD_SOURCE_DIR);
+                if (value != null) {
+                    sourceDir = value;
+                }
+            }
+
+            element.setPath(rootPath + "/" + sourceDir);
+
+            // get the res path. Always $PROJECT/res
+            element = resPath.createPathElement();
+            element.setPath(rootPath + "/" + SdkConstants.FD_RESOURCES);
+
+            // get the libs path. Always $PROJECT/libs
+            element = libsPath.createPathElement();
+            element.setPath(rootPath + "/" + SdkConstants.FD_NATIVE_LIBS);
+
+            // get the jars from it too
+            File libsFolder = new File(rootPath, SdkConstants.FD_NATIVE_LIBS);
+            File[] jarFiles = libsFolder.listFiles(filter);
+            for (File jarFile : jarFiles) {
+                element = jarsPath.createPathElement();
+                element.setPath(jarFile.getAbsolutePath());
+            }
+
+            // get the package from the manifest.
+            FileWrapper manifest = new FileWrapper(rootPath, SdkConstants.FN_ANDROID_MANIFEST_XML);
+            try {
+                String value = AndroidManifest.getPackage(manifest);
+                if (value != null) { // aapt will complain if it's missing.
+                    sb.append(';');
+                    sb.append(value);
+                }
+            } catch (Exception e) {
+                throw new BuildException(e);
+            }
+        }
+
+        // even with no libraries, always setup these so that various tasks in Ant don't complain
+        // (the task themselves can handle a ref to an empty Path)
+        antProject.addReference("android.libraries.src", sourcePath);
+        antProject.addReference("android.libraries.jars", jarsPath);
+        antProject.addReference("android.libraries.libs", libsPath);
+
+        // the rest is done only if there's a library.
+        if (sourcePath.list().length > 0) {
+            antProject.addReference("android.libraries.res", resPath);
+            antProject.setProperty("android.libraries.package", sb.toString());
         }
     }
 }

@@ -23,7 +23,9 @@ import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.FixLaunchConfig;
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.project.XmlErrorHandler.BasicXmlErrorListener;
+import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapper;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
@@ -207,20 +209,26 @@ public class PreCompilerBuilder extends BaseBuilder {
     @Override
     protected IProject[] build(int kind, Map args, IProgressMonitor monitor)
             throws CoreException {
+        // get a project object
+        IProject project = getProject();
+
+        // list of referenced projects.
+        IProject[] libProjects = null;
+
         try {
             mDerivedProgressMonitor.reset();
 
-            // First thing we do is go through the resource delta to not
-            // lose it if we have to abort the build for any reason.
+            // get the project info
+            ProjectState projectState = Sdk.getProject(project);
+            IAndroidTarget projectTarget = projectState.getTarget();
 
-            // get the project objects
-            IProject project = getProject();
+            // get the libraries
+            libProjects = projectState.getLibraryProjects();
+
             IJavaProject javaProject = JavaCore.create(project);
 
             // Top level check to make sure the build can move forward.
             abortOnBadSetup(javaProject);
-
-            IAndroidTarget projectTarget = Sdk.getCurrent().getTarget(project);
 
             // now we need to get the classpath list
             ArrayList<IPath> sourceFolderPathList = BaseProjectHelper.getSourceClasspaths(
@@ -452,151 +460,7 @@ public class PreCompilerBuilder extends BaseBuilder {
             }
 
             if (mMustCompileResources) {
-                // we need to figure out where to store the R class.
-                // get the parent folder for R.java and update mManifestPackageSourceFolder
-                IFolder packageFolder = getGenManifestPackageFolder(project);
-
-                // get the resource folder
-                IFolder resFolder = project.getFolder(AndroidConstants.WS_RESOURCES);
-
-                // get the file system path
-                IPath outputLocation = mGenFolder.getLocation();
-                IPath resLocation = resFolder.getLocation();
-                IPath manifestLocation = manifest == null ? null : manifest.getLocation();
-
-                // those locations have to exist for us to do something!
-                if (outputLocation != null && resLocation != null
-                        && manifestLocation != null) {
-                    String osOutputPath = outputLocation.toOSString();
-                    String osResPath = resLocation.toOSString();
-                    String osManifestPath = manifestLocation.toOSString();
-
-                    // remove the aapt markers
-                    removeMarkersFromFile(manifest, AndroidConstants.MARKER_AAPT_COMPILE);
-                    removeMarkersFromContainer(resFolder, AndroidConstants.MARKER_AAPT_COMPILE);
-
-                    AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
-                            Messages.Preparing_Generated_Files);
-
-                    // since the R.java file may be already existing in read-only
-                    // mode we need to make it readable so that aapt can overwrite
-                    // it
-                    IFile rJavaFile = packageFolder.getFile(AndroidConstants.FN_RESOURCE_CLASS);
-
-                    // do the same for the Manifest.java class
-                    IFile manifestJavaFile = packageFolder.getFile(
-                            AndroidConstants.FN_MANIFEST_CLASS);
-
-                    // we actually need to delete the manifest.java as it may become empty and
-                    // in this case aapt doesn't generate an empty one, but instead doesn't
-                    // touch it.
-                    manifestJavaFile.delete(true, null);
-
-                    // launch aapt: create the command line
-                    ArrayList<String> array = new ArrayList<String>();
-                    array.add(projectTarget.getPath(IAndroidTarget.AAPT));
-                    array.add("package"); //$NON-NLS-1$
-                    array.add("-m"); //$NON-NLS-1$
-                    if (AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE) {
-                        array.add("-v"); //$NON-NLS-1$
-                    }
-                    array.add("-J"); //$NON-NLS-1$
-                    array.add(osOutputPath);
-                    array.add("-M"); //$NON-NLS-1$
-                    array.add(osManifestPath);
-                    array.add("-S"); //$NON-NLS-1$
-                    array.add(osResPath);
-                    array.add("-I"); //$NON-NLS-1$
-                    array.add(projectTarget.getPath(IAndroidTarget.ANDROID_JAR));
-
-                    if (AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE) {
-                        StringBuilder sb = new StringBuilder();
-                        for (String c : array) {
-                            sb.append(c);
-                            sb.append(' ');
-                        }
-                        String cmd_line = sb.toString();
-                        AdtPlugin.printToConsole(project, cmd_line);
-                    }
-
-                    // launch
-                    int execError = 1;
-                    try {
-                        // launch the command line process
-                        Process process = Runtime.getRuntime().exec(
-                                array.toArray(new String[array.size()]));
-
-                        // list to store each line of stderr
-                        ArrayList<String> results = new ArrayList<String>();
-
-                        // get the output and return code from the process
-                        execError = grabProcessOutput(process, results);
-
-                        // attempt to parse the error output
-                        boolean parsingError = parseAaptOutput(results, project);
-
-                        // if we couldn't parse the output we display it in the console.
-                        if (parsingError) {
-                            if (execError != 0) {
-                                AdtPlugin.printErrorToConsole(project, results.toArray());
-                            } else {
-                                AdtPlugin.printBuildToConsole(BuildVerbosity.NORMAL,
-                                        project, results.toArray());
-                            }
-                        }
-
-                        if (execError != 0) {
-                            // if the exec failed, and we couldn't parse the error output
-                            // (and therefore not all files that should have been marked,
-                            // were marked), we put a generic marker on the project and abort.
-                            if (parsingError) {
-                                markProject(AndroidConstants.MARKER_ADT,
-                                        Messages.Unparsed_AAPT_Errors, IMarker.SEVERITY_ERROR);
-                            }
-
-                            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
-                                    Messages.AAPT_Error);
-
-                            // abort if exec failed.
-                            // This interrupts the build. The next builders will not run.
-                            stopBuild(Messages.AAPT_Error);
-                        }
-                    } catch (IOException e1) {
-                        // something happen while executing the process,
-                        // mark the project and exit
-                        String msg = String.format(Messages.AAPT_Exec_Error, array.get(0));
-                        markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
-
-                        // This interrupts the build. The next builders will not run.
-                        stopBuild(msg);
-                    } catch (InterruptedException e) {
-                        // we got interrupted waiting for the process to end...
-                        // mark the project and exit
-                        String msg = String.format(Messages.AAPT_Exec_Error, array.get(0));
-                        markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
-
-                        // This interrupts the build. The next builders will not run.
-                        stopBuild(msg);
-                    }
-
-                    // if the return code was OK, we refresh the folder that
-                    // contains R.java to force a java recompile.
-                    if (execError == 0) {
-                        // now add the R.java/Manifest.java to the list of file to be marked
-                        // as derived.
-                        mDerivedProgressMonitor.addFile(rJavaFile);
-                        mDerivedProgressMonitor.addFile(manifestJavaFile);
-
-                        // build has been done. reset the state of the builder
-                        mMustCompileResources = false;
-
-                        // and store it
-                        saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES,
-                                mMustCompileResources);
-                    }
-                }
-            } else {
-                // nothing to do
+                handleResources(project, javaPackage, projectTarget, manifest, libProjects);
             }
 
             // now handle the aidl stuff.
@@ -612,7 +476,7 @@ public class PreCompilerBuilder extends BaseBuilder {
             mGenFolder.refreshLocal(IResource.DEPTH_INFINITE, mDerivedProgressMonitor);
         }
 
-        return null;
+        return libProjects;
     }
 
     @Override
@@ -627,7 +491,6 @@ public class PreCompilerBuilder extends BaseBuilder {
 
         // remove all the derived resources from the 'gen' source folder.
         removeDerivedResources(mGenFolder, monitor);
-
 
         // Clear the project of the generic markers
         removeMarkersFromProject(project, AndroidConstants.MARKER_AAPT_COMPILE);
@@ -662,6 +525,231 @@ public class PreCompilerBuilder extends BaseBuilder {
                     javaProject);
 
             buildAidlCompilationList(project, sourceFolderPathList);
+        }
+    }
+
+    /**
+     * Handles resource changes and regenerate whatever files need regenerating.
+     * @param project the main project
+     * @param javaPackage the app package for the main project
+     * @param projectTarget the target of the main project
+     * @param manifest the {@link IFile} representing the project manifest
+     * @param libProjects the library dependencies
+     * @throws CoreException
+     */
+    private void handleResources(IProject project, String javaPackage, IAndroidTarget projectTarget,
+            IFile manifest, IProject[] libProjects) throws CoreException {
+        // get the resource folder
+        IFolder resFolder = project.getFolder(AndroidConstants.WS_RESOURCES);
+
+        // get the file system path
+        IPath outputLocation = mGenFolder.getLocation();
+        IPath resLocation = resFolder.getLocation();
+        IPath manifestLocation = manifest == null ? null : manifest.getLocation();
+
+        // those locations have to exist for us to do something!
+        if (outputLocation != null && resLocation != null
+                && manifestLocation != null) {
+            String osOutputPath = outputLocation.toOSString();
+            String osResPath = resLocation.toOSString();
+            String osManifestPath = manifestLocation.toOSString();
+
+            // remove the aapt markers
+            removeMarkersFromFile(manifest, AndroidConstants.MARKER_AAPT_COMPILE);
+            removeMarkersFromContainer(resFolder, AndroidConstants.MARKER_AAPT_COMPILE);
+
+            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
+                    Messages.Preparing_Generated_Files);
+
+            // we need to figure out where to store the R class.
+            // get the parent folder for R.java and update mManifestPackageSourceFolder
+            IFolder mainPackageFolder = getGenManifestPackageFolder();
+
+            // handle libraries
+            ArrayList<IFolder> libResFolders = new ArrayList<IFolder>();
+            ArrayList<IFolder> libOutputFolders = new ArrayList<IFolder>();
+            ArrayList<String> libJavaPackages = new ArrayList<String>();
+            if (libProjects != null) {
+                for (IProject lib : libProjects) {
+                    IFolder libResFolder = lib.getFolder(SdkConstants.FD_RES);
+                    if (libResFolder.exists()) {
+                        libResFolders.add(libResFolder);
+                    }
+
+                    try {
+                        String libJavaPackage = AndroidManifest.getPackage(new IFolderWrapper(lib));
+                        if (libJavaPackage.equals(javaPackage) == false) {
+                            libJavaPackages.add(libJavaPackage);
+                            libOutputFolders.add(getGenManifestPackageFolder(libJavaPackage));
+                        }
+                    } catch (Exception e) {
+                    }
+                }
+            }
+
+            execAapt(project, projectTarget, osOutputPath, osResPath, osManifestPath,
+                    mainPackageFolder, libResFolders, null /* custom java package */);
+
+            final int count = libOutputFolders.size();
+            if (count > 0) {
+                for (int i = 0 ; i < count ; i++) {
+                    IFolder libFolder = libOutputFolders.get(i);
+                    String libJavaPackage = libJavaPackages.get(i);
+                    execAapt(project, projectTarget, osOutputPath, osResPath, osManifestPath,
+                            libFolder, libResFolders, libJavaPackage);
+                }
+            }
+        }
+    }
+
+    /**
+     * Executes AAPT to generate R.java/Manifest.java
+     * @param project the main project
+     * @param projectTarget the main project target
+     * @param osOutputPath the OS output path for the generated file. This is the source folder, not
+     * the package folder.
+     * @param osResPath the OS path to the res folder for the main project
+     * @param osManifestPath the OS path to the manifest of the main project
+     * @param packageFolder the IFolder that will contain the generated file. Unlike
+     * <var>osOutputPath</var> this is the direct parent of the geenerated files.
+     * If <var>customJavaPackage</var> is not null, this must match the new destination triggered
+     * by its value.
+     * @param libResFolders the list of res folders for the library.
+     * @param customJavaPackage an optional javapackage to replace the main project java package.
+     * can be null.
+     * @throws CoreException
+     */
+    private void execAapt(IProject project, IAndroidTarget projectTarget, String osOutputPath,
+            String osResPath, String osManifestPath, IFolder packageFolder,
+            ArrayList<IFolder> libResFolders, String customJavaPackage) throws CoreException {
+        // since the R.java file may be already existing in read-only
+        // mode we need to make it readable so that aapt can overwrite it
+        IFile rJavaFile = packageFolder.getFile(AndroidConstants.FN_RESOURCE_CLASS);
+
+        // do the same for the Manifest.java class
+        IFile manifestJavaFile = packageFolder.getFile(AndroidConstants.FN_MANIFEST_CLASS);
+
+        // we actually need to delete the manifest.java as it may become empty and
+        // in this case aapt doesn't generate an empty one, but instead doesn't
+        // touch it.
+        manifestJavaFile.delete(true, null);
+
+        // launch aapt: create the command line
+        ArrayList<String> array = new ArrayList<String>();
+        array.add(projectTarget.getPath(IAndroidTarget.AAPT));
+        array.add("package"); //$NON-NLS-1$
+        array.add("-m"); //$NON-NLS-1$
+        if (AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE) {
+            array.add("-v"); //$NON-NLS-1$
+        }
+
+        if (libResFolders.size() > 0) {
+            array.add("--auto-add-overlay"); //$NON-NLS-1$
+        }
+
+        if (customJavaPackage != null) {
+            array.add("--custom-package"); //$NON-NLS-1$
+            array.add(customJavaPackage);
+        }
+
+        array.add("-J"); //$NON-NLS-1$
+        array.add(osOutputPath);
+        array.add("-M"); //$NON-NLS-1$
+        array.add(osManifestPath);
+        array.add("-S"); //$NON-NLS-1$
+        array.add(osResPath);
+        for (IFolder libResFolder : libResFolders) {
+            array.add("-S"); //$NON-NLS-1$
+            array.add(libResFolder.getLocation().toOSString());
+        }
+
+        array.add("-I"); //$NON-NLS-1$
+        array.add(projectTarget.getPath(IAndroidTarget.ANDROID_JAR));
+
+        if (AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE) {
+            StringBuilder sb = new StringBuilder();
+            for (String c : array) {
+                sb.append(c);
+                sb.append(' ');
+            }
+            String cmd_line = sb.toString();
+            AdtPlugin.printToConsole(project, cmd_line);
+        }
+
+        // launch
+        int execError = 1;
+        try {
+            // launch the command line process
+            Process process = Runtime.getRuntime().exec(
+                    array.toArray(new String[array.size()]));
+
+            // list to store each line of stderr
+            ArrayList<String> results = new ArrayList<String>();
+
+            // get the output and return code from the process
+            execError = grabProcessOutput(process, results);
+
+            // attempt to parse the error output
+            boolean parsingError = parseAaptOutput(results, project);
+
+            // if we couldn't parse the output we display it in the console.
+            if (parsingError) {
+                if (execError != 0) {
+                    AdtPlugin.printErrorToConsole(project, results.toArray());
+                } else {
+                    AdtPlugin.printBuildToConsole(BuildVerbosity.NORMAL,
+                            project, results.toArray());
+                }
+            }
+
+            if (execError != 0) {
+                // if the exec failed, and we couldn't parse the error output
+                // (and therefore not all files that should have been marked,
+                // were marked), we put a generic marker on the project and abort.
+                if (parsingError) {
+                    markProject(AndroidConstants.MARKER_ADT,
+                            Messages.Unparsed_AAPT_Errors, IMarker.SEVERITY_ERROR);
+                }
+
+                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
+                        Messages.AAPT_Error);
+
+                // abort if exec failed.
+                // This interrupts the build. The next builders will not run.
+                stopBuild(Messages.AAPT_Error);
+            }
+        } catch (IOException e1) {
+            // something happen while executing the process,
+            // mark the project and exit
+            String msg = String.format(Messages.AAPT_Exec_Error, array.get(0));
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+
+            // This interrupts the build. The next builders will not run.
+            stopBuild(msg);
+        } catch (InterruptedException e) {
+            // we got interrupted waiting for the process to end...
+            // mark the project and exit
+            String msg = String.format(Messages.AAPT_Exec_Error, array.get(0));
+            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
+
+            // This interrupts the build. The next builders will not run.
+            stopBuild(msg);
+        }
+
+        // if the return code was OK, we refresh the folder that
+        // contains R.java to force a java recompile.
+        if (execError == 0) {
+            // now add the R.java/Manifest.java to the list of file to be marked
+            // as derived.
+            mDerivedProgressMonitor.addFile(rJavaFile);
+            mDerivedProgressMonitor.addFile(manifestJavaFile);
+
+            // build has been done. reset the state of the builder
+            mMustCompileResources = false;
+
+            // and store it
+            saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES,
+                    mMustCompileResources);
         }
     }
 
@@ -720,15 +808,31 @@ public class PreCompilerBuilder extends BaseBuilder {
      * Returns an {@link IFolder} (located inside the 'gen' source folder), that matches the
      * package defined in the manifest. This {@link IFolder} may not actually exist
      * (aapt will create it anyway).
-     * @param project The project.
      * @return the {@link IFolder} that will contain the R class or null if
      * the folder was not found.
      * @throws CoreException
      */
-    private IFolder getGenManifestPackageFolder(IProject project)
-            throws CoreException {
+    private IFolder getGenManifestPackageFolder() throws CoreException {
         // get the path for the package
         IPath packagePath = getJavaPackagePath(mManifestPackage);
+
+        // get a folder for this path under the 'gen' source folder, and return it.
+        // This IFolder may not reference an actual existing folder.
+        return mGenFolder.getFolder(packagePath);
+    }
+
+    /**
+     * Returns an {@link IFolder} (located inside the 'gen' source folder), that matches the
+     * given package. This {@link IFolder} may not actually exist
+     * (aapt will create it anyway).
+     * @param javaPackage the java package that must match the folder.
+     * @return the {@link IFolder} that will contain the R class or null if
+     * the folder was not found.
+     * @throws CoreException
+     */
+    private IFolder getGenManifestPackageFolder(String javaPackage) throws CoreException {
+        // get the path for the package
+        IPath packagePath = getJavaPackagePath(javaPackage);
 
         // get a folder for this path under the 'gen' source folder, and return it.
         // This IFolder may not reference an actual existing folder.

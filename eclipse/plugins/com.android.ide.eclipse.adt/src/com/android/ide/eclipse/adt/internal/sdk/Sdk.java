@@ -20,6 +20,8 @@ import com.android.ddmlib.IDevice;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryState;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
@@ -37,16 +39,23 @@ import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarkerDelta;
+import org.eclipse.core.resources.IPathVariableManager;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 
@@ -58,6 +67,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Central point to load, manipulate and deal with the Android SDK. Only one SDK can be used
@@ -69,10 +79,16 @@ import java.util.Map;
  * To get the list of platforms or add-ons present in the SDK, call {@link #getTargets()}.
  */
 public class Sdk implements IProjectListener, IFileListener {
+    private final static Object sLock = new Object();
+
     private static Sdk sCurrentSdk = null;
 
-    private final SdkManager mManager;
-    private final AvdManager mAvdManager;
+    /**
+     * Map associating {@link IProject} and their state {@link ProjectState}.
+     * <p/>This <b>MUST NOT</b> be accessed directly. Instead use {@link #getProject(IProject)}.
+     */
+    private final static HashMap<IProject, ProjectState> sProjectStateMap =
+            new HashMap<IProject, ProjectState>();
 
     /**
      * Data bundled using during the load of Target data.
@@ -85,19 +101,15 @@ public class Sdk implements IProjectListener, IFileListener {
         final HashSet<IJavaProject> projecsToReload = new HashSet<IJavaProject>();
     }
 
+    private final SdkManager mManager;
+    private final AvdManager mAvdManager;
+
     /** Map associating an {@link IAndroidTarget} to an {@link AndroidTargetData} */
     private final HashMap<IAndroidTarget, AndroidTargetData> mTargetDataMap =
         new HashMap<IAndroidTarget, AndroidTargetData>();
     /** Map associating an {@link IAndroidTarget} and its {@link TargetLoadBundle}. */
     private final HashMap<IAndroidTarget, TargetLoadBundle> mTargetDataStatusMap =
         new HashMap<IAndroidTarget, TargetLoadBundle>();
-
-    /** Map associating {@link IProject} and their resolved {@link IAndroidTarget}. */
-    private final HashMap<IProject, IAndroidTarget> mProjectTargetMap =
-            new HashMap<IProject, IAndroidTarget>();
-    /** Map associating {@link IProject} and their APK creation settings ({@link ApkSettings}). */
-    private final HashMap<IProject, ApkSettings> mApkSettingsMap =
-            new HashMap<IProject, ApkSettings>();
 
     private final String mDocBaseUrl;
 
@@ -162,64 +174,76 @@ public class Sdk implements IProjectListener, IFileListener {
     }
 
     /**
+     * Returns the lock object used to synchronize all operations dealing with SDK, targets and
+     * projects.
+     */
+    public static final Object getLock() {
+        return sLock;
+    }
+
+    /**
      * Loads an SDK and returns an {@link Sdk} object if success.
      * <p/>If the SDK failed to load, it displays an error to the user.
      * @param sdkLocation the OS path to the SDK.
      */
-    public static synchronized Sdk loadSdk(String sdkLocation) {
-        if (sCurrentSdk != null) {
-            sCurrentSdk.dispose();
-            sCurrentSdk = null;
-        }
+    public static Sdk loadSdk(String sdkLocation) {
+        synchronized (sLock) {
+            if (sCurrentSdk != null) {
+                sCurrentSdk.dispose();
+                sCurrentSdk = null;
+            }
 
-        final ArrayList<String> logMessages = new ArrayList<String>();
-        ISdkLog log = new ISdkLog() {
-            public void error(Throwable throwable, String errorFormat, Object... arg) {
-                if (errorFormat != null) {
-                    logMessages.add(String.format("Error: " + errorFormat, arg));
+            final ArrayList<String> logMessages = new ArrayList<String>();
+            ISdkLog log = new ISdkLog() {
+                public void error(Throwable throwable, String errorFormat, Object... arg) {
+                    if (errorFormat != null) {
+                        logMessages.add(String.format("Error: " + errorFormat, arg));
+                    }
+
+                    if (throwable != null) {
+                        logMessages.add(throwable.getMessage());
+                    }
                 }
 
-                if (throwable != null) {
-                    logMessages.add(throwable.getMessage());
+                public void warning(String warningFormat, Object... arg) {
+                    logMessages.add(String.format("Warning: " + warningFormat, arg));
                 }
-            }
 
-            public void warning(String warningFormat, Object... arg) {
-                logMessages.add(String.format("Warning: " + warningFormat, arg));
-            }
+                public void printf(String msgFormat, Object... arg) {
+                    logMessages.add(String.format(msgFormat, arg));
+                }
+            };
 
-            public void printf(String msgFormat, Object... arg) {
-                logMessages.add(String.format(msgFormat, arg));
+            // get an SdkManager object for the location
+            SdkManager manager = SdkManager.createManager(sdkLocation, log);
+            if (manager != null) {
+                AvdManager avdManager = null;
+                try {
+                    avdManager = new AvdManager(manager, log);
+                } catch (AndroidLocationException e) {
+                    log.error(e, "Error parsing the AVDs");
+                }
+                sCurrentSdk = new Sdk(manager, avdManager);
+                return sCurrentSdk;
+            } else {
+                StringBuilder sb = new StringBuilder("Error Loading the SDK:\n");
+                for (String msg : logMessages) {
+                    sb.append('\n');
+                    sb.append(msg);
+                }
+                AdtPlugin.displayError("Android SDK", sb.toString());
             }
-        };
-
-        // get an SdkManager object for the location
-        SdkManager manager = SdkManager.createManager(sdkLocation, log);
-        if (manager != null) {
-            AvdManager avdManager = null;
-            try {
-                avdManager = new AvdManager(manager, log);
-            } catch (AndroidLocationException e) {
-                log.error(e, "Error parsing the AVDs");
-            }
-            sCurrentSdk = new Sdk(manager, avdManager);
-            return sCurrentSdk;
-        } else {
-            StringBuilder sb = new StringBuilder("Error Loading the SDK:\n");
-            for (String msg : logMessages) {
-                sb.append('\n');
-                sb.append(msg);
-            }
-            AdtPlugin.displayError("Android SDK", sb.toString());
+            return null;
         }
-        return null;
     }
 
     /**
      * Returns the current {@link Sdk} object.
      */
-    public static synchronized Sdk getCurrent() {
-        return sCurrentSdk;
+    public static Sdk getCurrent() {
+        synchronized (sLock) {
+            return sCurrentSdk;
+        }
     }
 
     /**
@@ -257,54 +281,51 @@ public class Sdk implements IProjectListener, IFileListener {
     }
 
     /**
-     * Sets a new target and a new list of Apk configuration for a given project.
+     * Sets a new target and/or a new set of APK settings for a given project.
      *
-     * @param project the project to receive the new apk configurations
+     * @param project the project to receive the new apk configurations.
      * @param target The new target to set, or <code>null</code> to not change the current target.
-     * @param apkConfigMap a map of apk configurations. The map contains (name, filter) where name
-     * is the name of the configuration (a-zA-Z0-9 only), and filter is the comma separated list of
-     * resource configuration to include in the apk (see aapt -c). Can be <code>null</code> if the
-     * apk configurations should not be updated.
+     * @param settings a new {@link ApkSettings} object to set or <code>null</code> to not change
+     * the current settings.
      */
     public void setProject(IProject project, IAndroidTarget target,
             ApkSettings settings) {
-        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
+        if (target == null && settings == null) {
+            return;
+        }
+
+
+        synchronized (sLock) {
             boolean resolveProject = false;
 
-            ProjectProperties properties = ProjectProperties.load(
-                    project.getLocation().toOSString(), PropertyType.DEFAULT);
-            if (properties == null) {
-                // doesn't exist yet? we create it.
-                properties = ProjectProperties.create(project.getLocation().toOSString(),
-                        PropertyType.DEFAULT);
+            ProjectState state = getProject(project);
+            if (state == null) {
+                return;
             }
+
+            ProjectProperties properties = state.getProperties();
 
             if (target != null) {
                 // look for the current target of the project
-                IAndroidTarget previousTarget = mProjectTargetMap.get(project);
+                IAndroidTarget previousTarget = state.getTarget();
 
                 if (target != previousTarget) {
                     // save the target hash string in the project persistent property
-                    properties.setAndroidTarget(target);
+                    properties.setProperty(ProjectProperties.PROPERTY_TARGET, target.hashString());
 
                     // put it in a local map for easy access.
-                    mProjectTargetMap.put(project, target);
+                    state.setTarget(target);
 
                     resolveProject = true;
                 }
             }
 
-            // if there's no settings, force default values (to reset possibly changed
-            // values in a previous call.
-            if (settings == null) {
-                settings = new ApkSettings();
+            if (settings != null) {
+                state.setApkSettings(settings);
+
+                // save the project settings into the project persistent property
+                ApkConfigurationHelper.setProperties(properties, settings);
             }
-
-            // save the project settings into the project persistent property
-            ApkConfigurationHelper.setProperties(properties, settings);
-
-            // put it in a local map for easy access.
-            mApkSettingsMap.put(project, settings);
 
             // we are done with the modification. Save the property file.
             try {
@@ -340,106 +361,79 @@ public class Sdk implements IProjectListener, IFileListener {
     }
 
     /**
+     * Returns the {@link ProjectState} object associated with a given project.
+     * <p/>
+     * This method is the only way to properly get the project's {@link ProjectState}
+     * If the project has not yet been loaded, then it is loaded.
+     * <p/>Because this methods deals with projects, it's not linked to an actual {@link Sdk}
+     * objects, and therefore is static.
+     * <p/>The value returned by {@link ProjectState#getTarget()} will change as {@link Sdk} objects
+     * are replaced.
+     * @param project the request project
+     * @return the ProjectState for the project.
+     */
+    public static ProjectState getProject(IProject project) {
+        if (project == null) {
+            return null;
+        }
+
+        synchronized (sLock) {
+            ProjectState state = sProjectStateMap.get(project);
+            if (state == null) {
+                // load the default.properties from the project folder.
+                IPath location = project.getLocation();
+                if (location == null) {  // can return null when the project is being deleted.
+                    // do nothing and return null;
+                    return null;
+                }
+
+                ProjectProperties properties = ProjectProperties.load(location.toOSString(),
+                        PropertyType.DEFAULT);
+                if (properties == null) {
+                    AdtPlugin.log(IStatus.ERROR, "Failed to load properties file for project '%s'",
+                            project.getName());
+                    return null;
+                }
+
+                state = new ProjectState(project, properties);
+                sProjectStateMap.put(project, state);
+
+                // try to resolve the target
+                if (AdtPlugin.getDefault().getSdkLoadStatus() == LoadStatus.LOADED) {
+                    sCurrentSdk.loadTarget(state);
+                }
+            }
+
+            return state;
+        }
+    }
+
+    /**
      * Returns the {@link IAndroidTarget} object associated with the given {@link IProject}.
      */
     public IAndroidTarget getTarget(IProject project) {
         if (project == null) {
             return null;
         }
-        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
-            IAndroidTarget target = mProjectTargetMap.get(project);
-            if (target == null) {
-                // get the value from the project persistent property.
-                String targetHashString = loadProjectProperties(project, this);
 
-                if (targetHashString != null) {
-                    target = mManager.getTargetFromHashString(targetHashString);
-                }
-            }
-
-            return target;
-        }
-    }
-
-
-    /**
-     * Parses the project properties and returns the hash string uniquely identifying the
-     * target of the given project.
-     * <p/>
-     * This methods reads the content of the <code>default.properties</code> file present in
-     * the root folder of the project.
-     * <p/>The returned string is equivalent to the return of {@link IAndroidTarget#hashString()}.
-     * @param project The project for which to return the target hash string.
-     * @param sdkStorage The sdk in which to store the Apk Configs. Can be null.
-     * @return the hash string or null if the project does not have a target set.
-     */
-    private static String loadProjectProperties(IProject project, Sdk sdkStorage) {
-        // load the default.properties from the project folder.
-        IPath location = project.getLocation();
-        if (location == null) {  // can return null when the project is being deleted.
-            // do nothing and return null;
-            return null;
-        }
-        ProjectProperties properties = ProjectProperties.load(location.toOSString(),
-                PropertyType.DEFAULT);
-        if (properties == null) {
-            AdtPlugin.log(IStatus.ERROR, "Failed to load properties file for project '%s'",
-                    project.getName());
-            return null;
+        ProjectState state = getProject(project);
+        if (state != null) {
+            return state.getTarget();
         }
 
-        if (sdkStorage != null) {
-            synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
-                ApkSettings settings = ApkConfigurationHelper.getSettings(properties);
-
-                if (settings != null) {
-                    sdkStorage.mApkSettingsMap.put(project, settings);
-                }
-            }
-        }
-
-        return properties.getProperty(ProjectProperties.PROPERTY_TARGET);
+        return null;
     }
 
     /**
-     * Returns the hash string uniquely identifying the target of a project.
-     * <p/>
-     * This methods reads the content of the <code>default.properties</code> file present in
-     * the root folder of the project.
-     * <p/>The string is equivalent to the return of {@link IAndroidTarget#hashString()}.
-     * @param project The project for which to return the target hash string.
-     * @return the hash string or null if the project does not have a target set.
+     * Loads the {@link IAndroidTarget} for a given project.
+     * <p/>This method will get the target hash string from the project properties, and resolve
+     * it to an {@link IAndroidTarget} object and store it inside the {@link ProjectState}.
+     * @param state the state representing the project to load.
      */
-    public static String getProjectTargetHashString(IProject project) {
-        return loadProjectProperties(project, null /*storeConfigs*/);
-    }
-
-    /**
-     * Sets a target hash string in given project's <code>default.properties</code> file.
-     * @param project The project in which to save the hash string.
-     * @param targetHashString The target hash string to save. This must be the result from
-     * {@link IAndroidTarget#hashString()}.
-     */
-    public static void setProjectTargetHashString(IProject project, String targetHashString) {
-        // because we don't want to erase other properties from default.properties, we first load
-        // them
-        ProjectProperties properties = ProjectProperties.load(project.getLocation().toOSString(),
-                PropertyType.DEFAULT);
-        if (properties == null) {
-            // doesn't exist yet? we create it.
-            properties = ProjectProperties.create(project.getLocation().toOSString(),
-                    PropertyType.DEFAULT);
-        }
-
-        // add/change the target hash string.
-        properties.setProperty(ProjectProperties.PROPERTY_TARGET, targetHashString);
-
-        // and rewrite the file.
-        try {
-            properties.save();
-        } catch (IOException e) {
-            AdtPlugin.log(e, "Failed to save default.properties for project '%s'",
-                    project.getName());
+    public void loadTarget(ProjectState state) {
+        String hash = state.getTargetHashString();
+        if (hash != null) {
+            state.setTarget(getTargetFromHashString(hash));
         }
     }
 
@@ -459,7 +453,7 @@ public class Sdk implements IProjectListener, IFileListener {
     public LoadStatus checkAndLoadTargetData(final IAndroidTarget target, IJavaProject project) {
         boolean loadData = false;
 
-        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
+        synchronized (sLock) {
             TargetLoadBundle bundle = mTargetDataStatusMap.get(target);
             if (bundle == null) {
                 bundle = new TargetLoadBundle();
@@ -497,7 +491,7 @@ public class Sdk implements IProjectListener, IFileListener {
 
                         IJavaProject[] javaProjectArray = null;
 
-                        synchronized (plugin.getSdkLockObject()) {
+                        synchronized (sLock) {
                             TargetLoadBundle bundle = mTargetDataStatusMap.get(target);
 
                             if (status.getCode() != IStatus.OK) {
@@ -522,7 +516,7 @@ public class Sdk implements IProjectListener, IFileListener {
 
                         return status;
                     } catch (Throwable t) {
-                        synchronized (plugin.getSdkLockObject()) {
+                        synchronized (sLock) {
                             TargetLoadBundle bundle = mTargetDataStatusMap.get(target);
                             bundle.status = LoadStatus.FAILED;
                         }
@@ -549,7 +543,7 @@ public class Sdk implements IProjectListener, IFileListener {
      * Return the {@link AndroidTargetData} for a given {@link IAndroidTarget}.
      */
     public AndroidTargetData getTargetData(IAndroidTarget target) {
-        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
+        synchronized (sLock) {
             return mTargetDataMap.get(target);
         }
     }
@@ -558,7 +552,7 @@ public class Sdk implements IProjectListener, IFileListener {
      * Return the {@link AndroidTargetData} for a given {@link IProject}.
      */
     public AndroidTargetData getTargetData(IProject project) {
-        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
+        synchronized (sLock) {
             IAndroidTarget target = getTarget(project);
             if (target != null) {
                 return getTargetData(target);
@@ -566,15 +560,6 @@ public class Sdk implements IProjectListener, IFileListener {
         }
 
         return null;
-    }
-
-    /**
-     * Returns the APK settings for a given project.
-     */
-    public ApkSettings getApkSettings(IProject project) {
-        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
-            return mApkSettingsMap.get(project);
-        }
     }
 
     /**
@@ -621,6 +606,14 @@ public class Sdk implements IProjectListener, IFileListener {
         mLayoutDeviceManager.loadDefaultAndUserDevices(mManager.getLocation());
         // and the ones from the add-on
         loadLayoutDevices();
+
+        // update whatever ProjectState is already present with new IAndroidTarget objects.
+        synchronized (sLock) {
+            for (Entry<IProject, ProjectState> entry: sProjectStateMap.entrySet()) {
+                entry.getValue().setTarget(
+                        getTargetFromHashString(entry.getValue().getTargetHashString()));
+            }
+        }
     }
 
     /**
@@ -630,10 +623,17 @@ public class Sdk implements IProjectListener, IFileListener {
         GlobalProjectMonitor monitor = GlobalProjectMonitor.getMonitor();
         monitor.removeProjectListener(this);
         monitor.removeFileListener(this);
+
+        // the IAndroidTarget objects are now obsolete so update the project states.
+        synchronized (sLock) {
+            for (Entry<IProject, ProjectState> entry: sProjectStateMap.entrySet()) {
+                entry.getValue().setTarget(null);
+            }
+        }
     }
 
     void setTargetData(IAndroidTarget target, AndroidTargetData data) {
-        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
+        synchronized (sLock) {
             mTargetDataMap.put(target, data);
         }
     }
@@ -695,22 +695,25 @@ public class Sdk implements IProjectListener, IFileListener {
 
     public void projectClosed(IProject project) {
         // get the target project
-        synchronized (AdtPlugin.getDefault().getSdkLockObject()) {
-            IAndroidTarget target = mProjectTargetMap.get(project);
-            if (target != null) {
-                // get the bridge for the target, and clear the cache for this project.
-                AndroidTargetData data = mTargetDataMap.get(target);
-                if (data != null) {
-                    LayoutBridge bridge = data.getLayoutBridge();
-                    if (bridge != null && bridge.status == LoadStatus.LOADED) {
-                        bridge.bridge.clearCaches(project);
+        synchronized (sLock) {
+            // direct access to the map since we're going to edit it.
+            ProjectState state = sProjectStateMap.get(project);
+            if (state != null) {
+                IAndroidTarget target = state.getTarget();
+                if (target != null) {
+                    // get the bridge for the target, and clear the cache for this project.
+                    AndroidTargetData data = mTargetDataMap.get(target);
+                    if (data != null) {
+                        LayoutBridge bridge = data.getLayoutBridge();
+                        if (bridge != null && bridge.status == LoadStatus.LOADED) {
+                            bridge.bridge.clearCaches(project);
+                        }
                     }
                 }
-            }
 
-            // now remove the project for the maps.
-            mProjectTargetMap.remove(project);
-            mApkSettingsMap.remove(project);
+                // now remove the project for the maps.
+                sProjectStateMap.remove(project);
+            }
         }
     }
 
@@ -718,14 +721,34 @@ public class Sdk implements IProjectListener, IFileListener {
         projectClosed(project);
     }
 
-    public void projectOpened(IProject project) {
-        // ignore this. The project will be added to the map the first time the target needs
-        // to be resolved.
+    public void projectOpened(IProject openedProject) {
+        ProjectState openedState = getProject(openedProject);
+        if (openedState != null) {
+            // find dependencies, if any
+            if (openedState.isMissingLibraries()) {
+                // look for all opened projects to see if they are valid library for this project.
+            }
+
+            // if the project is a library, then try to see if it's required by other projects.
+            if (openedState.isLibrary()) {
+                setupLibraryProject(openedProject);
+
+                synchronized (sLock) {
+                    for (ProjectState projectState : sProjectStateMap.values()) {
+                        if (projectState != openedState && projectState.isMissingLibraries()) {
+                            LibraryState libState = projectState.needs(openedProject);
+                            if (libState != null) {
+                                linkProjectAndLibrary(projectState, libState);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void projectOpenedWithWorkspace(IProject project) {
-        // ignore this. The project will be added to the map the first time the target needs
-        // to be resolved.
+        projectOpened(project);
     }
 
     public void fileChanged(final IFile file, IMarkerDelta[] markerDeltas, int kind) {
@@ -754,6 +777,85 @@ public class Sdk implements IProjectListener, IFileListener {
             job.setPriority(Job.BUILD); // build jobs are run after other interactive jobs
             job.schedule();
         }
+    }
+
+    private void setupLibraryProject(IProject libProject) {
+        // if needed add a path var for this library
+        IPathVariableManager pathVarMgr =
+            ResourcesPlugin.getWorkspace().getPathVariableManager();
+        IPath libPath = libProject.getLocation();
+
+        final String libName = libProject.getName();
+        final String varName = "_android_" + libName; //$NON-NLS-1$
+
+        if (libPath.equals(pathVarMgr.getValue(varName)) == false) {
+            try {
+                pathVarMgr.setValue(varName, libPath);
+            } catch (CoreException e) {
+                String message = String.format("Unable to set linked path var '%1$s' for library %2$s",
+                        varName, libPath.toOSString());
+                AdtPlugin.log(e, message);
+            }
+        }
+    }
+
+    /**
+     * Links a project and a library so that the project can use the library code and resources.
+     * <p/>This is done in a job to be sure that the workspace is not locked for resource
+     * modification.
+     * @param projectState the {@link ProjectState} for the main project
+     * @param libraryState the {@link LibraryState} for the library project.
+     */
+    private void linkProjectAndLibrary(final ProjectState projectState,
+            final LibraryState libraryState) {
+        Job job = new Job("Android Library link creation") { //$NON-NLS-1$
+            @Override
+            protected IStatus run(IProgressMonitor monitor) {
+                try {
+                    IProject project = projectState.getProject();
+                    IProject library = libraryState.getProject();
+
+                    // add the library to the list of dynamic references
+                    IProjectDescription projectDescription = project.getDescription();
+                    IProject[] refs = projectDescription.getDynamicReferences();
+                    if (refs.length > 0) {
+                        IProject[] newrefs = new IProject[refs.length + 1];
+                        System.arraycopy(refs, 0, newrefs, 0, refs.length);
+                        newrefs[refs.length] = library;
+                        refs = newrefs;
+                    } else {
+                        refs = new IProject[] { library };
+                    }
+                    projectDescription.setDynamicReferences(refs);
+
+                    // add a linked resource for the source of the library and add it to the project
+                    final String libName = library.getName();
+                    final String varName = "_android_" + libName; //$NON-NLS-1$
+
+                    // create a linked resource for the library using the path var.
+                    IFolder libSrc = project.getFolder(libName);
+                    // FIXME: make sure src has not been overriden?
+                    String libSrcFolder = "src"; //$NON-NLS-1$
+                    libSrc.createLink(new Path(varName + "/" + libSrcFolder), //$NON-NLS-1$
+                            IResource.REPLACE, monitor);
+
+                    // use the folder as a source folder
+                    IJavaProject javaProject = JavaCore.create(project);
+                    IClasspathEntry[] entries = javaProject.getRawClasspath();
+
+                    IClasspathEntry[] newEntries = new IClasspathEntry[entries.length + 1];
+                    System.arraycopy(entries, 0, newEntries, 0, entries.length);
+                    newEntries[entries.length] = JavaCore.newSourceEntry(libSrc.getFullPath());
+                    javaProject.setRawClasspath(newEntries, monitor);
+
+                    return Status.OK_STATUS;
+                } catch (CoreException e) {
+                    return e.getStatus();
+                }
+            }
+        };
+        job.setPriority(Job.BUILD);
+        job.schedule();
     }
 }
 

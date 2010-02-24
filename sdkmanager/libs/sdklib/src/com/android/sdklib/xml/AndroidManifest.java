@@ -16,6 +16,16 @@
 
 package com.android.sdklib.xml;
 
+import com.android.sdklib.SdkConstants;
+import com.android.sdklib.internal.io.IAbstractFile;
+import com.android.sdklib.internal.io.IAbstractFolder;
+import com.android.sdklib.internal.io.StreamException;
+
+import org.xml.sax.InputSource;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+
 /**
  * Helper and Constants for the AndroidManifest.xml file.
  *
@@ -43,6 +53,21 @@ public final class AndroidManifest {
     public final static String ATTRIBUTE_TARGET_PACKAGE = "targetPackage"; //$NON-NLS-1$
     public final static String ATTRIBUTE_EXPORTED = "exported"; //$NON-NLS-1$
 
+    public static String getPackage(IAbstractFolder projectFolder)
+            throws XPathExpressionException, StreamException {
+        IAbstractFile file = projectFolder.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
+        return getPackage(file);
+    }
+
+    public static String getPackage(IAbstractFile manifestFile)
+            throws XPathExpressionException, StreamException {
+        XPath xPath = AndroidXPathFactory.newXPath();
+
+        return xPath.evaluate(
+                "/"  + NODE_MANIFEST +
+                "/@" + ATTRIBUTE_PACKAGE,
+                new InputSource(manifestFile.getContents()));
+    }
 
     /**
      * Combines a java package, with a class value from the manifest to make a fully qualified
@@ -77,4 +102,25 @@ public final class AndroidManifest {
         }
     }
 
+    /**
+     * Given a fully qualified activity name (e.g. com.foo.test.MyClass) and given a project
+     * package base name (e.g. com.foo), returns the relative activity name that would be used
+     * the "name" attribute of an "activity" element.
+     *
+     * @param fullActivityName a fully qualified activity class name, e.g. "com.foo.test.MyClass"
+     * @param packageName The project base package name, e.g. "com.foo"
+     * @return The relative activity name if it can be computed or the original fullActivityName.
+     */
+    public static String extractActivityName(String fullActivityName, String packageName) {
+        if (packageName != null && fullActivityName != null) {
+            if (packageName.length() > 0 && fullActivityName.startsWith(packageName)) {
+                String name = fullActivityName.substring(packageName.length());
+                if (name.length() > 0 && name.charAt(0) == '.') {
+                    return name;
+                }
+            }
+        }
+
+        return fullActivityName;
+    }
 }
