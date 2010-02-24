@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,54 +23,157 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
     // ==== Drag'n'drop support ====
 
-    /**
-     * Called when a drop operation starts, whilst the d'n'd is dragging the cursor over the
-     * views. The purpose of the drop operation will be to create a new element.
-     * <p/>
-     * Drop targets that can't accept child views should always return null.
-     * <p/>
-     * Drop targets that can accept child views must return a non-empty list of drop zones,
-     * customized to the actual bounds of the target.
-     * The drop zones will be visually shown to the user. Once the user releases the mouse
-     * in one of the drop zone, the dropAccept/dropFinish methods will be called.
-     * <p/>
-     * Note that at this stage, the drop operation does not offer a way to know what is going
-     * to be dropped. We just know it's a view descriptor, typically from the layout palette,
-     * but we don't know which view class yet.
-     *
-     * @param targetNode The XML view that is currently the target of the drop.
-     * @return Null or an empty list if the rule rejects the drop, or a list of usable drop zones.
-     */
-//    public ArrayList<DropZone> dropStart(INode targetNode) {
-//
-//        // for testing, we're going to make 2 drop zones: top and bottom.
-//        // TODO find inner elements bounds & orientation, add margings
-//        def r = targetNode.getBounds();
-//        DropZone d1 = new DropZone();
-//        DropZone d2 = new DropZone();
-//        r.h /= 2;
-//        d1.bounds.set(r);
-//        d2.bounds.set(r);
-//        d2.bounds.y += r.h;
-//
-//        return [ d1, d2 ];
-//    }
+    DropFeedback onDropEnter(INode targetNode) {
 
-    /**
-     * Called after the user selects to drop the given source into one of the drop zones.
-     * <p/>
-     * This method should use the methods from the {@link INode} to actually create the
-     * new XML matching the source descriptor.
-     *
-     * @param sourceFqcn The FQCN of the view being dropped.
-     * @param targetNode The XML view that is currently the target of the drop.
-     * @param selectedZone One of the drop zones returned by {@link #dropStart(INode)}.
-     */
-//    public void dropFinish(
-//            String sourceFqcn,
-//            INode targetNode,
-//            DropZone selectedZone,
-//            Point where) {
-//        // TODO
-//    }
+        def bn = targetNode.getBounds();
+        if (!bn.isValid()) {
+            return;
+        }
+
+        boolean isVertical = targetNode.getStringAttr("orientation") == "vertical";
+
+        // Prepare a list of insertion points: X coords for horizontal, Y for vertical.
+        // Each list is a tuple: 0=pixel coordinate, 1=index of children or -1 for "at end".
+        def indexes = [ ] ;
+
+        int last = 0;
+        int pos = 0;
+        targetNode.getChildren().each {
+            def bc = it.getBounds();
+            if (bc.isValid()) {
+                int v = isVertical ? bc.y : bc.x;
+                v = (last + v) / 2;
+                indexes.add( [v, pos++] );
+
+                last = isVertical ? (bc.y + bc.h) : (bc.x + bc.w);
+            }
+        }
+
+        int v = isVertical ? bn.h : bn.w;
+        v = (last + v) / 2;
+        indexes.add( [v, -1] );
+
+        return new DropFeedback(
+          [ "isVertical": isVertical,   // boolean: True if vertical linear layout
+            "indexes": indexes,         // list(tuple(0:int, 1:int)): Split points (pixels + index)
+            "curr_x": null,             // int: Current marker X position
+            "curr_y": null,             // int: Current marker Y position
+            "insert_pos": -1            // int: Current drop insert index (-1 for "at the end")
+          ],
+          {
+            gc, node, feedback ->
+            // Paint closure for the LinearLayout.
+
+            Rect b = node.getBounds();
+            if (!b.isValid()) {
+                return;
+            }
+
+            gc.setForeground(gc.registerColor(0x00FFFF00));
+
+            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+            gc.setLineWidth(2);
+            gc.drawRect(b);
+
+            gc.setLineStyle(IGraphics.LineStyle.LINE_DOT);
+            gc.setLineWidth(1);
+
+            indexes.each {
+                int i = it[0];
+                if (isVertical) {
+                    // draw horizontal lines
+                    gc.drawLine(b.x, i, b.x + b.w, i);
+                } else {
+                    // draw vertical lines
+                    gc.drawLine(i, b.y, i, b.y + b.h);
+                }
+            }
+
+            def curr_x = feedback.userData.curr_x;
+            def curr_y = feedback.userData.curr_y;
+
+            if (curr_x != null && curr_y != null) {
+                gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+                gc.setLineWidth(2);
+
+                int x = curr_x;
+                int y = curr_y;
+                gc.drawLine(x - 10, y - 10, x + 10, y + 10);
+                gc.drawLine(x + 10, y - 10, x - 10, y + 10);
+                gc.drawRect(x - 10, y - 10, x + 10, y + 10);
+            }
+        })
+    }
+
+    DropFeedback onDropMove(INode targetNode, DropFeedback feedback, Point p) {
+        def data = feedback.userData;
+
+        Rect b = targetNode.getBounds();
+        if (!b.isValid()) {
+            return feedback;
+        }
+
+        boolean isVertical = data.isVertical;
+
+        int bestDist = Integer.MAX_VALUE;
+        int bestIndex = Integer.MIN_VALUE;
+        int bestPos = null;
+
+        data.indexes.each {
+            int i = it[0];
+            int pos = it[1];
+            if (bestDist > 0) {
+                int dist = (isVertical ? p.y : p.x) - i;
+                if (dist < 0) dist = - dist;
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestIndex = i;
+                    bestPos = pos;
+                }
+            }
+        }
+
+        if (bestIndex != Integer.MIN_VALUE) {
+            def old_x = data.curr_x;
+            def old_y = data.curr_y;
+
+            if (isVertical) {
+                data.curr_x = b.x + b.w / 2;
+                data.curr_y = bestIndex;
+            } else {
+                data.curr_x = bestIndex;
+                data.curr_y = b.y + b.h / 2;
+            }
+
+            data.insert_pos = bestPos;
+
+            feedback.requestPaint = (old_x != data.curr_x) || (old_y != data.curr_y);
+        }
+
+        return feedback;
+    }
+
+    void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point p) {
+
+        Rect b = targetNode.getBounds();
+        if (!b.isValid()) {
+            return;
+        }
+
+        int x = p.x - b.x;
+        int y = p.y - b.y;
+
+        int insert_pos = feedback.userData.insert_pos;
+
+        targetNode.debugPrintf("Linear.drop: add ${fqcn} at position ${insert_pos}");
+
+        targetNode.editXml("Add child to LinearLayout") {
+            INode e = targetNode.insertChildAt(fqcn, insert_pos);
+            // TODO adjust attributes?
+        }
+    }
+
+    void onDropLeave(INode targetNode, DropFeedback feedback) {
+        // ignore
+    }
 }

@@ -81,7 +81,7 @@ public class AvdManagerPage extends Composite implements ISdkListener {
         // nothing to be done for now.
     }
 
-    public void onSdkChange() {
+    public void onSdkChange(boolean init) {
         mAvdSelector.refresh(false /*reload*/);
     }
 

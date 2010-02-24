@@ -37,15 +37,8 @@ public class BaseView implements IViewRule {
         return null;
     }
 
-    public ArrayList<DropZone> dropStart(INode targetNode) {
-        // By default the base view rule does not participate in element creation by drag'n'drop.
-        return null;
-    }
 
-    public void dropFinish(String sourceFqcn, INode targetNode,
-            DropZone selectedZone, Point where) {
-        // Nothing to do, the base rule does not participate in drag'n'drop.
-    }
+    // ==== Selection ====
 
     void onSelected(IGraphics gc, INode selectedNode,
                 String displayName, boolean isMultipleSelection) {
@@ -90,6 +83,26 @@ public class BaseView implements IViewRule {
             // right line
             gc.drawLine(rc.x + rc.w, m, rp.x + rp.w, m);
         }
+    }
+
+
+    // ==== Drag'n'drop support ====
+
+    // By default Views do not accept drag'n'drop.
+    DropFeedback onDropEnter(INode targetNode) {
+        return null;
+    }
+
+    DropFeedback onDropMove(INode targetNode, DropFeedback feedback, Point p) {
+        return null;
+    }
+
+    void onDropLeave(INode targetNode, DropFeedback feedback) {
+        // ignore
+    }
+
+    void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point p) {
+        // ignore
     }
 
 }

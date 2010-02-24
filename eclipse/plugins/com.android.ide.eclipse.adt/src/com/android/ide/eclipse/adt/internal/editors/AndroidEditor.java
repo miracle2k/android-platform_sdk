@@ -106,6 +106,9 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
     /** flag set during page creation */
     private boolean mIsCreatingPage = false;
 
+    /** flag indicating we're inside {@link #editXmlModel(Runnable)}. */
+    private boolean mIsEditXmlModelPending;
+
     /**
      * Creates a form editor.
      * <p/>The editor will setup a {@link ITargetChangeListener} and call
@@ -649,12 +652,23 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
         IStructuredModel model = getModelForEdit();
         try {
             model.aboutToChangeModel();
+            mIsEditXmlModelPending = true;
             edit_action.run();
         } finally {
             // Notify the model we're done modifying it. This must *always* be executed.
+            mIsEditXmlModelPending = false;
             model.changedModel();
             model.releaseFromEdit();
         }
+    }
+
+    /**
+     * Returns true when the runnable of {@link #editXmlModel(Runnable)} is currently
+     * being executed. This means it is safe to actually edit the XML model returned
+     * by {@link #getModelForEdit()}.
+     */
+    public boolean isEditXmlModelPending() {
+        return mIsEditXmlModelPending;
     }
 
     /**

@@ -86,6 +86,11 @@ public class Rect {
             y < (this.y + this.h);
     }
 
+    /** Returns true if the rectangle contains the x,y coordinates, borders included. */
+    public boolean contains(Point p) {
+        return contains(p.x, p.y);
+    }
+
     @Override
     public String toString() {
         return String.format("Rect [%dx%d - %dx%d]", x, y, w, h);

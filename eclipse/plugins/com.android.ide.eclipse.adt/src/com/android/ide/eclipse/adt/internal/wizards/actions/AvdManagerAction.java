@@ -50,8 +50,10 @@ public class AvdManagerAction implements IWorkbenchWindowActionDelegate, IObject
                     sdk.getSdkLocation(),
                     false /*userCanChangeSdkRoot*/);
             window.addListeners(new UpdaterWindow.ISdkListener() {
-                public void onSdkChange() {
-                    AdtPlugin.getDefault().reparseSdk();
+                public void onSdkChange(boolean init) {
+                    if (init == false) { // ignore initial load of the SDK.
+                        AdtPlugin.getDefault().reparseSdk();
+                    }
                 }
             });
             window.open();

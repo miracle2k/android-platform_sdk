@@ -37,6 +37,8 @@ import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.project.ApkSettings;
+import com.android.sdklib.xml.AndroidManifest;
+import com.android.sdklib.xml.AndroidXPathFactory;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -59,6 +61,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -75,6 +78,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+
+import javax.xml.xpath.XPath;
 
 public class ApkBuilder extends BaseBuilder {
 
@@ -460,6 +465,17 @@ public class ApkBuilder extends BaseBuilder {
             // we need to test all three, as we may need to make the final package
             // but not the intermediary ones.
             if (mPackageResources || mConvertToDex || mBuildFinalPackage) {
+                // resource to the AndroidManifest.xml file
+                IFile manifestFile = project.getFile(AndroidConstants.FN_ANDROID_MANIFEST);
+
+                if (manifestFile == null || manifestFile.exists() == false) {
+                    // mark project and exit
+                    String msg = String.format(Messages.s_File_Missing,
+                            AndroidConstants.FN_ANDROID_MANIFEST);
+                    markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
+                    return referencedProjects;
+                }
+
                 IPath binLocation = outputFolder.getLocation();
                 if (binLocation == null) {
                     markProject(AndroidConstants.MARKER_PACKAGING, Messages.Output_Missing,
@@ -496,26 +512,11 @@ public class ApkBuilder extends BaseBuilder {
 
                     // need to figure out some path before we can execute aapt;
 
-                    // resource to the AndroidManifest.xml file
-                    IResource manifestResource = project .findMember(
-                            AndroidConstants.WS_SEP + AndroidConstants.FN_ANDROID_MANIFEST);
-
-                    if (manifestResource == null
-                            || manifestResource.exists() == false) {
-                        // mark project and exit
-                        String msg = String.format(Messages.s_File_Missing,
-                                AndroidConstants.FN_ANDROID_MANIFEST);
-                        markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
-                        return referencedProjects;
-                    }
-
                     // get the resource folder
-                    IFolder resFolder = project.getFolder(
-                            AndroidConstants.WS_RESOURCES);
+                    IFolder resFolder = project.getFolder(AndroidConstants.WS_RESOURCES);
 
                     // and the assets folder
-                    IFolder assetsFolder = project.getFolder(
-                            AndroidConstants.WS_ASSETS);
+                    IFolder assetsFolder = project.getFolder(AndroidConstants.WS_ASSETS);
 
                     // we need to make sure this one exists.
                     if (assetsFolder.exists() == false) {
@@ -523,7 +524,7 @@ public class ApkBuilder extends BaseBuilder {
                     }
 
                     IPath resLocation = resFolder.getLocation();
-                    IPath manifestLocation = manifestResource.getLocation();
+                    IPath manifestLocation = manifestFile.getLocation();
 
                     if (resLocation != null && manifestLocation != null) {
                         String osResPath = resLocation.toOSString();
@@ -582,6 +583,21 @@ public class ApkBuilder extends BaseBuilder {
                     saveProjectBooleanProperty(PROPERTY_CONVERT_TO_DEX, mConvertToDex);
                 }
 
+                // figure out whether the application is debuggable.
+                // It is considered debuggable if the attribute debuggable is set to true
+                // in the manifest
+                boolean debuggable = false;
+                XPath xpath = AndroidXPathFactory.newXPath();
+                String result = xpath.evaluate(
+                        "/"  + AndroidManifest.NODE_MANIFEST +                //$NON-NLS-1$
+                        "/"  + AndroidManifest.NODE_APPLICATION +             //$NON-NLS-1$
+                        "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX +        //$NON-NLS-1$
+                                ":" + AndroidManifest.ATTRIBUTE_DEBUGGABLE,   //$NON-NLS-1$
+                        new InputSource(manifestFile.getContents()));
+                if (result.length() > 0) {
+                    debuggable = Boolean.valueOf(result);
+                }
+
                 // now we need to make the final package from the intermediary apk
                 // and classes.dex.
                 // This is the default package with all the resources.
@@ -590,7 +606,7 @@ public class ApkBuilder extends BaseBuilder {
                         AndroidConstants.FN_CLASSES_DEX;
                 if (finalPackage(osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
                                 classesDexPath,osFinalPackagePath, javaProject,
-                                referencedJavaProjects) == false) {
+                                referencedJavaProjects, debuggable) == false) {
                     return referencedProjects;
                 }
 
@@ -607,7 +623,7 @@ public class ApkBuilder extends BaseBuilder {
                         String apkOsFilePath = osBinPath + File.separator +
                                 ProjectHelper.getApkFilename(project, entry.getKey());
                         if (finalPackage(resPath, classesDexPath, apkOsFilePath, javaProject,
-                                referencedJavaProjects) == false) {
+                                referencedJavaProjects, debuggable) == false) {
                             return referencedProjects;
                         }
                     }
@@ -862,10 +878,12 @@ public class ApkBuilder extends BaseBuilder {
      * @param output The path to the final package file to create.
      * @param javaProject
      * @param referencedJavaProjects
+     * @param debuggable
      * @return true if success, false otherwise.
      */
     private boolean finalPackage(String intermediateApk, String dex, String output,
-            final IJavaProject javaProject, IJavaProject[] referencedJavaProjects) {
+            final IJavaProject javaProject, IJavaProject[] referencedJavaProjects,
+            boolean debuggable) {
 
         FileOutputStream fos = null;
         try {
@@ -992,7 +1010,7 @@ public class ApkBuilder extends BaseBuilder {
             if (libFolder != null && libFolder.exists() &&
                     libFolder.getType() == IResource.FOLDER) {
                 // look inside and put .so in lib/* by keeping the relative folder path.
-                writeNativeLibraries((IFolder) libFolder, builder);
+                writeNativeLibraries((IFolder) libFolder, builder, debuggable);
             }
 
             // close the jar file and write the manifest and sign it.
@@ -1072,14 +1090,18 @@ public class ApkBuilder extends BaseBuilder {
      * The path in the archive is based on the ABI folder name, and located under a main
      * folder called "lib".
      *
-     * This method also packages any "gdbserver" executable it finds in the ABI folders.
+     * This method also packages any "gdbserver" executable it finds in the ABI folders, if
+     * <var>debuggable</var> is set to true.
      *
      * @param rootFolder The folder containing the native libraries.
      * @param jarBuilder the {@link SignedJarBuilder} used to create the archive.
+     * @param debuggable whether the application is debuggable. If <code>true</code> then gdbserver
+     * executables will be packaged as well.
      * @throws CoreException
      * @throws IOException
      */
-    private void writeNativeLibraries(IFolder rootFolder, SignedJarBuilder jarBuilder)
+    private void writeNativeLibraries(IFolder rootFolder, SignedJarBuilder jarBuilder,
+            boolean debuggable)
             throws CoreException, IOException {
         // the native files must be under a single sub-folder under the main root folder.
         // the sub-folder represents the abi for the native libs
@@ -1095,7 +1117,7 @@ public class ApkBuilder extends BaseBuilder {
                         // check the extension.
                         String ext = path.getFileExtension();
                         if (AndroidConstants.EXT_NATIVE_LIB.equalsIgnoreCase(ext) ||
-                                GDBSERVER_NAME.equals(lib.getName())) {
+                                (debuggable && GDBSERVER_NAME.equals(lib.getName()))) {
                             // compute the path inside the archive.
                             IPath apkPath = new Path(SdkConstants.FD_APK_NATIVE_LIBS);
                             apkPath = apkPath.append(abi.getName()).append(lib.getName());

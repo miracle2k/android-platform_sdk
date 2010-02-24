@@ -43,7 +43,7 @@ public interface INode {
      * guaranteed that its bounds are known and thus are valid.
      * <p/>
      * However the bounds are invalid (e.g. not known yet) for new XML elements
-     * that have just been created by the {@link #createChild(String)} method.
+     * that have just been created, e.g. by the {@link #appendChild(String)} method.
      *
      * @return A non-null rectangle, in canvas coordinates.
      */
@@ -60,6 +60,10 @@ public interface INode {
      */
     INode getParent();
 
+    /**
+     * Returns the list of valid children nodes. The list can be empty but not null.
+     */
+    INode[] getChildren();
 
     // ---- XML Editing ---
 
@@ -69,7 +73,7 @@ public interface INode {
      * edit-XML wrapper.
      *
      * @param undoName The UI name that will be given to the undo action.
-     * @param closure The code to execute.
+     * @param closure The code to execute. The closure receives this INode itself as argument.
      */
     void editXml(String undoName, final Closure closure);
 
@@ -87,7 +91,23 @@ public interface INode {
      *  depend on whether this is an Android view or a custom project view.
      * @return The node for the newly created element. Can be null if we failed to create it.
      */
-    INode createChild(String viewFqcn);
+    INode appendChild(String viewFqcn);
+
+    /**
+     * Creates a new XML element as a child of this node's XML element and inserts
+     * it at the specified position in the children list.
+     * <p/>
+     * For this to work, the editor must have a descriptor for the given FQCN.
+     * <p/>
+     * This call must be done in the context of editXml().
+     *
+     * @param viewFqcn The FQCN of the element to create. The actual XML local name will
+     *  depend on whether this is an Android view or a custom project view.
+     * @param index Index of the child to insert before. If the index is out of bounds
+     *  (less than zero or larger that current last child), appends at the end.
+     * @return The node for the newly created element. Can be null if we failed to create it.
+     */
+    INode insertChildAt(String viewFqcn, int index);
 
     /**
      * Sets an attribute for the underlying XML element.
@@ -105,7 +125,12 @@ public interface INode {
      */
     boolean setAttribute(String attributeName, String value);
 
-
+    /**
+     * Returns a given XML attribute.
+     * @param attrName The local name of the attribute.
+     * @return the attribute as a {@link String}, if it exists, or <code>null</code>
+     */
+    String getStringAttr(String attrName);
 
     // -----------
 

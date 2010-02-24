@@ -204,7 +204,7 @@ public class GCWrapper implements IGraphics {
 
     public void fillRect(int x1, int y1, int x2, int y2) {
         checkGC();
-        getGc().drawRectangle(x1 + mX, y1 + mY, x2-x1, y2-y1);
+        getGc().fillRectangle(x1 + mX, y1 + mY, x2-x1, y2-y1);
     }
 
     public void fillRect(Point p1, Point p2) {
@@ -213,11 +213,15 @@ public class GCWrapper implements IGraphics {
 
     public void fillRect(Rect r) {
         checkGC();
-        getGc().drawRectangle(r.x + mX, r.y + mY, r.w, r.h);
+        getGc().fillRectangle(r.x + mX, r.y + mY, r.w, r.h);
     }
 
     public void drawString(String string, int x, int y) {
         checkGC();
         getGc().drawString(string, x + mX, y + mY, true /*isTransparent*/);
+    }
+
+    public void drawString(String string, Point topLeft) {
+        drawString(string, topLeft.x, topLeft.y);
     }
 }

@@ -36,6 +36,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -48,7 +49,6 @@ public class NodeProxy implements INode {
 
     private final UiViewElementNode mNode;
     private final Rect mBounds;
-    private boolean mXmlEditOK;
     private final NodeFactory mFactory;
 
     /**
@@ -113,46 +113,60 @@ public class NodeProxy implements INode {
         return null;
     }
 
+    public INode[] getChildren() {
+        if (mNode != null) {
+            ArrayList<INode> nodes = new ArrayList<INode>();
+            for (UiElementNode uiChild : mNode.getUiChildren()) {
+                if (uiChild instanceof UiViewElementNode) {
+                    nodes.add(mFactory.create((UiViewElementNode) uiChild));
+                }
+            }
+
+            return nodes.toArray(new INode[nodes.size()]);
+        }
+
+        return new INode[0];
+    }
+
 
     // ---- XML Editing ---
 
     public void editXml(String undoName, final Closure c) {
-        if (mXmlEditOK) {
-            throw new RuntimeException("Error: nested calls to INode.editXml!");
+        final AndroidEditor editor = mNode.getEditor();
+
+        if (editor.isEditXmlModelPending()) {
+            throw new RuntimeException("Error: calls to INode.editXml cannot be nested!");
         }
-        try {
-            mXmlEditOK = true;
 
-            final AndroidEditor editor = mNode.getEditor();
+        if (editor instanceof LayoutEditor) {
+            // Create an undo wrapper, which takes a runnable
+            ((LayoutEditor) editor).wrapUndoRecording(
+                    undoName,
+                    new Runnable() {
+                        public void run() {
+                            // Create an edit-XML wrapper, which takes a runnable
+                            editor.editXmlModel(new Runnable() {
+                                public void run() {
+                                    // Here editor.isEditXmlModelPending returns true and it
+                                    // is safe to edit the model using any method from INode.
 
-            if (editor instanceof LayoutEditor) {
-                // Create an undo wrapper, which takes a runnable
-                ((LayoutEditor) editor).wrapUndoRecording(
-                        undoName,
-                        new Runnable() {
-                            public void run() {
-                                // Create an edit-XML wrapper, which takes a runnable
-                                editor.editXmlModel(new Runnable() {
-                                    public void run() {
-                                        // Finally execute the closure that will act on the XML
-                                        c.call(this);
-                                    }
-                                });
-                            }
-                        });
-            }
-        } finally {
-            mXmlEditOK = false;
+                                    // Finally execute the closure that will act on the XML
+                                    c.call(NodeProxy.this);
+                                }
+                            });
+                        }
+                    });
         }
     }
 
     private void checkEditOK() {
-        if (!mXmlEditOK) {
+        final AndroidEditor editor = mNode.getEditor();
+        if (!editor.isEditXmlModelPending()) {
             throw new RuntimeException("Error: XML edit call without using INode.editXml!");
         }
     }
 
-    public INode createChild(String viewFqcn) {
+    public INode appendChild(String viewFqcn) {
         checkEditOK();
 
         // Find the descriptor for this FQCN
@@ -162,9 +176,46 @@ public class NodeProxy implements INode {
             return null;
         }
 
-        // TODO use UiElementNode.insertNewUiChild() to control the position, which is
-        // needed for a relative layout.
+        // Append at the end.
         UiElementNode uiNew = mNode.appendNewUiChild(vd);
+
+        // TODO we probably want to defer that to the GRE to use IViewRule#getDefaultAttributes()
+        DescriptorsUtils.setDefaultLayoutAttributes(uiNew, false /*updateLayout*/);
+
+        Node xmlNode = uiNew.createXmlNode();
+
+        if (!(uiNew instanceof UiViewElementNode) || xmlNode == null) {
+            // Both things are not supposed to happen. When they do, we're in big trouble.
+            // We don't really know how to revert the state at this point and the UI model is
+            // now out of sync with the XML model.
+            // Panic ensues.
+            // The best bet is to abort now. The edit wrapper will release the edit and the
+            // XML/UI should get reloaded properly (with a likely invalid XML.)
+            debugPrintf("Failed to create a new %s element", viewFqcn);
+            throw new RuntimeException("XML node creation failed."); //$NON-NLS-1$
+        }
+
+        return mFactory.create((UiViewElementNode) uiNew);
+    }
+
+    public INode insertChildAt(String viewFqcn, int index) {
+        checkEditOK();
+
+        // Find the descriptor for this FQCN
+        ViewElementDescriptor vd = getFqcnViewDescritor(viewFqcn);
+        if (vd == null) {
+            debugPrintf("Can't create a new %s element", viewFqcn);
+            return null;
+        }
+
+        // Insert at the requested position or at the end.
+        int n = mNode.getUiChildren().size();
+        UiElementNode uiNew = null;
+        if (index < 0 || index >= n) {
+            uiNew = mNode.appendNewUiChild(vd);
+        } else {
+            uiNew = mNode.insertNewUiChild(index, vd);
+        }
 
         // TODO we probably want to defer that to the GRE to use IViewRule#getDefaultAttributes()
         DescriptorsUtils.setDefaultLayoutAttributes(uiNew, false /*updateLayout*/);
@@ -202,8 +253,7 @@ public class NodeProxy implements INode {
      * @param attrName The local name of the attribute.
      * @return the attribute as a {@link String}, if it exists, or <code>null</code>
      */
-    @SuppressWarnings("unused")
-    private String getStringAttr(String attrName) {
+    public String getStringAttr(String attrName) {
         // TODO this was just copy-pasted from the GLE1 edit code. Need to adapt to this context.
         UiElementNode uiNode = mNode;
         if (uiNode.getXmlNode() != null) {

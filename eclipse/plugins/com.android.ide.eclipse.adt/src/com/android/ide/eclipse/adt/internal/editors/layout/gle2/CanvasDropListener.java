@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropZone;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 
 import org.eclipse.swt.dnd.DND;
@@ -25,8 +25,6 @@ import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TransferData;
 import org.eclipse.swt.graphics.Point;
-
-import java.util.ArrayList;
 
 /**
  * Handles drop operations on top of the canvas.
@@ -36,27 +34,35 @@ import java.util.ArrayList;
 /* package */ class CanvasDropListener implements DropTargetListener {
 
     private final LayoutCanvas mCanvas;
+    /**
+     * The top view right under the drag'n'drop cursor.
+     * This can only be null during a drag'n'drop when there is no view under the cursor
+     * or after the state was all cleared.
+     */
     private CanvasViewInfo mCurrentView;
-    private DropZone mCurrentZone;
-    private ArrayList<DropZone> mZones;
+
+    /**
+     * The first view under the cursor that responded to onDropEnter is called the "target view".
+     * It can differ from mCurrentView, typically because a terminal View doesn't
+     * accept drag'n'drop so its parent layout became the target drag'n'drop receiver.
+     * <p/>
+     * The target node is the proxy node associated with the target view.
+     * This can be null if no view under the cursor accepted the drag'n'drop or if the node
+     * factory couldn't create a proxy for it.
+     */
     private NodeProxy mTargetNode;
-    private CanvasViewInfo mTargetView;
+
+    /**
+     * The latest drop feedback returned by IViewRule.onDropEnter/Move.
+     */
+    private DropFeedback mFeedback;
+    private NodeProxy mLeaveTargetNode;
+    private DropFeedback mLeaveFeedback;
 
     public CanvasDropListener(LayoutCanvas canvas) {
         mCanvas = canvas;
     }
 
-    public CanvasViewInfo getTargetView() {
-        return mTargetView;
-    }
-
-    public ArrayList<DropZone> getZones() {
-        return mZones;
-    }
-
-    public DropZone getCurrentZone() {
-        return mCurrentZone;
-    }
 
     /*
      * The cursor has entered the drop target boundaries.
@@ -105,11 +111,20 @@ import java.util.ArrayList;
     }
 
     /*
-     * The cursor has left the drop target boundaries.
+     * The cursor has left the drop target boundaries OR data is about to be dropped.
      * {@inheritDoc}
      */
     public void dragLeave(DropTargetEvent event) {
         AdtPlugin.printErrorToConsole("DEBUG", "drag leave");
+
+        // dragLeave is unfortunately called right before data is about to be dropped
+        // (between the last dropMove and the next dropAccept). That means we can't just
+        // trash the current DropFeedback from the current view rule, we need to preserve
+        // it in case a dropAccept happens next.
+        // See the corresponding kludge in drop().
+        mLeaveTargetNode = mTargetNode;
+        mLeaveFeedback = mFeedback;
+
         clearDropInfo();
     }
 
@@ -141,8 +156,21 @@ import java.util.ArrayList;
      * {@inheritDoc}
      */
     public void drop(DropTargetEvent event) {
-        // TODO Auto-generated method stub
-        AdtPlugin.printErrorToConsole("DEBUG", "drop");
+        AdtPlugin.printErrorToConsole("DEBUG", "dropped");
+
+        if (mTargetNode == null) {
+            // DEBUG
+            AdtPlugin.printErrorToConsole("DEBUG", "dropped on null targetNode");
+            return;
+        }
+
+        // If we have a valid target node and it matches the one we saved in
+        // dragLeave then we restore the DropFeedback that we saved in dragLeave.
+        if (mTargetNode == mLeaveTargetNode) {
+            mFeedback = mLeaveFeedback;
+        }
+        mLeaveTargetNode = null;
+        mLeaveFeedback = null;
 
         String viewFqcn = null;
 
@@ -162,10 +190,22 @@ import java.util.ArrayList;
         }
 
         Point p = eventToCanvasPoint(event);
-        mCanvas.getRulesEngine().callDropFinish(viewFqcn, mTargetNode, mCurrentZone,
-                new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(p.x, p.y));
+        com.android.ide.eclipse.adt.editors.layout.gscripts.Point p2 =
+            new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(p.x, p.y);
+        mCanvas.getRulesEngine().callOnDropped(viewFqcn, mTargetNode, mFeedback, p2);
 
         clearDropInfo();
+    }
+
+    /**
+     * Invoked by the canvas to refresh the display.
+     * @param gCWrapper The GC wrapper, never null.
+     */
+    public void paintFeedback(GCWrapper gCWrapper) {
+        if (mTargetNode != null && mFeedback != null && mFeedback.requestPaint) {
+            mFeedback.requestPaint = false;
+            mCanvas.getRulesEngine().callDropFeedbackPaint(gCWrapper, mTargetNode, mFeedback);
+        }
     }
 
     /**
@@ -201,6 +241,11 @@ import java.util.ArrayList;
         return false;
     }
 
+    /**
+     * Called on both dragEnter and dragMove.
+     * Generates the onDropEnter/Move/Leave events depending on the currently
+     * selected target node.
+     */
     private void processDropEvent(DropTargetEvent event) {
         if (!mCanvas.isResultValid()) {
             // We don't allow drop on an invalid layout, even if we have some obsolete
@@ -216,30 +261,79 @@ import java.util.ArrayList;
 
         CanvasViewInfo vi = mCanvas.findViewInfoAt(x, y);
 
-        boolean needRedraw = false;
+        boolean isMove = true;
 
         if (vi != mCurrentView) {
-            setCurrentView(vi);
-            needRedraw = true;
+            // Current view has changed. Does that also change the target node?
+            // Note that either mCurrentView or vi can be null.
+
+
+            if (vi == null) {
+                // vi is null but mCurrentView is not, no view is a target anymore
+                callDropLeave();
+
+                // We don't need onDropMove in this case
+                isMove = false;
+
+            } else {
+                // vi is a new current view.
+                // Query GRE for onDropEnter on the view till we find one that returns a non-null
+                // object.
+
+                DropFeedback df = null;
+                NodeProxy targetNode = null;
+
+                for (CanvasViewInfo targetVi = vi;
+                        targetVi != null && df == null;
+                        targetVi = targetVi.getParent()) {
+                    targetNode = mCanvas.getNodeFactory().create(targetVi);
+                    df = mCanvas.getRulesEngine().callOnDropEnter(targetNode);
+                }
+
+                if (df != null && targetNode != mTargetNode) {
+                    // We found a new target node for the drag'n'drop.
+                    // Release the previous one, if any.
+                    callDropLeave();
+
+                    // And assign the new one
+                    mTargetNode = targetNode;
+                    mFeedback = df;
+
+                    // We don't need onDropMove in this case
+                    isMove = false;
+                }
+            }
+
+            mCurrentView = vi;
         }
 
-        if (mZones != null) {
-            if (mCurrentZone == null || !mCurrentZone.bounds.contains(x, y)) {
-                // If there is no current zone or it doesn't contain the current point,
-                // try to find one.
-                for (DropZone z : mZones) {
-                    if (z.bounds.contains(x, y)) {
-                        mCurrentZone = z;
-                        needRedraw = true;
-                        break;
-                    }
-                }
+        if (isMove && mTargetNode != null && mFeedback != null) {
+            // this is a move inside the same view
+            com.android.ide.eclipse.adt.editors.layout.gscripts.Point p2 =
+                new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(x, y);
+            DropFeedback df = mCanvas.getRulesEngine().callOnDropMove(mTargetNode, mFeedback, p2);
+            if (df == null) {
+                // The target is no longer interested in the drop move.
+                callDropLeave();
             }
         }
 
-        if (needRedraw) {
+        if (mFeedback != null && mFeedback.requestPaint) {
             mCanvas.redraw();
         }
+    }
+
+    /**
+     * Calls onDropLeave on mTargetNode with the current mFeedback. <br/>
+     * Then clears mTargetNode and mFeedback.
+     */
+    private void callDropLeave() {
+        if (mTargetNode != null && mFeedback != null) {
+            mCanvas.getRulesEngine().callOnDropLeave(mTargetNode, mFeedback);
+        }
+
+        mTargetNode = null;
+        mFeedback = null;
     }
 
     private Point eventToCanvasPoint(DropTargetEvent event) {
@@ -249,46 +343,10 @@ import java.util.ArrayList;
         return p;
     }
 
-    private void setCurrentView(CanvasViewInfo vi) {
-        // We switched to a new view.
-        clearState();
-        mCurrentView = vi;
-
-        if (vi != null) {
-            // Query GRE for drop zones. If the view that we found reports null for drop
-            // zones, we move on the parent view till we find one that has drop zones.
-            for (; vi != null && mZones == null; vi = vi.getParent()) {
-                mTargetView = vi;
-                mTargetNode = mCanvas.getNodeFactory().create(vi);
-                mZones = mCanvas.getRulesEngine().callDropStart(mTargetNode);
-            }
-
-            if (mZones == null) {
-                mTargetView = null;
-                mTargetNode = null;
-            }
-
-            AdtPlugin.printErrorToConsole("ZONES", mZones);
-        }
-
+    private void clearDropInfo() {
+        callDropLeave();
+        mCurrentView = null;
         mCanvas.redraw();
     }
-
-    private void clearState() {
-        mCurrentView = null;
-        mTargetView = null;
-        mTargetNode = null;
-
-        mCurrentZone = null;
-        mZones = null;
-    }
-
-    private void clearDropInfo() {
-        if (mCurrentView != null) {
-            clearState();
-            mCanvas.redraw();
-        }
-    }
-
 
 }

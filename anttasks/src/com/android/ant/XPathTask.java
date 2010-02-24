@@ -39,6 +39,7 @@ public class XPathTask extends Task {
     private Path mManifestFile;
     private String mProperty;
     private String mExpression;
+    private String mDefault;
 
     public void setInput(Path manifestFile) {
         mManifestFile = manifestFile;
@@ -50,6 +51,10 @@ public class XPathTask extends Task {
 
     public void setExpression(String expression) {
         mExpression = expression;
+    }
+
+    public void setDefault(String defaultValue) {
+        mDefault = defaultValue;
     }
 
     @Override
@@ -71,6 +76,9 @@ public class XPathTask extends Task {
 
             String file = mManifestFile.list()[0];
             String result = xpath.evaluate(mExpression, new InputSource(new FileInputStream(file)));
+            if (result.length() == 0 && mDefault != null) {
+                result = mDefault;
+            }
 
             getProject().setProperty(mProperty, result);
         } catch (XPathExpressionException e) {

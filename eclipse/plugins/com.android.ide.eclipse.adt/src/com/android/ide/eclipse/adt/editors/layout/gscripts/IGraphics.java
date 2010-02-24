@@ -145,4 +145,13 @@ public interface IGraphics {
      * @param y the y coordinate of the top left corner of the text.
      */
     void drawString(String string, int x, int y);
+
+    /**
+     * Draws the given string, using the current foreground color.
+     * No tab expansion or carriage return processing will be performed.
+     *
+     * @param string the string to be drawn.
+     * @param topLeft the top left corner of the text.
+     */
+    void drawString(String string, Point topLeft);
 }

@@ -37,6 +37,9 @@
     <!-- Name of the application package extracted from manifest file -->
     <xpath input="AndroidManifest.xml" expression="/manifest/@package"
                 output="manifest.package" />
+    <!-- Value of the debuggable attribute (Application node) extracted from manifest file -->
+    <xpath input="AndroidManifest.xml" expression="/manifest/application/@android:debuggable"
+	            output="manifest.debuggable" default="false"/>
 
     <!-- Input directories -->
     <property name="source.dir" value="src" />
@@ -134,7 +137,7 @@
 
     <!-- This is macro that enable passing variable list of external jar files to ApkBuilder
          Example of use:
-         <package-helper sign.package="true" debug.mode="true">
+         <package-helper sign.package="true">
              <extra-jars>
                 <jarfolder path="my_jars" />
                 <jarfile path="foo/bar.jar" />
@@ -143,14 +146,13 @@
          </package-helper> -->
     <macrodef name="package-helper">
         <attribute name="sign.package" />
-        <attribute name="debug.mode" />
         <element name="extra-jars" optional="yes" />
         <sequential>
             <apkbuilder
                     outfolder="${out.absolute.dir}"
                     basename="${ant.project.name}"
                     signed="@{sign.package}"
-                    debug="@{debug.mode}"
+                    debug="${manifest.debuggable}"
                     verbose="${verbose}">
                 <file path="${intermediate.dex.file}" />
                 <sourcefolder path="${source.absolute.dir}" />
@@ -283,12 +285,12 @@
 
     <!-- Packages the application and sign it with a debug key. -->
     <target name="-package-debug-sign" depends="-dex, -package-resources">
-        <package-helper sign.package="true" debug.mode="true" />
+        <package-helper sign.package="true" />
     </target>
 
     <!-- Packages the application without signing it. -->
     <target name="-package-release" depends="-dex, -package-resources">
-        <package-helper sign.package="false" debug.mode="false" />
+        <package-helper sign.package="false" />
     </target>
 
     <target name="-compile-tested-if-test" if="tested.project.dir" unless="do.not.compile.again">
@@ -413,7 +415,7 @@
 
     <!-- Invoked from external files for code coverage purposes -->
     <target name="-package-with-emma" depends="-dex-instrumented, -package-resources">
-        <package-helper sign.package="true" debug.mode="true">
+        <package-helper sign.package="true">
             <extra-jars>
                 <!-- Injected from external file -->
                 <jarfile path="${emma.dir}/emma_device.jar" />
