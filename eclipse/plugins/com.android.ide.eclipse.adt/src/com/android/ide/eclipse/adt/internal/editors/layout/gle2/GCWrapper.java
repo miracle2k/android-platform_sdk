@@ -21,6 +21,7 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.LayoutCanvas.ScaleTransform;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -66,14 +67,14 @@ public class GCWrapper implements IGraphics {
     /** The cached pixel height of the default current font. */
     private int mFontHeight = 0;
 
-    /** The offset of the canvas in X. */
-    private final int mX;
-    /** The offset of the canvas in Y. */
-    private final int mY;
+    /** The scaling of the canvas in X. */
+    private final ScaleTransform mHScale;
+    /** The scaling of the canvas in Y. */
+    private final ScaleTransform mVScale;
 
-    public GCWrapper(int offsetX, int offsetY) {
-        mX = offsetX;
-        mY = offsetY;
+    public GCWrapper(ScaleTransform hScale, ScaleTransform vScale) {
+        mHScale = hScale;
+        mVScale = vScale;
         mGc = null;
     }
 
@@ -181,7 +182,11 @@ public class GCWrapper implements IGraphics {
 
     public void drawLine(int x1, int y1, int x2, int y2) {
         checkGC();
-        getGc().drawLine(x1 + mX, y1 + mY, x2 + mX, y2 + mY);
+        x1 = mHScale.translate(x1);
+        y1 = mVScale.translate(y1);
+        x2 = mHScale.translate(x2);
+        y2 = mVScale.translate(y2);
+        getGc().drawLine(x1, y1, x2, y2);
     }
 
     public void drawLine(Point p1, Point p2) {
@@ -190,7 +195,11 @@ public class GCWrapper implements IGraphics {
 
     public void drawRect(int x1, int y1, int x2, int y2) {
         checkGC();
-        getGc().drawRectangle(x1 + mX, y1 + mY, x2-x1, y2-y1);
+        int x = mHScale.translate(x1);
+        int y = mVScale.translate(y1);
+        int w = mHScale.scale(x2 - x1);
+        int h = mVScale.scale(y2 - y1);
+        getGc().drawRectangle(x, y, w, h);
     }
 
     public void drawRect(Point p1, Point p2) {
@@ -199,12 +208,20 @@ public class GCWrapper implements IGraphics {
 
     public void drawRect(Rect r) {
         checkGC();
-        getGc().drawRectangle(r.x + mX, r.y + mY, r.w, r.h);
+        int x = mHScale.translate(r.x);
+        int y = mVScale.translate(r.y);
+        int w = mHScale.scale(r.w);
+        int h = mVScale.scale(r.h);
+        getGc().drawRectangle(x, y, w, h);
     }
 
     public void fillRect(int x1, int y1, int x2, int y2) {
         checkGC();
-        getGc().fillRectangle(x1 + mX, y1 + mY, x2-x1, y2-y1);
+        int x = mHScale.translate(x1);
+        int y = mVScale.translate(y1);
+        int w = mHScale.scale(x2 - x1);
+        int h = mVScale.scale(y2 - y1);
+        getGc().fillRectangle(x, y, w, h);
     }
 
     public void fillRect(Point p1, Point p2) {
@@ -213,12 +230,18 @@ public class GCWrapper implements IGraphics {
 
     public void fillRect(Rect r) {
         checkGC();
-        getGc().fillRectangle(r.x + mX, r.y + mY, r.w, r.h);
+        int x = mHScale.translate(r.x);
+        int y = mVScale.translate(r.y);
+        int w = mHScale.scale(r.w);
+        int h = mVScale.scale(r.h);
+        getGc().fillRectangle(x, y, w, h);
     }
 
     public void drawString(String string, int x, int y) {
         checkGC();
-        getGc().drawString(string, x + mX, y + mY, true /*isTransparent*/);
+        x = mHScale.translate(x);
+        y = mVScale.translate(y);
+        getGc().drawString(string, x, y, true /*isTransparent*/);
     }
 
     public void drawString(String string, Point topLeft) {

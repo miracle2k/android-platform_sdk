@@ -201,6 +201,26 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
         CustomToggle[] toggles = new CustomToggle[] {
                 new CustomToggle(
+                        "-",
+                        null, //image
+                        "Canvas zoom out."
+                        ) {
+                    @Override
+                    public void onSelected(boolean newState) {
+                        rescale(-1);
+                    }
+                },
+                new CustomToggle(
+                        "+",
+                        null, //image
+                        "Canvas zoom in."
+                        ) {
+                    @Override
+                    public void onSelected(boolean newState) {
+                        rescale(+1);
+                    }
+                },
+                new CustomToggle(
                         "Explode",
                         null, //image
                         "Displays extra margins in the layout."
@@ -249,6 +269,23 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
         // Initialize the state
         reloadPalette();
+    }
+
+    /**
+     * Rescales canvas.
+     * @param direction +1 for zoom in, -1 for zoom out
+     */
+    private void rescale(int direction) {
+        double s = mLayoutCanvas.getScale();
+
+        if (direction > 0) {
+            s = s * 2;
+        } else {
+            s = s / 2;
+        }
+
+        mLayoutCanvas.setScale(s);
+
     }
 
     private void setupEditActions() {
