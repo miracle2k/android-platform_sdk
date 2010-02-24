@@ -169,7 +169,7 @@ public final class ProjectProperties {
      * @param type One the possible {@link PropertyType}s.
      * @return this object, for chaining.
      */
-    public ProjectProperties merge(PropertyType type) {
+    public synchronized ProjectProperties merge(PropertyType type) {
         File projectFolder = new File(mProjectFolderOsPath);
         if (projectFolder.isDirectory()) {
             File defaultFile = new File(projectFolder, type.mFilename);
@@ -205,7 +205,7 @@ public final class ProjectProperties {
      * @param name the name of the property.
      * @param value the value of the property.
      */
-    public void setProperty(String name, String value) {
+    public synchronized void setProperty(String name, String value) {
         mProperties.put(name, value);
     }
 
@@ -214,7 +214,7 @@ public final class ProjectProperties {
      * @param name the name of the property.
      * @return the property value or null if the property is not set.
      */
-    public String getProperty(String name) {
+    public synchronized String getProperty(String name) {
         return mProperties.get(name);
     }
 
@@ -222,15 +222,32 @@ public final class ProjectProperties {
      * Removes a property and returns its previous value (or null if the property did not exist).
      * @param name the name of the property to remove.
      */
-    public String removeProperty(String name) {
+    public synchronized String removeProperty(String name) {
         return mProperties.remove(name);
+    }
+
+    /**
+     * Reloads the properties from the underlying file.
+     */
+    public synchronized void reload() {
+        File projectFolder = new File(mProjectFolderOsPath);
+        if (projectFolder.isDirectory()) {
+            File defaultFile = new File(projectFolder, mType.mFilename);
+            if (defaultFile.isFile()) {
+                Map<String, String> map = SdkManager.parsePropertyFile(defaultFile, null /* log */);
+                if (map != null) {
+                    mProperties.clear();
+                    mProperties.putAll(map);
+                }
+            }
+        }
     }
 
     /**
      * Saves the property file, using UTF-8 encoding.
      * @throws IOException
      */
-    public void save() throws IOException {
+    public synchronized void save() throws IOException {
         File toSave = new File(mProjectFolderOsPath, mType.mFilename);
 
         OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(toSave),

@@ -281,6 +281,44 @@ public class Sdk implements IProjectListener, IFileListener {
     }
 
     /**
+     * Initializes a new project with a target. This creates the <code>default.properties</code>
+     * file.
+     * @param project the project to intialize
+     * @param target the project's target.
+     * @throws IOException if creating the file failed in any way.
+     */
+    public void initProject(IProject project, IAndroidTarget target) throws IOException {
+        if (project == null || target == null) {
+            return;
+        }
+
+        synchronized (sLock) {
+            // check if there's already a state?
+            ProjectState state = getProject(project);
+
+            ProjectProperties properties = null;
+
+            if (state != null) {
+                properties = state.getProperties();
+            }
+
+            if (properties == null) {
+                IPath location = project.getLocation();
+                if (location == null) {  // can return null when the project is being deleted.
+                    // do nothing and return null;
+                    return;
+                }
+
+                properties = ProjectProperties.create(location.toOSString(), PropertyType.DEFAULT);
+            }
+
+            // save the target hash string in the project persistent property
+            properties.setProperty(ProjectProperties.PROPERTY_TARGET, target.hashString());
+            properties.save();
+        }
+    }
+
+    /**
      * Sets a new target and/or a new set of APK settings for a given project.
      *
      * @param project the project to receive the new apk configurations.
@@ -596,7 +634,7 @@ public class Sdk implements IProjectListener, IFileListener {
         // listen to projects closing
         GlobalProjectMonitor monitor = GlobalProjectMonitor.getMonitor();
         monitor.addProjectListener(this);
-        monitor.addFileListener(this, IResourceDelta.CHANGED);
+        monitor.addFileListener(this, IResourceDelta.CHANGED | IResourceDelta.ADDED);
 
         // pre-compute some paths
         mDocBaseUrl = getDocumentationBaseUrl(mManager.getLocation() +
@@ -760,6 +798,13 @@ public class Sdk implements IProjectListener, IFileListener {
                 @Override
                 protected IStatus run(IProgressMonitor monitor) {
                     try {
+                        // reload the content of the default.properties file and update
+                        // the target.
+                        IProject iProject = file.getProject();
+                        ProjectState state = Sdk.getProject(iProject);
+                        state.reloadProperties();
+                        loadTarget(state);
+
                         IJavaProject javaProject = BaseProjectHelper.getJavaProject(
                                 file.getProject());
                         if (javaProject != null) {
