@@ -39,8 +39,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Properties;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
@@ -62,6 +64,9 @@ import javax.xml.xpath.XPathExpressionException;
  *
  */
 public final class SetupTask extends ImportTask {
+    /** current max version of the Ant rules that is supported */
+    private final static int ANT_RULES_MAX_VERSION = 2;
+
     private final static String ANDROID_RULES = "android_rules.xml";
     // additional android rules for test project - depends on android_rules.xml
     private final static String ANDROID_TEST_RULES = "android_test_rules.xml";
@@ -107,6 +112,12 @@ public final class SetupTask extends ImportTask {
         File sdk = new File(sdkLocation);
         if (sdk.isDirectory() == false) {
             throw new BuildException(String.format("SDK Location '%s' is not valid.", sdkLocation));
+        }
+
+        // display SDK Tools revision
+        int toolsRevison = getToolsRevision(sdk);
+        if (toolsRevison != -1) {
+            System.out.println("Android SDK Tools Revision " + toolsRevison);
         }
 
         // get the target property value
@@ -159,6 +170,14 @@ public final class SetupTask extends ImportTask {
                     "Unable to resolve target '%s'", targetHashString));
         }
 
+        // check that this version of the custom Ant task can build this target
+        int antBuildVersion = androidTarget.getAntBuildRevision();
+        if (antBuildVersion > ANT_RULES_MAX_VERSION) {
+            throw new BuildException(String.format(
+                    "The project target (%1$s) requires a more recent version of the tools. Please update.",
+                    androidTarget.getName()));
+        }
+
         // check if the project is a library
         boolean isLibrary = false;
 
@@ -170,7 +189,7 @@ public final class SetupTask extends ImportTask {
         // look for referenced libraries.
         processReferencedLibraries(antProject, androidTarget);
 
-        // display it
+        // display the project info
         System.out.println("Project Target: " + androidTarget.getName());
         if (isLibrary) {
             System.out.println("Type: Android Library");
@@ -442,5 +461,30 @@ public final class SetupTask extends ImportTask {
             antProject.addReference("android.libraries.res", resPath);
             antProject.setProperty("android.libraries.package", sb.toString());
         }
+    }
+
+    /**
+     * Returns the revision of the tools for a given SDK.
+     * @param sdkFile the {@link File} for the root folder of the SDK
+     * @return the tools revision or -1 if not found.
+     */
+    private int getToolsRevision(File sdkFile) {
+        Properties p = new Properties();
+        try{
+            // tools folder must exist, or this custom task wouldn't run!
+            File toolsFolder= new File(sdkFile, SdkConstants.FD_TOOLS);
+            File sourceProp = new File(toolsFolder, SdkConstants.FN_SOURCE_PROP);
+            p.load(new FileInputStream(sourceProp));
+            String value = p.getProperty("Pkg.Revision"); //$NON-NLS-1$
+            if (value != null) {
+                return Integer.parseInt(value);
+            }
+        } catch (FileNotFoundException e) {
+            // couldn't find the file? return -1 below.
+        } catch (IOException e) {
+            // couldn't find the file? return -1 below.
+        }
+
+        return -1;
     }
 }
