@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.project;
 
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.internal.project.ApkConfigurationHelper;
 import com.android.sdklib.internal.project.ApkSettings;
@@ -126,6 +127,16 @@ public final class ProjectState {
 
     public IAndroidTarget getTarget() {
         return mTarget;
+    }
+
+    /**
+     * Reloads the content of the properties.
+     * <p/>This also reset the reference to the target as it may have changed.
+     * <p/>This should be follow by a call to {@link Sdk#loadTarget(ProjectState)}.
+     */
+    public void reloadProperties() {
+        mTarget = null;
+        mProperties.reload();
     }
 
     public void setApkSettings(ApkSettings apkSettings) {

@@ -688,7 +688,7 @@ public class NewProjectWizard extends Wizard implements INewWizard {
             }
         }
 
-        Sdk.getCurrent().setProject(project, target, null /* apkConfigMap*/);
+        Sdk.getCurrent().initProject(project, target);
 
         // Fix the project to make sure all properties are as expected.
         // Necessary for existing projects and good for new ones to.
