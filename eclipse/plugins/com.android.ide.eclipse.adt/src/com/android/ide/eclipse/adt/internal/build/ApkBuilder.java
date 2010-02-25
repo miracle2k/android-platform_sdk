@@ -269,17 +269,36 @@ public class ApkBuilder extends BaseBuilder {
         IProject project = getProject();
 
         // list of referenced projects.
-        IProject[] referencedProjects = null;
+        IProject[] libProjects = null;
+        IProject[] javaProjects = null;
+        IProject[] allRefProjects = null;
 
         try {
+            // get the project info
+            ProjectState projectState = Sdk.getProject(project);
+
+            // get the libraries
+            libProjects = projectState.getLibraryProjects();
+
             IJavaProject javaProject = JavaCore.create(project);
 
             // Top level check to make sure the build can move forward.
             abortOnBadSetup(javaProject);
 
             // get the list of referenced projects.
-            referencedProjects = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = getJavaProjects(referencedProjects);
+            javaProjects = ProjectHelper.getReferencedProjects(project);
+            IJavaProject[] referencedJavaProjects = getJavaProjects(javaProjects);
+
+            // mix the java project and the library projects
+            final int libCount = libProjects != null ? libProjects.length : 0;
+            final int javaCount = javaProjects != null ? javaProjects.length : 0;
+            allRefProjects = new IProject[libCount + javaCount];
+            if (libCount > 0) {
+                System.arraycopy(libProjects, 0, allRefProjects, 0, libCount);
+            }
+            if (javaCount > 0) {
+                System.arraycopy(javaProjects, 0, allRefProjects, libCount, javaCount);
+            }
 
             // get the output folder, this method returns the path with a trailing
             // separator
@@ -347,7 +366,7 @@ public class ApkBuilder extends BaseBuilder {
 
                 // if there was some XML errors, we just return w/o doing
                 // anything since we've put some markers in the files anyway
-                return referencedProjects;
+                return allRefProjects;
             }
 
             // remove older packaging markers.
@@ -357,7 +376,7 @@ public class ApkBuilder extends BaseBuilder {
                 // mark project and exit
                 markProject(AndroidConstants.MARKER_PACKAGING, Messages.Failed_To_Get_Output,
                         IMarker.SEVERITY_ERROR);
-                return referencedProjects;
+                return allRefProjects;
             }
 
             // first thing we do is check that the SDK directory has been setup.
@@ -367,7 +386,7 @@ public class ApkBuilder extends BaseBuilder {
                 // this has already been checked in the precompiler. Therefore,
                 // while we do have to cancel the build, we don't have to return
                 // any error or throw anything.
-                return referencedProjects;
+                return allRefProjects;
             }
 
             // get the APK configs for the project.
@@ -473,14 +492,14 @@ public class ApkBuilder extends BaseBuilder {
                     String msg = String.format(Messages.s_File_Missing,
                             AndroidConstants.FN_ANDROID_MANIFEST);
                     markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
-                    return referencedProjects;
+                    return allRefProjects;
                 }
 
                 IPath binLocation = outputFolder.getLocation();
                 if (binLocation == null) {
                     markProject(AndroidConstants.MARKER_PACKAGING, Messages.Output_Missing,
                             IMarker.SEVERITY_ERROR);
-                    return referencedProjects;
+                    return allRefProjects;
                 }
                 String osBinPath = binLocation.toOSString();
 
@@ -527,7 +546,20 @@ public class ApkBuilder extends BaseBuilder {
                     IPath manifestLocation = manifestFile.getLocation();
 
                     if (resLocation != null && manifestLocation != null) {
-                        String osResPath = resLocation.toOSString();
+                        // list of res folder (main project + maybe libraries)
+                        ArrayList<String> osResPaths = new ArrayList<String>();
+                        osResPaths.add(resLocation.toOSString()); //main project
+
+                        // libraries?
+                        if (libProjects != null) {
+                            for (IProject lib : libProjects) {
+                                IFolder libResFolder = lib.getFolder(SdkConstants.FD_RES);
+                                if (libResFolder.exists()) {
+                                    osResPaths.add(libResFolder.getLocation().toOSString());
+                                }
+                            }
+                        }
+
                         String osManifestPath = manifestLocation.toOSString();
 
                         String osAssetsPath = null;
@@ -536,13 +568,13 @@ public class ApkBuilder extends BaseBuilder {
                         }
 
                         // build the default resource package
-                        if (executeAapt(project, osManifestPath, osResPath,
+                        if (executeAapt(project, osManifestPath, osResPaths,
                                 osAssetsPath,
                                 osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
                                 null /*configFilter*/) == false) {
                             // aapt failed. Whatever files that needed to be marked
                             // have already been marked. We just return.
-                            return referencedProjects;
+                            return allRefProjects;
                         }
 
                         // now do the same thing for all the configured resource packages.
@@ -551,11 +583,11 @@ public class ApkBuilder extends BaseBuilder {
                                 String outPathFormat = osBinPath + File.separator +
                                         AndroidConstants.FN_RESOURCES_S_AP_;
                                 String outPath = String.format(outPathFormat, entry.getKey());
-                                if (executeAapt(project, osManifestPath, osResPath,
+                                if (executeAapt(project, osManifestPath, osResPaths,
                                         osAssetsPath, outPath, entry.getValue()) == false) {
                                     // aapt failed. Whatever files that needed to be marked
                                     // have already been marked. We just return.
-                                    return referencedProjects;
+                                    return allRefProjects;
                                 }
                             }
                         }
@@ -573,7 +605,7 @@ public class ApkBuilder extends BaseBuilder {
                     if (executeDx(javaProject, osBinPath, osBinPath + File.separator +
                             AndroidConstants.FN_CLASSES_DEX, referencedJavaProjects) == false) {
                         // dx failed, we return
-                        return referencedProjects;
+                        return allRefProjects;
                     }
 
                     // build has been done. reset the state of the builder
@@ -607,7 +639,7 @@ public class ApkBuilder extends BaseBuilder {
                 if (finalPackage(osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
                                 classesDexPath,osFinalPackagePath, javaProject,
                                 referencedJavaProjects, debuggable) == false) {
-                    return referencedProjects;
+                    return allRefProjects;
                 }
 
                 // now do the same thing for all the configured resource packages.
@@ -624,7 +656,7 @@ public class ApkBuilder extends BaseBuilder {
                                 ProjectHelper.getApkFilename(project, entry.getKey());
                         if (finalPackage(resPath, classesDexPath, apkOsFilePath, javaProject,
                                 referencedJavaProjects, debuggable) == false) {
-                            return referencedProjects;
+                            return allRefProjects;
                         }
                     }
                 }
@@ -655,7 +687,7 @@ public class ApkBuilder extends BaseBuilder {
             if (exception instanceof CoreException) {
                 if (((CoreException)exception).getStatus().getSeverity() == IStatus.CANCEL) {
                     // Project is already marked with an error. Nothing to do
-                    return referencedProjects;
+                    return allRefProjects;
                 }
             }
 
@@ -669,7 +701,7 @@ public class ApkBuilder extends BaseBuilder {
             markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
         }
 
-        return referencedProjects;
+        return allRefProjects;
     }
 
     @Override
@@ -696,7 +728,8 @@ public class ApkBuilder extends BaseBuilder {
      * @return true if success, false otherwise.
      */
     private boolean executeAapt(IProject project, String osManifestPath,
-            String osResPath, String osAssetsPath, String osOutFilePath, String configFilter) {
+            List<String> osResPaths, String osAssetsPath, String osOutFilePath,
+            String configFilter) {
         IAndroidTarget target = Sdk.getCurrent().getTarget(project);
 
         // Create the command line.
@@ -707,20 +740,34 @@ public class ApkBuilder extends BaseBuilder {
         if (AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE) {
             commandArray.add("-v"); //$NON-NLS-1$
         }
+
+        // if more than one res, this means there's a library (or more) and we need
+        // to activate the auto-add-overlay
+        if (osResPaths.size() > 1) {
+            commandArray.add("--auto-add-overlay"); //$NON-NLS-1$
+        }
+
         if (configFilter != null) {
             commandArray.add("-c"); //$NON-NLS-1$
             commandArray.add(configFilter);
         }
+
         commandArray.add("-M"); //$NON-NLS-1$
         commandArray.add(osManifestPath);
-        commandArray.add("-S"); //$NON-NLS-1$
-        commandArray.add(osResPath);
+
+        for (String path : osResPaths) {
+            commandArray.add("-S"); //$NON-NLS-1$
+            commandArray.add(path);
+        }
+
         if (osAssetsPath != null) {
             commandArray.add("-A"); //$NON-NLS-1$
             commandArray.add(osAssetsPath);
         }
+
         commandArray.add("-I"); //$NON-NLS-1$
         commandArray.add(target.getPath(IAndroidTarget.ANDROID_JAR));
+
         commandArray.add("-F"); //$NON-NLS-1$
         commandArray.add(osOutFilePath);
 
