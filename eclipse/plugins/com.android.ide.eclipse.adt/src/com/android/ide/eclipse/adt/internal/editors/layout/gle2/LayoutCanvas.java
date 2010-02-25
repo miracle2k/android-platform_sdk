@@ -28,11 +28,15 @@ import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DropTarget;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
@@ -43,6 +47,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.ScrollBar;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -115,7 +120,7 @@ import java.util.ListIterator;
 
     /** GC wrapper given to the IViewRule methods. The GC itself is only defined in the
      *  context of {@link #onPaint(PaintEvent)}; otherwise it is null. */
-    private GCWrapper mGCWrapper;
+    private final GCWrapper mGCWrapper;
 
     /** Default font used on the canvas. Do not dispose, it's a system font. */
     private Font mFont;
@@ -123,7 +128,10 @@ import java.util.ListIterator;
     /** Current hover view info. Null when no mouse hover. */
     private CanvasViewInfo mHoverViewInfo;
 
-    /** Current mouse hover border rectangle. Null when there's no mouse hover. */
+    /** Current mouse hover border rectangle. Null when there's no mouse hover.
+     * The rectangle coordinates do not take account of the translation, which must
+     * be applied to the rectangle when drawing.
+     */
     private Rectangle mHoverRect;
 
     /** Hover border color. Must be disposed, it's NOT a system color. */
@@ -150,12 +158,20 @@ import java.util.ListIterator;
     /** Factory that can create {@link INode} proxies. */
     private final NodeFactory mNodeFactory = new NodeFactory();
 
+    /** Vertical scaling & scrollbar information. */
+    private ScaleInfo mVScale;
+
+    /** Horizontal scaling & scrollbar information. */
+    private ScaleInfo mHScale;
 
     public LayoutCanvas(RulesEngine rulesEngine, Composite parent, int style) {
         super(parent, style | SWT.DOUBLE_BUFFERED | SWT.V_SCROLL | SWT.H_SCROLL);
         mRulesEngine = rulesEngine;
 
-        mGCWrapper = new GCWrapper(IMAGE_MARGIN, IMAGE_MARGIN);
+        mHScale = new ScaleInfo(getHorizontalBar());
+        mVScale = new ScaleInfo(getVerticalBar());
+
+        mGCWrapper = new GCWrapper(mHScale, mVScale);
 
         Display d = getDisplay();
         mSelectionFgColor = d.getSystemColor(SWT.COLOR_RED);
@@ -167,6 +183,15 @@ import java.util.ListIterator;
         addPaintListener(new PaintListener() {
             public void paintControl(PaintEvent e) {
                 onPaint(e);
+            }
+        });
+
+        addControlListener(new ControlAdapter() {
+            @Override
+            public void controlResized(ControlEvent e) {
+                super.controlResized(e);
+                mHScale.setClientSize(getClientArea().width);
+                mVScale.setClientSize(getClientArea().height);
             }
         });
 
@@ -290,6 +315,9 @@ import java.util.ListIterator;
 
             // remove the current alternate selection views
             mAltSelection = null;
+
+            mHScale.setSize(mImage.getImageData().width, getClientArea().width);
+            mVScale.setSize(mImage.getImageData().height, getClientArea().height);
         }
 
         redraw();
@@ -297,6 +325,16 @@ import java.util.ListIterator;
 
     public void setShowOutline(boolean newState) {
         mShowOutline = newState;
+        redraw();
+    }
+
+    public double getScale() {
+        return mHScale.getScale();
+    }
+
+    public void setScale(double scale) {
+        mHScale.setScale(scale);
+        mVScale.setScale(scale);
         redraw();
     }
 
@@ -353,6 +391,143 @@ import java.util.ListIterator;
 
     //---
 
+    public interface ScaleTransform {
+        /**
+         * Computes the transformation from a X/Y canvas image coordinate
+         * to client pixel coordinate.
+         * <p/>
+         * This takes into account the {@link LayoutCanvas#IMAGE_MARGIN},
+         * the current scaling and the current translation.
+         *
+         * @param canvasX A canvas image coordinate (X or Y).
+         * @return The transformed coordinate in client pixel space.
+         */
+        public int translate(int canvasX);
+
+        /**
+         * Computes the transformation from a canvas image size (width or height) to
+         * client pixel coordinates.
+         *
+         * @param canwasW A canvas image size (W or H).
+         * @return The transformed coordinate in client pixel space.
+         */
+        public int scale(int canwasW);
+
+        /**
+         * Computes the transformation from a X/Y client pixel coordinate
+         * to canvas image coordinate.
+         * <p/>
+         * This takes into account the {@link LayoutCanvas#IMAGE_MARGIN},
+         * the current scaling and the current translation.
+         * <p/>
+         * This is the inverse of {@link #translate(int)}.
+         *
+         * @param screenX A client pixel space coordinate (X or Y).
+         * @return The transformed coordinate in canvas image space.
+         */
+        public int inverseTranslate(int screenX);
+    }
+
+    private class ScaleInfo implements ScaleTransform {
+        /** Canvas image size (original, before zoom), in pixels */
+        private int mImgSize;
+
+        /** Client size, in pixels */
+        private int mClientSize;
+
+        /** Left-top offset in client pixel coordinates */
+        private int mTranslate;
+
+        /** Scaling factor, > 0 */
+        private double mScale;
+
+        /** Scrollbar widget */
+        ScrollBar mScrollbar;
+
+        public ScaleInfo(ScrollBar scrollbar) {
+            mScrollbar = scrollbar;
+            mScale = 1.0;
+            mTranslate = 0;
+
+            mScrollbar.addSelectionListener(new SelectionAdapter() {
+                @Override
+                public void widgetSelected(SelectionEvent e) {
+                    // User requested scrolling. Changes translation and redraw canvas.
+                    mTranslate = mScrollbar.getSelection();
+                    redraw();
+                }
+            });
+        }
+
+        /**
+         * Sets the new scaling factor. Recomputes scrollbars.
+         * @param scale Scaling factor, > 0.
+         */
+        public void setScale(double scale) {
+            if (mScale != scale) {
+                mScale = scale;
+                resizeScrollbar();
+            }
+        }
+
+        /** Returns current scaling factor. */
+        public double getScale() {
+            return mScale;
+        }
+
+        /** Returns Canvas image size (original, before zoom), in pixels. */
+        public int getImgSize() {
+            return mImgSize;
+        }
+
+        /** Returns the scaled image size in pixels. */
+        public int getScalledImgSize() {
+            return (int) (mImgSize * mScale);
+        }
+
+        /** Changes the size of the canvas image and the client size. Recomputes scrollbars. */
+        public void setSize(int imgSize, int clientSize) {
+            mImgSize = imgSize;
+            setClientSize(clientSize);
+        }
+
+        /** Changes the size of the client size. Recomputes scrollbars. */
+        public void setClientSize(int clientSize) {
+            mClientSize = clientSize;
+            resizeScrollbar();
+        }
+
+        private void resizeScrollbar() {
+            // scaled image size
+            int sx = (int) (mImgSize * mScale);
+
+            // actual client area is always reduced by the margins
+            int cx = mClientSize - 2 * IMAGE_MARGIN;
+
+            if (sx < cx) {
+                mScrollbar.setEnabled(false);
+            } else {
+                mScrollbar.setEnabled(true);
+
+                // max scroll value is the scaled image size
+                // thumb value is the actual viewable area out of the scaled img size
+                mScrollbar.setMaximum(sx);
+                mScrollbar.setThumb(cx);
+            }
+        }
+
+        public int translate(int canvasX) {
+            return IMAGE_MARGIN - mTranslate + (int)(mScale * canvasX);
+        }
+
+        public int scale(int canwasW) {
+            return (int)(mScale * canwasW);
+        }
+
+        public int inverseTranslate(int screenX) {
+            return (int) ((screenX - IMAGE_MARGIN + mTranslate) / mScale);
+        }
+    }
 
     /**
      * Creates or updates the node proxy for this canvas view info.
@@ -420,6 +595,28 @@ import java.util.ListIterator;
     }
 
     /**
+     * Sets the non-text antialias flag for the given GC.
+     * <p/>
+     * Antialias may not work on all platforms and may fail with an exception.
+     *
+     * @param gc the GC to change
+     * @param alias One of {@link SWT#DEFAULT}, {@link SWT#ON}, {@link SWT#OFF}.
+     * @return The previous aliasing mode if the operation worked,
+     *         or -2 if it failed with an exception.
+     *
+     * @see GC#setAntialias(int)
+     */
+    private int gc_setAntialias(GC gc, int alias) {
+        try {
+            int old = gc.getAntialias();
+            gc.setAntialias(alias);
+            return old;
+        } catch (SWTException e) {
+            return -2;
+        }
+    }
+
+    /**
      * Paints the canvas in response to paint events.
      */
     private void onPaint(PaintEvent e) {
@@ -433,7 +630,29 @@ import java.util.ListIterator;
                     gc_setAlpha(gc, 128);  // half-transparent
                 }
 
-                gc.drawImage(mImage, IMAGE_MARGIN, IMAGE_MARGIN);
+                ScaleInfo hi = mHScale;
+                ScaleInfo vi = mVScale;
+
+                // we only anti-alias when reducing the image size.
+                int oldAlias = -2;
+                if (hi.getScale() < 1.0) {
+                    oldAlias = gc_setAntialias(gc, SWT.ON);
+                }
+
+                gc.drawImage(mImage,
+                        0,                          // srcX
+                        0,                          // srcY
+                        hi.getImgSize(),            // srcWidth
+                        vi.getImgSize(),            // srcHeight
+                        hi.translate(0),            // destX
+                        vi.translate(0),            // destY
+                        hi.getScalledImgSize(),     // destWidth
+                        vi.getScalledImgSize()      // destHeight
+                        );
+
+                if (oldAlias != -2) {
+                    gc_setAntialias(gc, oldAlias);
+                }
 
                 if (!mIsResultValid) {
                     gc_setAlpha(gc, 255);  // opaque
@@ -449,7 +668,13 @@ import java.util.ListIterator;
             if (mHoverRect != null) {
                 gc.setForeground(mHoverFgColor);
                 gc.setLineStyle(SWT.LINE_DOT);
-                gc.drawRectangle(mHoverRect);
+
+                int x = mHScale.translate(mHoverRect.x);
+                int y = mVScale.translate(mHoverRect.y);
+                int w = mHScale.scale(mHoverRect.width);
+                int h = mVScale.scale(mHoverRect.height);
+
+                gc.drawRectangle(x, y, w, h);
             }
 
             int n = mSelections.size();
@@ -479,7 +704,13 @@ import java.util.ListIterator;
     private void drawOutline(GC gc, CanvasViewInfo info) {
 
         Rectangle r = info.getAbsRect();
-        gc.drawRectangle(r.x + IMAGE_MARGIN, r.y + IMAGE_MARGIN, r.width, r.height);
+
+        int x = mHScale.translate(r.x);
+        int y = mVScale.translate(r.y);
+        int w = mHScale.scale(r.width);
+        int h = mVScale.scale(r.height);
+
+        gc.drawRectangle(x, y, w, h);
 
         for (CanvasViewInfo vi : info.getChildren()) {
             drawOutline(gc, vi);
@@ -492,7 +723,11 @@ import java.util.ListIterator;
     private void onMouseMove(MouseEvent e) {
         if (mLastValidResult != null) {
             CanvasViewInfo root = mLastValidViewInfoRoot;
-            CanvasViewInfo vi = findViewInfoAt(e.x - IMAGE_MARGIN, e.y - IMAGE_MARGIN);
+
+            int x = mHScale.inverseTranslate(e.x);
+            int y = mVScale.inverseTranslate(e.y);
+
+            CanvasViewInfo vi = findViewInfoAt(x, y);
 
             // We don't hover on the root since it's not a widget per see and it is always there.
             if (vi == root) {
@@ -506,8 +741,7 @@ import java.util.ListIterator;
                 mHoverRect = null;
             } else {
                 Rectangle r = vi.getSelectionRect();
-                mHoverRect = new Rectangle(r.x + IMAGE_MARGIN, r.y + IMAGE_MARGIN,
-                                           r.width, r.height);
+                mHoverRect = new Rectangle(r.x, r.y, r.width, r.height);
             }
 
             if (needsUpdate) {
@@ -533,8 +767,9 @@ import java.util.ListIterator;
             boolean isShift = (e.stateMask & SWT.SHIFT) != 0;
             boolean isAlt   = (e.stateMask & SWT.ALT)   != 0;
 
-            int x = e.x - IMAGE_MARGIN;
-            int y = e.y - IMAGE_MARGIN;
+            int x = mHScale.inverseTranslate(e.x);
+            int y = mVScale.inverseTranslate(e.y);
+
             CanvasViewInfo vi = findViewInfoAt(x, y);
 
             if (isShift && !isAlt) {
