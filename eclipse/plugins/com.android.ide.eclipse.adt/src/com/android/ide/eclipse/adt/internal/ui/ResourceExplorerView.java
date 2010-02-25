@@ -24,7 +24,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IResourceEventListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper;
-import com.android.sdklib.internal.io.IAbstractFile;
+import com.android.sdklib.io.IAbstractFile;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;

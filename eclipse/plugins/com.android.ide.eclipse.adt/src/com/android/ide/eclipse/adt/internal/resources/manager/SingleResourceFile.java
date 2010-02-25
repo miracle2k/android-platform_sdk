@@ -21,7 +21,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensit
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.utils.DensityBasedResourceValue;
 import com.android.layoutlib.utils.ResourceValue;
-import com.android.sdklib.internal.io.IAbstractFile;
+import com.android.sdklib.io.IAbstractFile;
 
 import java.util.ArrayList;
 import java.util.Collection;

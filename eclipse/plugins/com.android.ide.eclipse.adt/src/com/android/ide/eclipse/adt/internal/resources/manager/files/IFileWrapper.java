@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager.files;
 
-import com.android.sdklib.internal.io.IAbstractFile;
-import com.android.sdklib.internal.io.StreamException;
+import com.android.sdklib.io.IAbstractFile;
+import com.android.sdklib.io.StreamException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;

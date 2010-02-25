@@ -46,7 +46,7 @@ import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IXmlPullParser;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.internal.io.FolderWrapper;
+import com.android.sdklib.io.FolderWrapper;
 
 import org.kxml2.io.KXmlParser;
 import org.xmlpull.v1.XmlPullParser;

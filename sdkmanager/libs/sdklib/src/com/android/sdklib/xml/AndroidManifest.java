@@ -17,9 +17,9 @@
 package com.android.sdklib.xml;
 
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.internal.io.IAbstractFile;
-import com.android.sdklib.internal.io.IAbstractFolder;
-import com.android.sdklib.internal.io.StreamException;
+import com.android.sdklib.io.IAbstractFile;
+import com.android.sdklib.io.IAbstractFolder;
+import com.android.sdklib.io.StreamException;
 
 import org.xml.sax.InputSource;
 
@@ -53,12 +53,26 @@ public final class AndroidManifest {
     public final static String ATTRIBUTE_TARGET_PACKAGE = "targetPackage"; //$NON-NLS-1$
     public final static String ATTRIBUTE_EXPORTED = "exported"; //$NON-NLS-1$
 
+    /**
+     * Returns the package for a given project.
+     * @param projectFolder the folder of the project.
+     * @return the package info or null (or empty) if not found.
+     * @throws XPathExpressionException
+     * @throws StreamException If any error happens when reading the manifest.
+     */
     public static String getPackage(IAbstractFolder projectFolder)
             throws XPathExpressionException, StreamException {
         IAbstractFile file = projectFolder.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
         return getPackage(file);
     }
 
+    /**
+     * Returns the package for a given manifest.
+     * @param manifestFile the manifest to parse.
+     * @return the package info or null (or empty) if not found.
+     * @throws XPathExpressionException
+     * @throws StreamException If any error happens when reading the manifest.
+     */
     public static String getPackage(IAbstractFile manifestFile)
             throws XPathExpressionException, StreamException {
         XPath xPath = AndroidXPathFactory.newXPath();

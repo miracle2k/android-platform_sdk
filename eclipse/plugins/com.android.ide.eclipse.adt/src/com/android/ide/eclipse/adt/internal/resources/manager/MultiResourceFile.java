@@ -21,8 +21,8 @@ import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.utils.ResourceValue;
 import com.android.layoutlib.utils.ValueResourceParser;
 import com.android.layoutlib.utils.ValueResourceParser.IValueResourceRepository;
-import com.android.sdklib.internal.io.IAbstractFile;
-import com.android.sdklib.internal.io.StreamException;
+import com.android.sdklib.io.IAbstractFile;
+import com.android.sdklib.io.StreamException;
 
 import org.xml.sax.SAXException;
 

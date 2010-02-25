@@ -34,7 +34,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapp
 import com.android.ide.eclipse.mock.FileMock;
 import com.android.ide.eclipse.mock.FolderMock;
 import com.android.sdklib.IAndroidTarget;
-import com.android.sdklib.internal.io.IAbstractFolder;
+import com.android.sdklib.io.IAbstractFolder;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

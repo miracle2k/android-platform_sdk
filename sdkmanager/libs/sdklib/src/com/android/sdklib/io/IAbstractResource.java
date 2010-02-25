@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.sdklib.internal.io;
+package com.android.sdklib.io;
 
 /**
  * Base representation of a file system resource.<p/>

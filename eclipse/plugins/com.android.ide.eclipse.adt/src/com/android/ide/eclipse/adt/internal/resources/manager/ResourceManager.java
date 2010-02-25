@@ -28,10 +28,10 @@ import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapper;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.internal.io.FolderWrapper;
-import com.android.sdklib.internal.io.IAbstractFile;
-import com.android.sdklib.internal.io.IAbstractFolder;
-import com.android.sdklib.internal.io.IAbstractResource;
+import com.android.sdklib.io.FolderWrapper;
+import com.android.sdklib.io.IAbstractFile;
+import com.android.sdklib.io.IAbstractFolder;
+import com.android.sdklib.io.IAbstractResource;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;

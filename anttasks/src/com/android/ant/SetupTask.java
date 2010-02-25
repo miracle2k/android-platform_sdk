@@ -22,9 +22,9 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
-import com.android.sdklib.internal.io.FileWrapper;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
+import com.android.sdklib.io.FileWrapper;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.AndroidXPathFactory;
 
