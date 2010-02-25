@@ -337,6 +337,25 @@ public class ApkBuilder extends BaseBuilder {
                     mBuildFinalPackage |= dv.getMakeFinalPackage();
                 }
 
+                // if the main resources didn't change, then we check for the library
+                // ones (will trigger resource repackaging too)
+                if (mPackageResources == false && libProjects != null &&
+                        libProjects.length > 0) {
+                    for (IProject libProject : libProjects) {
+                        delta = getDelta(libProject);
+                        if (delta != null) {
+                            LibraryDeltaVisitor visitor = new LibraryDeltaVisitor();
+                            delta.accept(visitor);
+
+                            mPackageResources = visitor.getResChange();
+
+                            if (mPackageResources) {
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 // also go through the delta for all the referenced projects, until we are forced to
                 // compile anyway
                 for (int i = 0 ; i < referencedJavaProjects.length &&

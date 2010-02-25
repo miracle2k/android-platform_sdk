@@ -279,6 +279,25 @@ public class PreCompilerBuilder extends BaseBuilder {
                     // get the java package from the visitor
                     javaPackage = dv.getManifestPackage();
                     minSdkVersion = dv.getMinSdkVersion();
+
+                    // if the main resources didn't change, then we check for the library
+                    // ones (will trigger resource recompilation too)
+                    if (mMustCompileResources == false && libProjects != null &&
+                            libProjects.length > 0) {
+                        for (IProject libProject : libProjects) {
+                            delta = getDelta(libProject);
+                            if (delta != null) {
+                                LibraryDeltaVisitor visitor = new LibraryDeltaVisitor();
+                                delta.accept(visitor);
+
+                                mMustCompileResources = visitor.getResChange();
+
+                                if (mMustCompileResources) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

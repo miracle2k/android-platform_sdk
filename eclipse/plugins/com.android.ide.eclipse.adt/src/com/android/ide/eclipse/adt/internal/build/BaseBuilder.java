@@ -183,7 +183,7 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
         }
 
         /**
-         * Finds a matching Source folder for the current path. This checkds if the current path
+         * Finds a matching Source folder for the current path. This checks if the current path
          * leads to, or is a source folder.
          * @param sourceFolders The list of source folders
          * @param pathSegments The segments of the current path

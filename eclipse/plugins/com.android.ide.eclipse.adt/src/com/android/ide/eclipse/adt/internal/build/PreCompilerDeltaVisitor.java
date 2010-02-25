@@ -195,7 +195,8 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
         // since the delta visitor also visits the root we return true if
         // segments.length = 1
         if (segments.length == 1) {
-            // FIXME: check this is an Android project.
+            // this is always the Android project since we call
+            // Builder#getDelta(IProject) on the project itself.
             return true;
         } else if (segments.length == 2) {
             // if we are at an item directly under the root directory,

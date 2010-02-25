@@ -132,7 +132,7 @@ public final class ProjectState {
     /**
      * Reloads the content of the properties.
      * <p/>This also reset the reference to the target as it may have changed.
-     * <p/>This should be follow by a call to {@link Sdk#loadTarget(ProjectState)}.
+     * <p/>This should be followed by a call to {@link Sdk#loadTarget(ProjectState)}.
      */
     public void reloadProperties() {
         mTarget = null;

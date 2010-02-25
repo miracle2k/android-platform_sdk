@@ -63,7 +63,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
      * apk file.
      */
     private boolean mPackageResources = false;
-    
+
     /**
      * Final package flag. This is set to true if one of the changed/added/removed
      * file is a non java file (or aidl) in the resource folder. Upon visiting all the
@@ -94,11 +94,11 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
             IFolder outputfolder) {
         super(builder);
         mSourceFolders = sourceFolders;
-        
+
         if (outputfolder != null) {
             mOutputPath = outputfolder.getFullPath();
         }
-        
+
         IResource assetFolder = builder.getProject().findMember(SdkConstants.FD_ASSETS);
         if (assetFolder != null) {
             mAssetPath = assetFolder.getFullPath();
@@ -108,7 +108,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
         if (resFolder != null) {
             mResPath = resFolder.getFullPath();
         }
-        
+
         IResource libFolder = builder.getProject().findMember(SdkConstants.FD_NATIVE_LIBS);
         if (libFolder != null) {
             mLibFolder = libFolder.getFullPath();
@@ -122,14 +122,14 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
     public boolean getPackageResources() {
         return mPackageResources;
     }
-    
+
     public boolean getMakeFinalPackage() {
         return mMakeFinalPackage;
     }
 
     /**
      * {@inheritDoc}
-     * @throws CoreException 
+     * @throws CoreException
      *
      * @see org.eclipse.core.resources.IResourceDeltaVisitor
      *      #visit(org.eclipse.core.resources.IResourceDelta)
@@ -142,7 +142,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
 
         // we are only going to look for changes in res/, src/ and in
         // AndroidManifest.xml since the delta visitor goes through the main
-        // folder before its childre we can check when the path segment
+        // folder before its children we can check when the path segment
         // count is 2 (format will be /$Project/folder) and make sure we are
         // processing res/, src/ or AndroidManifest.xml
         IResource resource = delta.getResource();
@@ -168,7 +168,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
             // any for this resource anyway.
             return false;
         }
-        
+
         // check the other folders.
         if (mOutputPath != null && mOutputPath.isPrefixOf(path)) {
             // a resource changed inside the output folder.
@@ -179,7 +179,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
                 if (AndroidConstants.EXT_CLASS.equalsIgnoreCase(ext)) {
                     mConvertToDex = true;
                     mMakeFinalPackage = true;
-    
+
                     // no need to check the children, as we are in a package
                     // and there can only be subpackage children containing
                     // only .class files
@@ -267,12 +267,12 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
 
                             return false;
                         }
-                        
+
                     }
                 }
             }
         }
-        
+
         // if the folder is not inside one of the folders we are interested in (res, assets, output,
         // source folders), it could be a folder leading to them, so we return true.
         return true;
