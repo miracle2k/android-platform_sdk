@@ -78,7 +78,7 @@ import java.util.Map.Entry;
  *
  * To get the list of platforms or add-ons present in the SDK, call {@link #getTargets()}.
  */
-public class Sdk implements IProjectListener, IFileListener {
+public final class Sdk  {
     private final static Object sLock = new Object();
 
     private static Sdk sCurrentSdk = null;
@@ -633,8 +633,8 @@ public class Sdk implements IProjectListener, IFileListener {
 
         // listen to projects closing
         GlobalProjectMonitor monitor = GlobalProjectMonitor.getMonitor();
-        monitor.addProjectListener(this);
-        monitor.addFileListener(this, IResourceDelta.CHANGED | IResourceDelta.ADDED);
+        monitor.addProjectListener(mProjectListener);
+        monitor.addFileListener(mFileListener, IResourceDelta.CHANGED | IResourceDelta.ADDED);
 
         // pre-compute some paths
         mDocBaseUrl = getDocumentationBaseUrl(mManager.getLocation() +
@@ -659,8 +659,8 @@ public class Sdk implements IProjectListener, IFileListener {
      */
     private void dispose() {
         GlobalProjectMonitor monitor = GlobalProjectMonitor.getMonitor();
-        monitor.removeProjectListener(this);
-        monitor.removeFileListener(this);
+        monitor.removeProjectListener(mProjectListener);
+        monitor.removeFileListener(mFileListener);
 
         // the IAndroidTarget objects are now obsolete so update the project states.
         synchronized (sLock) {
@@ -731,98 +731,109 @@ public class Sdk implements IProjectListener, IFileListener {
         mLayoutDeviceManager.sealAddonLayoutDevices();
     }
 
-    public void projectClosed(IProject project) {
-        // get the target project
-        synchronized (sLock) {
-            // direct access to the map since we're going to edit it.
-            ProjectState state = sProjectStateMap.get(project);
-            if (state != null) {
-                IAndroidTarget target = state.getTarget();
-                if (target != null) {
-                    // get the bridge for the target, and clear the cache for this project.
-                    AndroidTargetData data = mTargetDataMap.get(target);
-                    if (data != null) {
-                        LayoutBridge bridge = data.getLayoutBridge();
-                        if (bridge != null && bridge.status == LoadStatus.LOADED) {
-                            bridge.bridge.clearCaches(project);
+    /**
+     * Delegate listener for project changes.
+     */
+    private IProjectListener mProjectListener = new IProjectListener() {
+        public void projectClosed(IProject project) {
+            // get the target project
+            synchronized (sLock) {
+                // direct access to the map since we're going to edit it.
+                ProjectState state = sProjectStateMap.get(project);
+                if (state != null) {
+                    IAndroidTarget target = state.getTarget();
+                    if (target != null) {
+                        // get the bridge for the target, and clear the cache for this project.
+                        AndroidTargetData data = mTargetDataMap.get(target);
+                        if (data != null) {
+                            LayoutBridge bridge = data.getLayoutBridge();
+                            if (bridge != null && bridge.status == LoadStatus.LOADED) {
+                                bridge.bridge.clearCaches(project);
+                            }
                         }
                     }
-                }
 
-                // now remove the project for the maps.
-                sProjectStateMap.remove(project);
+                    // now remove the project for the maps.
+                    sProjectStateMap.remove(project);
+                }
             }
         }
-    }
 
-    public void projectDeleted(IProject project) {
-        projectClosed(project);
-    }
+        public void projectDeleted(IProject project) {
+            projectClosed(project);
+        }
 
-    public void projectOpened(IProject openedProject) {
-        ProjectState openedState = getProject(openedProject);
-        if (openedState != null) {
-            // find dependencies, if any
-            if (openedState.isMissingLibraries()) {
-                // look for all opened projects to see if they are valid library for this project.
-            }
+        public void projectOpened(IProject openedProject) {
+            ProjectState openedState = getProject(openedProject);
+            if (openedState != null) {
+                // find dependencies, if any
+                if (openedState.isMissingLibraries()) {
+                    // look for all opened projects to see if they are valid library
+                    // for this project.
+                }
 
-            // if the project is a library, then try to see if it's required by other projects.
-            if (openedState.isLibrary()) {
-                setupLibraryProject(openedProject);
+                // if the project is a library, then try to see if it's required by other projects.
+                if (openedState.isLibrary()) {
+                    setupLibraryProject(openedProject);
 
-                synchronized (sLock) {
-                    for (ProjectState projectState : sProjectStateMap.values()) {
-                        if (projectState != openedState && projectState.isMissingLibraries()) {
-                            LibraryState libState = projectState.needs(openedProject);
-                            if (libState != null) {
-                                linkProjectAndLibrary(projectState, libState);
+                    synchronized (sLock) {
+                        for (ProjectState projectState : sProjectStateMap.values()) {
+                            if (projectState != openedState && projectState.isMissingLibraries()) {
+                                LibraryState libState = projectState.needs(openedProject);
+                                if (libState != null) {
+                                    linkProjectAndLibrary(projectState, libState);
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
-    public void projectOpenedWithWorkspace(IProject project) {
-        projectOpened(project);
-    }
-
-    public void fileChanged(final IFile file, IMarkerDelta[] markerDeltas, int kind) {
-        if (SdkConstants.FN_DEFAULT_PROPERTIES.equals(file.getName()) &&
-                file.getParent() == file.getProject()) {
-            // we can't do the change from the Workspace resource change notification
-            // so we create build-type job for it.
-            Job job = new Job("Project Update") {
-                @Override
-                protected IStatus run(IProgressMonitor monitor) {
-                    try {
-                        // reload the content of the default.properties file and update
-                        // the target.
-                        IProject iProject = file.getProject();
-                        ProjectState state = Sdk.getProject(iProject);
-                        state.reloadProperties();
-                        loadTarget(state);
-
-                        IJavaProject javaProject = BaseProjectHelper.getJavaProject(
-                                file.getProject());
-                        if (javaProject != null) {
-                            AndroidClasspathContainerInitializer.updateProjects(
-                                    new IJavaProject[] { javaProject });
-                        }
-                    } catch (CoreException e) {
-                        // This can't happen as it's only for closed project (or non existing)
-                        // but in that case we can't get a fileChanged on this file.
-                    }
-
-                    return Status.OK_STATUS;
-                }
-            };
-            job.setPriority(Job.BUILD); // build jobs are run after other interactive jobs
-            job.schedule();
+        public void projectOpenedWithWorkspace(IProject project) {
+            projectOpened(project);
         }
-    }
+    };
+
+    /**
+     * Delegate listener for file changes.
+     */
+    private IFileListener mFileListener = new IFileListener() {
+        public void fileChanged(final IFile file, IMarkerDelta[] markerDeltas, int kind) {
+            if (SdkConstants.FN_DEFAULT_PROPERTIES.equals(file.getName()) &&
+                    file.getParent() == file.getProject()) {
+                // we can't do the change from the Workspace resource change notification
+                // so we create build-type job for it.
+                Job job = new Job("Project Update") {
+                    @Override
+                    protected IStatus run(IProgressMonitor monitor) {
+                        try {
+                            // reload the content of the default.properties file and update
+                            // the target.
+                            IProject iProject = file.getProject();
+                            ProjectState state = Sdk.getProject(iProject);
+                            state.reloadProperties();
+                            loadTarget(state);
+
+                            IJavaProject javaProject = BaseProjectHelper.getJavaProject(
+                                    file.getProject());
+                            if (javaProject != null) {
+                                AndroidClasspathContainerInitializer.updateProjects(
+                                        new IJavaProject[] { javaProject });
+                            }
+                        } catch (CoreException e) {
+                            // This can't happen as it's only for closed project (or non existing)
+                            // but in that case we can't get a fileChanged on this file.
+                        }
+
+                        return Status.OK_STATUS;
+                    }
+                };
+                job.setPriority(Job.BUILD); // build jobs are run after other interactive jobs
+                job.schedule();
+            }
+        }
+    };
 
     private void setupLibraryProject(IProject libProject) {
         // if needed add a path var for this library

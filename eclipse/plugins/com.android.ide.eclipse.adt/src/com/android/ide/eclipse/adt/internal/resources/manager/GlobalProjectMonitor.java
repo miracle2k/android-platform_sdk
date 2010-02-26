@@ -46,7 +46,7 @@ import java.util.ArrayList;
  * cannot be match to previous {@link ResourceFile} or {@link ResourceFolder} objects by the
  * time the listeners get the event notifications.
  */
-public class GlobalProjectMonitor implements IResourceChangeListener {
+public final class GlobalProjectMonitor {
 
     private final static GlobalProjectMonitor sThis = new GlobalProjectMonitor();
 
@@ -225,7 +225,7 @@ public class GlobalProjectMonitor implements IResourceChangeListener {
      */
     public static GlobalProjectMonitor startMonitoring(IWorkspace ws) {
         if (sThis != null) {
-            ws.addResourceChangeListener(sThis,
+            ws.addResourceChangeListener(sThis.mResourceChangeListener,
                     IResourceChangeEvent.POST_CHANGE | IResourceChangeEvent.PRE_DELETE);
             sThis.mWorkspace = ws;
         }
@@ -238,7 +238,7 @@ public class GlobalProjectMonitor implements IResourceChangeListener {
      */
     public static void stopMonitoring(IWorkspace ws) {
         if (sThis != null) {
-            ws.removeResourceChangeListener(sThis);
+            ws.removeResourceChangeListener(sThis.mResourceChangeListener);
 
             synchronized (sThis) {
                 sThis.mFileListeners.clear();
@@ -348,40 +348,44 @@ public class GlobalProjectMonitor implements IResourceChangeListener {
         mEventListeners.remove(listener);
     }
 
-    /**
-     * Processes the workspace resource change events.
-     */
-    public synchronized void resourceChanged(IResourceChangeEvent event) {
-        // notify the event listeners of a start.
-        for (IResourceEventListener listener : mEventListeners) {
-            listener.resourceChangeEventStart();
-        }
-
-        if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
-            // a project is being deleted. Lets get the project object and remove
-            // its compiled resource list.
-            IResource r = event.getResource();
-            IProject project = r.getProject();
-
-            // notify the listeners.
-            for (IProjectListener pl : mProjectListeners) {
-                pl.projectDeleted(project);
+    private IResourceChangeListener mResourceChangeListener = new IResourceChangeListener() {
+        /**
+         * Processes the workspace resource change events.
+         *
+         * @see IResourceChangeListener#resourceChanged(IResourceChangeEvent)
+         */
+        public synchronized void resourceChanged(IResourceChangeEvent event) {
+            // notify the event listeners of a start.
+            for (IResourceEventListener listener : mEventListeners) {
+                listener.resourceChangeEventStart();
             }
-        } else {
-            // this a regular resource change. We get the delta and go through it with a visitor.
-            IResourceDelta delta = event.getDelta();
 
-            DeltaVisitor visitor = new DeltaVisitor();
-            try {
-                delta.accept(visitor);
-            } catch (CoreException e) {
+            if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
+                // a project is being deleted. Lets get the project object and remove
+                // its compiled resource list.
+                IResource r = event.getResource();
+                IProject project = r.getProject();
+
+                // notify the listeners.
+                for (IProjectListener pl : mProjectListeners) {
+                    pl.projectDeleted(project);
+                }
+            } else {
+                // this a regular resource change. We get the delta and go through it with a visitor.
+                IResourceDelta delta = event.getDelta();
+
+                DeltaVisitor visitor = new DeltaVisitor();
+                try {
+                    delta.accept(visitor);
+                } catch (CoreException e) {
+                }
+            }
+
+            // we're done, notify the event listeners.
+            for (IResourceEventListener listener : mEventListeners) {
+                listener.resourceChangeEventEnd();
             }
         }
-
-        // we're done, notify the event listeners.
-        for (IResourceEventListener listener : mEventListeners) {
-            listener.resourceChangeEventEnd();
-        }
-    }
+    };
 
 }

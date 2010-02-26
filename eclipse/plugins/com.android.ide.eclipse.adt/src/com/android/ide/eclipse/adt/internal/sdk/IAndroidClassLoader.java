@@ -26,8 +26,8 @@ import javax.management.InvalidAttributeValueException;
  * Classes which implements this interface provide methods to access framework resource
  * data loaded from the SDK.
  */
-public interface IAndroidClassLoader {
-    
+interface IAndroidClassLoader {
+
     /**
      * Classes which implement this interface provide methods to describe a class.
      */
@@ -42,19 +42,19 @@ public interface IAndroidClassLoader {
         IClassDescriptor getEnclosingClass();
 
         IClassDescriptor[] getDeclaredClasses();
-        
+
         boolean isInstantiable();
     }
 
     /**
      * Finds and loads all classes that derive from a given set of super classes.
-     * 
+     *
      * @param rootPackage Root package of classes to find. Use an empty string to find everyting.
-     * @param superClasses The super classes of all the classes to find. 
+     * @param superClasses The super classes of all the classes to find.
      * @return An hash map which keys are the super classes looked for and which values are
      *         ArrayList of the classes found. The array lists are always created for all the
      *         valid keys, they are simply empty if no deriving class is found for a given
-     *         super class. 
+     *         super class.
      * @throws IOException
      * @throws InvalidAttributeValueException
      * @throws ClassFormatError
@@ -74,7 +74,7 @@ public interface IAndroidClassLoader {
      * Returns a string indicating the source of the classes, typically for debugging
      * or in error messages. This would typically be a JAR file name or some kind of
      * identifier that would mean something to the user when looking at error messages.
-     * 
+     *
      * @return An informal string representing the source of the classes.
      */
     public String getSource();

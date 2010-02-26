@@ -39,15 +39,11 @@ import java.util.Iterator;
  * <p/>
  * The manager uses {@link IProject} and {@link IDevice} to identify the target device and the
  * (project generating the) APK. This ensures that disconnected and reconnected devices will
- * always receive new APKs (since the APK could be uninstalled manually).
- * <p/>
- * Manually uninstalling an APK from a connected device will still be a problem, but this should
- * be a limited use case.
+ * always receive new APKs (since the version may not match).
  * <p/>
  * This is a singleton. To get the instance, use {@link #getInstance()}
  */
-public class ApkInstallManager implements IDeviceChangeListener, IDebugBridgeChangeListener,
-        IProjectListener {
+public final class ApkInstallManager {
 
     private final static ApkInstallManager sThis = new ApkInstallManager();
 
@@ -83,6 +79,9 @@ public class ApkInstallManager implements IDeviceChangeListener, IDebugBridgeCha
         final IDevice device;
     }
 
+    /**
+     * Receiver and parser for the "pm path package" command.
+     */
     private final static class PmReceiver extends MultiLineReceiver {
         boolean foundPackage = false;
         @Override
@@ -180,92 +179,79 @@ public class ApkInstallManager implements IDeviceChangeListener, IDebugBridgeCha
     }
 
     private ApkInstallManager() {
-        AndroidDebugBridge.addDeviceChangeListener(this);
-        AndroidDebugBridge.addDebugBridgeChangeListener(this);
-        GlobalProjectMonitor.getMonitor().addProjectListener(this);
+        AndroidDebugBridge.addDeviceChangeListener(mDeviceChangeListener);
+        AndroidDebugBridge.addDebugBridgeChangeListener(mDebugBridgeListener);
+        GlobalProjectMonitor.getMonitor().addProjectListener(mProjectListener);
     }
 
-    /*
-     * Responds to a bridge change by clearing the full installation list.
-     * (non-Javadoc)
-     * @see com.android.ddmlib.AndroidDebugBridge.IDebugBridgeChangeListener#bridgeChanged(com.android.ddmlib.AndroidDebugBridge)
-     */
-    public void bridgeChanged(AndroidDebugBridge bridge) {
-        // the bridge changed, there is no way to know which IDevice will be which.
-        // We reset everything
-        synchronized (mInstallList) {
-            mInstallList.clear();
+    private IDebugBridgeChangeListener mDebugBridgeListener = new IDebugBridgeChangeListener() {
+        /**
+         * Responds to a bridge change by clearing the full installation list.
+         *
+         * @see IDebugBridgeChangeListener#bridgeChanged(AndroidDebugBridge)
+         */
+        public void bridgeChanged(AndroidDebugBridge bridge) {
+            // the bridge changed, there is no way to know which IDevice will be which.
+            // We reset everything
+            synchronized (mInstallList) {
+                mInstallList.clear();
+            }
         }
-    }
+    };
 
-    /*
-     * Responds to a device being disconnected by removing all installations related to this device.
-     * (non-Javadoc)
-     * @see com.android.ddmlib.AndroidDebugBridge.IDeviceChangeListener#deviceDisconnected(com.android.ddmlib.Device)
-     */
-    public void deviceDisconnected(IDevice device) {
-        synchronized (mInstallList) {
-            Iterator<ApkInstall> iterator = mInstallList.iterator();
-            while (iterator.hasNext()) {
-                ApkInstall install = iterator.next();
-                if (install.device == device) {
-                    iterator.remove();
+    private IDeviceChangeListener mDeviceChangeListener = new IDeviceChangeListener() {
+        /**
+         * Responds to a device being disconnected by removing all installations related
+         * to this device.
+         *
+         * @see IDeviceChangeListener#deviceDisconnected(IDevice)
+         */
+        public void deviceDisconnected(IDevice device) {
+            synchronized (mInstallList) {
+                Iterator<ApkInstall> iterator = mInstallList.iterator();
+                while (iterator.hasNext()) {
+                    ApkInstall install = iterator.next();
+                    if (install.device == device) {
+                        iterator.remove();
+                    }
                 }
             }
         }
-    }
 
-    /*
-     * Responds to a close project by resetting all its installation.
-     * (non-Javadoc)
-     * @see com.android.ide.eclipse.editors.resources.manager.ResourceMonitor.IProjectListener#projectClosed(org.eclipse.core.resources.IProject)
-     */
-    public void projectClosed(IProject project) {
-        resetInstallationFor(project);
-    }
+        public void deviceChanged(IDevice device, int changeMask) {
+            // nothing to do.
+        }
 
-    /*
-     * Responds to a close project by resetting all its installation.
-     * (non-Javadoc)
-     * @see com.android.ide.eclipse.editors.resources.manager.ResourceMonitor.IProjectListener#projectDeleted(org.eclipse.core.resources.IProject)
-     */
-    public void projectDeleted(IProject project) {
-        resetInstallationFor(project);
-    }
+        public void deviceConnected(IDevice device) {
+            // nothing to do.
+        }
+    };
 
-    /*
-     * Does nothing
-     * (non-Javadoc)
-     * @see com.android.ddmlib.AndroidDebugBridge.IDeviceChangeListener#deviceChanged(com.android.ddmlib.Device, int)
-     */
-    public void deviceChanged(IDevice device, int changeMask) {
-        // nothing to do.
-    }
+    private IProjectListener mProjectListener = new IProjectListener() {
+        /**
+         * Responds to a closed project by resetting all its installation.
+         *
+         * @see IProjectListener#projectClosed(IProject)
+         */
+        public void projectClosed(IProject project) {
+            resetInstallationFor(project);
+        }
 
-    /*
-     * Does nothing
-     * (non-Javadoc)
-     * @see com.android.ddmlib.AndroidDebugBridge.IDeviceChangeListener#deviceConnected(com.android.ddmlib.Device)
-     */
-    public void deviceConnected(IDevice device) {
-        // nothing to do.
-    }
+        /**
+         * Responds to a deleted project by resetting all its installation.
+         *
+         * @see IProjectListener#projectDeleted(IProject)
+         */
+        public void projectDeleted(IProject project) {
+            resetInstallationFor(project);
+        }
 
-    /*
-     * Does nothing
-     * (non-Javadoc)
-     * @see com.android.ide.eclipse.editors.resources.manager.ResourceMonitor.IProjectListener#projectOpened(org.eclipse.core.resources.IProject)
-     */
-    public void projectOpened(IProject project) {
-        // nothing to do.
-    }
+        public void projectOpened(IProject project) {
+            // nothing to do.
+        }
 
-    /*
-     * Does nothing
-     * (non-Javadoc)
-     * @see com.android.ide.eclipse.editors.resources.manager.ResourceMonitor.IProjectListener#projectOpenedWithWorkspace(org.eclipse.core.resources.IProject)
-     */
-    public void projectOpenedWithWorkspace(IProject project) {
-        // nothing to do.
-    }
+        public void projectOpenedWithWorkspace(IProject project) {
+            // nothing to do.
+        }
+    };
 }
