@@ -18,8 +18,11 @@ package com.android.adt.gscripts;
 
 public class BaseView implements IViewRule {
 
+    private String mFqcn;
+
     public boolean onInitialize(String fqcn) {
         // This base rule can handle any class.
+        mFqcn = fqcn
         return true;
     }
 
@@ -37,6 +40,9 @@ public class BaseView implements IViewRule {
         return null;
     }
 
+    public String getFqcn() {
+        return mFqcn;
+    }
 
     // ==== Selection ====
 

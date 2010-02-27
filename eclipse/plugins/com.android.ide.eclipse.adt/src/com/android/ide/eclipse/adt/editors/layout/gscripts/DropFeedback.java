@@ -43,6 +43,15 @@ public class DropFeedback {
     public Closure paintClosure;
 
     /**
+     * When set to a non-null valid rectangle, this informs the engine that a drag'n'drop
+     * feedback wants to capture the mouse as long as it stays in the given area.
+     * <p/>
+     * When the mouse is captured, drop events will keep going to the rule that started the
+     * capture and the current INode proxy will not change.
+     */
+    public Rect captureArea;
+
+    /**
      * Initializes the drop feedback with the given user data and paint closure.
      * A paint is requested if the paint closure is non-null.
      */
@@ -50,5 +59,6 @@ public class DropFeedback {
         this.userData = userData;
         this.paintClosure = paintClosure;
         this.requestPaint = paintClosure != null;
+        this.captureArea = null;
     }
 }

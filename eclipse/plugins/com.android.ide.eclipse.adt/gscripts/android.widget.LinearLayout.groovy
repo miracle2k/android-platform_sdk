@@ -153,27 +153,21 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         return feedback;
     }
 
+    void onDropLeave(INode targetNode, DropFeedback feedback) {
+        // ignore
+    }
+
     void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point p) {
-
-        Rect b = targetNode.getBounds();
-        if (!b.isValid()) {
-            return;
-        }
-
-        int x = p.x - b.x;
-        int y = p.y - b.y;
-
         int insert_pos = feedback.userData.insert_pos;
 
         targetNode.debugPrintf("Linear.drop: add ${fqcn} at position ${insert_pos}");
 
-        targetNode.editXml("Add child to LinearLayout") {
-            INode e = targetNode.insertChildAt(fqcn, insert_pos);
-            // TODO adjust attributes?
-        }
-    }
+        // Get the last component of the FQCN (e.g. "android.view.Button" => "Button")
+        String name = getFqcn();
+        name = name[name.indexOf(".")+1 .. name.length()-1];
 
-    void onDropLeave(INode targetNode, DropFeedback feedback) {
-        // ignore
+        targetNode.editXml("Add ${name} to LinearLayout") {
+            INode e = targetNode.insertChildAt(fqcn, insert_pos);
+        }
     }
 }

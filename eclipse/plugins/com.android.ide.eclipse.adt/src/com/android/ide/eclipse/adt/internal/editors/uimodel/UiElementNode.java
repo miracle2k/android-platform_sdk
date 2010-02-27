@@ -1316,7 +1316,7 @@ public class UiElementNode implements IPropertySource {
      * @see #commitAttributeToXml(UiAttributeNode, String)
      * @see #commitDirtyAttributesToXml()
      *
-     * @param attrXmlName The XML name of the attribute to modify
+     * @param attrXmlName The XML <em>local</em> name of the attribute to modify
      * @param value The new value for the attribute. If set to null, the attribute is removed.
      * @param override True if the value must be set even if one already exists.
      * @return The {@link UiAttributeNode} that has been modified or null.

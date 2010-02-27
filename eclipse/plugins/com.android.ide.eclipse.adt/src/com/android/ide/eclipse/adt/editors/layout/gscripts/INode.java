@@ -119,7 +119,7 @@ public interface INode {
      * <p/>
      * This call must be done in the context of editXml().
      *
-     * @param attributeName The XML local name of the attribute to set.
+     * @param attributeName The XML <em>local</em> name of the attribute to set.
      * @param value It's value. Cannot be null.
      * @return Whether the attribute was actually set or not.
      */
@@ -127,7 +127,7 @@ public interface INode {
 
     /**
      * Returns a given XML attribute.
-     * @param attrName The local name of the attribute.
+     * @param attrName The <em>local</em> name of the attribute.
      * @return the attribute as a {@link String}, if it exists, or <code>null</code>
      */
     String getStringAttr(String attrName);
