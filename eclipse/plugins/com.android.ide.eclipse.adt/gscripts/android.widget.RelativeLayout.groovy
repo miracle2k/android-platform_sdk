@@ -21,6 +21,11 @@ package com.android.adt.gscripts;
  */
 public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
+    /*
+     * TODO List:
+     * - anchor to parent layout top/left/bottom/right.
+     */
+
     // ==== Selection ====
 
     /**
@@ -97,6 +102,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         // Prepare the drop feedback
         return new DropFeedback(
                 [ "child": null,    // INode: Current child under cursor
+                  "index": 0,       // int: Index of child in the parent children list
                   "zones": null,    // Valid "anchor" zones for the current child
                                     // of type list(map(rect:Rect, attr:[String]))
                   "rect": null,     // Surrounding rect of the current zones
@@ -114,24 +120,39 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
         Rect r = data.rect;
 
-        // If cursor is still in the current rect, don't change it.
+        // Only look for a new child if cursor is no longer under the current rect
         if (r == null || !r.contains(p)) {
             // Find the current direct children under the cursor
             def childNode = null;
+            def childIndex = 0;
             for(child in layoutNode.getChildren()) {
                 if (child.getBounds().contains(p)) {
                     childNode = child;
                     break;
                 }
+                childIndex++;
             }
 
             // Only recompute drop zones if the child changed
             if (childNode != data.child) {
                 data.child = childNode;
-                def result = computeDropZones(childNode);
-                data.rect = r = result[0];
-                data.zones = result[1];
+                data.index = childIndex;
                 data.curr  = null;
+
+                if (childNode == null) {
+                    // No child selected... free the captured area
+                    data.rect = null;
+                    data.zones = null;
+                    feedback.captureArea = null;
+
+                } else {
+                    def result = computeDropZones(childNode);
+                    data.rect  = result[0];
+                    data.zones = result[1];
+                    // capture this rect, to prevent the engine from switching the layout node.
+                    feedback.captureArea = data.rect;
+                }
+
                 feedback.requestPaint = true;
             }
         }
@@ -156,10 +177,6 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
     }
 
     def computeDropZones(INode childNode) {
-
-        if (childNode == null) {
-            return [];
-        }
 
         Rect b = childNode.getBounds();
 
@@ -207,8 +224,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             int wn, ArrayList a2 ->
 
             zones << [ "rect" : new Rect(x, y, wn, h1),
-                       "attr" : [ a ] +  a2,
-                       "child": childNode ];
+                       "attr" : [ a ] +  a2 ];
             x += wn;
         }
 
@@ -231,8 +247,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         def addy = {
             int hn, ArrayList a2 ->
             zones << [ "rect" : new Rect(x, y, w1, hn),
-                       "attr" : [ a ] +  a2,
-                       "child": childNode ];
+                       "attr" : [ a ] +  a2 ];
             y += hn;
         }
 
@@ -288,7 +303,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             int x = data.rect.x + 5;
             int y = data.rect.y + data.rect.h + 5;
             int h = gc.getFontHeight();
-            String id = data.curr.child.getStringAttr("id");
+            String id = data.child.getStringAttr("id");
             data.curr.attr.each {
                 String s = it;
                 if (id) s = "$s=$id";
@@ -300,11 +315,32 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
     }
 
     void onDropLeave(INode targetNode, DropFeedback feedback) {
-        // ignore
+        // Free the last captured rect, if any
+        feedback.captureArea = null;
     }
 
     void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point p) {
-        // ignore
+        def data = feedback.userData;
+        if (!data.curr) {
+            return;
+        }
+
+        def index = data.index;
+
+        targetNode.debugPrintf("Relative.drop: add ${fqcn} after index ${index}");
+
+        // Get the last component of the FQCN (e.g. "android.view.Button" => "Button")
+        String name = getFqcn();
+        name = name[name.indexOf(".")+1 .. name.length()-1];
+
+        targetNode.editXml("Add ${name} to RelativeLayout") {
+            INode e = targetNode.insertChildAt(fqcn, index + 1);
+
+            String id = data.child.getStringAttr("id");
+            data.curr.attr.each {
+                e.setAttribute("layout_${it}", id);
+            }
+        }
     }
 
 

@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 
 import org.eclipse.swt.dnd.DND;
@@ -259,9 +260,23 @@ import org.eclipse.swt.graphics.Point;
         int x = p.x;
         int y = p.y;
 
-        CanvasViewInfo vi = mCanvas.findViewInfoAt(x, y);
+        // Is the mouse currently captured by a DropFeedback.captureArea?
+        boolean isCaptured = false;
+        if (mFeedback != null) {
+            Rect r = mFeedback.captureArea;
+            isCaptured = r != null && r.contains(x, y);
+        }
+
+        // We can't switch views/nodes when the mouse is captured
+        CanvasViewInfo vi;
+        if (isCaptured) {
+            vi = mCurrentView;
+        } else {
+            vi = mCanvas.findViewInfoAt(x, y);
+        }
 
         boolean isMove = true;
+        boolean needRedraw = false;
 
         if (vi != mCurrentView) {
             // Current view has changed. Does that also change the target node?
@@ -274,6 +289,7 @@ import org.eclipse.swt.graphics.Point;
 
                 // We don't need onDropMove in this case
                 isMove = false;
+                needRedraw = true;
 
             } else {
                 // vi is a new current view.
@@ -318,7 +334,7 @@ import org.eclipse.swt.graphics.Point;
             }
         }
 
-        if (mFeedback != null && mFeedback.requestPaint) {
+        if (needRedraw || (mFeedback != null && mFeedback.requestPaint)) {
             mCanvas.redraw();
         }
     }

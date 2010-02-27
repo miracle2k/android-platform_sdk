@@ -66,11 +66,13 @@ import java.util.ListIterator;
  *
  * TODO list:
  * - gray on error, keep select but disable d'n'd.
- * - make sure it is scrollable (Canvas derives from Scrollable, so prolly just setting bounds.)
- * - handle drop target (from palette).
  * - handle drag'n'drop (internal, for moving/duplicating).
  * - handle context menu (depending on selection).
+ * - delete, copy/paste linked with menus and in context menu
+ * - context menu handling of layout + local props (via IViewRules)
  * - selection synchronization with the outline (both ways).
+ * - outline should include same context menu + delete/copy/paste ops.
+ * - outline should include drop support (from canvas or from palette)
  */
 /* package */  class LayoutCanvas extends Canvas {
 
