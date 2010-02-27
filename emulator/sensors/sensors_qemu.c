@@ -252,7 +252,7 @@ data__data_open(struct sensors_data_device_t *dev, native_handle_t* handle)
 {
     SensorData*  data = (void*)dev;
     int i;
-    D("%s: dev=%p fd=%d", __FUNCTION__, dev, fd);
+    D("%s: dev=%p fd=%d", __FUNCTION__, dev, handle->data[0]);
     memset(&data->sensors, 0, sizeof(data->sensors));
 
     for (i=0 ; i<MAX_NUM_SENSORS ; i++) {
@@ -292,7 +292,7 @@ pick_sensor(SensorData*      data,
             data->pendingSensors &= ~(1<<i);
             *values = data->sensors[i];
             values->sensor = (1<<i);
-            LOGD_IF(0, "%s: %d [%f, %f, %f]", __FUNCTION__,
+            D("%s: %d [%f, %f, %f]", __FUNCTION__,
                     (1<<i),
                     values->vector.x,
                     values->vector.y,
@@ -303,7 +303,7 @@ pick_sensor(SensorData*      data,
     LOGE("No sensor to return!!! pendingSensors=%08x", data->pendingSensors);
     // we may end-up in a busy loop, slow things down, just in case.
     usleep(100000);
-    return -1;
+    return -EINVAL;
 }
 
 static int
@@ -329,8 +329,10 @@ data__poll(struct sensors_data_device_t *dev, sensors_data_t* values)
         float    params[3];
         int64_t  event_time;
 
-        if (len < 0)
-            continue;
+        if (len < 0) {
+            E("%s: len=%d", __FUNCTION__, len);
+            return -errno;
+        }
 
         buff[len] = 0;
 
