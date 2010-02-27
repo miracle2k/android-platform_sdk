@@ -25,6 +25,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IPath;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -252,6 +253,12 @@ public final class ApkInstallManager {
 
         public void projectOpenedWithWorkspace(IProject project) {
             // nothing to do.
+        }
+
+        public void projectRenamed(IProject project, IPath from) {
+            // project renaming also triggers delete/open events so
+            // there's nothing to do here (since delete will remove
+            // whatever's linked to the project from the list).
         }
     };
 }

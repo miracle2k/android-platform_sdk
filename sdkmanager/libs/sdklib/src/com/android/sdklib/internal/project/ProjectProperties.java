@@ -201,6 +201,15 @@ public final class ProjectProperties {
     }
 
     /**
+     * Returns the type of the property file.
+     *
+     * @see PropertyType
+     */
+    public PropertyType getType() {
+        return mType;
+    }
+
+    /**
      * Sets a new properties. If a property with the same name already exists, it is replaced.
      * @param name the name of the property.
      * @param value the value of the property.

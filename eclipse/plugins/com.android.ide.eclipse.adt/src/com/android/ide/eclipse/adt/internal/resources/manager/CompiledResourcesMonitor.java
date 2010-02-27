@@ -29,6 +29,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 
 import java.lang.reflect.Field;
@@ -97,6 +98,11 @@ public final class CompiledResourcesMonitor implements IFileListener, IProjectLi
     public void projectOpened(IProject project) {
         // when the project is opened, we get an ADDED event for each file, so we don't
         // need to do anything here.
+    }
+
+    public void projectRenamed(IProject project, IPath from) {
+        // renamed projects also trigger delete/open event,
+        // so nothing to be done here.
     }
 
     /**

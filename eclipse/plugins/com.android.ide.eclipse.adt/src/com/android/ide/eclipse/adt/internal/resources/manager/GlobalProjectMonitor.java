@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 
 import org.eclipse.core.resources.IFile;
@@ -30,6 +31,7 @@ import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.IJavaModel;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
@@ -43,8 +45,12 @@ import java.util.ArrayList;
  * <p/>
  * To track project resource changes, use the monitor in the {@link ResourceManager}. It is more
  * efficient and while the global ProjectMonitor can track any file, deleted resource files
- * cannot be match to previous {@link ResourceFile} or {@link ResourceFolder} objects by the
+ * cannot be matched to previous {@link ResourceFile} or {@link ResourceFolder} objects by the
  * time the listeners get the event notifications.
+ *
+ * @see IProjectListener
+ * @see IFolderListener
+ * @see IFileListener
  */
 public final class GlobalProjectMonitor {
 
@@ -89,6 +95,13 @@ public final class GlobalProjectMonitor {
          * @param project the project about to be deleted.
          */
         public void projectDeleted(IProject project);
+
+        /** Sent when a project is renamed
+         *
+         * @param project the new {@link IProject} object.
+         * @param from the path of the project before the rename action.
+         */
+        public void projectRenamed(IProject project, IPath from);
     }
 
     /**
@@ -174,7 +187,11 @@ public final class GlobalProjectMonitor {
                 for (FileListenerBundle bundle : mFileListeners) {
                     if (bundle.kindMask == ListenerBundle.MASK_NONE
                             || (bundle.kindMask & kind) != 0) {
-                        bundle.listener.fileChanged((IFile)r, delta.getMarkerDeltas(), kind);
+                        try {
+                            bundle.listener.fileChanged((IFile)r, delta.getMarkerDeltas(), kind);
+                        } catch (Throwable t) {
+                            AdtPlugin.log(t,"Failed to call IFileListener.fileChanged");
+                        }
                     }
                 }
                 return false;
@@ -184,7 +201,11 @@ public final class GlobalProjectMonitor {
                 for (FolderListenerBundle bundle : mFolderListeners) {
                     if (bundle.kindMask == ListenerBundle.MASK_NONE
                             || (bundle.kindMask & kind) != 0) {
-                        bundle.listener.folderChanged((IFolder)r, kind);
+                        try {
+                            bundle.listener.folderChanged((IFolder)r, kind);
+                        } catch (Throwable t) {
+                            AdtPlugin.log(t,"Failed to call IFileListener.folderChanged");
+                        }
                     }
                 }
                 return true;
@@ -198,12 +219,32 @@ public final class GlobalProjectMonitor {
                     if (project.isOpen()) {
                         // notify the listeners.
                         for (IProjectListener pl : mProjectListeners) {
-                            pl.projectOpened(project);
+                            try {
+                                pl.projectOpened(project);
+                            } catch (Throwable t) {
+                                AdtPlugin.log(t,"Failed to call IProjectListener.projectOpened");
+                            }
                         }
                     } else {
                         // notify the listeners.
                         for (IProjectListener pl : mProjectListeners) {
-                            pl.projectClosed(project);
+                            try {
+                                pl.projectClosed(project);
+                            } catch (Throwable t) {
+                                AdtPlugin.log(t,"Failed to call IProjectListener.projectClosed");
+                            }
+                        }
+                    }
+
+                    if ((flags & IResourceDelta.MOVED_FROM) != 0) {
+                        IPath from = delta.getMovedFromPath();
+                        // notify the listeners.
+                        for (IProjectListener pl : mProjectListeners) {
+                            try {
+                                pl.projectRenamed(project, from);
+                            } catch (Throwable t) {
+                                AdtPlugin.log(t,"Failed to call IProjectListener.projectRenamed");
+                            }
                         }
                     }
                 }
@@ -357,7 +398,11 @@ public final class GlobalProjectMonitor {
         public synchronized void resourceChanged(IResourceChangeEvent event) {
             // notify the event listeners of a start.
             for (IResourceEventListener listener : mEventListeners) {
-                listener.resourceChangeEventStart();
+                try {
+                    listener.resourceChangeEventStart();
+                } catch (Throwable t) {
+                    AdtPlugin.log(t,"Failed to call IResourceEventListener.resourceChangeEventStart");
+                }
             }
 
             if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
@@ -368,7 +413,11 @@ public final class GlobalProjectMonitor {
 
                 // notify the listeners.
                 for (IProjectListener pl : mProjectListeners) {
-                    pl.projectDeleted(project);
+                    try {
+                        pl.projectDeleted(project);
+                    } catch (Throwable t) {
+                        AdtPlugin.log(t,"Failed to call IProjectListener.projectDeleted");
+                    }
                 }
             } else {
                 // this a regular resource change. We get the delta and go through it with a visitor.
@@ -383,7 +432,11 @@ public final class GlobalProjectMonitor {
 
             // we're done, notify the event listeners.
             for (IResourceEventListener listener : mEventListeners) {
-                listener.resourceChangeEventEnd();
+                try {
+                    listener.resourceChangeEventEnd();
+                } catch (Throwable t) {
+                    AdtPlugin.log(t,"Failed to call IResourceEventListener.resourceChangeEventEnd");
+                }
             }
         }
     };
