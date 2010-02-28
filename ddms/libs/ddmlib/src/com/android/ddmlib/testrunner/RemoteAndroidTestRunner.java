@@ -28,7 +28,7 @@ import java.util.Map.Entry;
 /**
  * Runs a Android test command remotely and reports results.
  */
-public class RemoteAndroidTestRunner  {
+public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
 
     private final String mPackageName;
     private final  String mRunnerName;
@@ -81,14 +81,14 @@ public class RemoteAndroidTestRunner  {
     }
 
     /**
-     * Returns the application package name.
+     * {@inheritDoc}
      */
     public String getPackageName() {
         return mPackageName;
     }
 
     /**
-     * Returns the runnerName.
+     * {@inheritDoc}
      */
     public String getRunnerName() {
         if (mRunnerName == null) {
@@ -105,23 +105,14 @@ public class RemoteAndroidTestRunner  {
     }
 
     /**
-     * Sets to run only tests in this class
-     * Must be called before 'run'.
-     * 
-     * @param className fully qualified class name (eg x.y.z)
+     * {@inheritDoc}
      */
     public void setClassName(String className) {
         addInstrumentationArg(CLASS_ARG_NAME, className);
     }
 
     /**
-     * Sets to run only tests in the provided classes
-     * Must be called before 'run'.
-     * <p>
-     * If providing more than one class, requires a InstrumentationTestRunner that supports 
-     * the multiple class argument syntax.
-     * 
-     * @param classNames array of fully qualified class names (eg x.y.z)
+     * {@inheritDoc}
      */
     public void setClassNames(String[] classNames) {
         StringBuilder classArgBuilder = new StringBuilder();
@@ -136,34 +127,21 @@ public class RemoteAndroidTestRunner  {
     }
 
     /**
-     * Sets to run only specified test method
-     * Must be called before 'run'.
-     * 
-     * @param className fully qualified class name (eg x.y.z)
-     * @param testName method name
+     * {@inheritDoc}
      */
     public void setMethodName(String className, String testName) {
         setClassName(className + METHOD_SEPARATOR + testName);
     }
 
     /**
-     * Sets to run all tests in specified package
-     * Must be called before 'run'.
-     * 
-     * @param packageName fully qualified package name (eg x.y.z)
+     * {@inheritDoc}
      */
     public void setTestPackageName(String packageName) {
         addInstrumentationArg(PACKAGE_ARG_NAME, packageName);
     }
 
     /**
-     * Adds a argument to include in instrumentation command.
-     * <p/>
-     * Must be called before 'run'. If an argument with given name has already been provided, it's
-     * value will be overridden. 
-     * 
-     * @param name the name of the instrumentation bundle argument
-     * @param value the value of the argument
+     * {@inheritDoc}
      */
     public void addInstrumentationArg(String name, String value) {
         if (name == null || value == null) {
@@ -173,43 +151,35 @@ public class RemoteAndroidTestRunner  {
     }
 
     /**
-     * Adds a boolean argument to include in instrumentation command.
-     * <p/>
-     * @see RemoteAndroidTestRunner#addInstrumentationArg
-     * 
-     * @param name the name of the instrumentation bundle argument
-     * @param value the value of the argument
+     * {@inheritDoc}
      */
     public void addBooleanArg(String name, boolean value) {
         addInstrumentationArg(name, Boolean.toString(value));
     }
   
     /**
-     * Sets this test run to log only mode - skips test execution.
+     * {@inheritDoc}
      */
     public void setLogOnly(boolean logOnly) {
         addBooleanArg(LOG_ARG_NAME, logOnly);
     }
 
     /**
-     * Sets this debug mode of this test run. If true, the Android test runner will wait for a 
-     * debugger to attach before proceeding with test execution.
+     * {@inheritDoc}
      */
     public void setDebug(boolean debug) {
         addBooleanArg(DEBUG_ARG_NAME, debug);
     }
 
     /**
-     * Sets this code coverage mode of this test run. 
+     * {@inheritDoc}
      */
     public void setCoverage(boolean coverage) {
         addBooleanArg(COVERAGE_ARG_NAME, coverage);
     }
 
     /**
-     * Execute this test run.
-     * 
-     * @param listener listens for test results
+     * {@inheritDoc}
      */
     public void run(ITestRunListener listener) {
         final String runCaseCommandStr = String.format("am instrument -w -r %s %s",
@@ -226,7 +196,7 @@ public class RemoteAndroidTestRunner  {
     }
 
     /**
-     * Requests cancellation of this test run.
+     * {@inheritDoc}
      */
     public void cancel() {
         if (mParser != null) {
