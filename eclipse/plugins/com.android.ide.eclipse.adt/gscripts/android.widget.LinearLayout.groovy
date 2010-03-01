@@ -163,8 +163,8 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         targetNode.debugPrintf("Linear.drop: add ${fqcn} at position ${insert_pos}");
 
         // Get the last component of the FQCN (e.g. "android.view.Button" => "Button")
-        String name = getFqcn();
-        name = name[name.indexOf(".")+1 .. name.length()-1];
+        String name = fqcn;
+        name = name[name.lastIndexOf(".")+1 .. name.length()-1];
 
         targetNode.editXml("Add ${name} to LinearLayout") {
             INode e = targetNode.insertChildAt(fqcn, insert_pos);

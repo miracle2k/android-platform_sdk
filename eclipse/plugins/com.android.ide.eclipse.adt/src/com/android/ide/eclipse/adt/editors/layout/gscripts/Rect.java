@@ -91,6 +91,11 @@ public class Rect {
         return contains(p.x, p.y);
     }
 
+    public Point center() {
+        return new Point(x + (w > 0 ? w / 2 : 0),
+                         y + (h > 0 ? h / 2 : 0));
+    }
+
     @Override
     public String toString() {
         return String.format("Rect [%dx%d - %dx%d]", x, y, w, h);

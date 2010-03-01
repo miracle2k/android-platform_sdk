@@ -105,8 +105,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                   "index": 0,       // int: Index of child in the parent children list
                   "zones": null,    // Valid "anchor" zones for the current child
                                     // of type list(map(rect:Rect, attr:[String]))
-                  "rect": null,     // Surrounding rect of the current zones
-                  "curr": null,     // map: Current zone
+                  "curr":  null,     // map: Current zone
                 ],
                 { gc, node, feedback ->
                     // Paint closure for the RelativeLayout just defers to the method below
@@ -116,44 +115,56 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
     DropFeedback onDropMove(INode layoutNode, DropFeedback feedback, Point p) {
 
-        def data = feedback.userData;
-
-        Rect r = data.rect;
+        def  data = feedback.userData;
+        Rect area = feedback.captureArea;
 
         // Only look for a new child if cursor is no longer under the current rect
-        if (r == null || !r.contains(p)) {
+        if (area == null || !area.contains(p)) {
+
+            // We're not capturing anymore since we got outside of the capture bounds
+            feedback.captureArea = null;
+
             // Find the current direct children under the cursor
             def childNode = null;
-            def childIndex = 0;
+            def childIndex = -1;
             for(child in layoutNode.getChildren()) {
+                childIndex++;
                 if (child.getBounds().contains(p)) {
                     childNode = child;
                     break;
                 }
-                childIndex++;
             }
 
-            // Only recompute drop zones if the child changed
-            if (childNode != data.child) {
+            // If there is a selected child and it changed, recompute child drop zones
+            if (childNode != null && childNode != data.child) {
                 data.child = childNode;
                 data.index = childIndex;
                 data.curr  = null;
+                data.zones = null;
 
-                if (childNode == null) {
-                    // No child selected... free the captured area
-                    data.rect = null;
+                def result = computeChildDropZones(childNode);
+                data.zones = result[1];
+
+                // capture this rect, to prevent the engine from switching the layout node.
+                feedback.captureArea = result[0];
+                feedback.requestPaint = true;
+
+            } else if (childNode == null) {
+                // If there is no selected child, compute the border drop zone
+                data.child = null;
+                data.index = -1;
+                data.curr  = null;
+
+                def zone = computeBorderDropZone(layoutNode.getBounds(), p);
+
+                if (zone == null) {
                     data.zones = null;
-                    feedback.captureArea = null;
-
                 } else {
-                    def result = computeDropZones(childNode);
-                    data.rect  = result[0];
-                    data.zones = result[1];
-                    // capture this rect, to prevent the engine from switching the layout node.
-                    feedback.captureArea = data.rect;
+                    data.zones = [ zone ];
+                    feedback.captureArea = zone.rect;
                 }
 
-                feedback.requestPaint = true;
+                feedback.requestPaint = (area != feedback.captureArea);
             }
         }
 
@@ -176,7 +187,50 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         return feedback;
     }
 
-    def computeDropZones(INode childNode) {
+    def computeBorderDropZone(Rect bounds, Point p) {
+
+        int x = p.x;
+        int y = p.y;
+
+        int x1 = bounds.x;
+        int y1 = bounds.y;
+        int w  = bounds.w;
+        int h  = bounds.h;
+        int x2 = x1 + w;
+        int y2 = y1 + h;
+
+        int n  = 10;
+        int n2 = n*2;
+
+        Rect r = null;
+        String attr = null;
+
+        if (x <= x1 + n && y >= y1 && y <= y2) {
+            r = new Rect(x1 - n, y1, n2, h);
+            attr = "alignParentLeft";
+
+        } else if (x >= x2 - n && y >= y1 && y <= y2) {
+            r = new Rect(x2 - n, y1, n2, h);
+            attr = "alignParentRight";
+
+        } else if (y <= y1 + n && x >= x1 && x <= x2) {
+            r = new Rect(x1, y1 - n, w, n2);
+            attr = "alignParentTop";
+
+        } else if (y >= y2 - n && x >= x1 && x <= x2) {
+            r = new Rect(x1, y2 - n, w, n2);
+            attr = "alignParentBottom";
+
+        } else {
+            // we're nowhere near a border
+            return null;
+        }
+
+        return [ "rect": r, "attr": [ attr ], "mark": r.center() ];
+    }
+
+
+    def computeChildDropZones(INode childNode) {
 
         Rect b = childNode.getBounds();
 
@@ -223,8 +277,8 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         def addx = {
             int wn, ArrayList a2 ->
 
-            zones << [ "rect" : new Rect(x, y, wn, h1),
-                       "attr" : [ a ] +  a2 ];
+            zones << [ "rect": new Rect(x, y, wn, h1),
+                       "attr": [ a ] +  a2 ];
             x += wn;
         }
 
@@ -246,8 +300,8 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
         def addy = {
             int hn, ArrayList a2 ->
-            zones << [ "rect" : new Rect(x, y, w1, hn),
-                       "attr" : [ a ] +  a2 ];
+            zones << [ "rect": new Rect(x, y, w1, hn),
+                       "attr": [ a ] +  a2 ];
             y += hn;
         }
 
@@ -300,15 +354,33 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             gc.fillRect(data.curr.rect);
             gc.setAlpha(255);
 
-            int x = data.rect.x + 5;
-            int y = data.rect.y + data.rect.h + 5;
+            def r = feedback.captureArea;
+            int x = r.x + 5;
+            int y = r.y + r.h + 5;
             int h = gc.getFontHeight();
-            String id = data.child.getStringAttr("id");
+            String id = null;
+            if (data.child) {
+                id = data.child.getStringAttr("id");
+            }
             data.curr.attr.each {
                 String s = it;
                 if (id) s = "$s=$id";
                 gc.drawString(s, x, y);
                 y += h;
+            }
+
+            def mark = data.curr.get("mark");
+            if (mark) {
+                gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+                gc.setLineWidth(2);
+                def black = gc.registerColor(0);
+                gc.setForeground(black);
+
+                x = mark.x;
+                y = mark.y;
+                gc.drawLine(x - 10, y - 10, x + 10, y + 10);
+                gc.drawLine(x + 10, y - 10, x - 10, y + 10);
+                gc.drawRect(x - 10, y - 10, x + 10, y + 10);
             }
 
         }
@@ -330,15 +402,19 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         targetNode.debugPrintf("Relative.drop: add ${fqcn} after index ${index}");
 
         // Get the last component of the FQCN (e.g. "android.view.Button" => "Button")
-        String name = getFqcn();
-        name = name[name.indexOf(".")+1 .. name.length()-1];
+        String name = fqcn;
+        name = name[name.lastIndexOf(".")+1 .. name.length()-1];
 
         targetNode.editXml("Add ${name} to RelativeLayout") {
             INode e = targetNode.insertChildAt(fqcn, index + 1);
 
-            String id = data.child.getStringAttr("id");
+            String id = null;
+            if (data.child) {
+                id = data.child.getStringAttr("id");
+            }
+
             data.curr.attr.each {
-                e.setAttribute("layout_${it}", id);
+                e.setAttribute("layout_${it}", id ? id : "true");
             }
         }
     }

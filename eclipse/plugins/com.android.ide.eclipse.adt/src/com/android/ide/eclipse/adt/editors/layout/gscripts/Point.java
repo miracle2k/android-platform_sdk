@@ -42,4 +42,9 @@ public class Point {
         int h = x ^ ((y >> 16) & 0x0FFFF) ^ ((y & 0x0FFFF) << 16);
         return h;
     }
+
+    @Override
+    public String toString() {
+        return String.format("Point [%dx%d]", x, y);
+    }
 }
