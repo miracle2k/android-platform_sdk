@@ -64,6 +64,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -738,9 +739,12 @@ public final class Sdk  {
         public void projectClosed(IProject project) {
             // get the target project
             synchronized (sLock) {
-                // direct access to the map since we're going to edit it.
+                // Don't use getProject() as it could create the ProjectState if it's not
+                // there yet and this is not what we want. We want the current object.
+                // Therefore, direct access to the map.
                 ProjectState state = sProjectStateMap.get(project);
                 if (state != null) {
+                    // 1. clear the layout lib cache associated with this project
                     IAndroidTarget target = state.getTarget();
                     if (target != null) {
                         // get the bridge for the target, and clear the cache for this project.
@@ -753,7 +757,20 @@ public final class Sdk  {
                         }
                     }
 
-                    // now remove the project for the maps.
+                    // 2. if the project is a library, make sure to update the
+                    // LibraryState for any main project using this.
+                    for (ProjectState projectState : sProjectStateMap.values()) {
+                        LibraryState libState = projectState.getLibrary(project);
+                        if (libState != null) {
+                            // reset the library
+                            libState.close();
+
+                            // update the main project
+                            // FIXME update the main project. maybe before library.close()?
+                        }
+                    }
+
+                    // now remove the project for the project map.
                     sProjectStateMap.remove(project);
                 }
             }
@@ -768,7 +785,7 @@ public final class Sdk  {
             if (openedState != null) {
                 // find dependencies, if any
                 if (openedState.isMissingLibraries()) {
-                    // look for all opened projects to see if they are valid library
+                    // FIXME look for all opened projects to see if they are valid library
                     // for this project.
                 }
 
@@ -781,7 +798,7 @@ public final class Sdk  {
                             if (projectState != openedState && projectState.isMissingLibraries()) {
                                 LibraryState libState = projectState.needs(openedProject);
                                 if (libState != null) {
-                                    linkProjectAndLibrary(projectState, libState);
+                                    linkProjectAndLibrary(projectState, libState, null);
                                 }
                             }
                         }
@@ -792,6 +809,38 @@ public final class Sdk  {
 
         public void projectOpenedWithWorkspace(IProject project) {
             projectOpened(project);
+        }
+
+        public void projectRenamed(IProject project, IPath from) {
+            // a project was renamed.
+            // if the project is a library, look for any project that depended on it
+            // and update it. (default.properties and linked source folder)
+            ProjectState renamedState = getProject(project);
+            if (renamedState.isLibrary()) {
+                // remove the variable
+                cleanLibraryProject(from.lastSegment());
+
+                // update the project depending on the library
+                synchronized (sLock) {
+                    for (ProjectState projectState : sProjectStateMap.values()) {
+                        if (projectState != renamedState && projectState.isMissingLibraries()) {
+                            IPath oldRelativePath = from.makeRelativeTo(
+                                    projectState.getProject().getFullPath());
+
+                            IPath newRelativePath = project.getFullPath().makeRelativeTo(
+                                    projectState.getProject().getFullPath());
+
+                            // update the library for the main project.
+                            LibraryState libState = projectState.updateLibrary(
+                                    oldRelativePath.toString(), newRelativePath.toString(),
+                                    project);
+                            if (libState != null) {
+                                linkProjectAndLibrary(projectState, libState, from);
+                            }
+                        }
+                    }
+                }
+            }
         }
     };
 
@@ -848,10 +897,27 @@ public final class Sdk  {
             try {
                 pathVarMgr.setValue(varName, libPath);
             } catch (CoreException e) {
-                String message = String.format("Unable to set linked path var '%1$s' for library %2$s",
+                String message = String.format(
+                        "Unable to set linked path var '%1$s' for library %2$s", //$NON-NLS-1$
                         varName, libPath.toOSString());
                 AdtPlugin.log(e, message);
             }
+        }
+    }
+
+    private void cleanLibraryProject(String libName) {
+        IPathVariableManager pathVarMgr =
+            ResourcesPlugin.getWorkspace().getPathVariableManager();
+
+        final String varName = "_android_" + libName; //$NON-NLS-1$
+
+        // remove the value by setting the value to null.
+        try {
+            pathVarMgr.setValue(varName, null /*path*/);
+        } catch (CoreException e) {
+            String message = String.format("Unable to remove linked path var '%1$s'", //$NON-NLS-1$
+                    varName);
+            AdtPlugin.log(e, message);
         }
     }
 
@@ -861,9 +927,12 @@ public final class Sdk  {
      * modification.
      * @param projectState the {@link ProjectState} for the main project
      * @param libraryState the {@link LibraryState} for the library project.
+     * @param previousLibraryPath
      */
-    private void linkProjectAndLibrary(final ProjectState projectState,
-            final LibraryState libraryState) {
+    private void linkProjectAndLibrary(
+            final ProjectState projectState,
+            final LibraryState libraryState,
+            final IPath previousLibraryPath) {
         Job job = new Job("Android Library link creation") { //$NON-NLS-1$
             @Override
             protected IStatus run(IProgressMonitor monitor) {
@@ -874,15 +943,34 @@ public final class Sdk  {
                     // add the library to the list of dynamic references
                     IProjectDescription projectDescription = project.getDescription();
                     IProject[] refs = projectDescription.getDynamicReferences();
+
                     if (refs.length > 0) {
-                        IProject[] newrefs = new IProject[refs.length + 1];
-                        System.arraycopy(refs, 0, newrefs, 0, refs.length);
-                        newrefs[refs.length] = library;
-                        refs = newrefs;
+                        ArrayList<IProject> list = new ArrayList<IProject>(Arrays.asList(refs));
+
+                        // remove a previous library if needed (in case of a rename)
+                        if (previousLibraryPath != null) {
+                            final int count = list.size();
+                            for (int i = 0 ; i < count ; i++) {
+                                // since project basically have only one segment that matter,
+                                // just check the names
+                                if (list.get(i).getName().equals(
+                                        previousLibraryPath.lastSegment())) {
+                                    list.remove(i);
+                                    break;
+                                }
+                            }
+
+                        }
+
+                        // add the new one.
+                        list.add(library);
+
+                        // set the changed list
+                        projectDescription.setDynamicReferences(
+                                list.toArray(new IProject[list.size()]));
                     } else {
-                        refs = new IProject[] { library };
+                        projectDescription.setDynamicReferences(new IProject[] { library });
                     }
-                    projectDescription.setDynamicReferences(refs);
 
                     // add a linked resource for the source of the library and add it to the project
                     final String libName = library.getName();
@@ -895,14 +983,37 @@ public final class Sdk  {
                     libSrc.createLink(new Path(varName + "/" + libSrcFolder), //$NON-NLS-1$
                             IResource.REPLACE, monitor);
 
-                    // use the folder as a source folder
+                    // use the folder as a source folder. get the current list first.
                     IJavaProject javaProject = JavaCore.create(project);
                     IClasspathEntry[] entries = javaProject.getRawClasspath();
+                    ArrayList<IClasspathEntry> list = new ArrayList<IClasspathEntry>(
+                            Arrays.asList(entries));
 
-                    IClasspathEntry[] newEntries = new IClasspathEntry[entries.length + 1];
-                    System.arraycopy(entries, 0, newEntries, 0, entries.length);
-                    newEntries[entries.length] = JavaCore.newSourceEntry(libSrc.getFullPath());
-                    javaProject.setRawClasspath(newEntries, monitor);
+                    // add the new one.
+                    IPath path = libSrc.getFullPath();
+                    list.add(JavaCore.newSourceEntry(path));
+
+                    // remove a previous one if needed (in case of a rename)
+                    if (previousLibraryPath != null) {
+                        String oldLibName = previousLibraryPath.lastSegment();
+                        IPath oldEntryPath = new Path("/").append(project.getName()).append(oldLibName);
+                        // first remove the class path entry.
+                        final int count = list.size();
+                        for (int i = 0 ; i < count ; i++) {
+                            if (list.get(i).getPath().equals(oldEntryPath)) {
+                                list.remove(i);
+                                break;
+                            }
+                        }
+
+                        // then remove the folder itself.
+                        IFolder oldLinkedFolder = project.getFolder(oldLibName);
+                        oldLinkedFolder.delete(true, monitor);
+                    }
+
+                    // set the new list
+                    javaProject.setRawClasspath(list.toArray(new IClasspathEntry[list.size()]),
+                            monitor);
 
                     return Status.OK_STATUS;
                 } catch (CoreException e) {

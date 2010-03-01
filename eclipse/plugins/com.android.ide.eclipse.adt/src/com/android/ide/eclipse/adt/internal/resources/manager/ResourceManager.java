@@ -347,6 +347,10 @@ public final class ResourceManager {
         public void projectOpenedWithWorkspace(IProject project) {
             createProject(project);
         }
+
+        public void projectRenamed(IProject project, IPath from) {
+            // renamed project get a delete/open event too, so this can be ignored.
+        }
     };
 
     /**
