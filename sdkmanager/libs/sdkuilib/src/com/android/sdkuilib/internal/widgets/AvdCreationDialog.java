@@ -918,8 +918,10 @@ final class AvdCreationDialog extends GridDialog {
             skinName = mSkinSizeWidth.getText() + "x" + mSkinSizeHeight.getText(); //$NON-NLS-1$
         }
 
-        SdkLog log = new SdkLog(String.format("Result of creating AVD '%s':", avdName),
-                getContents().getDisplay());
+        SdkLog log = new SdkLog(
+                String.format("Result of creating AVD '%s':", avdName),
+                getContents().getDisplay(),
+                false /*logErrorsOnly*/);
 
         File avdFolder;
         try {

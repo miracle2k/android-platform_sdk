@@ -45,7 +45,7 @@ public class UpdaterWindow {
 
     /**
      * Creates a new window. Caller must call open(), which will block.
-     * @param sdkLog
+     * @param sdkLog Logger. Can be null.
      * @param osSdkRoot The OS path to the SDK root.
      * @param userCanChangeSdkRoot If true, the window lets the user change the SDK path
      *                             being browsed.

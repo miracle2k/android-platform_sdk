@@ -881,7 +881,8 @@ public final class AvdSelector {
         // log for this action.
         SdkLog log = new SdkLog(
                 String.format("Result of deleting AVD '%s':", avdInfo.getName()),
-                display);
+                display,
+                false /*logErrorsOnly*/);
 
         // delete the AVD
         boolean success = mAvdManager.deleteAvd(avdInfo, log);
@@ -908,7 +909,8 @@ public final class AvdSelector {
         // log for this action.
         SdkLog log = new SdkLog(
                 String.format("Result of updating AVD '%s':", avdInfo.getName()),
-                display);
+                display,
+                false /*logErrorsOnly*/);
 
         // delete the AVD
         try {
@@ -925,13 +927,21 @@ public final class AvdSelector {
     }
 
     private void onManager() {
+
+        // get the current Display
+        Display display = mTable.getDisplay();
+
+        // log for this action.
+        SdkLog log = new SdkLog("Result of SDK Manager", display, true /*logErrorsOnly*/);
+
         UpdaterWindow window = new UpdaterWindow(
                 mTable.getShell(),
-                null /*sdk log*/,
+                log,
                 mAvdManager.getSdkManager().getLocation(),
                 false /*userCanChangeSdkRoot*/);
         window.open();
         refresh(true /*reload*/); // UpdaterWindow uses its own AVD manager so this one must reload.
+        log.displayResult(true);
     }
 
     private void onStart() {
@@ -1067,10 +1077,12 @@ public final class AvdSelector {
         final ArrayList<String> logMessages = new ArrayList<String>();
         private final String mMessage;
         private final Display mDisplay;
+        private final boolean mLogErrorsOnly;
 
-        public SdkLog(String message, Display display) {
+        public SdkLog(String message, Display display, boolean logErrorsOnly) {
             mMessage = message;
             mDisplay = display;
+            mLogErrorsOnly = logErrorsOnly;
         }
 
         public void error(Throwable throwable, String errorFormat, Object... arg) {
@@ -1084,11 +1096,15 @@ public final class AvdSelector {
         }
 
         public void warning(String warningFormat, Object... arg) {
-            logMessages.add(String.format("Warning: " + warningFormat, arg));
+            if (!mLogErrorsOnly) {
+                logMessages.add(String.format("Warning: " + warningFormat, arg));
+            }
         }
 
         public void printf(String msgFormat, Object... arg) {
-            logMessages.add(String.format(msgFormat, arg));
+            if (!mLogErrorsOnly) {
+                logMessages.add(String.format(msgFormat, arg));
+            }
         }
 
         /**
@@ -1106,7 +1122,9 @@ public final class AvdSelector {
                 mDisplay.asyncExec(new Runnable() {
                     public void run() {
                         Shell shell = mDisplay.getActiveShell();
-                        if (success) {
+                        // Use the success icon if the call indicates success.
+                        // However just use the error icon if the logger was only recording errors.
+                        if (success && !mLogErrorsOnly) {
                             MessageDialog.openInformation(shell, "Android Virtual Devices Manager",
                                     sb.toString());
                         } else {

@@ -103,7 +103,7 @@ public final class SdkManager {
     /**
      * Creates an {@link SdkManager} for a given sdk location.
      * @param sdkLocation the location of the SDK.
-     * @param log the ISdkLog object receiving warning/error from the parsing.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Can be null.
      * @return the created {@link SdkManager} or null if the location is not valid.
      */
     public static SdkManager createManager(String sdkLocation, ISdkLog log) {
@@ -236,7 +236,7 @@ public final class SdkManager {
      * Loads the Platforms from the SDK.
      * @param location Location of the SDK
      * @param list the list to fill with the platforms.
-     * @param log the ISdkLog object receiving warning/error from the parsing.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Can be null.
      */
     private static void loadPlatforms(String location, ArrayList<IAndroidTarget> list,
             ISdkLog log) {
@@ -272,7 +272,7 @@ public final class SdkManager {
     /**
      * Loads a specific Platform at a given location.
      * @param platform the location of the platform.
-     * @param log the ISdkLog object receiving warning/error from the parsing.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Can be null.
      */
     private static PlatformTarget loadPlatform(File platform, ISdkLog log) {
         File buildProp = new File(platform, SdkConstants.FN_BUILD_PROP);
@@ -601,7 +601,7 @@ public final class SdkManager {
     private static boolean checkPlatformContent(File platform, ISdkLog log) {
         for (String relativePath : sPlatformContentList) {
             File f = new File(platform, relativePath);
-            if (f.exists() == false) {
+            if (!f.exists() && log != null) {
                 log.error(null,
                         "Ignoring platform '%1$s': %2$s is missing.",
                         platform.getName(), relativePath);
