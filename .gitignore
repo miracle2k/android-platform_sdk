@@ -2,4 +2,4 @@
 *.bak
 *.pyc
 Thumbs.db
-
+*.class
