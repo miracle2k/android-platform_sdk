@@ -737,6 +737,14 @@ public final class Sdk  {
      */
     private IProjectListener mProjectListener = new IProjectListener() {
         public void projectClosed(IProject project) {
+            onProjectRemoved(project, false /*deleted*/);
+        }
+
+        public void projectDeleted(IProject project) {
+            onProjectRemoved(project, true /*deleted*/);
+        }
+
+        private void onProjectRemoved(IProject project, boolean deleted) {
             // get the target project
             synchronized (sLock) {
                 // Don't use getProject() as it could create the ProjectState if it's not
@@ -762,25 +770,34 @@ public final class Sdk  {
                     for (ProjectState projectState : sProjectStateMap.values()) {
                         LibraryState libState = projectState.getLibrary(project);
                         if (libState != null) {
-                            // reset the library
-                            libState.close();
-
-                            // update the main project
-                            // FIXME update the main project. maybe before library.close()?
+                            // edit the project to remove the linked source folder.
+                            // this also calls LibraryState.close();
+                            unlinkLibrary(projectState, libState);
                         }
+                    }
+
+                    if (deleted) {
+                        // remove the linked path variable
+                        disposeLibraryProject(project);
                     }
 
                     // now remove the project for the project map.
                     sProjectStateMap.remove(project);
                 }
             }
+
         }
 
-        public void projectDeleted(IProject project) {
-            projectClosed(project);
+        public void projectOpened(IProject project) {
+            onProjectOpened(project, true /*recompile*/);
         }
 
-        public void projectOpened(IProject openedProject) {
+        public void projectOpenedWithWorkspace(IProject project) {
+            // no need to force recompilation when projects are opened with the workspace.
+            onProjectOpened(project, false /*recompile*/);
+        }
+
+        private void onProjectOpened(IProject openedProject, boolean recompile) {
             ProjectState openedState = getProject(openedProject);
             if (openedState != null) {
                 // find dependencies, if any
@@ -799,16 +816,18 @@ public final class Sdk  {
                                 LibraryState libState = projectState.needs(openedProject);
                                 if (libState != null) {
                                     linkProjectAndLibrary(projectState, libState, null);
+
+                                    // force a recompile of the main project through a job
+                                    // (tree is locked)
+                                    if (recompile) {
+                                        recompile(projectState.getProject());
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
-
-        public void projectOpenedWithWorkspace(IProject project) {
-            projectOpened(project);
         }
 
         public void projectRenamed(IProject project, IPath from) {
@@ -818,7 +837,7 @@ public final class Sdk  {
             ProjectState renamedState = getProject(project);
             if (renamedState.isLibrary()) {
                 // remove the variable
-                cleanLibraryProject(from.lastSegment());
+                disposeLibraryProject(from.lastSegment());
 
                 // update the project depending on the library
                 synchronized (sLock) {
@@ -836,6 +855,10 @@ public final class Sdk  {
                                     project);
                             if (libState != null) {
                                 linkProjectAndLibrary(projectState, libState, from);
+
+                                // force a recompile of the main project through a job
+                                // (tree is locked)
+                                recompile(projectState.getProject());
                             }
                         }
                     }
@@ -905,7 +928,11 @@ public final class Sdk  {
         }
     }
 
-    private void cleanLibraryProject(String libName) {
+    private void disposeLibraryProject(IProject project) {
+        disposeLibraryProject(project.getName());
+    }
+
+    private void disposeLibraryProject(String libName) {
         IPathVariableManager pathVarMgr =
             ResourcesPlugin.getWorkspace().getPathVariableManager();
 
@@ -927,7 +954,8 @@ public final class Sdk  {
      * modification.
      * @param projectState the {@link ProjectState} for the main project
      * @param libraryState the {@link LibraryState} for the library project.
-     * @param previousLibraryPath
+     * @param previousLibraryPath an optional old library path that needs to be removed at the
+     * same time. Can be <code>null</code> in which case no libraries are removed.
      */
     private void linkProjectAndLibrary(
             final ProjectState projectState,
@@ -1021,6 +1049,107 @@ public final class Sdk  {
                 }
             }
         };
+        job.setPriority(Job.BUILD);
+        job.schedule();
+    }
+
+    /**
+     * Unlinks a project and a library. This removes the linked folder from the main project, and
+     * removes it from the build path. Finally, this calls {@link LibraryState#close()}.
+     * <p/>This is done in a job to be sure that the workspace is not locked for resource
+     * modification.
+     * @param projectState the {@link ProjectState} for the main project
+     * @param libraryPath the library path to remove
+     */
+    private void unlinkLibrary(final ProjectState projectState, final LibraryState libraryState) {
+        Job job = new Job("Android Library unlinking") { //$NON-NLS-1$
+            @Override
+            protected IStatus run(IProgressMonitor monitor) {
+                try {
+                    IProject project = projectState.getProject();
+
+                    // remove the library to the list of dynamic references
+                    IProjectDescription projectDescription = project.getDescription();
+                    IProject[] refs = projectDescription.getDynamicReferences();
+
+                    if (refs.length > 0) {
+                        ArrayList<IProject> list = new ArrayList<IProject>(Arrays.asList(refs));
+
+                        // remove a previous library if needed (in case of a rename)
+                        final int count = list.size();
+                        for (int i = 0 ; i < count ; i++) {
+                            // since project basically have only one segment that matter,
+                            // just check the names
+                            if (list.get(i).equals(libraryState.getProject())) {
+                                list.remove(i);
+                                break;
+                            }
+                        }
+
+                        // set the changed list
+                        projectDescription.setDynamicReferences(
+                                list.toArray(new IProject[list.size()]));
+                    }
+
+                    // edit the list of source folders.
+                    IJavaProject javaProject = JavaCore.create(project);
+                    IClasspathEntry[] entries = javaProject.getRawClasspath();
+                    ArrayList<IClasspathEntry> list = new ArrayList<IClasspathEntry>(
+                            Arrays.asList(entries));
+
+                    String libName = libraryState.getProject().getName();
+                    IPath oldEntryPath = new Path("/").append(project.getName()).append(libName);
+                    // first remove the class path entry.
+                    final int count = list.size();
+                    for (int i = 0 ; i < count ; i++) {
+                        if (list.get(i).getPath().equals(oldEntryPath)) {
+                            list.remove(i);
+                            break;
+                        }
+                    }
+
+                    // then remove the folder itself.
+                    IFolder oldLinkedFolder = project.getFolder(libName);
+                    oldLinkedFolder.delete(true, monitor);
+
+                    // set the new list
+                    javaProject.setRawClasspath(list.toArray(new IClasspathEntry[list.size()]),
+                            monitor);
+
+
+                    // finally reset the library
+                    libraryState.close();
+
+                    return Status.OK_STATUS;
+                } catch (CoreException e) {
+                    return e.getStatus();
+                }
+            }
+        };
+
+        job.setPriority(Job.BUILD);
+        job.schedule();
+    }
+
+    /**
+     * Triggers a project recompilation in a new {@link Job}. This is useful when the
+     * tree is locked and the {@link IProject#build(int, IProgressMonitor)} call would failed.
+     * @param project the project to recompile.
+     */
+    private void recompile(final IProject project) {
+        Job job = new Job("Project recompilation trigger") { //$NON-NLS-1$
+
+            @Override
+            protected IStatus run(IProgressMonitor monitor) {
+                try {
+                    project.build( IncrementalProjectBuilder.FULL_BUILD, null);
+                    return Status.OK_STATUS;
+                } catch (CoreException e) {
+                    return e.getStatus();
+                }
+            }
+        };
+
         job.setPriority(Job.BUILD);
         job.schedule();
     }
