@@ -333,7 +333,6 @@ public final class Sdk  {
             return;
         }
 
-
         synchronized (sLock) {
             boolean resolveProject = false;
 
@@ -802,8 +801,30 @@ public final class Sdk  {
             if (openedState != null) {
                 // find dependencies, if any
                 if (openedState.isMissingLibraries()) {
-                    // FIXME look for all opened projects to see if they are valid library
-                    // for this project.
+                    // the opened project depends on some libraries.
+                    // Look for all other opened projects to see if any is a library for it.
+                    // if they are, fix its LibraryState to get the IProject reference and
+                    // link the two projects with the linked source folder.
+                    boolean foundLibrary = false;
+                    synchronized (sLock) {
+                        for (ProjectState projectState : sProjectStateMap.values()) {
+                            if (projectState != openedState) {
+                                LibraryState libState = openedState.needs(
+                                        projectState.getProject());
+
+                                if (libState != null) {
+                                    foundLibrary = true;
+                                    linkProjectAndLibrary(openedState, libState, null);
+                                }
+                            }
+                        }
+                    }
+
+                    // force a recompile of the main project through a job
+                    // (tree is locked)
+                    if (recompile && foundLibrary) {
+                        recompile(openedState.getProject());
+                    }
                 }
 
                 // if the project is a library, then try to see if it's required by other projects.
@@ -1138,7 +1159,6 @@ public final class Sdk  {
      */
     private void recompile(final IProject project) {
         Job job = new Job("Project recompilation trigger") { //$NON-NLS-1$
-
             @Override
             protected IStatus run(IProgressMonitor monitor) {
                 try {
