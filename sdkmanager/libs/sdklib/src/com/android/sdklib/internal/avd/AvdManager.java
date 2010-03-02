@@ -357,7 +357,7 @@ public final class AvdManager {
      *            This log object is not kept by this instance of AvdManager and each
      *            method takes its own logger. The rationale is that the AvdManager
      *            might be called from a variety of context, each with different
-     *            logging needs.
+     *            logging needs. Cannot be null.
      * @throws AndroidLocationException
      */
     public AvdManager(SdkManager sdkManager, ISdkLog log) throws AndroidLocationException {
@@ -1118,9 +1118,7 @@ public final class AvdManager {
 
         if (configIniFile != null) {
             if (!configIniFile.isFile()) {
-                if (log != null) {
-                    log.warning("Missing file '%1$s'.",  configIniFile.getPath());
-                }
+                log.warning("Missing file '%1$s'.",  configIniFile.getPath());
             } else {
                 properties = SdkManager.parsePropertyFile(configIniFile, log);
             }

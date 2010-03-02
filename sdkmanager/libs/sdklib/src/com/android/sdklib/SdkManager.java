@@ -103,7 +103,7 @@ public final class SdkManager {
     /**
      * Creates an {@link SdkManager} for a given sdk location.
      * @param sdkLocation the location of the SDK.
-     * @param log the ISdkLog object receiving warning/error from the parsing. Can be null.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      * @return the created {@link SdkManager} or null if the location is not valid.
      */
     public static SdkManager createManager(String sdkLocation, ISdkLog log) {
@@ -123,9 +123,7 @@ public final class SdkManager {
 
             return manager;
         } catch (IllegalArgumentException e) {
-            if (log != null) {
-                log.error(e, "Error parsing the sdk.");
-            }
+            log.error(e, "Error parsing the sdk.");
         }
 
         return null;
@@ -212,7 +210,8 @@ public final class SdkManager {
 
     /**
      * Reloads the content of the SDK.
-     * @param log the ISdkLog object receiving warning/error from the parsing.
+     *
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      */
     public void reloadSdk(ISdkLog log) {
         // get the current target list.
@@ -236,7 +235,7 @@ public final class SdkManager {
      * Loads the Platforms from the SDK.
      * @param location Location of the SDK
      * @param list the list to fill with the platforms.
-     * @param log the ISdkLog object receiving warning/error from the parsing. Can be null.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      */
     private static void loadPlatforms(String location, ArrayList<IAndroidTarget> list,
             ISdkLog log) {
@@ -250,7 +249,7 @@ public final class SdkManager {
                     if (target != null) {
                         list.add(target);
                     }
-                } else if (log != null) {
+                } else {
                     log.warning("Ignoring platform '%1$s', not a folder.", platform.getName());
                 }
             }
@@ -272,7 +271,7 @@ public final class SdkManager {
     /**
      * Loads a specific Platform at a given location.
      * @param platform the location of the platform.
-     * @param log the ISdkLog object receiving warning/error from the parsing. Can be null.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      */
     private static PlatformTarget loadPlatform(File platform, ISdkLog log) {
         File buildProp = new File(platform, SdkConstants.FN_BUILD_PROP);
@@ -286,12 +285,10 @@ public final class SdkManager {
                 // version string
                 String apiName = map.get(PROP_VERSION_RELEASE);
                 if (apiName == null) {
-                    if (log != null) {
-                        log.error(null,
-                                "Ignoring platform '%1$s': %2$s is missing from '%3$s'",
-                                platform.getName(), PROP_VERSION_RELEASE,
-                                SdkConstants.FN_BUILD_PROP);
-                    }
+                    log.error(null,
+                            "Ignoring platform '%1$s': %2$s is missing from '%3$s'",
+                            platform.getName(), PROP_VERSION_RELEASE,
+                            SdkConstants.FN_BUILD_PROP);
                     return null;
                 }
 
@@ -299,12 +296,10 @@ public final class SdkManager {
                 int apiNumber;
                 String stringValue = map.get(PROP_VERSION_SDK);
                 if (stringValue == null) {
-                    if (log != null) {
-                        log.error(null,
-                                "Ignoring platform '%1$s': %2$s is missing from '%3$s'",
-                                platform.getName(), PROP_VERSION_SDK,
-                                SdkConstants.FN_BUILD_PROP);
-                    }
+                    log.error(null,
+                            "Ignoring platform '%1$s': %2$s is missing from '%3$s'",
+                            platform.getName(), PROP_VERSION_SDK,
+                            SdkConstants.FN_BUILD_PROP);
                     return null;
                 } else {
                     try {
@@ -312,12 +307,10 @@ public final class SdkManager {
                     } catch (NumberFormatException e) {
                         // looks like apiNumber does not parse to a number.
                         // Ignore this platform.
-                        if (log != null) {
-                            log.error(null,
-                                    "Ignoring platform '%1$s': %2$s is not a valid number in %3$s.",
-                                    platform.getName(), PROP_VERSION_SDK,
-                                    SdkConstants.FN_BUILD_PROP);
-                        }
+                        log.error(null,
+                                "Ignoring platform '%1$s': %2$s is not a valid number in %3$s.",
+                                platform.getName(), PROP_VERSION_SDK,
+                                SdkConstants.FN_BUILD_PROP);
                         return null;
                     }
                 }
@@ -371,7 +364,7 @@ public final class SdkManager {
 
                 return target;
             }
-        } else if (log != null) {
+        } else {
             log.error(null, "Ignoring platform '%1$s': %2$s is missing.", platform.getName(),
                     SdkConstants.FN_BUILD_PROP);
         }
@@ -384,7 +377,7 @@ public final class SdkManager {
      * Loads the Add-on from the SDK.
      * @param location Location of the SDK
      * @param list the list to fill with the add-ons.
-     * @param log the ISdkLog object receiving warning/error from the parsing.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      */
     private static void loadAddOns(String location, ArrayList<IAndroidTarget> list, ISdkLog log) {
         File addonFolder = new File(location, SdkConstants.FD_ADDONS);
@@ -419,7 +412,7 @@ public final class SdkManager {
      * Loads a specific Add-on at a given location.
      * @param addon the location of the addon.
      * @param targetList The list of Android target that were already loaded from the SDK.
-     * @param log the ISdkLog object receiving warning/error from the parsing.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      */
     private static AddOnTarget loadAddon(File addon, ArrayList<IAndroidTarget> targetList,
             ISdkLog log) {
@@ -459,11 +452,9 @@ public final class SdkManager {
 
                     if (baseTarget == null) {
                         // Ignore this add-on.
-                        if (log != null) {
-                            log.error(null,
-                                    "Ignoring add-on '%1$s': Unable to find base platform with API level '%2$s'",
-                                    addon.getName(), api);
-                        }
+                        log.error(null,
+                                "Ignoring add-on '%1$s': Unable to find base platform with API level '%2$s'",
+                                addon.getName(), api);
                         return null;
                     }
                 }
@@ -483,11 +474,9 @@ public final class SdkManager {
                     } catch (NumberFormatException e) {
                         // looks like apiNumber does not parse to a number.
                         // Ignore this add-on.
-                        if (log != null) {
-                            log.error(null,
-                                    "Ignoring add-on '%1$s': %2$s is not a valid number in %3$s.",
-                                    addon.getName(), ADDON_REVISION, SdkConstants.FN_BUILD_PROP);
-                        }
+                        log.error(null,
+                                "Ignoring add-on '%1$s': %2$s is not a valid number in %3$s.",
+                                addon.getName(), ADDON_REVISION, SdkConstants.FN_BUILD_PROP);
                         return null;
                     }
                 }
@@ -515,12 +504,12 @@ public final class SdkManager {
                                     if (m.matches()) {
                                         libMap.put(libName, new String[] {
                                                 m.group(1), m.group(2) });
-                                    } else if (log != null) {
+                                    } else {
                                         log.error(null,
                                                 "Ignoring library '%1$s', property value has wrong format\n\t%2$s",
                                                 libName, libData);
                                     }
-                                } else if (log != null) {
+                                } else {
                                     log.error(null,
                                             "Ignoring library '%1$s', missing property value",
                                             libName, libData);
@@ -556,7 +545,7 @@ public final class SdkManager {
 
                 return target;
             }
-        } else if (log != null) {
+        } else {
             log.error(null, "Ignoring add-on '%1$s': %2$s is missing.", addon.getName(),
                     SdkConstants.FN_MANIFEST_INI);
         }
@@ -585,11 +574,16 @@ public final class SdkManager {
         return IAndroidTarget.NO_USB_ID;
     }
 
+    /**
+     * Displays an error in the log about the addon being ignored due to a missing manifest value.
+     *
+     * @param log The logger object. Cannot be null.
+     * @param addonName The addon name, for display.
+     * @param valueName The missing manifest value, for display.
+     */
     private static void displayAddonManifestError(ISdkLog log, String addonName, String valueName) {
-        if (log != null) {
-            log.error(null, "Ignoring add-on '%1$s': '%2$s' is missing from %3$s.",
-                    addonName, valueName, SdkConstants.FN_MANIFEST_INI);
-        }
+        log.error(null, "Ignoring add-on '%1$s': '%2$s' is missing from %3$s.",
+                addonName, valueName, SdkConstants.FN_MANIFEST_INI);
     }
 
     /**
@@ -597,11 +591,14 @@ public final class SdkManager {
      * present.
      * <p/>This checks the presence of the following files: android.jar, framework.aidl, aapt(.exe),
      * aidl(.exe), dx(.bat), and dx.jar
+     *
+     * @param platform The folder containing the platform.
+     * @param log Logger. Cannot be null.
      */
     private static boolean checkPlatformContent(File platform, ISdkLog log) {
         for (String relativePath : sPlatformContentList) {
             File f = new File(platform, relativePath);
-            if (!f.exists() && log != null) {
+            if (!f.exists()) {
                 log.error(null,
                         "Ignoring platform '%1$s': %2$s is missing.",
                         platform.getName(), relativePath);
@@ -615,8 +612,9 @@ public final class SdkManager {
     /**
      * Parses a property file (using UTF-8 encoding) and returns a map of the content.
      * <p/>If the file is not present, null is returned with no error messages sent to the log.
+     *
      * @param propFile the property file to parse
-     * @param log the ISdkLog object receiving warning/error from the parsing.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      * @return the map of (key,value) pairs, or null if the parsing failed.
      */
     public static Map<String, String> parsePropertyFile(File propFile, ISdkLog log) {
@@ -635,10 +633,9 @@ public final class SdkManager {
                     if (m.matches()) {
                         map.put(m.group(1), m.group(2));
                     } else {
-                        if (log != null) {
-                            log.warning("Error parsing '%1$s': \"%2$s\" is not a valid syntax",
-                                    propFile.getAbsolutePath(), line);
-                        }
+                        log.warning("Error parsing '%1$s': \"%2$s\" is not a valid syntax",
+                                propFile.getAbsolutePath(),
+                                line);
                         return null;
                     }
                 }
@@ -650,10 +647,9 @@ public final class SdkManager {
             // calling the method.
             // Return null below.
         } catch (IOException e) {
-            if (log != null) {
-                log.warning("Error parsing '%1$s': %2$s.", propFile.getAbsolutePath(),
-                        e.getMessage());
-            }
+            log.warning("Error parsing '%1$s': %2$s.",
+                    propFile.getAbsolutePath(),
+                    e.getMessage());
         } finally {
             if (reader != null) {
                 try {
@@ -705,6 +701,11 @@ public final class SdkManager {
         return new String[0];
     }
 
+    /**
+     * Loads all samples from the {@link SdkConstants#FD_SAMPLES} directory.
+     *
+     * @param log Logger. Cannot be null.
+     */
     private void loadSamples(ISdkLog log) {
         File sampleFolder = new File(mSdkLocation, SdkConstants.FD_SAMPLES);
         if (sampleFolder.isDirectory()) {
@@ -729,6 +730,13 @@ public final class SdkManager {
         }
     }
 
+    /**
+     * Returns the {@link AndroidVersion} of the sample in the given folder.
+     *
+     * @param folder The sample's folder.
+     * @param log Logger for errors. Cannot be null.
+     * @return An {@link AndroidVersion} or null on error.
+     */
     private AndroidVersion getSamplesVersion(File folder, ISdkLog log) {
         File sourceProp = new File(folder, SdkConstants.FN_SOURCE_PROP);
         try {

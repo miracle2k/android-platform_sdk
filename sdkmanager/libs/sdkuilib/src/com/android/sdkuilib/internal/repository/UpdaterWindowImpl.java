@@ -77,6 +77,15 @@ public class UpdaterWindowImpl {
     private AvdManagerPage mAvdManagerPage;
     private StackLayout mStackLayout;
 
+    /**
+     * Creates a new window. Caller must call open(), which will block.
+     *
+     * @param parentShell Parent shell.
+     * @param sdkLog Logger. Cannot be null.
+     * @param osSdkRoot The OS path to the SDK root.
+     * @param userCanChangeSdkRoot If true, the window lets the user change the SDK path
+     *                             being browsed.
+     */
     public UpdaterWindowImpl(Shell parentShell, ISdkLog sdkLog, String osSdkRoot,
             boolean userCanChangeSdkRoot) {
         mParentShell = parentShell;

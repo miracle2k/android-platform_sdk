@@ -138,7 +138,7 @@ public class RepoSources {
 
     /**
      * Saves all the user sources.
-     * @param log
+     * @param log Logger. Cannot be null.
      */
     public void saveUserSources(ISdkLog log) {
         FileOutputStream fos = null;

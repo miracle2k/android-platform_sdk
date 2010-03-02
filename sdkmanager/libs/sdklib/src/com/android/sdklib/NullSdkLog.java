@@ -20,7 +20,6 @@ package com.android.sdklib;
  * Dummy implementation of an {@link ISdkLog}.
  * <p/>
  * Use {@link #getLogger()} to get a default instance of this {@link NullSdkLog}.
- *
  */
 public class NullSdkLog implements ISdkLog {
 

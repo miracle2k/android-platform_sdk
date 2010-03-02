@@ -102,7 +102,7 @@ public class HardwareProperties {
     /**
      * Parses the hardware definition file.
      * @param file the property file to parse
-     * @param log the ISdkLog object receiving warning/error from the parsing.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      * @return the map of (key,value) pairs, or null if the parsing failed.
      */
     public static Map<String, HardwareProperty> parseHardwareDefinitions(File file, ISdkLog log) {
@@ -156,10 +156,8 @@ public class HardwareProperties {
             // calling the method.
             // Return null below.
         } catch (IOException e) {
-            if (log != null) {
-                log.warning("Error parsing '%1$s': %2$s.", file.getAbsolutePath(),
+            log.warning("Error parsing '%1$s': %2$s.", file.getAbsolutePath(),
                         e.getMessage());
-            }
         }
 
         return null;

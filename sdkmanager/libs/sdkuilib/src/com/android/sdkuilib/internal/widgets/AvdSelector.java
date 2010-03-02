@@ -1021,7 +1021,7 @@ public final class AvdSelector {
      * Get the stderr/stdout outputs of a process and return when the process is done.
      * Both <b>must</b> be read or the process will block on windows.
      * @param process The process to get the output from.
-     * @param monitor An {@link ISdkLog} to capture errors.
+     * @param monitor An {@link ITaskMonitor} to capture errors. Cannot be null.
      */
     private void grabEmulatorOutput(final Process process, final ITaskMonitor monitor) {
         // read the lines as they come. if null is returned, it's because the process finished

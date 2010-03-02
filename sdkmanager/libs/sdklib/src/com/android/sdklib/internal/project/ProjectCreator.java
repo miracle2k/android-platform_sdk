@@ -128,12 +128,23 @@ public class ProjectCreator {
         }
     }
 
+    /** The {@link OutputLevel} verbosity. */
     private final OutputLevel mLevel;
-
+    /** Logger for errors and output. Cannot be null. */
     private final ISdkLog mLog;
+    /** The OS path of the SDK folder. */
     private final String mSdkFolder;
+    /** The {@link SdkManager} instance. */
     private final SdkManager mSdkManager;
 
+    /**
+     * Helper class to create android projects.
+     *
+     * @param sdkManager The {@link SdkManager} instance.
+     * @param sdkFolder The OS path of the SDK folder.
+     * @param level The {@link OutputLevel} verbosity.
+     * @param log Logger for errors and output. Cannot be null.
+     */
     public ProjectCreator(SdkManager sdkManager, String sdkFolder, OutputLevel level, ISdkLog log) {
         mSdkManager = sdkManager;
         mSdkFolder = sdkFolder;

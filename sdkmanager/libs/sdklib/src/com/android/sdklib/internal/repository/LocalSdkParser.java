@@ -70,7 +70,7 @@ public class LocalSdkParser {
      *
      * @param osSdkRoot The path to the SDK folder.
      * @param sdkManager An existing SDK manager to list current platforms and addons.
-     * @param log An SDK logger object.
+     * @param log An SDK logger object. Cannot be null.
      * @return The packages found. Can be retrieved later using {@link #getPackages()}.
      */
     public Package[] parseSdk(String osSdkRoot, SdkManager sdkManager, ISdkLog log) {

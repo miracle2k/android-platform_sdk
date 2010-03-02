@@ -70,6 +70,12 @@ class UpdaterData {
 
     private Shell mWindowShell;
 
+    /**
+     * Creates a new updater data.
+     *
+     * @param sdkLog Logger. Cannot be null.
+     * @param osSdkRoot The OS path to the SDK root.
+     */
     public UpdaterData(String osSdkRoot, ISdkLog sdkLog) {
         mOsSdkRoot = osSdkRoot;
         mSdkLog = sdkLog;
