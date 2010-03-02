@@ -393,7 +393,10 @@ public class ConfigurationComposite extends Composite {
                 mTarget = currentSdk.getTarget(iProject);
             }
 
-            LoadStatus targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
+            LoadStatus targetStatus = LoadStatus.FAILED;
+            if (mTarget != null) {
+                targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
+            }
 
             if (targetStatus == LoadStatus.LOADED) {
                 mResources = ResourceManager.getInstance().getProjectResources(iProject);
