@@ -315,16 +315,23 @@ public final class ProjectState {
         for (LibraryState state : mLibraries) {
             if (state.getProject() == null) {
                 try {
-                    // use File to do a platform-dependent path comparison
+                    // oldRelativePath may not be the same exact string as the
+                    // one in the project properties (trailing separator could be different
+                    // for instance).
+                    // Use java.io.File to deal with this and also do a platform-dependent
+                    // path comparison
                     File library1 = new File(projectFile, oldRelativePath);
                     File library2 = new File(projectFile, state.getRelativePath());
                     if (library1.getCanonicalPath().equals(library2.getCanonicalPath())) {
-                        // update the LibraryPath first
+                        // save the exact property string to replace.
+                        String oldProperty = state.getRelativePath();
+
+                        // then update the LibraryPath.
                         state.setRelativePath(newRelativePath);
                         state.setProject(newLibraryProject);
 
                         // update the default.properties file
-                        IStatus status = replaceLibraryProperty(oldRelativePath, newRelativePath);
+                        IStatus status = replaceLibraryProperty(oldProperty, newRelativePath);
                         if (status != null) {
                             if (status.getSeverity() != IStatus.OK) {
                                 // log the error somehow.

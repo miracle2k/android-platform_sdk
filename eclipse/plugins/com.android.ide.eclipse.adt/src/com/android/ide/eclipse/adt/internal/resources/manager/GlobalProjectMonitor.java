@@ -96,7 +96,10 @@ public final class GlobalProjectMonitor {
          */
         public void projectDeleted(IProject project);
 
-        /** Sent when a project is renamed
+        /**
+         * Sent when a project is renamed. During a project rename
+         * {@link #projectDeleted(IProject)} and {@link #projectOpened(IProject)} are also called.
+         * This is called last.
          *
          * @param project the new {@link IProject} object.
          * @param from the path of the project before the rename action.
