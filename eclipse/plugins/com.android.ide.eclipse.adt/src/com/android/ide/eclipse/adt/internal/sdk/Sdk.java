@@ -769,9 +769,17 @@ public final class Sdk  {
                     for (ProjectState projectState : sProjectStateMap.values()) {
                         LibraryState libState = projectState.getLibrary(project);
                         if (libState != null) {
+                            // the unlink below will work in the job, but we need to close
+                            // the library right away.
+                            // This is because in case of a rename of a project, projectClosed and
+                            // projectOpened will be called before any other job is run, so we
+                            // need to make sure projectOpened is closed with the main project
+                            // state up to date.
+                            libState.close();
+
                             // edit the project to remove the linked source folder.
                             // this also calls LibraryState.close();
-                            unlinkLibrary(projectState, libState);
+                            unlinkLibrary(projectState, project);
                         }
                     }
 
@@ -784,7 +792,6 @@ public final class Sdk  {
                     sProjectStateMap.remove(project);
                 }
             }
-
         }
 
         public void projectOpened(IProject project) {
@@ -1080,9 +1087,9 @@ public final class Sdk  {
      * <p/>This is done in a job to be sure that the workspace is not locked for resource
      * modification.
      * @param projectState the {@link ProjectState} for the main project
-     * @param libraryPath the library path to remove
+     * @param libraryProject the library project that needs to be removed
      */
-    private void unlinkLibrary(final ProjectState projectState, final LibraryState libraryState) {
+    private void unlinkLibrary(final ProjectState projectState, final IProject libraryProject) {
         Job job = new Job("Android Library unlinking") { //$NON-NLS-1$
             @Override
             protected IStatus run(IProgressMonitor monitor) {
@@ -1101,7 +1108,7 @@ public final class Sdk  {
                         for (int i = 0 ; i < count ; i++) {
                             // since project basically have only one segment that matter,
                             // just check the names
-                            if (list.get(i).equals(libraryState.getProject())) {
+                            if (list.get(i).equals(libraryProject)) {
                                 list.remove(i);
                                 break;
                             }
@@ -1118,7 +1125,7 @@ public final class Sdk  {
                     ArrayList<IClasspathEntry> list = new ArrayList<IClasspathEntry>(
                             Arrays.asList(entries));
 
-                    String libName = libraryState.getProject().getName();
+                    String libName = libraryProject.getName();
                     IPath oldEntryPath = new Path("/").append(project.getName()).append(libName);
                     // first remove the class path entry.
                     final int count = list.size();
@@ -1136,10 +1143,6 @@ public final class Sdk  {
                     // set the new list
                     javaProject.setRawClasspath(list.toArray(new IClasspathEntry[list.size()]),
                             monitor);
-
-
-                    // finally reset the library
-                    libraryState.close();
 
                     return Status.OK_STATUS;
                 } catch (CoreException e) {
@@ -1176,7 +1179,7 @@ public final class Sdk  {
 
     /**
      * Computes a new IPath targeting a given target, but relative to a given base.
-     * <p/>IPath{@link #makeRelativeTo(IPath, IPath)} is only available in 3.5 and later.
+     * <p/>{@link IPath#makeRelativeTo(IPath, IPath)} is only available in 3.5 and later.
      * <p/>This is based on the implementation {@link Path#makeRelativeTo(IPath)}.
      * @param target the target of the IPath
      * @param base the IPath to base the relative path on.
