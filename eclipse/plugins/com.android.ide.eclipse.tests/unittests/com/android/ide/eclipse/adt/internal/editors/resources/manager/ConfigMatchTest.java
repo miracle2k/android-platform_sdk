@@ -68,7 +68,7 @@ public class ConfigMatchTest extends TestCase {
         mQualifierList = (ResourceQualifier[])qualifierListField.get(manager);
 
         // create the project resources.
-        mResources = new ProjectResources(false /* isFrameworkRepository */);
+        mResources = new ProjectResources(null /*project*/);
 
         // create 2 arrays of IResource. one with the filename being looked up, and one without.
         // Since the required API uses IResource, we can use MockFolder for them.

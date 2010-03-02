@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -24,11 +25,13 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.LanguageQua
 import com.android.ide.eclipse.adt.internal.resources.configurations.RegionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
 import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapper;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.utils.ResourceValue;
 import com.android.sdklib.io.IAbstractFolder;
 
 import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,6 +42,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.Map.Entry;
 
 /**
  * Represents the resources of a project. This is a file view of the resources, with handling
@@ -71,13 +75,33 @@ public class ProjectResources implements IResourceRepository {
     private final ArrayList<IdResourceItem> mIdResourceList = new ArrayList<IdResourceItem>();
 
     private final boolean mIsFrameworkRepository;
+    private final IProject mProject;
 
     private final IntArrayWrapper mWrapper = new IntArrayWrapper(null);
 
-    public ProjectResources(boolean isFrameworkRepository) {
-        mIsFrameworkRepository = isFrameworkRepository;
+
+    /**
+     * Makes a ProjectResources for a given <var>project</var>.
+     * @param project the project.
+     */
+    public ProjectResources(IProject project) {
+        mIsFrameworkRepository = false;
+        mProject = project;
     }
 
+    /**
+     * Makes a ProjectResource for a framework repository.
+     *
+     * @see #isSystemRepository()
+     */
+    public ProjectResources() {
+        mIsFrameworkRepository = true;
+        mProject = null;
+    }
+
+    /**
+     * Returns whether this ProjectResources is for a project or for a framework.
+     */
     public boolean isSystemRepository() {
         return mIsFrameworkRepository;
     }
@@ -355,25 +379,91 @@ public class ProjectResources implements IResourceRepository {
         Map<String, Map<String, IResourceValue>> map =
             new HashMap<String, Map<String, IResourceValue>>();
 
+        // if the project contains libraries, we need to add the libraries resources here
+        // so that they are accessible to the layout rendering.
+        if (mProject != null) {
+            ProjectState state = Sdk.getProject(mProject);
+            if (state != null) {
+                IProject[] libraries = state.getLibraryProjects();
+
+                ResourceManager resMgr = ResourceManager.getInstance();
+
+                // because aapt put all the library in their order in this array, the first
+                // one will have priority over the 2nd one. So it's better to loop in the inverse
+                // order and fill the map with resources that will be overwritten by higher
+                // priority resources
+                final int libCount = libraries != null ? libraries.length : 0;
+                for (int i = libCount - 1 ; i >= 0 ; i--) {
+                    IProject library = libraries[i];
+
+                    ProjectResources libRes = resMgr.getProjectResources(library);
+                    if (libRes != null) {
+                        // make sure they are loaded
+                        libRes.loadAll();
+
+                        // we don't want to simply replace the whole map, but instead merge the
+                        // content of any sub-map
+                        Map<String, Map<String, IResourceValue>> libMap =
+                                libRes.getConfiguredResources(referenceConfig);
+
+                        for (Entry<String, Map<String, IResourceValue>> entry : libMap.entrySet()) {
+                            // get the map currently in the result map for this resource type
+                            Map<String, IResourceValue> tempMap = map.get(entry.getKey());
+                            if (tempMap == null) {
+                                // since there's no current map for this type, just add the map
+                                // directly coming from the library resources
+                                map.put(entry.getKey(), entry.getValue());
+                            } else {
+                                // already a map for this type. add the resources from the
+                                // library.
+                                tempMap.putAll(entry.getValue());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // now the project resources themselves.
+        // Don't blindly fill the map, instead check if there are sub-map already present
+        // due to library resources.
+
         // special case for Id since there's a mix of compiled id (declared inline) and id declared
         // in the XML files.
         if (mIdResourceList.size() > 0) {
-            Map<String, IResourceValue> idMap = new HashMap<String, IResourceValue>();
             String idType = ResourceType.ID.getName();
+            Map<String, IResourceValue> idMap = map.get(idType);
+
+            if (idMap == null) {
+                idMap = new HashMap<String, IResourceValue>();
+                map.put(idType, idMap);
+            }
             for (IdResourceItem id : mIdResourceList) {
                 // FIXME: cache the ResourceValue!
                 idMap.put(id.getName(), new ResourceValue(idType, id.getName(),
                         mIsFrameworkRepository));
             }
 
-            map.put(ResourceType.ID.getName(), idMap);
         }
 
         Set<ResourceType> keys = mResourceMap.keySet();
         for (ResourceType key : keys) {
             // we don't process ID resources since we already did it above.
             if (key != ResourceType.ID) {
-                map.put(key.getName(), getConfiguredResource(key, referenceConfig));
+                // get the local results
+                Map<String, IResourceValue> localResMap = getConfiguredResource(key,
+                        referenceConfig);
+
+                // check if a map for this type already exists
+                String resName = key.getName();
+                Map<String, IResourceValue> resMap = map.get(resName);
+                if (resMap == null) {
+                    // just use the local results.
+                    map.put(resName, localResMap);
+                } else {
+                    // add to the library results.
+                    resMap.putAll(localResMap);
+                }
             }
         }
 

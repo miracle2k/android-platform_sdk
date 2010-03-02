@@ -74,6 +74,8 @@ public final class ResourceManager {
 
     /**
      * Map associating project resource with project objects.
+     * <p/><b>All accesses must be inside a synchronized(mMap) block</b>, and do as a little as
+     * possible and <b>not call out to other classes</b>.
      */
     private final HashMap<IProject, ProjectResources> mMap =
         new HashMap<IProject, ProjectResources>();
@@ -149,7 +151,9 @@ public final class ResourceManager {
      * @return a ProjectResources object or null if none was found.
      */
     public ProjectResources getProjectResources(IProject project) {
-        return mMap.get(project);
+        synchronized (mMap) {
+            return mMap.get(project);
+        }
     }
 
     /**
@@ -180,12 +184,14 @@ public final class ResourceManager {
                     if (path.segmentCount() == 3) {
                         if (isInResFolder(path)) {
                             // get the project and its resource object.
-                            resources = mMap.get(project);
+                            synchronized (mMap) {
+                                resources = mMap.get(project);
 
-                            // if it doesn't exist, we create it.
-                            if (resources == null) {
-                                resources = new ProjectResources(false /* isFrameworkRepository */);
-                                mMap.put(project, resources);
+                                // if it doesn't exist, we create it.
+                                if (resources == null) {
+                                    resources = new ProjectResources(project);
+                                    mMap.put(project, resources);
+                                }
                             }
 
                             ResourceFolder newFolder = processFolder(new IFolderWrapper(folder),
@@ -197,7 +203,9 @@ public final class ResourceManager {
                     }
                     break;
                 case IResourceDelta.CHANGED:
-                    resources = mMap.get(folder.getProject());
+                    synchronized (mMap) {
+                        resources = mMap.get(folder.getProject());
+                    }
                     if (resources != null) {
                         ResourceFolder resFolder = resources.getResourceFolder(folder);
                         if (resFolder != null) {
@@ -207,7 +215,9 @@ public final class ResourceManager {
                     }
                     break;
                 case IResourceDelta.REMOVED:
-                    resources = mMap.get(folder.getProject());
+                    synchronized (mMap) {
+                        resources = mMap.get(folder.getProject());
+                    }
                     if (resources != null) {
                         // lets get the folder type
                         ResourceFolderType type = ResourceFolderType.getFolderType(
@@ -262,7 +272,9 @@ public final class ResourceManager {
                     if (path.segmentCount() == 4) {
                         if (isInResFolder(path)) {
                             // get the project and its resources
-                            resources = mMap.get(project);
+                            synchronized (mMap) {
+                                resources = mMap.get(project);
+                            }
 
                             IContainer container = file.getParent();
                             if (container instanceof IFolder && resources != null) {
@@ -281,7 +293,9 @@ public final class ResourceManager {
                     break;
                 case IResourceDelta.CHANGED:
                     // try to find a matching ResourceFile
-                    resources = mMap.get(project);
+                    synchronized (mMap) {
+                        resources = mMap.get(project);
+                    }
                     if (resources != null) {
                         IContainer container = file.getParent();
                         if (container instanceof IFolder) {
@@ -303,7 +317,9 @@ public final class ResourceManager {
                     break;
                 case IResourceDelta.REMOVED:
                     // try to find a matching ResourceFile
-                    resources = mMap.get(project);
+                    synchronized (mMap) {
+                        resources = mMap.get(project);
+                    }
                     if (resources != null) {
                         IContainer container = file.getParent();
                         if (container instanceof IFolder) {
@@ -333,11 +349,15 @@ public final class ResourceManager {
      */
     private IProjectListener mProjectListener = new IProjectListener() {
         public void projectClosed(IProject project) {
-            mMap.remove(project);
+            synchronized (mMap) {
+                mMap.remove(project);
+            }
         }
 
         public void projectDeleted(IProject project) {
-            mMap.remove(project);
+            synchronized (mMap) {
+                mMap.remove(project);
+            }
         }
 
         public void projectOpened(IProject project) {
@@ -394,7 +414,7 @@ public final class ResourceManager {
 
         FolderWrapper frameworkRes = new FolderWrapper(osResourcesPath);
         if (frameworkRes.exists()) {
-            ProjectResources resources = new ProjectResources(true /* isFrameworkRepository */);
+            ProjectResources resources = new ProjectResources();
 
             try {
                 loadResources(resources, frameworkRes);
@@ -471,10 +491,13 @@ public final class ResourceManager {
 
             IFolder resourceFolder = project.getFolder(SdkConstants.FD_RESOURCES);
 
-            ProjectResources projectResources = mMap.get(project);
-            if (projectResources == null) {
-                projectResources = new ProjectResources(false /* isFrameworkRepository */);
-                mMap.put(project, projectResources);
+            ProjectResources projectResources;
+            synchronized (mMap) {
+                projectResources = mMap.get(project);
+                if (projectResources == null) {
+                    projectResources = new ProjectResources(project);
+                    mMap.put(project, projectResources);
+                }
             }
 
             if (resourceFolder != null && resourceFolder.exists()) {

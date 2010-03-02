@@ -167,9 +167,8 @@ public class ApiDemosRenderingTest extends SdkTestCase {
         ProjectResources framework = ResourceManager.getInstance().loadFrameworkResources(target);
 
         // now load the project resources
-        ProjectResources project = new ProjectResources(false /* isFrameworkRepository */);
+        ProjectResources project = new ProjectResources(null /*project*/);
         ResourceManager.getInstance().loadResources(project, resFolder);
-
 
         // Create a folder configuration that will be used for the rendering:
         FolderConfiguration config = getConfiguration();
