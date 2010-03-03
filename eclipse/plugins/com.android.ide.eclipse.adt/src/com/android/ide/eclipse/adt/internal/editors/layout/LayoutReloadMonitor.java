@@ -16,7 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
@@ -25,6 +27,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IResourceEventListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager.IResourceListener;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
@@ -36,6 +39,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 /**
@@ -54,7 +58,9 @@ public final class LayoutReloadMonitor {
 
     public final static class ChangeFlags {
         public boolean code = false;
+        /** any non-layout resource changes */
         public boolean resources = false;
+        public boolean layout = false;
         public boolean rClass = false;
         public boolean localeList = false;
 
@@ -75,9 +81,12 @@ public final class LayoutReloadMonitor {
     public interface ILayoutReloadListener {
         /**
          * Sent when the layout needs to be redrawn
+         *
          * @param flags a {@link ChangeFlags} object indicating what type of resource changed.
+         * @param libraryModified <code>true</code> if the changeFlags are not for the project
+         * associated with the listener, but instead correspond to a library.
          */
-        void reloadLayout(ChangeFlags flags);
+        void reloadLayout(ChangeFlags flags, boolean libraryModified);
     }
 
     /**
@@ -211,22 +220,50 @@ public final class LayoutReloadMonitor {
          */
         public void resourceChangeEventEnd() {
             // for each IProject that was changed, we notify all the listeners.
-            synchronized (mListenerMap) {
-                for (Entry<IProject, ChangeFlags> project : mProjectFlags.entrySet()) {
-                    List<ILayoutReloadListener> listeners = mListenerMap.get(project.getKey());
+            for (Entry<IProject, ChangeFlags> entry : mProjectFlags.entrySet()) {
+                IProject project = entry.getKey();
 
-                    ChangeFlags flags = project.getValue();
+                // notify the project itself.
+                notifyForProject(project, entry.getValue(), false);
 
-                    if (listeners != null) {
-                        for (ILayoutReloadListener listener : listeners) {
-                            listener.reloadLayout(flags);
-                        }
+                // check if the project is a library, and if it is search for what other
+                // project depends on this one (directly or not)
+                ProjectState state = Sdk.getProject(project);
+                if (state.isLibrary()) {
+                    Set<ProjectState> mainProjects = Sdk.getMainProjectsFor(project);
+                    for (ProjectState mainProject : mainProjects) {
+                        // always give the changeflag of the modified project.
+                        notifyForProject(mainProject.getProject(), entry.getValue(), true);
                     }
                 }
             }
 
             // empty the list.
             mProjectFlags.clear();
+        }
+
+        /**
+         * Notifies the listeners for a given project.
+         * @param project the project for which the listeners must be notified
+         * @param flags the change flags to pass to the listener
+         * @param libraryChanged a flag indicating if the change flags are for the give project,
+         * or if they are for a library dependency.
+         */
+        private void notifyForProject(IProject project, ChangeFlags flags,
+                boolean libraryChanged) {
+            synchronized (mListenerMap) {
+                List<ILayoutReloadListener> listeners = mListenerMap.get(project);
+
+                if (listeners != null) {
+                    for (ILayoutReloadListener listener : listeners) {
+                        try {
+                            listener.reloadLayout(flags, libraryChanged);
+                        } catch (Throwable t) {
+                            AdtPlugin.log(t, "Failed to call ILayoutReloadListener.reloadLayout");
+                        }
+                    }
+                }
+            }
         }
     };
 
@@ -266,15 +303,16 @@ public final class LayoutReloadMonitor {
 
             // it's unclear why but there has been cases of resTypes being empty!
             if (resTypes.length > 0) {
-                // files that generates > 1 types cannot be layout files.
-                if (resTypes.length > 1 || resTypes[0] != ResourceType.LAYOUT) {
-                    // this is a resource change, that may require a layout redraw!
-                    if (changeFlags == null) {
-                        changeFlags = new ChangeFlags();
-                        mProjectFlags.put(project, changeFlags);
-                    }
+                // this is a resource change, that may require a layout redraw!
+                if (changeFlags == null) {
+                    changeFlags = new ChangeFlags();
+                    mProjectFlags.put(project, changeFlags);
+                }
 
+                if (resTypes[0] != ResourceType.LAYOUT) {
                     changeFlags.resources = true;
+                } else {
+                    changeFlags.layout = true;
                 }
             }
         }

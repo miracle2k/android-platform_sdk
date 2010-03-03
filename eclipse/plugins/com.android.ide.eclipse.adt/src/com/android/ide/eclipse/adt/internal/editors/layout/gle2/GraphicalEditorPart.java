@@ -1159,7 +1159,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
         /*
          * Called when the file changes triggered a redraw of the layout
          */
-        public void reloadLayout(ChangeFlags flags) {
+        public void reloadLayout(ChangeFlags flags, boolean libraryChanged) {
             boolean recompute = false;
 
             if (flags.rClass) {
@@ -1187,7 +1187,9 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                 });
             }
 
-            if (flags.resources) {
+            // if a resources was modified.
+            // also, if a layout in a library was modified.
+            if (flags.resources || (libraryChanged && flags.layout)) {
                 recompute = true;
 
                 // TODO: differentiate between single and multi resource file changed, and whether the resource change affects the cache.
