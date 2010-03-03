@@ -1136,7 +1136,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
     /*
      * Called when the file changes triggered a redraw of the layout
      */
-    public void reloadLayout(ChangeFlags flags) {
+    public void reloadLayout(ChangeFlags flags, boolean libraryChanged) {
         boolean recompute = false;
 
         if (flags.rClass) {
@@ -1155,7 +1155,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
             mParent.getDisplay().asyncExec(mLocaleUpdaterFromUiRunnable);
         }
 
-        if (flags.resources) {
+        if (flags.resources || (libraryChanged && flags.layout)) {
             recompute = true;
 
             // TODO: differentiate between single and multi resource file changed, and whether the resource change affects the cache.

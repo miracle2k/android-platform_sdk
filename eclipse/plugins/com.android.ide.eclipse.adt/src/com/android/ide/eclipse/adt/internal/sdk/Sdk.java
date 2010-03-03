@@ -68,6 +68,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 /**
@@ -625,6 +626,41 @@ public final class Sdk  {
 
     public LayoutDeviceManager getLayoutDeviceManager() {
         return mLayoutDeviceManager;
+    }
+
+    /**
+     * Returns a list of {@link ProjectState} representing projects depending, directly or
+     * indirectly on a given library project.
+     * @param project the library project.
+     * @return a possibly empty list of ProjectState.
+     */
+    public static Set<ProjectState> getMainProjectsFor(IProject project) {
+        synchronized (sLock) {
+            // first get the project directly depending on this.
+            HashSet<ProjectState> list = new HashSet<ProjectState>();
+
+            // loop on all project and see if ProjectState.getLibrary returns a non null
+            // project.
+            for (Entry<IProject, ProjectState> entry : sProjectStateMap.entrySet()) {
+                if (project != entry.getKey()) {
+                    LibraryState library = entry.getValue().getLibrary(project);
+                    if (library != null) {
+                        list.add(entry.getValue());
+                    }
+                }
+            }
+
+            // now look for projects depending on the projects directly depending on the library.
+            HashSet<ProjectState> result = new HashSet<ProjectState>(list);
+            for (ProjectState p : list) {
+                if (p.isLibrary()) {
+                    Set<ProjectState> set = getMainProjectsFor(p.getProject());
+                    result.addAll(set);
+                }
+            }
+
+            return result;
+        }
     }
 
     private Sdk(SdkManager manager, AvdManager avdManager) {
