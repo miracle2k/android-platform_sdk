@@ -29,12 +29,14 @@ import com.android.hierarchyviewer.scene.ViewManager;
 import com.android.hierarchyviewer.scene.ViewNode;
 import com.android.hierarchyviewer.scene.WindowsLoader;
 import com.android.hierarchyviewer.scene.ProfilesLoader;
+import com.android.hierarchyviewer.ui.util.PsdFileFilter;
 import com.android.hierarchyviewer.util.OS;
 import com.android.hierarchyviewer.util.WorkerThread;
 import com.android.hierarchyviewer.ui.action.ShowDevicesAction;
 import com.android.hierarchyviewer.ui.action.RequestLayoutAction;
 import com.android.hierarchyviewer.ui.action.InvalidateAction;
 import com.android.hierarchyviewer.ui.action.CaptureNodeAction;
+import com.android.hierarchyviewer.ui.action.CaptureLayersAction;
 import com.android.hierarchyviewer.ui.action.RefreshWindowsAction;
 import com.android.hierarchyviewer.ui.action.StopServerAction;
 import com.android.hierarchyviewer.ui.action.StartServerAction;
@@ -152,6 +154,7 @@ public class Workspace extends JFrame {
     private Window currentWindow = Window.FOCUSED_WINDOW;
 
     private JButton displayNodeButton;
+    private JButton captureLayersButton;
     private JButton invalidateButton;
     private JButton requestLayoutButton;
     private JButton loadButton;
@@ -200,6 +203,7 @@ public class Workspace extends JFrame {
         actionsMap.put(InvalidateAction.ACTION_NAME, new InvalidateAction(this));
         actionsMap.put(RequestLayoutAction.ACTION_NAME, new RequestLayoutAction(this));
         actionsMap.put(CaptureNodeAction.ACTION_NAME, new CaptureNodeAction(this));
+        actionsMap.put(CaptureLayersAction.ACTION_NAME, new CaptureLayersAction(this));
         actionsMap.put(RefreshWindowsAction.ACTION_NAME, new RefreshWindowsAction(this));
     }
 
@@ -477,6 +481,12 @@ public class Workspace extends JFrame {
         displayNodeButton.putClientProperty("JButton.segmentPosition", "first");
         toolBar.add(displayNodeButton);
 
+        captureLayersButton = new JButton();
+        captureLayersButton.setAction(actionsMap.get(CaptureLayersAction.ACTION_NAME));
+        captureLayersButton.putClientProperty("JButton.buttonType", "segmentedTextured");
+        captureLayersButton.putClientProperty("JButton.segmentPosition", "middle");
+        toolBar.add(captureLayersButton);
+        
         invalidateButton = new JButton();
         invalidateButton.setAction(actionsMap.get(InvalidateAction.ACTION_NAME));
         invalidateButton.putClientProperty("JButton.buttonType", "segmentedTextured");
@@ -707,6 +717,7 @@ public class Workspace extends JFrame {
         mainSplitter.setDividerLocation(getWidth() - mainSplitter.getDividerSize() -
                 buttonsPanel.getPreferredSize().width);
 
+        captureLayersButton.setEnabled(true);        
         saveMenuItem.setEnabled(true);
         showPixelPerfectTree();
 
@@ -872,6 +883,7 @@ public class Workspace extends JFrame {
             showDevicesMenuItem.setEnabled(false);
             showDevicesButton.setEnabled(false);
             displayNodeButton.setEnabled(false);
+            captureLayersButton.setEnabled(false);
             invalidateButton.setEnabled(false);
             requestLayoutButton.setEnabled(false);
             graphViewButton.setEnabled(false);
@@ -900,6 +912,7 @@ public class Workspace extends JFrame {
             saveMenuItem.setEnabled(false);
             loadButton.setEnabled(false);
             displayNodeButton.setEnabled(false);
+            captureLayersButton.setEnabled(false);
             invalidateButton.setEnabled(false);
             graphViewButton.setEnabled(false);
             pixelPerfectViewButton.setEnabled(false);
@@ -994,6 +1007,17 @@ public class Workspace extends JFrame {
         }
         return new CaptureNodeTask();
     }
+    
+    public SwingWorker<?, ?> captureLayers() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new PsdFileFilter());
+        int choice = chooser.showSaveDialog(sceneView);
+        if (choice == JFileChooser.APPROVE_OPTION) {
+            return new CaptureLayersTask(chooser.getSelectedFile());
+        } else {
+            return null;
+        }        
+    }
 
     public SwingWorker<?, ?> startServer() {
         return new StartServerTask();
@@ -1070,6 +1094,26 @@ public class Workspace extends JFrame {
         protected Object doInBackground() throws Exception {
             ViewManager.requestLayout(currentDevice, currentWindow, captureParams);
             return null;
+        }
+
+        @Override
+        protected void done() {
+            endTask();
+        }
+    }
+    
+    private class CaptureLayersTask extends SwingWorker<Boolean, Void> {
+        private File file;
+
+        private CaptureLayersTask(File file) {
+            this.file = file;
+            beginTask();
+        }
+
+        @Override
+        @WorkerThread
+        protected Boolean doInBackground() throws Exception {
+            return CaptureLoader.saveLayers(currentDevice, currentWindow, file);
         }
 
         @Override
