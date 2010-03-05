@@ -135,7 +135,7 @@ control__open_data_source(struct sensors_control_device_t *dev)
     }
     D("%s: fd=%d", __FUNCTION__, ctl->fd);
     handle = native_handle_create(1, 0);
-    handle->data[0] = ctl->fd;
+    handle->data[0] = dup(ctl->fd);
     return handle;
 }
 
@@ -149,8 +149,8 @@ control__activate(struct sensors_control_device_t *dev,
     char            command[128];
     int             ret;
 
-    D("%s: handle=%s (%d) enabled=%d", __FUNCTION__,
-        _sensorIdToName(handle), handle, enabled);
+    D("%s: handle=%s (%d) fd=%d enabled=%d", __FUNCTION__,
+        _sensorIdToName(handle), handle, ctl->fd, enabled);
 
     if (!ID_CHECK(handle)) {
         E("%s: bad handle ID", __FUNCTION__);
@@ -175,9 +175,10 @@ control__activate(struct sensors_control_device_t *dev,
     }
 
     ret = qemud_channel_send(ctl->fd, command, -1);
-    if (ret < 0)
+    if (ret < 0) {
+        E("%s: when sending command errno=%d: %s", __FUNCTION__, errno, strerror(errno));
         return -1;
-
+    }
     ctl->active_sensors = new_sensors;
 
     return 0;
@@ -263,6 +264,7 @@ data__data_open(struct sensors_data_device_t *dev, native_handle_t* handle)
     data->timeOffset     = 0;
 
     data->events_fd = dup(handle->data[0]);
+    D("%s: dev=%p fd=%d (was %d)", __FUNCTION__, dev, data->events_fd, handle->data[0]);
     native_handle_close(handle);
     native_handle_delete(handle);
     return 0;
@@ -330,7 +332,7 @@ data__poll(struct sensors_data_device_t *dev, sensors_data_t* values)
         int64_t  event_time;
 
         if (len < 0) {
-            E("%s: len=%d", __FUNCTION__, len);
+            E("%s: len=%d, errno=%d: %s", __FUNCTION__, len, errno, strerror(errno));
             return -errno;
         }
 
