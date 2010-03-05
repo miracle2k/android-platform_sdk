@@ -382,7 +382,7 @@ public class ProjectResources implements IResourceRepository {
         // if the project contains libraries, we need to add the libraries resources here
         // so that they are accessible to the layout rendering.
         if (mProject != null) {
-            ProjectState state = Sdk.getProject(mProject);
+            ProjectState state = Sdk.getProjectState(mProject);
             if (state != null) {
                 IProject[] libraries = state.getLibraryProjects();
 

@@ -275,7 +275,7 @@ public class ApkBuilder extends BaseBuilder {
 
         try {
             // get the project info
-            ProjectState projectState = Sdk.getProject(project);
+            ProjectState projectState = Sdk.getProjectState(project);
 
             // get the libraries
             libProjects = projectState.getLibraryProjects();
@@ -409,7 +409,7 @@ public class ApkBuilder extends BaseBuilder {
             }
 
             // get the APK configs for the project.
-            ProjectState state = Sdk.getProject(project);
+            ProjectState state = Sdk.getProjectState(project);
             Set<Entry<String, String>> apkfilters = null;
             if (state != null) {
                 ApkSettings apkSettings = state.getApkSettings();

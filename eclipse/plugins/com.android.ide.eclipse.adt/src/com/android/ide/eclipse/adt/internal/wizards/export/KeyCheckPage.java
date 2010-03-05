@@ -151,7 +151,7 @@ final class KeyCheckPage extends ExportWizardPage {
         if ((mProjectDataChanged & DATA_PROJECT) != 0) {
             // reset the destination from the content of the project
             IProject project = mWizard.getProject();
-            ProjectState state = Sdk.getProject(project);
+            ProjectState state = Sdk.getProjectState(project);
             if (state != null) {
                 mApkSettings = state.getApkSettings();
             }

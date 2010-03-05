@@ -21,6 +21,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryDifference;
 import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryState;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
@@ -52,12 +53,14 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.ui.progress.IJobRunnable;
 
 import java.io.File;
 import java.io.IOException;
@@ -87,7 +90,7 @@ public final class Sdk  {
 
     /**
      * Map associating {@link IProject} and their state {@link ProjectState}.
-     * <p/>This <b>MUST NOT</b> be accessed directly. Instead use {@link #getProject(IProject)}.
+     * <p/>This <b>MUST NOT</b> be accessed directly. Instead use {@link #getProjectState(IProject)}.
      */
     private final static HashMap<IProject, ProjectState> sProjectStateMap =
             new HashMap<IProject, ProjectState>();
@@ -296,7 +299,7 @@ public final class Sdk  {
 
         synchronized (sLock) {
             // check if there's already a state?
-            ProjectState state = getProject(project);
+            ProjectState state = getProjectState(project);
 
             ProjectProperties properties = null;
 
@@ -337,7 +340,7 @@ public final class Sdk  {
         synchronized (sLock) {
             boolean resolveProject = false;
 
-            ProjectState state = getProject(project);
+            ProjectState state = getProjectState(project);
             if (state == null) {
                 return;
             }
@@ -411,7 +414,7 @@ public final class Sdk  {
      * @param project the request project
      * @return the ProjectState for the project.
      */
-    public static ProjectState getProject(IProject project) {
+    public static ProjectState getProjectState(IProject project) {
         if (project == null) {
             return null;
         }
@@ -455,7 +458,7 @@ public final class Sdk  {
             return null;
         }
 
-        ProjectState state = getProject(project);
+        ProjectState state = getProjectState(project);
         if (state != null) {
             return state.getTarget();
         }
@@ -468,12 +471,16 @@ public final class Sdk  {
      * <p/>This method will get the target hash string from the project properties, and resolve
      * it to an {@link IAndroidTarget} object and store it inside the {@link ProjectState}.
      * @param state the state representing the project to load.
+     * @return the target that was loaded.
      */
-    public void loadTarget(ProjectState state) {
+    public IAndroidTarget loadTarget(ProjectState state) {
+        IAndroidTarget target = null;
         String hash = state.getTargetHashString();
         if (hash != null) {
-            state.setTarget(getTargetFromHashString(hash));
+            state.setTarget(target = getTargetFromHashString(hash));
         }
+
+        return target;
     }
 
     /**
@@ -815,7 +822,7 @@ public final class Sdk  {
 
                             // edit the project to remove the linked source folder.
                             // this also calls LibraryState.close();
-                            unlinkLibrary(projectState, project);
+                            unlinkLibrary(projectState, project, true /*doInJob*/);
                         }
                     }
 
@@ -840,7 +847,7 @@ public final class Sdk  {
         }
 
         private void onProjectOpened(IProject openedProject, boolean recompile) {
-            ProjectState openedState = getProject(openedProject);
+            ProjectState openedState = getProjectState(openedProject);
             if (openedState != null) {
                 // find dependencies, if any
                 if (openedState.isMissingLibraries()) {
@@ -852,12 +859,12 @@ public final class Sdk  {
                     synchronized (sLock) {
                         for (ProjectState projectState : sProjectStateMap.values()) {
                             if (projectState != openedState) {
-                                LibraryState libState = openedState.needs(
-                                        projectState.getProject());
+                                LibraryState libState = openedState.needs(projectState);
 
                                 if (libState != null) {
                                     foundLibrary = true;
-                                    linkProjectAndLibrary(openedState, libState, null);
+                                    linkProjectAndLibrary(openedState, libState, null,
+                                            true /*doInJob*/);
                                 }
                             }
                         }
@@ -877,9 +884,10 @@ public final class Sdk  {
                     synchronized (sLock) {
                         for (ProjectState projectState : sProjectStateMap.values()) {
                             if (projectState != openedState && projectState.isMissingLibraries()) {
-                                LibraryState libState = projectState.needs(openedProject);
+                                LibraryState libState = projectState.needs(openedState);
                                 if (libState != null) {
-                                    linkProjectAndLibrary(projectState, libState, null);
+                                    linkProjectAndLibrary(projectState, libState, null,
+                                            true /*doInJob*/);
 
                                     // force a recompile of the main project through a job
                                     // (tree is locked)
@@ -898,7 +906,7 @@ public final class Sdk  {
             // a project was renamed.
             // if the project is a library, look for any project that depended on it
             // and update it. (default.properties and linked source folder)
-            ProjectState renamedState = getProject(project);
+            ProjectState renamedState = getProjectState(project);
             if (renamedState.isLibrary()) {
                 // remove the variable
                 disposeLibraryProject(from.lastSegment());
@@ -916,9 +924,10 @@ public final class Sdk  {
                             // update the library for the main project.
                             LibraryState libState = projectState.updateLibrary(
                                     oldRelativePath.toString(), newRelativePath.toString(),
-                                    project);
+                                    renamedState);
                             if (libState != null) {
-                                linkProjectAndLibrary(projectState, libState, from);
+                                linkProjectAndLibrary(projectState, libState, from,
+                                        true /*doInJob*/);
 
                                 // force a recompile of the main project through a job
                                 // (tree is locked)
@@ -947,15 +956,51 @@ public final class Sdk  {
                             // reload the content of the default.properties file and update
                             // the target.
                             IProject iProject = file.getProject();
-                            ProjectState state = Sdk.getProject(iProject);
-                            state.reloadProperties();
-                            loadTarget(state);
+                            ProjectState state = Sdk.getProjectState(iProject);
 
-                            IJavaProject javaProject = BaseProjectHelper.getJavaProject(
-                                    file.getProject());
-                            if (javaProject != null) {
-                                AndroidClasspathContainerInitializer.updateProjects(
-                                        new IJavaProject[] { javaProject });
+                            // get the current target
+                            IAndroidTarget oldTarget = state.getTarget();
+
+                            LibraryDifference diff = state.reloadProperties();
+
+                            // load the (possibly new) target.
+                            IAndroidTarget newTarget = loadTarget(state);
+
+                            // reload the libraries if needed
+                            if (diff.hasDiff()) {
+                                for (LibraryState removedState : diff.removed) {
+                                    unlinkLibrary(state,
+                                            removedState.getProjectState().getProject(),
+                                            false /*doInJob*/);
+                                }
+
+                                if (diff.added) {
+                                    synchronized (sLock) {
+                                        for (ProjectState projectState : sProjectStateMap.values()) {
+                                            if (projectState != state) {
+                                                LibraryState libState = state.needs(projectState);
+
+                                                if (libState != null) {
+                                                    linkProjectAndLibrary(state, libState, null,
+                                                            false /*doInJob*/);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // need to force a full recompile.
+                                iProject.build( IncrementalProjectBuilder.FULL_BUILD, monitor);
+                            }
+
+                            // apply the new target if needed.
+                            if (newTarget != oldTarget) {
+                                IJavaProject javaProject = BaseProjectHelper.getJavaProject(
+                                        file.getProject());
+                                if (javaProject != null) {
+                                    AndroidClasspathContainerInitializer.updateProjects(
+                                            new IJavaProject[] { javaProject });
+                                }
                             }
                         } catch (CoreException e) {
                             // This can't happen as it's only for closed project (or non existing)
@@ -1014,23 +1059,25 @@ public final class Sdk  {
 
     /**
      * Links a project and a library so that the project can use the library code and resources.
-     * <p/>This is done in a job to be sure that the workspace is not locked for resource
-     * modification.
+     * <p/>This can be done in a job in case the workspace is not locked for resource
+     * modification. See <var>doInJob</var>.
+     *
      * @param projectState the {@link ProjectState} for the main project
      * @param libraryState the {@link LibraryState} for the library project.
      * @param previousLibraryPath an optional old library path that needs to be removed at the
      * same time. Can be <code>null</code> in which case no libraries are removed.
+     * @param doInJob whether the action must be done in a new {@link Job}.
      */
     private void linkProjectAndLibrary(
             final ProjectState projectState,
             final LibraryState libraryState,
-            final IPath previousLibraryPath) {
-        Job job = new Job("Android Library link creation") { //$NON-NLS-1$
-            @Override
-            protected IStatus run(IProgressMonitor monitor) {
+            final IPath previousLibraryPath,
+            boolean doInJob) {
+        final IJobRunnable jobRunnable = new IJobRunnable() {
+            public IStatus run(IProgressMonitor monitor) {
                 try {
                     IProject project = projectState.getProject();
-                    IProject library = libraryState.getProject();
+                    IProject library = libraryState.getProjectState().getProject();
 
                     // add the library to the list of dynamic references
                     IProjectDescription projectDescription = project.getDescription();
@@ -1113,22 +1160,35 @@ public final class Sdk  {
                 }
             }
         };
-        job.setPriority(Job.BUILD);
-        job.schedule();
+
+        if (doInJob) {
+            Job job = new Job("Android Library link creation") { //$NON-NLS-1$
+                @Override
+                protected IStatus run(IProgressMonitor monitor) {
+                    return jobRunnable.run(monitor);
+                }
+            };
+            job.setPriority(Job.BUILD);
+            job.schedule();
+        } else {
+            jobRunnable.run(new NullProgressMonitor());
+        }
     }
 
     /**
      * Unlinks a project and a library. This removes the linked folder from the main project, and
      * removes it from the build path. Finally, this calls {@link LibraryState#close()}.
-     * <p/>This is done in a job to be sure that the workspace is not locked for resource
-     * modification.
+     * <p/>This can be done in a job in case the workspace is not locked for resource
+     * modification. See <var>doInJob</var>.
+     *
      * @param projectState the {@link ProjectState} for the main project
      * @param libraryProject the library project that needs to be removed
+     * @param doInJob whether the action must be done in a new {@link Job}.
      */
-    private void unlinkLibrary(final ProjectState projectState, final IProject libraryProject) {
-        Job job = new Job("Android Library unlinking") { //$NON-NLS-1$
-            @Override
-            protected IStatus run(IProgressMonitor monitor) {
+    private void unlinkLibrary(final ProjectState projectState, final IProject libraryProject,
+            boolean doInJob) {
+        final IJobRunnable jobRunnable = new IJobRunnable() {
+            public IStatus run(IProgressMonitor monitor) {
                 try {
                     IProject project = projectState.getProject();
 
@@ -1187,8 +1247,19 @@ public final class Sdk  {
             }
         };
 
-        job.setPriority(Job.BUILD);
-        job.schedule();
+        if (doInJob) {
+            Job job = new Job("Android Library unlinking") { //$NON-NLS-1$
+                @Override
+                protected IStatus run(IProgressMonitor monitor) {
+                    return jobRunnable.run(monitor);
+                }
+            };
+
+            job.setPriority(Job.BUILD);
+            job.schedule();
+        } else {
+            jobRunnable.run(new NullProgressMonitor());
+        }
     }
 
     /**

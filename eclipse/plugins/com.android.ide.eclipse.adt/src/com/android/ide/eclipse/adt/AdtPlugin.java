@@ -987,7 +987,7 @@ public class AdtPlugin extends AbstractUIPlugin {
                                     // project that have been resolved before the sdk was loaded
                                     // will have a ProjectState where the IAndroidTarget is null
                                     // so we load the target now that the SDK is loaded.
-                                    sdk.loadTarget(Sdk.getProject(iProject));
+                                    sdk.loadTarget(Sdk.getProjectState(iProject));
                                     list.add(javaProject);
                                 }
                             }
