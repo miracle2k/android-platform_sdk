@@ -348,6 +348,7 @@ public class NewProjectCreationPage extends WizardPage {
         // Update state the first time
         enableLocationWidgets();
         loadSamplesForTarget(null /*target*/);
+        mSdkTargetChangeListener.onSdkLoaded();
 
         // Show description the first time
         setErrorMessage(null);
@@ -525,6 +526,15 @@ public class NewProjectCreationPage extends WizardPage {
         // The selector is created without targets. They are added below in the change listener.
         mSdkTargetSelector = new SdkTargetSelector(group, null);
 
+        mSdkTargetSelector.setSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                onSdkTargetModified();
+                updateLocationPathField(null);
+                validatePageComplete();
+            }
+        });
+
         mSdkTargetChangeListener = new ITargetChangeListener() {
             public void onSdkLoaded() {
                 // Update the sdk target selector with the new targets
@@ -536,7 +546,8 @@ public class NewProjectCreationPage extends WizardPage {
                 }
                 mSdkTargetSelector.setTargets(targets);
 
-                // If there's only one target, select it
+                // If there's only one target, select it.
+                // This will invoke the selection listener on the selector defined above.
                 if (targets != null && targets.length == 1) {
                     mSdkTargetSelector.setSelection(targets[0]);
                 }
@@ -552,18 +563,6 @@ public class NewProjectCreationPage extends WizardPage {
         };
 
         AdtPlugin.getDefault().addTargetListener(mSdkTargetChangeListener);
-
-        // Invoke it once to initialize the targets
-        mSdkTargetChangeListener.onSdkLoaded();
-
-        mSdkTargetSelector.setSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                onSdkTargetModified();
-                updateLocationPathField(null);
-                validatePageComplete();
-            }
-        });
     }
 
     /**
@@ -962,15 +961,6 @@ public class NewProjectCreationPage extends WizardPage {
      */
     private void onSdkTargetModified() {
         IAndroidTarget target = mInfo.getSdkTarget();
-
-// Disable automatic selection of minSdkVersion based on android target.
-// This creates issues in most cases, such as using existing samples.
-// TODO: remove this in next version if we really don't want it.
-//        if (target != null) {
-//            mInternalMinSdkVersionUpdate = true;
-//            mMinSdkVersionField.setText(target.getVersion().getApiString());
-//            mInternalMinSdkVersionUpdate = false;
-//        }
 
         loadSamplesForTarget(target);
         enableLocationWidgets();
