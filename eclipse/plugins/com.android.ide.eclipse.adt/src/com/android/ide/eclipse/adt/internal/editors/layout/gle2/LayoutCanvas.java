@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
@@ -46,7 +47,9 @@ import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.ScrollBar;
 
 import java.awt.image.BufferedImage;
@@ -75,13 +78,6 @@ import java.util.ListIterator;
  * - outline should include drop support (from canvas or from palette)
  */
 /* package */  class LayoutCanvas extends Canvas {
-
-    /**
-     * Margin around the rendered image. Should be enough space to display the layout
-     * width and height pseudo widgets.
-     */
-    static final int IMAGE_MARGIN = 25;
-
 
     /** The Groovy Rules Engine, associated with the current project. */
     private RulesEngine mRulesEngine;
@@ -391,6 +387,24 @@ import java.util.ListIterator;
         // TODO not implemented yet, not even hooked in yet!
     }
 
+    /**
+     * Transforms a point, expressed in SWT display coordinates
+     * (e.g. from a Drag'n'Drop {@link Event}, not local {@link Control} coordinates)
+     * into the canvas' image coordinates according to the current zoom and scroll.
+     *
+     * @param displayX X in SWT display coordinates
+     * @param displayY Y in SWT display coordinates
+     * @return A new {@link Point} in canvas coordinates
+     */
+    public Point displayToCanvasPoint(int displayX, int displayY) {
+        // convert screen coordinates to local SWT control coordinates
+        org.eclipse.swt.graphics.Point p = this.toControl(displayX, displayY);
+
+        int x = mHScale.inverseTranslate(p.x);
+        int y = mVScale.inverseTranslate(p.y);
+        return new Point(x, y);
+    }
+
     //---
 
     public interface ScaleTransform {
@@ -398,7 +412,7 @@ import java.util.ListIterator;
          * Computes the transformation from a X/Y canvas image coordinate
          * to client pixel coordinate.
          * <p/>
-         * This takes into account the {@link LayoutCanvas#IMAGE_MARGIN},
+         * This takes into account the {@link ScaleInfo#IMAGE_MARGIN},
          * the current scaling and the current translation.
          *
          * @param canvasX A canvas image coordinate (X or Y).
@@ -419,7 +433,7 @@ import java.util.ListIterator;
          * Computes the transformation from a X/Y client pixel coordinate
          * to canvas image coordinate.
          * <p/>
-         * This takes into account the {@link LayoutCanvas#IMAGE_MARGIN},
+         * This takes into account the {@link ScaleInfo#IMAGE_MARGIN},
          * the current scaling and the current translation.
          * <p/>
          * This is the inverse of {@link #translate(int)}.
@@ -431,6 +445,12 @@ import java.util.ListIterator;
     }
 
     private class ScaleInfo implements ScaleTransform {
+        /**
+         * Margin around the rendered image.
+         * Should be enough space to display the layout width and height pseudo widgets.
+         */
+        private static final int IMAGE_MARGIN = 25;
+
         /** Canvas image size (original, before zoom), in pixels */
         private int mImgSize;
 

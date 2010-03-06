@@ -21,10 +21,6 @@ package com.android.adt.gscripts;
  */
 public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
-    /*
-     * TODO List:
-     * - anchor to parent layout top/left/bottom/right.
-     */
 
     // ==== Selection ====
 

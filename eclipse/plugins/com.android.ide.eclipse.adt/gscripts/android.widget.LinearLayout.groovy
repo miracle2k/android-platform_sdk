@@ -36,11 +36,12 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         // Each list is a tuple: 0=pixel coordinate, 1=index of children or -1 for "at end".
         def indexes = [ ] ;
 
-        int last = 0;
+        int last = isVertical ? bn.y : bn.x;
         int pos = 0;
         targetNode.getChildren().each {
             def bc = it.getBounds();
             if (bc.isValid()) {
+                // add an insertion point between the last point and the start of this child
                 int v = isVertical ? bc.y : bc.x;
                 v = (last + v) / 2;
                 indexes.add( [v, pos++] );
@@ -49,13 +50,13 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
             }
         }
 
-        int v = isVertical ? bn.h : bn.w;
+        int v = isVertical ? (bn.y + bn.h) : (bn.x + bn.w);
         v = (last + v) / 2;
         indexes.add( [v, -1] );
 
         return new DropFeedback(
           [ "isVertical": isVertical,   // boolean: True if vertical linear layout
-            "indexes": indexes,         // list(tuple(0:int, 1:int)): Split points (pixels + index)
+            "indexes": indexes,         // list(tuple(0:int, 1:int)): insert points (pixels + index)
             "curr_x": null,             // int: Current marker X position
             "curr_y": null,             // int: Current marker Y position
             "insert_pos": -1            // int: Current drop insert index (-1 for "at the end")
@@ -119,17 +120,16 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         int bestIndex = Integer.MIN_VALUE;
         int bestPos = null;
 
-        data.indexes.each {
-            int i = it[0];
-            int pos = it[1];
-            if (bestDist > 0) {
-                int dist = (isVertical ? p.y : p.x) - i;
-                if (dist < 0) dist = - dist;
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    bestIndex = i;
-                    bestPos = pos;
-                }
+        for(index in data.indexes) {
+            int i   = index[0];
+            int pos = index[1];
+            int dist = (isVertical ? p.y : p.x) - i;
+            if (dist < 0) dist = - dist;
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestIndex = i;
+                bestPos = pos;
+                if (bestDist <= 0) break;
             }
         }
 

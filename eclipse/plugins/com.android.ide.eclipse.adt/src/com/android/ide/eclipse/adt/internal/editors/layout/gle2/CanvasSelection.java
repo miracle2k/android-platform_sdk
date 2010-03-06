@@ -59,11 +59,7 @@ import org.eclipse.swt.graphics.Rectangle;
             mNodeProxy = null;
         } else {
             Rectangle r = canvasViewInfo.getSelectionRect();
-            mRect = new Rectangle(
-                    r.x + LayoutCanvas.IMAGE_MARGIN,
-                    r.y + LayoutCanvas.IMAGE_MARGIN,
-                    r.width,
-                    r.height);
+            mRect = new Rectangle(r.x, r.y, r.width, r.height);
             mNodeProxy = nodeFactory.create(canvasViewInfo);
         }
 
