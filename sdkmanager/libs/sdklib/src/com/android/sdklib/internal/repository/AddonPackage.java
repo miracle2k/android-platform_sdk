@@ -256,17 +256,13 @@ public class AddonPackage extends Package
             }
         }
 
-        // Otherwise, see about reusing the suggestedDir. It must not be already used or
-        // add some index to it, or we try to make up one.
-        String name = suggestedDir;
-
-        if (suggestedDir == null || suggestedDir.length() == 0) {
-            name = String.format("addon-%s-%s-%s", getName(), getVendor(), //$NON-NLS-1$
-                    mVersion.getApiString());
-            name = name.toLowerCase();
-            name = name.replaceAll("[^a-z0-9_-]+", "_");      //$NON-NLS-1$ //$NON-NLS-2$
-            name = name.replaceAll("_+", "_");                //$NON-NLS-1$ //$NON-NLS-2$
-        }
+        // Compute a folder directory using the addon declared name and vendor strings.
+        // This purposedly ignores the suggestedDir.
+        String name = String.format("addon_%s_%s_%s",     //$NON-NLS-1$
+                                    getName(), getVendor(), mVersion.getApiString());
+        name = name.toLowerCase();
+        name = name.replaceAll("[^a-z0-9_-]+", "_");      //$NON-NLS-1$ //$NON-NLS-2$
+        name = name.replaceAll("_+", "_");                //$NON-NLS-1$ //$NON-NLS-2$
 
         for (int i = 0; i < 100; i++) {
             String name2 = i == 0 ? name : String.format("%s-%d", name, i); //$NON-NLS-1$
