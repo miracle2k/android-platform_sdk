@@ -425,7 +425,7 @@ class UpdaterLogic {
                 if (p instanceof ToolPackage) {
                     if (((ToolPackage) p).getRevision() >= rev) {
                         // We found one already installed.
-                        return ai;
+                        return null;
                     }
                 }
             }
@@ -520,7 +520,7 @@ class UpdaterLogic {
                 if (p instanceof PlatformPackage) {
                     if (v.equals(((PlatformPackage) p).getVersion())) {
                         // We found one already installed.
-                        return ai;
+                        return null;
                     }
                 }
             }
@@ -623,7 +623,7 @@ class UpdaterLogic {
                 if (p instanceof PlatformPackage) {
                     if (((PlatformPackage) p).getVersion().isGreaterOrEqualThan(api)) {
                         // We found one already installed.
-                        return ai;
+                        return null;
                     }
                 }
             }

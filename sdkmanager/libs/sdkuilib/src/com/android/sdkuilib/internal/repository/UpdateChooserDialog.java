@@ -184,7 +184,8 @@ final class UpdateChooserDialog extends GridDialog {
         mPackageTextGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 4, 1));
         mPackageTextGroup.setLayout(new GridLayout(1, false/*makeColumnsEqual*/));
 
-        mPackageText = new StyledText(mPackageTextGroup,                        SWT.MULTI | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
+        mPackageText = new StyledText(mPackageTextGroup,
+                        SWT.MULTI | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
         mPackageText.setBackground(
                 getParentShell().getDisplay().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
         mPackageText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
@@ -451,7 +452,7 @@ final class UpdateChooserDialog extends GridDialog {
             addSectionTitle("Dependencies\n");
 
             if (aDeps != null && aDeps.length > 0) {
-                addText("This package depends on:");
+                addText("Installing this package also requires installing:");
                 for (ArchiveInfo aDep : aDeps) {
                     addText(String.format("\n- %1$s",
                             aDep.getShortDescription()));
