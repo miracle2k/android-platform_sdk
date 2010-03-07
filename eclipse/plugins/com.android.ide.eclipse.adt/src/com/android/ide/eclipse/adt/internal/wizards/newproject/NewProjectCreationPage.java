@@ -150,7 +150,6 @@ public class NewProjectCreationPage extends WizardPage {
     private boolean mInternalActivityNameUpdate;
     private boolean mProjectNameModifiedByUser;
     private boolean mApplicationNameModifiedByUser;
-    private boolean mInternalMinSdkVersionUpdate;
 
     private final ArrayList<String> mSamplesPaths = new ArrayList<String>();
     private Combo mSamplesCombo;
@@ -660,7 +659,6 @@ public class NewProjectCreationPage extends WizardPage {
         mMinSdkVersionField.setFont(parent.getFont());
         mMinSdkVersionField.addListener(SWT.Modify, new Listener() {
             public void handleEvent(Event event) {
-                onMinSdkVersionFieldModified();
                 validatePageComplete();
             }
         });
@@ -774,6 +772,11 @@ public class NewProjectCreationPage extends WizardPage {
 
         mSamplesCombo.setEnabled(is_create_from_sample && mSamplesPaths.size() > 0);
 
+        // Most fields are only editable in new-project mode. When importing
+        // an existing project/sample we won't edit existing files anyway so the
+        // user won't be able to customize them,
+        mApplicationNameField.setEnabled(is_new_project);
+        mMinSdkVersionField.setEnabled(is_new_project);
         mPackageNameField.setEnabled(is_new_project);
         mCreateActivityCheck.setEnabled(is_new_project);
         mActivityNameField.setEnabled(is_new_project & create_activity);
@@ -913,47 +916,6 @@ public class NewProjectCreationPage extends WizardPage {
     }
 
     /**
-     * Called when the min sdk version field has been modified.
-     *
-     * Ignore the internal modifications. When modified by the user, try to match
-     * a target with the same API level.
-     */
-    private void onMinSdkVersionFieldModified() {
-        if (mInternalMinSdkVersionUpdate) {
-            return;
-        }
-
-// Disable automatic selection of the android target based on minSdkVersion.
-// This creates issues in most cases, such as using existing samples.
-// TODO: remove this in next version if we really don't want it.
-//        String minSdkVersion = mInfo.getMinSdkVersion();
-//
-//        // If there's a current target defined, we do not allow to change it when
-//        // operating in the create-from-sample mode -- since the available sample list
-//        // is tied to the current target, so changing it would invalidate the project we're
-//        // trying to load in the first place.
-//        IAndroidTarget currentTarget = mInfo.getSdkTarget();
-//        if (currentTarget != null && mInfo.isCreateFromSample()) {
-//            return;
-//        }
-//
-//        // Before changing, compare with the currently selected one, if any.
-//        // There can be multiple targets with the same sdk api version, so don't change
-//        // it if it's already at the right version.
-//        IAndroidTarget curr_target = mInfo.getSdkTarget();
-//        if (curr_target != null && curr_target.getVersion().equals(minSdkVersion)) {
-//            return;
-//        }
-//
-//        for (IAndroidTarget target : mSdkTargetSelector.getTargets()) {
-//            if (target.getVersion().equals(minSdkVersion)) {
-//                mSdkTargetSelector.setSelection(target);
-//                break;
-//            }
-//        }
-    }
-
-    /**
      * Called when an SDK target is modified.
      *
      * Also changes the minSdkVersion field to reflect the sdk api level that has
@@ -1043,15 +1005,15 @@ public class NewProjectCreationPage extends WizardPage {
         }
 
         if (activity != null) {
-            activityName = AndroidManifest.extractActivityName(activity.getName(),
-                    packageName);
+            activityName = AndroidManifest.extractActivityName(activity.getName(), packageName);
         }
 
         if (activityName != null && activityName.length() > 0) {
             mInternalActivityNameUpdate = true;
             mInternalCreateActivityUpdate = true;
             mActivityNameField.setText(activityName);
-            mCreateActivityCheck.setSelection(true);
+            // we are "importing" an existing activity, not creating a new one
+            mCreateActivityCheck.setSelection(false);
             mInternalCreateActivityUpdate = false;
             mInternalActivityNameUpdate = false;
 
@@ -1161,10 +1123,8 @@ public class NewProjectCreationPage extends WizardPage {
             mSdkTargetSelector.setSelection(foundTarget);
         }
 
-        mInternalMinSdkVersionUpdate = true;
         // It's OK for an import to not a minSdkVersion and we should respect it.
         mMinSdkVersionField.setText(minSdkVersion == null ? "" : minSdkVersion);  //$NON-NLS-1$
-        mInternalMinSdkVersionUpdate = false;
     }
 
     /**
@@ -1463,6 +1423,20 @@ public class NewProjectCreationPage extends WizardPage {
      */
     private int validateMinSdkVersionField() {
 
+        // If the current target is a preview, explicitly indicate minSdkVersion
+        // must be set to this target name.
+        // Since the field is only editable in new-project mode, we can't produce an
+        // error when importing an existing project.
+        if (mInfo.isNewProject() &&
+                mInfo.getSdkTarget() != null &&
+                mInfo.getSdkTarget().getVersion().isPreview() &&
+                mInfo.getSdkTarget().getVersion().equals(mInfo.getMinSdkVersion()) == false) {
+            return setStatus(
+                    String.format("The SDK target is a preview. Min SDK Version must be set to '%s'.",
+                            mInfo.getSdkTarget().getVersion().getCodename()),
+                    MSG_ERROR);
+        }
+
         // If the min sdk version is empty, it is always accepted.
         if (mInfo.getMinSdkVersion().length() == 0) {
             return MSG_NONE;
@@ -1470,7 +1444,7 @@ public class NewProjectCreationPage extends WizardPage {
 
         if (mInfo.getSdkTarget() != null &&
                 mInfo.getSdkTarget().getVersion().equals(mInfo.getMinSdkVersion()) == false) {
-            return setStatus("The API level for the selected SDK target does not match the Min SDK version.",
+            return setStatus("The API level for the selected SDK target does not match the Min SDK Version.",
                     mInfo.getSdkTarget().getVersion().isPreview() ? MSG_ERROR : MSG_WARNING);
         }
 
