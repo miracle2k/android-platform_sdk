@@ -17,44 +17,44 @@
 package com.android.ddmlib.testrunner;
 
 /**
- * Identifies a parsed instrumentation test 
+ * Identifies a parsed instrumentation test.
  */
 public class TestIdentifier {
 
     private final String mClassName;
     private final String mTestName;
-    
+
     /**
-     * Creates a test identifier
-     * 
+     * Creates a test identifier.
+     *
      * @param className fully qualified class name of the test. Cannot be null.
      * @param testName name of the test. Cannot be null.
      */
     public TestIdentifier(String className, String testName) {
         if (className == null || testName == null) {
-            throw new IllegalArgumentException("className and testName must " + 
+            throw new IllegalArgumentException("className and testName must " +
                     "be non-null");
         }
         mClassName = className;
         mTestName = testName;
     }
-    
+
     /**
-     * Returns the fully qualified class name of the test
+     * Returns the fully qualified class name of the test.
      */
     public String getClassName() {
         return mClassName;
     }
 
     /**
-     * Returns the name of the test
+     * Returns the name of the test.
      */
     public String getTestName() {
         return mTestName;
     }
-    
+
     /**
-     * Tests equality by comparing class and method name
+     * Tests equality by comparing class and method name.
      */
     @Override
     public boolean equals(Object other) {
@@ -62,15 +62,23 @@ public class TestIdentifier {
             return false;
         }
         TestIdentifier otherTest = (TestIdentifier)other;
-        return getClassName().equals(otherTest.getClassName())  && 
+        return getClassName().equals(otherTest.getClassName())  &&
                 getTestName().equals(otherTest.getTestName());
     }
-    
+
     /**
      * Generates hashCode based on class and method name.
      */
     @Override
     public int hashCode() {
         return getClassName().hashCode() * 31 + getTestName().hashCode();
+    }
+
+    /**
+     * Generates user friendly string.
+     */
+    @Override
+    public String toString() {
+        return String.format("%s#%s", getClassName(), getTestName());
     }
 }

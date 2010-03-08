@@ -94,7 +94,7 @@ public class InstrumentationResultParserTest extends TestCase {
         assertEquals(ITestRunListener.TestFailure.FAILURE, mTestResult.mTestStatus);
         assertEquals(STACK_TRACE, mTestResult.mTrace);
     }
-    
+
     /**
      * Test basic parsing and conversion of time from output.
      */
@@ -103,39 +103,54 @@ public class InstrumentationResultParserTest extends TestCase {
         injectTestString(timeString);
         assertEquals(4900, mTestResult.mTestTime);
     }
-    
+
     /**
      * Test basic parsing of a test run failure.
      */
     public void testRunFailed() {
-        StringBuilder output = new StringBuilder();        
+        StringBuilder output = new StringBuilder();
         final String errorMessage = "Unable to find instrumentation info";
         addStatusKey(output, "Error", errorMessage);
         addStatusCode(output, "-1");
         output.append("INSTRUMENTATION_FAILED: com.dummy/android.test.InstrumentationTestRunner");
         addLineBreak(output);
-        
+
         injectTestString(output.toString());
-        
+
         assertEquals(errorMessage, mTestResult.mRunFailedMessage);
     }
-    
+
     /**
      * Test parsing of a test run failure, where an instrumentation component failed to load
      * Parsing input takes the from of INSTRUMENTATION_RESULT: fff
      */
     public void testRunFailedResult() {
-        StringBuilder output = new StringBuilder();        
+        StringBuilder output = new StringBuilder();
         final String errorMessage = "Unable to instantiate instrumentation";
         output.append("INSTRUMENTATION_RESULT: shortMsg=");
         output.append(errorMessage);
         addLineBreak(output);
         output.append("INSTRUMENTATION_CODE: 0");
         addLineBreak(output);
-        
+
         injectTestString(output.toString());
-        
+
         assertEquals(errorMessage, mTestResult.mRunFailedMessage);
+    }
+
+    /**
+     * Test parsing of a test run that did not complete. This can occur if device spontaneously
+     * reboots, or if test method could not be found
+     */
+    public void testRunIncomplete() {
+        StringBuilder output = new StringBuilder();
+        // add a start test sequence, but without an end test sequence
+        addCommonStatus(output);
+        addStartCode(output);
+
+        injectTestString(output.toString());
+
+        assertTrue(mTestResult.mRunFailedMessage.startsWith("Test run incomplete."));
     }
 
     /**
@@ -210,7 +225,7 @@ public class InstrumentationResultParserTest extends TestCase {
 
     /**
      * inject a test string into the result parser.
-     * 
+     *
      * @param result
      */
     private void injectTestString(String result) {
