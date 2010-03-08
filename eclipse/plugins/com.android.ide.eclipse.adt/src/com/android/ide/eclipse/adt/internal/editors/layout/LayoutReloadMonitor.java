@@ -229,7 +229,7 @@ public final class LayoutReloadMonitor {
                 // check if the project is a library, and if it is search for what other
                 // project depends on this one (directly or not)
                 ProjectState state = Sdk.getProject(project);
-                if (state.isLibrary()) {
+                if (state != null && state.isLibrary()) {
                     Set<ProjectState> mainProjects = Sdk.getMainProjectsFor(project);
                     for (ProjectState mainProject : mainProjects) {
                         // always give the changeflag of the modified project.
