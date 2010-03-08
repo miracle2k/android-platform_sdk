@@ -17,19 +17,19 @@
 package com.android.adt.gscripts;
 
 /**
- * An {@link IViewRule} for android.widget.AbsoluteLayout and all its derived classes.
+ * An {@link IViewRule} for android.widget.FrameLayout and all its derived classes.
  */
-public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
+public class AndroidWidgetFrameLayoutRule extends BaseLayout {
 
     // ==== Drag'n'drop support ====
-    // The AbsoluteLayout accepts any drag'n'drop anywhere on its surface.
+    // The FrameLayout accepts any drag'n'drop anywhere on its surface.
 
     DropFeedback onDropEnter(INode targetNode) {
         return new DropFeedback(
             [ "p": null ],      // Point: last cursor position
             {
                 gc, node, feedback ->
-                // Paint closure for the AbsoluteLayout.
+                // Paint closure for the FrameLayout.
 
                 Rect b = node.getBounds();
                 if (!b.isValid()) {
@@ -42,7 +42,6 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
                 gc.drawRect(b);
 
                 Point p = feedback.userData.p;
-
                 if (p != null) {
                     int x = p.x;
                     int y = p.y;
@@ -65,24 +64,12 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
 
     void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point p) {
 
-        Rect b = targetNode.getBounds();
-        if (!b.isValid()) {
-            return;
-        }
-
-        int x = p.x - b.x;
-        int y = p.y - b.y;
-
-        targetNode.debugPrintf("AbsL.drop: add ${fqcn} at coord ${x}x${y}");
-
         // Get the last component of the FQCN (e.g. "android.view.Button" => "Button")
         String name = fqcn;
         name = name[name.lastIndexOf(".")+1 .. name.length()-1];
 
-        targetNode.editXml("Add ${name} to AbsoluteLayout") {
-            INode e = targetNode.appendChild(fqcn);
-            e.setAttribute("layout_x", "${x}dip");
-            e.setAttribute("layout_y", "${y}dip");
+        targetNode.editXml("Add ${name} to FrameLayout") {
+            targetNode.appendChild(fqcn);
         }
     }
 }

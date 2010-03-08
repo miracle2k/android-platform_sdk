@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 
@@ -25,7 +26,6 @@ import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TransferData;
-import org.eclipse.swt.graphics.Point;
 
 /**
  * Handles drop operations on top of the canvas.
@@ -190,10 +190,8 @@ import org.eclipse.swt.graphics.Point;
             return;
         }
 
-        Point p = eventToCanvasPoint(event);
-        com.android.ide.eclipse.adt.editors.layout.gscripts.Point p2 =
-            new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(p.x, p.y);
-        mCanvas.getRulesEngine().callOnDropped(viewFqcn, mTargetNode, mFeedback, p2);
+        Point p = mCanvas.displayToCanvasPoint(event.x, event.y);
+        mCanvas.getRulesEngine().callOnDropped(viewFqcn, mTargetNode, mFeedback, p);
 
         clearDropInfo();
     }
@@ -256,7 +254,7 @@ import org.eclipse.swt.graphics.Point;
             return;
         }
 
-        Point p = eventToCanvasPoint(event);
+        Point p = mCanvas.displayToCanvasPoint(event.x, event.y);
         int x = p.x;
         int y = p.y;
 
@@ -281,7 +279,6 @@ import org.eclipse.swt.graphics.Point;
         if (vi != mCurrentView) {
             // Current view has changed. Does that also change the target node?
             // Note that either mCurrentView or vi can be null.
-
 
             if (vi == null) {
                 // vi is null but mCurrentView is not, no view is a target anymore
@@ -350,13 +347,6 @@ import org.eclipse.swt.graphics.Point;
 
         mTargetNode = null;
         mFeedback = null;
-    }
-
-    private Point eventToCanvasPoint(DropTargetEvent event) {
-        Point p = mCanvas.toControl(event.x, event.y);
-        p.x -= LayoutCanvas.IMAGE_MARGIN;
-        p.y -= LayoutCanvas.IMAGE_MARGIN;
-        return p;
     }
 
     private void clearDropInfo() {
