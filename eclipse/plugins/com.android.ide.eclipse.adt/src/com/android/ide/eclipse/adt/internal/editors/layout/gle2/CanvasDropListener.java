@@ -35,12 +35,22 @@ import org.eclipse.swt.dnd.TransferData;
 /* package */ class CanvasDropListener implements DropTargetListener {
 
     private final LayoutCanvas mCanvas;
+
     /**
      * The top view right under the drag'n'drop cursor.
      * This can only be null during a drag'n'drop when there is no view under the cursor
      * or after the state was all cleared.
      */
     private CanvasViewInfo mCurrentView;
+
+    /**
+     * The FQCN currently being dragged. This will always be non-null for a valid
+     * drag'n'drop that happens within the same instance of Eclipse.
+     * <p/>
+     * In the event that the drag and drop happens between different instances of Eclipse
+     * this will remain null.
+     */
+    private String mCurrentDragFqcn;
 
     /**
      * The first view under the cursor that responded to onDropEnter is called the "target view".
@@ -57,7 +67,19 @@ import org.eclipse.swt.dnd.TransferData;
      * The latest drop feedback returned by IViewRule.onDropEnter/Move.
      */
     private DropFeedback mFeedback;
+
+    /**
+     * {@link #dragLeave(DropTargetEvent)} is unfortunately called right before data is
+     * about to be dropped (between the last {@link #dragOver(DropTargetEvent)} and the
+     * next {@link #dropAccept(DropTargetEvent)}). That means we can't just
+     * trash the current DropFeedback from the current view rule in dragLeave().
+     * Instead we preserve it in mLeaveTargetNode and mLeaveFeedback in case a dropAccept
+     * happens next.
+     */
     private NodeProxy mLeaveTargetNode;
+    /**
+     * @see #mLeaveTargetNode
+     */
     private DropFeedback mLeaveFeedback;
 
     public CanvasDropListener(LayoutCanvas canvas) {
@@ -81,6 +103,36 @@ import org.eclipse.swt.dnd.TransferData;
         }
 
         if (event.detail == DND.DROP_COPY) {
+
+            // Get the dragged FQCN.
+            // The current transfered type can be extracted from the event.
+            // As described in dragOver(), this works basically works on Windows but
+            // not on Linux or Mac, in which case we can't get the type until we
+            // receive dropAccept/drop().
+            // For consistency we try to use the GlobalCanvasDragInfo instance first,
+            // and if it fails we use the event transfer type as a backup (but as said
+            // before it will most likely work only on Windows.)
+            // In any case this can be null even for a valid transfer.
+
+            mCurrentDragFqcn = GlobalCanvasDragInfo.getInstance().getCurrentFqcn();
+
+            ElementDescTransfer edt = ElementDescTransfer.getInstance();
+            if (edt.isSupportedType(event.currentDataType)) {
+                String data = (String) edt.nativeToJava(event.currentDataType);
+                if (data != null) {
+                    if (mCurrentDragFqcn == null) {
+                        mCurrentDragFqcn = data;
+
+                    } else if (!mCurrentDragFqcn.equals(data)) {
+                        // Mostly for debugging purposes we compare them. They should always match.
+                        // TODO use an error for right now. Later move this to a log warning only.
+                        AdtPlugin.logAndPrintError(null /*exception*/, "CanvasDrop",
+                                "TransferType mismatch: Global=%s, drag.event=%s",
+                                mCurrentDragFqcn, data);
+                    }
+                }
+            }
+
             processDropEvent(event);
         } else {
             event.detail = DND.DROP_NONE;
@@ -191,7 +243,7 @@ import org.eclipse.swt.dnd.TransferData;
         }
 
         Point p = mCanvas.displayToCanvasPoint(event.x, event.y);
-        mCanvas.getRulesEngine().callOnDropped(viewFqcn, mTargetNode, mFeedback, p);
+        mCanvas.getRulesEngine().callOnDropped(mTargetNode, viewFqcn, mFeedback, p);
 
         clearDropInfo();
     }
@@ -300,7 +352,7 @@ import org.eclipse.swt.dnd.TransferData;
                         targetVi != null && df == null;
                         targetVi = targetVi.getParent()) {
                     targetNode = mCanvas.getNodeFactory().create(targetVi);
-                    df = mCanvas.getRulesEngine().callOnDropEnter(targetNode);
+                    df = mCanvas.getRulesEngine().callOnDropEnter(targetNode, mCurrentDragFqcn);
                 }
 
                 if (df != null && targetNode != mTargetNode) {
@@ -324,7 +376,8 @@ import org.eclipse.swt.dnd.TransferData;
             // this is a move inside the same view
             com.android.ide.eclipse.adt.editors.layout.gscripts.Point p2 =
                 new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(x, y);
-            DropFeedback df = mCanvas.getRulesEngine().callOnDropMove(mTargetNode, mFeedback, p2);
+            DropFeedback df = mCanvas.getRulesEngine().callOnDropMove(
+                    mTargetNode, mCurrentDragFqcn, mFeedback, p2);
             if (df == null) {
                 // The target is no longer interested in the drop move.
                 callDropLeave();
@@ -342,7 +395,7 @@ import org.eclipse.swt.dnd.TransferData;
      */
     private void callDropLeave() {
         if (mTargetNode != null && mFeedback != null) {
-            mCanvas.getRulesEngine().callOnDropLeave(mTargetNode, mFeedback);
+            mCanvas.getRulesEngine().callOnDropLeave(mTargetNode, mCurrentDragFqcn, mFeedback);
         }
 
         mTargetNode = null;

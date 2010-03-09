@@ -436,6 +436,9 @@ public class PaletteComposite extends Composite {
         public void dragStart(DragSourceEvent e) {
             if (mDesc == null) {
                 e.doit = false;
+            } else {
+                // Register this as the current dragged data
+                GlobalCanvasDragInfo.getInstance().startDrag(ElementDescTransfer.getFqcn(mDesc));
             }
         }
 
@@ -448,7 +451,8 @@ public class PaletteComposite extends Composite {
         }
 
         public void dragFinished(DragSourceEvent e) {
-            // Nothing to do here.
+            // Unregister the dragged data.
+            GlobalCanvasDragInfo.getInstance().stopDrag();
         }
     }
 }

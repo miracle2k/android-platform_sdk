@@ -125,7 +125,7 @@ public interface IViewRule {
      * If not interested in drop, return null.
      * Followed by a paint.
      */
-    DropFeedback onDropEnter(INode targetNode);
+    DropFeedback onDropEnter(INode targetNode, String fqcn);
 
     /**
      * Called after onDropEnter.
@@ -133,7 +133,7 @@ public interface IViewRule {
      * as input one).
      * Returning null will invalidate the drop workflow.
      */
-    DropFeedback onDropMove(INode targetNode, DropFeedback feedback, Point where);
+    DropFeedback onDropMove(INode targetNode, String fqcn, DropFeedback feedback, Point where);
 
     /**
      * Called when drop leaves the target without actually dropping.
@@ -152,11 +152,11 @@ public interface IViewRule {
      * - onDropLeave(node2, feedback2)
      * </pre>
      */
-    void onDropLeave(INode targetNode, DropFeedback feedback);
+    void onDropLeave(INode targetNode, String fqcn, DropFeedback feedback);
 
     /**
      * Called when drop is released over the target to perform the actual drop.
      */
-    void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point where);
+    void onDropped(INode targetNode, String fqcn, DropFeedback feedback, Point where);
 
 }

@@ -51,14 +51,37 @@ public class ElementDescTransfer extends ByteArrayTransfer {
 
     private static final String TYPE_NAME = "android.ADT.element.desc.transfer.1";
     private static final int TYPE_ID = registerType(TYPE_NAME);
-    private static ElementDescTransfer sInstance = new ElementDescTransfer();
+    private static final ElementDescTransfer sInstance = new ElementDescTransfer();
 
+    /** Private constructor. Use {@link #getInstance()} to retrieve the singleton instance. */
     private ElementDescTransfer() {
         // pass
     }
 
+    /** Returns the singleton instance. */
     public static ElementDescTransfer getInstance() {
         return sInstance;
+    }
+
+    /**
+     * Helper method that returns the FQCN transfered for the given {@link ElementDescriptor}.
+     * <p/>
+     * If the descriptor is a {@link ViewElementDescriptor}, the transfered data is the FQCN
+     * of the Android View class represented (e.g. "android.widget.Button").
+     * For any other non-null descriptor, the XML name is used.
+     * Otherwise it is null.
+     *
+     * @param desc The {@link ElementDescriptor} to transfer.
+     * @return The FQCN, XML name or null.
+     */
+    public static String getFqcn(ElementDescriptor desc) {
+        if (desc instanceof ViewElementDescriptor) {
+            return ((ViewElementDescriptor) desc).getFullClassName();
+        } else if (desc != null) {
+            return desc.getXmlName();
+        }
+
+        return null;
     }
 
     @Override
@@ -78,13 +101,8 @@ public class ElementDescTransfer extends ByteArrayTransfer {
         }
 
         if (isSupportedType(transferData)) {
-            String data = null;
-            ElementDescriptor desc = (ElementDescriptor)object;
-            if (desc instanceof ViewElementDescriptor) {
-                data = ((ViewElementDescriptor) desc).getFullClassName();
-            } else if (desc != null) {
-                data = desc.getXmlName();
-            }
+            String data = getFqcn((ElementDescriptor)object);
+
             if (data != null) {
                 try {
                     byte[] buf = data.getBytes("UTF-8");  //$NON-NLS-1$
