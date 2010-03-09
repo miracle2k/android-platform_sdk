@@ -88,7 +88,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
     // ==== Drag'n'drop support ====
 
-    DropFeedback onDropEnter(INode targetNode) {
+    DropFeedback onDropEnter(INode targetNode, String fqcn) {
 
         def bn = targetNode.getBounds();
         if (!bn.isValid()) {
@@ -109,7 +109,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                 });
     }
 
-    DropFeedback onDropMove(INode layoutNode, DropFeedback feedback, Point p) {
+    DropFeedback onDropMove(INode layoutNode, String fqcn, DropFeedback feedback, Point p) {
 
         def  data = feedback.userData;
         Rect area = feedback.captureArea;
@@ -382,12 +382,12 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         }
     }
 
-    void onDropLeave(INode targetNode, DropFeedback feedback) {
+    void onDropLeave(INode targetNode, String fqcn, DropFeedback feedback) {
         // Free the last captured rect, if any
         feedback.captureArea = null;
     }
 
-    void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point p) {
+    void onDropped(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
         def data = feedback.userData;
         if (!data.curr) {
             return;

@@ -23,7 +23,7 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
     // ==== Drag'n'drop support ====
 
-    DropFeedback onDropEnter(INode targetNode) {
+    DropFeedback onDropEnter(INode targetNode, String fqcn) {
 
         def bn = targetNode.getBounds();
         if (!bn.isValid()) {
@@ -106,7 +106,7 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         })
     }
 
-    DropFeedback onDropMove(INode targetNode, DropFeedback feedback, Point p) {
+    DropFeedback onDropMove(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
         def data = feedback.userData;
 
         Rect b = targetNode.getBounds();
@@ -153,11 +153,11 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         return feedback;
     }
 
-    void onDropLeave(INode targetNode, DropFeedback feedback) {
+    void onDropLeave(INode targetNode, String fqcn, DropFeedback feedback) {
         // ignore
     }
 
-    void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point p) {
+    void onDropped(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
         int insert_pos = feedback.userData.insert_pos;
 
         targetNode.debugPrintf("Linear.drop: add ${fqcn} at position ${insert_pos}");

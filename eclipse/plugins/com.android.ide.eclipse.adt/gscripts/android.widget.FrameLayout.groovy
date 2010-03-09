@@ -24,7 +24,7 @@ public class AndroidWidgetFrameLayoutRule extends BaseLayout {
     // ==== Drag'n'drop support ====
     // The FrameLayout accepts any drag'n'drop anywhere on its surface.
 
-    DropFeedback onDropEnter(INode targetNode) {
+    DropFeedback onDropEnter(INode targetNode, String fqcn) {
         return new DropFeedback(
             [ "p": null ],      // Point: last cursor position
             {
@@ -52,17 +52,17 @@ public class AndroidWidgetFrameLayoutRule extends BaseLayout {
             });
     }
 
-    DropFeedback onDropMove(INode targetNode, DropFeedback feedback, Point p) {
+    DropFeedback onDropMove(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
         feedback.userData.p = p;
         feedback.requestPaint = true;
         return feedback;
     }
 
-    void onDropLeave(INode targetNode, DropFeedback feedback) {
+    void onDropLeave(INode targetNode, String fqcn, DropFeedback feedback) {
         // ignore
     }
 
-    void onDropped(String fqcn, INode targetNode, DropFeedback feedback, Point p) {
+    void onDropped(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
 
         // Get the last component of the FQCN (e.g. "android.view.Button" => "Button")
         String name = fqcn;

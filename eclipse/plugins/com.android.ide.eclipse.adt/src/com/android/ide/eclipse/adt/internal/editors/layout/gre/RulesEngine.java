@@ -212,13 +212,13 @@ public class RulesEngine {
      * If not interested in drop, return false.
      * Followed by a paint.
      */
-    public DropFeedback callOnDropEnter(NodeProxy targetNode) {
+    public DropFeedback callOnDropEnter(NodeProxy targetNode, String fqcn) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
-                return rule.onDropEnter(targetNode);
+                return rule.onDropEnter(targetNode, fqcn);
 
             } catch (Exception e) {
                 logError("%s.onDropEnter() failed: %s",
@@ -236,6 +236,7 @@ public class RulesEngine {
      * as input one).
      */
     public DropFeedback callOnDropMove(NodeProxy targetNode,
+            String fqcn,
             DropFeedback feedback,
             Point where) {
         // try to find a rule for this element's FQCN
@@ -243,7 +244,7 @@ public class RulesEngine {
 
         if (rule != null) {
             try {
-                return rule.onDropMove(targetNode, feedback, where);
+                return rule.onDropMove(targetNode, fqcn, feedback, where);
 
             } catch (Exception e) {
                 logError("%s.onDropMove() failed: %s",
@@ -258,13 +259,13 @@ public class RulesEngine {
     /**
      * Called when drop leaves the target without actually dropping
      */
-    public void callOnDropLeave(NodeProxy targetNode, DropFeedback feedback) {
+    public void callOnDropLeave(NodeProxy targetNode, String fqcn, DropFeedback feedback) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
-                rule.onDropLeave(targetNode, feedback);
+                rule.onDropLeave(targetNode, fqcn, feedback);
 
             } catch (Exception e) {
                 logError("%s.onDropLeave() failed: %s",
@@ -277,8 +278,8 @@ public class RulesEngine {
     /**
      * Called when drop is released over the target to perform the actual drop.
      */
-    public void callOnDropped(String fqcn,
-            NodeProxy targetNode,
+    public void callOnDropped(NodeProxy targetNode,
+            String fqcn,
             DropFeedback feedback,
             Point where) {
         // try to find a rule for this element's FQCN
@@ -286,7 +287,7 @@ public class RulesEngine {
 
         if (rule != null) {
             try {
-                rule.onDropped(fqcn, targetNode, feedback, where);
+                rule.onDropped(targetNode, fqcn, feedback, where);
 
             } catch (Exception e) {
                 logError("%s.onDropped() failed: %s",
