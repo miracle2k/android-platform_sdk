@@ -285,7 +285,7 @@ public final class SdkManager {
                 // version string
                 String apiName = map.get(PROP_VERSION_RELEASE);
                 if (apiName == null) {
-                    log.error(null,
+                    log.warning(null,
                             "Ignoring platform '%1$s': %2$s is missing from '%3$s'",
                             platform.getName(), PROP_VERSION_RELEASE,
                             SdkConstants.FN_BUILD_PROP);
@@ -296,7 +296,7 @@ public final class SdkManager {
                 int apiNumber;
                 String stringValue = map.get(PROP_VERSION_SDK);
                 if (stringValue == null) {
-                    log.error(null,
+                    log.warning(null,
                             "Ignoring platform '%1$s': %2$s is missing from '%3$s'",
                             platform.getName(), PROP_VERSION_SDK,
                             SdkConstants.FN_BUILD_PROP);
@@ -307,7 +307,7 @@ public final class SdkManager {
                     } catch (NumberFormatException e) {
                         // looks like apiNumber does not parse to a number.
                         // Ignore this platform.
-                        log.error(null,
+                        log.warning(null,
                                 "Ignoring platform '%1$s': %2$s is not a valid number in %3$s.",
                                 platform.getName(), PROP_VERSION_SDK,
                                 SdkConstants.FN_BUILD_PROP);
@@ -365,7 +365,7 @@ public final class SdkManager {
                 return target;
             }
         } else {
-            log.error(null, "Ignoring platform '%1$s': %2$s is missing.", platform.getName(),
+            log.warning(null, "Ignoring platform '%1$s': %2$s is missing.", platform.getName(),
                     SdkConstants.FN_BUILD_PROP);
         }
 
@@ -426,20 +426,20 @@ public final class SdkManager {
                 // we require name, vendor, and api
                 String name = propertyMap.get(ADDON_NAME);
                 if (name == null) {
-                    displayAddonManifestError(log, addon.getName(), ADDON_NAME);
+                    displayAddonManifestWarning(log, addon.getName(), ADDON_NAME);
                     return null;
                 }
 
                 String vendor = propertyMap.get(ADDON_VENDOR);
                 if (vendor == null) {
-                    displayAddonManifestError(log, addon.getName(), ADDON_VENDOR);
+                    displayAddonManifestWarning(log, addon.getName(), ADDON_VENDOR);
                     return null;
                 }
 
                 String api = propertyMap.get(ADDON_API);
                 PlatformTarget baseTarget = null;
                 if (api == null) {
-                    displayAddonManifestError(log, addon.getName(), ADDON_API);
+                    displayAddonManifestWarning(log, addon.getName(), ADDON_API);
                     return null;
                 } else {
                     // Look for a platform that has a matching api level or codename.
@@ -452,7 +452,7 @@ public final class SdkManager {
 
                     if (baseTarget == null) {
                         // Ignore this add-on.
-                        log.error(null,
+                        log.warning(null,
                                 "Ignoring add-on '%1$s': Unable to find base platform with API level '%2$s'",
                                 addon.getName(), api);
                         return null;
@@ -474,7 +474,7 @@ public final class SdkManager {
                     } catch (NumberFormatException e) {
                         // looks like apiNumber does not parse to a number.
                         // Ignore this add-on.
-                        log.error(null,
+                        log.warning(null,
                                 "Ignoring add-on '%1$s': %2$s is not a valid number in %3$s.",
                                 addon.getName(), ADDON_REVISION, SdkConstants.FN_BUILD_PROP);
                         return null;
@@ -505,12 +505,12 @@ public final class SdkManager {
                                         libMap.put(libName, new String[] {
                                                 m.group(1), m.group(2) });
                                     } else {
-                                        log.error(null,
+                                        log.warning(null,
                                                 "Ignoring library '%1$s', property value has wrong format\n\t%2$s",
                                                 libName, libData);
                                     }
                                 } else {
-                                    log.error(null,
+                                    log.warning(null,
                                             "Ignoring library '%1$s', missing property value",
                                             libName, libData);
                                 }
@@ -546,7 +546,7 @@ public final class SdkManager {
                 return target;
             }
         } else {
-            log.error(null, "Ignoring add-on '%1$s': %2$s is missing.", addon.getName(),
+            log.warning(null, "Ignoring add-on '%1$s': %2$s is missing.", addon.getName(),
                     SdkConstants.FN_MANIFEST_INI);
         }
 
@@ -575,14 +575,14 @@ public final class SdkManager {
     }
 
     /**
-     * Displays an error in the log about the addon being ignored due to a missing manifest value.
+     * Displays a warning in the log about the addon being ignored due to a missing manifest value.
      *
      * @param log The logger object. Cannot be null.
      * @param addonName The addon name, for display.
      * @param valueName The missing manifest value, for display.
      */
-    private static void displayAddonManifestError(ISdkLog log, String addonName, String valueName) {
-        log.error(null, "Ignoring add-on '%1$s': '%2$s' is missing from %3$s.",
+    private static void displayAddonManifestWarning(ISdkLog log, String addonName, String valueName) {
+        log.warning(null, "Ignoring add-on '%1$s': '%2$s' is missing from %3$s.",
                 addonName, valueName, SdkConstants.FN_MANIFEST_INI);
     }
 
@@ -599,7 +599,7 @@ public final class SdkManager {
         for (String relativePath : sPlatformContentList) {
             File f = new File(platform, relativePath);
             if (!f.exists()) {
-                log.error(null,
+                log.warning(null,
                         "Ignoring platform '%1$s': %2$s is missing.",
                         platform.getName(), relativePath);
                 return false;
