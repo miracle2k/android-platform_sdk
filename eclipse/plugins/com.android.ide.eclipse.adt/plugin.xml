@@ -152,12 +152,11 @@
    <extension
          point="org.eclipse.debug.ui.launchShortcuts">
       <shortcut
-            category="com.android.ide.eclipse.adt.launch.LaunchConfigType"
             class="com.android.ide.eclipse.adt.internal.launch.LaunchShortcut"
             icon="icons/android_app.png"
             id="com.android.ide.eclipse.adt.debug.launching.LaunchShortcut"
             label="Android Application"
-            modes="debug, run">
+            modes="run, debug">
         <contextualLaunch>
            <enablement>
              <with variable="selection">
@@ -173,6 +172,9 @@
          </contextualLaunch>
          <perspective id="org.eclipse.jdt.ui.JavaPerspective"/>
          <perspective id="org.eclipse.debug.ui.DebugPerspective"/>
+         <configurationType
+             id="com.android.ide.eclipse.adt.debug.LaunchConfigType">
+         </configurationType>
          <description
                description="Runs an Android Application"
                mode="run">
