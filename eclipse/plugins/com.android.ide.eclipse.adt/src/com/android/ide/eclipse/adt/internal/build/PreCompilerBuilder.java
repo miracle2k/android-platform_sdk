@@ -219,7 +219,7 @@ public class PreCompilerBuilder extends BaseBuilder {
             mDerivedProgressMonitor.reset();
 
             // get the project info
-            ProjectState projectState = Sdk.getProject(project);
+            ProjectState projectState = Sdk.getProjectState(project);
 
             // this can happen if the project has no default.properties.
             if (projectState == null) {

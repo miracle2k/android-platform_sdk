@@ -30,6 +30,7 @@ import org.eclipse.core.runtime.Status;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Centralized state for Android Eclipse project.
@@ -42,7 +43,7 @@ public final class ProjectState {
     /**
      * A class that represents a library linked to a project.
      * <p/>It does not represent the library uniquely. Instead the {@link LibraryState} is linked
-     * to the main project which is accessible through {@link #getMainProject()}.
+     * to the main project which is accessible through {@link #getMainProjectState()}.
      * <p/>If a library is used by two different projects, then there will be two different
      * instances of {@link LibraryState} for the library.
      *
@@ -50,7 +51,7 @@ public final class ProjectState {
      */
     public final class LibraryState {
         private String mRelativePath;
-        private IProject mProject;
+        private ProjectState mProjectState;
         private String mPath;
 
         private LibraryState(String relativePath) {
@@ -60,18 +61,18 @@ public final class ProjectState {
         /**
          * Returns the {@link ProjectState} of the main project using this library.
          */
-        public ProjectState getMainProject() {
+        public ProjectState getMainProjectState() {
             return ProjectState.this;
         }
 
         /**
-         * Closes the library. This resets the IProject from this object ({@link #getProject()} will
+         * Closes the library. This resets the IProject from this object ({@link #getProjectState()} will
          * return <code>null</code>), and updates the main project data so that the library
          * {@link IProject} object does not show up in the return value of
          * {@link ProjectState#getLibraryProjects()}.
          */
         public void close() {
-            mProject = null;
+            mProjectState = null;
             mPath = null;
 
             updateLibraries();
@@ -81,9 +82,9 @@ public final class ProjectState {
             mRelativePath = relativePath;
         }
 
-        private void setProject(IProject project) {
-            mProject = project;
-            mPath = project.getLocation().toOSString();
+        private void setProject(ProjectState project) {
+            mProjectState = project;
+            mPath = project.getProject().getLocation().toOSString();
 
             updateLibraries();
         }
@@ -97,11 +98,11 @@ public final class ProjectState {
         }
 
         /**
-         * Returns the {@link IProject} item for the library. This can be null if the project
+         * Returns the {@link ProjectState} item for the library. This can be null if the project
          * is not actually opened in Eclipse.
          */
-        public IProject getProject() {
-            return mProject;
+        public ProjectState getProjectState() {
+            return mProjectState;
         }
 
         /**
@@ -114,10 +115,36 @@ public final class ProjectState {
         public String getProjectLocation() {
             return mPath;
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof LibraryState) {
+                // the only thing that's always non-null is the relative path.
+                LibraryState objState = (LibraryState)obj;
+                return mRelativePath.equals(objState.mRelativePath) &&
+                        getMainProjectState().equals(objState.getMainProjectState());
+            } else if (obj instanceof ProjectState || obj instanceof IProject) {
+                return mProjectState != null && mProjectState.equals(obj);
+            } else if (obj instanceof String) {
+                return mRelativePath.equals(obj);
+            }
+
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return mRelativePath.hashCode();
+        }
     }
 
     private final IProject mProject;
     private final ProjectProperties mProperties;
+    /**
+     * list of libraries. Access to this list must be protected by
+     * <code>synchronized(mLibraries)</code>, but it is important that such code do not call
+     * out to other classes (especially those protected by {@link Sdk#getLock()}.)
+     */
     private final ArrayList<LibraryState> mLibraries = new ArrayList<LibraryState>();
     private IAndroidTarget mTarget;
     private ApkSettings mApkSettings;
@@ -131,16 +158,18 @@ public final class ProjectState {
         mApkSettings = ApkConfigurationHelper.getSettings(properties);
 
         // load the libraries
-        int index = 1;
-        while (true) {
-            String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index++);
-            String rootPath = mProperties.getProperty(propName);
+        synchronized (mLibraries) {
+            int index = 1;
+            while (true) {
+                String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index++);
+                String rootPath = mProperties.getProperty(propName);
 
-            if (rootPath == null) {
-                break;
+                if (rootPath == null) {
+                    break;
+                }
+
+                mLibraries.add(new LibraryState(convertPath(rootPath)));
             }
-
-            mLibraries.add(new LibraryState(convertPath(rootPath)));
         }
     }
 
@@ -180,14 +209,77 @@ public final class ProjectState {
         return mTarget;
     }
 
+    public static class LibraryDifference {
+        public List<LibraryState> removed = new ArrayList<LibraryState>();
+        public boolean added = false;
+
+        public boolean hasDiff() {
+            return removed.size() > 0 || added;
+        }
+    }
+
     /**
      * Reloads the content of the properties.
      * <p/>This also reset the reference to the target as it may have changed.
      * <p/>This should be followed by a call to {@link Sdk#loadTarget(ProjectState)}.
+     *
+     * @return an instance of {@link LibraryDifference} describing the change in libraries.
      */
-    public void reloadProperties() {
+    public LibraryDifference reloadProperties() {
         mTarget = null;
         mProperties.reload();
+
+        // compare/reload the libraries.
+
+        // if the order change it won't impact the java part, so instead try to detect removed/added
+        // libraries.
+
+        LibraryDifference diff = new LibraryDifference();
+
+        synchronized (mLibraries) {
+            List<LibraryState> oldLibraries = new ArrayList<LibraryState>(mLibraries);
+            mLibraries.clear();
+
+            // load the libraries
+            int index = 1;
+            while (true) {
+                String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index++);
+                String rootPath = mProperties.getProperty(propName);
+
+                if (rootPath == null) {
+                    break;
+                }
+
+                // search for a library with the same path (not exact same string, but going
+                // to the same folder).
+                String convertedPath = convertPath(rootPath);
+                boolean found = false;
+                for (int i = 0 ; i < oldLibraries.size(); i++) {
+                    LibraryState libState = oldLibraries.get(i);
+                    if (libState.equals(convertedPath)) {
+                        // it's a match. move it back to mLibraries and remove it from the
+                        // old library list.
+                        found = true;
+                        mLibraries.add(libState);
+                        oldLibraries.remove(i);
+                        break;
+                    }
+                }
+
+                if (found == false) {
+                    diff.added = true;
+                    mLibraries.add(new LibraryState(convertedPath));
+                }
+            }
+
+            // whatever's left in oldLibraries is removed.
+            diff.removed.addAll(oldLibraries);
+
+            // update the library with what IProjet are known at the time.
+            updateLibraries();
+        }
+
+        return diff;
     }
 
     public void setApkSettings(ApkSettings apkSettings) {
@@ -221,9 +313,11 @@ public final class ProjectState {
      * Returns whether the project is missing some required libraries.
      */
     public boolean isMissingLibraries() {
-        for (LibraryState state : mLibraries) {
-            if (state.getProject() == null) {
-                return true;
+        synchronized (mLibraries) {
+            for (LibraryState state : mLibraries) {
+                if (state.getProjectState() == null) {
+                    return true;
+                }
             }
         }
 
@@ -240,46 +334,63 @@ public final class ProjectState {
      * @see #needs(IProject)
      */
     public LibraryState getLibrary(IProject library) {
-        for (LibraryState state : mLibraries) {
-            if (state.getProject() == library) {
-                return state;
+        synchronized (mLibraries) {
+            for (LibraryState state : mLibraries) {
+                if (state.getProjectState().equals(library)) {
+                    return state;
+                }
             }
         }
 
         return null;
     }
 
+    public LibraryState getLibrary(String name) {
+        synchronized (mLibraries) {
+            for (LibraryState state : mLibraries) {
+                if (state.getProjectState().getProject().getName().equals(name)) {
+                    return state;
+                }
+            }
+        }
+
+        return null;
+    }
+
+
     /**
      * Returns whether a given library project is needed by the receiver.
      * <p/>If the library is needed, this finds the matching {@link LibraryState}, initializes it
      * so that it contains the library's {@link IProject} object (so that
-     * {@link LibraryState#getProject()} does not return null) and then returns it.
+     * {@link LibraryState#getProjectState()} does not return null) and then returns it.
      *
      * @param libraryProject the library project to check.
      * @return a non null object if the project is a library dependency,
      * <code>null</code> otherwise.
      *
-     * @see LibraryState#getProject()
+     * @see LibraryState#getProjectState()
      */
-    public LibraryState needs(IProject libraryProject) {
+    public LibraryState needs(ProjectState libraryProject) {
         // compute current location
         File projectFile = new File(mProject.getLocation().toOSString());
 
         // get the location of the library.
-        File libraryFile = new File(libraryProject.getLocation().toOSString());
+        File libraryFile = new File(libraryProject.getProject().getLocation().toOSString());
 
         // loop on all libraries and check if the path match
-        for (LibraryState state : mLibraries) {
-            if (state.getProject() == null) {
-                File library = new File(projectFile, state.getRelativePath());
-                try {
-                    File absPath = library.getCanonicalFile();
-                    if (absPath.equals(libraryFile)) {
-                        state.setProject(libraryProject);
-                        return state;
+        synchronized (mLibraries) {
+            for (LibraryState state : mLibraries) {
+                if (state.getProjectState() == null) {
+                    File library = new File(projectFile, state.getRelativePath());
+                    try {
+                        File absPath = library.getCanonicalFile();
+                        if (absPath.equals(libraryFile)) {
+                            state.setProject(libraryProject);
+                            return state;
+                        }
+                    } catch (IOException e) {
+                        // ignore this library
                     }
-                } catch (IOException e) {
-                    // ignore this library
                 }
             }
         }
@@ -301,51 +412,53 @@ public final class ProjectState {
      *
      * @param oldRelativePath the old library path relative to this project
      * @param newRelativePath the new library path relative to this project
-     * @param newLibraryProject the new {@link IProject} object.
+     * @param newLibraryState the new {@link ProjectState} object.
      * @return a non null object if the project depends on the library.
      *
-     * @see LibraryState#getProject()
+     * @see LibraryState#getProjectState()
      */
     public LibraryState updateLibrary(String oldRelativePath, String newRelativePath,
-            IProject newLibraryProject) {
+            ProjectState newLibraryState) {
         // compute current location
         File projectFile = new File(mProject.getLocation().toOSString());
 
         // loop on all libraries and check if the path matches
-        for (LibraryState state : mLibraries) {
-            if (state.getProject() == null) {
-                try {
-                    // oldRelativePath may not be the same exact string as the
-                    // one in the project properties (trailing separator could be different
-                    // for instance).
-                    // Use java.io.File to deal with this and also do a platform-dependent
-                    // path comparison
-                    File library1 = new File(projectFile, oldRelativePath);
-                    File library2 = new File(projectFile, state.getRelativePath());
-                    if (library1.getCanonicalPath().equals(library2.getCanonicalPath())) {
-                        // save the exact property string to replace.
-                        String oldProperty = state.getRelativePath();
+        synchronized (mLibraries) {
+            for (LibraryState state : mLibraries) {
+                if (state.getProjectState() == null) {
+                    try {
+                        // oldRelativePath may not be the same exact string as the
+                        // one in the project properties (trailing separator could be different
+                        // for instance).
+                        // Use java.io.File to deal with this and also do a platform-dependent
+                        // path comparison
+                        File library1 = new File(projectFile, oldRelativePath);
+                        File library2 = new File(projectFile, state.getRelativePath());
+                        if (library1.getCanonicalPath().equals(library2.getCanonicalPath())) {
+                            // save the exact property string to replace.
+                            String oldProperty = state.getRelativePath();
 
-                        // then update the LibraryPath.
-                        state.setRelativePath(newRelativePath);
-                        state.setProject(newLibraryProject);
+                            // then update the LibraryPath.
+                            state.setRelativePath(newRelativePath);
+                            state.setProject(newLibraryState);
 
-                        // update the default.properties file
-                        IStatus status = replaceLibraryProperty(oldProperty, newRelativePath);
-                        if (status != null) {
-                            if (status.getSeverity() != IStatus.OK) {
-                                // log the error somehow.
+                            // update the default.properties file
+                            IStatus status = replaceLibraryProperty(oldProperty, newRelativePath);
+                            if (status != null) {
+                                if (status.getSeverity() != IStatus.OK) {
+                                    // log the error somehow.
+                                }
+                            } else {
+                                // This should not happen since the library wouldn't be here in the
+                                // first place
                             }
-                        } else {
-                            // This should not happen since the library wouldn't be here in the
-                            // first place
-                        }
 
-                        // return the LibraryState object.
-                        return state;
+                            // return the LibraryState object.
+                            return state;
+                        }
+                    } catch (IOException e) {
+                        // ignore this library
                     }
-                } catch (IOException e) {
-                    // ignore this library
                 }
             }
         }
@@ -382,9 +495,11 @@ public final class ProjectState {
 
     private void updateLibraries() {
         ArrayList<IProject> list = new ArrayList<IProject>();
-        for (LibraryState state : mLibraries) {
-            if (state.getProject() != null) {
-                list.add(state.getProject());
+        synchronized (mLibraries) {
+            for (LibraryState state : mLibraries) {
+                if (state.getProjectState() != null) {
+                    list.add(state.getProjectState().getProject());
+                }
             }
         }
 
@@ -396,5 +511,21 @@ public final class ProjectState {
      */
     private String convertPath(String path) {
         return path.replaceAll("/", File.separator); //$NON-NLS-1$
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof ProjectState) {
+            return mProject.equals(((ProjectState) obj).mProject);
+        } else if (obj instanceof IProject) {
+            return mProject.equals(obj);
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return mProject.hashCode();
     }
 }

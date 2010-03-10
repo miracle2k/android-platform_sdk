@@ -18,6 +18,8 @@ package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryState;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.resources.IFolder;
@@ -35,7 +37,7 @@ import org.eclipse.jface.viewers.ILightweightLabelDecorator;
  * This is used to add android icons in some special folders in the package explorer.
  */
 public class FolderDecorator implements ILightweightLabelDecorator {
-    
+
     private ImageDescriptor mDescriptor;
 
     public FolderDecorator() {
@@ -45,7 +47,7 @@ public class FolderDecorator implements ILightweightLabelDecorator {
     public void decorate(Object element, IDecoration decoration) {
         if (element instanceof IFolder) {
             IFolder folder = (IFolder)element;
-            
+
             // get the project and make sure this is an android project
             IProject project = folder.getProject();
 
@@ -62,6 +64,12 @@ public class FolderDecorator implements ILightweightLabelDecorator {
                             doDecoration(decoration, " [Generated Java Files]");
                       } else if (name.equals(SdkConstants.FD_NATIVE_LIBS)) {
                           doDecoration(decoration, null);
+                      } else if (folder.isLinked()) {
+                          ProjectState state = Sdk.getProjectState(project);
+                          LibraryState lib = state.getLibrary(folder.getName());
+                          if (lib != null) {
+                              doDecoration(decoration, " [Android Library]");
+                          }
                         }
                     }
                 }
@@ -71,21 +79,13 @@ public class FolderDecorator implements ILightweightLabelDecorator {
             }
         }
     }
-    
+
     public void doDecoration(IDecoration decoration, String suffix) {
         decoration.addOverlay(mDescriptor, IDecoration.TOP_LEFT);
 
         if (suffix != null) {
             decoration.addSuffix(suffix);
-
-            // this is broken as it changes the color of the whole text, not only of the decoration.
-            // TODO: figure out how to change the color of the decoration only.
-//            ITheme theme = PlatformUI.getWorkbench().getThemeManager().getCurrentTheme();
-//            ColorRegistry registry = theme.getColorRegistry();
-//            decoration.setForegroundColor(
-//                    registry.get("org.eclipse.jdt.ui.ColoredLabels.decorations")); //$NON-NLS-1$
         }
-
     }
 
     public boolean isLabelProperty(Object element, String property) {

@@ -162,7 +162,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                 boolean sdkIsLoaded = plugin.getSdkLoadStatus() == LoadStatus.LOADED;
 
                 // check if the project has a valid target.
-                ProjectState state = Sdk.getProject(iProject);
+                ProjectState state = Sdk.getProjectState(iProject);
                 if (state == null) {
                     // looks like the project state (default.properties) couldn't be read!
                     markerMessage = String.format(
@@ -515,10 +515,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
             // project that have been resolved before the sdk was loaded
             // will have a ProjectState where the IAndroidTarget is null
             // so we load the target now that the SDK is loaded.
-            currentSdk.loadTarget(Sdk.getProject(iProject));
-
-            // get the target from the project and its paths
-            IAndroidTarget target = currentSdk.getTarget(javaProject.getProject());
+            IAndroidTarget target = currentSdk.loadTarget(Sdk.getProjectState(iProject));
             if (target == null) {
                 // this is really not supposed to happen. This would mean there are cached paths,
                 // but default.properties was deleted. Keep the project in the list to force
