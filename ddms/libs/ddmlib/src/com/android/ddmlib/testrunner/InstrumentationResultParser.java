@@ -20,6 +20,9 @@ import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.Log;
 import com.android.ddmlib.MultiLineReceiver;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 /**
  * Parses the 'raw output mode' results of an instrumentation test run from shell and informs a
  * ITestRunListener of the results.
@@ -85,7 +88,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
         private static final String TIME_REPORT = "Time: ";
     }
 
-    private final ITestRunListener mTestListener;
+    private final Collection<ITestRunListener> mTestListeners;
 
     /**
      * Test result data
@@ -152,10 +155,20 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     /**
      * Creates the InstrumentationResultParser.
      *
+     * @param listeners informed of test results as the tests are executing
+     */
+    public InstrumentationResultParser(Collection<ITestRunListener> listeners) {
+        mTestListeners = new ArrayList<ITestRunListener>(listeners);
+    }
+
+    /**
+     * Creates the InstrumentationResultParser for a single listener.
+     *
      * @param listener informed of test results as the tests are executing
      */
     public InstrumentationResultParser(ITestRunListener listener) {
-        mTestListener = listener;
+        mTestListeners = new ArrayList<ITestRunListener>(1);
+        mTestListeners.add(listener);
     }
 
     /**
@@ -338,27 +351,38 @@ public class InstrumentationResultParser extends MultiLineReceiver {
 
         switch (testInfo.mCode) {
             case StatusCodes.START:
-                mTestListener.testStarted(testId);
+                for (ITestRunListener listener : mTestListeners) {
+                    listener.testStarted(testId);
+                }
                 break;
             case StatusCodes.FAILURE:
-                mTestListener.testFailed(ITestRunListener.TestFailure.FAILURE, testId,
+                for (ITestRunListener listener : mTestListeners) {
+                    listener.testFailed(ITestRunListener.TestFailure.FAILURE, testId,
                         getTrace(testInfo));
-                mTestListener.testEnded(testId);
+
+                    listener.testEnded(testId);
+                }
                 mNumTestsRun++;
                 break;
             case StatusCodes.ERROR:
-                mTestListener.testFailed(ITestRunListener.TestFailure.ERROR, testId,
+                for (ITestRunListener listener : mTestListeners) {
+                    listener.testFailed(ITestRunListener.TestFailure.ERROR, testId,
                         getTrace(testInfo));
-                mTestListener.testEnded(testId);
+                    listener.testEnded(testId);
+                }
                 mNumTestsRun++;
                 break;
             case StatusCodes.OK:
-                mTestListener.testEnded(testId);
+                for (ITestRunListener listener : mTestListeners) {
+                    listener.testEnded(testId);
+                }
                 mNumTestsRun++;
                 break;
             default:
                 Log.e(LOG_TAG, "Unknown status code received: " + testInfo.mCode);
-                mTestListener.testEnded(testId);
+                for (ITestRunListener listener : mTestListeners) {
+                    listener.testEnded(testId);
+                }
                 mNumTestsRun++;
             break;
         }
@@ -374,7 +398,9 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     private void reportTestRunStarted(TestResult testInfo) {
         // if start test run not reported yet
         if (!mTestStartReported && testInfo.mNumTests != null) {
-            mTestListener.testRunStarted(testInfo.mNumTests);
+            for (ITestRunListener listener : mTestListeners) {
+                listener.testRunStarted(testInfo.mNumTests);
+            }
             mNumTestsExpected = testInfo.mNumTests;
             mTestStartReported = true;
         }
@@ -410,7 +436,9 @@ public class InstrumentationResultParser extends MultiLineReceiver {
      */
     private void handleTestRunFailed(String errorMsg) {
         Log.i(LOG_TAG, String.format("test run failed %s", errorMsg));
-        mTestListener.testRunFailed(errorMsg == null ? "Unknown error" : errorMsg);
+        for (ITestRunListener listener : mTestListeners) {
+            listener.testRunFailed(errorMsg == null ? "Unknown error" : errorMsg);
+        }
         mTestRunFailReported = true;
     }
 
@@ -425,9 +453,13 @@ public class InstrumentationResultParser extends MultiLineReceiver {
                 String.format("Test run incomplete. Expected %d tests, received %d",
                         mNumTestsExpected, mNumTestsRun);
             Log.w(LOG_TAG, message);
-            mTestListener.testRunFailed(message);
+            for (ITestRunListener listener : mTestListeners) {
+                listener.testRunFailed(message);
+            }
         } else {
-            mTestListener.testRunEnded(mTestTime);
+            for (ITestRunListener listener : mTestListeners) {
+                listener.testRunEnded(mTestTime);
+            }
         }
     }
 }
