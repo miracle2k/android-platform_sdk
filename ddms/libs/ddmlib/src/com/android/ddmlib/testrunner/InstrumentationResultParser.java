@@ -126,6 +126,9 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     /** Stores the status values for the test result currently being parsed */
     private TestResult mCurrentTestResult = null;
 
+    /** Stores the status values for the test result last parsed */
+    private TestResult mLastTestResult = null;
+
     /** Stores the current "key" portion of the status key-value being parsed. */
     private String mCurrentKey = null;
 
@@ -273,6 +276,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     }
 
     private void clearCurrentTestInfo() {
+        mLastTestResult = mCurrentTestResult;
         mCurrentTestResult = null;
     }
 
@@ -435,11 +439,27 @@ public class InstrumentationResultParser extends MultiLineReceiver {
      * Process a instrumentation run failure
      */
     private void handleTestRunFailed(String errorMsg) {
+        errorMsg = (errorMsg == null ? "Unknown error" : errorMsg);
         Log.i(LOG_TAG, String.format("test run failed %s", errorMsg));
+        if (mLastTestResult != null &&
+            mLastTestResult.isComplete() &&
+            StatusCodes.START == mLastTestResult.mCode) {
+
+            // received test start msg, but not test complete
+            // assume test caused this, report as test failure
+            TestIdentifier testId = new TestIdentifier(mLastTestResult.mTestClass,
+                    mLastTestResult.mTestName);
+            for (ITestRunListener listener : mTestListeners) {
+                listener.testFailed(ITestRunListener.TestFailure.ERROR, testId,
+                    String.format("Incomplete: %s", errorMsg));
+                listener.testEnded(testId);
+            }
+        }
         for (ITestRunListener listener : mTestListeners) {
-            listener.testRunFailed(errorMsg == null ? "Unknown error" : errorMsg);
+            listener.testRunFailed(errorMsg);
         }
         mTestRunFailReported = true;
+
     }
 
     /**
@@ -452,10 +472,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
             final String message =
                 String.format("Test run incomplete. Expected %d tests, received %d",
                         mNumTestsExpected, mNumTestsRun);
-            Log.w(LOG_TAG, message);
-            for (ITestRunListener listener : mTestListeners) {
-                listener.testRunFailed(message);
-            }
+            handleTestRunFailed(message);
         } else {
             for (ITestRunListener listener : mTestListeners) {
                 listener.testRunEnded(mTestTime);

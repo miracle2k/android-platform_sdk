@@ -16,6 +16,8 @@
 
 package com.android.ddmlib.testrunner;
 
+import com.android.ddmlib.testrunner.ITestRunListener.TestFailure;
+
 import junit.framework.TestCase;
 
 
@@ -59,7 +61,6 @@ public class InstrumentationResultParserTest extends TestCase {
 
         injectTestString(output.toString());
         assertCommonAttributes();
-        assertEquals(0, mTestResult.mNumTestsRun);
     }
 
     /**
@@ -151,6 +152,8 @@ public class InstrumentationResultParserTest extends TestCase {
         injectTestString(output.toString());
 
         assertTrue(mTestResult.mRunFailedMessage.startsWith("Test run incomplete."));
+        // ensure test is marked as failed
+        assertEquals(TestFailure.ERROR, mTestResult.mTestStatus);
     }
 
     /**
