@@ -16,6 +16,8 @@
 
 package com.android.ddmlib.testrunner;
 
+import java.util.Collection;
+
 /**
  * Interface for running a Android test command remotely and reporting result to a listener.
  */
@@ -106,10 +108,19 @@ public interface IRemoteAndroidTestRunner {
 
     /**
      * Execute this test run.
+     * <p/>
+     * Convenience method for {@link #run(Collection)}.
      *
-     * @param listener listens for test results
+     * @param listeners listens for test results
      */
-    public void run(ITestRunListener listener);
+    public void run(ITestRunListener... listeners);
+
+    /**
+     * Execute this test run.
+     *
+     * @param listeners collection of listeners for test results
+     */
+    public void run(Collection<ITestRunListener> listeners);
 
     /**
      * Requests cancellation of this test run.

@@ -21,6 +21,8 @@ import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -44,25 +46,25 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     private static final char METHOD_SEPARATOR = '#';
     private static final char RUNNER_SEPARATOR = '/';
 
-    // defined instrumentation argument names  
+    // defined instrumentation argument names
     private static final String CLASS_ARG_NAME = "class";
     private static final String LOG_ARG_NAME = "log";
     private static final String DEBUG_ARG_NAME = "debug";
     private static final String COVERAGE_ARG_NAME = "coverage";
     private static final String PACKAGE_ARG_NAME = "package";
- 
+
     /**
      * Creates a remote Android test runner.
-     * 
-     * @param packageName the Android application package that contains the tests to run 
+     *
+     * @param packageName the Android application package that contains the tests to run
      * @param runnerName the instrumentation test runner to execute. If null, will use default
-     *   runner 
+     *   runner
      * @param remoteDevice the Android device to execute tests on
      */
-    public RemoteAndroidTestRunner(String packageName, 
+    public RemoteAndroidTestRunner(String packageName,
                                    String runnerName,
                                    IDevice remoteDevice) {
-        
+
         mPackageName = packageName;
         mRunnerName = runnerName;
         mRemoteDevice = remoteDevice;
@@ -71,11 +73,11 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
 
     /**
      * Alternate constructor. Uses default instrumentation runner.
-     * 
-     * @param packageName the Android application package that contains the tests to run 
+     *
+     * @param packageName the Android application package that contains the tests to run
      * @param remoteDevice the Android device to execute tests on
      */
-    public RemoteAndroidTestRunner(String packageName, 
+    public RemoteAndroidTestRunner(String packageName,
                                    IDevice remoteDevice) {
         this(packageName, null, remoteDevice);
     }
@@ -116,7 +118,7 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
      */
     public void setClassNames(String[] classNames) {
         StringBuilder classArgBuilder = new StringBuilder();
-        
+
         for (int i = 0; i < classNames.length; i++) {
             if (i != 0) {
                 classArgBuilder.append(CLASS_SEPARATOR);
@@ -147,7 +149,7 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
         if (name == null || value == null) {
             throw new IllegalArgumentException("name or value arguments cannot be null");
         }
-        mArgMap.put(name, value);  
+        mArgMap.put(name, value);
     }
 
     /**
@@ -156,7 +158,7 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     public void addBooleanArg(String name, boolean value) {
         addInstrumentationArg(name, Boolean.toString(value));
     }
-  
+
     /**
      * {@inheritDoc}
      */
@@ -181,17 +183,26 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     /**
      * {@inheritDoc}
      */
-    public void run(ITestRunListener listener) {
+    public void run(ITestRunListener... listeners) {
+        run(Arrays.asList(listeners));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void run(Collection<ITestRunListener> listeners) {
         final String runCaseCommandStr = String.format("am instrument -w -r %s %s",
             getArgsCommand(), getRunnerPath());
         Log.d(LOG_TAG, runCaseCommandStr);
-        mParser = new InstrumentationResultParser(listener);
+        mParser = new InstrumentationResultParser(listeners);
 
         try {
             mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser);
         } catch (IOException e) {
             Log.e(LOG_TAG, e);
-            listener.testRunFailed(e.toString());
+            for (ITestRunListener listener : listeners) {
+                listener.testRunFailed(e.toString());
+            }
         }
     }
 
@@ -205,8 +216,8 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     }
 
     /**
-     * Returns the full instrumentation command line syntax for the provided instrumentation 
-     * arguments.  
+     * Returns the full instrumentation command line syntax for the provided instrumentation
+     * arguments.
      * Returns an empty string if no arguments were specified.
      */
     private String getArgsCommand() {
