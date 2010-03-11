@@ -126,7 +126,7 @@ public final class ProjectState {
             } else if (obj instanceof ProjectState || obj instanceof IProject) {
                 return mProjectState != null && mProjectState.equals(obj);
             } else if (obj instanceof String) {
-                return mRelativePath.equals(obj);
+                return normalizePath(mRelativePath).equals(normalizePath((String) obj));
             }
 
             return false;
@@ -372,10 +372,10 @@ public final class ProjectState {
      */
     public LibraryState needs(ProjectState libraryProject) {
         // compute current location
-        File projectFile = new File(mProject.getLocation().toOSString());
+        File projectFile = mProject.getLocation().toFile();
 
         // get the location of the library.
-        File libraryFile = new File(libraryProject.getProject().getLocation().toOSString());
+        File libraryFile = libraryProject.getProject().getLocation().toFile();
 
         // loop on all libraries and check if the path match
         synchronized (mLibraries) {
@@ -420,7 +420,7 @@ public final class ProjectState {
     public LibraryState updateLibrary(String oldRelativePath, String newRelativePath,
             ProjectState newLibraryState) {
         // compute current location
-        File projectFile = new File(mProject.getLocation().toOSString());
+        File projectFile = mProject.getLocation().toFile();
 
         // loop on all libraries and check if the path matches
         synchronized (mLibraries) {
@@ -511,6 +511,17 @@ public final class ProjectState {
      */
     private String convertPath(String path) {
         return path.replaceAll("/", File.separator); //$NON-NLS-1$
+    }
+
+    /**
+     * Normalizes a relative path.
+     */
+    private String normalizePath(String path) {
+        path = convertPath(path);
+        if (path.endsWith("/")) { //$NON-NLS-1$
+            path = path.substring(0, path.length() - 1);
+        }
+        return path;
     }
 
     @Override
