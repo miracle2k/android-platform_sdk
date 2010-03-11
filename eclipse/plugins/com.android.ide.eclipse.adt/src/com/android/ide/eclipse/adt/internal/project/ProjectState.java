@@ -310,6 +310,15 @@ public final class ProjectState {
     }
 
     /**
+     * Returns whether the project depends on one or more libraries.
+     */
+    public boolean hasLibraries() {
+        synchronized (mLibraries) {
+            return mLibraries.size() > 0;
+        }
+    }
+
+    /**
      * Returns whether the project is missing some required libraries.
      */
     public boolean isMissingLibraries() {

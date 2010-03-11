@@ -128,6 +128,14 @@ public class MockPlatformPackage extends PlatformPackage {
             return null;
         }
 
+        public Integer getProperty(String name, Integer defaultValue) {
+            return defaultValue;
+        }
+
+        public Boolean getProperty(String name, Boolean defaultValue) {
+            return defaultValue;
+        }
+
         public Map<String, String> getProperties() {
             return null;
         }
@@ -171,14 +179,6 @@ public class MockPlatformPackage extends PlatformPackage {
 
         public int compareTo(IAndroidTarget o) {
             throw new UnsupportedOperationException("Implement this as needed for tests");
-        }
-
-        public int getAntBuildRevision() {
-            return 1;
-        }
-
-        public int getAntTemplatesRevision() {
-            return 1;
         }
     }
 }

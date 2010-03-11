@@ -336,13 +336,10 @@ public final class SdkManager {
                 }
 
                 // Ant properties
-                File templateFolder = new File(platform, SdkConstants.FD_TEMPLATES);
-                if (templateFolder.isDirectory()) {
-                    File antPropFile = new File(templateFolder, SdkConstants.FN_ANT_PROP);
-                    Map<String, String> antProp = parsePropertyFile(antPropFile, log);
-                    if (antProp != null) {
-                        map.putAll(antProp);
-                    }
+                File sdkPropFile = new File(platform, SdkConstants.FN_SDK_PROP);
+                Map<String, String> antProp = parsePropertyFile(sdkPropFile, log);
+                if (antProp != null) {
+                    map.putAll(antProp);
                 }
 
                 // api number and name look valid, perform a few more checks

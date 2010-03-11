@@ -120,8 +120,8 @@ public final class SdkConstants {
     public final static String FN_SOURCE_PROP = "source.properties"; //$NON-NLS-1$
     /** properties file for content hash of installed packages */
     public final static String FN_CONTENT_HASH_PROP = "content_hash.properties"; //$NON-NLS-1$
-    /** properties file for Ant revisions */
-    public final static String FN_ANT_PROP = "ant.properties"; //$NON-NLS-1$
+    /** properties file for the SDK */
+    public final static String FN_SDK_PROP = "sdk.properties"; //$NON-NLS-1$
 
     /* Folder Names for Android Projects . */
 
@@ -271,8 +271,12 @@ public final class SdkConstants {
     /** Skin default **/
     public final static String SKIN_DEFAULT = "default";
 
-    /** Ant revision value: Library support introduction */
-    public final static int ANT_REV_LIBRARY = 2;
+    /** SDK property: support for library */
+    public final static String PROP_SDK_SUPPORT_LIBRARY = "sdk.build.support.library"; //$NON-NLS-1$
+    /** SDK property: ant build revision */
+    public final static String PROP_SDK_ANT_BUILD_REVISION = "sdk.ant.build.revision"; //$NON-NLS-1$
+    /** SDK property: ant templates revision */
+    public final static String PROP_SDK_ANT_TEMPLATES_REVISION = "sdk.ant.templates.revision"; //$NON-NLS-1$
 
 
     /** Returns the appropriate name for the 'android' command, which is 'android.bat' for

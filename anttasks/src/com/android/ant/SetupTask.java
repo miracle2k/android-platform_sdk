@@ -171,7 +171,8 @@ public final class SetupTask extends ImportTask {
         }
 
         // check that this version of the custom Ant task can build this target
-        int antBuildVersion = androidTarget.getAntBuildRevision();
+        int antBuildVersion = androidTarget.getProperty(SdkConstants.PROP_SDK_ANT_BUILD_REVISION,
+                1);
         if (antBuildVersion > ANT_RULES_MAX_VERSION) {
             throw new BuildException(String.format(
                     "The project target (%1$s) requires a more recent version of the tools. Please update.",
@@ -199,6 +200,14 @@ public final class SetupTask extends ImportTask {
             System.out.println("Platform Version: " + androidTarget.getVersionName());
         }
         System.out.println("API level: " + androidTarget.getVersion().getApiString());
+
+        // do a quick check to make sure the target supports library.
+        if (isLibrary &&
+                androidTarget.getProperty(SdkConstants.PROP_SDK_SUPPORT_LIBRARY, false) == false) {
+            throw new BuildException(String.format(
+                    "Project target '%1$s' does not support building libraries.",
+                    androidTarget.getFullName()));
+        }
 
         // always check the manifest minSdkVersion.
         checkManifest(antProject, androidTarget.getVersion());
@@ -274,7 +283,7 @@ public final class SetupTask extends ImportTask {
 
             if (rules.isFile() == false) {
                 throw new BuildException(String.format("Build rules file '%s' is missing.",
-                        templateFolder));
+                        rules));
             }
 
             // set the file location to import
@@ -390,7 +399,8 @@ public final class SetupTask extends ImportTask {
 
         // get the build version for the current target. It'll be tested if there's at least
         // one library.
-        int antBuildVersion = androidTarget.getAntBuildRevision();
+        boolean supportLibrary = androidTarget.getProperty(SdkConstants.PROP_SDK_SUPPORT_LIBRARY,
+                false);
 
         int index = 1;
         while (true) {
@@ -401,7 +411,7 @@ public final class SetupTask extends ImportTask {
                 break;
             }
 
-            if (antBuildVersion < SdkConstants.ANT_REV_LIBRARY) {
+            if (supportLibrary == false) {
                 throw new BuildException(String.format(
                         "The build system for this project target (%1$s) does not support libraries",
                         androidTarget.getFullName()));

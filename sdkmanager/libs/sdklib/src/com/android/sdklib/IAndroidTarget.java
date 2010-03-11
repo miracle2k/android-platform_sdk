@@ -181,20 +181,34 @@ public interface IAndroidTarget extends Comparable<IAndroidTarget> {
     String getProperty(String name);
 
     /**
+     * Returns the value of a given property for this target as an Integer value.
+     * <p/> If the value is missing or is not an integer, the method will return the given default
+     * value.
+     * @param name the name of the property to return
+     * @param defaultValue the default value to return.
+     *
+     * @see Integer#decode(String)
+     */
+    Integer getProperty(String name, Integer defaultValue);
+
+    /**
+     * Returns the value of a given property for this target as a Boolean value.
+     * <p/> If the value is missing or is not an boolean, the method will return the given default
+     * value.
+     *
+     * @param name the name of the property to return
+     * @param defaultValue the default value to return.
+     *
+     * @see Boolean#valueOf(String)
+     */
+
+    Boolean getProperty(String name, Boolean defaultValue);
+
+    /**
      * Returns all the properties associated with this target. This can be null if the target has
      * no properties.
      */
     Map<String, String> getProperties();
-
-    /**
-     * Returns the revision number of the Ant build system supported by this target.
-     */
-    int getAntBuildRevision();
-
-    /**
-     * Returns the revision number of the Ant templates supported by this target.
-     */
-    int getAntTemplatesRevision();
 
     /**
      * Returns the USB Vendor ID for the vendor of this target.

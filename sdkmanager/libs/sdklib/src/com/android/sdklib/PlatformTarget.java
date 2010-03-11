@@ -258,30 +258,30 @@ final class PlatformTarget implements IAndroidTarget {
         return mProperties.get(name);
     }
 
+    public Integer getProperty(String name, Integer defaultValue) {
+        try {
+            String value = getProperty(name);
+            if (value != null) {
+                return Integer.decode(value);
+            }
+        } catch (NumberFormatException e) {
+            // ignore, return default value;
+        }
+
+        return defaultValue;
+    }
+
+    public Boolean getProperty(String name, Boolean defaultValue) {
+        String value = getProperty(name);
+        if (value != null) {
+            return Boolean.valueOf(value);
+        }
+
+        return defaultValue;
+    }
+
     public Map<String, String> getProperties() {
         return mProperties; // mProperties is unmodifiable.
-    }
-
-    public int getAntBuildRevision() {
-        try {
-            String value = getProperty("ant.build.revision");
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            // ignore, return 1;
-        }
-
-        return 1;
-    }
-
-    public int getAntTemplatesRevision() {
-        try {
-            String value = getProperty("ant.templates.revision");
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            // ignore, return 1;
-        }
-
-        return 1;
     }
 
     // ---- platform only methods.

@@ -21,6 +21,7 @@ import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.SdkConstants;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 
 import org.eclipse.core.resources.IMarker;
@@ -176,6 +177,16 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                     if (sdkIsLoaded && target != null) {
                         // first make sure the target has loaded its data
                         Sdk.getCurrent().checkAndLoadTargetData(target, null /*project*/);
+
+                        // now do a quick check to make sure the project's target is compatible
+                        // with library (if applicable).
+                        if (state.hasLibraries() &&
+                                target.getProperty(
+                                        SdkConstants.PROP_SDK_SUPPORT_LIBRARY, false) == false) {
+                            AdtPlugin.printErrorToConsole(iProject, String.format(
+                                    "Target '%1$s' does not support building project with libraries.",
+                                    target.getFullName()));
+                        }
 
                         String targetName = target.getClasspathName();
 
