@@ -34,7 +34,6 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
-import com.android.sdklib.internal.project.ApkConfigurationHelper;
 import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
@@ -366,7 +365,7 @@ public final class Sdk  {
                 state.setApkSettings(settings);
 
                 // save the project settings into the project persistent property
-                ApkConfigurationHelper.setProperties(properties, settings);
+                settings.write(properties);
             }
 
             // we are done with the modification. Save the property file.

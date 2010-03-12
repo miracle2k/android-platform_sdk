@@ -29,6 +29,16 @@ public class ApkSettings {
     }
 
     /**
+     * Creates an ApkSettings and fills it from the project settings read from a
+     * {@link ProjectProperties} file.
+     */
+    public ApkSettings(ProjectProperties properties) {
+        boolean splitByDensity = Boolean.parseBoolean(properties.getProperty(
+                ProjectProperties.PROPERTY_SPLIT_BY_DENSITY));
+        setSplitByDensity(splitByDensity);
+    }
+
+    /**
      * Returns a map of configuration filters to be used by the -c option of aapt.
      * <p/>The map stores (key, value) pairs where the keys is a filename modifier and the value
      * is the parameter to pass to aapt through the -c option.
@@ -54,6 +64,16 @@ public class ApkSettings {
 
     public void setSplitByDensity(boolean split) {
         mSplitByDpi = split;
+    }
+
+    /**
+     * Writes the receiver into a {@link ProjectProperties}.
+     * @param properties the {@link ProjectProperties} in which to store the settings.
+     */
+    public void write(ProjectProperties properties) {
+        // TODO: this is not supported at the moment, so we dont write the property into the file.
+//        propertiessetProperty(ProjectProperties.PROPERTY_SPLIT_BY_DENSITY,
+//                Boolean.toString(isSplitByDpi()));
     }
 
     @Override
