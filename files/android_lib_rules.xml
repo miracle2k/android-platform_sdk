@@ -104,21 +104,8 @@
         </aaptexec>
     </target>
 
-    <!-- Generates java classes from .aidl files. -->
-    <target name="-aidl" depends="-dirs">
-        <echo>Compiling aidl files into Java classes...</echo>
-        <apply executable="${aidl}" failonerror="true">
-            <arg value="-p${android.aidl}" />
-            <arg value="-I${source.absolute.dir}" />
-            <arg value="-o${gen.absolute.dir}" />
-            <fileset dir="${source.absolute.dir}">
-                <include name="**/*.aidl" />
-            </fileset>
-        </apply>
-    </target>
-
     <!-- Compiles this project's .java files into .class files. -->
-    <target name="compile" depends="-resource-src, -aidl"
+    <target name="compile" depends="-resource-src"
                 description="Compiles project's .java files into .class files">
         <!-- If android rules are used for a test project, its classpath should include
              tested project's location -->
