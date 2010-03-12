@@ -59,13 +59,13 @@ import java.util.regex.Pattern;
  * See {@link UiTextAttributeNode} for more information.
  */
 public class UiResourceAttributeNode extends UiTextAttributeNode {
-    
+
     private ResourceType mType;
-    
+
     public UiResourceAttributeNode(ResourceType type,
             AttributeDescriptor attributeDescriptor, UiElementNode uiParent) {
         super(attributeDescriptor, uiParent);
-        
+
         mType = type;
     }
 
@@ -93,17 +93,17 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
         // Fixes missing text borders under GTK... also requires adding a 1-pixel margin
         // for the text field below
         toolkit.paintBordersFor(composite);
-        
+
         final Text text = toolkit.createText(composite, getCurrentValue());
         GridData gd = new GridData(GridData.FILL_HORIZONTAL);
         gd.horizontalIndent = 1;  // Needed by the fixed composite borders under GTK
         text.setLayoutData(gd);
         Button browseButton = toolkit.createButton(composite, "Browse...", SWT.PUSH);
-        
+
         setTextWidget(text);
 
         // TODO Add a validator using onAddModifyListener
-        
+
         browseButton.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -114,7 +114,7 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
             }
         });
     }
-    
+
     /**
      * Shows a dialog letting the user choose a set of enum, and returns a string
      * containing the result.
@@ -128,7 +128,7 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
             // get the resource repository for this project and the system resources.
             IResourceRepository projectRepository =
                 ResourceManager.getInstance().getProjectResources(project);
-            
+
             if (mType != null) {
                 // get the Target Data to get the system resources
                 AndroidTargetData data = editor.getTargetData();
@@ -162,7 +162,7 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
 
         return null;
     }
-    
+
     /**
      * Gets all the values one could use to auto-complete a "resource" value in an XML
      * content assist.
@@ -170,11 +170,11 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
      * Typically the user is editing the value of an attribute in a resource XML, e.g.
      *   <pre> "&lt;Button android:test="@string/my_[caret]_string..." </pre>
      * <p/>
-     * 
+     *
      * "prefix" is the value that the user has typed so far (or more exactly whatever is on the
      * left side of the insertion point). In the example above it would be "@style/my_".
      * <p/>
-     * 
+     *
      * To avoid a huge long list of values, the completion works on two levels:
      * <ul>
      * <li> If a resource type as been typed so far (e.g. "@style/"), then limit the values to
@@ -183,14 +183,14 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
      *      completed. So if the project has only strings and layouts resources, for example,
      *      the returned list will only include "@string/" and "@layout/".
      * </ul>
-     * 
+     *
      * Finally if anywhere in the string we find the special token "android:", we use the
      * current framework system resources rather than the project resources.
      * This works for both "@android:style/foo" and "@style/android:foo" conventions even though
      * the reconstructed name will always be of the former form.
-     * 
+     *
      * Note that "android:" here is a keyword specific to Android resources and should not be
-     * mixed with an XML namespace for an XML attribute name. 
+     * mixed with an XML namespace for an XML attribute name.
      */
     @Override
     public String[] getPossibleValues(String prefix) {
@@ -200,7 +200,7 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
         UiElementNode uiNode = getUiParent();
         AndroidEditor editor = uiNode.getEditor();
 
-        if (prefix == null || prefix.indexOf("android:") < 0) {
+        if (prefix == null || prefix.indexOf("android:") < 0) {                 //$NON-NLS-1$
             IProject project = editor.getProject();
             if (project != null) {
                 // get the resource repository for this project and the system resources.
@@ -224,7 +224,7 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
         // Get the type name from the prefix, if any. It's any word before the / if there's one
         String typeName = null;
         if (prefix != null) {
-            Matcher m = Pattern.compile(".*?([a-z]+)/.*").matcher(prefix);
+            Matcher m = Pattern.compile(".*?([a-z]+)/.*").matcher(prefix);      //$NON-NLS-1$
             if (m.matches()) {
                 typeName = m.group(1);
             }
@@ -239,10 +239,10 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
             // resource types.
 
             for (ResourceType resType : resTypes) {
-                results.add("@" + resType.getName() + "/");
+                results.add("@" + resType.getName() + "/");         //$NON-NLS-1$ //$NON-NLS-2$
                 if (resType == ResourceType.ID) {
                     // Also offer the + version to create an id from scratch
-                    results.add("@+" + resType.getName() + "/");
+                    results.add("@+" + resType.getName() + "/");    //$NON-NLS-1$ //$NON-NLS-2$
                 }
             }
         } else if (repository != null) {
@@ -253,14 +253,14 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
             if (resType != null) {
                 StringBuilder sb = new StringBuilder();
                 sb.append('@');
-                if (prefix.indexOf('+') >= 0) {
+                if (prefix != null && prefix.indexOf('+') >= 0) {
                     sb.append('+');
                 }
-                
+
                 if (isSystem) {
-                    sb.append("android:");
+                    sb.append("android:");                                  //$NON-NLS-1$
                 }
-                
+
                 sb.append(typeName).append('/');
                 String base = sb.toString();
 
