@@ -50,6 +50,7 @@ final class Device implements IDevice {
 
     /** Device properties. */
     private final Map<String, String> mProperties = new HashMap<String, String>();
+    private final Map<String, String> mMountPoints = new HashMap<String, String>();
 
     private final ArrayList<Client> mClients = new ArrayList<Client>();
     private DeviceMonitor mMonitor;
@@ -162,6 +163,10 @@ final class Device implements IDevice {
      */
     public String getProperty(String name) {
         return mProperties.get(name);
+    }
+
+    public String getMountPoint(String name) {
+        return mMountPoints.get(name);
     }
 
 
@@ -416,6 +421,10 @@ final class Device implements IDevice {
 
     void addProperty(String label, String value) {
         mProperties.put(label, value);
+    }
+
+    void setMountingPoint(String name, String value) {
+        mMountPoints.put(name, value);
     }
 
     /**

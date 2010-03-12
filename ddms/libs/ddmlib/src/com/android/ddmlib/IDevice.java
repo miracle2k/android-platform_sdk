@@ -45,6 +45,10 @@ public interface IDevice {
     /** @deprecated Use {@link #PROP_BUILD_API_LEVEL}. */
     public final static String PROP_BUILD_VERSION_NUMBER = PROP_BUILD_API_LEVEL;
 
+    public final static String MNT_EXTERNAL_STORAGE = "EXTERNAL_STORAGE"; //$NON-NLS-1$
+    public final static String MNT_ROOT = "ANDROID_ROOT"; //$NON-NLS-1$
+    public final static String MNT_DATA = "ANDROID_DATA"; //$NON-NLS-1$
+
     /**
      * The state of a device.
      */
@@ -109,6 +113,16 @@ public interface IDevice {
      * @return the value or <code>null</code> if the property does not exist.
      */
     public String getProperty(String name);
+
+    /**
+     * Returns a mount point.
+     * @param name the name of the mount point to return
+     *
+     * @see #MNT_EXTERNAL_STORAGE
+     * @see #MNT_ROOT
+     * @see #MNT_DATA
+     */
+    public String getMountPoint(String name);
 
     /**
      * Returns if the device is ready.

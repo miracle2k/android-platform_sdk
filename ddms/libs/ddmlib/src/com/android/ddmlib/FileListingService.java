@@ -45,6 +45,8 @@ public final class FileListingService {
     public final static String DIRECTORY_DATA = "data"; //$NON-NLS-1$
     /** Top level sdcard folder. */
     public final static String DIRECTORY_SDCARD = "sdcard"; //$NON-NLS-1$
+    /** Top level mount folder. */
+    public final static String DIRECTORY_MNT = "mnt"; //$NON-NLS-1$
     /** Top level system folder. */
     public final static String DIRECTORY_SYSTEM = "system"; //$NON-NLS-1$
     /** Top level temp folder. */
@@ -56,7 +58,8 @@ public final class FileListingService {
         DIRECTORY_DATA,
         DIRECTORY_SDCARD,
         DIRECTORY_SYSTEM,
-        DIRECTORY_TEMP
+        DIRECTORY_TEMP,
+        DIRECTORY_MNT,
     };
 
     public static final long REFRESH_RATE = 5000L;
@@ -206,7 +209,7 @@ public final class FileListingService {
          * Returns the extra info for the entry.
          * <p/>For a link, it will be a description of the link.
          * <p/>For an application apk file it will be the application package as returned
-         * by the Package Manager.  
+         * by the Package Manager.
          */
         public String getInfo() {
             return info;
