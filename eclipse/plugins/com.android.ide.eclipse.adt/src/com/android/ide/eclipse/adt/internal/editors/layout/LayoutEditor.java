@@ -20,6 +20,10 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.IUnknownDescriptorProvider;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.CustomViewDescriptorService;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.GraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiContentOutlinePage;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiPropertySheetPage;
@@ -28,15 +32,19 @@ import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiActions;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
+import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.gef.ui.parts.TreeViewer;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IShowEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
@@ -47,6 +55,8 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.w3c.dom.Document;
+
+import java.util.HashMap;
 
 /**
  * Multi-page form editor for /res/layout XML files.
@@ -66,6 +76,10 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
     private UiPropertySheetPage mPropertyPage;
 
     private UiEditorActions mUiEditorActions;
+
+    private final HashMap<String, ElementDescriptor> mUnknownDescriptorMap =
+        new HashMap<String, ElementDescriptor>();
+
 
     /**
      * Flag indicating if the replacement file is due to a config change.
@@ -412,11 +426,77 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
             mUiRootNode = (UiDocumentNode) desc.createUiNode();
             mUiRootNode.setEditor(this);
 
+            mUiRootNode.setUnknownDescriptorProvider(new IUnknownDescriptorProvider() {
+
+                public ElementDescriptor getDescriptor(String xmlLocalName) {
+
+                    ElementDescriptor desc = mUnknownDescriptorMap.get(xmlLocalName);
+
+                    if (desc == null) {
+                        desc = createUnknownDescriptor(xmlLocalName);
+                        mUnknownDescriptorMap.put(xmlLocalName, desc);
+                    }
+
+                    return desc;
+                }
+            });
+
             onDescriptorsChanged(doc);
         }
     }
 
+    /**
+     * Creates a new {@link ElementDescriptor} for an unknown XML local name
+     * (i.e. one that was not mapped by the current descriptors).
+     * <p/>
+     * Since we deal with layouts, we returns either a descriptor for a custom view
+     * or one for the base View.
+     *
+     * @param xmlLocalName The XML local name to match.
+     * @return A non-null {@link ElementDescriptor}.
+     */
+    private ElementDescriptor createUnknownDescriptor(String xmlLocalName) {
+        IEditorInput editorInput = getEditorInput();
+        if (editorInput instanceof IFileEditorInput) {
+            IFileEditorInput fileInput = (IFileEditorInput)editorInput;
+            IProject project = fileInput.getFile().getProject();
+
+            // Check if we can find a custom view specific to this project.
+            ElementDescriptor desc = CustomViewDescriptorService.getInstance().getDescriptor(
+                    project, xmlLocalName);
+
+            if (desc != null) {
+                return desc;
+            }
+
+            // If we didn't find a custom view, reuse the base View descriptor.
+            // This is a layout after all, so every XML node should represent
+            // a view.
+
+            Sdk currentSdk = Sdk.getCurrent();
+            if (currentSdk != null) {
+                IAndroidTarget target = currentSdk.getTarget(project);
+                if (target != null) {
+                    AndroidTargetData data = currentSdk.getTargetData(target);
+                    desc = data.getLayoutDescriptors().getBaseViewDescriptor();
+                }
+            }
+
+            if (desc != null) {
+                return desc;
+            }
+        }
+
+        // We get here if the editor input is not of the right type or if the
+        // SDK hasn't finished loading. In either case, return something just
+        // because we should not return null.
+        return new ViewElementDescriptor(xmlLocalName, xmlLocalName);
+    }
+
     private void onDescriptorsChanged(Document document) {
+
+        mUnknownDescriptorMap.clear();
+
         if (document != null) {
             mUiRootNode.loadFromXmlNode(document);
         } else {

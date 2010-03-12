@@ -198,10 +198,12 @@ public final class CustomViewDescriptorService {
         List<ElementDescriptor> builtInList = null;
 
         Sdk currentSdk = Sdk.getCurrent();
-        IAndroidTarget target = currentSdk == null ? null : currentSdk.getTarget(project);
-        if (target != null) {
-            AndroidTargetData data = currentSdk.getTargetData(target);
-            builtInList = data.getLayoutDescriptors().getViewDescriptors();
+        if (currentSdk != null) {
+            IAndroidTarget target = currentSdk.getTarget(project);
+            if (target != null) {
+                AndroidTargetData data = currentSdk.getTargetData(target);
+                builtInList = data.getLayoutDescriptors().getViewDescriptors();
+            }
         }
 
         // give up if there's no type

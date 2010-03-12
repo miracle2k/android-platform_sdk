@@ -20,10 +20,10 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.IUnknownDescriptorProvider;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.SeparatorAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.CustomViewDescriptorService;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors;
@@ -33,8 +33,6 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.ui.IEditorInput;
-import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.views.properties.IPropertyDescriptor;
 import org.eclipse.ui.views.properties.IPropertySource;
 import org.w3c.dom.Attr;
@@ -113,6 +111,9 @@ public class UiElementNode implements IPropertySource {
     /** An optional list of {@link IUiUpdateListener}. Most element nodes will not have any
      *  listeners attached, so the list is only created on demand and can be null. */
     private ArrayList<IUiUpdateListener> mUiUpdateListeners;
+    /** A provider that knows how to create {@link ElementDescriptor} from unmapped XML names.
+     *  The default is to have one that creates new {@link ElementDescriptor}. */
+    private IUnknownDescriptorProvider mUnknownDescProvider;
     /** Error Flag */
     private boolean mHasError;
     /** Temporary data used by the editors. This data is not sync'ed with the XML */
@@ -504,6 +505,65 @@ public class UiElementNode implements IPropertySource {
     }
 
     /**
+     * Returns the provider that knows how to create {@link ElementDescriptor} from unmapped
+     * XML names.
+     * <p/>
+     * The default is to have one that creates new {@link ElementDescriptor}.
+     * <p/>
+     * There is only one such provider in any UI model tree, attached to the root node.
+     *
+     * @return An instance of {@link IUnknownDescriptorProvider}. Can never be null.
+     */
+    public IUnknownDescriptorProvider getUnknownDescriptorProvider() {
+        if (mUiParent != null) {
+            return mUiParent.getUnknownDescriptorProvider();
+        }
+        if (mUnknownUiAttributes == null) {
+            // Create the default one on demand.
+            mUnknownDescProvider = new IUnknownDescriptorProvider() {
+
+                private final HashMap<String, ElementDescriptor> mMap =
+                    new HashMap<String, ElementDescriptor>();
+
+                /**
+                 * The default is to create a new ElementDescriptor wrapping
+                 * the unknown XML local name and reuse previously created descriptors.
+                 */
+                public ElementDescriptor getDescriptor(String xmlLocalName) {
+
+                    ElementDescriptor desc = mMap.get(xmlLocalName);
+
+                    if (desc == null) {
+                        desc = new ElementDescriptor(xmlLocalName);
+                        mMap.put(xmlLocalName, desc);
+                    }
+
+                    return desc;
+                }
+            };
+        }
+        return mUnknownDescProvider;
+    }
+
+    /**
+     * Sets the provider that knows how to create {@link ElementDescriptor} from unmapped
+     * XML names.
+     * <p/>
+     * The default is to have one that creates new {@link ElementDescriptor}.
+     * <p/>
+     * There is only one such provider in any UI model tree, attached to the root node.
+     *
+     * @param unknownDescProvider The new provider to use. Must not be null.
+     */
+    public void setUnknownDescriptorProvider(IUnknownDescriptorProvider unknownDescProvider) {
+        if (mUiParent == null) {
+            mUnknownDescProvider = unknownDescProvider;
+        } else {
+            mUiParent.setUnknownDescriptorProvider(unknownDescProvider);
+        }
+    }
+
+    /**
      * Adds a new {@link IUiUpdateListener} to the internal update listener list.
      */
     public void addUpdateListener(IUiUpdateListener listener) {
@@ -828,20 +888,9 @@ public class UiElementNode implements IPropertySource {
                             false /* recursive */);
                     if (desc == null) {
                         // Unknown node. Create a temporary descriptor for it.
-                        // most important we want to auto-add unknown attributes to it.
-                        AndroidEditor editor = getEditor();
-                        IEditorInput editorInput = editor.getEditorInput();
-                        if (editorInput instanceof IFileEditorInput) {
-                            IFileEditorInput fileInput = (IFileEditorInput)editorInput;
-                            desc = CustomViewDescriptorService.getInstance().getDescriptor(
-                                    fileInput.getFile().getProject(), element_name);
-                            if (desc == null) {
-                                desc = new ElementDescriptor(element_name);
-                            }
-                        } else {
-                            desc = new ElementDescriptor(element_name);
-                            // TODO associate a new "?" icon to this descriptor.
-                        }
+                        // We'll add unknown attributes to it later.
+                        IUnknownDescriptorProvider p = getUnknownDescriptorProvider();
+                        desc = p.getDescriptor(element_name);
                     }
                     structure_changed = true;
                     ui_node = appendNewUiChild(desc);

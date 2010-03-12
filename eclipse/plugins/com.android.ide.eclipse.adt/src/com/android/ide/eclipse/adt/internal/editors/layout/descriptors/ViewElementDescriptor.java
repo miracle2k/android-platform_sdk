@@ -134,8 +134,6 @@ public final class ViewElementDescriptor extends ElementDescriptor {
      * @param xml_name The XML element node name. Case sensitive.
      * @param fullClassName The fully qualified class name the {@link ViewElementDescriptor} is
      * representing.
-     *
-     *  @deprecated Never used. We should clean it up someday.
      */
     public ViewElementDescriptor(String xml_name, String fullClassName) {
         super(xml_name);

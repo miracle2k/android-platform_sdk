@@ -60,23 +60,45 @@ public final class LayoutDescriptors implements IDescriptorProvider {
     /** Read-Only list of View Descriptors. */
     private List<ElementDescriptor> mROViewDescriptors;
 
-    /** @return the document descriptor. Contains all layouts and views linked together. */
+    /** The descriptor matching android.view.View. */
+    private ElementDescriptor mBaseViewDescriptor;
+
+    /** Returns the document descriptor. Contains all layouts and views linked together. */
     public DocumentDescriptor getDescriptor() {
         return mRootDescriptor;
     }
 
-    /** @return The read-only list of all known ViewLayout descriptors. */
+    /** Returns the read-only list of all known ViewLayout descriptors. */
     public List<ElementDescriptor> getLayoutDescriptors() {
         return mROLayoutDescriptors;
     }
 
-    /** @return The read-only list of all known View (not ViewLayout) descriptors. */
+    /** Returns the read-only list of all known View (not ViewLayout) descriptors. */
     public List<ElementDescriptor> getViewDescriptors() {
         return mROViewDescriptors;
     }
 
     public ElementDescriptor[] getRootElementDescriptors() {
         return mRootDescriptor.getChildren();
+    }
+
+    /**
+     * Returns the descriptor matching android.view.View.
+     */
+    public ElementDescriptor getBaseViewDescriptor() {
+        if (mBaseViewDescriptor == null) {
+            for (ElementDescriptor desc : mViewDescriptors) {
+                if (desc instanceof ViewElementDescriptor) {
+                    ViewElementDescriptor viewDesc = (ViewElementDescriptor) desc;
+                    if (AndroidConstants.CLASS_VIEW.equals(viewDesc.getFullClassName())) {
+                        mBaseViewDescriptor = viewDesc;
+                        break;
+                    }
+                }
+
+            }
+        }
+        return mBaseViewDescriptor;
     }
 
     /**
@@ -140,6 +162,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         mLayoutDescriptors  = newLayouts;
         mRootDescriptor.setChildren(newDescriptors);
 
+        mBaseViewDescriptor = null;
         mROLayoutDescriptors = Collections.unmodifiableList(mLayoutDescriptors);
         mROViewDescriptors = Collections.unmodifiableList(mViewDescriptors);
     }
