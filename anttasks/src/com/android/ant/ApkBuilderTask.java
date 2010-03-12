@@ -19,7 +19,6 @@ package com.android.ant;
 import com.android.apkbuilder.ApkBuilder.ApkCreationException;
 import com.android.apkbuilder.internal.ApkBuilderImpl;
 import com.android.apkbuilder.internal.ApkBuilderImpl.ApkFile;
-import com.android.sdklib.internal.project.ApkConfigurationHelper;
 import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
@@ -245,7 +244,7 @@ public class ApkBuilderTask extends Task {
             ProjectProperties properties = ProjectProperties.load(baseDir.getAbsolutePath(),
                     PropertyType.DEFAULT);
 
-            ApkSettings apkSettings = ApkConfigurationHelper.getSettings(properties);
+            ApkSettings apkSettings = new ApkSettings(properties);
             if (apkSettings != null) {
                 Map<String, String> apkFilters = apkSettings.getResourceFilters();
                 if (apkFilters.size() > 0) {

@@ -19,7 +19,6 @@ package com.android.ide.eclipse.adt.internal.project;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
-import com.android.sdklib.internal.project.ApkConfigurationHelper;
 import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
 
@@ -155,7 +154,7 @@ public final class ProjectState {
         mProperties = properties;
 
         // load the ApkSettings
-        mApkSettings = ApkConfigurationHelper.getSettings(properties);
+        mApkSettings = new ApkSettings(properties);
 
         // load the libraries
         synchronized (mLibraries) {
