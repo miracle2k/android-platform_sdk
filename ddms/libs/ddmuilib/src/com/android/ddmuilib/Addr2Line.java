@@ -144,7 +144,7 @@ public class Addr2Line {
         command[1] = "-C";
         command[2] = "-f";
         command[3] = "-e";
-        command[4] = symbols + mLibrary.replaceAll("libc\\.so", "libc_debug\\.so");
+        command[4] = symbols + mLibrary;
 
         try {
             // attempt to start the process
