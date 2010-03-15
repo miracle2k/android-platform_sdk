@@ -168,6 +168,10 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
             throw new UnsupportedOperationException();
         }
 
+        public String getMountPoint(String name) {
+            throw new UnsupportedOperationException();
+        }
+
         public RawImage getScreenshot() throws IOException {
             throw new UnsupportedOperationException();
         }

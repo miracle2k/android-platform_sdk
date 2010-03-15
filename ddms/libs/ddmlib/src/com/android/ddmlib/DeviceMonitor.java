@@ -420,6 +420,10 @@ final class DeviceMonitor {
             device.executeShellCommand(GetPropReceiver.GETPROP_COMMAND,
                     new GetPropReceiver(device));
 
+            queryNewDeviceForMountingPoint(device, IDevice.MNT_EXTERNAL_STORAGE);
+            queryNewDeviceForMountingPoint(device, IDevice.MNT_DATA);
+            queryNewDeviceForMountingPoint(device, IDevice.MNT_ROOT);
+
             // now get the emulator Virtual Device name (if applicable).
             if (device.isEmulator()) {
                 EmulatorConsole console = EmulatorConsole.getConsole(device);
@@ -430,6 +434,25 @@ final class DeviceMonitor {
         } catch (IOException e) {
             // if we can't get the build info, it doesn't matter too much
         }
+    }
+
+    private void queryNewDeviceForMountingPoint(final Device device, final String name)
+            throws IOException {
+        device.executeShellCommand("echo $" + name, new MultiLineReceiver() { //$NON-NLS-1$
+            public boolean isCancelled() {
+                return false;
+            }
+
+            @Override
+            public void processNewLines(String[] lines) {
+                for (String line : lines) {
+                    if (line.length() > 0) {
+                        // this should be the only one.
+                        device.setMountingPoint(name, line);
+                    }
+                }
+            }
+        });
     }
 
     /**
