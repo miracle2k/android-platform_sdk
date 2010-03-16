@@ -155,6 +155,9 @@ public class InstrumentationResultParser extends MultiLineReceiver {
 
     private static final String LOG_TAG = "InstrumentationResultParser";
 
+    /** Error message supplied when no parseable test results are received from test run. */
+    static final String NO_TEST_RESULTS_MSG = "No test results";
+
     /**
      * Creates the InstrumentationResultParser.
      *
@@ -468,7 +471,10 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     @Override
     public void done() {
         super.done();
-        if (!mTestRunFailReported && mNumTestsExpected > mNumTestsRun) {
+        if (!mTestRunFailReported && !mTestStartReported) {
+            // no results
+            handleTestRunFailed(NO_TEST_RESULTS_MSG);
+        } else if (!mTestRunFailReported && mNumTestsExpected > mNumTestsRun) {
             final String message =
                 String.format("Test run incomplete. Expected %d tests, received %d",
                         mNumTestsExpected, mNumTestsRun);
