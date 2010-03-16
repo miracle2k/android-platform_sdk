@@ -8,6 +8,7 @@ import com.android.hierarchyviewer.ui.util.PngFileFilter;
 import com.android.hierarchyviewer.ui.util.IconLoader;
 
 import javax.swing.JComponent;
+import javax.swing.JScrollPane;
 import javax.swing.Timer;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -74,7 +75,7 @@ class ScreenViewer extends JPanel implements ActionListener {
     private JSlider zoomSlider;
 
     ScreenViewer(Workspace workspace, IDevice device, int spacing) {
-        setLayout(new BorderLayout());
+        setLayout(new GridBagLayout());
         setOpaque(false);
 
         this.workspace = workspace;
@@ -85,10 +86,14 @@ class ScreenViewer extends JPanel implements ActionListener {
         timer.setRepeats(true);
 
         JPanel panel = buildViewerAndControls();
-        add(panel, BorderLayout.WEST);
+        add(panel, new GridBagConstraints(0, 0, 1, 1, 0.3f, 1.0f,
+                GridBagConstraints.FIRST_LINE_START, GridBagConstraints.BOTH,
+                new Insets(0, 0, 0, 0), 0, 0));
 
         JPanel loupePanel = buildLoupePanel(spacing);
-        add(loupePanel, BorderLayout.CENTER);
+        add(loupePanel, new GridBagConstraints(1, 0, 1, 1, 0.7f, 1.0f,
+                GridBagConstraints.FIRST_LINE_START, GridBagConstraints.BOTH,
+                new Insets(0, 0, 0, 0), 0, 0));
 
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -125,9 +130,12 @@ class ScreenViewer extends JPanel implements ActionListener {
         JPanel panel = new JPanel(new GridBagLayout());
         crosshair = new Crosshair(new ScreenshotViewer());
         crosshair.addMouseWheelListener(new WheelZoomListener());
-        panel.add(crosshair,
-                new GridBagConstraints(0, y++, 2, 1, 1.0f, 0.0f,
-                    GridBagConstraints.FIRST_LINE_START, GridBagConstraints.NONE,
+        JScrollPane scroller = new JScrollPane(crosshair);
+        scroller.setPreferredSize(new Dimension(320, 480));
+        scroller.setBorder(null);
+        panel.add(scroller,
+                new GridBagConstraints(0, y++, 2, 1, 1.0f, 1.0f,
+                    GridBagConstraints.FIRST_LINE_START, GridBagConstraints.BOTH,
                     new Insets(0, 0, 0, 0), 0, 0));
         buildSlider(panel, "Overlay:", "0%", "100%", 0, 100, 30, 1).addChangeListener(
                 new ChangeListener() {
@@ -474,8 +482,10 @@ class ScreenViewer extends JPanel implements ActionListener {
         Point crosshair = new Point();
         private int width;
         private int height;
+        private final ScreenshotViewer screenshotViewer;
 
         Crosshair(ScreenshotViewer screenshotViewer) {
+            this.screenshotViewer = screenshotViewer;
             setOpaque(true);
             setLayout(new BorderLayout());
             add(screenshotViewer);
@@ -507,6 +517,16 @@ class ScreenViewer extends JPanel implements ActionListener {
             status.showPixel(crosshair.x, crosshair.y);
 
             repaint();
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            return screenshotViewer.getPreferredSize();
+        }
+
+        @Override
+        public Dimension getMaximumSize() {
+            return screenshotViewer.getPreferredSize();
         }
 
         @Override
@@ -660,7 +680,7 @@ class ScreenViewer extends JPanel implements ActionListener {
             boolean resize = false;
             isLoading = true;
             try {
-                if (rawImage != null && rawImage.bpp == 16) {
+                if (rawImage != null) {
                     if (image == null || rawImage.width != image.getWidth() ||
                             rawImage.height != image.getHeight()) {
                         image = new BufferedImage(rawImage.width, rawImage.height,
@@ -669,21 +689,13 @@ class ScreenViewer extends JPanel implements ActionListener {
                         resize = true;
                     }
 
-                    byte[] buffer = rawImage.data;
-                    int index = 0;
-                    for (int y = 0 ; y < rawImage.height ; y++) {
-                        for (int x = 0 ; x < rawImage.width ; x++) {
-                            int value = buffer[index++] & 0x00FF;
-                            value |= (buffer[index++] << 8) & 0x0FF00;
-
-                            int r = ((value >> 11) & 0x01F) << 3;
-                            int g = ((value >> 5) & 0x03F) << 2;
-                            int b = ((value     ) & 0x01F) << 3;
-
-                            scanline[x] = 0xFF << 24 | r << 16 | g << 8 | b;
-                        }
-                        image.setRGB(0, y, rawImage.width, 1, scanline,
-                                0, rawImage.width);
+                    switch (rawImage.bpp) {
+                        case 16:
+                            rawImage16toARGB(rawImage);
+                            break;
+                        case 32:
+                            rawImage32toARGB(rawImage);
+                            break;
                     }
                 }
             } finally {
@@ -691,6 +703,77 @@ class ScreenViewer extends JPanel implements ActionListener {
             }
 
             return resize;
+        }
+        
+        private int getMask(int length) {
+            int res = 0;
+            for (int i = 0 ; i < length ; i++) {
+                res = (res << 1) + 1;
+            }
+    
+            return res;
+        }
+
+        private void rawImage32toARGB(RawImage rawImage) {
+            byte[] buffer = rawImage.data;
+            int index = 0;
+
+            final int redOffset = rawImage.red_offset;
+            final int redLength = rawImage.red_length;
+            final int redMask = getMask(redLength);
+            final int greenOffset = rawImage.green_offset;
+            final int greenLength = rawImage.green_length;
+            final int greenMask = getMask(greenLength);
+            final int blueOffset = rawImage.blue_offset;
+            final int blueLength = rawImage.blue_length;
+            final int blueMask = getMask(blueLength);
+            final int alphaLength = rawImage.alpha_length;
+            final int alphaOffset = rawImage.alpha_offset;
+            final int alphaMask = getMask(alphaLength);
+
+            for (int y = 0 ; y < rawImage.height ; y++) {
+                for (int x = 0 ; x < rawImage.width ; x++) {
+                    int value = buffer[index++] & 0x00FF;
+                    value |= (buffer[index++] & 0x00FF) << 8;
+                    value |= (buffer[index++] & 0x00FF) << 16;
+                    value |= (buffer[index++] & 0x00FF) << 24;
+
+                    int r = ((value >>> redOffset) & redMask) << (8 - redLength);
+                    int g = ((value >>> greenOffset) & greenMask) << (8 - greenLength);
+                    int b = ((value >>> blueOffset) & blueMask) << (8 - blueLength);
+                    int a = 0xFF;
+
+                    if (alphaLength != 0) {
+                        a = ((value >>> alphaOffset) & alphaMask) << (8 - alphaLength);
+                    }
+
+                    scanline[x] = a << 24 | r << 16 | g << 8 | b;
+                }
+
+                image.setRGB(0, y, rawImage.width, 1, scanline,
+                        0, rawImage.width);
+            }
+        }
+
+        private void rawImage16toARGB(RawImage rawImage) {
+            byte[] buffer = rawImage.data;
+            int index = 0;
+
+            for (int y = 0 ; y < rawImage.height ; y++) {
+                for (int x = 0 ; x < rawImage.width ; x++) {
+                    int value = buffer[index++] & 0x00FF;
+                    value |= (buffer[index++] << 8) & 0x0FF00;
+
+                    int r = ((value >> 11) & 0x01F) << 3;
+                    int g = ((value >> 5) & 0x03F) << 2;
+                    int b = ((value     ) & 0x01F) << 3;
+
+                    scanline[x] = 0xFF << 24 | r << 16 | g << 8 | b;
+                }
+
+                image.setRGB(0, y, rawImage.width, 1, scanline,
+                        0, rawImage.width);
+            }
         }
 
         @Override

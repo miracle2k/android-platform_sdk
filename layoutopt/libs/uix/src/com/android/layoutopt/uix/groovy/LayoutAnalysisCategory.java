@@ -42,7 +42,8 @@ public class LayoutAnalysisCategory {
     private static final String ANDROID_PADDING_BOTTOM = "android:paddingBottom";
     private static final String ANDROID_LAYOUT_WIDTH = "android:layout_width";
     private static final String ANDROID_LAYOUT_HEIGHT = "android:layout_height";
-    private static final String VALUE_FILL_PARENT = "match_parent";
+    private static final String VALUE_FILL_PARENT = "fill_parent";
+    private static final String VALUE_MATCH_PARENT = "match_parent";
     private static final String VALUE_WRAP_CONTENT = "wrap_content";
     
     private static final String[] sContainers = new String[] {
@@ -121,7 +122,8 @@ public class LayoutAnalysisCategory {
      * Returns whether this node's width is match_parent.
      */
     public static boolean isWidthFillParent(Element element) {
-        return element.getAttribute(ANDROID_LAYOUT_WIDTH).equals(VALUE_FILL_PARENT);
+        final String attribute = element.getAttribute(ANDROID_LAYOUT_WIDTH);
+        return attribute.equals(VALUE_FILL_PARENT) || attribute.equals(VALUE_MATCH_PARENT);
     }
 
     /**
@@ -135,7 +137,8 @@ public class LayoutAnalysisCategory {
      * Returns whether this node's height is match_parent.
      */
     public static boolean isHeightFillParent(Element element) {
-        return element.getAttribute(ANDROID_LAYOUT_HEIGHT).equals(VALUE_FILL_PARENT);
+        final String attribute = element.getAttribute(ANDROID_LAYOUT_HEIGHT);
+        return attribute.equals(VALUE_FILL_PARENT) || attribute.equals(VALUE_MATCH_PARENT);
     }
 
     /**
