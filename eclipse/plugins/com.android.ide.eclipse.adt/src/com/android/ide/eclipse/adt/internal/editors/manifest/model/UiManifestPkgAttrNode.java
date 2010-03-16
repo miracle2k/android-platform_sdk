@@ -108,7 +108,7 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
         });
         formText.setLayoutData(new TableWrapData(TableWrapData.LEFT, TableWrapData.MIDDLE));
         SectionHelper.addControlTooltip(formText, desc.getTooltip());
-        
+
         Composite composite = toolkit.createComposite(parent);
         composite.setLayoutData(new TableWrapData(TableWrapData.FILL_GRAB, TableWrapData.MIDDLE));
         GridLayout gl = new GridLayout(2, false);
@@ -117,7 +117,7 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
         // Fixes missing text borders under GTK... also requires adding a 1-pixel margin
         // for the text field below
         toolkit.paintBordersFor(composite);
-        
+
         final Text text = toolkit.createText(composite, getCurrentValue());
         GridData gd = new GridData(GridData.FILL_HORIZONTAL);
         gd.horizontalIndent = 1;  // Needed by the fixed composite borders under GTK
@@ -126,7 +126,7 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
         setTextWidget(text);
 
         Button browseButton = toolkit.createButton(composite, "Browse...", SWT.PUSH);
-        
+
         browseButton.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -134,9 +134,9 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
                 doBrowseClick();
             }
         });
-        
+
     }
-    
+
     /* (non-java doc)
      * Adds a validator to the text field that calls managedForm.getMessageManager().
      */
@@ -172,7 +172,7 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
      * Handles response to the Browse button by creating a Package dialog.
      * */
     private void doBrowseClick() {
-        
+
         // Display the list of AndroidManifest packages in a selection dialog
         ElementListSelectionDialog dialog = new ElementListSelectionDialog(
                 getTextWidget().getShell(),
@@ -219,7 +219,7 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
     private void doLabelClick() {
         // get the current package name
         String package_name = getTextWidget().getText().trim();
-        
+
         if (package_name.length() == 0) {
             createNewProject();
         } else {
@@ -231,13 +231,13 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
      * When the label is clicked and there's already a package name, this method
      * attempts to find the project matching the android package name and it attempts
      * to open the manifest editor.
-     * 
+     *
      * @param package_name The android package name to find. Must not be null.
      */
     private void displayExistingManifest(String package_name) {
 
         // Look for the first project that uses this package name
-        for (IJavaProject project : BaseProjectHelper.getAndroidProjects()) {
+        for (IJavaProject project : BaseProjectHelper.getAndroidProjects(null /*filter*/)) {
             // check that there is indeed a manifest file.
             IFile manifestFile = AndroidManifestParser.getManifest(project.getProject());
             if (manifestFile == null) {
@@ -257,7 +257,7 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
             }
 
             if (package_name.equals(parser.getPackage())) {
-                // Found the project. 
+                // Found the project.
 
                 IWorkbenchWindow win = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
                 if (win != null) {
@@ -303,14 +303,14 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
     /**
      * Returns all the possible android package names that could be used.
      * The prefix is not used.
-     * 
+     *
      * {@inheritDoc}
      */
     @Override
     public String[] getPossibleValues(String prefix) {
         TreeSet<String> packages = new TreeSet<String>();
 
-        for (IJavaProject project : BaseProjectHelper.getAndroidProjects()) {
+        for (IJavaProject project : BaseProjectHelper.getAndroidProjects(null /*filter*/)) {
             // check that there is indeed a manifest file.
             IFile manifestFile = AndroidManifestParser.getManifest(project.getProject());
             if (manifestFile == null) {

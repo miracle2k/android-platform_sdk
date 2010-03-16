@@ -22,6 +22,7 @@ import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper.NonLibraryProjectOnlyFilter;
 import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard.ExportWizardPage;
 
 import org.eclipse.core.resources.IFolder;
@@ -45,7 +46,7 @@ import org.eclipse.swt.widgets.Text;
 import java.io.File;
 
 /**
- * First Export Wizard Page. Display warning/errors. 
+ * First Export Wizard Page. Display warning/errors.
  */
 final class ProjectCheckPage extends ExportWizardPage {
     private final static String IMG_ERROR = "error.png"; //$NON-NLS-1$
@@ -71,7 +72,8 @@ final class ProjectCheckPage extends ExportWizardPage {
     }
 
     public void createControl(Composite parent) {
-        mProjectChooserHelper = new ProjectChooserHelper(parent.getShell());
+        mProjectChooserHelper = new ProjectChooserHelper(parent.getShell(),
+                new NonLibraryProjectOnlyFilter());
         mDisplay = parent.getDisplay();
 
         GridLayout gl = null;
@@ -80,7 +82,7 @@ final class ProjectCheckPage extends ExportWizardPage {
         mTopComposite = new Composite(parent, SWT.NONE);
         mTopComposite.setLayoutData(new GridData(GridData.FILL_BOTH));
         mTopComposite.setLayout(new GridLayout(1, false));
-        
+
         // composite for the project selection.
         Composite projectComposite = new Composite(mTopComposite, SWT.NONE);
         projectComposite.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -130,11 +132,11 @@ final class ProjectCheckPage extends ExportWizardPage {
             if (project != null) {
                 mProjectText.setText(project.getName());
             }
-            
+
             mFirstOnShow = false;
         }
     }
-    
+
     private void buildErrorUi(IProject project) {
         // Show description the first time
         setErrorMessage(null);
@@ -163,14 +165,14 @@ final class ProjectCheckPage extends ExportWizardPage {
                     if (ProjectHelper.hasError(project, true))  {
                         addError(mErrorComposite, "Project has compilation error(s)");
                     }
-                    
+
                     // check the project output
                     IFolder outputIFolder = BaseProjectHelper.getOutputFolder(project);
                     if (outputIFolder != null) {
                         String outputOsPath =  outputIFolder.getLocation().toOSString();
                         String apkFilePath =  outputOsPath + File.separator + project.getName() +
                                 AndroidConstants.DOT_ANDROID_PACKAGE;
-                        
+
                         File f = new File(apkFilePath);
                         if (f.isFile() == false) {
                             addError(mErrorComposite,
@@ -191,12 +193,12 @@ final class ProjectCheckPage extends ExportWizardPage {
                             true /* gatherData */, false /* markErrors */);
 
                     Boolean debuggable = manifestParser.getDebuggable();
-                    
+
                     if (debuggable != null && debuggable == Boolean.TRUE) {
                         addWarning(mErrorComposite,
-                                "The manifest 'debuggable' attribute is set to true.\nYou should set it to false for applications that you release to the public."); 
+                                "The manifest 'debuggable' attribute is set to true.\nYou should set it to false for applications that you release to the public.");
                     }
-                    
+
                     // check for mapview stuff
                 }
             } catch (CoreException e) {
@@ -204,7 +206,7 @@ final class ProjectCheckPage extends ExportWizardPage {
                 addError(mErrorComposite, "Unable to get project nature");
             }
         }
-        
+
         if (mHasMessage == false) {
             Label label = new Label(mErrorComposite, SWT.NONE);
             GridData gd = new GridData(GridData.FILL_HORIZONTAL);
@@ -212,10 +214,10 @@ final class ProjectCheckPage extends ExportWizardPage {
             label.setLayoutData(gd);
             label.setText("No errors found. Click Next.");
         }
-        
+
         mTopComposite.layout();
     }
-    
+
     /**
      * Adds an error label to a {@link Composite} object.
      * @param parent the Composite parent.
@@ -225,17 +227,17 @@ final class ProjectCheckPage extends ExportWizardPage {
         if (mError == null) {
             mError = AdtPlugin.getImageLoader().loadImage(IMG_ERROR, mDisplay);
         }
-        
+
         new Label(parent, SWT.NONE).setImage(mError);
         Label label = new Label(parent, SWT.NONE);
         label.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         label.setText(message);
-        
+
         setErrorMessage("Application cannot be exported due to the error(s) below.");
         setPageComplete(false);
         mHasMessage = true;
     }
-    
+
     /**
      * Adds a warning label to a {@link Composite} object.
      * @param parent the Composite parent.
@@ -245,26 +247,26 @@ final class ProjectCheckPage extends ExportWizardPage {
         if (mWarning == null) {
             mWarning = AdtPlugin.getImageLoader().loadImage(IMG_WARNING, mDisplay);
         }
-        
+
         new Label(parent, SWT.NONE).setImage(mWarning);
         Label label = new Label(parent, SWT.NONE);
         label.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         label.setText(message);
-        
+
         mHasMessage = true;
     }
-    
+
     /**
      * Checks the parameters for correctness, and update the error message and buttons.
      */
     private void handleProjectNameChange() {
         setPageComplete(false);
-        
+
         if (mErrorComposite != null) {
             mErrorComposite.dispose();
             mErrorComposite = null;
         }
-        
+
         // update the wizard with the new project
         mWizard.setProject(null);
 
@@ -282,12 +284,12 @@ final class ProjectCheckPage extends ExportWizardPage {
                     found = javaProject.getProject();
                     break;
                 }
-                
+
             }
-            
+
             if (found != null) {
                 setErrorMessage(null);
-                
+
                 // update the wizard with the new project
                 mWizard.setProject(found);
 

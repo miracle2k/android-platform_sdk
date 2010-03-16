@@ -34,7 +34,6 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
-import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 
@@ -319,85 +318,6 @@ public final class Sdk  {
             // save the target hash string in the project persistent property
             properties.setProperty(ProjectProperties.PROPERTY_TARGET, target.hashString());
             properties.save();
-        }
-    }
-
-    /**
-     * Sets a new target and/or a new set of APK settings for a given project.
-     *
-     * @param project the project to receive the new apk configurations.
-     * @param target The new target to set, or <code>null</code> to not change the current target.
-     * @param settings a new {@link ApkSettings} object to set or <code>null</code> to not change
-     * the current settings.
-     */
-    public void setProject(IProject project, IAndroidTarget target,
-            ApkSettings settings) {
-        if (target == null && settings == null) {
-            return;
-        }
-
-        synchronized (sLock) {
-            boolean resolveProject = false;
-
-            ProjectState state = getProjectState(project);
-            if (state == null) {
-                return;
-            }
-
-            ProjectProperties properties = state.getProperties();
-
-            if (target != null) {
-                // look for the current target of the project
-                IAndroidTarget previousTarget = state.getTarget();
-
-                if (target != previousTarget) {
-                    // save the target hash string in the project persistent property
-                    properties.setProperty(ProjectProperties.PROPERTY_TARGET, target.hashString());
-
-                    // put it in a local map for easy access.
-                    state.setTarget(target);
-
-                    resolveProject = true;
-                }
-            }
-
-            if (settings != null) {
-                state.setApkSettings(settings);
-
-                // save the project settings into the project persistent property
-                settings.write(properties);
-            }
-
-            // we are done with the modification. Save the property file.
-            try {
-                properties.save();
-            } catch (IOException e) {
-                AdtPlugin.log(e, "Failed to save default.properties for project '%s'",
-                        project.getName());
-            }
-
-            if (resolveProject) {
-                // force a resolve of the project by updating the classpath container.
-                // This will also force a recompile.
-                IJavaProject javaProject = JavaCore.create(project);
-                AndroidClasspathContainerInitializer.updateProjects(
-                        new IJavaProject[] { javaProject });
-            } else {
-                // always do a full clean/build.
-                try {
-                    project.build(IncrementalProjectBuilder.CLEAN_BUILD, null);
-                } catch (CoreException e) {
-                    // failed to build? force resolve instead.
-                    IJavaProject javaProject = JavaCore.create(project);
-                    AndroidClasspathContainerInitializer.updateProjects(
-                            new IJavaProject[] { javaProject });
-                }
-            }
-
-            // finally, update the opened editors.
-            if (resolveProject) {
-                AdtPlugin.getDefault().updateTargetListeners(project);
-            }
         }
     }
 
@@ -968,9 +888,11 @@ public final class Sdk  {
                             // reload the libraries if needed
                             if (diff.hasDiff()) {
                                 for (LibraryState removedState : diff.removed) {
-                                    unlinkLibrary(state,
-                                            removedState.getProjectState().getProject(),
-                                            false /*doInJob*/);
+                                    ProjectState removePState = removedState.getProjectState();
+                                    if (removePState != null) {
+                                        unlinkLibrary(state, removePState.getProject(),
+                                                false /*doInJob*/);
+                                    }
                                 }
 
                                 if (diff.added) {
@@ -989,7 +911,7 @@ public final class Sdk  {
                                 }
 
                                 // need to force a full recompile.
-                                iProject.build( IncrementalProjectBuilder.FULL_BUILD, monitor);
+                                iProject.build(IncrementalProjectBuilder.FULL_BUILD, monitor);
                             }
 
                             // apply the new target if needed.
@@ -1000,6 +922,9 @@ public final class Sdk  {
                                     AndroidClasspathContainerInitializer.updateProjects(
                                             new IJavaProject[] { javaProject });
                                 }
+
+                                // update the editors to reload with the new target
+                                AdtPlugin.getDefault().updateTargetListeners(iProject);
                             }
                         } catch (CoreException e) {
                             // This can't happen as it's only for closed project (or non existing)
@@ -1291,7 +1216,7 @@ public final class Sdk  {
      * @param base the IPath to base the relative path on.
      * @return the relative IPath
      */
-    private static IPath makeRelativeTo(IPath target, IPath base) {
+    public static IPath makeRelativeTo(IPath target, IPath base) {
         //can't make relative if devices are not equal
         if (target.getDevice() != base.getDevice() && (target.getDevice() == null ||
                 !target.getDevice().equalsIgnoreCase(base.getDevice())))

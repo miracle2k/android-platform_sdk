@@ -24,7 +24,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 /**
@@ -233,6 +235,14 @@ public final class ProjectProperties {
      */
     public synchronized String removeProperty(String name) {
         return mProperties.remove(name);
+    }
+
+    /**
+     * Returns a set of the property keys. Unlike {@link Map#keySet()} this is not a view of the
+     * map keys. Modifying the returned {@link Set} will not impact the underlying {@link Map}.
+     */
+    public synchronized Set<String> keySet() {
+        return new HashSet<String>(mProperties.keySet());
     }
 
     /**

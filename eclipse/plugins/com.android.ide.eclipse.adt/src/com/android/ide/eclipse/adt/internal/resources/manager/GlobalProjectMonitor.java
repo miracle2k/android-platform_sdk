@@ -361,7 +361,8 @@ public final class GlobalProjectMonitor {
         // get the list of opened android projects.
         IWorkspaceRoot workspaceRoot = mWorkspace.getRoot();
         IJavaModel javaModel = JavaCore.create(workspaceRoot);
-        IJavaProject[] androidProjects = BaseProjectHelper.getAndroidProjects(javaModel);
+        IJavaProject[] androidProjects = BaseProjectHelper.getAndroidProjects(javaModel,
+                null /*filter*/);
 
         for (IJavaProject androidProject : androidProjects) {
             listener.projectOpenedWithWorkspace(androidProject.getProject());

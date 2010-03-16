@@ -16,6 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.project;
 
+import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper.IProjectFilter;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -35,6 +38,7 @@ import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 public class ProjectChooserHelper {
 
     private final Shell mParentShell;
+    private final IProjectChooserFilter mFilter;
 
     /**
      * List of current android projects. Since the dialog is modal, we'll just get
@@ -42,9 +46,57 @@ public class ProjectChooserHelper {
      */
     private IJavaProject[] mAndroidProjects;
 
-    public ProjectChooserHelper(Shell parentShell) {
-        mParentShell = parentShell;
+    /**
+     * Interface to filter out some project displayed by {@link ProjectChooserHelper}.
+     *
+     * @see IProjectFilter
+     */
+    public interface IProjectChooserFilter extends IProjectFilter {
+        /**
+         * Whether the Project Chooser can compute the project list once and cache the result.
+         * </p>If false the project list is recomputed every time the dialog is opened.
+         */
+        boolean useCache();
     }
+
+    /**
+     * An implementation of {@link IProjectChooserFilter} that only displays non-library projects.
+     */
+    public final static class NonLibraryProjectOnlyFilter implements IProjectChooserFilter {
+        public boolean accept(IProject project) {
+            ProjectState state = Sdk.getProjectState(project);
+            return state.isLibrary() == false;
+        }
+
+        public boolean useCache() {
+            return true;
+        }
+    }
+
+    /**
+     * An implementation of {@link IProjectChooserFilter} that only displays library projects.
+     */
+    public final static class LibraryProjectOnlyFilter implements IProjectChooserFilter {
+        public boolean accept(IProject project) {
+            ProjectState state = Sdk.getProjectState(project);
+            return state.isLibrary();
+        }
+
+        public boolean useCache() {
+            return true;
+        }
+    }
+
+    /**
+     * Creates a new project chooser.
+     * @param parentShell the parent {@link Shell} for the dialog.
+     * @param filter a filter to only accept certain projects. Can be null.
+     */
+    public ProjectChooserHelper(Shell parentShell, IProjectChooserFilter filter) {
+        mParentShell = parentShell;
+        mFilter = filter;
+    }
+
     /**
      * Displays a project chooser dialog which lists all available projects with the Android nature.
      * <p/>
@@ -85,31 +137,33 @@ public class ProjectChooserHelper {
         }
         return null;
     }
-    
+
     /**
      * Returns the list of Android projects.
      * <p/>
      * Because this list can be time consuming, this class caches the list of project.
      * It is recommended to call this method instead of
      * {@link BaseProjectHelper#getAndroidProjects()}.
-     * 
+     *
      * @param javaModel the java model. Can be null.
      */
     public IJavaProject[] getAndroidProjects(IJavaModel javaModel) {
-        if (mAndroidProjects == null) {
+        // recompute only if we don't have the projects already or the filter is dynamic
+        // and prevent usage of a cache.
+        if (mAndroidProjects == null || (mFilter != null && mFilter.useCache() == false)) {
             if (javaModel == null) {
-                mAndroidProjects = BaseProjectHelper.getAndroidProjects();
+                mAndroidProjects = BaseProjectHelper.getAndroidProjects(mFilter);
             } else {
-                mAndroidProjects = BaseProjectHelper.getAndroidProjects(javaModel);
+                mAndroidProjects = BaseProjectHelper.getAndroidProjects(javaModel, mFilter);
             }
         }
-        
+
         return mAndroidProjects;
     }
-    
+
     /**
      * Helper method to get the Android project with the given name
-     * 
+     *
      * @param projectName the name of the project to find
      * @return the {@link IProject} for the Android project. <code>null</code> if not found.
      */
@@ -123,7 +177,7 @@ public class ProjectChooserHelper {
                     break;
                 }
             }
-        }    
+        }
         return iproject;
     }
 }

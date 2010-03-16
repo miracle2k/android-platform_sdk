@@ -523,7 +523,7 @@ public class NewTestProjectCreationPage extends WizardPage {
                 }
             });
 
-            mProjectChooserHelper = new ProjectChooserHelper(parent.getShell());
+            mProjectChooserHelper = new ProjectChooserHelper(parent.getShell(), null /*filter*/);
         } else {
             // Part of NPW mode: no selection.
 

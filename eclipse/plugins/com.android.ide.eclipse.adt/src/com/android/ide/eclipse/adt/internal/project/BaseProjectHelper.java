@@ -64,6 +64,13 @@ public final class BaseProjectHelper {
     public static final String TEST_CLASS_OK = null;
 
     /**
+     * Project filter to be used with {@link BaseProjectHelper#getAndroidProjects(IProjectFilter)}.
+     */
+    public static interface IProjectFilter {
+        boolean accept(IProject project);
+    }
+
+    /**
      * returns a list of source classpath for a specified project
      * @param javaProject
      * @return a list of path relative to the workspace root.
@@ -360,13 +367,14 @@ public final class BaseProjectHelper {
     /**
      * Returns the list of android-flagged projects. This list contains projects that are opened
      * in the workspace and that are flagged as android project (through the android nature)
+     * @param filter an optional filter to control which android project are returned. Can be null.
      * @return an array of IJavaProject, which can be empty if no projects match.
      */
-    public static IJavaProject[] getAndroidProjects() {
+    public static IJavaProject[] getAndroidProjects(IProjectFilter filter) {
         IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
         IJavaModel javaModel = JavaCore.create(workspaceRoot);
 
-        return getAndroidProjects(javaModel);
+        return getAndroidProjects(javaModel, filter);
     }
 
     /**
@@ -374,9 +382,10 @@ public final class BaseProjectHelper {
      * This list contains projects that are opened in the workspace and that are flagged as android
      * project (through the android nature)
      * @param javaModel the Java Model object corresponding for the current workspace root.
+     * @param filter an optional filter to control which android project are returned. Can be null.
      * @return an array of IJavaProject, which can be empty if no projects match.
      */
-    public static IJavaProject[] getAndroidProjects(IJavaModel javaModel) {
+    public static IJavaProject[] getAndroidProjects(IJavaModel javaModel, IProjectFilter filter) {
         // get the java projects
         IJavaProject[] javaProjectList = null;
         try {
@@ -397,7 +406,9 @@ public final class BaseProjectHelper {
             // check if it's an android project based on its nature
             try {
                 if (project.hasNature(AndroidConstants.NATURE)) {
-                    androidProjectList.add(javaProject);
+                    if (filter == null || filter.accept(project)) {
+                        androidProjectList.add(javaProject);
+                    }
                 }
             } catch (CoreException e) {
                 // this exception, thrown by IProject.hasNature(), means the project either doesn't
