@@ -67,15 +67,23 @@ public class InstrumentationResultParserTest extends TestCase {
      * Tests that a single successful test execution.
      */
     public void testTestSuccess() {
-        StringBuilder output = buildCommonResult();
-        addStartCode(output);
-        addCommonStatus(output);
-        addSuccessCode(output);
+        StringBuilder output = createSuccessTest();
 
         injectTestString(output.toString());
         assertCommonAttributes();
         assertEquals(1, mTestResult.mNumTestsRun);
         assertEquals(null, mTestResult.mTestStatus);
+    }
+
+    /**
+     * Create instrumentation output for a successful single test case execution.
+     */
+    private StringBuilder createSuccessTest() {
+        StringBuilder output = buildCommonResult();
+        addStartCode(output);
+        addCommonStatus(output);
+        addSuccessCode(output);
+        return output;
     }
 
     /**
@@ -100,8 +108,9 @@ public class InstrumentationResultParserTest extends TestCase {
      * Test basic parsing and conversion of time from output.
      */
     public void testTimeParsing() {
-        final String timeString = "Time: 4.9";
-        injectTestString(timeString);
+        StringBuilder output = createSuccessTest();
+        output.append("Time: 4.9");
+        injectTestString(output.toString());
         assertEquals(4900, mTestResult.mTestTime);
     }
 
@@ -154,6 +163,29 @@ public class InstrumentationResultParserTest extends TestCase {
         assertTrue(mTestResult.mRunFailedMessage.startsWith("Test run incomplete."));
         // ensure test is marked as failed
         assertEquals(TestFailure.ERROR, mTestResult.mTestStatus);
+    }
+
+    /**
+     * Test parsing of a test run that did not start due to incorrect syntax supplied to am.
+     */
+    public void testRunAmFailed() {
+        StringBuilder output = new StringBuilder();
+        output.append("usage: am [subcommand] [options]");
+        addLineBreak(output);
+        output.append("start an Activity: am start [-D] [-W] <INTENT>");
+        addLineBreak(output);
+        output.append("-D: enable debugging");
+        addLineBreak(output);
+        output.append("-W: wait for launch to complete");
+        addLineBreak(output);
+        output.append("start a Service: am startservice <INTENT>");
+        addLineBreak(output);
+        output.append("Error: Bad component name: wfsdafddfasasdf");
+
+        injectTestString(output.toString());
+
+        assertEquals(InstrumentationResultParser.NO_TEST_RESULTS_MSG,
+                mTestResult.mRunFailedMessage);
     }
 
     /**
