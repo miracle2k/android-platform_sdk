@@ -518,7 +518,7 @@ public class UiElementNode implements IPropertySource {
         if (mUiParent != null) {
             return mUiParent.getUnknownDescriptorProvider();
         }
-        if (mUnknownUiAttributes == null) {
+        if (mUnknownDescProvider == null) {
             // Create the default one on demand.
             mUnknownDescProvider = new IUnknownDescriptorProvider() {
 
