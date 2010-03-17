@@ -71,13 +71,15 @@ public class UiViewElementNode extends UiElementNode {
             IProject project = getEditor().getProject();
             if (project != null) {
                 Sdk currentSdk = Sdk.getCurrent();
-                IAndroidTarget target = currentSdk.getTarget(project);
-                if (target != null) {
-                    AndroidTargetData data = currentSdk.getTargetData(target);
-                    layoutDescriptors = data.getLayoutDescriptors().getLayoutDescriptors();
+                if (currentSdk != null) {
+                    IAndroidTarget target = currentSdk.getTarget(project);
+                    if (target != null) {
+                        AndroidTargetData data = currentSdk.getTargetData(target);
+                        layoutDescriptors = data.getLayoutDescriptors().getLayoutDescriptors();
+                    }
                 }
             }
-            
+
             if (layoutDescriptors != null) {
                 for (ElementDescriptor desc : layoutDescriptors) {
                     if (desc instanceof ViewElementDescriptor &&
@@ -116,7 +118,7 @@ public class UiViewElementNode extends UiElementNode {
 
         return mCachedAttributeDescriptors;
     }
-    
+
     /**
      * Sets the parent of this UI node.
      * <p/>
