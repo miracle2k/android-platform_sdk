@@ -966,8 +966,8 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
             return;
         }
         } catch (CoreException e) {
-            AdtPlugin.logAndPrintError(e, TAG, "ERROR: Failed to get instrumentations for %1$s",
-                    project.getName());
+            AdtPlugin.logAndPrintError(e, project.getName(), "Failed to load instrumentations from %1$s",
+                    AndroidConstants.FN_ANDROID_MANIFEST);
         }
         // if we reach this point, either project is null, or we got an exception during
         // the parsing. In either case, we empty the instrumentation list.

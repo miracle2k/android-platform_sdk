@@ -47,7 +47,7 @@ class InstrumentationRunnerValidator {
                     null /* errorListener */, true /* gatherData */, false /* markErrors */);
             init(manifestParser);
         } catch (CoreException e) {
-            AdtPlugin.printErrorToConsole(javaProject.getProject(), "ERROR: Failed to parse %1$s",
+            AdtPlugin.printErrorToConsole(javaProject.getProject(), "Failed to parse %1$s",
                     AndroidConstants.FN_ANDROID_MANIFEST);
         }
     }

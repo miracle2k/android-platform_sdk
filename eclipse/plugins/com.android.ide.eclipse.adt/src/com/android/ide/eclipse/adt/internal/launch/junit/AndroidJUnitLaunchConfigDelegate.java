@@ -64,7 +64,8 @@ public class AndroidJUnitLaunchConfigDelegate extends LaunchConfigDelegate {
         String runner = getRunner(project, configuration, manifestParser);
         if (runner == null) {
             AdtPlugin.displayError("Android Launch",
-                    "An instrumention test runner is not specified!");
+                    String.format("%1$s is not configured correctly for running tests. See Console for details.",
+                            project.getName()));
             androidLaunch.stopLaunch();
             return;
         }
@@ -72,8 +73,8 @@ public class AndroidJUnitLaunchConfigDelegate extends LaunchConfigDelegate {
         String targetAppPackage = getTargetPackage(manifestParser, runner); 
         if (targetAppPackage == null) {
             AdtPlugin.displayError("Android Launch",
-                    String.format("A target package for instrumention test runner %1$s could not be found!", 
-                    runner));
+                    String.format("%1$s is not configured correctly for running tests:\nA targetPackage attribute for instrumentation %2$s in its %3$s could not be found!",
+                            project.getName(), runner, AndroidConstants.FN_ANDROID_MANIFEST));
             androidLaunch.stopLaunch();
             return; 
         }
@@ -156,7 +157,8 @@ public class AndroidJUnitLaunchConfigDelegate extends LaunchConfigDelegate {
      * <p/>
      * If a runner is stored in the given <code>configuration</code>, will return that.
      * Otherwise, will try to find the first valid runner for the project.
-     * If a runner can still not be found, will return <code>null</code>.
+     * If a runner can still not be found, will return <code>null</code>, and will log an error
+     * to the console.
      * 
      * @param project the {@link IProject} for the app 
      * @param configuration the {@link ILaunchConfiguration} for the launch
@@ -182,9 +184,11 @@ public class AndroidJUnitLaunchConfigDelegate extends LaunchConfigDelegate {
                 return runner;
             }
             AdtPlugin.printErrorToConsole(project,
-                    String.format("ERROR: Application does not specify a %1$s instrumentation or does not declare uses-library %2$s",
+                    String.format("%1$s does not specify a %2$s instrumentation or does not declare uses-library %3$s in its %4$s",
+                    project.getName(),
                     AndroidConstants.CLASS_INSTRUMENTATION_RUNNER, 
-                    AndroidConstants.LIBRARY_TEST_RUNNER));
+                    AndroidConstants.LIBRARY_TEST_RUNNER,
+                    AndroidConstants.FN_ANDROID_MANIFEST));
             return null;
         } catch (CoreException e) {
             AdtPlugin.log(e, "Error when retrieving instrumentation info"); //$NON-NLS-1$           
