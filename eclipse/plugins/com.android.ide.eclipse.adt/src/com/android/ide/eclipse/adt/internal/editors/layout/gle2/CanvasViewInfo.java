@@ -86,7 +86,12 @@ public class CanvasViewInfo {
 
         if (viewInfo.getChildren() != null) {
             for (ILayoutViewInfo child : viewInfo.getChildren()) {
-                mChildren.add(new CanvasViewInfo(child, this, x, y));
+                // Only use children which have a ViewKey of the correct type.
+                // We can't interact with those when they have a null key or
+                // an incompatible type.
+                if (child.getViewKey() instanceof UiViewElementNode) {
+                    mChildren.add(new CanvasViewInfo(child, this, x, y));
+                }
             }
         }
 
