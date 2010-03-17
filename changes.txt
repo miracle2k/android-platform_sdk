@@ -1,6 +1,13 @@
 Change log for Android SDK Tools.
 
-Revision 5 (02/2010):
+Revision 6:
+- Support for library project to share code/resources among projects
+    - Updated Ant rules and custom tasks
+    - New "android create lib-project", "android update lib-project" actions.
+    - New parameter for "android update project"
+ 
+
+Revision 5 (03/2010):
 - AVD/SDK Manager:
 	- Fixed SSL download for the standalone version of the SDK Updater.
 	- Fixed issue with 64bit JVM on windows.
