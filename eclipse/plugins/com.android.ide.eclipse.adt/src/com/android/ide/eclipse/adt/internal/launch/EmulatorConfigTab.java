@@ -346,7 +346,7 @@ public class EmulatorConfigTab extends AbstractLaunchConfigurationTab {
         IProject project = null;
 
         // get the list of existing Android projects from the workspace.
-        IJavaProject[] projects = BaseProjectHelper.getAndroidProjects();
+        IJavaProject[] projects = BaseProjectHelper.getAndroidProjects(null /*filter*/);
         if (projects != null) {
             // look for the project whose name we read from the configuration.
             for (IJavaProject p : projects) {

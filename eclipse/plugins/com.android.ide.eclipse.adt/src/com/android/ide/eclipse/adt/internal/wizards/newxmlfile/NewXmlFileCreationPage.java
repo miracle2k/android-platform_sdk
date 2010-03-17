@@ -536,7 +536,7 @@ class NewXmlFileCreationPage extends WizardPage {
                onProjectBrowse();
             }
         });
-        mProjectChooserHelper = new ProjectChooserHelper(parent.getShell());
+        mProjectChooserHelper = new ProjectChooserHelper(parent.getShell(), null /*filter*/);
         ++col;
 
         col = padWithEmptyCells(parent, col);

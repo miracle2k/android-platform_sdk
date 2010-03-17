@@ -1371,7 +1371,7 @@ public class AdtPlugin extends AbstractUIPlugin {
         // after the SDK is reloaded
         synchronized (Sdk.getLock()) {
             // get the project to refresh.
-            IJavaProject[] androidProjects = BaseProjectHelper.getAndroidProjects();
+            IJavaProject[] androidProjects = BaseProjectHelper.getAndroidProjects(null /*filter*/);
             mPostLoadProjectsToResolve.addAll(Arrays.asList(androidProjects));
         }
 

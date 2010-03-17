@@ -19,16 +19,21 @@ package com.android.ide.eclipse.adt.internal.project;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -290,6 +295,15 @@ public final class ProjectState {
     }
 
     /**
+     * Returns the list of {@link LibraryState}.
+     */
+    public List<LibraryState> getLibraries() {
+        synchronized (mLibraries) {
+            return Collections.unmodifiableList(mLibraries);
+        }
+    }
+
+    /**
      * Convenience method returning all the IProject objects for the resolved libraries.
      * <p/>If some dependencies are not resolved (or their projects is not opened in Eclipse),
      * they will not show up in this list.
@@ -472,6 +486,25 @@ public final class ProjectState {
         }
 
         return null;
+    }
+
+    /**
+     * Saves the default.properties file and refreshes it to make sure that it gets reloaded
+     * by Eclipse
+     */
+    public void saveProperties() {
+        try {
+            mProperties.save();
+
+            IResource defaultProp = mProject.findMember(SdkConstants.FN_DEFAULT_PROPERTIES);
+            defaultProp.refreshLocal(IResource.DEPTH_ZERO, new NullProgressMonitor());
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (CoreException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     private IStatus replaceLibraryProperty(String oldValue, String newValue) {

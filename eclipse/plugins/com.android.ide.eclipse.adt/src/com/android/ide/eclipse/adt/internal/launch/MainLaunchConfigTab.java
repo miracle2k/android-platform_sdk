@@ -20,6 +20,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper.NonLibraryProjectOnlyFilter;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser.Activity;
 
 import org.eclipse.core.resources.IProject;
@@ -59,12 +60,12 @@ import java.util.ArrayList;
 public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
 
     /**
-     * 
+     *
      */
     public static final String LAUNCH_TAB_IMAGE = "mainLaunchTab.png"; //$NON-NLS-1$
 
     protected static final String EMPTY_STRING = ""; //$NON-NLS-1$
-    
+
     protected Text mProjText;
     private Button mProjButton;
 
@@ -77,9 +78,9 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
     private Button mActivityActionButton;
     private Button mDoNothingActionButton;
     private int mLaunchAction = LaunchConfigDelegate.DEFAULT_LAUNCH_ACTION;
-    
+
     private ProjectChooserHelper mProjectChooserHelper;
-    
+
     /**
      * A listener which handles widget change events for the controls in this
      * tab.
@@ -109,7 +110,8 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
     }
 
     public void createControl(Composite parent) {
-        mProjectChooserHelper = new ProjectChooserHelper(parent.getShell());
+        mProjectChooserHelper = new ProjectChooserHelper(parent.getShell(),
+                new NonLibraryProjectOnlyFilter());
 
         Font font = parent.getFont();
         Composite comp = new Composite(parent, SWT.NONE);
@@ -175,7 +177,7 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
                 checkParameters();
             }
         });
-        
+
         mDoNothingActionButton = new Button(group, SWT.RADIO);
         gd = new GridData(GridData.FILL_HORIZONTAL);
         gd.horizontalSpan = 2;
@@ -193,7 +195,7 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
                 }
             }
         });
-        
+
     }
 
     public String getName() {
@@ -214,14 +216,14 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
 
         // add the launch mode
         configuration.setAttribute(LaunchConfigDelegate.ATTR_LAUNCH_ACTION, mLaunchAction);
-        
+
         // add the activity
         int selection = mActivityCombo.getSelectionIndex();
         if (mActivities != null && selection >=0 && selection < mActivities.size()) {
             configuration.setAttribute(LaunchConfigDelegate.ATTR_ACTIVITY,
                     mActivities.get(selection).getName());
         }
-        
+
         // link the project and the launch config.
         mapResources(configuration);
     }
@@ -293,7 +295,7 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
         }// end if
         String projectName = javaProject.getElementName();
         mProjText.setText(projectName);
-        
+
         // get the list of activities and fill the combo
         IProject project = javaProject.getProject();
         loadActivities(project);
@@ -304,9 +306,9 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
      * launch configuration. This method is called when
      * a configuration is selected to view or edit, after this
      * tab's control has been created.
-     * 
+     *
      * @param config launch configuration
-     * 
+     *
      * @see ILaunchConfigurationTab
      */
     public void initializeFrom(ILaunchConfiguration config) {
@@ -321,7 +323,7 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
 
         IProject proj = mProjectChooserHelper.getAndroidProject(projectName);
         loadActivities(proj);
-        
+
         // load the launch action.
         mLaunchAction = LaunchConfigDelegate.DEFAULT_LAUNCH_ACTION;
         try {
@@ -330,7 +332,7 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
         } catch (CoreException e) {
             // nothing to be done really. launchAction will keep its default value.
         }
-        
+
         mDefaultActionButton.setSelection(mLaunchAction == LaunchConfigDelegate.ACTION_DEFAULT);
         mActivityActionButton.setSelection(mLaunchAction == LaunchConfigDelegate.ACTION_ACTIVITY);
         mDoNothingActionButton.setSelection(
@@ -363,7 +365,7 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
                         break;
                     }
                 }
-    
+
                 // if we haven't found a matching activity we clear the combo selection
                 if (found == false) {
                     mActivityCombo.clearSelection();
@@ -397,7 +399,7 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
      * activities in <code>mActivities</code>.
      * <p/>
      * First activity is selected by default if present.
-     * 
+     *
      * @param project The project to load the activities from.
      */
     private void loadActivities(IProject project) {
@@ -412,14 +414,14 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
 
                     mActivities.clear();
                     mActivityCombo.removeAll();
-                    
+
                     for (Activity activity : activities) {
                         if (activity.isExported() && activity.hasAction()) {
                             mActivities.add(activity);
                             mActivityCombo.add(activity.getName());
                         }
                     }
-                    
+
                     if (mActivities.size() > 0) {
                         if (mLaunchAction == LaunchConfigDelegate.ACTION_ACTIVITY) {
                             mActivityCombo.setEnabled(true);
@@ -427,11 +429,11 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
                     } else {
                         mActivityCombo.setEnabled(false);
                     }
-    
+
                     // the selection will be set when we update the ui from the current
                     // config object.
                     mActivityCombo.clearSelection();
-    
+
                     return;
                 }
 
@@ -440,13 +442,13 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
                 // already so there's nothing to do.
             }
         }
-        
+
         // if we reach this point, either project is null, or we got an exception during
         // the parsing. In either case, we empty the activity list.
         mActivityCombo.removeAll();
         mActivities.clear();
     }
-    
+
     /**
      * Checks the parameters for correctness, and update the error message and buttons.
      * @return the current IProject of this launch config.
@@ -467,22 +469,22 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
                         found = javaProject.getProject();
                         break;
                     }
-                    
+
                 }
-                
+
                 if (found != null) {
                     setErrorMessage(null);
                 } else {
                     setErrorMessage(String.format("There is no android project named '%1$s'",
                             text));
                 }
-                
+
                 return found;
             }
         } finally {
             updateLaunchConfigurationDialog();
         }
-        
+
         return null;
     }
 }
