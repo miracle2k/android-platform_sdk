@@ -49,10 +49,14 @@ import org.eclipse.jdt.core.JavaConventions;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.osgi.util.TextProcessor;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -276,10 +280,15 @@ public class NewTestProjectCreationPage extends WizardPage {
      * @see org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.widgets.Composite)
      */
     public void createControl(Composite parent) {
-        Composite composite = new Composite(parent, SWT.NULL);
-        composite.setFont(parent.getFont());
-
+        final ScrolledComposite scrolledComposite = new ScrolledComposite(parent, SWT.V_SCROLL);
+        scrolledComposite.setFont(parent.getFont());
+        scrolledComposite.setExpandHorizontal(true);
+        scrolledComposite.setExpandVertical(true);
         initializeDialogUnits(parent);
+
+        final Composite composite = new Composite(scrolledComposite, SWT.NULL);
+        composite.setFont(parent.getFont());
+        scrolledComposite.setContent(composite);
 
         composite.setLayout(new GridLayout());
         composite.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -294,10 +303,18 @@ public class NewTestProjectCreationPage extends WizardPage {
         // Update state the first time
         enableLocationWidgets();
 
+        scrolledComposite.addControlListener(new ControlAdapter() {
+            @Override
+            public void controlResized(ControlEvent e) {
+                Rectangle r = scrolledComposite.getClientArea();
+                scrolledComposite.setMinSize(composite.computeSize(r.width, SWT.DEFAULT));
+            }
+        });
+
         // Show description the first time
         setErrorMessage(null);
         setMessage(null);
-        setControl(composite);
+        setControl(scrolledComposite);
 
         // Validate. This will complain about the first empty field.
         validatePageComplete();
@@ -470,7 +487,7 @@ public class NewTestProjectCreationPage extends WizardPage {
         GridLayout layout = new GridLayout();
         layout.numColumns = 3;
         group.setLayout(layout);
-        group.setLayoutData(new GridData(GridData.FILL_BOTH));
+        group.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         group.setFont(parent.getFont());
         group.setText("Test Target");
 
