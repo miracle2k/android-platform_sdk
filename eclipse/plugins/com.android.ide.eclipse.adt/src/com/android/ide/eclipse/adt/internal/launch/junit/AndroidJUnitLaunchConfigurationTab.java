@@ -17,6 +17,7 @@ package com.android.ide.eclipse.adt.internal.launch.junit;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.launch.LaunchMessages;
 import com.android.ide.eclipse.adt.internal.launch.MainLaunchConfigTab;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
@@ -242,7 +243,7 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
     private void createTestContainerSelectionGroup(Composite comp) {
         mTestContainerRadioButton = new Button(comp, SWT.RADIO);
         mTestContainerRadioButton.setText(
-                "Run all tests in the selected project, or package");
+                LaunchMessages.AndroidJUnitTab_TestContainerText);
         GridData gd = new GridData();
         gd.horizontalSpan = 3;
         mTestContainerRadioButton.setLayoutData(gd);
@@ -280,7 +281,7 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
 
     private void createInstrumentationGroup(Composite comp) {
         Label loaderLabel = new Label(comp, SWT.NONE);
-        loaderLabel.setText("Instrumentation runner:");
+        loaderLabel.setText(LaunchMessages.AndroidJUnitTab_LoaderLabel);
         GridData gd = new GridData();
         gd.horizontalIndent = 0;
         loaderLabel.setLayoutData(gd);
@@ -663,7 +664,8 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
 
         try {
             if (!project.hasNature(AndroidConstants.NATURE)) {
-                setErrorMessage("Specified project is not an Android project");
+                setErrorMessage(
+                        LaunchMessages.NonAndroidProjectError);
                 return;
             }
             String className = mTestText.getText().trim();
@@ -694,7 +696,7 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
     private void validateInstrumentation() {
         String instrumentation = getSelectedInstrumentation();
         if (instrumentation == null) {
-            setErrorMessage("Instrumentation runner not specified");
+            setErrorMessage(LaunchMessages.AndroidJUnitTab_NoRunnerError);
             return;
         }
         String result = mInstrValidator.validateInstrumentationRunner(instrumentation);
@@ -966,7 +968,8 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
             return;
         }
         } catch (CoreException e) {
-            AdtPlugin.logAndPrintError(e, project.getName(), "Failed to load instrumentations from %1$s",
+            AdtPlugin.logAndPrintError(e, project.getName(),
+                    LaunchMessages.AndroidJUnitTab_LoadInstrError_s,
                     AndroidConstants.FN_ANDROID_MANIFEST);
         }
         // if we reach this point, either project is null, or we got an exception during

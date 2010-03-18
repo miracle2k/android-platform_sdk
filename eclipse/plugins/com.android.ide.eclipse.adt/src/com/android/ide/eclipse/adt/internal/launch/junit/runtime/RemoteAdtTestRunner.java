@@ -20,6 +20,7 @@ import com.android.ddmlib.testrunner.ITestRunListener;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.ddmlib.testrunner.TestIdentifier;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.launch.LaunchMessages;
 
 import org.eclipse.jdt.internal.junit.runner.MessageIds;
 import org.eclipse.jdt.internal.junit.runner.RemoteTestRunner;
@@ -154,7 +155,7 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
      */
     private void reportError(String errorMessage) {
         AdtPlugin.printErrorToConsole(mLaunchInfo.getProject(), 
-                String.format("Test run failed: %s", errorMessage));
+                String.format(LaunchMessages.RemoteAdtTestRunner_RunFailedMsg_s, errorMessage));
         // is this needed?
         //notifyTestRunStopped(-1);
     }
@@ -192,7 +193,8 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
          */
         public void testRunEnded(long elapsedTime) {
             notifyTestRunEnded(elapsedTime);
-            AdtPlugin.printToConsole(mLaunchInfo.getProject(), "Test run complete");
+            AdtPlugin.printToConsole(mLaunchInfo.getProject(),
+                    LaunchMessages.RemoteAdtTestRunner_RunCompleteMsg);
         }
 
         /* (non-Javadoc)
@@ -214,7 +216,8 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
          */
         public void testRunStopped(long elapsedTime) {
             notifyTestRunStopped(elapsedTime);
-            AdtPlugin.printToConsole(mLaunchInfo.getProject(), "Test run stopped");
+            AdtPlugin.printToConsole(mLaunchInfo.getProject(),
+                    LaunchMessages.RemoteAdtTestRunner_RunStoppedMsg);
         }
 
         /* (non-Javadoc)

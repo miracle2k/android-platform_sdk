@@ -19,6 +19,7 @@ import com.android.ddmlib.IDevice;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.launch.DelayedLaunchInfo;
 import com.android.ide.eclipse.adt.internal.launch.IAndroidLaunchAction;
+import com.android.ide.eclipse.adt.internal.launch.LaunchMessages;
 import com.android.ide.eclipse.adt.internal.launch.junit.runtime.AndroidJUnitLaunchInfo;
 import com.android.ide.eclipse.adt.internal.launch.junit.runtime.RemoteAdtTestRunner;
 
@@ -56,7 +57,7 @@ class AndroidJUnitLaunchAction implements IAndroidLaunchAction {
      * @see IAndroidLaunchAction#doLaunchAction(DelayedLaunchInfo, IDevice)
      */
     public boolean doLaunchAction(DelayedLaunchInfo info, IDevice device) {
-        String msg = String.format("Launching instrumentation %s on device %s",
+        String msg = String.format(LaunchMessages.AndroidJUnitLaunchAction_LaunchInstr_2s,
                 mLaunchInfo.getRunner(), device.getSerialNumber());
         AdtPlugin.printToConsole(info.getProject(), msg);
         
@@ -72,7 +73,8 @@ class AndroidJUnitLaunchAction implements IAndroidLaunchAction {
 
            // TODO: need to add AMReceiver-type functionality somewhere
         } catch (CoreException e) {
-            AdtPlugin.printErrorToConsole(info.getProject(), "Failed to launch test");
+            AdtPlugin.printErrorToConsole(info.getProject(),
+                    LaunchMessages.AndroidJUnitLaunchAction_LaunchFail);
         }
         return true;
     }
@@ -81,7 +83,8 @@ class AndroidJUnitLaunchAction implements IAndroidLaunchAction {
      * {@inheritDoc}
      */
     public String getLaunchDescription() {
-        return String.format("%s JUnit launch", mLaunchInfo.getRunner());
+        return String.format(LaunchMessages.AndroidJUnitLaunchAction_LaunchDesc_s,
+                mLaunchInfo.getRunner());
     }
 
     /**
