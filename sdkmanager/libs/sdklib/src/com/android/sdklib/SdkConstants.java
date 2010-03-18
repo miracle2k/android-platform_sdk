@@ -181,6 +181,8 @@ public final class SdkConstants {
     public final static String FD_SAMPLES = "samples";
     /** Name of the SDK templates folder, i.e. "templates" */
     public final static String FD_TEMPLATES = "templates";
+    /** Name of the SDK Ant folder, i.e. "ant" */
+    public final static String FD_ANT = "ant";
     /** Name of the SDK data folder, i.e. "data" */
     public final static String FD_DATA = "data";
     /** Name of the SDK resources folder, i.e. "res" */
@@ -249,6 +251,10 @@ public final class SdkConstants {
     /** Path of the android templates directory relative to a platform folder.
      *  This is an OS path, ending with a separator. */
     public final static String OS_PLATFORM_TEMPLATES_FOLDER = FD_TEMPLATES + File.separator;
+
+    /** Path of the Ant build rules directory relative to a platform folder.
+     *  This is an OS path, ending with a separator. */
+    public final static String OS_PLATFORM_ANT_FOLDER = FD_ANT + File.separator;
 
     /** Path of the attrs.xml file relative to a platform folder. */
     public final static String OS_PLATFORM_ATTRS_XML =

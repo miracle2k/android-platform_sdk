@@ -90,6 +90,7 @@ final class PlatformTarget implements IAndroidTarget {
         mPaths.put(DX, mLocation + SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_DX);
         mPaths.put(DX_JAR, mLocation + SdkConstants.OS_SDK_TOOLS_LIB_FOLDER +
                 SdkConstants.FN_DX_JAR);
+        mPaths.put(ANT, mLocation + SdkConstants.OS_PLATFORM_ANT_FOLDER);
     }
 
     public String getLocation() {

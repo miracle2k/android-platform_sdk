@@ -67,19 +67,28 @@ public final class SetupTask extends ImportTask {
     /** current max version of the Ant rules that is supported */
     private final static int ANT_RULES_MAX_VERSION = 2;
 
-    private final static String ANDROID_RULES = "android_rules.xml";
-    // additional android rules for test project - depends on android_rules.xml
-    private final static String ANDROID_TEST_RULES = "android_test_rules.xml";
-    // additional android rules for test project - depends on android_rules.xml
-    private final static String ANDROID_LIBRARY_RULES = "android_lib_rules.xml";
+    // legacy main rules file.
+    private final static String RULES_LEGACY_MAIN = "android_rules.xml";
+    // legacy test rules file - depends on android_rules.xml
+    private final static String RULES_LEGACY_TEST = "android_test_rules.xml";
+
+    // main rules file
+    private final static String RULES_MAIN = "ant_rules_r%1$d.xml";
+    // test rules file - depends on android_rules.xml
+    private final static String RULES_TEST = "ant_test_rules_r%1$d.xml";
+    // library rules file.
+    private final static String RULES_LIBRARY = "ant_lib_rules_r%1$d.xml";
+
     // ant property with the path to the android.jar
     private final static String PROPERTY_ANDROID_JAR = "android.jar";
     // LEGACY - compatibility with 1.6 and before
     private final static String PROPERTY_ANDROID_JAR_LEGACY = "android-jar";
+
     // ant property with the path to the framework.jar
     private final static String PROPERTY_ANDROID_AIDL = "android.aidl";
     // LEGACY - compatibility with 1.6 and before
     private final static String PROPERTY_ANDROID_AIDL_LEGACY = "android-aidl";
+
     // ant property with the path to the aapt tool
     private final static String PROPERTY_AAPT = "aapt";
     // ant property with the path to the aidl tool
@@ -250,9 +259,6 @@ public final class SetupTask extends ImportTask {
         // finally sets the path in the project with a reference
         antProject.addReference(REF_CLASSPATH, bootclasspath);
 
-        // find the file to import, and import it.
-        String templateFolder = androidTarget.getPath(IAndroidTarget.TEMPLATES);
-
         // LEGACY support. android_rules.xml in older platforms expects properties with
         // older names. This sets those properties to make sure the rules will work.
         if (androidTarget.getVersion().getApiLevel() <= 4) { // 1.6 and earlier
@@ -267,24 +273,46 @@ public final class SetupTask extends ImportTask {
 
         // Now the import section. This is only executed if the task actually has to import a file.
         if (mDoImport) {
-            // make sure the file exists.
-            File templates = new File(templateFolder);
+            // find the folder containing the file to import
+            int folderID = antBuildVersion == 1 ? IAndroidTarget.TEMPLATES : IAndroidTarget.ANT;
+            String rulesOSPath = androidTarget.getPath(folderID);
 
-            if (templates.isDirectory() == false) {
-                throw new BuildException(String.format("Template directory '%s' is missing.",
-                        templateFolder));
+            // make sure the file exists.
+            File rulesFolder = new File(rulesOSPath);
+
+            if (rulesFolder.isDirectory() == false) {
+                throw new BuildException(String.format("Rules directory '%s' is missing.",
+                        rulesOSPath));
             }
 
-            String importedRulesFileName = isLibrary ? ANDROID_LIBRARY_RULES :
-                    isTestProject ? ANDROID_TEST_RULES : ANDROID_RULES;
+            String importedRulesFileName;
+            if (antBuildVersion == 1) {
+                // legacy mode
+                importedRulesFileName = isTestProject ? RULES_LEGACY_TEST : RULES_LEGACY_MAIN;
+            } else {
+                importedRulesFileName = String.format(
+                        isLibrary ? RULES_LIBRARY : isTestProject ? RULES_TEST : RULES_MAIN,
+                        antBuildVersion);;
+            }
 
             // now check the rules file exists.
-            File rules = new File(templateFolder, importedRulesFileName);
+            File rules = new File(rulesFolder, importedRulesFileName);
 
             if (rules.isFile() == false) {
                 throw new BuildException(String.format("Build rules file '%s' is missing.",
                         rules));
             }
+
+            // display the file being imported.
+            // figure out the path relative to the SDK
+            String rulesLocation = rules.getAbsolutePath();
+            if (rulesLocation.startsWith(sdkLocation)) {
+                rulesLocation = rulesLocation.substring(sdkLocation.length());
+                if (rulesLocation.startsWith(File.separator)) {
+                    rulesLocation = rulesLocation.substring(1);
+                }
+            }
+            System.out.println("Importing rules file: " + rulesLocation);
 
             // set the file location to import
             setFile(rules.getAbsolutePath());
