@@ -47,7 +47,9 @@ import com.android.sdklib.IAndroidTarget;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -73,10 +75,16 @@ import java.util.Map.Entry;
  * A composite that displays the current configuration displayed in a Graphical Layout Editor.
  * <p/>
  * The composite has several entry points:<br>
- * - {@link #openFile(FolderConfiguration, IAndroidTarget)}<br>
- *   Called after the creation to init the composite with a file being opened in a new editor.<br>
+ * - {@link #setFile(File)}<br>
+ *   Called after the constructor to set the file being edited. Nothing else is performed.<br>
  *<br>
- * - {@link #replaceFile(FolderConfiguration)}<br>
+ * - {@link #onXmlModelLoaded()}<br>
+ *   Called when the XML model is loaded, either the first time or when the Target/SDK changes.
+ *   This initializes the UI, either with the first compatible configuration found, or attempts
+ *   to restore a configuration if one is found to have been saved in the file persistent storage.
+ *   (see {@link #storeState()})<br>
+ *<br>
+ * - {@link #replaceFile(File)}<br>
  *   Called when a file, representing the same resource but with a different config is opened<br>
  *   by the user.<br>
  *<br>
@@ -90,8 +98,8 @@ import java.util.Map.Entry;
  */
 public class ConfigurationComposite extends Composite {
 
+    private final static String CONFIG_STATE = "state";  //$NON-NLS-1$
     private final static String THEME_SEPARATOR = "----------"; //$NON-NLS-1$
-
     private final static String FAKE_LOCALE_VALUE = "__"; //$NON-NLS-1$
 
     private final static int LOCALE_LANG = 0;
@@ -107,7 +115,8 @@ public class ConfigurationComposite extends Composite {
     private Button mCreateButton;
 
     private int mPlatformThemeCount = 0;
-    private boolean mDisableUpdates = false;
+    /** updates are disabled if > 0 */
+    private int mDisableUpdates = 0;
 
     private List<LayoutDevice> mDeviceList;
 
@@ -120,14 +129,10 @@ public class ConfigurationComposite extends Composite {
      */
     private boolean mClipping = true;
 
-    /**
-     * TODO: remove as it's saved in mCurrentStave. Just need to make sure there's no NPE when mCurrentState is null.
-     */
-    private LayoutDevice mCurrentDevice;
-
-    private SelectionState mCurrentState = null;
+    private final ConfigState mState = new ConfigState();
 
     private boolean mSdkChanged = false;
+    private boolean mFirstXmlModelChange = true;
 
     /** The config listener given to the constructor. Never null. */
     private final IConfigListener mListener;
@@ -143,6 +148,7 @@ public class ConfigurationComposite extends Composite {
     private IAndroidTarget mTarget;
     /** The {@link FolderConfiguration} being edited. */
     private FolderConfiguration mEditedConfig;
+
 
     /**
      * Interface implemented by the part which owns a {@link ConfigurationComposite}.
@@ -163,14 +169,90 @@ public class ConfigurationComposite extends Composite {
     }
 
     /**
-     * State of the config selection. This is used during UI reset to attempt to return the
+     * State of the current config. This is used during UI reset to attempt to return the
      * rendering to its original configuration.
      */
-    private static class SelectionState {
-        String deviceName;
+    private class ConfigState {
+        private final static String SEP = ":"; //$NON-NLS-1$
+        private final static String SEP_LOCALE = "-"; //$NON-NLS-1$
+
+        LayoutDevice device;
         String configName;
         ResourceQualifier[] locale;
         String theme;
+
+        String getData() {
+            StringBuilder sb = new StringBuilder();
+            if (device != null) {
+                sb.append(device.getName());
+                sb.append(SEP);
+                sb.append(configName);
+                sb.append(SEP);
+                if (locale != null) {
+                    sb.append(((LanguageQualifier) locale[0]).getValue());
+                    sb.append(SEP_LOCALE);
+                    sb.append(((RegionQualifier) locale[1]).getValue());
+                }
+                sb.append(SEP);
+                sb.append(theme);
+                sb.append(SEP);
+            }
+
+            return sb.toString();
+        }
+
+        boolean setData(String data) {
+            String[] values = data.split(SEP);
+            if (values.length == 4) {
+                for (LayoutDevice d : mDeviceList) {
+                    if (d.getName().equals(values[0])) {
+                        device = d;
+                        FolderConfiguration config = device.getConfigs().get(values[1]);
+                        if (config != null) {
+                            configName = values[1];
+
+                            locale = new ResourceQualifier[2];
+                            String locales[] = values[2].split(SEP_LOCALE);
+                            if (locales[0].length() > 0) {
+                                locale[0] = new LanguageQualifier(locales[0]);
+                            }
+                            if (locales[1].length() > 0) {
+                                locale[1] = new RegionQualifier(locales[1]);
+                            }
+
+                            theme = values[3];
+
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            if (device != null) {
+                sb.append(device.getName());
+            } else {
+                sb.append("null");
+            }
+            sb.append(SEP);
+            sb.append(configName);
+            sb.append(SEP);
+            if (locale != null) {
+                sb.append(((LanguageQualifier) locale[0]).getValue());
+                sb.append(SEP_LOCALE);
+                sb.append(((RegionQualifier) locale[1]).getValue());
+            }
+            sb.append(SEP);
+            sb.append(theme);
+            sb.append(SEP);
+
+            return sb.toString();
+        }
     }
 
     /**
@@ -332,6 +414,8 @@ public class ConfigurationComposite extends Composite {
         gd.heightHint = 0;
 
         mThemeCombo = new Combo(this, SWT.READ_ONLY | SWT.DROP_DOWN);
+        mThemeCombo.setLayoutData(new GridData(
+                GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
         mThemeCombo.setEnabled(false);
 
         mThemeCombo.addSelectionListener(new SelectionAdapter() {
@@ -363,77 +447,25 @@ public class ConfigurationComposite extends Composite {
     // ---- Init and reset/reload methods ----
 
     /**
-     * Init the UI with a given file configuration and project target. This must only be called
-     * the first time the {@link ConfigurationComposite} is created.
-     * <p/>This will NOT trigger a redraw event (will not call
-     * {@link IConfigListener#onConfigurationChange()}.)
-     * The state of the selection of the various combos will be initialized to default values that
-     * are compatible with the opened file.
+     * Sets the reference to the file being edited.
+     * <p/>The UI is intialized in {@link #onXmlModelLoaded()} which is called as the XML model is
+     * loaded (or reloaded as the SDK/target changes).
      *
      * @param file the file being opened
      *
+     * @see #onXmlModelLoaded()
      * @see #replaceFile(FolderConfiguration)
      * @see #changeFileOnNewConfig(FolderConfiguration)
      */
-    public void openFile(IFile file) {
+    public void setFile(IFile file) {
         mEditedFile = file;
-        IProject iProject = mEditedFile.getProject();
-
-        mDisableUpdates = true; // we do not want to trigger onXXXChange when setting
-                                // new values in the widgets.
-
-        // only attempt to do anything if the SDK and targets are loaded.
-        LoadStatus sdkStatus = AdtPlugin.getDefault().getSdkLoadStatus();
-        if (sdkStatus == LoadStatus.LOADED) {
-            // init the devices since the SDK is loaded.
-            initDevices();
-
-            Sdk currentSdk = Sdk.getCurrent();
-            if (currentSdk != null) {
-                mTarget = currentSdk.getTarget(iProject);
-            }
-
-            LoadStatus targetStatus = LoadStatus.FAILED;
-            if (mTarget != null) {
-                targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
-            }
-
-            if (targetStatus == LoadStatus.LOADED) {
-                mResources = ResourceManager.getInstance().getProjectResources(iProject);
-                ResourceFolder resFolder = mResources.getResourceFolder((IFolder)file.getParent());
-                mEditedConfig = resFolder.getConfiguration();
-
-                // update the themes and locales.
-                updateThemes();
-                updateLocales();
-
-                // update the clipping state
-                AndroidTargetData data = Sdk.getCurrent().getTargetData(mTarget);
-                if (data != null) {
-                    LayoutBridge bridge = data.getLayoutBridge();
-                    setClippingSupport(bridge.apiLevel >= 4);
-                }
-
-                // attempt to find a device/locale that can display this particular config.
-                findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
-
-                // compute the final current config
-                computeCurrentConfig();
-
-                // update the string showing the config value
-                updateConfigDisplay(mEditedConfig);
-
-                saveState();
-            }
-        }
-
-        mDisableUpdates = false;
     }
 
     /**
      * Replaces the UI with a given file configuration. This is meant to answer the user
-     * Explicitly opening a different version of the same layout from the Package Explorer.
-     * <p/>This attempts to keep the current config, but may change it if it's not compatible.
+     * explicitly opening a different version of the same layout from the Package Explorer.
+     * <p/>This attempts to keep the current config, but may change it if it's not compatible or
+     * not the best match
      * <p/>This will NOT trigger a redraw event (will not call
      * {@link IConfigListener#onConfigurationChange()}.)
      * @param file the file being opened.
@@ -444,8 +476,8 @@ public class ConfigurationComposite extends Composite {
      */
     public void replaceFile(IFile file) {
         // if there is no previous selection, revert to default mode.
-        if (mCurrentDevice == null) {
-            openFile(file);
+        if (mState.device == null) {
+            setFile(file); // onTargetChanged will be called later.
             return;
         }
 
@@ -456,8 +488,8 @@ public class ConfigurationComposite extends Composite {
         ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(file);
         mEditedConfig = resFolder.getConfiguration();
 
-        mDisableUpdates = true; // we do not want to trigger onXXXChange when setting
-        // new values in the widgets.
+        mDisableUpdates++; // we do not want to trigger onXXXChange when setting
+                           // new values in the widgets.
 
         // only attempt to do anything if the SDK and targets are loaded.
         LoadStatus sdkStatus = AdtPlugin.getDefault().getSdkLoadStatus();
@@ -468,19 +500,17 @@ public class ConfigurationComposite extends Composite {
 
                 // update the current config selection to make sure it's
                 // compatible with the new file
-                adaptConfigSelection();
+                adaptConfigSelection(true /*needBestMatch*/);
 
                 // compute the final current config
-                computeCurrentConfig();
+                computeCurrentConfig(true /*force*/);
 
                 // update the string showing the config value
                 updateConfigDisplay(mEditedConfig);
-
-                saveState();
             }
         }
 
-        mDisableUpdates = false;
+        mDisableUpdates--;
     }
 
     /**
@@ -515,67 +545,110 @@ public class ConfigurationComposite extends Composite {
         // store the new target.
         mTarget = target;
 
-        mDisableUpdates = true; // we do not want to trigger onXXXChange when setting
-                                // new values in the widgets.
+        mDisableUpdates++; // we do not want to trigger onXXXChange when setting
+                           // new values in the widgets.
 
         // this is going to be followed by a call to onTargetLoaded.
         // So we can only care about the layout devices in this case.
         initDevices();
 
-        mDisableUpdates = false;
+        mDisableUpdates--;
     }
 
     /**
-     * Responds to the event that the {@link IAndroidTarget} data was loaded, or the project's
-     * target changed
+     * Answers to the XML model being loaded, either the first time or when the Targget/SDK changes.
+     * <p>This initializes the UI, either with the first compatible configuration found,
+     * or attempts to restore a configuration if one is found to have been saved in the file
+     * persistent storage.
+     * <p>If the SDK or target are not loaded, nothing will happend (but the method must be called
+     * back when those are loaded).
+     * <p>The method automatically handles being called the first time after editor creation, or
+     * being called after during SDK/Target changes (as long as {@link #onSdkLoaded(IAndroidTarget)}
+     * is properly called).
+     *
+     * @see #storeState()
+     * @see #onSdkLoaded(IAndroidTarget)
      */
-    public void onTargetChange() {
-        if (mCurrentState == null) {
-            // this means the file was opened before the target finished loaded.
-            // This is basically an initial call to openFile that's delayed.
-            openFile(mEditedFile);
-            return;
+    public void onXmlModelLoaded() {
+        // only attempt to do anything if the SDK and targets are loaded.
+        LoadStatus sdkStatus = AdtPlugin.getDefault().getSdkLoadStatus();
+        if (sdkStatus == LoadStatus.LOADED) {
+            mDisableUpdates++; // we do not want to trigger onXXXChange when setting
+
+            // init the devices if needed (new SDK or first time going through here)
+            if (mSdkChanged || mFirstXmlModelChange) {
+                initDevices();
+            }
+
+            IProject iProject = mEditedFile.getProject();
+
+            Sdk currentSdk = Sdk.getCurrent();
+            if (currentSdk != null) {
+                mTarget = currentSdk.getTarget(iProject);
+            }
+
+            LoadStatus targetStatus = LoadStatus.FAILED;
+            if (mTarget != null) {
+                targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
+            }
+
+            if (targetStatus == LoadStatus.LOADED) {
+                if (mResources == null) {
+                    mResources = ResourceManager.getInstance().getProjectResources(iProject);
+                }
+                if (mEditedConfig == null) {
+                    ResourceFolder resFolder = mResources.getResourceFolder(
+                            (IFolder) mEditedFile.getParent());
+                    mEditedConfig = resFolder.getConfiguration();
+                }
+
+                // update the clipping state
+                AndroidTargetData targetData = Sdk.getCurrent().getTargetData(mTarget);
+                if (targetData != null) {
+                    LayoutBridge bridge = targetData.getLayoutBridge();
+                    setClippingSupport(bridge.apiLevel >= 4);
+                }
+
+                // get the file stored state
+                boolean loadedConfigData = false;
+                try {
+                    QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID, CONFIG_STATE);
+                    String data = mEditedFile.getPersistentProperty(qname);
+                    if (data != null) {
+                        loadedConfigData = mState.setData(data);
+                    }
+                } catch (CoreException e) {
+                    // pass
+                }
+
+                // update the themes and locales.
+                updateThemes();
+                updateLocales();
+
+                // If the current state was loaded from the persistent storage, we update the
+                // UI with it and then try to adapt it (which will handle incompatible
+                // configuration).
+                // Otherwise, just look for the first compatible configuration.
+                if (loadedConfigData) {
+                    // first make sure we have the config to adapt
+                    selectDevice(mState.device);
+                    fillConfigCombo(mState.configName);
+
+                    adaptConfigSelection(false /*needBestMatch*/);
+                } else {
+                    findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
+                }
+
+                // update the string showing the config value
+                updateConfigDisplay(mEditedConfig);
+
+                // compute the final current config
+                computeCurrentConfig(true /*force*/);
+            }
+
+            mDisableUpdates--;
+            mFirstXmlModelChange  = false;
         }
-
-        // update the resource and config if they are not present
-        if (mResources == null) {
-            mResources = ResourceManager.getInstance().getProjectResources(
-                    mEditedFile.getProject());
-        }
-
-        if (mEditedConfig == null) {
-            ResourceFolder resFolder = mResources.getResourceFolder(
-                    (IFolder)mEditedFile.getParent());
-            mEditedConfig = resFolder.getConfiguration();
-        }
-
-        mDisableUpdates = true; // we do not want to trigger onXXXChange when setting
-                                // new values in the widgets.
-
-        // update the themes. The locales need not be updated as they are stricly based on the
-        // content of the project
-        updateThemes();
-
-        // at this point, this means the target of the project was changed, or the whole SDK
-        // was changed reloaded (different location?).
-        // The former means the devices/configs are still there, the latter means they've
-        // been reloaded (in #onSdkLoaded).
-        if (mSdkChanged) {
-            findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
-        } else {
-            adaptConfigSelection();
-        }
-
-        // update the clipping state
-        AndroidTargetData data = Sdk.getCurrent().getTargetData(mTarget);
-        if (data != null) {
-            LayoutBridge bridge = data.getLayoutBridge();
-            setClippingSupport(bridge.apiLevel >= 4);
-        }
-
-        computeCurrentConfig();
-
-        mDisableUpdates = false;
     }
 
     /**
@@ -648,12 +721,12 @@ public class ConfigurationComposite extends Composite {
                                 mCurrentConfig.toDisplayString()));
             } else if (anyDeviceMatch != null) {
                 // select the device anyway.
-                selectDevice(mCurrentDevice = anyDeviceMatch);
+                selectDevice(mState.device = anyDeviceMatch);
                 fillConfigCombo(anyConfigMatchName);
                 mLocaleCombo.select(anyLocaleIndex);
 
                 // TODO: display a better warning!
-                computeCurrentConfig();
+                computeCurrentConfig(false /*force*/);
                 AdtPlugin.printErrorToConsole(mEditedFile.getProject(),
                         String.format(
                                 "'%1$s' is not a best match for any device/locale combination.",
@@ -668,7 +741,7 @@ public class ConfigurationComposite extends Composite {
                 // and replace whatever qualifier required by the layout file.
             }
         } else {
-            selectDevice(mCurrentDevice = bestDeviceMatch);
+            selectDevice(mState.device = bestDeviceMatch);
             fillConfigCombo(bestConfigMatchName);
             mLocaleCombo.select(bestLocaleIndex);
         }
@@ -682,17 +755,17 @@ public class ConfigurationComposite extends Composite {
      * <p/>If none are compatible, it reverts to
      * {@link #findAndSetCompatibleConfig(FolderConfiguration)}
      */
-    private void adaptConfigSelection() {
+    private void adaptConfigSelection(boolean needBestMatch) {
         // check the device config (ie sans locale)
         boolean needConfigChange = true; // if still true, we need to find another config.
         boolean currentConfigIsCompatible = false;
         int configIndex = mDeviceConfigCombo.getSelectionIndex();
         if (configIndex != -1) {
             String configName = mDeviceConfigCombo.getItem(configIndex);
-            FolderConfiguration currentConfig = mCurrentDevice.getConfigs().get(configName);
+            FolderConfiguration currentConfig = mState.device.getConfigs().get(configName);
             if (mEditedConfig.isMatchFor(currentConfig)) {
                 currentConfigIsCompatible = true; // current config is compatible
-                if (isCurrentFileBestMatchFor(currentConfig)) {
+                if (needBestMatch == false || isCurrentFileBestMatchFor(currentConfig)) {
                     needConfigChange = false;
                 }
             }
@@ -706,7 +779,7 @@ public class ConfigurationComposite extends Composite {
             // first look in the current device.
             String matchName = null;
             int localeIndex = -1;
-            Map<String, FolderConfiguration> configs = mCurrentDevice.getConfigs();
+            Map<String, FolderConfiguration> configs = mState.device.getConfigs();
             mainloop: for (Entry<String, FolderConfiguration> entry : configs.entrySet()) {
                 testConfig.set(entry.getValue());
 
@@ -777,33 +850,39 @@ public class ConfigurationComposite extends Composite {
         mCurrentLayoutLabel.setText(current != null ? current : "(Default)");
     }
 
-    private void saveState() {
-        if (mCurrentDevice != null) {
-            if (mCurrentState == null) {
-                mCurrentState = new SelectionState();
-            }
-
-            mCurrentState.deviceName = mCurrentDevice.getName();
-
+    private void saveState(boolean force) {
+        if (mDisableUpdates == 0) {
             int index = mDeviceConfigCombo.getSelectionIndex();
             if (index != -1) {
-                mCurrentState.configName = mDeviceConfigCombo.getItem(index);
+                mState.configName = mDeviceConfigCombo.getItem(index);
             } else {
-                mCurrentState.configName = null;
+                mState.configName = null;
             }
 
             // since the locales are relative to the project, only keeping the index is enough
             index = mLocaleCombo.getSelectionIndex();
             if (index != -1) {
-                mCurrentState.locale = mLocaleList.get(index);
+                mState.locale = mLocaleList.get(index);
             } else {
-                mCurrentState.locale = null;
+                mState.locale = null;
             }
 
             index = mThemeCombo.getSelectionIndex();
             if (index != -1) {
-                mCurrentState.theme = mThemeCombo.getItem(index);
+                mState.theme = mThemeCombo.getItem(index);
             }
+        }
+    }
+
+    /**
+     * Stores the current config selection into the edited file.
+     */
+    public void storeState() {
+        try {
+            QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID, CONFIG_STATE); //$NON-NLS-1$
+            mEditedFile.setPersistentProperty(qname, mState.getData());
+        } catch (CoreException e) {
+            // pass
         }
     }
 
@@ -816,7 +895,7 @@ public class ConfigurationComposite extends Composite {
             return; // can't do anything w/o it.
         }
 
-        mDisableUpdates = true;
+        mDisableUpdates++;
 
         // Reset the combo
         mLocaleCombo.removeAll();
@@ -874,18 +953,18 @@ public class ConfigurationComposite extends Composite {
                 new RegionQualifier(FAKE_LOCALE_VALUE)
         });
 
-        if (mCurrentState != null && mCurrentState.locale != null) {
+        if (mState.locale != null) {
             // FIXME: this may fails if the layout was deleted (and was the last one to have that local.
             // (we have other problem in this case though)
-            setLocaleCombo(mCurrentState.locale[LOCALE_LANG],
-                    mCurrentState.locale[LOCALE_REGION]);
+            setLocaleCombo(mState.locale[LOCALE_LANG],
+                    mState.locale[LOCALE_REGION]);
         } else {
             mLocaleCombo.select(0);
         }
 
         mThemeCombo.getParent().layout();
 
-        mDisableUpdates = false;
+        mDisableUpdates--;
     }
 
     /**
@@ -899,7 +978,7 @@ public class ConfigurationComposite extends Composite {
 
         ProjectResources frameworkProject = mListener.getFrameworkResources();
 
-        mDisableUpdates = true;
+        mDisableUpdates++;
 
         // Reset the combo
         mThemeCombo.removeAll();
@@ -977,10 +1056,10 @@ public class ConfigurationComposite extends Composite {
         }
 
         // try to reselect the previous theme.
-        if (mCurrentState != null && mCurrentState.theme != null) {
+        if (mState.theme != null) {
             final int count = mThemeCombo.getItemCount();
             for (int i = 0 ; i < count ; i++) {
-                if (mCurrentState.theme.equals(mThemeCombo.getItem(i))) {
+                if (mState.theme.equals(mThemeCombo.getItem(i))) {
                     mThemeCombo.select(i);
                     break;
                 }
@@ -995,7 +1074,7 @@ public class ConfigurationComposite extends Composite {
 
         mThemeCombo.getParent().layout();
 
-        mDisableUpdates = false;
+        mDisableUpdates--;
     }
 
     // ---- getters for the config selection values ----
@@ -1035,8 +1114,8 @@ public class ConfigurationComposite extends Composite {
      * Returns the current device xdpi.
      */
     public float getXDpi() {
-        if (mCurrentDevice != null) {
-            float dpi = mCurrentDevice.getXDpi();
+        if (mState.device != null) {
+            float dpi = mState.device.getXDpi();
             if (Float.isNaN(dpi) == false) {
                 return dpi;
             }
@@ -1050,8 +1129,8 @@ public class ConfigurationComposite extends Composite {
      * Returns the current device ydpi.
      */
     public float getYDpi() {
-        if (mCurrentDevice != null) {
-            float dpi = mCurrentDevice.getYDpi();
+        if (mState.device != null) {
+            float dpi = mState.device.getYDpi();
             if (Float.isNaN(dpi) == false) {
                 return dpi;
             }
@@ -1209,7 +1288,7 @@ public class ConfigurationComposite extends Composite {
     private void onDeviceChange(boolean recomputeLayout) {
         // because changing the content of a combo triggers a change event, respect the
         // mDisableUpdates flag
-        if (mDisableUpdates == true) {
+        if (mDisableUpdates > 0) {
             return;
         }
 
@@ -1224,10 +1303,10 @@ public class ConfigurationComposite extends Composite {
             }
 
             // get the previous config, so that we can look for a close match
-            if (mCurrentDevice != null) {
+            if (mState.device != null) {
                 int index = mDeviceConfigCombo.getSelectionIndex();
                 if (index != -1) {
-                    FolderConfiguration oldConfig = mCurrentDevice.getConfigs().get(
+                    FolderConfiguration oldConfig = mState.device.getConfigs().get(
                             mDeviceConfigCombo.getItem(index));
 
                     LayoutDevice newDevice = mDeviceList.get(deviceIndex);
@@ -1236,14 +1315,14 @@ public class ConfigurationComposite extends Composite {
                 }
             }
 
-            mCurrentDevice = mDeviceList.get(deviceIndex);
+            mState.device = mDeviceList.get(deviceIndex);
         } else {
-            mCurrentDevice = null;
+            mState.device = null;
         }
 
         fillConfigCombo(newConfigName);
 
-        computeCurrentConfig();
+        computeCurrentConfig(false /*force*/);
 
         if (recomputeLayout) {
             onDeviceConfigChange();
@@ -1261,9 +1340,9 @@ public class ConfigurationComposite extends Composite {
         Sdk.getCurrent().getLayoutDeviceManager().save();
 
         // Update the UI with no triggered event
-        mDisableUpdates = true;
+        mDisableUpdates++;
 
-        LayoutDevice oldCurrent = mCurrentDevice;
+        LayoutDevice oldCurrent = mState.device;
 
         // but first, update the device combo
         initDevices();
@@ -1272,21 +1351,21 @@ public class ConfigurationComposite extends Composite {
         if (selectDevice(oldCurrent)) {
             // current device still exists.
             // reselect the config
-            selectConfig(mCurrentState.configName);
+            selectConfig(mState.configName);
 
             // reset the UI as if it was just a replacement file, since we can keep
             // the current device (and possibly config).
-            adaptConfigSelection();
+            adaptConfigSelection(false /*needBestMatch*/);
 
         } else {
             // find a new device/config to match the current file.
             findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
         }
 
-        mDisableUpdates = false;
+        mDisableUpdates--;
 
         // recompute the current config
-        computeCurrentConfig();
+        computeCurrentConfig(false /*force*/);
 
         // force a redraw
         onDeviceChange(true /*recomputeLayout*/);
@@ -1357,14 +1436,14 @@ public class ConfigurationComposite extends Composite {
     }
 
     /**
-     * fills the config combo with new values based on {@link #mCurrentDevice}.
+     * fills the config combo with new values based on {@link #mCurrentState#device}.
      * @param refName an optional name. if set the selection will match this name (if found)
      */
     private void fillConfigCombo(String refName) {
         mDeviceConfigCombo.removeAll();
 
-        if (mCurrentDevice != null) {
-            Set<String> configNames = mCurrentDevice.getConfigs().keySet();
+        if (mState.device != null) {
+            Set<String> configNames = mState.device.getConfigs().keySet();
 
             int selectionIndex = 0;
             int i = 0;
@@ -1389,11 +1468,11 @@ public class ConfigurationComposite extends Composite {
     private void onDeviceConfigChange() {
         // because changing the content of a combo triggers a change event, respect the
         // mDisableUpdates flag
-        if (mDisableUpdates == true) {
+        if (mDisableUpdates > 0) {
             return;
         }
 
-        if (computeCurrentConfig() && mListener != null) {
+        if (computeCurrentConfig(false /*force*/) && mListener != null) {
             mListener.onConfigurationChange();
         }
     }
@@ -1404,26 +1483,29 @@ public class ConfigurationComposite extends Composite {
     private void onLocaleChange() {
         // because mLanguage triggers onLanguageChange at each modification, the filling
         // of the combo with data will trigger notifications, and we don't want that.
-        if (mDisableUpdates == true) {
+        if (mDisableUpdates > 0) {
             return;
         }
 
-        if (computeCurrentConfig() &&  mListener != null) {
+        if (computeCurrentConfig(false /*force*/) &&  mListener != null) {
             mListener.onConfigurationChange();
         }
     }
 
     /**
      * Saves the current state and the current configuration
+     * @param force forces saving the states even if updates are disabled
+     *
+     * @see #saveState(boolean)
      */
-    private boolean computeCurrentConfig() {
-        saveState();
+    private boolean computeCurrentConfig(boolean force) {
+        saveState(force);
 
-        if (mCurrentDevice != null) {
+        if (mState.device != null) {
             // get the device config from the device/config combos.
             int configIndex = mDeviceConfigCombo.getSelectionIndex();
             String name = mDeviceConfigCombo.getItem(configIndex);
-            FolderConfiguration config = mCurrentDevice.getConfigs().get(name);
+            FolderConfiguration config = mState.device.getConfigs().get(name);
 
             // replace the config with the one from the device
             mCurrentConfig.set(config);
@@ -1449,6 +1531,8 @@ public class ConfigurationComposite extends Composite {
     }
 
     private void onThemeChange() {
+        saveState(false /*force*/);
+
         int themeIndex = mThemeCombo.getSelectionIndex();
         if (themeIndex != -1) {
             String theme = mThemeCombo.getItem(themeIndex);
@@ -1461,8 +1545,6 @@ public class ConfigurationComposite extends Composite {
                 mListener.onThemeChange();
             }
         }
-
-        saveState();
     }
 
     private void onClippingChange() {

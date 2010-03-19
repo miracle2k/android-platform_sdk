@@ -592,7 +592,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
      */
     public void openFile(IFile file) {
         mEditedFile = file;
-        mConfigComposite.openFile(mEditedFile);
+        mConfigComposite.setFile(mEditedFile);
     }
 
     /**
@@ -620,7 +620,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
     public void onTargetChange() {
         resetInput();
-        mConfigComposite.onTargetChange();
+        mConfigComposite.onXmlModelLoaded();
         onConfigurationChange();
     }
 
@@ -844,6 +844,9 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
                 // at this point, we have not opened a new file.
 
+                // Store the state in the current file
+                mConfigComposite.storeState();
+
                 // Even though the layout doesn't change, the config changed, and referenced
                 // resources need to be updated.
                 recomputeLayout();
@@ -862,6 +865,9 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
     }
 
     public void onThemeChange() {
+        // Store the state in the current file
+        mConfigComposite.storeState();
+
         recomputeLayout();
     }
 
