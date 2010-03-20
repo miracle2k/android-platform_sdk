@@ -742,19 +742,30 @@ final class AvdCreationDialog extends GridDialog {
             } else {
                 String valueString = mSdCardSize.getText();
                 if (valueString.length() > 0) {
-                    int value = Integer.parseInt(valueString); // verifier makes this
-                                                               // unlikely to fail.
-                    switch (mSdCardSizeCombo.getSelectionIndex()) {
-                        case 0:
-                            value *= 1024;
-                            break;
-                        case 1:
-                            value *= 1024 * 1024;
-                            break;
-                    }
+                    // prevent overflow: no more than 999GB
+                    // 10 digit for MiB, 13 for KiB
+                    if (valueString.length() >= 10 +
+                            (mSdCardSizeCombo.getSelectionIndex() == 0 ? 3 : 0)) {
+                        error = "SD Card size is too big!";
+                    } else {
+                        try {
+                            long value = Long.parseLong(valueString);
 
-                    if (value < 9 * 1024 * 1024) {
-                        error = "SD Card size must be at least 9MB";
+                            switch (mSdCardSizeCombo.getSelectionIndex()) {
+                                case 0:
+                                    value *= 1024L;
+                                    break;
+                                case 1:
+                                    value *= 1024L * 1024L;
+                                    break;
+                            }
+
+                            if (value < 9 * 1024 * 1024) {
+                                error = "SD Card size must be at least 9MB";
+                            }
+                        } catch (NumberFormatException e) {
+                            // will never happen thanks to the VerifyListener.
+                        }
                     }
                 }
             }
