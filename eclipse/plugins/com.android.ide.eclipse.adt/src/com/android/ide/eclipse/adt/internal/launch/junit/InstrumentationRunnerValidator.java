@@ -17,6 +17,7 @@ package com.android.ide.eclipse.adt.internal.launch.junit;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.launch.LaunchMessages;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser.Instrumentation;
@@ -47,7 +48,7 @@ class InstrumentationRunnerValidator {
                     null /* errorListener */, true /* gatherData */, false /* markErrors */);
             init(manifestParser);
         } catch (CoreException e) {
-            AdtPlugin.printErrorToConsole(javaProject.getProject(), "Failed to parse %1$s",
+            AdtPlugin.printErrorToConsole(javaProject.getProject(), LaunchMessages.ParseFileFailure_s,
                     AndroidConstants.FN_ANDROID_MANIFEST);
         }
     }
@@ -132,7 +133,7 @@ class InstrumentationRunnerValidator {
      */
     String validateInstrumentationRunner(String instrumentation) {
         if (!mHasRunnerLibrary) {
-            return String.format("The application does not declare uses-library %1$s", 
+            return String.format(LaunchMessages.InstrValidator_NoTestLibMsg_s,
                     AndroidConstants.LIBRARY_TEST_RUNNER);
         }
         // check if this instrumentation is the standard test runner
@@ -141,7 +142,8 @@ class InstrumentationRunnerValidator {
             String result = BaseProjectHelper.testClassForManifest(mJavaProject,
                     instrumentation, AndroidConstants.CLASS_INSTRUMENTATION_RUNNER, true);
              if (result != BaseProjectHelper.TEST_CLASS_OK) {
-                return String.format("The instrumentation runner must be of type %s", 
+                return String.format(
+                        LaunchMessages.InstrValidator_WrongRunnerTypeMsg_s,
                         AndroidConstants.CLASS_INSTRUMENTATION_RUNNER);
              }
         }

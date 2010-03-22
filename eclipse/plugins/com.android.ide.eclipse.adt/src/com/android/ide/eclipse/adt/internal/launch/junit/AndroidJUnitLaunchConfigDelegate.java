@@ -23,6 +23,7 @@ import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchConfiguration;
 import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchController;
 import com.android.ide.eclipse.adt.internal.launch.IAndroidLaunchAction;
 import com.android.ide.eclipse.adt.internal.launch.LaunchConfigDelegate;
+import com.android.ide.eclipse.adt.internal.launch.LaunchMessages;
 import com.android.ide.eclipse.adt.internal.launch.junit.runtime.AndroidJUnitLaunchInfo;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
@@ -63,8 +64,8 @@ public class AndroidJUnitLaunchConfigDelegate extends LaunchConfigDelegate {
 
         String runner = getRunner(project, configuration, manifestParser);
         if (runner == null) {
-            AdtPlugin.displayError("Android Launch",
-                    String.format("%1$s is not configured correctly for running tests. See Console for details.",
+            AdtPlugin.displayError(LaunchMessages.LaunchDialogTitle,
+                    String.format(LaunchMessages.AndroidJUnitDelegate_NoRunnerMsg_s,
                             project.getName()));
             androidLaunch.stopLaunch();
             return;
@@ -72,8 +73,8 @@ public class AndroidJUnitLaunchConfigDelegate extends LaunchConfigDelegate {
         // get the target app's package
         String targetAppPackage = getTargetPackage(manifestParser, runner); 
         if (targetAppPackage == null) {
-            AdtPlugin.displayError("Android Launch",
-                    String.format("%1$s is not configured correctly for running tests:\nA targetPackage attribute for instrumentation %2$s in its %3$s could not be found!",
+            AdtPlugin.displayError(LaunchMessages.LaunchDialogTitle,
+                    String.format(LaunchMessages.AndroidJUnitDelegate_NoTargetMsg_3s,
                             project.getName(), runner, AndroidConstants.FN_ANDROID_MANIFEST));
             androidLaunch.stopLaunch();
             return; 
@@ -178,13 +179,12 @@ public class AndroidJUnitLaunchConfigDelegate extends LaunchConfigDelegate {
                     BaseProjectHelper.getJavaProject(project), manifestParser);
             runner = instrFinder.getValidInstrumentationTestRunner();
             if (runner != null) {
-                AdtPlugin.printErrorToConsole(project,
-                        String.format("Warning: No instrumentation runner found for the launch, " +
-                                "using %1$s", runner));
+                AdtPlugin.printErrorToConsole(project, String.format(
+                        LaunchMessages.AndroidJUnitDelegate_NoRunnerConfigMsg_s, runner));
                 return runner;
             }
-            AdtPlugin.printErrorToConsole(project,
-                    String.format("%1$s does not specify a %2$s instrumentation or does not declare uses-library %3$s in its %4$s",
+            AdtPlugin.printErrorToConsole(project, String.format(
+                    LaunchMessages.AndroidJUnitDelegate_NoRunnerConsoleMsg_4s,
                     project.getName(),
                     AndroidConstants.CLASS_INSTRUMENTATION_RUNNER, 
                     AndroidConstants.LIBRARY_TEST_RUNNER,
