@@ -432,22 +432,29 @@ public final class AvdManager {
 
     /**
      * Returns the {@link AvdInfo} matching the given <var>name</var>.
+     * <p/>
+     * The search is case-insensitive.
+     *
      * @param name the name of the AVD to return
      * @param validAvdOnly if <code>true</code>, only look through the list of valid AVDs.
      * @return the matching AvdInfo or <code>null</code> if none were found.
      */
     public AvdInfo getAvd(String name, boolean validAvdOnly) {
 
+        boolean ignoreCase = SdkConstants.currentPlatform() == SdkConstants.PLATFORM_WINDOWS;
+
         if (validAvdOnly) {
             for (AvdInfo info : getValidAvds()) {
-                if (info.getName().equals(name)) {
+                String name2 = info.getName();
+                if (name2.equals(name) || (ignoreCase && name2.equalsIgnoreCase(name))) {
                     return info;
                 }
             }
         } else {
             synchronized (mAllAvdList) {
                 for (AvdInfo info : mAllAvdList) {
-                    if (info.getName().equals(name)) {
+                    String name2 = info.getName();
+                    if (name2.equals(name) || (ignoreCase && name2.equalsIgnoreCase(name))) {
                         return info;
                     }
                 }
