@@ -254,7 +254,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
         mSashError = new SashForm(mSashPalette, SWT.VERTICAL | SWT.BORDER);
         mSashError.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        mLayoutCanvas = new LayoutCanvas(mRulesEngine, mSashError, SWT.NONE);
+        mLayoutCanvas = new LayoutCanvas(mLayoutEditor, mRulesEngine, mSashError, SWT.NONE);
 
         mErrorLabel = new StyledText(mSashError, SWT.READ_ONLY);
         mErrorLabel.setEditable(false);

@@ -26,40 +26,54 @@ import org.eclipse.swt.dnd.TransferData;
 import java.io.UnsupportedEncodingException;
 
 /**
- * A d'n'd {@link Transfer} class that can transfer a <em>single</em> {@link ElementDescriptor}.
+ * A d'n'd {@link Transfer} class that can transfer a <em>simplified</em> XML fragment
+ * to transfer elements and their attributes between {@link LayoutCanvas}.
  * <p/>
  * The implementation is based on the {@link ByteArrayTransfer} and what we transfer
- * is actually only the inner XML name of the element, which is unique enough.
+ * is text with the following fixed format:
  * <p/>
- * Drag source provides an {@link ElementDescriptor} object.
- * Drog receivers get back a {@link String} object representing the
- * {@link ElementDescriptor#getXmlName()}.
+ * <pre>
+ * {element-name element-property ...
+ *  attrib_name="attrib_value"
+ *  attrib2="..."
+ *  {...inner elements...
+ *  }
+ * }
+ * {...next element...
+ * }
+ *
+ * </pre>
+ * The format has nothing to do with XML per se, except for the fact that the
+ * transfered content represents XML elements and XML attributes.
+ *
  * <p/>
- * Drop receivers can find the corresponding element by using
- * {@link ElementDescriptor#findChildrenDescriptor(String, boolean)} with the
- * XML name returned by this transfer operation and their root descriptor.
- * <p/>
- * Drop receivers must deal with the fact that this XML name may not exist in their
- * own {@link ElementDescriptor} hierarchy -- e.g. if the drag came from a different
- * GLE based on a different SDK platform or using custom widgets. In this case they
- * must refuse the drop.
+ * The detailed syntax is:
+ * <pre>
+ * - ELEMENT     := {NAME PROPERTY*\nATTRIB_LINE*ELEMENT*}\n
+ * - PROPERTY    := $[A-Z]=[^ ]*
+ * - NAME        := [^\n=]+
+ * - ATTRIB_LINE := @URI:NAME=[^\n]*\n
+ * </pre>
+ *
+ * Elements are represented by {@link SimpleElement}s and their attributes by
+ * {@link SimpleAttribute}s, all of which have very specific properties that are
+ * specifically limited to our needs for drag'n'drop.
  */
-public class ElementDescTransfer extends ByteArrayTransfer {
+class SimpleXmlTransfer extends ByteArrayTransfer {
 
     // Reference: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
 
-
-    private static final String TYPE_NAME = "android.ADT.element.desc.transfer.1";
+    private static final String TYPE_NAME = "android.ADT.simple.xml.transfer.1";    //$NON-NLS-1$
     private static final int TYPE_ID = registerType(TYPE_NAME);
-    private static final ElementDescTransfer sInstance = new ElementDescTransfer();
+    private static final SimpleXmlTransfer sInstance = new SimpleXmlTransfer();
 
     /** Private constructor. Use {@link #getInstance()} to retrieve the singleton instance. */
-    private ElementDescTransfer() {
+    private SimpleXmlTransfer() {
         // pass
     }
 
     /** Returns the singleton instance. */
-    public static ElementDescTransfer getInstance() {
+    public static SimpleXmlTransfer getInstance() {
         return sInstance;
     }
 
@@ -94,26 +108,34 @@ public class ElementDescTransfer extends ByteArrayTransfer {
         return new String[] { TYPE_NAME };
     }
 
+    /** Transforms a array of {@link SimpleElement} into a native data transfer. */
     @Override
     protected void javaToNative(Object object, TransferData transferData) {
-        if (object == null || !(object instanceof ElementDescriptor)) {
+        if (object == null || !(object instanceof SimpleElement[])) {
             return;
         }
 
         if (isSupportedType(transferData)) {
-            String data = getFqcn((ElementDescriptor)object);
+            StringBuilder sb = new StringBuilder();
+            for (SimpleElement e : (SimpleElement[]) object) {
+                sb.append(e.toString());
+            }
+            String data = sb.toString();
 
-            if (data != null) {
-                try {
-                    byte[] buf = data.getBytes("UTF-8");  //$NON-NLS-1$
-                    super.javaToNative(buf, transferData);
-                } catch (UnsupportedEncodingException e) {
-                    // unlikely; ignore
-                }
+            try {
+                byte[] buf = data.getBytes("UTF-8");  //$NON-NLS-1$
+                super.javaToNative(buf, transferData);
+            } catch (UnsupportedEncodingException e) {
+                // unlikely; ignore
             }
         }
     }
 
+    /**
+     * Recreates an array of {@link SimpleElement} from a native data transfer.
+     *
+     * @return An array of {@link SimpleElement} or null. The array may be empty.
+     */
     @Override
     protected Object nativeToJava(TransferData transferData) {
         if (isSupportedType(transferData)) {
@@ -121,7 +143,7 @@ public class ElementDescTransfer extends ByteArrayTransfer {
             if (buf != null && buf.length > 0) {
                 try {
                     String s = new String(buf, "UTF-8"); //$NON-NLS-1$
-                    return s;
+                    return SimpleElement.parseString(s);
                 } catch (UnsupportedEncodingException e) {
                     // unlikely to happen, but still possible
                 }

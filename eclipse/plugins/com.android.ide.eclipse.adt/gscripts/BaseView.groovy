@@ -95,19 +95,21 @@ public class BaseView implements IViewRule {
     // ==== Drag'n'drop support ====
 
     // By default Views do not accept drag'n'drop.
-    DropFeedback onDropEnter(INode targetNode, String fqcn) {
+    DropFeedback onDropEnter(INode targetNode, IDragElement[] elements) {
         return null;
     }
 
-    DropFeedback onDropMove(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
+    DropFeedback onDropMove(INode targetNode, IDragElement[] elements,
+                            DropFeedback feedback, Point p) {
         return null;
     }
 
-    void onDropLeave(INode targetNode, String fqcn, DropFeedback feedback) {
+    void onDropLeave(INode targetNode, IDragElement[] elements, DropFeedback feedback) {
         // ignore
     }
 
-    void onDropped(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
+    void onDropped(INode targetNode, IDragElement[] elements, DropFeedback feedback,
+                   Point p, boolean isCopy, boolean sameCanvas) {
         // ignore
     }
 

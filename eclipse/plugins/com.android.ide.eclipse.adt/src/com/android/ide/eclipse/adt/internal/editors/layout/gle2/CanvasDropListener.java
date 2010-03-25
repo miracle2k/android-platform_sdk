@@ -44,13 +44,13 @@ import org.eclipse.swt.dnd.TransferData;
     private CanvasViewInfo mCurrentView;
 
     /**
-     * The FQCN currently being dragged. This will always be non-null for a valid
+     * The elements currently being dragged. This will always be non-null for a valid
      * drag'n'drop that happens within the same instance of Eclipse.
      * <p/>
      * In the event that the drag and drop happens between different instances of Eclipse
      * this will remain null.
      */
-    private String mCurrentDragFqcn;
+    private SimpleElement[] mCurrentDragElements;
 
     /**
      * The first view under the cursor that responded to onDropEnter is called the "target view".
@@ -97,6 +97,9 @@ import org.eclipse.swt.dnd.TransferData;
         checkDataType(event);
 
         if (event.detail == DND.DROP_DEFAULT) {
+            // We set the default operation to COPY.
+            // TODO: for a SimpleXmlTransfer whithin the *same* canvas, we want to use MOVE as default.
+            // TODO: see dragOperationChanged() below which must match behavior.
             if ((event.operations & DND.DROP_COPY) != 0) {
                 event.detail = DND.DROP_COPY;
             }
@@ -104,7 +107,7 @@ import org.eclipse.swt.dnd.TransferData;
 
         if (event.detail == DND.DROP_COPY) {
 
-            // Get the dragged FQCN.
+            // Get the dragged elements.
             // The current transfered type can be extracted from the event.
             // As described in dragOver(), this works basically works on Windows but
             // not on Linux or Mac, in which case we can't get the type until we
@@ -114,21 +117,21 @@ import org.eclipse.swt.dnd.TransferData;
             // before it will most likely work only on Windows.)
             // In any case this can be null even for a valid transfer.
 
-            mCurrentDragFqcn = GlobalCanvasDragInfo.getInstance().getCurrentFqcn();
+            mCurrentDragElements = GlobalCanvasDragInfo.getInstance().getCurrentElements();
 
-            ElementDescTransfer edt = ElementDescTransfer.getInstance();
-            if (edt.isSupportedType(event.currentDataType)) {
-                String data = (String) edt.nativeToJava(event.currentDataType);
+            SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
+            if (sxt.isSupportedType(event.currentDataType)) {
+                SimpleElement[] data = (SimpleElement[]) sxt.nativeToJava(event.currentDataType);
                 if (data != null) {
-                    if (mCurrentDragFqcn == null) {
-                        mCurrentDragFqcn = data;
+                    if (mCurrentDragElements == null) {
+                        mCurrentDragElements = data;
 
-                    } else if (!mCurrentDragFqcn.equals(data)) {
+                    } else if (!mCurrentDragElements.equals(data)) {
                         // Mostly for debugging purposes we compare them. They should always match.
                         // TODO use an error for right now. Later move this to a log warning only.
                         AdtPlugin.logAndPrintError(null /*exception*/, "CanvasDrop",
                                 "TransferType mismatch: Global=%s, drag.event=%s",
-                                mCurrentDragFqcn, data);
+                                mCurrentDragElements, data);
                     }
                 }
             }
@@ -225,25 +228,32 @@ import org.eclipse.swt.dnd.TransferData;
         mLeaveTargetNode = null;
         mLeaveFeedback = null;
 
-        String viewFqcn = null;
+        SimpleElement[] elements = null;
 
-        ElementDescTransfer edt = ElementDescTransfer.getInstance();
+        SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
 
-        if (edt.isSupportedType(event.currentDataType)) {
-            // DropTarget already invoked Tranfer#nativeToJava() and stored the result
-            // in event.data
-            if (event.data instanceof String) {
-                viewFqcn = (String) event.data;
+        if (sxt.isSupportedType(event.currentDataType)) {
+            if (event.data instanceof SimpleElement[]) {
+                elements = (SimpleElement[]) event.data;
             }
         }
 
-        if (viewFqcn == null) {
+        if (elements == null || elements.length < 1) {
             AdtPlugin.printErrorToConsole("DEBUG", "drop missing drop data");
             return;
         }
 
-        Point p = mCanvas.displayToCanvasPoint(event.x, event.y);
-        mCanvas.getRulesEngine().callOnDropped(mTargetNode, viewFqcn, mFeedback, p);
+        Point where = mCanvas.displayToCanvasPoint(event.x, event.y);
+
+        boolean isCopy = event.detail == DND.DROP_COPY;
+        boolean sameCanvas = mCanvas == GlobalCanvasDragInfo.getInstance().getSourceCanvas();
+
+        mCanvas.getRulesEngine().callOnDropped(mTargetNode,
+                elements,
+                mFeedback,
+                where,
+                isCopy,
+                sameCanvas);
 
         clearDropInfo();
     }
@@ -260,7 +270,7 @@ import org.eclipse.swt.dnd.TransferData;
     }
 
     /**
-     * Verifies that event.currentDataType is of type {@link ElementDescTransfer}.
+     * Verifies that event.currentDataType is of type {@link SimpleXmlTransfer}.
      * If not, try to find a valid data type.
      * Otherwise set the drop to {@link DND#DROP_NONE} to cancel it.
      *
@@ -268,19 +278,19 @@ import org.eclipse.swt.dnd.TransferData;
      */
     private boolean checkDataType(DropTargetEvent event) {
 
-        ElementDescTransfer edt = ElementDescTransfer.getInstance();
+        SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
 
         TransferData current = event.currentDataType;
 
-        if (edt.isSupportedType(current)) {
+        if (sxt.isSupportedType(current)) {
             return true;
         }
 
-        // We only support ElementDescTransfer and the current data type is not right.
+        // We only support SimpleXmlTransfer and the current data type is not right.
         // Let's see if we can find another one.
 
         for (TransferData td : event.dataTypes) {
-            if (td != current && edt.isSupportedType(td)) {
+            if (td != current && sxt.isSupportedType(td)) {
                 // We like this type better.
                 event.currentDataType = td;
                 return true;
@@ -352,7 +362,7 @@ import org.eclipse.swt.dnd.TransferData;
                         targetVi != null && df == null;
                         targetVi = targetVi.getParent()) {
                     targetNode = mCanvas.getNodeFactory().create(targetVi);
-                    df = mCanvas.getRulesEngine().callOnDropEnter(targetNode, mCurrentDragFqcn);
+                    df = mCanvas.getRulesEngine().callOnDropEnter(targetNode, mCurrentDragElements);
                 }
 
                 if (df != null && targetNode != mTargetNode) {
@@ -377,7 +387,7 @@ import org.eclipse.swt.dnd.TransferData;
             com.android.ide.eclipse.adt.editors.layout.gscripts.Point p2 =
                 new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(x, y);
             DropFeedback df = mCanvas.getRulesEngine().callOnDropMove(
-                    mTargetNode, mCurrentDragFqcn, mFeedback, p2);
+                    mTargetNode, mCurrentDragElements, mFeedback, p2);
             if (df == null) {
                 // The target is no longer interested in the drop move.
                 callDropLeave();
@@ -395,7 +405,7 @@ import org.eclipse.swt.dnd.TransferData;
      */
     private void callDropLeave() {
         if (mTargetNode != null && mFeedback != null) {
-            mCanvas.getRulesEngine().callOnDropLeave(mTargetNode, mCurrentDragFqcn, mFeedback);
+            mCanvas.getRulesEngine().callOnDropLeave(mTargetNode, mCurrentDragElements, mFeedback);
         }
 
         mTargetNode = null;

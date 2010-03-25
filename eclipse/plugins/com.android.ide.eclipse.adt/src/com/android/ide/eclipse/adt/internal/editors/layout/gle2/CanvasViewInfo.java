@@ -158,6 +158,25 @@ public class CanvasViewInfo {
     }
 
     /**
+     * Returns true if the specific {@link CanvasViewInfo} is a parent
+     * of this {@link CanvasViewInfo}. It can be a direct parent or any
+     * grand-parent higher in the hierarchy.
+     */
+    public boolean isParent(CanvasViewInfo potentialParent) {
+        if (potentialParent == null) {
+
+        }
+        CanvasViewInfo p = mParent;
+        while (p != null) {
+            if (p == potentialParent) {
+                return true;
+            }
+            p = p.getParent();
+        }
+        return false;
+    }
+
+    /**
      * Returns the name of the {@link CanvasViewInfo}.
      * Could be null, although unlikely.
      * Experience shows this is the full qualified Java name of the View.

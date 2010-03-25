@@ -24,7 +24,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
     // ==== Drag'n'drop support ====
     // The AbsoluteLayout accepts any drag'n'drop anywhere on its surface.
 
-    DropFeedback onDropEnter(INode targetNode, String fqcn) {
+    DropFeedback onDropEnter(INode targetNode, IDragElement[] elements) {
         return new DropFeedback(
             [ "p": null ],      // Point: last cursor position
             {
@@ -53,17 +53,25 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
             });
     }
 
-    DropFeedback onDropMove(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
+    DropFeedback onDropMove(INode targetNode,
+                            IDragElement[] elements,
+                            DropFeedback feedback,
+                            Point p) {
         feedback.userData.p = p;
         feedback.requestPaint = true;
         return feedback;
     }
 
-    void onDropLeave(INode targetNode, String fqcn, DropFeedback feedback) {
+    void onDropLeave(INode targetNode, IDragElement[] elements, DropFeedback feedback) {
         // ignore
     }
 
-    void onDropped(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
+    void onDropped(INode targetNode,
+                   IDragElement[] elements,
+                   DropFeedback feedback,
+                   Point p,
+                   boolean isCopy,
+                   boolean sameCanvas) {
 
         Rect b = targetNode.getBounds();
         if (!b.isValid()) {

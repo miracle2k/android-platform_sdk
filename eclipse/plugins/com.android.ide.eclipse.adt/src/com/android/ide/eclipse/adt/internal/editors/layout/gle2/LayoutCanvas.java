@@ -16,18 +16,30 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
+import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.layoutlib.api.ILayoutResult;
 
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
+import org.eclipse.swt.dnd.DragSource;
+import org.eclipse.swt.dnd.DragSourceEvent;
+import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.DropTarget;
+import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
@@ -51,11 +63,17 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.ScrollBar;
+import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
+import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
+import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
+import org.eclipse.wst.xml.core.internal.document.NodeContainer;
+import org.w3c.dom.Node;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -78,6 +96,9 @@ import java.util.ListIterator;
  * - outline should include drop support (from canvas or from palette)
  */
 /* package */  class LayoutCanvas extends Canvas {
+
+    /** The layout editor that uses this layout canvas. */
+    private final LayoutEditor mLayoutEditor;
 
     /** The Groovy Rules Engine, associated with the current project. */
     private RulesEngine mRulesEngine;
@@ -162,8 +183,11 @@ import java.util.ListIterator;
     /** Horizontal scaling & scrollbar information. */
     private ScaleInfo mHScale;
 
-    public LayoutCanvas(RulesEngine rulesEngine, Composite parent, int style) {
+    private DragSource mSource;
+
+    public LayoutCanvas(LayoutEditor layoutEditor, RulesEngine rulesEngine, Composite parent, int style) {
         super(parent, style | SWT.DOUBLE_BUFFERED | SWT.V_SCROLL | SWT.H_SCROLL);
+        mLayoutEditor = layoutEditor;
         mRulesEngine = rulesEngine;
 
         mHScale = new ScaleInfo(getHorizontalBar());
@@ -213,10 +237,19 @@ import java.util.ListIterator;
             }
         });
 
+        // DND Reference: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
+
         mDropTarget = new DropTarget(this, DND.DROP_COPY | DND.DROP_MOVE | DND.DROP_DEFAULT);
-        mDropTarget.setTransfer(new Transfer[] { ElementDescTransfer.getInstance() });
+        mDropTarget.setTransfer(new Transfer[] { SimpleXmlTransfer.getInstance() } );
         mDropListener = new CanvasDropListener(this);
         mDropTarget.addDropListener(mDropListener);
+
+        mSource = new DragSource(this, DND.DROP_COPY | DND.DROP_MOVE);
+        mSource.setTransfer(new Transfer[] {
+                TextTransfer.getInstance(),
+                SimpleXmlTransfer.getInstance()
+            } );
+        mSource.addDragListener(new CanvasDragSourceListener());
     }
 
     @Override
@@ -854,24 +887,34 @@ import java.util.ListIterator;
             } else {
                 // Case where no modifier is pressed: either select or reset the selection.
 
-                // reset alternate selection if any
-                mAltSelection = null;
-
-                // reset (multi)selection if any
-                if (mSelections.size() > 0) {
-                    if (mSelections.size() == 1 && mSelections.getFirst().getViewInfo() == vi) {
-                        // CanvasSelection remains the same, don't touch it.
-                        return;
-                    }
-                    mSelections.clear();
-                }
-
-                if (vi != null) {
-                    mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
-                }
-                redraw();
+                selectSingle(vi);
             }
         }
+    }
+
+    /**
+     * Removes all the currently selected item and only select the given item.
+     * Issues a {@link #redraw()} if the selection changes.
+     *
+     * @param vi The new selected item if non-null. Selection becomes empty if null.
+     */
+    private void selectSingle(CanvasViewInfo vi) {
+        // reset alternate selection if any
+        mAltSelection = null;
+
+        // reset (multi)selection if any
+        if (mSelections.size() > 0) {
+            if (mSelections.size() == 1 && mSelections.getFirst().getViewInfo() == vi) {
+                // CanvasSelection remains the same, don't touch it.
+                return;
+            }
+            mSelections.clear();
+        }
+
+        if (vi != null) {
+            mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
+        }
+        redraw();
     }
 
     /** Deselects a view info. Returns true if the object was actually selected. */
@@ -1012,5 +1055,249 @@ import java.util.ListIterator;
         for (CanvasViewInfo vi : canvasViewInfo.getChildren()) {
             selectAllViewInfos(vi);
         }
+    }
+
+    private class CanvasDragSourceListener implements DragSourceListener {
+
+        /**
+         * The current selection being dragged.
+         * This may be a subset of the canvas selection.
+         * Can be empty but never null.
+         */
+        final ArrayList<CanvasSelection> mDragSelection = new ArrayList<CanvasSelection>();
+        private SimpleElement[] mDragElements;
+
+        /**
+         * The user has begun the actions required to drag the widget.
+         * <p/>
+         * Initiate a drag only if there is one or more item selected.
+         * If there's none, try to auto-select the one under the cursor.
+         *
+         * {@inheritDoc}
+         */
+        public void dragStart(DragSourceEvent e) {
+            // We need a selection (simple or multiple) to do any transfer.
+            // If there's a selection *and* the cursor is over this selection, use all the
+            // currently selected elements.
+            // If there is no selection or the cursor is not over a selected element, drag
+            // the element under the cursor.
+            // If nothing can be selected, abort the drag operation.
+
+            mDragSelection.clear();
+
+            if (mSelections.size() > 0) {
+                // Is the cursor on top of a selected element?
+                int x = mHScale.inverseTranslate(e.x);
+                int y = mVScale.inverseTranslate(e.y);
+
+                for (CanvasSelection cs : mSelections) {
+                    if (cs.getRect().contains(x, y)) {
+                        mDragSelection.addAll(mSelections);
+                        break;
+                    }
+                }
+
+                if (mDragSelection.isEmpty()) {
+                    // There is no selected element under the cursor.
+                    // We'll now try to find another element.
+
+                    CanvasViewInfo vi = findViewInfoAt(x, y);
+                    if (vi != null) {
+                        mDragSelection.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
+                    }
+                }
+            }
+
+            if (mDragSelection.size() > 0) {
+                // Sanitize the list to make sure all elements have a valid XML attached to it.
+                // This avoids us from making repeated checks in dragSetData.
+
+                // In case of multiple selection, we also need to remove all children when their
+                // parent is already selected since parents will always be added with all their
+                // children.
+
+                for (Iterator<CanvasSelection> it = mDragSelection.iterator(); it.hasNext(); ) {
+                    CanvasSelection cs = it.next();
+                    CanvasViewInfo vi = cs.getViewInfo();
+                    UiViewElementNode key = vi == null ? null : vi.getUiViewKey();
+                    Node node = key == null ? null : key.getXmlNode();
+                    if (node == null) {
+                        // Missing ViewInfo or view key or XML, discard this.
+                        it.remove();
+                        continue;
+                    }
+
+                    if (vi != null) {
+                        for (Iterator<CanvasSelection> it2 = mDragSelection.iterator();
+                             it2.hasNext(); ) {
+                            CanvasSelection cs2 = it2.next();
+                            if (cs != cs2) {
+                                CanvasViewInfo vi2 = cs2.getViewInfo();
+                                if (vi.isParent(vi2)) {
+                                    // vi2 is a parent for vi. Remove vi.
+                                    it.remove();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            e.doit = mDragSelection.size() > 0;
+            if (e.doit) {
+                mDragElements = getSelectionAsElements();
+                GlobalCanvasDragInfo.getInstance().startDrag(mDragElements, this);
+
+                // TODO for debugging. remove later.
+                AdtPlugin.printToConsole("CanvasDND", String.format("dragStart %d items, type=%s", mDragSelection.size(), e.dataType));
+            }
+        }
+
+        /**
+         * Callback invoked when data is needed for the event, typically right before drop.
+         * The drop side decides what type of transfer to use and this side must now provide
+         * the adequate data.
+         *
+         * {@inheritDoc}
+         */
+        public void dragSetData(DragSourceEvent e) {
+            // TODO for debugging. remove later.
+            AdtPlugin.printToConsole("CanvasDND", "dragSetData");
+
+            if (TextTransfer.getInstance().isSupportedType(e.dataType)) {
+                e.data = getSelectionAsText();
+                return;
+            }
+
+            if (SimpleXmlTransfer.getInstance().isSupportedType(e.dataType)) {
+                // TODO for debugging. remove later.
+                AdtPlugin.printToConsole("CanvasDND", "=> SimpleXmlTransfer");
+                e.data = mDragElements;
+                return;
+            }
+
+            // otherwise we failed
+            e.detail = DND.DROP_NONE;
+            e.doit = false;
+        }
+
+        private SimpleElement[] getSelectionAsElements() {
+            ArrayList<SimpleElement> elements = new ArrayList<SimpleElement>();
+
+            for (CanvasSelection cs : mDragSelection) {
+                CanvasViewInfo vi = cs.getViewInfo();
+
+                SimpleElement e = transformToSimpleElement(vi);
+                elements.add(e);
+            }
+
+            return elements.toArray(new SimpleElement[elements.size()]);
+        }
+
+        private SimpleElement transformToSimpleElement(CanvasViewInfo vi) {
+
+            UiViewElementNode uiNode = vi.getUiViewKey();
+            ElementDescriptor desc = uiNode.getDescriptor();
+
+            String elementName = SimpleXmlTransfer.getFqcn(desc);
+            Rect bounds = new Rect(vi.getAbsRect());
+            String parentName = null;
+
+            CanvasViewInfo pvi = vi.getParent();
+            if (pvi != null && pvi.getUiViewKey() != null) {
+                parentName = SimpleXmlTransfer.getFqcn(pvi.getUiViewKey().getDescriptor());
+            }
+
+            SimpleElement e = new SimpleElement(elementName, bounds, parentName);
+
+            for (UiAttributeNode attr : uiNode.getUiAttributes()) {
+                String value = attr.getCurrentValue();
+                if (value != null && value.length() > 0) {
+                    AttributeDescriptor attrDesc = attr.getDescriptor();
+                    SimpleAttribute a = new SimpleAttribute(
+                            attrDesc.getNamespaceUri(),
+                            attrDesc.getXmlLocalName(),
+                            value);
+                    e.addAttribute(a);
+                }
+            }
+
+            for (CanvasViewInfo childVi : vi.getChildren()) {
+                SimpleElement e2 = transformToSimpleElement(childVi);
+                if (e2 != null) {
+                    e.addInnerElement(e2);
+                }
+            }
+
+            return e;
+        }
+
+        /** Get the XML text from the current drag selection for a text transfer. */
+        private String getSelectionAsText() {
+            StringBuilder sb = new StringBuilder();
+
+            for (CanvasSelection cs : mDragSelection) {
+                CanvasViewInfo vi = cs.getViewInfo();
+                UiViewElementNode key = vi.getUiViewKey();
+                Node node = key.getXmlNode();
+                String t = getXmlTextFromEditor(mLayoutEditor, node);
+                if (t != null) {
+                    if (sb.length() > 0) {
+                        sb.append('\n');
+                    }
+                    sb.append(t);
+                }
+            }
+
+            return sb.toString();
+        }
+
+        /** Get the XML text directly from the editor. */
+        private String getXmlTextFromEditor(AndroidEditor editor, Node xml_node) {
+            String data = null;
+            IStructuredModel model = editor.getModelForRead();
+            try {
+                IStructuredDocument sse_doc = editor.getStructuredDocument();
+                if (xml_node instanceof NodeContainer) {
+                    // The easy way to get the source of an SSE XML node.
+                    data = ((NodeContainer) xml_node).getSource();
+                } else  if (xml_node instanceof IndexedRegion && sse_doc != null) {
+                    // Try harder.
+                    IndexedRegion region = (IndexedRegion) xml_node;
+                    int start = region.getStartOffset();
+                    int end = region.getEndOffset();
+
+                    if (end > start) {
+                        data = sse_doc.get(start, end - start);
+                    }
+                }
+            } catch (BadLocationException e) {
+                // the region offset was invalid. ignore.
+            } finally {
+                model.releaseFromRead();
+            }
+            return data;
+        }
+
+        /**
+         * Callback invoked when the drop has been finished either way.
+         * On a successful move, remove the originating elements.
+         */
+        public void dragFinished(DragSourceEvent e) {
+            // TODO for debugging. remove later.
+            AdtPlugin.printToConsole("CanvasDND", "dragFinished");
+
+            if (e.detail == DND.DROP_MOVE) {
+                // remove from source
+                AdtPlugin.printToConsole("CanvasDND", "dragFinished => MOVE");
+            }
+
+            // Clear the selection
+            mDragSelection.clear();
+            mDragElements = null;
+            GlobalCanvasDragInfo.getInstance().stopDrag();
+        }
+
     }
 }
