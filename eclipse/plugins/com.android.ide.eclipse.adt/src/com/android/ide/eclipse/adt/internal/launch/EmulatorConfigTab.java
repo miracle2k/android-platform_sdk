@@ -20,6 +20,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchConfiguration.TargetMode;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.sdk.AdtConsoleSdkLog;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
@@ -199,7 +200,8 @@ public class EmulatorConfigTab extends AbstractLaunchConfigurationTab {
         mPreferredAvdSelector = new AvdSelector(offsetComp,
                 Sdk.getCurrent().getSdkLocation(),
                 null /* avd manager */,
-                DisplayMode.SIMPLE_CHECK);
+                DisplayMode.SIMPLE_CHECK,
+                new AdtConsoleSdkLog());
         mPreferredAvdSelector.setTableHeightHint(100);
         mPreferredAvdSelector.setSelectionListener(new SelectionAdapter() {
             @Override

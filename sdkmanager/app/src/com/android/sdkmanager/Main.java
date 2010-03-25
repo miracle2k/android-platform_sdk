@@ -35,8 +35,10 @@ import com.android.sdklib.xml.AndroidXPathFactory;
 import com.android.sdkmanager.internal.repository.AboutPage;
 import com.android.sdkmanager.internal.repository.SettingsPage;
 import com.android.sdkuilib.internal.repository.LocalPackagesPage;
+import com.android.sdkuilib.internal.widgets.MessageBoxLog;
 import com.android.sdkuilib.repository.UpdaterWindow;
 
+import org.eclipse.swt.widgets.Display;
 import org.xml.sax.InputSource;
 
 import java.io.File;
@@ -94,8 +96,8 @@ public class Main {
 
     /**
      * Creates the {@link #mSdkLog} object.
-     * <p/>
      * This must be done before {@link #init()} as it will be used to report errors.
+     * This logger prints to the attached console.
      */
     private void createLogger() {
         mSdkLog = new ISdkLog() {
@@ -263,9 +265,15 @@ public class Main {
             // display a message talking about the command line version
             System.out.printf("No command line parameters provided, launching UI.\n" +
                     "See 'android --help' for operations from the command line.\n");
+
+            MessageBoxLog errorLogger = new MessageBoxLog(
+                    "SDK Manager",
+                    Display.getCurrent(),
+                    true /*logErrorsOnly*/);
+
             UpdaterWindow window = new UpdaterWindow(
                     null /* parentShell */,
-                    mSdkLog,
+                    errorLogger,
                     mOsSdkFolder,
                     false /*userCanChangeSdkRoot*/);
             window.registerPage("Settings", SettingsPage.class);
@@ -275,6 +283,9 @@ public class Main {
                 window.setRequestAutoUpdate(true);
             }
             window.open();
+
+            errorLogger.displayResult(true);
+
         } catch (Exception e) {
             e.printStackTrace();
         }

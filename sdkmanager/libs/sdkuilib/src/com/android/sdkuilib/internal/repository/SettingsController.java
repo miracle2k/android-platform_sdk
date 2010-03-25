@@ -169,7 +169,7 @@ public class SettingsController {
         } catch (Exception e) {
             ISdkLog log = mUpdaterData.getSdkLog();
             if (log != null) {
-                log.error(e, "Failed to load settings from '%1$s'", path);
+                log.error(e, "Failed to load settings from .android folder. Path is '%1$s'.", path);
             }
         } finally {
             if (fis != null) {

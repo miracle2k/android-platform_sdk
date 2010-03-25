@@ -19,6 +19,7 @@ package com.android.sdkuilib.internal.widgets;
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
@@ -26,7 +27,6 @@ import com.android.sdklib.internal.avd.HardwareProperties;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo;
 import com.android.sdklib.internal.avd.HardwareProperties.HardwareProperty;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
-import com.android.sdkuilib.internal.widgets.AvdSelector.SdkLog;
 import com.android.sdkuilib.ui.GridDialog;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -92,6 +92,8 @@ final class AvdCreationDialog extends GridDialog {
     private final Map<String, String> mProperties = new HashMap<String, String>();
     // a list of user-edited properties.
     private final ArrayList<String> mEditedProperties = new ArrayList<String>();
+    private final ImageFactory mImageFactory;
+    private final ISdkLog mSdkLog;
 
     private Text mAvdName;
     private Combo mTargetCombo;
@@ -119,7 +121,6 @@ final class AvdCreationDialog extends GridDialog {
     private Label mStatusIcon;
     private Label mStatusLabel;
     private Composite mStatusComposite;
-    private final ImageFactory mImageFactory;
 
     /**
      * {@link VerifyListener} for {@link Text} widgets that should only contains numbers.
@@ -171,16 +172,33 @@ final class AvdCreationDialog extends GridDialog {
         }
     }
 
-    protected AvdCreationDialog(Shell parentShell, AvdManager avdManager,
-            ImageFactory imageFactory) {
+    protected AvdCreationDialog(Shell parentShell,
+            AvdManager avdManager,
+            ImageFactory imageFactory,
+            ISdkLog log) {
         super(parentShell, 2, false);
         mAvdManager = avdManager;
         mImageFactory = imageFactory;
+        mSdkLog = log;
 
-        File hardwareDefs = new File (avdManager.getSdkManager().getLocation() + File.separator +
-                SdkConstants.OS_SDK_TOOLS_LIB_FOLDER, SdkConstants.FN_HARDWARE_INI);
-        mHardwareMap = HardwareProperties.parseHardwareDefinitions(
+        File hardwareDefs = null;
+
+        SdkManager sdkMan = avdManager.getSdkManager();
+        if (sdkMan != null) {
+            String sdkPath = sdkMan.getLocation();
+            if (sdkPath != null) {
+                hardwareDefs = new File (sdkPath + File.separator +
+                        SdkConstants.OS_SDK_TOOLS_LIB_FOLDER, SdkConstants.FN_HARDWARE_INI);
+            }
+        }
+
+        if (hardwareDefs == null) {
+            log.error(null, "Failed to load file %s from SDK", SdkConstants.FN_HARDWARE_INI);
+            mHardwareMap = new HashMap<String, HardwareProperty>();
+        } else {
+            mHardwareMap = HardwareProperties.parseHardwareDefinitions(
                 hardwareDefs, null /*sdkLog*/);
+        }
     }
 
     @Override
@@ -918,12 +936,17 @@ final class AvdCreationDialog extends GridDialog {
             skinName = mSkinSizeWidth.getText() + "x" + mSkinSizeHeight.getText(); //$NON-NLS-1$
         }
 
-        SdkLog log = new SdkLog(
-                String.format("Result of creating AVD '%s':", avdName),
-                getContents().getDisplay(),
-                false /*logErrorsOnly*/);
+        ISdkLog log = mSdkLog;
+        if (log == null || log instanceof MessageBoxLog) {
+            // If the current logger is a message box, we use our own (to make sure
+            // to display errors right away and customize the title).
+            log = new MessageBoxLog(
+                    String.format("Result of creating AVD '%s':", avdName),
+                    getContents().getDisplay(),
+                    false /*logErrorsOnly*/);
+        }
 
-        File avdFolder;
+        File avdFolder = null;
         try {
             avdFolder = new File(
                     AndroidLocation.getFolder() + AndroidLocation.FOLDER_AVD,
@@ -947,7 +970,9 @@ final class AvdCreationDialog extends GridDialog {
 
         success = avdInfo != null;
 
-        log.displayResult(success);
+        if (log instanceof MessageBoxLog) {
+            ((MessageBoxLog) log).displayResult(success);
+        }
         return success;
     }
 }

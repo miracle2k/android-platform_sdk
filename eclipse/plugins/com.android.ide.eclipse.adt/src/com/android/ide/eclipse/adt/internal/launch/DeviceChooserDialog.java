@@ -25,6 +25,7 @@ import com.android.ddmuilib.IImageLoader;
 import com.android.ddmuilib.ImageHelper;
 import com.android.ddmuilib.TableHelper;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.sdk.AdtConsoleSdkLog;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.sdklib.AndroidVersion;
@@ -400,7 +401,8 @@ public class DeviceChooserDialog extends Dialog implements IDeviceChangeListener
                 mSdk.getSdkLocation(),
                 mSdk.getAvdManager(),
                 new NonRunningAvdFilter(),
-                DisplayMode.SIMPLE_SELECTION);
+                DisplayMode.SIMPLE_SELECTION,
+                new AdtConsoleSdkLog());
         mPreferredAvdSelector.setTableHeightHint(100);
         mPreferredAvdSelector.setEnabled(false);
         mPreferredAvdSelector.setSelectionListener(new SelectionAdapter() {

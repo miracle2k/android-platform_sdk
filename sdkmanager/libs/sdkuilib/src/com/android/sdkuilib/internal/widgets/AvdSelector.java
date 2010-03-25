@@ -101,6 +101,8 @@ public final class AvdSelector {
 
     private SettingsController mController;
 
+    private final ISdkLog mSdkLog;
+
 
     /**
      * The display mode of the AVD Selector.
@@ -193,18 +195,19 @@ public final class AvdSelector {
      * @param manager the AVD manager.
      * @param filter When non-null, will allow filtering the AVDs to display.
      * @param displayMode The display mode ({@link DisplayMode}).
-     *
-     * TODO: pass an ISdkLog and use it when reloading, starting the emulator, etc.
+     * @param sdkLog The logger. Cannot be null.
      */
     public AvdSelector(Composite parent,
             String osSdkPath,
             AvdManager manager,
             IAvdFilter filter,
-            DisplayMode displayMode) {
+            DisplayMode displayMode,
+            ISdkLog sdkLog) {
         mOsSdkPath = osSdkPath;
         mAvdManager = manager;
         mTargetFilter = filter;
         mDisplayMode = displayMode;
+        mSdkLog = sdkLog;
 
         // get some bitmaps.
         mImageFactory = new ImageFactory(parent.getDisplay());
@@ -367,12 +370,14 @@ public final class AvdSelector {
      * @param parent The parent composite where the selector will be added.
      * @param manager the AVD manager.
      * @param displayMode The display mode ({@link DisplayMode}).
+     * @param sdkLog The logger. Cannot be null.
      */
     public AvdSelector(Composite parent,
             String osSdkPath,
             AvdManager manager,
-            DisplayMode displayMode) {
-        this(parent, osSdkPath, manager, (IAvdFilter)null /* filter */, displayMode);
+            DisplayMode displayMode,
+            ISdkLog sdkLog) {
+        this(parent, osSdkPath, manager, (IAvdFilter)null /* filter */, displayMode, sdkLog);
     }
 
     /**
@@ -385,13 +390,15 @@ public final class AvdSelector {
      * @param manager the AVD manager.
      * @param filter Only shows the AVDs matching this target (must not be null).
      * @param displayMode The display mode ({@link DisplayMode}).
+     * @param sdkLog The logger. Cannot be null.
      */
     public AvdSelector(Composite parent,
             String osSdkPath,
             AvdManager manager,
             IAndroidTarget filter,
-            DisplayMode displayMode) {
-        this(parent, osSdkPath, manager, new TargetBasedFilter(filter), displayMode);
+            DisplayMode displayMode,
+            ISdkLog sdkLog) {
+        this(parent, osSdkPath, manager, new TargetBasedFilter(filter), displayMode, sdkLog);
     }
 
     /**
@@ -826,8 +833,10 @@ public final class AvdSelector {
     }
 
     private void onNew() {
-        AvdCreationDialog dlg = new AvdCreationDialog(mTable.getShell(), mAvdManager,
-                mImageFactory);
+        AvdCreationDialog dlg = new AvdCreationDialog(mTable.getShell(),
+                mAvdManager,
+                mImageFactory,
+                mSdkLog);
         if (dlg.open() == Window.OK) {
             refresh(false /*reload*/);
         }
@@ -879,16 +888,23 @@ public final class AvdSelector {
         }
 
         // log for this action.
-        SdkLog log = new SdkLog(
+        ISdkLog log = mSdkLog;
+        if (log == null || log instanceof MessageBoxLog) {
+            // If the current logger is a message box, we use our own (to make sure
+            // to display errors right away and customize the title).
+            log = new MessageBoxLog(
                 String.format("Result of deleting AVD '%s':", avdInfo.getName()),
                 display,
                 false /*logErrorsOnly*/);
+        }
 
         // delete the AVD
         boolean success = mAvdManager.deleteAvd(avdInfo, log);
 
         // display the result
-        log.displayResult(success);
+        if (log instanceof MessageBoxLog) {
+            ((MessageBoxLog) log).displayResult(success);
+        }
 
         if (success) {
             refresh(false /*reload*/);
@@ -907,22 +923,31 @@ public final class AvdSelector {
         final Display display = mTable.getDisplay();
 
         // log for this action.
-        SdkLog log = new SdkLog(
+        ISdkLog log = mSdkLog;
+        if (log == null || log instanceof MessageBoxLog) {
+            // If the current logger is a message box, we use our own (to make sure
+            // to display errors right away and customize the title).
+            log = new MessageBoxLog(
                 String.format("Result of updating AVD '%s':", avdInfo.getName()),
                 display,
                 false /*logErrorsOnly*/);
+        }
 
         // delete the AVD
         try {
             mAvdManager.updateAvd(avdInfo, log);
 
             // display the result
-            log.displayResult(true /* success */);
-
+            if (log instanceof MessageBoxLog) {
+                ((MessageBoxLog) log).displayResult(true /* success */);
+            }
             refresh(false /*reload*/);
+
         } catch (IOException e) {
             log.error(e, null);
-            log.displayResult(false /* success */);
+            if (log instanceof MessageBoxLog) {
+                ((MessageBoxLog) log).displayResult(false /* success */);
+            }
         }
     }
 
@@ -932,7 +957,12 @@ public final class AvdSelector {
         Display display = mTable.getDisplay();
 
         // log for this action.
-        SdkLog log = new SdkLog("Result of SDK Manager", display, true /*logErrorsOnly*/);
+        ISdkLog log = mSdkLog;
+        if (log == null || log instanceof MessageBoxLog) {
+            // If the current logger is a message box, we use our own (to make sure
+            // to display errors right away and customize the title).
+            log = new MessageBoxLog("Result of SDK Manager", display, true /*logErrorsOnly*/);
+        }
 
         UpdaterWindow window = new UpdaterWindow(
                 mTable.getShell(),
@@ -941,7 +971,10 @@ public final class AvdSelector {
                 false /*userCanChangeSdkRoot*/);
         window.open();
         refresh(true /*reload*/); // UpdaterWindow uses its own AVD manager so this one must reload.
-        log.displayResult(true);
+
+        if (log instanceof MessageBoxLog) {
+            ((MessageBoxLog) log).displayResult(true);
+        }
     }
 
     private void onStart() {
@@ -1067,75 +1100,6 @@ public final class AvdSelector {
                 }
             }
         }.start();
-    }
-
-    /**
-     * Collects all log from the AVD action and displays it in a dialog.
-     */
-    static class SdkLog implements ISdkLog {
-
-        final ArrayList<String> logMessages = new ArrayList<String>();
-        private final String mMessage;
-        private final Display mDisplay;
-        private final boolean mLogErrorsOnly;
-
-        public SdkLog(String message, Display display, boolean logErrorsOnly) {
-            mMessage = message;
-            mDisplay = display;
-            mLogErrorsOnly = logErrorsOnly;
-        }
-
-        public void error(Throwable throwable, String errorFormat, Object... arg) {
-            if (errorFormat != null) {
-                logMessages.add(String.format("Error: " + errorFormat, arg));
-            }
-
-            if (throwable != null) {
-                logMessages.add(throwable.getMessage());
-            }
-        }
-
-        public void warning(String warningFormat, Object... arg) {
-            if (!mLogErrorsOnly) {
-                logMessages.add(String.format("Warning: " + warningFormat, arg));
-            }
-        }
-
-        public void printf(String msgFormat, Object... arg) {
-            if (!mLogErrorsOnly) {
-                logMessages.add(String.format(msgFormat, arg));
-            }
-        }
-
-        /**
-         * Displays the log if anything was captured.
-         */
-        public void displayResult(final boolean success) {
-            if (logMessages.size() > 0) {
-                final StringBuilder sb = new StringBuilder(mMessage + "\n\n");
-                for (String msg : logMessages) {
-                    sb.append(msg);
-                }
-
-                // display the message
-                // dialog box only run in ui thread..
-                mDisplay.asyncExec(new Runnable() {
-                    public void run() {
-                        Shell shell = mDisplay.getActiveShell();
-                        // Use the success icon if the call indicates success.
-                        // However just use the error icon if the logger was only recording errors.
-                        if (success && !mLogErrorsOnly) {
-                            MessageDialog.openInformation(shell, "Android Virtual Devices Manager",
-                                    sb.toString());
-                        } else {
-                            MessageDialog.openError(shell, "Android Virtual Devices Manager",
-                                    sb.toString());
-
-                        }
-                    }
-                });
-            }
-        }
     }
 
     private boolean isAvdRepairable(AvdStatus avdStatus) {

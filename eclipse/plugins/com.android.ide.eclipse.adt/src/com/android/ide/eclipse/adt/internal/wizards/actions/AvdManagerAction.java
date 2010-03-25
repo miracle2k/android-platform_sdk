@@ -17,8 +17,8 @@
 package com.android.ide.eclipse.adt.internal.wizards.actions;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.sdk.AdtConsoleSdkLog;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.sdklib.ISdkLog;
 import com.android.sdkuilib.repository.UpdaterWindow;
 
 import org.eclipse.jface.action.IAction;
@@ -45,9 +45,12 @@ public class AvdManagerAction implements IWorkbenchWindowActionDelegate, IObject
     public void run(IAction action) {
         Sdk sdk = Sdk.getCurrent();
         if (sdk != null) {
+
+            // Runs the updater window, directing all logs to the ADT console.
+
             UpdaterWindow window = new UpdaterWindow(
                     AdtPlugin.getDisplay().getActiveShell(),
-                    new AdtSdkLogger(),
+                    new AdtConsoleSdkLog(),
                     sdk.getSdkLocation(),
                     false /*userCanChangeSdkRoot*/);
             window.addListeners(new UpdaterWindow.ISdkListener() {
@@ -67,27 +70,5 @@ public class AvdManagerAction implements IWorkbenchWindowActionDelegate, IObject
 
     public void setActivePart(IAction action, IWorkbenchPart targetPart) {
         // nothing to do.
-    }
-
-    private static class AdtSdkLogger implements ISdkLog {
-
-        private static final String TAG = "SDK Manager"; //$NON-NLS-1$
-
-        public void error(Throwable t, String errorFormat, Object... args) {
-            if (t != null) {
-                AdtPlugin.logAndPrintError(t, TAG, "Error: " + errorFormat, args);
-            } else {
-                AdtPlugin.printErrorToConsole(TAG, String.format(errorFormat, args));
-            }
-        }
-
-        public void printf(String msgFormat, Object... args) {
-            AdtPlugin.printToConsole(TAG, String.format(msgFormat, args));
-        }
-
-        public void warning(String warningFormat, Object... args) {
-            AdtPlugin.printToConsole(TAG, String.format("Warning: " + warningFormat, args));
-        }
-
     }
 }

@@ -428,6 +428,7 @@ public final class AvdManager {
      * @return the matching AvdInfo or <code>null</code> if none were found.
      */
     public AvdInfo getAvd(String name, boolean validAvdOnly) {
+
         if (validAvdOnly) {
             for (AvdInfo info : getValidAvds()) {
                 if (info.getName().equals(name)) {
@@ -684,22 +685,29 @@ public final class AvdManager {
             File configIniFile = new File(avdFolder, CONFIG_INI);
             writeIniFile(configIniFile, values);
 
+            // Generate the log report first because we want to control where line breaks
+            // are located when generating the hardware config list.
+            StringBuilder report = new StringBuilder();
+
             if (target.isPlatform()) {
-                log.printf("Created AVD '%1$s' based on %2$s", name, target.getName());
+                report.append(String.format("Created AVD '%1$s' based on %2$s",
+                        name, target.getName()));
             } else {
-                log.printf("Created AVD '%1$s' based on %2$s (%3$s)", name,
-                        target.getName(), target.getVendor());
+                report.append(String.format("Created AVD '%1$s' based on %2$s (%3$s)", name,
+                        target.getName(), target.getVendor()));
             }
 
             // display the chosen hardware config
             if (finalHardwareValues.size() > 0) {
-                log.printf(", with the following hardware config:\n");
+                report.append(",\nwith the following hardware config:\n");
                 for (Entry<String, String> entry : finalHardwareValues.entrySet()) {
-                    log.printf("%s=%s\n",entry.getKey(), entry.getValue());
+                    report.append(String.format("%s=%s\n",entry.getKey(), entry.getValue()));
                 }
             } else {
-                log.printf("\n");
+                report.append("\n");
             }
+
+            log.printf(report.toString());
 
             // create the AvdInfo object, and add it to the list
             AvdInfo newAvdInfo = new AvdInfo(name,
