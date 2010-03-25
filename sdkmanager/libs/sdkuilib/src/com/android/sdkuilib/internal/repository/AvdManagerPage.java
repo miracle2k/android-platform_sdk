@@ -16,11 +16,14 @@
 
 package com.android.sdkuilib.internal.repository;
 
+import com.android.prefs.AndroidLocation.AndroidLocationException;
+import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdkuilib.internal.widgets.AvdSelector;
 import com.android.sdkuilib.internal.widgets.AvdSelector.DisplayMode;
 import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
@@ -50,7 +53,17 @@ public class AvdManagerPage extends Composite implements ISdkListener {
         parent.setLayout(new GridLayout(1, false));
 
         Label label = new Label(parent, SWT.NONE);
-        label.setText("List of existing Android Virtual Devices:");
+        label.setLayoutData(new GridData());
+
+        try {
+            label.setText(String.format(
+                    "List of existing Android Virtual Devices located at %s",
+                    AvdManager.getBaseAvdFolder()));
+        } catch (AndroidLocationException e) {
+            // We shouldn't be getting here anymore: UpdaterData.initSdk() will
+            // no longer complete if the AvdManager failed to be created.
+            label.setText("Error: Please define the environment variable ANDROID_SDK_HOME.");
+        }
 
         mAvdSelector = new AvdSelector(parent,
                 mUpdaterData.getOsSdkRoot(),

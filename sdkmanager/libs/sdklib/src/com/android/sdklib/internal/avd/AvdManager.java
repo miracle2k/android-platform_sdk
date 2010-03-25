@@ -240,7 +240,7 @@ public final class AvdManager {
          */
         public static File getIniFile(String name) throws AndroidLocationException {
             String avdRoot;
-            avdRoot = AndroidLocation.getFolder() + AndroidLocation.FOLDER_AVD;
+            avdRoot = getBaseAvdFolder();
             return new File(avdRoot, name + INI_EXTENSION);
         }
 
@@ -349,6 +349,15 @@ public final class AvdManager {
     private AvdInfo[] mValidAvdList;
     private AvdInfo[] mBrokenAvdList;
     private final SdkManager mSdkManager;
+
+    /**
+     * Returns the base folder where AVDs are created.
+     *
+     * @throws AndroidLocationException
+     */
+    public static String getBaseAvdFolder() throws AndroidLocationException {
+        return AndroidLocation.getFolder() + AndroidLocation.FOLDER_AVD;
+    }
 
     /**
      * Creates an AVD Manager for a given SDK represented by a {@link SdkManager}.
@@ -1049,7 +1058,7 @@ public final class AvdManager {
      */
     private File[] buildAvdFilesList() throws AndroidLocationException {
         // get the Android prefs location.
-        String avdRoot = AndroidLocation.getFolder() + AndroidLocation.FOLDER_AVD;
+        String avdRoot = AvdManager.getBaseAvdFolder();
 
         // ensure folder validity.
         File folder = new File(avdRoot);

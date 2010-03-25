@@ -106,12 +106,12 @@ public class UpdaterWindowImpl {
         mAndroidSdkUpdater.open();
         mAndroidSdkUpdater.layout();
 
-        postCreate();    //$hide$ (hide from SWT designer)
-
-        Display display = Display.getDefault();
-        while (!mAndroidSdkUpdater.isDisposed()) {
-            if (!display.readAndDispatch()) {
-                display.sleep();
+        if (postCreate()) {    //$hide$ (hide from SWT designer)
+            Display display = Display.getDefault();
+            while (!mAndroidSdkUpdater.isDisposed()) {
+                if (!display.readAndDispatch()) {
+                    display.sleep();
+                }
             }
         }
 
@@ -257,8 +257,10 @@ public class UpdaterWindowImpl {
     /**
      * Once the UI has been created, initializes the content.
      * This creates the pages, selects the first one, setup sources and scan for local folders.
+     *
+     * Returns true if we should show the window.
      */
-    private void postCreate() {
+    private boolean postCreate() {
         mUpdaterData.setWindowShell(getShell());
         mTaskFactory = new ProgressTaskFactory(getShell());
         mUpdaterData.setTaskFactory(mTaskFactory);
@@ -285,11 +287,18 @@ public class UpdaterWindowImpl {
 
         setupSources();
         initializeSettings();
+
+        if (mUpdaterData.checkIfInitFailed()) {
+            return false;
+        }
+
         mUpdaterData.notifyListeners(true /*init*/);
 
         if (mRequestAutoUpdate) {
             mUpdaterData.updateOrInstallAll(null /*selectedArchives*/);
         }
+
+        return true;
     }
 
     /**

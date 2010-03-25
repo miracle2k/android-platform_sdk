@@ -362,6 +362,7 @@ public final class AvdSelector {
         adjustColumnsWidth(mTable, column0, column1, column2, column3);
         setupSelectionListener(mTable);
         fillTable(mTable);
+        setEnabled(true);
     }
 
     /**
@@ -588,7 +589,8 @@ public final class AvdSelector {
      * @param enabled the new enabled state.
      */
     public void setEnabled(boolean enabled) {
-        mIsEnabled = enabled;
+        // We can only enable widgets if the AVD Manager is defined.
+        mIsEnabled = enabled && mAvdManager != null;
 
         mTable.setEnabled(mIsEnabled);
         mRefreshButton.setEnabled(mIsEnabled);
@@ -837,6 +839,7 @@ public final class AvdSelector {
                 mAvdManager,
                 mImageFactory,
                 mSdkLog);
+
         if (dlg.open() == Window.OK) {
             refresh(false /*reload*/);
         }
