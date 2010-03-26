@@ -276,7 +276,7 @@ public class ApkBuilder extends BaseBuilder {
         try {
             // get the project info
             ProjectState projectState = Sdk.getProjectState(project);
-            if (projectState.isLibrary()) {
+            if (projectState == null || projectState.isLibrary()) {
                 // library project do not need to be dexified or packaged.
                 return null;
             }
