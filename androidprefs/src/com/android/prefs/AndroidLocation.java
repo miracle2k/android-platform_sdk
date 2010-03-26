@@ -52,7 +52,8 @@ public final class AndroidLocation {
             // if the above failed, we throw an exception.
             if (home == null) {
                 throw new AndroidLocationException(
-                        "Unable to get the home directory. Make sure the environment variable ANDROID_SDK_HOME is set up");
+                        "Unable to get the Android SDK home directory.\n" +
+                        "Make sure the environment variable ANDROID_SDK_HOME is set up.");
             } else {
                 sPrefsLocation = home + File.separator + ".android" + File.separator;
             }

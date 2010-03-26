@@ -191,7 +191,7 @@ class UpdaterData {
                     "The AVD manager normally uses the user's profile directory to store " +
                     "AVD files. However it failed to find the default profile directory. " +
                     "\n" +
-                    "To fix this please set the environment variable ANDROID_SDK_HOME to " +
+                    "To fix this, please set the environment variable ANDROID_SDK_HOME to " +
                     "a valid path such as \"%s\".",
                     example));
 
@@ -211,7 +211,7 @@ class UpdaterData {
             mAvdManager = null; // remove the old one if needed.
             mAvdManager = new AvdManager(mSdkManager, mSdkLog);
         } catch (AndroidLocationException e) {
-            mSdkLog.error(e, "Unable to read AVDs: " + e.toString());  //$NON-NLS-1$
+            mSdkLog.error(e, "Unable to read AVDs: " + e.getMessage());  //$NON-NLS-1$
 
             // Note: we used to continue here, but the thing is that
             // mAvdManager==null so nothing is really going to work as

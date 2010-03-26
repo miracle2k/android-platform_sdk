@@ -60,9 +60,7 @@ public class AvdManagerPage extends Composite implements ISdkListener {
                     "List of existing Android Virtual Devices located at %s",
                     AvdManager.getBaseAvdFolder()));
         } catch (AndroidLocationException e) {
-            // We shouldn't be getting here anymore: UpdaterData.initSdk() will
-            // no longer complete if the AvdManager failed to be created.
-            label.setText("Error: Please define the environment variable ANDROID_SDK_HOME.");
+            label.setText(e.getMessage());
         }
 
         mAvdSelector = new AvdSelector(parent,
