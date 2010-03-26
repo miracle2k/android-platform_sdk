@@ -91,7 +91,7 @@ public class ApkBuilder extends BaseBuilder {
 
     private static final String DX_PREFIX = "Dx"; //$NON-NLS-1$
 
-    private final static String GDBSERVER_NAME = "gdbserver"; //$NON-NLS-1$
+    final static String GDBSERVER_NAME = "gdbserver"; //$NON-NLS-1$
 
     /**
      * Dex conversion flag. This is set to true if one of the changed/added/removed

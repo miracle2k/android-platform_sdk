@@ -236,7 +236,8 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
         } else if (mLibFolder != null && mLibFolder.isPrefixOf(path)) {
             // inside the native library folder. Test if the changed resource is a .so file.
             if (type == IResource.FILE &&
-                    path.getFileExtension().equalsIgnoreCase(AndroidConstants.EXT_NATIVE_LIB)) {
+                    (AndroidConstants.EXT_NATIVE_LIB.equalsIgnoreCase(path.getFileExtension())
+                            || ApkBuilder.GDBSERVER_NAME.equals(resource.getName()))) {
                 mMakeFinalPackage = true;
                 return false; // return false for file.
             }
