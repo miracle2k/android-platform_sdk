@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
 
 /**
  * Centralized state for Android Eclipse project.
@@ -551,7 +552,7 @@ public final class ProjectState {
      * Converts a path containing only / by the proper platform separator.
      */
     private String convertPath(String path) {
-        return path.replaceAll("/", File.separator); //$NON-NLS-1$
+        return path.replaceAll("/", Matcher.quoteReplacement(File.separator)); //$NON-NLS-1$
     }
 
     /**
