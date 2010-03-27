@@ -42,6 +42,8 @@ public class LaunchMessages extends NLS {
     public static String InstrValidator_WrongRunnerTypeMsg_s;
     public static String RemoteAdtTestRunner_RunCompleteMsg;
     public static String RemoteAdtTestRunner_RunFailedMsg_s;
+
+    public static String RemoteAdtTestRunner_RunIOException_s;
     public static String RemoteAdtTestRunner_RunStoppedMsg;
 
     static {

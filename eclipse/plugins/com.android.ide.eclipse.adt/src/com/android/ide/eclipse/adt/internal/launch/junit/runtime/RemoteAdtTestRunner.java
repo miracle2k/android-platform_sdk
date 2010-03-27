@@ -27,6 +27,8 @@ import org.eclipse.jdt.internal.junit.runner.RemoteTestRunner;
 import org.eclipse.jdt.internal.junit.runner.TestExecution;
 import org.eclipse.jdt.internal.junit.runner.TestReferenceFailure;
 
+import java.io.IOException;
+
 /**
  * Supports Eclipse JUnit execution of Android tests.
  * <p/>
@@ -98,24 +100,29 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
         // set log only to first collect test case info, so Eclipse has correct test case count/
         // tree info
         runner.setLogOnly(true);
-        TestCollector collector = new TestCollector();        
-        runner.run(collector);
-        if (collector.getErrorMessage() != null) {
-            // error occurred during test collection.
-            reportError(collector.getErrorMessage());
-            // abort here
-            notifyTestRunEnded(0);
-            return;
+        TestCollector collector = new TestCollector();
+        try {
+            runner.run(collector);
+            if (collector.getErrorMessage() != null) {
+                // error occurred during test collection.
+                reportError(collector.getErrorMessage());
+                // abort here
+                notifyTestRunEnded(0);
+                return;
+            }
+            notifyTestRunStarted(collector.getTestCaseCount());
+            collector.sendTrees(this);
+
+            // now do real execution
+            runner.setLogOnly(false);
+            if (mLaunchInfo.isDebugMode()) {
+                runner.setDebug(true);
+            }
+            runner.run(new TestRunListener());
+        } catch (IOException e) {
+            reportError(String.format(LaunchMessages.RemoteAdtTestRunner_RunIOException_s,
+                    e.getMessage()));
         }
-        notifyTestRunStarted(collector.getTestCaseCount());
-        collector.sendTrees(this);
-        
-        // now do real execution
-        runner.setLogOnly(false);
-        if (mLaunchInfo.isDebugMode()) {
-            runner.setDebug(true);
-        }
-        runner.run(new TestRunListener());
     }
     
     /**

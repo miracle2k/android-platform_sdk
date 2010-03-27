@@ -16,6 +16,7 @@
 
 package com.android.ddmlib.testrunner;
 
+import java.io.IOException;
 import java.util.Collection;
 
 /**
@@ -112,15 +113,17 @@ public interface IRemoteAndroidTestRunner {
      * Convenience method for {@link #run(Collection)}.
      *
      * @param listeners listens for test results
+     * @throws IOException if connection to device was lost.
      */
-    public void run(ITestRunListener... listeners);
+    public void run(ITestRunListener... listeners) throws IOException;
 
     /**
      * Execute this test run.
      *
      * @param listeners collection of listeners for test results
+     * @throws IOException if connection to device was lost.
      */
-    public void run(Collection<ITestRunListener> listeners);
+    public void run(Collection<ITestRunListener> listeners) throws IOException;
 
     /**
      * Requests cancellation of this test run.
