@@ -1052,16 +1052,26 @@ public final class Sdk  {
                     ArrayList<IClasspathEntry> list = new ArrayList<IClasspathEntry>(
                             Arrays.asList(entries));
 
-                    // add the new one.
+                    // add the source folder to the classpath entries
                     IPath path = libSrc.getFullPath();
-                    list.add(JavaCore.newSourceEntry(path));
+                    int count = list.size();
+                    boolean foundMatch = false;
+                    for (int i = 0 ; i < count ; i++) {
+                        if (list.get(i).getPath().equals(path)) {
+                            foundMatch = true;
+                            break;
+                        }
+                    }
+                    if (foundMatch == false) {
+                        list.add(JavaCore.newSourceEntry(path));
+                    }
 
                     // remove a previous one if needed (in case of a rename)
                     if (previousLibraryPath != null) {
                         String oldLibName = previousLibraryPath.lastSegment();
                         IPath oldEntryPath = new Path("/").append(project.getName()).append(oldLibName);
                         // first remove the class path entry.
-                        final int count = list.size();
+                        count = list.size();
                         for (int i = 0 ; i < count ; i++) {
                             if (list.get(i).getPath().equals(oldEntryPath)) {
                                 list.remove(i);
