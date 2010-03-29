@@ -371,7 +371,8 @@ public final class ProjectState {
     public LibraryState getLibrary(String name) {
         synchronized (mLibraries) {
             for (LibraryState state : mLibraries) {
-                if (state.getProjectState().getProject().getName().equals(name)) {
+                ProjectState ps = state.getProjectState();
+                if (ps != null && ps.getProject().getName().equals(name)) {
                     return state;
                 }
             }
