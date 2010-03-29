@@ -249,9 +249,29 @@ public class RepoSource implements IDescription {
         }
 
         if (usingAlternateXml) {
-            String info = "This repository requires a more recent version of the Tools. Please update.";
+
+            // Is the manager running from inside ADT?
+            // We check that com.android.ide.eclipse.adt.AdtPlugin exists using reflection.
+
+            boolean isADT = false;
+            try {
+                Class<?> adt = Class.forName("com.android.ide.eclipse.adt.AdtPlugin");  //$NON-NLS-1$
+                isADT = (adt != null);
+            } catch (ClassNotFoundException e) {
+                // pass
+            }
+
+            String info;
+            if (isADT) {
+                info = "This repository requires a more recent version of ADT. Please update the Eclipse Android plugin.";
+                mDescription = "This repository requires a more recent version of ADT, the Eclipse Android plugin.\nYou must update it before you can see other new packages.";
+
+            } else {
+                info = "This repository requires a more recent version of the Tools. Please update.";
+                mDescription = "This repository requires a more recent version of the Tools.\nYou must update it before you can see other new packages.";
+            }
+
             mFetchError = mFetchError == null ? info : mFetchError + ". " + info;
-            mDescription = "This repository requires a more recent version of the Tools.\nYou must update it before you can see other new packages.";
         }
 
         monitor.incProgress(1);
