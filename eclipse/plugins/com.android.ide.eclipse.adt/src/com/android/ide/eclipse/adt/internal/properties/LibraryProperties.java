@@ -179,6 +179,7 @@ final class LibraryProperties {
                 mItemDataList.remove(data);
                 mTable.remove(mTable.getSelectionIndex());
                 resetEnabled();
+                mMustSave = true;
             }
         });
 
@@ -201,6 +202,7 @@ final class LibraryProperties {
                 // reset the selection
                 mTable.select(index - 1);
                 resetEnabled();
+                mMustSave = true;
             }
         });
 
@@ -220,6 +222,7 @@ final class LibraryProperties {
                 // reset the selection
                 mTable.select(index + 1);
                 resetEnabled();
+                mMustSave = true;
             }
         });
 
