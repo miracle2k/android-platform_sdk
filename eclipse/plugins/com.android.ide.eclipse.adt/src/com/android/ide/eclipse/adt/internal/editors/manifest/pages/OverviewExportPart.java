@@ -19,6 +19,8 @@ package com.android.ide.eclipse.adt.internal.editors.manifest.pages;
 import com.android.ide.eclipse.adt.internal.editors.manifest.ManifestEditor;
 import com.android.ide.eclipse.adt.internal.editors.ui.SectionHelper.ManifestSectionPart;
 import com.android.ide.eclipse.adt.internal.project.ExportHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -43,45 +45,69 @@ final class OverviewExportPart extends ManifestSectionPart {
         mOverviewPage = overviewPage;
         Section section = getSection();
         section.setText("Exporting");
-        section.setDescription("To export the application for distribution, you have the following options:");
 
-        Composite table = createTableLayout(toolkit, 2 /* numColumns */);
-        
-        StringBuffer buf = new StringBuffer();
-        buf.append("<form><li><a href=\"wizard\">"); //$NON-NLS-1$
-        buf.append("Use the Export Wizard");
-        buf.append("</a>"); //$NON-NLS-1$
-        buf.append(" to export and sign an APK");
-        buf.append("</li>"); //$NON-NLS-1$
-        buf.append("<li><a href=\"manual\">"); //$NON-NLS-1$
-        buf.append("Export an unsigned APK");
-        buf.append("</a>"); //$NON-NLS-1$
-        buf.append(" and sign it manually");
-        buf.append("</li></form>"); //$NON-NLS-1$
+        final IProject project = getProject();
+        boolean isLibrary = false;
+        if (project != null) {
+            ProjectState state = Sdk.getProjectState(project);
+            if (state != null) {
+                isLibrary = state.isLibrary();
+            }
+        }
 
-        FormText text = createFormText(table, toolkit, true, buf.toString(),
-                false /* setupLayoutData */);
-        text.addHyperlinkListener(new HyperlinkAdapter() {
-            @Override
-            public void linkActivated(HyperlinkEvent e) {
-                // get the project from the editor
-                IEditorInput input = mOverviewPage.mEditor.getEditorInput();
-                if (input instanceof FileEditorInput) {
-                    FileEditorInput fileInput = (FileEditorInput)input;
-                    IFile file = fileInput.getFile();
-                    IProject project = file.getProject();
-                    
-                    if ("manual".equals(e.data)) { //$NON-NLS-1$
-                        // now we can export an unsigned apk for the project.
-                        ExportHelper.exportProject(project);
-                    } else {
-                        // call the export wizard
-                        ExportHelper.startExportWizard(project);
+        if (isLibrary) {
+            section.setDescription("Library project cannot be exported.");
+            Composite table = createTableLayout(toolkit, 2 /* numColumns */);
+            createFormText(table, toolkit, true, "<form></form>", false /* setupLayoutData */);
+        } else {
+            section.setDescription("To export the application for distribution, you have the following options:");
+
+            Composite table = createTableLayout(toolkit, 2 /* numColumns */);
+
+            StringBuffer buf = new StringBuffer();
+            buf.append("<form><li><a href=\"wizard\">"); //$NON-NLS-1$
+            buf.append("Use the Export Wizard");
+            buf.append("</a>"); //$NON-NLS-1$
+            buf.append(" to export and sign an APK");
+            buf.append("</li>"); //$NON-NLS-1$
+            buf.append("<li><a href=\"manual\">"); //$NON-NLS-1$
+            buf.append("Export an unsigned APK");
+            buf.append("</a>"); //$NON-NLS-1$
+            buf.append(" and sign it manually");
+            buf.append("</li></form>"); //$NON-NLS-1$
+
+            FormText text = createFormText(table, toolkit, true, buf.toString(),
+                    false /* setupLayoutData */);
+            text.addHyperlinkListener(new HyperlinkAdapter() {
+                @Override
+                public void linkActivated(HyperlinkEvent e) {
+                    if (project != null) {
+                        if ("manual".equals(e.data)) { //$NON-NLS-1$
+                            // now we can export an unsigned apk for the project.
+                            ExportHelper.exportProject(project);
+                        } else {
+                            // call the export wizard
+                            ExportHelper.startExportWizard(project);
+                        }
                     }
                 }
-            }
-        });
-        
+            });
+        }
+
         layoutChanged();
-    }        
+    }
+
+    /**
+     * Returns the project of the edited file.
+     */
+    private IProject getProject() {
+        IEditorInput input = mOverviewPage.mEditor.getEditorInput();
+        if (input instanceof FileEditorInput) {
+            FileEditorInput fileInput = (FileEditorInput)input;
+            IFile file = fileInput.getFile();
+            return file.getProject();
+        }
+
+        return null;
+    }
 }
