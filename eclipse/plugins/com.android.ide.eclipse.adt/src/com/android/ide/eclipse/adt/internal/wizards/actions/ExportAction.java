@@ -17,23 +17,29 @@
 package com.android.ide.eclipse.adt.internal.wizards.actions;
 
 import com.android.ide.eclipse.adt.internal.project.ExportHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
 
 public class ExportAction implements IObjectActionDelegate {
 
     private ISelection mSelection;
+    private Shell mShell;
 
     /**
      * @see IObjectActionDelegate#setActivePart(IAction, IWorkbenchPart)
      */
     public void setActivePart(IAction action, IWorkbenchPart targetPart) {
+        mShell = targetPart.getSite().getShell();
     }
 
     public void run(IAction action) {
@@ -53,13 +59,19 @@ public class ExportAction implements IObjectActionDelegate {
 
                 // and finally do the action
                 if (project != null) {
-                    ExportHelper.exportProject(project);
+                    ProjectState state = Sdk.getProjectState(project);
+                    if (state.isLibrary()) {
+                        MessageDialog.openError(mShell, "Android Export",
+                                "Android library projects cannot be exported.");
+                    } else {
+                        ExportHelper.exportProject(project);
+                    }
                 }
             }
         }
     }
 
     public void selectionChanged(IAction action, ISelection selection) {
-        this.mSelection = selection;
+        mSelection = selection;
     }
 }
