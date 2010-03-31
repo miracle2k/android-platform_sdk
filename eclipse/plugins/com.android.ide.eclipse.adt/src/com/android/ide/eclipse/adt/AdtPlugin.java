@@ -507,7 +507,8 @@ public class AdtPlugin extends AbstractUIPlugin {
                 return total.toString();
             }
         } catch (IOException e) {
-            // we'll just return null;.
+            // we'll just return null
+            AdtPlugin.log(e, "Failed to read text file '%s'", filepath);  //$NON-NLS-1$
         }
 
         return null;
@@ -538,6 +539,7 @@ public class AdtPlugin extends AbstractUIPlugin {
             }
         } catch (IOException e) {
             // we'll just return null;.
+            AdtPlugin.log(e, "Failed to read binary file '%s'", filepath);  //$NON-NLS-1$
         }
 
         return null;
@@ -558,8 +560,10 @@ public class AdtPlugin extends AbstractUIPlugin {
             }
         } catch (MalformedURLException e) {
             // we'll just return null.
+            AdtPlugin.log(e, "Failed to read stream '%s'", filepath);  //$NON-NLS-1$
         } catch (IOException e) {
             // we'll just return null;.
+            AdtPlugin.log(e, "Failed to read stream '%s'", filepath);  //$NON-NLS-1$
         }
 
         return null;
@@ -581,7 +585,14 @@ public class AdtPlugin extends AbstractUIPlugin {
         }
 
         // attempt to get a file to one of the template.
-        return bundle.getEntry(AndroidConstants.WS_SEP + filepath);
+        String path = AndroidConstants.WS_SEP + filepath;
+        URL url = bundle.getEntry(path);
+
+        if (url == null) {
+            AdtPlugin.log(IStatus.INFO, "Bundle file URL not found at path '%s'", path);
+        }
+
+        return url;
     }
 
     /**

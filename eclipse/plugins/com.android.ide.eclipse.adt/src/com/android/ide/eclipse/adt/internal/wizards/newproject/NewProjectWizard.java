@@ -760,6 +760,15 @@ public class NewProjectWizard extends Wizard implements INewWizard {
             // Replace all keyword parameters
             manifestTemplate = replaceParameters(manifestTemplate, parameters);
 
+            if (manifestTemplate == null) {
+                // Inform the user there will be not manifest.
+                AdtPlugin.logAndPrintError(null, getWindowTitle() /*TAG*/,
+                        "Failed to generate the Android manifest. Missing template %s",
+                        TEMPLATE_MANIFEST);
+                // Abort now, there's no need to continue
+                return;
+            }
+
             if (parameters.containsKey(PARAM_ACTIVITY)) {
                 // now get the activity template
                 String activityTemplate = AdtPlugin.readEmbeddedTextFile(TEMPLATE_ACTIVITIES);
@@ -770,11 +779,15 @@ public class NewProjectWizard extends Wizard implements INewWizard {
                 // set the intent.
                 String intent = AdtPlugin.readEmbeddedTextFile(TEMPLATE_INTENT_LAUNCHER);
 
-                // set the intent to the main activity
-                activities = activities.replaceAll(PH_INTENT_FILTERS, intent);
+                if (activities != null) {
+                    if (intent != null) {
+                        // set the intent to the main activity
+                        activities = activities.replaceAll(PH_INTENT_FILTERS, intent);
+                    }
 
-                // set the activity(ies) in the manifest
-                manifestTemplate = manifestTemplate.replaceAll(PH_ACTIVITIES, activities);
+                    // set the activity(ies) in the manifest
+                    manifestTemplate = manifestTemplate.replaceAll(PH_ACTIVITIES, activities);
+                }
             } else {
                 // remove the activity(ies) from the manifest
                 manifestTemplate = manifestTemplate.replaceAll(PH_ACTIVITIES, "");  //$NON-NLS-1$
@@ -784,11 +797,17 @@ public class NewProjectWizard extends Wizard implements INewWizard {
             if (parameters.containsKey(PARAM_TEST_TARGET_PACKAGE)) {
                 // Set the uses-library needed by the test project
                 String usesLibrary = AdtPlugin.readEmbeddedTextFile(TEMPLATE_TEST_USES_LIBRARY);
-                manifestTemplate = manifestTemplate.replaceAll(PH_TEST_USES_LIBRARY, usesLibrary);
+                if (usesLibrary != null) {
+                    manifestTemplate = manifestTemplate.replaceAll(
+                            PH_TEST_USES_LIBRARY, usesLibrary);
+                }
 
                 // Set the instrumentation element needed by the test project
                 String instru = AdtPlugin.readEmbeddedTextFile(TEMPLATE_TEST_INSTRUMENTATION);
-                manifestTemplate = manifestTemplate.replaceAll(PH_TEST_INSTRUMENTATION, instru);
+                if (instru != null) {
+                    manifestTemplate = manifestTemplate.replaceAll(
+                            PH_TEST_INSTRUMENTATION, instru);
+                }
 
                 // Replace PARAM_TEST_TARGET_PACKAGE itself now
                 manifestTemplate = replaceParameters(manifestTemplate, parameters);
@@ -802,8 +821,10 @@ public class NewProjectWizard extends Wizard implements INewWizard {
             String minSdkVersion = (String) parameters.get(PARAM_MIN_SDK_VERSION);
             if (minSdkVersion != null && minSdkVersion.length() > 0) {
                 String usesSdkTemplate = AdtPlugin.readEmbeddedTextFile(TEMPLATE_USES_SDK);
-                String usesSdk = replaceParameters(usesSdkTemplate, parameters);
-                manifestTemplate = manifestTemplate.replaceAll(PH_USES_SDK, usesSdk);
+                if (usesSdkTemplate != null) {
+                    String usesSdk = replaceParameters(usesSdkTemplate, parameters);
+                    manifestTemplate = manifestTemplate.replaceAll(PH_USES_SDK, usesSdk);
+                }
             } else {
                 manifestTemplate = manifestTemplate.replaceAll(PH_USES_SDK, "");
             }
