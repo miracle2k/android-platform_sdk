@@ -580,16 +580,21 @@ public class AdtPlugin extends AbstractUIPlugin {
             if (sPlugin != null) {
                 bundle = sPlugin.getBundle();
             } else {
+                AdtPlugin.log(IStatus.WARNING, "ADT Plugin is missing");    //$NON-NLS-1$
                 return null;
             }
         }
 
         // attempt to get a file to one of the template.
-        String path = AndroidConstants.WS_SEP + filepath;
+        String path = filepath;
+        if (!path.startsWith(AndroidConstants.WS_SEP)) {
+            path = AndroidConstants.WS_SEP + path;
+        }
+
         URL url = bundle.getEntry(path);
 
         if (url == null) {
-            AdtPlugin.log(IStatus.INFO, "Bundle file URL not found at path '%s'", path);
+            AdtPlugin.log(IStatus.INFO, "Bundle file URL not found at path '%s'", path); //$NON-NLS-1$
         }
 
         return url;
