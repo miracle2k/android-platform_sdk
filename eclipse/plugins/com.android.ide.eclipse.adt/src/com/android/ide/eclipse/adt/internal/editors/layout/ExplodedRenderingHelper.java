@@ -84,7 +84,7 @@ public final class ExplodedRenderingHelper {
      * @param root the root node (ie the top layout).
      * @param layoutNames the list of layout classes
      */
-    ExplodedRenderingHelper(Node root, Set<String> layoutNames) {
+    public ExplodedRenderingHelper(Node root, Set<String> layoutNames) {
         mLayoutNames = layoutNames;
 
         computePadding(root, mPadding);
