@@ -39,6 +39,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubProgressMonitor;
@@ -513,6 +514,9 @@ public class NewProjectWizard extends Wizard implements INewWizard {
         try {
             getContainer().run(true /* fork */, true /* cancelable */, op);
         } catch (InvocationTargetException e) {
+
+            AdtPlugin.log(e, "New Project Wizard failed");
+
             // The runnable threw an exception
             Throwable t = e.getTargetException();
             if (t instanceof CoreException) {
@@ -522,11 +526,20 @@ public class NewProjectWizard extends Wizard implements INewWizard {
                     // and there's a resource with a similar name.
                     MessageDialog.openError(getShell(), "Error", "Error: Case Variant Exists");
                 } else {
-                    ErrorDialog.openError(getShell(), "Error", null, core.getStatus());
+                    ErrorDialog.openError(getShell(), "Error", core.getMessage(), core.getStatus());
                 }
             } else {
                 // Some other kind of exception
-                MessageDialog.openError(getShell(), "Error", t.getMessage());
+                String msg = t.getMessage();
+                Throwable t1 = t;
+                while (msg == null && t1.getCause() != null) {
+                    msg = t1.getMessage();
+                    t1 = t1.getCause();
+                }
+                if (msg == null) {
+                    msg = t.toString();
+                }
+                MessageDialog.openError(getShell(), "Error", msg);
             }
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -1083,9 +1096,28 @@ public class NewProjectWizard extends Wizard implements INewWizard {
      * @return A new String object with the placeholder replaced by the values.
      */
     private String replaceParameters(String str, Map<String, Object> parameters) {
+
+        if (parameters == null) {
+            AdtPlugin.log(IStatus.ERROR,
+                    "NPW replace parameters: null parameter map. String: '%s'", str);  //$NON-NLS-1$
+            return str;
+        } else if (str == null) {
+            AdtPlugin.log(IStatus.ERROR,
+                    "NPW replace parameters: null template string");  //$NON-NLS-1$
+            return str;
+        }
+
         for (Entry<String, Object> entry : parameters.entrySet()) {
-            if (entry.getValue() instanceof String) {
-                str = str.replaceAll(entry.getKey(), (String) entry.getValue());
+            if (entry != null && entry.getValue() instanceof String) {
+                Object value = entry.getValue();
+                if (value == null) {
+                    AdtPlugin.log(IStatus.ERROR,
+                    "NPW replace parameters: null value for key '%s' in template '%s'",  //$NON-NLS-1$
+                    entry.getKey(),
+                    str);
+                } else {
+                    str = str.replaceAll(entry.getKey(), (String) value);
+                }
             }
         }
 
