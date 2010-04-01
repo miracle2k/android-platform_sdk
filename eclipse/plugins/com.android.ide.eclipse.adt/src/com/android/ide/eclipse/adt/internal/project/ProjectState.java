@@ -359,7 +359,8 @@ public final class ProjectState {
     public LibraryState getLibrary(IProject library) {
         synchronized (mLibraries) {
             for (LibraryState state : mLibraries) {
-                if (state.getProjectState().equals(library)) {
+                ProjectState ps = state.getProjectState();
+                if (ps != null && ps.equals(library)) {
                     return state;
                 }
             }
