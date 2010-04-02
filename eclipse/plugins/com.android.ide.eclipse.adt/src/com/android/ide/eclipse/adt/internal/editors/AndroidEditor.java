@@ -164,6 +164,15 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
     abstract protected void createFormPages();
 
     /**
+     * Called by the base class {@link AndroidEditor} once all pages (custom form pages
+     * as well as text editor page) have been created. This give a chance to deriving
+     * classes to adjust behavior once the text page has been created.
+     */
+    protected void postCreatePages() {
+        // Nothing in the base class.
+    }
+
+    /**
      * Creates the initial UI Root Node, including the known mandatory elements.
      * @param force if true, a new UiManifestNode is recreated even if it already exists.
      */
@@ -199,8 +208,8 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
         mIsCreatingPage = true;
         createFormPages();
         createTextEditor();
-
         createUndoRedoActions();
+        postCreatePages();
         mIsCreatingPage = false;
     }
 
@@ -304,6 +313,11 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
     @Override
     protected void pageChange(int newPageIndex) {
         super.pageChange(newPageIndex);
+
+        // Do not record page changes during creation of pages
+        if (mIsCreatingPage) {
+            return;
+        }
 
         if (getEditorInput() instanceof IFileEditorInput) {
             IFile file = ((IFileEditorInput) getEditorInput()).getFile();
