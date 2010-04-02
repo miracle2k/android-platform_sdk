@@ -244,6 +244,10 @@
                            value="${tested.project.absolute.dir}/bin/classes" else=".">
             <isset property="tested.project.absolute.dir" />
         </condition>
+        <condition property="extensible.libs.classpath"
+                           value="${tested.project.absolute.dir}/libs" else="./libs">
+            <isset property="tested.project.absolute.dir" />
+        </condition>
         <javac encoding="ascii" target="1.5" debug="true" extdirs=""
                 destdir="${out.classes.absolute.dir}"
                 bootclasspathref="android.target.classpath"
@@ -254,6 +258,7 @@
             <src refid="android.libraries.src" />
             <classpath>
                 <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
+                <fileset dir="${extensible.libs.classpath}" includes="*.jar" />
             </classpath>
         </javac>
     </target>

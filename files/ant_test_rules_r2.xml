@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="android_test_rules" default="run-tests">
 
-    <import file="android_rules.xml" />
+    <import file="ant_rules_r2.xml" />
 
     <property name="tested.project.absolute.dir" location="${tested.project.dir}" />
     <property name="instrumentation.dir" value="instrumented" />
