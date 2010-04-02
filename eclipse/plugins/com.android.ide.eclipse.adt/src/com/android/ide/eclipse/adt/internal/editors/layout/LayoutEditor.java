@@ -164,12 +164,14 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
                             input.toString());
                 }
 
-                // It is possible that the Layout Editor alreadys exits if a different version
+                // It is possible that the Layout Editor already exits if a different version
                 // of the same layout is being opened (either through "open" action from
                 // the user, or through a configuration change in the configuration selector.)
                 if (mGraphicalEditor == null) {
 
-                    if (System.getenv("USE_GLE2") != null) {            //$NON-NLS-1$ //$NON-NLS-2$
+                    String useGle2 = System.getenv("USE_GLE2");     //$NON-NLS-1$
+
+                    if (useGle2 != null && !useGle2.equals("0")) {  //$NON-NLS-1$
                         mGraphicalEditor = new GraphicalEditorPart(this);
                     } else {
                         mGraphicalEditor = new GraphicalLayoutEditor(this);
@@ -195,6 +197,25 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
             AdtPlugin.log(e, "Error creating nested page"); //$NON-NLS-1$
         }
      }
+
+    @Override
+    protected void postCreatePages() {
+        super.postCreatePages();
+
+        // This is called after the createFormPages() and createTextPage() methods have
+        // been called. Usually we select the first page (e.g. the GLE here) but right
+        // now we're going to temporarily select the last page (the XML text editor) if
+        // GLE1 is being used. That's because GLE1 is mostly useless and being deprecated.
+        //
+        // Note that this sets the default page. Eventually a default page might be
+        // restored by selectDefaultPage() later based on the last page used by the user.
+        //
+        // TODO revert this once GLE2 becomes useful and is the default.
+
+        if (mGraphicalEditor instanceof GraphicalLayoutEditor) {
+            setActivePage(getPageCount() - 1);
+        }
+    }
 
     /* (non-java doc)
      * Change the tab/title name to include the name of the layout.
@@ -353,8 +374,14 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
     }
 
     public void partOpened(IWorkbenchPart part) {
-        EclipseUiHelper.showView(EclipseUiHelper.CONTENT_OUTLINE_VIEW_ID, false /* activate */);
-        EclipseUiHelper.showView(EclipseUiHelper.PROPERTY_SHEET_VIEW_ID, false /* activate */);
+        /*
+         * We used to automatically bring the outline and the property sheet to view
+         * when opening the editor. This behavior has always been a mixed bag and not
+         * exactly satisfactory. GLE1 is being useless/deprecated and GLE2 will need to
+         * improve on that, so right now let's comment this out.
+         */
+        //EclipseUiHelper.showView(EclipseUiHelper.CONTENT_OUTLINE_VIEW_ID, false /* activate */);
+        //EclipseUiHelper.showView(EclipseUiHelper.PROPERTY_SHEET_VIEW_ID, false /* activate */);
     }
 
     public class UiEditorActions extends UiActions {
