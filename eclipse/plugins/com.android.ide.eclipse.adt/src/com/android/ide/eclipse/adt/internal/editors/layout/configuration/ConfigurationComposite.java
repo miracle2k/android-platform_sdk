@@ -213,11 +213,13 @@ public class ConfigurationComposite extends Composite {
 
                             locale = new ResourceQualifier[2];
                             String locales[] = values[2].split(SEP_LOCALE);
-                            if (locales[0].length() > 0) {
-                                locale[0] = new LanguageQualifier(locales[0]);
-                            }
-                            if (locales[1].length() > 0) {
-                                locale[1] = new RegionQualifier(locales[1]);
+                            if (locales.length >= 2) {
+                                if (locales[0].length() > 0) {
+                                    locale[0] = new LanguageQualifier(locales[0]);
+                                }
+                                if (locales[1].length() > 0) {
+                                    locale[1] = new RegionQualifier(locales[1]);
+                                }
                             }
 
                             theme = values[3];
