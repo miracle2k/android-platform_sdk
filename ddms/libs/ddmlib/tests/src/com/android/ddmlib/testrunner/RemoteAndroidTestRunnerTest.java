@@ -52,7 +52,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
     /**
      * Test the basic case building of the instrumentation runner command with no arguments.
      */
-    public void testRun() {
+    public void testRun() throws IOException {
         mRunner.run(new EmptyListener());
         assertStringsEquals(String.format("am instrument -w -r %s/%s", TEST_PACKAGE, TEST_RUNNER),
                 mMockDevice.getLastShellCommand());
@@ -61,7 +61,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
     /**
      * Test the building of the instrumentation runner command with log set.
      */
-    public void testRunWithLog() {
+    public void testRunWithLog() throws IOException {
         mRunner.setLogOnly(true);
         mRunner.run(new EmptyListener());
         assertStringsEquals(String.format("am instrument -w -r -e log true %s/%s", TEST_PACKAGE,
@@ -71,7 +71,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
     /**
      * Test the building of the instrumentation runner command with method set.
      */
-    public void testRunWithMethod() {
+    public void testRunWithMethod() throws IOException {
         final String className = "FooTest";
         final String testName = "fooTest";
         mRunner.setMethodName(className, testName);
@@ -83,7 +83,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
     /**
      * Test the building of the instrumentation runner command with test package set.
      */
-    public void testRunWithPackage() {
+    public void testRunWithPackage() throws IOException {
         final String packageName = "foo.test";
         mRunner.setTestPackageName(packageName);
         mRunner.run(new EmptyListener());
@@ -94,7 +94,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
     /**
      * Test the building of the instrumentation runner command with extra argument added.
      */
-    public void testRunWithAddInstrumentationArg() {
+    public void testRunWithAddInstrumentationArg() throws IOException {
         final String extraArgName = "blah";
         final String extraArgValue = "blahValue";
         mRunner.addInstrumentationArg(extraArgName, extraArgValue);

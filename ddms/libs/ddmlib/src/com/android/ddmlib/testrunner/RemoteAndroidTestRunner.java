@@ -183,27 +183,20 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     /**
      * {@inheritDoc}
      */
-    public void run(ITestRunListener... listeners) {
+    public void run(ITestRunListener... listeners)  throws IOException {
         run(Arrays.asList(listeners));
     }
 
     /**
      * {@inheritDoc}
      */
-    public void run(Collection<ITestRunListener> listeners) {
+    public void run(Collection<ITestRunListener> listeners)  throws IOException {
         final String runCaseCommandStr = String.format("am instrument -w -r %s %s",
             getArgsCommand(), getRunnerPath());
         Log.d(LOG_TAG, runCaseCommandStr);
         mParser = new InstrumentationResultParser(listeners);
 
-        try {
-            mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser);
-        } catch (IOException e) {
-            Log.e(LOG_TAG, e);
-            for (ITestRunListener listener : listeners) {
-                listener.testRunFailed(e.toString());
-            }
-        }
+        mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser);
     }
 
     /**
