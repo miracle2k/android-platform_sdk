@@ -875,7 +875,8 @@ class NewXmlFileCreationPage extends WizardPage {
      * Callback called when the user uses the "Browse Projects" button.
      */
     private void onProjectBrowse() {
-        IJavaProject p = mProjectChooserHelper.chooseJavaProject(mProjectTextField.getText());
+        IJavaProject p = mProjectChooserHelper.chooseJavaProject(mProjectTextField.getText(),
+                "Please select the target project");
         if (p != null) {
             changeProject(p.getProject());
             mProjectTextField.setText(mProject.getName());

@@ -154,7 +154,8 @@ final class LibraryProperties {
         mAddButton.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                IJavaProject javaProject = mProjectChooser.chooseJavaProject(null);
+                IJavaProject javaProject = mProjectChooser.chooseJavaProject(null /*projectName*/,
+                        "Please select a library project");
                 if (javaProject != null) {
                     IProject iProject = javaProject.getProject();
                     IPath relativePath = Sdk.makeRelativeTo(

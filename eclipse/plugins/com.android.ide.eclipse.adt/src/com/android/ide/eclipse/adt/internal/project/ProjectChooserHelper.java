@@ -104,15 +104,20 @@ public class ProjectChooserHelper {
      *
      * @param projectName If non null and not empty, represents the name of an Android project
      *                    that will be selected by default.
+     * @param message Message for the dialog box. Can be null in which case a default message
+     *                is displayed.
      * @return the project chosen by the user in the dialog, or null if the dialog was canceled.
      */
-    public IJavaProject chooseJavaProject(String projectName) {
+    public IJavaProject chooseJavaProject(String projectName, String message) {
         ILabelProvider labelProvider = new JavaElementLabelProvider(
                 JavaElementLabelProvider.SHOW_DEFAULT);
         ElementListSelectionDialog dialog = new ElementListSelectionDialog(
                 mParentShell, labelProvider);
         dialog.setTitle("Project Selection");
-        dialog.setMessage("Select a project to constrain your search.");
+        if (message == null) {
+            message = "Please select a project";
+        }
+        dialog.setMessage(message);
 
         IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
         IJavaModel javaModel = JavaCore.create(workspaceRoot);

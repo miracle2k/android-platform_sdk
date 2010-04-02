@@ -812,7 +812,8 @@ public class NewTestProjectCreationPage extends WizardPage {
      * Callback called when the user uses the "Browse Projects" button.
      */
     private void onProjectBrowse() {
-        IJavaProject p = mProjectChooserHelper.chooseJavaProject(mTestedProjectNameField.getText());
+        IJavaProject p = mProjectChooserHelper.chooseJavaProject(mTestedProjectNameField.getText(),
+                null /*message*/);
         if (p != null) {
             setExistingProject(p.getProject());
             mTestedProjectNameField.setText(mExistingTestedProject.getName());

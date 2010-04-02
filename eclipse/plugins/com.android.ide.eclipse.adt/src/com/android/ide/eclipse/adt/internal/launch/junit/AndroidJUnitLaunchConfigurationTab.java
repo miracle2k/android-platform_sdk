@@ -556,7 +556,8 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
      * constraining the search for main types to the specified project.
      */
     private void handleProjectButtonSelected() {
-        IJavaProject project = mProjectChooserHelper.chooseJavaProject(getProjectName());
+        IJavaProject project = mProjectChooserHelper.chooseJavaProject(getProjectName(),
+                "Please select a project to launch");
         if (project == null) {
             return;
         }
