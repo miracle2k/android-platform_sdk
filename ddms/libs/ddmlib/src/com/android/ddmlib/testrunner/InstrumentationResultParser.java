@@ -234,8 +234,8 @@ public class InstrumentationResultParser extends MultiLineReceiver {
                 // this is a value that has wrapped to next line.
                 mCurrentValue.append("\r\n");
                 mCurrentValue.append(line);
-            } else {
-                Log.i(LOG_TAG, "unrecognized line " + line);
+            } else if (line.trim().length() > 0){
+                Log.d(LOG_TAG, "unrecognized line " + line);
             }
         }
     }
@@ -462,7 +462,6 @@ public class InstrumentationResultParser extends MultiLineReceiver {
             listener.testRunFailed(errorMsg);
         }
         mTestRunFailReported = true;
-
     }
 
     /**

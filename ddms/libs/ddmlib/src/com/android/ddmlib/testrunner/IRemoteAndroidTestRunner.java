@@ -24,6 +24,51 @@ import java.util.Collection;
  */
 public interface IRemoteAndroidTestRunner {
 
+    public static enum TestSize {
+        /** Run tests annotated with SmallTest */
+        SMALL("small"),
+        /** Run tests annotated with MediumTest */
+        MEDIUM("medium"),
+        /** Run tests annotated with LargeTest */
+        LARGE("large");
+
+        private String mRunnerValue;
+
+        /**
+         * Create a {@link TestSize}.
+         *
+         * @param runnerValue the {@link String} value that represents the size that is passed to
+         * device. Defined on device in android.test.InstrumentationTestRunner.
+         */
+        TestSize(String runnerValue) {
+            mRunnerValue = runnerValue;
+        }
+
+        String getRunnerValue() {
+            return mRunnerValue;
+        }
+
+        /**
+         * Return the {@link TestSize} corresponding to the given Android platform defined value.
+         *
+         * @throws IllegalArgumentException if {@link TestSize} cannot be found.
+         */
+        public static TestSize getTestSize(String value) {
+            // build the error message in the success case too, to avoid two for loops
+            StringBuilder msgBuilder = new StringBuilder("Unknown TestSize ");
+            msgBuilder.append(value);
+            msgBuilder.append(", Must be one of ");
+            for (TestSize size : values()) {
+                if (size.getRunnerValue().equals(value)) {
+                    return size;
+                }
+                msgBuilder.append(size.getRunnerValue());
+                msgBuilder.append(", ");
+            }
+            throw new IllegalArgumentException(msgBuilder.toString());
+        }
+    }
+
     /**
      * Returns the application package name.
      */
@@ -69,6 +114,14 @@ public interface IRemoteAndroidTestRunner {
      * @param packageName fully qualified package name (eg x.y.z)
      */
     public void setTestPackageName(String packageName);
+
+    /**
+     * Sets to run only tests of given size.
+     * Must be called before 'run'.
+     *
+     * @param size the {@link TestSize} to run.
+     */
+    public void setTestSize(TestSize size);
 
     /**
      * Adds a argument to include in instrumentation command.
