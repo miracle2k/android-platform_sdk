@@ -160,6 +160,7 @@ public class RepoSource implements IDescription {
         monitor.incProgress(1);
 
         mFetchError = null;
+        Boolean[] validatorFound = new Boolean[] { Boolean.FALSE };
         String[] validationError = new String[] { null };
         Exception[] exception = new Exception[] { null };
         ByteArrayInputStream xml = fetchUrl(url, exception);
@@ -168,17 +169,23 @@ public class RepoSource implements IDescription {
         String validatedUri = null;
         if (xml != null) {
             monitor.setDescription("Validate XML");
-            String uri = validateXml(xml, url, validationError);
+            String uri = validateXml(xml, url, validationError, validatorFound);
             if (uri != null) {
+                // Validation was successful
                 validatedDoc = getDocument(xml, monitor);
                 validatedUri = uri;
-            } else {
+            } else if (validatorFound[0].equals(Boolean.TRUE)) {
+                // An XML validator was found and the XML failed to validate.
+                // Let's see if we can find an alternate tools upgrade to perform.
                 validatedDoc = findAlternateToolsXml(xml);
                 if (validatedDoc != null) {
                     validationError[0] = null;  // remove error from XML validation
                     validatedUri = SdkRepository.NS_SDK_REPOSITORY;
                     usingAlternateXml = true;
                 }
+            } else {
+                // Validation failed because this JVM lacks a proper XML Validator
+                mFetchError = "No suitable XML Schema Validator could be found in your Java environment. Please update your version of Java.";
             }
         }
 
@@ -192,17 +199,24 @@ public class RepoSource implements IDescription {
 
             xml = fetchUrl(url, exception);
             if (xml != null) {
-                String uri = validateXml(xml, url, validationError);
+                String uri = validateXml(xml, url, validationError, validatorFound);
                 if (uri != null) {
+                    // Validation was successful
+                    validationError[0] = null;  // remove error from previous XML validation
                     validatedDoc = getDocument(xml, monitor);
                     validatedUri = uri;
-                } else {
+                } else if (validatorFound[0].equals(Boolean.TRUE)) {
+                    // An XML validator was found and the XML failed to validate.
+                    // Let's see if we can find an alternate tools upgrade to perform.
                     validatedDoc = findAlternateToolsXml(xml);
                     if (validatedDoc != null) {
                         validationError[0] = null;  // remove error from XML validation
                         validatedUri = SdkRepository.NS_SDK_REPOSITORY;
                         usingAlternateXml = true;
                     }
+                } else {
+                    // Validation failed because this JVM lacks a proper XML Validator
+                    mFetchError = "No suitable XML Schema Validator could be found in your Java environment. Please update your version of Java.";
                 }
             }
 
@@ -359,7 +373,8 @@ public class RepoSource implements IDescription {
      * If the XML was correctly validated, returns the schema that worked.
      * If no schema validated the XML, returns null.
      */
-    private String validateXml(ByteArrayInputStream xml, String url, String[] outError) {
+    private String validateXml(ByteArrayInputStream xml, String url,
+            String[] outError, Boolean[] validatorFound) {
 
         String lastError = null;
         String extraError = null;
@@ -369,9 +384,11 @@ public class RepoSource implements IDescription {
 
                 if (validator == null) {
                     lastError = "XML verification failed for %1$s.\nNo suitable XML Schema Validator could be found in your Java environment. Please consider updating your version of Java.";
+                    validatorFound[0] = Boolean.FALSE;
                     continue;
                 }
 
+                validatorFound[0] = Boolean.TRUE;
                 xml.reset();
                 // Validation throws a bunch of possible Exceptions on failure.
                 validator.validate(new StreamSource(xml));
