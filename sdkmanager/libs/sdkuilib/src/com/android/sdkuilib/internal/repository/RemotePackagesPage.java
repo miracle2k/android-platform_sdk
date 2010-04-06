@@ -112,11 +112,11 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
 
         mDescriptionLabel = new Label(mDescriptionContainer, SWT.NONE);
         mDescriptionLabel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
-        mDescriptionLabel.setText("Line1\nLine2\nLine3");
+        mDescriptionLabel.setText("Line1\nLine2\nLine3");  //$NON-NLS-1$
 
         mAddSiteButton = new Button(parent, SWT.NONE);
-        mAddSiteButton.setText("Add Site...");
-        mAddSiteButton.setToolTipText("Allows you to enter a new user external site. " +
+        mAddSiteButton.setText("Add Add-on Site...");
+        mAddSiteButton.setToolTipText("Allows you to enter a new add-on site. " +
                 "Such site can only contribute add-ons and extra packages.");
         mAddSiteButton.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -126,9 +126,9 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         });
 
         mDeleteSiteButton = new Button(parent, SWT.NONE);
-        mDeleteSiteButton.setText("Delete Site...");
-        mDeleteSiteButton.setToolTipText("Allows you to remove an external site. " +
-                "Built-in sites cannot be removed.");
+        mDeleteSiteButton.setText("Delete Add-on Site...");
+        mDeleteSiteButton.setToolTipText("Allows you to remove an add-on site. " +
+                "Built-in default sites cannot be removed.");
         mDeleteSiteButton.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -327,28 +327,38 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
     private void onAddSiteSelected() {
 
         final RepoSource[] knowSources = mUpdaterData.getSources().getSources();
-        String title = "Add Site URL";
-        String msg = "Please enter the URL of the repository.xml for the new site:";
+        String title = "Add Add-on Site URL";
+
+        String msg =
+        "This dialog lets you add the URL of a new add-on site.\n" +
+        "\n" +
+        "An add-on site can only provide new add-ons or \"user\" packages.\n" +
+        "Add-on sites cannot provide standard Android platforms, docs or samples packages.\n" +
+        "Inserting a URL here will not allow you to clone an official Android repository.\n" +
+        "\n" +
+        "Please enter the URL of the repository.xml for the new add-on site:";
 
         InputDialog dlg = new InputDialog(getShell(), title, msg, null, new IInputValidator() {
             public String isValid(String newText) {
 
                 if (newText == null || newText.length() == 0) {
-                    return "Please enter an URL.";
+                    return "Error: URL field is empty. Please enter a URL.";
                 }
 
                 // A URL should have one of the following prefixes
-                if (!newText.startsWith("file://") &&
-                        !newText.startsWith("ftp://") &&
-                        !newText.startsWith("http://") &&
-                        !newText.startsWith("https://")) {
-                    return "The URL must start by one of file://, ftp://, http:// or https://";
+                if (!newText.startsWith("file://") &&                 //$NON-NLS-1$
+                        !newText.startsWith("ftp://") &&              //$NON-NLS-1$
+                        !newText.startsWith("http://") &&             //$NON-NLS-1$
+                        !newText.startsWith("https://")) {            //$NON-NLS-1$
+                    return "Error: The URL must start by one of file://, ftp://, http:// or https://";
                 }
 
-                // Reject URLs that are already in the source list
+                // Reject URLs that are already in the source list.
+                // URLs are generally case-insensitive (except for file:// where it all depends
+                // on the current OS so we'll ignore this case.)
                 for (RepoSource s : knowSources) {
-                    if (newText.equals(s.getUrl())) {
-                        return "This site is already listed.";
+                    if (newText.equalsIgnoreCase(s.getUrl())) {
+                        return "Error : This site is already listed.";
                     }
                 }
 
@@ -372,9 +382,9 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
                 if (c instanceof RepoSource && ((RepoSource) c).isUserSource()) {
                     RepoSource source = (RepoSource) c;
 
-                    String title = "Delete Site?";
+                    String title = "Delete Add-on Site?";
 
-                    String msg = String.format("Are you sure you want to delete the site '%1$s'?",
+                    String msg = String.format("Are you sure you want to delete the add-on site '%1$s'?",
                             source.getUrl());
 
                     if (MessageDialog.openQuestion(getShell(), title, msg)) {
