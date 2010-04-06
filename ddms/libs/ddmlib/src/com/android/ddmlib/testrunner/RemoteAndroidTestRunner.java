@@ -52,6 +52,7 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     private static final String DEBUG_ARG_NAME = "debug";
     private static final String COVERAGE_ARG_NAME = "coverage";
     private static final String PACKAGE_ARG_NAME = "package";
+    private static final String SIZE_ARG_NAME = "size";
 
     /**
      * Creates a remote Android test runner.
@@ -183,6 +184,13 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     /**
      * {@inheritDoc}
      */
+    public void setTestSize(TestSize size) {
+        addInstrumentationArg(SIZE_ARG_NAME, size.getRunnerValue());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void run(ITestRunListener... listeners)  throws IOException {
         run(Arrays.asList(listeners));
     }
@@ -193,7 +201,8 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     public void run(Collection<ITestRunListener> listeners)  throws IOException {
         final String runCaseCommandStr = String.format("am instrument -w -r %s %s",
             getArgsCommand(), getRunnerPath());
-        Log.d(LOG_TAG, runCaseCommandStr);
+        Log.i(LOG_TAG, String.format("Running %s on %s", runCaseCommandStr,
+                mRemoteDevice.getSerialNumber()));
         mParser = new InstrumentationResultParser(listeners);
 
         mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser);
