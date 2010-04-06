@@ -215,7 +215,7 @@ final class AvdCreationDialog extends GridDialog {
     @Override
     protected Control createContents(Composite parent) {
         Control control = super.createContents(parent);
-        getShell().setText("Create new AVD");
+        getShell().setText("Create new Android Virtual Device (AVD)");
 
         mOkButton = getButton(IDialogConstants.OK_ID);
         validatePage();
@@ -230,16 +230,22 @@ final class AvdCreationDialog extends GridDialog {
 
         Label label = new Label(parent, SWT.NONE);
         label.setText("Name:");
+        String tooltip = "Name of the new Android Virtual Device";
+        label.setToolTipText(tooltip);
 
         mAvdName = new Text(parent, SWT.BORDER);
         mAvdName.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mAvdName.addModifyListener(new CreateNameModifyListener());
+        mAvdName.setToolTipText(tooltip);
 
         label = new Label(parent, SWT.NONE);
         label.setText("Target:");
+        tooltip = "The version of Android to use in the virtual device";
+        label.setToolTipText(tooltip);
 
         mTargetCombo = new Combo(parent, SWT.READ_ONLY | SWT.DROP_DOWN);
         mTargetCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        mTargetCombo.setToolTipText(tooltip);
         mTargetCombo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -261,6 +267,7 @@ final class AvdCreationDialog extends GridDialog {
 
         mSdCardSizeRadio = new Button(sdCardGroup, SWT.RADIO);
         mSdCardSizeRadio.setText("Size:");
+        mSdCardSizeRadio.setToolTipText("Create a new SD Card file");
         mSdCardSizeRadio.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent arg0) {
@@ -276,6 +283,7 @@ final class AvdCreationDialog extends GridDialog {
         mSdCardSize.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mSdCardSize.addVerifyListener(mDigitVerifier);
         mSdCardSize.addModifyListener(validateListener);
+        mSdCardSize.setToolTipText("Size of the new SD Card file (must be at least 9 MiB)");
 
         mSdCardSizeCombo = new Combo(sdCardGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
         mSdCardSizeCombo.add("KiB");
@@ -285,13 +293,16 @@ final class AvdCreationDialog extends GridDialog {
 
         mSdCardFileRadio = new Button(sdCardGroup, SWT.RADIO);
         mSdCardFileRadio.setText("File:");
+        mSdCardFileRadio.setToolTipText("Use an existing file for the SD Card");
 
         mSdCardFile = new Text(sdCardGroup, SWT.BORDER);
         mSdCardFile.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mSdCardFile.addModifyListener(validateListener);
+        mSdCardFile.setToolTipText("File to use for the SD Card");
 
         mBrowseSdCard = new Button(sdCardGroup, SWT.PUSH);
         mBrowseSdCard.setText("Browse...");
+        mBrowseSdCard.setToolTipText("Select the file to use for the SD Card");
         mBrowseSdCard.addSelectionListener(new SelectionAdapter() {
            @Override
             public void widgetSelected(SelectionEvent arg0) {
@@ -315,6 +326,7 @@ final class AvdCreationDialog extends GridDialog {
 
         mSkinListRadio = new Button(skinGroup, SWT.RADIO);
         mSkinListRadio.setText("Built-in:");
+        mSkinListRadio.setToolTipText("Select an emulated screen size provided by the current Android target");
         mSkinListRadio.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent arg0) {
@@ -337,11 +349,13 @@ final class AvdCreationDialog extends GridDialog {
 
         mSkinSizeRadio = new Button(skinGroup, SWT.RADIO);
         mSkinSizeRadio.setText("Resolution:");
+        mSkinSizeRadio.setToolTipText("Select a custom emulated screen size");
 
         mSkinSizeWidth = new Text(skinGroup, SWT.BORDER);
         mSkinSizeWidth.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mSkinSizeWidth.addVerifyListener(mDigitVerifier);
         mSkinSizeWidth.addModifyListener(validateListener);
+        mSkinSizeWidth.setToolTipText("Width in pixels of the emulated screen size");
 
         new Label(skinGroup, SWT.NONE).setText("x");
 
@@ -349,6 +363,7 @@ final class AvdCreationDialog extends GridDialog {
         mSkinSizeHeight.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mSkinSizeHeight.addVerifyListener(mDigitVerifier);
         mSkinSizeHeight.addModifyListener(validateListener);
+        mSkinSizeHeight.setToolTipText("Height in pixels of the emulated screen size");
 
         mSkinListRadio.setSelection(true);
         enableSkinWidgets(true);
@@ -373,6 +388,7 @@ final class AvdCreationDialog extends GridDialog {
 
         Button b = new Button(hwButtons, SWT.PUSH | SWT.FLAT);
         b.setText("New...");
+        b.setToolTipText("Add a new hardware property");
         b.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         b.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -390,6 +406,7 @@ final class AvdCreationDialog extends GridDialog {
         });
         mDeleteHardwareProp = new Button(hwButtons, SWT.PUSH | SWT.FLAT);
         mDeleteHardwareProp.setText("Delete");
+        mDeleteHardwareProp.setToolTipText("Delete the selected hardware property");
         mDeleteHardwareProp.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mDeleteHardwareProp.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -407,9 +424,9 @@ final class AvdCreationDialog extends GridDialog {
         // --- end hardware group
 
         mForceCreation = new Button(parent, SWT.CHECK);
-        mForceCreation.setText("Force create");
-        mForceCreation.setToolTipText("Select this to override any existing AVD");
-        mForceCreation.setLayoutData(new GridData(GridData.END, GridData.CENTER,
+        mForceCreation.setText("Override the existing AVD with the same name");
+        mForceCreation.setToolTipText("There's already an AVD with the same name. Check this to delete it and replace it by the new AVD.");
+        mForceCreation.setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER,
                 true, false, 2, 1));
         mForceCreation.setEnabled(false);
         mForceCreation.addSelectionListener(validateListener);
@@ -761,7 +778,7 @@ final class AvdCreationDialog extends GridDialog {
                             }
 
                             if (value < 9 * 1024 * 1024) {
-                                error = "SD Card size must be at least 9MB";
+                                error = "SD Card size must be at least 9 MiB";
                             }
                         } catch (NumberFormatException e) {
                             // will never happen thanks to the VerifyListener.
@@ -792,7 +809,7 @@ final class AvdCreationDialog extends GridDialog {
             if (avdMatch != null && !mForceCreation.getSelection()) {
                 error = String.format(
                         "The AVD name '%s' is already used.\n" +
-                        "Check \"Force create\" to override existing AVD.",
+                        "Check \"Override the existing AVD\" to delete the existing one.",
                         avdName);
             }
         }
