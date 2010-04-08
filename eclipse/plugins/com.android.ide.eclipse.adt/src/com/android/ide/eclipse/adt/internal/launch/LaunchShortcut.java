@@ -16,15 +16,20 @@
 
 package com.android.ide.eclipse.adt.internal.launch;
 
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.debug.ui.ILaunchShortcut;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Launch shortcut to launch debug/run configuration directly.
@@ -52,8 +57,17 @@ public class LaunchShortcut implements ILaunchShortcut {
                     IProject project = r.getProject();
 
                     if (project != null)  {
-                        // and launch
-                        launch(project, mode);
+                        ProjectState state = Sdk.getProjectState(project);
+                        if (state != null && state.isLibrary()) {
+
+                            MessageDialog.openError(
+                                    PlatformUI.getWorkbench().getDisplay().getActiveShell(),
+                                    "Android Launch",
+                                    "Android library projects cannot be launched.");
+                        } else{
+                            // and launch
+                            launch(project, mode);
+                        }
                     }
                 }
             }

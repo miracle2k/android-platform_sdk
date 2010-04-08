@@ -26,16 +26,21 @@ import org.eclipse.core.runtime.IPath;
 
 /**
  * Delta visitor specifically for Library resources.
- * The goal is to detect library resource change when compiling the main project
+ * The goal is to detect library resource/library changes when compiling the main project
  * and trigger a resource recompilation/repackaging.
  *
  */
 public class LibraryDeltaVisitor implements IResourceDeltaVisitor {
 
     private boolean mResChange = false;
+    private boolean mLibChange = false;
 
     public boolean getResChange() {
         return mResChange;
+    }
+
+    public boolean getLibChange() {
+        return mLibChange;
     }
 
     public boolean visit(IResourceDelta delta) throws CoreException {
@@ -60,6 +65,10 @@ public class LibraryDeltaVisitor implements IResourceDeltaVisitor {
                 // res folder was changed!
                 // This is all that matters, we can stop (return false below)
                 mResChange = true;
+            } else if (SdkConstants.FD_NATIVE_LIBS.equalsIgnoreCase(segments[1])) {
+                // libs folder was changed.
+                // This is all that matters, we can stop (return false below)
+                mLibChange = true;
             }
         }
 

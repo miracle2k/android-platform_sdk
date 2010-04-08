@@ -154,7 +154,8 @@ final class LibraryProperties {
         mAddButton.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                IJavaProject javaProject = mProjectChooser.chooseJavaProject(null);
+                IJavaProject javaProject = mProjectChooser.chooseJavaProject(null /*projectName*/,
+                        "Please select a library project");
                 if (javaProject != null) {
                     IProject iProject = javaProject.getProject();
                     IPath relativePath = Sdk.makeRelativeTo(
@@ -179,6 +180,7 @@ final class LibraryProperties {
                 mItemDataList.remove(data);
                 mTable.remove(mTable.getSelectionIndex());
                 resetEnabled();
+                mMustSave = true;
             }
         });
 
@@ -201,6 +203,7 @@ final class LibraryProperties {
                 // reset the selection
                 mTable.select(index - 1);
                 resetEnabled();
+                mMustSave = true;
             }
         });
 
@@ -220,6 +223,7 @@ final class LibraryProperties {
                 // reset the selection
                 mTable.select(index + 1);
                 resetEnabled();
+                mMustSave = true;
             }
         });
 

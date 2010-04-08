@@ -343,17 +343,18 @@ public class ApkBuilder extends BaseBuilder {
 
                 // if the main resources didn't change, then we check for the library
                 // ones (will trigger resource repackaging too)
-                if (mPackageResources == false && libProjects != null &&
-                        libProjects.length > 0) {
+                if ((mPackageResources == false || mBuildFinalPackage == false) &&
+                        libProjects != null && libProjects.length > 0) {
                     for (IProject libProject : libProjects) {
                         delta = getDelta(libProject);
                         if (delta != null) {
                             LibraryDeltaVisitor visitor = new LibraryDeltaVisitor();
                             delta.accept(visitor);
 
-                            mPackageResources = visitor.getResChange();
+                            mPackageResources |= visitor.getResChange();
+                            mBuildFinalPackage |= visitor.getLibChange();
 
-                            if (mPackageResources) {
+                            if (mPackageResources && mBuildFinalPackage) {
                                 break;
                             }
                         }
@@ -660,7 +661,7 @@ public class ApkBuilder extends BaseBuilder {
                 String classesDexPath = osBinPath + File.separator +
                         AndroidConstants.FN_CLASSES_DEX;
                 if (finalPackage(osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
-                                classesDexPath,osFinalPackagePath, javaProject,
+                                classesDexPath, osFinalPackagePath, javaProject, libProjects,
                                 referencedJavaProjects, debuggable) == false) {
                     return allRefProjects;
                 }
@@ -678,7 +679,7 @@ public class ApkBuilder extends BaseBuilder {
                         String apkOsFilePath = osBinPath + File.separator +
                                 ProjectHelper.getApkFilename(project, entry.getKey());
                         if (finalPackage(resPath, classesDexPath, apkOsFilePath, javaProject,
-                                referencedJavaProjects, debuggable) == false) {
+                                libProjects, referencedJavaProjects, debuggable) == false) {
                             return allRefProjects;
                         }
                     }
@@ -946,14 +947,16 @@ public class ApkBuilder extends BaseBuilder {
      * @param intermediateApk The path to the temporary resource file.
      * @param dex The path to the dex file.
      * @param output The path to the final package file to create.
-     * @param javaProject
-     * @param referencedJavaProjects
-     * @param debuggable
+     * @param javaProject the java project being compiled
+     * @param libProjects an optional list of library projects (can be null)
+     * @param referencedJavaProjects referenced projects.
+     * @param debuggable whether the project manifest has debuggable==true. If true, any gdbserver
+     * executables will be packaged with the native libraries.
      * @return true if success, false otherwise.
      */
     private boolean finalPackage(String intermediateApk, String dex, String output,
-            final IJavaProject javaProject, IJavaProject[] referencedJavaProjects,
-            boolean debuggable) {
+            final IJavaProject javaProject, IProject[] libProjects,
+            IJavaProject[] referencedJavaProjects, boolean debuggable) {
 
         FileOutputStream fos = null;
         try {
@@ -1081,6 +1084,18 @@ public class ApkBuilder extends BaseBuilder {
                     libFolder.getType() == IResource.FOLDER) {
                 // look inside and put .so in lib/* by keeping the relative folder path.
                 writeNativeLibraries((IFolder) libFolder, builder, debuggable);
+            }
+
+            // write the native libraries for the library projects.
+            if (libProjects != null) {
+                for (IProject lib : libProjects) {
+                    libFolder = lib.findMember(SdkConstants.FD_NATIVE_LIBS);
+                    if (libFolder != null && libFolder.exists() &&
+                            libFolder.getType() == IResource.FOLDER) {
+                        // look inside and put .so in lib/* by keeping the relative folder path.
+                        writeNativeLibraries((IFolder) libFolder, builder, debuggable);
+                    }
+                }
             }
 
             // close the jar file and write the manifest and sign it.

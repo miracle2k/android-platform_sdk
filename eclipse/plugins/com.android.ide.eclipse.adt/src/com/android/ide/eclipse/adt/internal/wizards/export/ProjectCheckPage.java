@@ -109,7 +109,8 @@ final class ProjectCheckPage extends ExportWizardPage {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 IJavaProject javaProject = mProjectChooserHelper.chooseJavaProject(
-                        mProjectText.getText().trim());
+                        mProjectText.getText().trim(),
+                        "Please select a project to export");
 
                 if (javaProject != null) {
                     IProject project = javaProject.getProject();

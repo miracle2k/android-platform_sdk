@@ -16,9 +16,14 @@
 
 package com.android.ide.eclipse.adt.internal.wizards.actions;
 
+import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardDialog;
@@ -42,16 +47,39 @@ public class ExportWizardAction implements IObjectActionDelegate {
         if (mSelection instanceof IStructuredSelection) {
             IStructuredSelection selection = (IStructuredSelection)mSelection;
 
-            // call the export wizard on the current selection.
-            ExportWizard wizard = new ExportWizard();
-            wizard.init(mWorkbench, selection);
-            WizardDialog dialog = new WizardDialog(mWorkbench.getDisplay().getActiveShell(),
-                    wizard);
-            dialog.open();
+            // get the unique selected item.
+            if (selection.size() == 1) {
+                Object element = selection.getFirstElement();
+
+                // get the project object from it.
+                IProject project = null;
+                if (element instanceof IProject) {
+                    project = (IProject) element;
+                } else if (element instanceof IAdaptable) {
+                    project = (IProject) ((IAdaptable) element).getAdapter(IProject.class);
+                }
+
+                // and finally do the action
+                if (project != null) {
+                    ProjectState state = Sdk.getProjectState(project);
+                    if (state.isLibrary()) {
+                        MessageDialog.openError(mWorkbench.getDisplay().getActiveShell(),
+                                "Android Export",
+                                "Android library projects cannot be exported.");
+                    } else {
+                        // call the export wizard on the current selection.
+                        ExportWizard wizard = new ExportWizard();
+                        wizard.init(mWorkbench, selection);
+                        WizardDialog dialog = new WizardDialog(
+                                mWorkbench.getDisplay().getActiveShell(), wizard);
+                        dialog.open();
+                    }
+                }
+            }
         }
     }
 
     public void selectionChanged(IAction action, ISelection selection) {
-        this.mSelection = selection;
+        mSelection = selection;
     }
 }

@@ -289,7 +289,8 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
      */
     protected void handleProjectButtonSelected() {
         IJavaProject javaProject = mProjectChooserHelper.chooseJavaProject(
-                mProjText.getText().trim());
+                mProjText.getText().trim(),
+                "Please select a project to launch");
         if (javaProject == null) {
             return;
         }// end if
