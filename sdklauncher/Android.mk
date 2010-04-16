@@ -20,6 +20,13 @@ LOCAL_CFLAGS += -Wall -Wno-unused-parameter
 LOCAL_CFLAGS += -D_XOPEN_SOURCE -D_GNU_SOURCE -DSH_HISTORY
 LOCAL_MODULE := sdklauncher
 
+# Locate windres executable
+WINDRES := windres
+ifneq ($(USE_MINGW),)
+  # When building the Windows emulator under Linux, use the MinGW one
+  WINDRES := i586-mingw32msvc-windres
+endif
+
 # Link the Windows icon file as well into the executable, based on the technique
 # used in external/qemu/Makefile.android.
 #
@@ -27,7 +34,7 @@ INTERMEDIATE     := $(call intermediates-dir-for,EXECUTABLES,$(LOCAL_MODULE),tru
 ANDROID_ICON_OBJ := android_icon.o
 ANDROID_ICON_PATH := $(LOCAL_PATH)/images
 $(ANDROID_ICON_PATH)/$(ANDROID_ICON_OBJ): $(ANDROID_ICON_PATH)/android_icon.rc
-	windres $< -I $(ANDROID_ICON_PATH) -o $@
+	$(WINDRES) $< -I $(ANDROID_ICON_PATH) -o $@
 
 # seems to be the only way to add an object file that was not generated from
 # a C/C++/Java source file to our build system. and very unfortunately,
