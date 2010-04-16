@@ -337,13 +337,21 @@ public final class Log {
      * @param message
      */
     public static void printLog(LogLevel logLevel, String tag, String message) {
+        System.out.print(getLogFormatString(logLevel, tag, message));
+    }
+
+    /**
+     * Formats a log message.
+     * @param logLevel
+     * @param tag
+     * @param message
+     */
+    public static String getLogFormatString(LogLevel logLevel, String tag, String message) {
         long msec;
         
         msec = System.currentTimeMillis();
-        String outMessage = String.format("%02d:%02d %c/%s: %s\n",
-                (msec / 60000) % 60, (msec / 1000) % 60,
+        return String.format("%02d:%02d %c/%s: %s\n", (msec / 60000) % 60, (msec / 1000) % 60,
                 logLevel.getPriorityLetter(), tag, message);
-        System.out.print(outMessage);
     }
 
 }
