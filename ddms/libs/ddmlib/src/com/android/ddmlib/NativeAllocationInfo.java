@@ -50,6 +50,7 @@ public final class NativeAllocationInfo {
         sAllocFunctionFilter.add("chk_free"); //$NON-NLS-1$
         sAllocFunctionFilter.add("chk_memalign"); //$NON-NLS-1$
         sAllocFunctionFilter.add("Malloc"); //$NON-NLS-1$
+        sAllocFunctionFilter.add("leak_memalign"); //$NON-NLS-1$
     }
 
     private final int mSize;
@@ -74,7 +75,7 @@ public final class NativeAllocationInfo {
         this.mIsZygoteChild = ((size & FLAG_ZYGOTE_CHILD) != 0);
         this.mAllocations = allocations;
     }
-    
+
     /**
      * Adds a stack call address for this allocation.
      * @param address The address to add.
@@ -82,7 +83,7 @@ public final class NativeAllocationInfo {
     void addStackCallAddress(long address) {
         mStackCallAddresses.add(address);
     }
-    
+
     /**
      * Returns the total size of this allocation.
      */
@@ -104,7 +105,7 @@ public final class NativeAllocationInfo {
     public int getAllocationCount() {
         return mAllocations;
     }
-    
+
     /**
      * Returns whether the stack call addresses have been resolved into
      * {@link NativeStackCallInfo} objects.
@@ -120,7 +121,7 @@ public final class NativeAllocationInfo {
     public Long[] getStackCallAddresses() {
         return mStackCallAddresses.toArray(new Long[mStackCallAddresses.size()]);
     }
-    
+
     /**
      * Sets the resolved stack call for this allocation.
      * <p/>
@@ -149,7 +150,7 @@ public final class NativeAllocationInfo {
         if (mIsStackCallResolved) {
             return mResolvedStackCall.toArray(new NativeStackCallInfo[mResolvedStackCall.size()]);
         }
-        
+
         return null;
     }
 
@@ -231,7 +232,7 @@ public final class NativeAllocationInfo {
      * Returns the first {@link NativeStackCallInfo} that is relevant.
      * <p/>
      * A relevant <code>NativeStackCallInfo</code> is a stack call that is not deep in the
-     * lower level of the libc, but the actual method that performed the allocation. 
+     * lower level of the libc, but the actual method that performed the allocation.
      * @return a <code>NativeStackCallInfo</code> or <code>null</code> if the stack call has not
      * been processed from the raw addresses.
      * @see #setResolvedStackCall(ArrayList)
@@ -260,7 +261,7 @@ public final class NativeAllocationInfo {
 
         return null;
     }
-    
+
     /**
      * Returns true if the method name is relevant.
      * @param methodName the method name to test.
@@ -271,7 +272,7 @@ public final class NativeAllocationInfo {
                 return false;
             }
         }
-        
+
         return true;
     }
 }
