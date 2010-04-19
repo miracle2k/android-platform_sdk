@@ -138,6 +138,9 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     /** True if start of test has already been reported to listener. */
     private boolean mTestStartReported = false;
 
+    /** True if the completion of the test run has been detected. */
+    private boolean mTestRunFinished = false;
+
     /** True if test run failure has already been reported to listener. */
     private boolean mTestRunFailReported = false;
 
@@ -226,6 +229,8 @@ public class InstrumentationResultParser extends MultiLineReceiver {
                    line.startsWith(Prefixes.CODE)) {
             // Previous status key-value has been collected. Store it.
             submitCurrentKeyValue();
+            // these codes signal the end of the instrumentation run
+            mTestRunFinished = true;
             // just ignore the remaining data on this line
         } else if (line.startsWith(Prefixes.TIME_REPORT)) {
             parseTime(line, Prefixes.TIME_REPORT.length());
@@ -470,7 +475,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     @Override
     public void done() {
         super.done();
-        if (!mTestRunFailReported && !mTestStartReported) {
+        if (!mTestRunFailReported && !mTestStartReported && !mTestRunFinished) {
             // no results
             handleTestRunFailed(NO_TEST_RESULTS_MSG);
         } else if (!mTestRunFailReported && mNumTestsExpected > mNumTestsRun) {
@@ -480,6 +485,11 @@ public class InstrumentationResultParser extends MultiLineReceiver {
             handleTestRunFailed(message);
         } else {
             for (ITestRunListener listener : mTestListeners) {
+                if (!mTestStartReported) {
+                    // test run wasn't started, but it finished successfully. Must be a run with
+                    // no tests
+                    listener.testRunStarted(0);
+                }
                 listener.testRunEnded(mTestTime);
             }
         }
