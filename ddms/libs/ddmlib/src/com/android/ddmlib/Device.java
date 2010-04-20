@@ -247,7 +247,7 @@ final class Device implements IDevice {
      * @see com.android.ddmlib.IDevice#getSyncService()
      */
     public SyncService getSyncService() throws IOException {
-        SyncService syncService = new SyncService(AndroidDebugBridge.sSocketAddr, this);
+        SyncService syncService = new SyncService(AndroidDebugBridge.getSocketAddress(), this);
         if (syncService.openSync()) {
             return syncService;
          }
@@ -268,7 +268,7 @@ final class Device implements IDevice {
      * @see com.android.ddmlib.IDevice#getScreenshot()
      */
     public RawImage getScreenshot() throws IOException {
-        return AdbHelper.getFrameBuffer(AndroidDebugBridge.sSocketAddr, this);
+        return AdbHelper.getFrameBuffer(AndroidDebugBridge.getSocketAddress(), this);
     }
 
     /*
@@ -277,7 +277,7 @@ final class Device implements IDevice {
      */
     public void executeShellCommand(String command, IShellOutputReceiver receiver)
             throws IOException {
-        AdbHelper.executeRemoteCommand(AndroidDebugBridge.sSocketAddr, command, this,
+        AdbHelper.executeRemoteCommand(AndroidDebugBridge.getSocketAddress(), command, this,
                 receiver);
     }
 
@@ -286,7 +286,7 @@ final class Device implements IDevice {
      * @see com.android.ddmlib.IDevice#runEventLogService(com.android.ddmlib.log.LogReceiver)
      */
     public void runEventLogService(LogReceiver receiver) throws IOException {
-        AdbHelper.runEventLogService(AndroidDebugBridge.sSocketAddr, this, receiver);
+        AdbHelper.runEventLogService(AndroidDebugBridge.getSocketAddress(), this, receiver);
     }
 
     /*
@@ -295,7 +295,7 @@ final class Device implements IDevice {
      */
     public void runLogService(String logname,
             LogReceiver receiver) throws IOException {
-        AdbHelper.runLogService(AndroidDebugBridge.sSocketAddr, this, logname, receiver);
+        AdbHelper.runLogService(AndroidDebugBridge.getSocketAddress(), this, logname, receiver);
     }
 
     /*
@@ -304,7 +304,7 @@ final class Device implements IDevice {
      */
     public boolean createForward(int localPort, int remotePort) {
         try {
-            return AdbHelper.createForward(AndroidDebugBridge.sSocketAddr, this,
+            return AdbHelper.createForward(AndroidDebugBridge.getSocketAddress(), this,
                     localPort, remotePort);
         } catch (IOException e) {
             Log.e("adb-forward", e); //$NON-NLS-1$
@@ -318,7 +318,7 @@ final class Device implements IDevice {
      */
     public boolean removeForward(int localPort, int remotePort) {
         try {
-            return AdbHelper.removeForward(AndroidDebugBridge.sSocketAddr, this,
+            return AdbHelper.removeForward(AndroidDebugBridge.getSocketAddress(), this,
                     localPort, remotePort);
         } catch (IOException e) {
             Log.e("adb-remove-forward", e); //$NON-NLS-1$

@@ -232,7 +232,7 @@ final class DeviceMonitor {
 
         SocketChannel adbChannel = null;
         try {
-            adbChannel = SocketChannel.open(AndroidDebugBridge.sSocketAddr);
+            adbChannel = SocketChannel.open(AndroidDebugBridge.getSocketAddress());
             adbChannel.socket().setTcpNoDelay(true);
         } catch (IOException e) {
         }
@@ -732,7 +732,7 @@ final class DeviceMonitor {
         SocketChannel clientSocket;
         try {
             clientSocket = AdbHelper.createPassThroughConnection(
-                    AndroidDebugBridge.sSocketAddr, device, pid);
+                    AndroidDebugBridge.getSocketAddress(), device, pid);
 
             // required for Selector
             clientSocket.configureBlocking(false);
