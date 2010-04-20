@@ -170,22 +170,38 @@ public class InstrumentationResultParserTest extends TestCase {
      */
     public void testRunAmFailed() {
         StringBuilder output = new StringBuilder();
-        output.append("usage: am [subcommand] [options]");
-        addLineBreak(output);
-        output.append("start an Activity: am start [-D] [-W] <INTENT>");
-        addLineBreak(output);
-        output.append("-D: enable debugging");
-        addLineBreak(output);
-        output.append("-W: wait for launch to complete");
-        addLineBreak(output);
-        output.append("start a Service: am startservice <INTENT>");
-        addLineBreak(output);
-        output.append("Error: Bad component name: wfsdafddfasasdf");
+        addLine(output, "usage: am [subcommand] [options]");
+        addLine(output, "start an Activity: am start [-D] [-W] <INTENT>");
+        addLine(output, "-D: enable debugging");
+        addLine(output, "-W: wait for launch to complete");
+        addLine(output, "start a Service: am startservice <INTENT>");
+        addLine(output, "Error: Bad component name: wfsdafddfasasdf");
 
         injectTestString(output.toString());
 
         assertEquals(InstrumentationResultParser.NO_TEST_RESULTS_MSG,
                 mTestResult.mRunFailedMessage);
+    }
+
+    /**
+     * Test parsing of a test run that has no tests.
+     * <p/>
+     * Expect run to be reported as success.
+     */
+    public void testRunNoResults() {
+        StringBuilder output = new StringBuilder();
+        addLine(output, "INSTRUMENTATION_RESULT: stream=");
+        addLine(output, "Test results for InstrumentationTestRunner=");
+        addLine(output, "Time: 0.001");
+        addLine(output, "OK (0 tests)");
+        addLine(output, "INSTRUMENTATION_CODE: -1");
+
+        injectTestString(output.toString());
+
+        assertEquals(0, mTestResult.mTestCount);
+        assertNull(mTestResult.mRunFailedMessage);
+        assertEquals(1, mTestResult.mTestTime);
+        assertFalse(mTestResult.mStopped);
     }
 
     /**
@@ -218,7 +234,6 @@ public class InstrumentationResultParserTest extends TestCase {
      */
     private void addStackTrace(StringBuilder output) {
         addStatusKey(output, "stack", STACK_TRACE);
-
     }
 
     /**
@@ -230,6 +245,14 @@ public class InstrumentationResultParserTest extends TestCase {
         outputBuilder.append(key);
         outputBuilder.append('=');
         outputBuilder.append(value);
+        addLineBreak(outputBuilder);
+    }
+
+    /**
+     * Append a line to output.
+     */
+    private void addLine(StringBuilder outputBuilder, String lineContent) {
+        outputBuilder.append(lineContent);
         addLineBreak(outputBuilder);
     }
 
