@@ -51,23 +51,14 @@ public final class AndroidDebugBridge {
 
     private final static String ADB = "adb"; //$NON-NLS-1$
     private final static String DDMS = "ddms"; //$NON-NLS-1$
+    private final static String SERVER_PORT_ENV_VAR = "ANDROID_ADB_SERVER_PORT"; //$NON-NLS-1$
 
     // Where to find the ADB bridge.
     final static String ADB_HOST = "127.0.0.1"; //$NON-NLS-1$
     final static int ADB_PORT = 5037;
 
-    static InetAddress sHostAddr;
-    static InetSocketAddress sSocketAddr;
-
-    static {
-        // built-in local address/port for ADB.
-        try {
-            sHostAddr = InetAddress.getByName(ADB_HOST);
-            sSocketAddr = new InetSocketAddress(sHostAddr, ADB_PORT);
-        } catch (UnknownHostException e) {
-
-        }
-    }
+    private static InetAddress sHostAddr;
+    private static InetSocketAddress sSocketAddr;
 
     private static AndroidDebugBridge sThis;
     private static boolean sClientSupport;
@@ -185,6 +176,9 @@ public final class AndroidDebugBridge {
     public static void init(boolean clientSupport) {
         sClientSupport = clientSupport;
 
+        // Determine port and instantiate socket address.
+        initAdbSocketAddr();
+
         MonitorThread monitorThread = MonitorThread.createInstance();
         monitorThread.start();
 
@@ -219,6 +213,13 @@ public final class AndroidDebugBridge {
      */
     static boolean getClientSupport() {
         return sClientSupport;
+    }
+
+    /**
+     * Returns the socket address of the ADB server on the host.
+     */
+    public static InetSocketAddress getSocketAddress() {
+        return sSocketAddr;
     }
 
     /**
@@ -1049,4 +1050,71 @@ public final class AndroidDebugBridge {
     static Object getLock() {
         return sLock;
     }
+
+    /**
+     * Instantiates sSocketAddr with the address of the host's adb process.
+     */
+    private static void initAdbSocketAddr() {
+        try {
+            int adb_port = determineAndValidateAdbPort();
+            sHostAddr = InetAddress.getByName(ADB_HOST);
+            sSocketAddr = new InetSocketAddress(sHostAddr, adb_port);
+        } catch (UnknownHostException e) {
+            // localhost should always be known.
+        }
+    }
+
+    /**
+     * Determines port where ADB is expected by looking at an env variable.
+     * <p/>
+     * The value for the environment variable ANDROID_ADB_SERVER_PORT is validated,
+     * IllegalArgumentException is thrown on illegal values.
+     * <p/>
+     * @return The port number where the host's adb should be expected or started.
+     * @throws IllegalArgumentException if ANDROID_ADB_SERVER_PORT has a non-numeric value.
+     */
+    private static int determineAndValidateAdbPort() {
+        String adb_env_var;
+        int result = ADB_PORT;
+        try {
+            adb_env_var = System.getenv(SERVER_PORT_ENV_VAR);
+
+            if (adb_env_var != null) {
+                adb_env_var = adb_env_var.trim();
+            }
+
+            if (adb_env_var != null && adb_env_var.length() > 0) {
+                // C tools (adb, emulator) accept hex and octal port numbers, so need to accept
+                // them too.
+                result = Integer.decode(adb_env_var);
+
+                if (result <= 0) {
+                    String errMsg = "env var " + SERVER_PORT_ENV_VAR //$NON-NLS-1$
+                            + ": must be >=0, got " //$NON-NLS-1$
+                            + System.getenv(SERVER_PORT_ENV_VAR);
+                    throw new IllegalArgumentException(errMsg);
+                }
+            }
+        } catch (NumberFormatException nfEx) {
+            String errMsg = "env var " + SERVER_PORT_ENV_VAR //$NON-NLS-1$
+                    + ": illegal value '" //$NON-NLS-1$
+                    + System.getenv(SERVER_PORT_ENV_VAR) + "'"; //$NON-NLS-1$
+            throw new IllegalArgumentException(errMsg);
+        } catch (SecurityException secEx) {
+            // A security manager has been installed that doesn't allow access to env vars.
+            // So an environment variable might have been set, but we can't tell.
+            // Let's log a warning and continue with ADB's default port.
+            // The issue is that adb would be started (by the forked process having access
+            // to the env vars) on the desired port, but within this process, we can't figure out
+            // what that port is. However, a security manager not granting access to env vars
+            // but allowing to fork is a rare and interesting configuration, so the right
+            // thing seems to be to continue using the default port, as forking is likely to
+            // fail later on in the scenario of the security manager.
+            Log.w(DDMS,
+                    "No access to env variables allowed by current security manager. " //$NON-NLS-1$
+                    + "If you've set ANDROID_ADB_SERVER_PORT: it's being ignored."); //$NON-NLS-1$
+        }
+        return result;
+    }
+
 }
