@@ -177,7 +177,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
         }
 
         public String getSerialNumber() {
-            throw new UnsupportedOperationException();
+            return "fakeserial";
         }
 
         public DeviceState getState() {
