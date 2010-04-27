@@ -229,7 +229,7 @@ class CommandLineProcessor {
      * @param args The arguments typically received by a main method.
      */
     public void parseArgs(String[] args) {
-        String needsHelp = null;
+        String errorMsg = null;
         String verb = null;
         String directObject = null;
 
@@ -252,7 +252,7 @@ class CommandLineProcessor {
                             // It looks like a dashed parameter and we don't have a a verb/object
                             // set yet, the parameter was just given too early.
 
-                            needsHelp = String.format(
+                            errorMsg = String.format(
                                 "Flag '%1$s' is not a valid global flag. Did you mean to specify it after the verb/object name?",
                                 a);
                             return;
@@ -260,7 +260,7 @@ class CommandLineProcessor {
                             // It looks like a dashed parameter and but it is unknown by this
                             // verb-object combination
 
-                            needsHelp = String.format(
+                            errorMsg = String.format(
                                     "Flag '%1$s' is not valid for '%2$s %3$s'.",
                                     a, verb, directObject);
                             return;
@@ -278,7 +278,7 @@ class CommandLineProcessor {
 
                         // Error if it was not a valid verb
                         if (verb == null) {
-                            needsHelp = String.format(
+                            errorMsg = String.format(
                                 "Expected verb after global parameters but found '%1$s' instead.",
                                 a);
                             return;
@@ -303,7 +303,7 @@ class CommandLineProcessor {
 
                         // Error if it was not a valid object for that verb
                         if (directObject == null) {
-                            needsHelp = String.format(
+                            errorMsg = String.format(
                                 "Expected verb after global parameters but found '%1$s' instead.",
                                 a);
                             return;
@@ -318,7 +318,7 @@ class CommandLineProcessor {
                     String error = null;
                     if (arg.getMode().needsExtra()) {
                         if (++i >= n) {
-                            needsHelp = String.format("Missing argument for flag %1$s.", a);
+                            errorMsg = String.format("Missing argument for flag %1$s.", a);
                             return;
                         }
 
@@ -326,27 +326,26 @@ class CommandLineProcessor {
                     } else {
                         error = arg.getMode().process(arg, null);
 
-                        // If we just toggled help, we want to exit now without printing any error.
-                        // We do this test here only when a Boolean flag is toggled since booleans
-                        // are the only flags that don't take parameters and help is a boolean.
                         if (isHelpRequested()) {
-                            printHelpAndExit(null);
-                            // The call above should terminate however in unit tests we override
-                            // it so we still need to return here.
-                            return;
+                            // The --help flag was requested. We'll continue the usual processing
+                            // so that we can find the optional verb/object words. Those will be
+                            // used to print specific help.
+                            // Setting a non-null error message triggers printing the help, however
+                            // there is no specific error to print.
+                            errorMsg = "";
                         }
                     }
 
                     if (error != null) {
-                        needsHelp = String.format("Invalid usage for flag %1$s: %2$s.", a, error);
+                        errorMsg = String.format("Invalid usage for flag %1$s: %2$s.", a, error);
                         return;
                     }
                 }
             }
 
-            if (needsHelp == null) {
+            if (errorMsg == null) {
                 if (verb == null && !acceptLackOfVerb()) {
-                    needsHelp = "Missing verb name.";
+                    errorMsg = "Missing verb name.";
                 } else if (verb != null) {
                     if (directObject == null) {
                         // Make sure this verb has an optional direct object
@@ -359,7 +358,7 @@ class CommandLineProcessor {
                         }
 
                         if (directObject == null) {
-                            needsHelp = String.format("Missing object name for verb '%1$s'.", verb);
+                            errorMsg = String.format("Missing object name for verb '%1$s'.", verb);
                             return;
                         }
                     }
@@ -383,7 +382,7 @@ class CommandLineProcessor {
                     }
 
                     if (missing != null) {
-                        needsHelp  = String.format(
+                        errorMsg  = String.format(
                                 "The %1$s %2$s must be defined for action '%3$s %4$s'",
                                 plural ? "parameters" : "parameter",
                                 missing,
@@ -396,8 +395,8 @@ class CommandLineProcessor {
                 }
             }
         } finally {
-            if (needsHelp != null) {
-                printHelpAndExitForAction(verb, directObject, needsHelp);
+            if (errorMsg != null) {
+                printHelpAndExitForAction(verb, directObject, errorMsg);
             }
         }
     }
@@ -464,7 +463,7 @@ class CommandLineProcessor {
      */
     public void printHelpAndExitForAction(String verb, String directObject,
             String errorFormat, Object... args) {
-        if (errorFormat != null) {
+        if (errorFormat != null && errorFormat.length() > 0) {
             stderr(errorFormat, args);
         }
 
@@ -474,31 +473,37 @@ class CommandLineProcessor {
          */
         stdout("\n" +
             "Usage:\n" +
-            "  android [global options] action [action options]\n" +
+            "  android [global options] %s [action options]\n" +
             "\n" +
-            "Global options:");
+            "Global options:",
+            verb == null ? "action" :
+                verb + (directObject == null ? "" : " " + directObject));
         listOptions(GLOBAL_FLAG_VERB, NO_VERB_OBJECT);
 
         if (verb == null || directObject == null) {
             stdout("\nValid actions are composed of a verb and an optional direct object:");
             for (String[] action : mActions) {
-
-                stdout("- %1$6s %2$-12s: %3$s",
-                        action[ACTION_VERB_INDEX],
-                        action[ACTION_OBJECT_INDEX],
-                        action[ACTION_DESC_INDEX]);
+                if (verb == null || verb.equals(action[ACTION_VERB_INDEX])) {
+                    stdout("- %1$6s %2$-12s: %3$s",
+                            action[ACTION_VERB_INDEX],
+                            action[ACTION_OBJECT_INDEX],
+                            action[ACTION_DESC_INDEX]);
+                }
             }
         }
 
-        for (String[] action : mActions) {
-            if (verb == null || verb.equals(action[ACTION_VERB_INDEX])) {
-                if (directObject == null || directObject.equals(action[ACTION_OBJECT_INDEX])) {
-                    stdout("\nAction \"%1$s %2$s\":",
-                            action[ACTION_VERB_INDEX],
-                            action[ACTION_OBJECT_INDEX]);
-                    stdout("  %1$s", action[ACTION_DESC_INDEX]);
-                    stdout("Options:");
-                    listOptions(action[ACTION_VERB_INDEX], action[ACTION_OBJECT_INDEX]);
+        // Only print details if a verb/object is requested
+        if (verb != null) {
+            for (String[] action : mActions) {
+                if (verb == null || verb.equals(action[ACTION_VERB_INDEX])) {
+                    if (directObject == null || directObject.equals(action[ACTION_OBJECT_INDEX])) {
+                        stdout("\nAction \"%1$s %2$s\":",
+                                action[ACTION_VERB_INDEX],
+                                action[ACTION_OBJECT_INDEX]);
+                        stdout("  %1$s", action[ACTION_DESC_INDEX]);
+                        stdout("Options:");
+                        listOptions(action[ACTION_VERB_INDEX], action[ACTION_OBJECT_INDEX]);
+                    }
                 }
             }
         }
