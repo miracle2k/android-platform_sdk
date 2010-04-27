@@ -65,7 +65,7 @@ import javax.xml.xpath.XPathExpressionException;
  */
 public final class SetupTask extends ImportTask {
     /** current max version of the Ant rules that is supported */
-    private final static int ANT_RULES_MAX_VERSION = 2;
+    private final static int ANT_RULES_MAX_VERSION = 3;
 
     // legacy main rules file.
     private final static String RULES_LEGACY_MAIN = "android_rules.xml";
@@ -183,9 +183,13 @@ public final class SetupTask extends ImportTask {
         int antBuildVersion = androidTarget.getProperty(SdkConstants.PROP_SDK_ANT_BUILD_REVISION,
                 1);
         if (antBuildVersion > ANT_RULES_MAX_VERSION) {
-            throw new BuildException(String.format(
-                    "The project target (%1$s) requires a more recent version of the tools. Please update.",
-                    androidTarget.getName()));
+            antBuildVersion = ANT_RULES_MAX_VERSION;
+            System.out.println("\n\n\n"
+                    + "***********************************************************\n"
+                    + "WARNING: This platform requires Ant build rules not supported by your SDK Tools.\n"
+                    + "WARNING: Attempting to use older build rules instead, but result may not be correct.\n"
+                    + "WARNING: Please update to the newest revisions of the SDK Tools.\n"
+                    + "***********************************************************\n\n\n");
         }
 
         // check if the project is a library
