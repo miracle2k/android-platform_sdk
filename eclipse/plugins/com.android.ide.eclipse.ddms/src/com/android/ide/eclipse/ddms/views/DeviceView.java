@@ -246,9 +246,6 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
     @Override
     public void createPartControl(Composite parent) {
         mParentShell = parent.getShell();
-        ClientData.setHprofDumpHandler(new HProfHandler(mParentShell));
-        AndroidDebugBridge.addClientChangeListener(this);
-        ClientData.setMethodProfilingHandler(new MethodProfilingHandler(mParentShell));
 
         mDeviceList = new DevicePanel(DdmsPlugin.getImageLoader(), USE_SELECTED_DEBUG_PORT);
         mDeviceList.createPanel(parent);
@@ -425,6 +422,10 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
         }
 
         placeActions();
+
+        ClientData.setHprofDumpHandler(new HProfHandler(mParentShell));
+        AndroidDebugBridge.addClientChangeListener(this);
+        ClientData.setMethodProfilingHandler(new MethodProfilingHandler(mParentShell));
     }
 
     @Override
