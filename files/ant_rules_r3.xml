@@ -81,6 +81,12 @@
     <property name="out.release.package"
                   location="${out.absolute.dir}/${ant.project.name}-release.apk" />
 
+    <!-- set some property used for filtering/override. If those weren't defined
+         before, then this will create them with empty values, which are then ignored
+         by the custom tasks receiving them. -->
+    <property name="version.code" value="" />
+    <property name="filter.abi" value="" />
+
     <!-- Verbosity -->
     <property name="verbose" value="false" />
     <!-- This is needed by emma as it uses multilevel verbosity instead of simple 'true' or 'false'
@@ -153,6 +159,7 @@
                     basename="${ant.project.name}"
                     signed="@{sign.package}"
                     debug="${manifest.debuggable}"
+                    abifilter="${filter.abi}"
                     verbose="${verbose}">
                 <file path="${intermediate.dex.file}" />
                 <sourcefolder path="${source.absolute.dir}" />
@@ -277,6 +284,7 @@
         <echo>Packaging resources</echo>
         <aaptexec executable="${aapt}"
                 command="package"
+                versioncode="${version.code}"
                 manifest="AndroidManifest.xml"
                 assets="${asset.absolute.dir}"
                 androidjar="${android.jar}"
