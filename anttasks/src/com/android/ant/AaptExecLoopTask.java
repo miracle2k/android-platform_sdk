@@ -79,6 +79,7 @@ public final class AaptExecLoopTask extends Task {
     private String mCommand;
     private boolean mForce = true; // true due to legacy reasons
     private boolean mVerbose = false;
+    private int mVersionCode = 0;
     private String mManifest;
     private ArrayList<Path> mResources;
     private String mAssets;
@@ -118,6 +119,17 @@ public final class AaptExecLoopTask extends Task {
      */
     public void setVerbose(boolean verbose) {
         mVerbose = verbose;
+    }
+
+    public void setVersioncode(String versionCode) {
+        if (versionCode.length() > 0) {
+            try {
+                mVersionCode = Integer.decode(versionCode);
+            } catch (NumberFormatException e) {
+                System.out.println(String.format(
+                        "WARNING: Ignoring invalid version code value '%s'.", versionCode));
+            }
+        }
     }
 
     /**
@@ -354,6 +366,11 @@ public final class AaptExecLoopTask extends Task {
         Object libSrc = taskProject.getReference("android.libraries.res");
         if (libSrc != null) {
             task.createArg().setValue("--auto-add-overlay");
+        }
+
+        if (mVersionCode != 0) {
+            task.createArg().setValue("--version-code");
+            task.createArg().setValue(Integer.toString(mVersionCode));
         }
 
         // manifest location

@@ -148,7 +148,8 @@ public final class ApkBuilderImpl {
                     throw new WrongOptionException("Missing value for -nf");
                 }
 
-                processNativeFolder(new File(args[index++]), mDebugMode, nativeLibraries);
+                processNativeFolder(new File(args[index++]), mDebugMode, nativeLibraries,
+                        mVerbose, null /*abiFilter*/);
             } else if ("-storetype".equals(argument)) {
                 // quick check on the next argument.
                 if (index == args.length) {
@@ -317,19 +318,38 @@ public final class ApkBuilderImpl {
      * <p/>The root folder must include folders that include .so files.
      * @param root the native root folder.
      * @param nativeLibraries the collection to add native libraries to.
+     * @param verbose verbose mode.
+     * @param abiFilter optional ABI filter. If non-null only the given ABI is included.
      * @throws ApkCreationException
      */
     public static void processNativeFolder(File root, boolean debugMode,
-            Collection<ApkFile> nativeLibraries) throws ApkCreationException {
+            Collection<ApkFile> nativeLibraries, boolean verbose, String abiFilter)
+            throws ApkCreationException {
         if (root.isDirectory() == false) {
             throw new ApkCreationException(root.getAbsolutePath() + " is not a folder!");
         }
 
         File[] abiList = root.listFiles();
 
+        if (verbose) {
+            System.out.println("Processing native folder: " + root.getAbsolutePath());
+            if (abiFilter != null) {
+                System.out.println("ABI Filter: " + abiFilter);
+            }
+        }
+
         if (abiList != null) {
             for (File abi : abiList) {
                 if (abi.isDirectory()) { // ignore files
+
+                    // check the abi filter and reject all other ABIs
+                    if (abiFilter != null && abiFilter.equals(abi.getName()) == false) {
+                        if (verbose) {
+                            System.out.println("Rejecting ABI " + abi.getName());
+                        }
+                        continue;
+                    }
+
                     File[] libs = abi.listFiles();
                     if (libs != null) {
                         for (File lib : libs) {

@@ -46,6 +46,7 @@ public class ApkBuilderTask extends Task {
     private boolean mVerbose = false;
     private boolean mSigned = true;
     private boolean mDebug = false;
+    private String mAbiFilter = null;
 
     private final ArrayList<Path> mZipList = new ArrayList<Path>();
     private final ArrayList<Path> mFileList = new ArrayList<Path>();
@@ -98,6 +99,21 @@ public class ApkBuilderTask extends Task {
      */
     public void setDebug(boolean debug) {
         mDebug = debug;
+    }
+
+    /**
+     * Sets an ABI filter. If non <code>null</code>, then only native libraries matching the given
+     * ABI will be packaged with the APK.
+     * @param abiFilter the ABI to accept (and reject all other). If null or empty string, no ABIs
+     * are rejected. This must be a single ABI name as defined by the Android NDK. For a list
+     * of valid ABI names, see $NDK/docs/CPU-ARCH-ABIS.TXT
+     */
+    public void setAbifilter(String abiFilter) {
+        if (abiFilter != null && abiFilter.length() > 0) {
+            mAbiFilter = abiFilter.trim();
+        } else {
+            mAbiFilter = null;
+        }
     }
 
     /**
@@ -208,7 +224,7 @@ public class ApkBuilderTask extends Task {
             for (Path pathList : mNativeList) {
                 for (String path : pathList.list()) {
                     ApkBuilderImpl.processNativeFolder(new File(path), mDebug,
-                            mNativeLibraries);
+                            mNativeLibraries, mVerbose, mAbiFilter);
                 }
             }
 
