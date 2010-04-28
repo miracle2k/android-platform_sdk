@@ -81,7 +81,7 @@
     <property name="out.release.package"
                   location="${out.absolute.dir}/${ant.project.name}-release.apk" />
 
-    <!-- set some property used for filtering/override. If those weren't defined
+    <!-- set some properties used for filtering/override. If those weren't defined
          before, then this will create them with empty values, which are then ignored
          by the custom tasks receiving them. -->
     <property name="version.code" value="" />
@@ -216,8 +216,12 @@
         <mkdir dir="${out.classes.absolute.dir}" />
     </target>
 
+    <!-- empty default pre-build target. Create a similar target in
+         your build.xml and it'll be called instead of this one. -->
+    <target name="-pre-build"/>
+
     <!-- Generates the R.java file for this project's resources. -->
-    <target name="-resource-src" depends="-dirs">
+    <target name="-resource-src" depends="-dirs, -pre-build">
         <echo>Generating R.java / Manifest.java from the resources...</echo>
         <aaptexec executable="${aapt}"
                 command="package"
@@ -242,8 +246,12 @@
         </apply>
     </target>
 
+    <!-- empty default pre-compile target. Create a similar target in
+         your build.xml and it'll be called instead of this one. -->
+    <target name="-pre-compile"/>
+
     <!-- Compiles this project's .java files into .class files. -->
-    <target name="compile" depends="-resource-src, -aidl"
+    <target name="compile" depends="-resource-src, -aidl, -pre-compile"
                 description="Compiles project's .java files into .class files">
         <!-- If android rules are used for a test project, its classpath should include
              tested project's location -->
@@ -270,8 +278,12 @@
         </javac>
     </target>
 
+    <!-- empty default post-compile target. Create a similar target in
+         your build.xml and it'll be called instead of this one. -->
+    <target name="-post-compile"/>
+
     <!-- Converts this project's .class files into .dex files -->
-    <target name="-dex" depends="compile">
+    <target name="-dex" depends="compile, -post-compile">
         <dex-helper />
     </target>
 
