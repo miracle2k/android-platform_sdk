@@ -739,7 +739,7 @@ public class ProjectCreator {
         // project folder must exist and be a directory, since this is an update
         File projectFolder = new File(folderPath);
         if (!projectFolder.isDirectory()) {
-            mLog.error(null, "Project folder '%1$s' is not a valid directory, this is not an Android project you can update.",
+            mLog.error(null, "Project folder '%1$s' is not a valid directory.",
                     projectFolder);
             return null;
         }
@@ -748,9 +748,9 @@ public class ProjectCreator {
         File androidManifest = new File(projectFolder, SdkConstants.FN_ANDROID_MANIFEST_XML);
         if (!androidManifest.isFile()) {
             mLog.error(null,
-                    "%1$s not found in '%2$s', this is not an Android project you can update.",
-                    SdkConstants.FN_ANDROID_MANIFEST_XML,
-                    folderPath);
+                    "%1$s is not a valid project (%2$s not found).",
+                    folderPath,
+                    SdkConstants.FN_ANDROID_MANIFEST_XML);
             return null;
         }
 

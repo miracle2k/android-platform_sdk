@@ -36,7 +36,6 @@ import com.android.jarutils.SignedJarBuilder.IZipEntryFilter;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.AndroidXPathFactory;
 
@@ -76,8 +75,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
 
 import javax.xml.xpath.XPath;
 
@@ -413,19 +410,6 @@ public class ApkBuilder extends BaseBuilder {
                 return allRefProjects;
             }
 
-            // get the APK configs for the project.
-            ProjectState state = Sdk.getProjectState(project);
-            Set<Entry<String, String>> apkfilters = null;
-            if (state != null) {
-                ApkSettings apkSettings = state.getApkSettings();
-                if (apkSettings != null) {
-                    Map<String, String> filterMap = apkSettings.getResourceFilters();
-                    if (filterMap != null && filterMap.size() > 0) {
-                        apkfilters = filterMap.entrySet();
-                    }
-                }
-            }
-
             // do some extra check, in case the output files are not present. This
             // will force to recreate them.
             IResource tmp = null;
@@ -436,27 +420,6 @@ public class ApkBuilder extends BaseBuilder {
                 if (tmp == null || tmp.exists() == false) {
                     mPackageResources = true;
                     mBuildFinalPackage = true;
-                } else {
-                    // if the full package is present, we check the filtered resource packages
-                    // as well
-                    if (apkfilters != null) {
-                        for (Entry<String, String> entry : apkfilters) {
-                            String filename = String.format(AndroidConstants.FN_RESOURCES_S_AP_,
-                                    entry.getKey());
-
-                            tmp = outputFolder.findMember(filename);
-                            if (tmp == null || (tmp instanceof IFile &&
-                                    tmp.exists() == false)) {
-                                String msg = String.format(Messages.s_Missing_Repackaging,
-                                        filename);
-                                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
-                                        project, msg);
-                                mPackageResources = true;
-                                mBuildFinalPackage = true;
-                                break;
-                            }
-                        }
-                    }
                 }
             }
 
@@ -478,20 +441,6 @@ public class ApkBuilder extends BaseBuilder {
                     String msg = String.format(Messages.s_Missing_Repackaging, finalPackageName);
                     AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project, msg);
                     mBuildFinalPackage = true;
-                } else if (apkfilters != null) {
-                    // if the full apk is present, we check the filtered apk as well
-                    for (Entry<String, String> entry : apkfilters) {
-                        String filename = ProjectHelper.getApkFilename(project, entry.getKey());
-
-                        tmp = outputFolder.findMember(filename);
-                        if (tmp == null || (tmp instanceof IFile &&
-                                tmp.exists() == false)) {
-                            String msg = String.format(Messages.s_Missing_Repackaging, filename);
-                            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project, msg);
-                            mBuildFinalPackage = true;
-                            break;
-                        }
-                    }
                 }
             }
 
@@ -537,16 +486,6 @@ public class ApkBuilder extends BaseBuilder {
                 // handle already present .apk, and if that one failed as well, the user will be
                 // notified.
                 finalPackage.delete();
-
-                if (apkfilters != null) {
-                    for (Entry<String, String> entry : apkfilters) {
-                        String packageFilepath = osBinPath + File.separator +
-                                ProjectHelper.getApkFilename(project, entry.getKey());
-
-                        finalPackage = new File(packageFilepath);
-                        finalPackage.delete();
-                    }
-                }
 
                 // first we check if we need to package the resources.
                 if (mPackageResources) {
@@ -601,21 +540,6 @@ public class ApkBuilder extends BaseBuilder {
                             return allRefProjects;
                         }
 
-                        // now do the same thing for all the configured resource packages.
-                        if (apkfilters != null) {
-                            for (Entry<String, String> entry : apkfilters) {
-                                String outPathFormat = osBinPath + File.separator +
-                                        AndroidConstants.FN_RESOURCES_S_AP_;
-                                String outPath = String.format(outPathFormat, entry.getKey());
-                                if (executeAapt(project, osManifestPath, osResPaths,
-                                        osAssetsPath, outPath, entry.getValue()) == false) {
-                                    // aapt failed. Whatever files that needed to be marked
-                                    // have already been marked. We just return.
-                                    return allRefProjects;
-                                }
-                            }
-                        }
-
                         // build has been done. reset the state of the builder
                         mPackageResources = false;
 
@@ -664,25 +588,6 @@ public class ApkBuilder extends BaseBuilder {
                                 classesDexPath, osFinalPackagePath, javaProject, libProjects,
                                 referencedJavaProjects, debuggable) == false) {
                     return allRefProjects;
-                }
-
-                // now do the same thing for all the configured resource packages.
-                if (apkfilters != null) {
-                    String resPathFormat = osBinPath + File.separator +
-                            AndroidConstants.FN_RESOURCES_S_AP_;
-
-                    for (Entry<String, String> entry : apkfilters) {
-                        // make the filename for the resource package.
-                        String resPath = String.format(resPathFormat, entry.getKey());
-
-                        // make the filename for the apk to generate
-                        String apkOsFilePath = osBinPath + File.separator +
-                                ProjectHelper.getApkFilename(project, entry.getKey());
-                        if (finalPackage(resPath, classesDexPath, apkOsFilePath, javaProject,
-                                libProjects, referencedJavaProjects, debuggable) == false) {
-                            return allRefProjects;
-                        }
-                    }
                 }
 
                 // we are done.

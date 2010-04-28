@@ -21,9 +21,11 @@ import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.io.StreamException;
 
+import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
 import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
 /**
@@ -46,6 +48,7 @@ public final class AndroidManifest {
     public final static String NODE_USES_LIBRARY = "uses-library"; //$NON-NLS-1$
 
     public final static String ATTRIBUTE_PACKAGE = "package"; //$NON-NLS-1$
+    public final static String ATTRIBUTE_VERSIONCODE = "versionCode"; //$NON-NLS-1$
     public final static String ATTRIBUTE_NAME = "name"; //$NON-NLS-1$
     public final static String ATTRIBUTE_PROCESS = "process"; //$NON-NLS-$
     public final static String ATTRIBUTE_DEBUGGABLE = "debuggable"; //$NON-NLS-$
@@ -82,6 +85,85 @@ public final class AndroidManifest {
                 "/@" + ATTRIBUTE_PACKAGE,
                 new InputSource(manifestFile.getContents()));
     }
+
+    /**
+     * Returns the value of the versionCode attribute or -1 if the value is not set.
+     * @param manifestFile the manifest file to read the attribute from.
+     * @return the integer value or -1 if not set.
+     * @throws XPathExpressionException
+     * @throws StreamException If any error happens when reading the manifest.
+     */
+    public static int getVersionCode(IAbstractFile manifestFile)
+            throws XPathExpressionException, StreamException {
+        XPath xPath = AndroidXPathFactory.newXPath();
+
+        String result = xPath.evaluate(
+                "/"  + NODE_MANIFEST +
+                "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX +
+                ":"  + ATTRIBUTE_VERSIONCODE,
+                new InputSource(manifestFile.getContents()));
+
+        try {
+            return Integer.parseInt(result);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * Returns whether the version Code attribute is set in a given manifest.
+     * @param manifestFile the manifest to check
+     * @return true if the versionCode attribute is present and its value is not empty.
+     * @throws XPathExpressionException
+     * @throws StreamException If any error happens when reading the manifest.
+     */
+    public static boolean hasVersionCode(IAbstractFile manifestFile)
+            throws XPathExpressionException, StreamException {
+        XPath xPath = AndroidXPathFactory.newXPath();
+
+        Object result = xPath.evaluate(
+                "/"  + NODE_MANIFEST +
+                "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX +
+                ":"  + ATTRIBUTE_VERSIONCODE,
+                new InputSource(manifestFile.getContents()),
+                XPathConstants.NODE);
+
+        if (result != null) {
+            Node node  = (Node)result;
+            if (node.getNodeValue().length() > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the value of the minSdkVersion attribute (defaults to 1 if the attribute is not set),
+     * or -1 if the value is a codename.
+     * @param manifestFile the manifest file to read the attribute from.
+     * @return the integer value or -1 if not set.
+     * @throws XPathExpressionException
+     * @throws StreamException If any error happens when reading the manifest.
+     */
+    public static int getMinSdkVersion(IAbstractFile manifestFile)
+            throws XPathExpressionException, StreamException {
+        XPath xPath = AndroidXPathFactory.newXPath();
+
+        String result = xPath.evaluate(
+                "/"  + NODE_MANIFEST +
+                "/"  + NODE_USES_SDK +
+                "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX +
+                ":"  + ATTRIBUTE_MIN_SDK_VERSION,
+                new InputSource(manifestFile.getContents()));
+
+        try {
+            return Integer.parseInt(result);
+        } catch (NumberFormatException e) {
+            return result.length() > 0 ? -1 : 1;
+        }
+    }
+
 
     /**
      * Combines a java package, with a class value from the manifest to make a fully qualified
