@@ -232,6 +232,10 @@ public class Main {
                 updateTestProject();
             } else if (SdkCommandLine.OBJECT_LIB_PROJECT.equals(directObject)) {
                 updateProject(true /*library*/);
+            } else if (SdkCommandLine.OBJECT_SDK.equals(directObject)) {
+                showMainWindow(true /*autoUpdate*/);
+            } else if (SdkCommandLine.OBJECT_ADB.equals(directObject)) {
+                updateAdb();
             }
         } else if (SdkCommandLine.VERB_DELETE.equals(verb) &&
                 SdkCommandLine.OBJECT_AVD.equals(directObject)) {
@@ -243,14 +247,6 @@ public class Main {
 
         } else if (verb == null && directObject == null) {
             showMainWindow(false /*autoUpdate*/);
-
-        } else if (SdkCommandLine.VERB_UPDATE.equals(verb) &&
-                SdkCommandLine.OBJECT_SDK.equals(directObject)) {
-            showMainWindow(true /*autoUpdate*/);
-
-        } else if (SdkCommandLine.VERB_UPDATE.equals(verb) &&
-                SdkCommandLine.OBJECT_ADB.equals(directObject)) {
-            updateAdb();
 
         } else {
             mSdkCommandLine.printHelpAndExit(null);
