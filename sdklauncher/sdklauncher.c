@@ -29,8 +29,23 @@
 #ifdef _WIN32
 
 #include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
 #include <windows.h>
 
+
+int _enable_dprintf = 0;
+
+void dprintf(char *msg, ...) {
+    va_list ap;
+    va_start(ap, msg);
+
+    if (_enable_dprintf) {
+        vfprintf(stderr, msg, ap);
+    }
+
+    va_end(ap);
+}
 
 void display_error(LPSTR description) {
     DWORD err = GetLastError();
@@ -170,8 +185,8 @@ int sdk_launcher() {
     int                   result = 0;
     STARTUPINFO           startup;
     PROCESS_INFORMATION   pinfo;
-    CHAR                  program_path[MAX_PATH];
-    int                   ret;
+    CHAR                  program_dir[MAX_PATH];
+    int                   ret, pos;
     CHAR                  temp_filename[MAX_PATH];
     HANDLE                temp_handle;
 
@@ -189,29 +204,50 @@ int sdk_launcher() {
     startup.hStdOutput = temp_handle;
     startup.hStdError  = temp_handle;
 
-    /* get path of current program */
-    GetModuleFileName(NULL, program_path, sizeof(program_path));
-
-    ret = CreateProcess(
-            NULL,                                       /* program path */
-            "tools\\android.bat update sdk",            /* command-line */
-            NULL,                  /* process handle is not inheritable */
-            NULL,                   /* thread handle is not inheritable */
-            TRUE,                          /* yes, inherit some handles */
-            CREATE_NO_WINDOW,                /* we don't want a console */
-            NULL,                     /* use parent's environment block */
-            NULL,                    /* use parent's starting directory */
-            &startup,                 /* startup info, i.e. std handles */
-            &pinfo);
-
-    if (!ret) {
-        display_error("Failed to execute tools\\android.bat:");
+    /* get path of current program, to switch dirs here when executing the command. */
+    ret = GetModuleFileName(NULL, program_dir, sizeof(program_dir));
+    if (ret == 0) {
+        display_error("Failed to get program's filename:");
         result = 1;
     } else {
-        WaitForSingleObject(pinfo.hProcess, INFINITE);
-        CloseHandle(pinfo.hProcess);
-        CloseHandle(pinfo.hThread);
+        /* Remove the last segment to keep only the directory. */
+        pos = ret - 1;
+        while (pos > 0 && program_dir[pos] != '\\') {
+            --pos;
+        }
+        program_dir[pos] = 0;
     }
+
+    if (!result) {
+        dprintf("Program dir: %s\n", program_dir);
+
+        ret = CreateProcess(
+                NULL,                                       /* program path */
+                "tools\\android.bat update sdk",           /* command-line */
+                NULL,                  /* process handle is not inheritable */
+                NULL,                   /* thread handle is not inheritable */
+                TRUE,                          /* yes, inherit some handles */
+                CREATE_NO_WINDOW,                /* we don't want a console */
+                NULL,                     /* use parent's environment block */
+                program_dir,             /* use parent's starting directory */
+                &startup,                 /* startup info, i.e. std handles */
+                &pinfo);
+               
+        dprintf("CreateProcess returned %d\n", ret);
+
+        if (!ret) {
+            display_error("Failed to execute tools\\android.bat:");
+            result = 1;
+        } else {
+            dprintf("Wait for process to finish.\n");
+            
+            WaitForSingleObject(pinfo.hProcess, INFINITE);
+            CloseHandle(pinfo.hProcess);
+            CloseHandle(pinfo.hThread);
+        }
+    }
+    
+    dprintf("Cleanup.\n");
 
     if (!CloseHandle(temp_handle)) {
         display_error("CloseHandle temp file failed");
@@ -229,6 +265,9 @@ int sdk_launcher() {
 }
 
 int main(int argc, char **argv) {
+    _enable_dprintf = argc > 1 && strcmp(argv[1], "-v") == 0;
+    dprintf("Verbose debug mode.\n");
+    
     return sdk_launcher();
 }
 

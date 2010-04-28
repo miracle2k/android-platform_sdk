@@ -115,7 +115,7 @@ class CommandLineProcessor {
                 "Silent mode: only errors are printed out.",
                 false);
         define(Mode.BOOLEAN, false, GLOBAL_FLAG_VERB, NO_VERB_OBJECT, "h", KEY_HELP,
-                "This help.",
+                "Help on a specific command.",
                 false);
     }
 
