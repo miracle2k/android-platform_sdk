@@ -505,7 +505,10 @@ public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPa
                 IAndroidTarget target = currentSdk.getTarget(project);
                 if (target != null) {
                     AndroidTargetData data = currentSdk.getTargetData(target);
-                    desc = data.getLayoutDescriptors().getBaseViewDescriptor();
+                    if (data != null) {
+                        // data can be null when the target is still loading
+                        desc = data.getLayoutDescriptors().getBaseViewDescriptor();
+                    }
                 }
             }
 
