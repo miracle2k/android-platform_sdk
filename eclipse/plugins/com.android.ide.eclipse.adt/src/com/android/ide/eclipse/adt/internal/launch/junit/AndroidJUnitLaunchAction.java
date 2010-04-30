@@ -239,7 +239,7 @@ class AndroidJUnitLaunchAction implements IAndroidLaunchAction {
          * @see org.eclipse.debug.core.model.ITerminate#isTerminated()
          */
         public boolean isTerminated() {
-            return mIsTerminated;
+            return mIsTerminated || isInterrupted();
         }
 
         /**

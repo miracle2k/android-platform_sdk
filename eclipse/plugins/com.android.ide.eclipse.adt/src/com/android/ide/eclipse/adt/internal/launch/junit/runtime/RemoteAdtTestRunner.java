@@ -33,7 +33,7 @@ import java.io.IOException;
  * Supports Eclipse JUnit execution of Android tests.
  * <p/>
  * Communicates back to a Eclipse JDT JUnit client via a socket connection.
- * 
+ *
  * @see org.eclipse.jdt.internal.junit.runner.RemoteTestRunner for more details on the protocol
  */
 @SuppressWarnings("restriction")
@@ -41,17 +41,17 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
 
     private AndroidJUnitLaunchInfo mLaunchInfo;
     private TestExecution mExecution;
-    
+
     /**
      * Initialize the JDT JUnit test runner parameters from the {@code args}.
-     * 
-     * @param args name-value pair of arguments to pass to parent JUnit runner. 
+     *
+     * @param args name-value pair of arguments to pass to parent JUnit runner.
      * @param launchInfo the Android specific test launch info
      */
     protected void init(String[] args, AndroidJUnitLaunchInfo launchInfo) {
         defaultInit(args);
         mLaunchInfo = launchInfo;
-    }   
+    }
 
     /**
      * Runs a set of tests, and reports back results using parent class.
@@ -65,13 +65,13 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
      *   <li>The test execution result for each test method. Expects individual notifications of
      *   the test execution start, any failures, and the end of the test execution.</li>
      *   <li>The end of the test run, with its elapsed time.</li>
-     * </ol>  
+     * </ol>
      * <p/>
      * In order to satisfy this, this method performs two actual Android instrumentation runs.
      * The first is a 'log only' run that will collect the test tree data, without actually
      * executing the tests,  and send it back to JDT JUnit. The second is the actual test execution,
      * whose results will be communicated back in real-time to JDT JUnit.
-     * 
+     *
      * @param testClassNames ignored - the AndroidJUnitLaunchInfo will be used to determine which
      *     tests to run.
      * @param testName ignored
@@ -81,16 +81,16 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
     public void runTests(String[] testClassNames, String testName, TestExecution execution) {
         // hold onto this execution reference so it can be used to report test progress
         mExecution = execution;
-        
-        RemoteAndroidTestRunner runner = new RemoteAndroidTestRunner(mLaunchInfo.getAppPackage(), 
-                mLaunchInfo.getRunner(), mLaunchInfo.getDevice()); 
+
+        RemoteAndroidTestRunner runner = new RemoteAndroidTestRunner(mLaunchInfo.getAppPackage(),
+                mLaunchInfo.getRunner(), mLaunchInfo.getDevice());
 
         if (mLaunchInfo.getTestClass() != null) {
             if (mLaunchInfo.getTestMethod() != null) {
                 runner.setMethodName(mLaunchInfo.getTestClass(), mLaunchInfo.getTestMethod());
-            } else {    
+            } else {
                 runner.setClassName(mLaunchInfo.getTestClass());
-            }    
+            }
         }
 
         if (mLaunchInfo.getTestPackage() != null) {
@@ -102,6 +102,8 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
         runner.setLogOnly(true);
         TestCollector collector = new TestCollector();
         try {
+            AdtPlugin.printToConsole(mLaunchInfo.getProject(), "Collecting test information");
+
             runner.run(collector);
             if (collector.getErrorMessage() != null) {
                 // error occurred during test collection.
@@ -111,6 +113,9 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
                 return;
             }
             notifyTestRunStarted(collector.getTestCaseCount());
+            AdtPlugin.printToConsole(mLaunchInfo.getProject(),
+                    "Sending test information to Eclipse");
+
             collector.sendTrees(this);
 
             // now do real execution
@@ -118,23 +123,24 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
             if (mLaunchInfo.isDebugMode()) {
                 runner.setDebug(true);
             }
+            AdtPlugin.printToConsole(mLaunchInfo.getProject(), "Running tests...");
             runner.run(new TestRunListener());
         } catch (IOException e) {
             reportError(String.format(LaunchMessages.RemoteAdtTestRunner_RunIOException_s,
                     e.getMessage()));
         }
     }
-    
+
     /**
      * Main entry method to run tests
-     * 
+     *
      * @param programArgs JDT JUnit program arguments to be processed by parent
      * @param junitInfo the {@link AndroidJUnitLaunchInfo} containing info about this test ru
      */
     public void runTests(String[] programArgs, AndroidJUnitLaunchInfo junitInfo) {
         init(programArgs, junitInfo);
         run();
-    } 
+    }
 
     /**
      * Stop the current test run.
@@ -147,7 +153,7 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
     protected void stop() {
         if (mExecution != null) {
             mExecution.stop();
-        }    
+        }
     }
 
     private void notifyTestRunEnded(long elapsedTime) {
@@ -161,14 +167,14 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
      * @param errorMessage
      */
     private void reportError(String errorMessage) {
-        AdtPlugin.printErrorToConsole(mLaunchInfo.getProject(), 
+        AdtPlugin.printErrorToConsole(mLaunchInfo.getProject(),
                 String.format(LaunchMessages.RemoteAdtTestRunner_RunFailedMsg_s, errorMessage));
         // is this needed?
         //notifyTestRunStopped(-1);
     }
 
     /**
-     * TestRunListener that communicates results in real-time back to JDT JUnit 
+     * TestRunListener that communicates results in real-time back to JDT JUnit
      */
     private class TestRunListener implements ITestRunListener {
 
@@ -189,8 +195,8 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
             } else {
                 statusString = MessageIds.TEST_FAILED;
             }
-            TestReferenceFailure failure = 
-                new TestReferenceFailure(new TestCaseReference(test), 
+            TestReferenceFailure failure =
+                new TestReferenceFailure(new TestCaseReference(test),
                         statusString, trace, null);
             mExecution.getListener().notifyTestFailed(failure);
         }
@@ -233,6 +239,34 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
         public void testStarted(TestIdentifier test) {
             TestCaseReference testId = new TestCaseReference(test);
             mExecution.getListener().notifyTestStarted(testId);
+        }
+
+    }
+
+    /**
+     * Override parent to get extra logs.
+     */
+    @Override
+    protected boolean connect() {
+        boolean result = super.connect();
+        if (!result) {
+            AdtPlugin.printErrorToConsole(mLaunchInfo.getProject(),
+                    "Connect to Eclipse test result listener failed");
+        }
+        return result;
+    }
+
+    /**
+     * Override parent to dump error message to console.
+     */
+    @Override
+    public void runFailed(String message, Exception exception) {
+        if (exception != null) {
+            AdtPlugin.logAndPrintError(exception, mLaunchInfo.getProject().getName(),
+                    "Test launch failed: %s", message);
+        } else {
+            AdtPlugin.printErrorToConsole(mLaunchInfo.getProject(), "Test launch failed: %s",
+                    message);
         }
     }
 }
