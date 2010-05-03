@@ -25,6 +25,7 @@ import com.android.ide.eclipse.adt.internal.launch.junit.runtime.RemoteAdtTestRu
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
@@ -33,6 +34,7 @@ import org.eclipse.debug.core.model.IStreamsProxy;
 import org.eclipse.jdt.junit.launcher.JUnitLaunchConfigurationDelegate;
 import org.eclipse.jdt.launching.IVMRunner;
 import org.eclipse.jdt.launching.VMRunnerConfiguration;
+import org.eclipse.swt.widgets.Display;
 
 /**
  * A launch action that executes a instrumentation test run on an Android device.
@@ -53,6 +55,8 @@ class AndroidJUnitLaunchAction implements IAndroidLaunchAction {
     /**
      * Launch a instrumentation test run on given Android device. 
      * Reuses JDT JUnit launch delegate so results can be communicated back to JDT JUnit UI.
+     * <p/>
+     * Note: Must be executed on non-UI thread.
      * 
      * @see IAndroidLaunchAction#doLaunchAction(DelayedLaunchInfo, IDevice)
      */
@@ -137,7 +141,7 @@ class AndroidJUnitLaunchAction implements IAndroidLaunchAction {
     }
 
     /**
-     * Provides a VM runner implementation which starts a thread implementation of a launch process
+     * Provides a VM runner implementation which starts a inline implementation of a launch process
      */
     private static class VMTestRunner implements IVMRunner {
         
@@ -156,15 +160,15 @@ class AndroidJUnitLaunchAction implements IAndroidLaunchAction {
             
             TestRunnerProcess runnerProcess = 
                 new TestRunnerProcess(config, mJUnitInfo);
-            runnerProcess.start();
             launch.addProcess(runnerProcess);
+            runnerProcess.run();
         }
     }
 
     /**
      * Launch process that executes the tests.
      */
-    private static class TestRunnerProcess extends Thread implements IProcess  {
+    private static class TestRunnerProcess implements IProcess  {
 
         private final VMRunnerConfiguration mRunConfig;
         private final AndroidJUnitLaunchInfo mJUnitInfo;
@@ -239,7 +243,7 @@ class AndroidJUnitLaunchAction implements IAndroidLaunchAction {
          * @see org.eclipse.debug.core.model.ITerminate#isTerminated()
          */
         public boolean isTerminated() {
-            return mIsTerminated || isInterrupted();
+            return mIsTerminated;
         }
 
         /**
@@ -254,10 +258,18 @@ class AndroidJUnitLaunchAction implements IAndroidLaunchAction {
         } 
 
         /**
-         * Launches a test runner that will communicate results back to JDT JUnit UI
+         * Launches a test runner that will communicate results back to JDT JUnit UI.
+         * <p/>
+         * Must be executed on a non-UI thread.
          */
-        @Override
         public void run() {
+            if (Display.getCurrent() != null) {
+                AdtPlugin.log(IStatus.ERROR, "Adt test runner executed on UI thread");
+                AdtPlugin.printErrorToConsole(mJUnitInfo.getProject(),
+                        "Test launch failed due to internal error: Running tests on UI thread");
+                terminate();
+                return;
+            }
             mTestRunner = new RemoteAdtTestRunner();
             mTestRunner.runTests(mRunConfig.getProgramArguments(), mJUnitInfo);
         }
