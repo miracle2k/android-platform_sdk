@@ -61,8 +61,8 @@ function check_params() {
 
 function build_libs() {
   MAKE_OPT="-j8"
-  echo "*** Building: make $MAKE_OPT dx ping ddms jarutils androidprefs layoutlib_api ninepatch sdklib sdkuilib"
-  make $MAKE_OPT dx ping ddms jarutils androidprefs layoutlib_api layoutlib_utils ninepatch sdklib sdkuilib
+  echo "*** Building: make $MAKE_OPT dx ping ddms jarutils androidprefs groovy-all-1.7.0 layoutlib layoutlib_api layoutlib_utils ninepatch sdklib sdkuilib"
+  make $MAKE_OPT dx ping ddms jarutils androidprefs groovy-all-1.7.0 layoutlib layoutlib_api layoutlib_utils ninepatch sdklib sdkuilib
 }
 
 function build_plugin {
