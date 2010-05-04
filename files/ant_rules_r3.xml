@@ -211,7 +211,7 @@
          -install-with-emma which do exactly the same but differ in dependencies -->
     <macrodef name="install-helper">
         <sequential>
-            <echo>Installing ${out.debug.package} onto default emulator or device...</echo>
+            <echo>Installing ${out.debug.file} onto default emulator or device...</echo>
             <exec executable="${adb}" failonerror="true">
                 <arg line="${adb.device.arg}" />
                 <arg value="install" />
@@ -351,7 +351,7 @@
                 description="Builds the application and signs it with a debug key.">
         <zipalign-helper in.package="${out.debug.unaligned.file}"
                                    out.package="${out.debug.file}" />
-        <echo>Debug Package: ${out.debug.package}</echo>
+        <echo>Debug Package: ${out.debug.file}</echo>
     </target>
 
     <target name="-release-check">
@@ -365,7 +365,7 @@
 
     <target name="-release-nosign" depends="-release-check" unless="release.sign">
         <echo>No key.store and key.alias properties found in build.properties.</echo>
-        <echo>Please sign ${out.unsigned.package} manually</echo>
+        <echo>Please sign ${out.unsigned.file} manually</echo>
         <echo>and run zipalign from the Android SDK tools.</echo>
     </target>
 
@@ -394,7 +394,7 @@
         <!-- Zip aligns the APK -->
         <zipalign-helper in.package="${out.unaligned.file}"
                                    out.package="${out.release.file}" />
-        <echo>Release Package: ${out.release.package}</echo>
+        <echo>Release Package: ${out.release.file}</echo>
     </target>
 
     <target name="install" depends="debug"
