@@ -12,9 +12,6 @@
          default property values used by the Ant rules.
          Here are some properties you may want to change/update:
 
-         application.package
-             The name of your application package as defined in the manifest.
-             Used by the 'uninstall' rule.
          source.dir
              The name of the source directory. Default is 'src'.
          out.dir

@@ -67,24 +67,39 @@
 
     <!-- Intermediate files -->
     <property name="dex.file.name" value="classes.dex" />
-    <property name="intermediate.dex.file" location="${out.absolute.dir}/${dex.file.name}" />
+    <property name="intermediate.dex.file"
+                  location="${out.absolute.dir}/${dex.file.name}" />
+    <property name="resource.package.file.name"
+                  value="${ant.project.name}.ap_" />
 
-    <!-- The final package file to generate -->
-    <property name="out.debug.unaligned.package"
+    <!-- The final package file to generate
+         These can be overridden by setting them earlier to
+         different values -->
+    <property name="out.debug.unaligned.file"
                   location="${out.absolute.dir}/${ant.project.name}-debug-unaligned.apk" />
-    <property name="out.debug.package"
+    <property name="out.debug.file"
                   location="${out.absolute.dir}/${ant.project.name}-debug.apk" />
-    <property name="out.unsigned.package"
-                  location="${out.absolute.dir}/${ant.project.name}-unsigned.apk" />
-    <property name="out.unaligned.package"
-                  location="${out.absolute.dir}/${ant.project.name}-unaligned.apk" />
-    <property name="out.release.package"
-                  location="${out.absolute.dir}/${ant.project.name}-release.apk" />
+
+    <property name="out.unsigned.file.name"
+                  value="${ant.project.name}-unsigned.apk" />
+    <property name="out.unsigned.file"
+                  location="${out.absolute.dir}/${out.unsigned.file.name}" />
+
+    <property name="out.unaligned.file.name"
+                  value="${ant.project.name}-unaligned.apk" />
+    <property name="out.unaligned.file"
+                  location="${out.absolute.dir}/${out.unaligned.file.name}" />
+
+    <property name="out.release.file.name"
+                  value="${ant.project.name}-release.apk" />
+    <property name="out.release.file"
+                  location="${out.absolute.dir}/${out.release.file.name}" />
 
     <!-- set some properties used for filtering/override. If those weren't defined
          before, then this will create them with empty values, which are then ignored
          by the custom tasks receiving them. -->
     <property name="version.code" value="" />
+    <property name="aapt.resource.filter" value="" />
     <property name="filter.abi" value="" />
 
     <!-- Verbosity -->
@@ -143,7 +158,7 @@
 
     <!-- This is macro that enable passing variable list of external jar files to ApkBuilder
          Example of use:
-         <package-helper sign.package="true">
+         <package-helper sign.package="true" output.filepath="/path/to/foo.apk">
              <extra-jars>
                 <jarfolder path="my_jars" />
                 <jarfile path="foo/bar.jar" />
@@ -152,11 +167,13 @@
          </package-helper> -->
     <macrodef name="package-helper">
         <attribute name="sign.package" />
+        <attribute name="output.filepath" />
         <element name="extra-jars" optional="yes" />
         <sequential>
             <apkbuilder
                     outfolder="${out.absolute.dir}"
-                    basename="${ant.project.name}"
+                    resourceFile="${resource.package.file.name}"
+                    apkFilepath="@{output.filepath}"
                     signed="@{sign.package}"
                     debug="${manifest.debuggable}"
                     abifilter="${filter.abi}"
@@ -199,7 +216,7 @@
                 <arg line="${adb.device.arg}" />
                 <arg value="install" />
                 <arg value="-r" />
-                <arg path="${out.debug.package}" />
+                <arg path="${out.debug.file}" />
             </exec>
         </sequential>
     </macrodef>
@@ -283,7 +300,7 @@
     <target name="-post-compile"/>
 
     <!-- Converts this project's .class files into .dex files -->
-    <target name="-dex" depends="compile, -post-compile">
+    <target name="-dex" depends="compile, -post-compile" unless="do.not.compile">
         <dex-helper />
     </target>
 
@@ -301,7 +318,8 @@
                 assets="${asset.absolute.dir}"
                 androidjar="${android.jar}"
                 apkfolder="${out.absolute.dir}"
-                apkbasename="${ant.project.name}">
+                resourceFilename="${resource.package.file.name}"
+                resourceFilter="${aapt.resource.filter}">
             <res path="${resource.absolute.dir}" />
             <!-- <nocompress /> forces no compression on any files in assets or res/raw -->
             <!-- <nocompress extension="xml" /> forces no compression on specific file extensions in assets and res/raw -->
@@ -310,12 +328,16 @@
 
     <!-- Packages the application and sign it with a debug key. -->
     <target name="-package-debug-sign" depends="-dex, -package-resources">
-        <package-helper sign.package="true" />
+        <package-helper
+                sign.package="true"
+                output.filepath="${out.debug.unaligned.file}" />
     </target>
 
     <!-- Packages the application without signing it. -->
     <target name="-package-release" depends="-dex, -package-resources">
-        <package-helper sign.package="false" />
+        <package-helper
+                sign.package="false"
+                output.filepath="${out.unsigned.file}"/>
     </target>
 
     <target name="-compile-tested-if-test" if="tested.project.dir" unless="do.not.compile.again">
@@ -327,8 +349,8 @@
     <!-- Builds debug output package, provided all the necessary files are already dexed -->
     <target name="debug" depends="-compile-tested-if-test, -package-debug-sign"
                 description="Builds the application and signs it with a debug key.">
-        <zipalign-helper in.package="${out.debug.unaligned.package}"
-                                   out.package="${out.debug.package}" />
+        <zipalign-helper in.package="${out.debug.unaligned.file}"
+                                   out.package="${out.debug.file}" />
         <echo>Debug Package: ${out.debug.package}</echo>
     </target>
 
@@ -361,8 +383,8 @@
         <!-- Signs the APK -->
         <echo>Signing final apk...</echo>
         <signjar
-                jar="${out.unsigned.package}"
-                signedjar="${out.unaligned.package}"
+                jar="${out.unsigned.file}"
+                signedjar="${out.unaligned.file}"
                 keystore="${key.store}"
                 storepass="${key.store.password}"
                 alias="${key.alias}"
@@ -370,8 +392,8 @@
                 verbose="${verbose}" />
 
         <!-- Zip aligns the APK -->
-        <zipalign-helper in.package="${out.unaligned.package}"
-                                   out.package="${out.release.package}" />
+        <zipalign-helper in.package="${out.unaligned.file}"
+                                   out.package="${out.release.file}" />
         <echo>Release Package: ${out.release.package}</echo>
     </target>
 
@@ -440,7 +462,9 @@
 
     <!-- Invoked from external files for code coverage purposes -->
     <target name="-package-with-emma" depends="-dex-instrumented, -package-resources">
-        <package-helper sign.package="true">
+        <package-helper
+                sign.package="true"
+                output.filepath="${out.debug.unaligned.file}">
             <extra-jars>
                 <!-- Injected from external file -->
                 <jarfile path="${emma.dir}/emma_device.jar" />
@@ -449,8 +473,8 @@
     </target>
 
     <target name="-debug-with-emma" depends="-package-with-emma">
-        <zipalign-helper in.package="${out.debug.unaligned.package}"
-                                   out.package="${out.debug.package}" />
+        <zipalign-helper in.package="${out.debug.unaligned.file}"
+                                   out.package="${out.debug.file}" />
     </target>
 
     <target name="-install-with-emma" depends="-debug-with-emma">

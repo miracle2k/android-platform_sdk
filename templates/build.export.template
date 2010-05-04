@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Main" default="help">
+
+    <!-- The local.properties file is created and updated by the 'android'
+         tool.
+         It contains the path to the SDK. It should *NOT* be checked in in
+         Version Control Systems. -->
+    <property file="local.properties" />
+
+    <!-- ? -->
+    <property file="export.properties" />
+
+    <!-- Custom Android task to deal with the project target, and import the proper rules.
+         This requires ant 1.6.0 or above. -->
+    <path id="android.antlibs">
+        <pathelement path="${sdk.dir}/tools/lib/anttasks.jar" />
+        <pathelement path="${sdk.dir}/tools/lib/sdklib.jar" />
+        <pathelement path="${sdk.dir}/tools/lib/androidprefs.jar" />
+        <pathelement path="${sdk.dir}/tools/lib/apkbuilder.jar" />
+        <pathelement path="${sdk.dir}/tools/lib/jarutils.jar" />
+    </path>
+
+    <taskdef name="android-export"
+        classname="com.android.ant.MultiApkExportTask"
+        classpathref="android.antlibs" />
+
+    <property name="out.dir" value="bin" />
+    <property name="out.absolute.dir" location="${out.dir}" />
+
+    <target name="-dirs">
+        <echo>Creating output directories if needed...</echo>
+        <mkdir dir="${out.absolute.dir}" />
+    </target>
+
+    <target name="release" depends="-dirs">
+        <android-export target="release" />
+    </target>
+
+    <target name="clean">
+        <delete dir="${out.absolute.dir}" verbose="${verbose}" />
+        <android-export target="clean"/>
+    </target>
+
+    <target name="help">
+        <!-- displays starts at col 13
+              |13                                                              80| -->
+        <echo>Android Ant Build. Available targets:</echo>
+        <echo>   help:      Displays this help.</echo>
+        <echo>   clean:     Removes output files created by other targets.</echo>
+        <echo>   release:   Builds the application. The generated apk file must be</echo>
+        <echo>              signed before it is published.</echo>
+    </target>
+</project>

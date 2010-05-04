@@ -68,17 +68,21 @@
     <!-- Intermediate files -->
     <property name="dex.file.name" value="classes.dex" />
     <property name="intermediate.dex.file" location="${out.absolute.dir}/${dex.file.name}" />
+    <property name="resource.package.file.name"
+                  value="${ant.project.name}.ap_" />
 
-    <!-- The final package file to generate -->
-    <property name="out.debug.unaligned.package"
+    <!-- The final package file to generate
+         These can be overridden by setting them earlier to
+         different values -->
+    <property name="out.debug.unaligned.file"
                   location="${out.absolute.dir}/${ant.project.name}-debug-unaligned.apk" />
-    <property name="out.debug.package"
+    <property name="out.debug.file"
                   location="${out.absolute.dir}/${ant.project.name}-debug.apk" />
-    <property name="out.unsigned.package"
+    <property name="out.unsigned.file"
                   location="${out.absolute.dir}/${ant.project.name}-unsigned.apk" />
-    <property name="out.unaligned.package"
+    <property name="out.unaligned.file"
                   location="${out.absolute.dir}/${ant.project.name}-unaligned.apk" />
-    <property name="out.release.package"
+    <property name="out.release.file"
                   location="${out.absolute.dir}/${ant.project.name}-release.apk" />
 
     <!-- Verbosity -->
@@ -192,7 +196,7 @@
                 <arg line="${adb.device.arg}" />
                 <arg value="install" />
                 <arg value="-r" />
-                <arg path="${out.debug.package}" />
+                <arg path="${out.debug.file}" />
             </exec>
         </sequential>
     </macrodef>
@@ -307,8 +311,8 @@
     <!-- Builds debug output package, provided all the necessary files are already dexed -->
     <target name="debug" depends="-compile-tested-if-test, -package-debug-sign"
                 description="Builds the application and signs it with a debug key.">
-        <zipalign-helper in.package="${out.debug.unaligned.package}"
-                                   out.package="${out.debug.package}" />
+        <zipalign-helper in.package="${out.debug.unaligned.file}"
+                                   out.package="${out.debug.file}" />
         <echo>Debug Package: ${out.debug.package}</echo>
     </target>
 
@@ -341,8 +345,8 @@
         <!-- Signs the APK -->
         <echo>Signing final apk...</echo>
         <signjar
-                jar="${out.unsigned.package}"
-                signedjar="${out.unaligned.package}"
+                jar="${out.unsigned.file}"
+                signedjar="${out.unaligned.file}"
                 keystore="${key.store}"
                 storepass="${key.store.password}"
                 alias="${key.alias}"
@@ -350,8 +354,8 @@
                 verbose="${verbose}" />
 
         <!-- Zip aligns the APK -->
-        <zipalign-helper in.package="${out.unaligned.package}"
-                                   out.package="${out.release.package}" />
+        <zipalign-helper in.package="${out.unaligned.file}"
+                                   out.package="${out.release.file}" />
         <echo>Release Package: ${out.release.package}</echo>
     </target>
 
@@ -429,8 +433,8 @@
     </target>
 
     <target name="-debug-with-emma" depends="-package-with-emma">
-        <zipalign-helper in.package="${out.debug.unaligned.package}"
-                                   out.package="${out.debug.package}" />
+        <zipalign-helper in.package="${out.debug.unaligned.file}"
+                                   out.package="${out.debug.file}" />
     </target>
 
     <target name="-install-with-emma" depends="-debug-with-emma">

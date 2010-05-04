@@ -16,14 +16,13 @@
 
 package com.android.sdklib.internal.project;
 
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Settings for multiple APK generation.
  */
 public class ApkSettings {
-    private boolean mSplitByDpi = false;
+    private boolean mSplitByDensity = false;
+    private boolean mSplitByAbi = false;
 
     public ApkSettings() {
     }
@@ -33,37 +32,29 @@ public class ApkSettings {
      * {@link ProjectProperties} file.
      */
     public ApkSettings(ProjectProperties properties) {
-        boolean splitByDensity = Boolean.parseBoolean(properties.getProperty(
+        mSplitByDensity = Boolean.parseBoolean(properties.getProperty(
                 ProjectProperties.PROPERTY_SPLIT_BY_DENSITY));
-        setSplitByDensity(splitByDensity);
-    }
-
-    /**
-     * Returns a map of configuration filters to be used by the -c option of aapt.
-     * <p/>The map stores (key, value) pairs where the keys is a filename modifier and the value
-     * is the parameter to pass to aapt through the -c option.
-     * @return a map, always. It can however be empty.
-     */
-    public Map<String, String> getResourceFilters() {
-        Map<String, String> map = new HashMap<String, String>();
-        if (mSplitByDpi) {
-            map.put("hdpi", "hdpi,nodpi");
-            map.put("mdpi", "mdpi,nodpi");
-            map.put("ldpi", "ldpi,nodpi");
-        }
-
-        return map;
+        mSplitByAbi =  Boolean.parseBoolean(properties.getProperty(
+                ProjectProperties.PROPERTY_SPLIT_BY_ABI));
     }
 
     /**
      * Indicates whether APKs should be generate for each dpi level.
      */
-    public boolean isSplitByDpi() {
-        return mSplitByDpi;
+    public boolean isSplitByDensity() {
+        return mSplitByDensity;
     }
 
     public void setSplitByDensity(boolean split) {
-        mSplitByDpi = split;
+        mSplitByDensity = split;
+    }
+
+    public boolean isSplitByAbi() {
+    	return mSplitByAbi;
+    }
+
+    public void setSplitByAbi(boolean split) {
+    	mSplitByAbi = split;
     }
 
     /**
@@ -71,15 +62,18 @@ public class ApkSettings {
      * @param properties the {@link ProjectProperties} in which to store the settings.
      */
     public void write(ProjectProperties properties) {
-        // TODO: this is not supported at the moment, so we dont write the property into the file.
-//        propertiessetProperty(ProjectProperties.PROPERTY_SPLIT_BY_DENSITY,
-//                Boolean.toString(isSplitByDpi()));
+        properties.setProperty(ProjectProperties.PROPERTY_SPLIT_BY_DENSITY,
+                Boolean.toString(mSplitByDensity));
+        properties.setProperty(ProjectProperties.PROPERTY_SPLIT_BY_ABI,
+                Boolean.toString(mSplitByAbi));
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof ApkSettings) {
-            return mSplitByDpi == ((ApkSettings) obj).mSplitByDpi;
+            ApkSettings objSettings = (ApkSettings) obj;
+            return mSplitByDensity == objSettings.mSplitByDensity &&
+                    mSplitByAbi == objSettings.mSplitByAbi;
         }
 
         return false;
@@ -87,6 +81,8 @@ public class ApkSettings {
 
     @Override
     public int hashCode() {
-        return Boolean.valueOf(mSplitByDpi).hashCode();
+        return Integer.valueOf(
+                (mSplitByDensity ? 1 : 0) +
+                (mSplitByAbi ? 2 : 0)).hashCode();
     }
 }

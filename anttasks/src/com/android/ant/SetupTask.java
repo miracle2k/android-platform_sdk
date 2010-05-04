@@ -39,10 +39,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Properties;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
@@ -81,13 +79,9 @@ public final class SetupTask extends ImportTask {
 
     // ant property with the path to the android.jar
     private final static String PROPERTY_ANDROID_JAR = "android.jar";
-    // LEGACY - compatibility with 1.6 and before
-    private final static String PROPERTY_ANDROID_JAR_LEGACY = "android-jar";
 
     // ant property with the path to the framework.jar
     private final static String PROPERTY_ANDROID_AIDL = "android.aidl";
-    // LEGACY - compatibility with 1.6 and before
-    private final static String PROPERTY_ANDROID_AIDL_LEGACY = "android-aidl";
 
     // ant property with the path to the aapt tool
     private final static String PROPERTY_AAPT = "aapt";
@@ -105,26 +99,11 @@ public final class SetupTask extends ImportTask {
         Project antProject = getProject();
 
         // get the SDK location
-        String sdkLocation = antProject.getProperty(ProjectProperties.PROPERTY_SDK);
-
-        // check if it's valid and exists
-        if (sdkLocation == null || sdkLocation.length() == 0) {
-            // LEGACY support: project created with 1.6 or before may be using a different
-            // property to declare the location of the SDK. At this point, we cannot
-            // yet check which target is running so we check both always.
-            sdkLocation = antProject.getProperty(ProjectProperties.PROPERTY_SDK_LEGACY);
-            if (sdkLocation == null || sdkLocation.length() == 0) {
-                throw new BuildException("SDK Location is not set.");
-            }
-        }
-
-        File sdk = new File(sdkLocation);
-        if (sdk.isDirectory() == false) {
-            throw new BuildException(String.format("SDK Location '%s' is not valid.", sdkLocation));
-        }
+        File sdk = TaskHelper.getSdkLocation(antProject);
+        String sdkLocation = sdk.getPath();
 
         // display SDK Tools revision
-        int toolsRevison = getToolsRevision(sdk);
+        int toolsRevison = TaskHelper.getToolsRevision(sdk);
         if (toolsRevison != -1) {
             System.out.println("Android SDK Tools Revision " + toolsRevison);
         }
@@ -179,6 +158,14 @@ public final class SetupTask extends ImportTask {
                     "Unable to resolve target '%s'", targetHashString));
         }
 
+        // display the project info
+        System.out.println("Project Target: " + androidTarget.getName());
+        if (androidTarget.isPlatform() == false) {
+            System.out.println("Vendor: " + androidTarget.getVendor());
+            System.out.println("Platform Version: " + androidTarget.getVersionName());
+        }
+        System.out.println("API level: " + androidTarget.getVersion().getApiString());
+
         // check that this version of the custom Ant task can build this target
         int antBuildVersion = androidTarget.getProperty(SdkConstants.PROP_SDK_ANT_BUILD_REVISION,
                 1);
@@ -192,6 +179,39 @@ public final class SetupTask extends ImportTask {
                     + "***********************************************************\n\n\n");
         }
 
+        if (antBuildVersion < 2) {
+            // these older rules are obselete, and not versioned, and therefore it's hard
+            // to maintain compatibility.
+
+            // if the platform itself is obsolete, display a different warning
+            if (androidTarget.getVersion().getApiLevel() < 3 ||
+                    androidTarget.getVersion().getApiLevel() == 5 ||
+                    androidTarget.getVersion().getApiLevel() == 6) {
+                System.out.println("\n\n\n"
+                        + "***********************************************************\n"
+                        + "WARNING: This platform is obsolete and its Ant rules may not work properly.\n"
+                        + "WARNING: It is recommended to develop against a newer version of Android.\n"
+                        + "WARNING: For more information about active versions of Android see:\n"
+                        + "WARNING: http://developer.android.com/resources/dashboard/platform-versions.html\n"
+                        + "***********************************************************\n\n\n");
+            } else {
+                IAndroidTarget baseTarget =
+                    androidTarget.getParent() != null ? androidTarget.getParent() : androidTarget;
+                System.out.println(String.format("\n\n\n"
+                        + "***********************************************************\n"
+                        + "WARNING: Revision %1$d of %2$s uses obsolete Ant rules which may not work properly.\n"
+                        + "WARNING: It is recommended that you download a newer revision if available.\n"
+                        + "WARNING: For more information about updating your SDK, see:\n"
+                        + "WARNING: http://developer.android.com/sdk/adding-components.html\n"
+                        + "***********************************************************\n\n\n",
+                        baseTarget.getRevision(), baseTarget.getFullName()));
+            }
+        }
+
+        // set a property that contains the rules revision. This can be used by other custom
+        // tasks later.
+        antProject.setProperty(TaskHelper.PROP_RULES_REV, Integer.toString(antBuildVersion));
+
         // check if the project is a library
         boolean isLibrary = false;
 
@@ -203,16 +223,9 @@ public final class SetupTask extends ImportTask {
         // look for referenced libraries.
         processReferencedLibraries(antProject, androidTarget);
 
-        // display the project info
-        System.out.println("Project Target: " + androidTarget.getName());
         if (isLibrary) {
-            System.out.println("Type: Android Library");
+            System.out.println("Project Type: Android Library");
         }
-        if (androidTarget.isPlatform() == false) {
-            System.out.println("Vendor: " + androidTarget.getVendor());
-            System.out.println("Platform Version: " + androidTarget.getVersionName());
-        }
-        System.out.println("API level: " + androidTarget.getVersion().getApiString());
 
         // do a quick check to make sure the target supports library.
         if (isLibrary &&
@@ -262,18 +275,6 @@ public final class SetupTask extends ImportTask {
 
         // finally sets the path in the project with a reference
         antProject.addReference(REF_CLASSPATH, bootclasspath);
-
-        // LEGACY support. android_rules.xml in older platforms expects properties with
-        // older names. This sets those properties to make sure the rules will work.
-        if (androidTarget.getVersion().getApiLevel() <= 4) { // 1.6 and earlier
-            antProject.setProperty(PROPERTY_ANDROID_JAR_LEGACY, androidJar);
-            antProject.setProperty(PROPERTY_ANDROID_AIDL_LEGACY, androidAidl);
-            antProject.setProperty(ProjectProperties.PROPERTY_SDK_LEGACY, sdkLocation);
-            String appPackage = antProject.getProperty(ProjectProperties.PROPERTY_APP_PACKAGE);
-            if (appPackage != null && appPackage.length() > 0) {
-                antProject.setProperty(ProjectProperties.PROPERTY_APP_PACKAGE_LEGACY, appPackage);
-            }
-        }
 
         // Now the import section. This is only executed if the task actually has to import a file.
         if (mDoImport) {
@@ -503,30 +504,5 @@ public final class SetupTask extends ImportTask {
             antProject.addReference("android.libraries.res", resPath);
             antProject.setProperty("android.libraries.package", sb.toString());
         }
-    }
-
-    /**
-     * Returns the revision of the tools for a given SDK.
-     * @param sdkFile the {@link File} for the root folder of the SDK
-     * @return the tools revision or -1 if not found.
-     */
-    private int getToolsRevision(File sdkFile) {
-        Properties p = new Properties();
-        try{
-            // tools folder must exist, or this custom task wouldn't run!
-            File toolsFolder= new File(sdkFile, SdkConstants.FD_TOOLS);
-            File sourceProp = new File(toolsFolder, SdkConstants.FN_SOURCE_PROP);
-            p.load(new FileInputStream(sourceProp));
-            String value = p.getProperty("Pkg.Revision"); //$NON-NLS-1$
-            if (value != null) {
-                return Integer.parseInt(value);
-            }
-        } catch (FileNotFoundException e) {
-            // couldn't find the file? return -1 below.
-        } catch (IOException e) {
-            // couldn't find the file? return -1 below.
-        }
-
-        return -1;
     }
 }

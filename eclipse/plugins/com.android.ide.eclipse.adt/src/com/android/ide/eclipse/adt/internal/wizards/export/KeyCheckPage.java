@@ -418,26 +418,6 @@ final class KeyCheckPage extends ExportWizardPage {
         apkArray[ExportWizard.APK_FILE_DEST] = filename;
         map.put(null, apkArray);
 
-        // add the APKs for each APK configuration.
-        if (mApkSettings != null) {
-            Map<String, String> apkFilters = mApkSettings.getResourceFilters();
-            if (apkFilters.size() > 0) {
-                // remove the extension from the user-chosen filename
-                int index = filename.lastIndexOf('.');
-                String base = filename.substring(0, index);
-                String extension = filename.substring(index);
-
-                for (Entry<String, String> entry : apkFilters.entrySet()) {
-                    apkArray = new String[ExportWizard.APK_COUNT];
-                    apkArray[ExportWizard.APK_FILE_SOURCE] = ProjectHelper.getApkFilename(
-                            mWizard.getProject(), entry.getKey());
-                    apkArray[ExportWizard.APK_FILE_DEST] = base + "-" + //$NON-NLS-1$
-                            entry.getKey() + extension;
-                    map.put(entry.getKey(), apkArray);
-                }
-            }
-        }
-
         return map;
     }
 

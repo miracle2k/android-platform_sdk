@@ -44,11 +44,11 @@ public final class ProjectProperties {
     // LEGACY - compatibility with 1.6 and before
     public final static String PROPERTY_SDK_LEGACY = "sdk-location";
 
+    @Deprecated //This is not needed by the new Ant rules
     public final static String PROPERTY_APP_PACKAGE = "application.package";
-    // LEGACY - compatibility with 1.6 and before
-    public final static String PROPERTY_APP_PACKAGE_LEGACY = "application-package";
 
     public final static String PROPERTY_SPLIT_BY_DENSITY = "split.density";
+    public final static String PROPERTY_SPLIT_BY_ABI = "split.abi";
 
     public final static String PROPERTY_TESTED_PROJECT = "tested.project.dir";
 

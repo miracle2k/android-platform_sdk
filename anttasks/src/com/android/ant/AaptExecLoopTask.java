@@ -16,10 +16,6 @@
 
 package com.android.ant;
 
-import com.android.sdklib.internal.project.ApkSettings;
-import com.android.sdklib.internal.project.ProjectProperties;
-import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
-
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
@@ -28,8 +24,6 @@ import org.apache.tools.ant.types.Path;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  * Task able to run an Exec task on aapt several times.
@@ -85,7 +79,9 @@ public final class AaptExecLoopTask extends Task {
     private String mAssets;
     private String mAndroidJar;
     private String mApkFolder;
-    private String mApkBaseName;
+    @Deprecated private String mApkBaseName;
+    private String mApkName;
+    private String mResourceFilter;
     private String mRFolder;
     private final ArrayList<NoCompress> mNoCompressList = new ArrayList<NoCompress>();
 
@@ -144,10 +140,12 @@ public final class AaptExecLoopTask extends Task {
      * Sets the value of the "resources" attribute.
      * @param resources the value.
      *
-     * @deprecated Uses nested element(s) <res path="value" />
+     * @deprecated Use nested element(s) <res path="value" />
      */
     @Deprecated
     public void setResources(Path resources) {
+        System.out.println("WARNNG: Using deprecated 'resources' attribute in AaptExecLoopTask." +
+                "Use nested element(s) <res path=\"value\" /> instead.");
         if (mResources == null) {
             mResources = new ArrayList<Path>();
         }
@@ -178,6 +176,8 @@ public final class AaptExecLoopTask extends Task {
      */
     @Deprecated
     public void setOutfolder(Path outFolder) {
+        System.out.println("WARNNG: Using deprecated 'outfolder' attribute in AaptExecLoopTask." +
+                "Use 'apkfolder' (path) instead.");
         mApkFolder = TaskHelper.checkSinglePath("outfolder", outFolder);
     }
 
@@ -196,6 +196,8 @@ public final class AaptExecLoopTask extends Task {
      */
     @Deprecated
     public void setBasename(String baseName) {
+        System.out.println("WARNNG: Using deprecated 'basename' attribute in AaptExecLoopTask." +
+                "Use 'resourceFilename' (string) instead.");
         mApkBaseName = baseName;
     }
 
@@ -204,7 +206,17 @@ public final class AaptExecLoopTask extends Task {
      * @param apkbaseName the value.
      */
     public void setApkbasename(String apkbaseName) {
+        System.out.println("WARNNG: Using deprecated 'apkbasename' attribute in AaptExecLoopTask." +
+                "Use 'resourceFilename' (string) instead.");
         mApkBaseName = apkbaseName;
+    }
+
+    /**
+     * Sets the value of the apkname attribute
+     * @param apkName the value
+     */
+    public void setResourceFilename(String apkName) {
+        mApkName = apkName;
     }
 
     /**
@@ -213,6 +225,12 @@ public final class AaptExecLoopTask extends Task {
      */
     public void setRfolder(Path rFolder) {
         mRFolder = TaskHelper.checkSinglePath("rfolder", rFolder);
+    }
+
+    public void setresourceFilter(String filter) {
+        if (filter != null && filter.length() > 0) {
+            mResourceFilter = filter;
+        }
     }
 
     /**
@@ -251,8 +269,10 @@ public final class AaptExecLoopTask extends Task {
         Project taskProject = getProject();
 
         // first do a full resource package
-        createPackage(null /*configName*/, null /*resourceFilter*/, null /*customPackage*/);
+        callAapt(null /*customPackage*/);
 
+        // if the parameters indicate generation of the R class, check if
+        // more R classes need to be created for libraries.
         if (mRFolder != null && new File(mRFolder).isDirectory()) {
             String libPkgProp = taskProject.getProperty("android.libraries.package");
             if (libPkgProp != null) {
@@ -265,49 +285,31 @@ public final class AaptExecLoopTask extends Task {
                         // FIXME: instead of recreating R.java from scratch, maybe copy
                         // the files (R.java and manifest.java)? This would force to replace
                         // the package line on the fly.
-                        createPackage(null, null, libPkg);
+                        callAapt(libPkg);
                     }
-                }
-            }
-        }
-
-        // now see if we need to create file with filtered resources.
-        // Get the project base directory.
-        File baseDir = taskProject.getBaseDir();
-        ProjectProperties properties = ProjectProperties.load(baseDir.getAbsolutePath(),
-                PropertyType.DEFAULT);
-
-
-        ApkSettings apkSettings = new ApkSettings(properties);
-        if (apkSettings != null) {
-            Map<String, String> apkFilters = apkSettings.getResourceFilters();
-            if (apkFilters.size() > 0) {
-                for (Entry<String, String> entry : apkFilters.entrySet()) {
-                    createPackage(entry.getKey(), entry.getValue(), null /*custom package*/);
                 }
             }
         }
     }
 
     /**
-     * Creates a resource package.
-     * @param configName the name of the filter config. Can be null in which case a full resource
-     * package will be generated.
+     * Calls aapt with the given parameters.
      * @param resourceFilter the resource configuration filter to pass to aapt (if configName is
      * non null)
+     * @param customPackage an optional custom package.
      */
-    private void createPackage(String configName, String resourceFilter, String customPackage) {
+    private void callAapt(String customPackage) {
         Project taskProject = getProject();
 
         final boolean generateRClass = mRFolder != null && new File(mRFolder).isDirectory();
 
         if (generateRClass) {
-        } else if (configName == null || resourceFilter == null) {
+        } else if (mResourceFilter == null) {
             System.out.println("Creating full resource package...");
         } else {
             System.out.println(String.format(
-                    "Creating resource package for config '%1$s' (%2$s)...",
-                    configName, resourceFilter));
+                    "Creating resource package with filter: (%1$s)...",
+                    mResourceFilter));
         }
 
         // create a task for the default apk.
@@ -333,9 +335,9 @@ public final class AaptExecLoopTask extends Task {
         }
 
         // filters if needed
-        if (configName != null && resourceFilter != null) {
+        if (mResourceFilter != null) {
             task.createArg().setValue("-c");
-            task.createArg().setValue(resourceFilter);
+            task.createArg().setValue(mResourceFilter);
         }
 
         // no compress flag
@@ -419,14 +421,14 @@ public final class AaptExecLoopTask extends Task {
         }
 
         // apk file. This is based on the apkFolder, apkBaseName, and the configName (if applicable)
-        if (mApkBaseName != null && mApkBaseName != null) {
-            String filename;
-            if (configName != null && resourceFilter != null) {
-                filename = mApkBaseName + "-" + configName + ".ap_";
-            } else {
-                filename = mApkBaseName + ".ap_";
-            }
+        String filename = null;
+        if (mApkName != null) {
+            filename = mApkName;
+        } else if (mApkBaseName != null) {
+            filename = mApkBaseName + ".ap_";
+        }
 
+        if (filename != null) {
             File file = new File(mApkFolder, filename);
             task.createArg().setValue("-F");
             task.createArg().setValue(file.getAbsolutePath());

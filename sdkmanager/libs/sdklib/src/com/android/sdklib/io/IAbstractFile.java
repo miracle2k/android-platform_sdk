@@ -25,7 +25,7 @@ public interface IAbstractFile extends IAbstractResource {
 
     /**
      * Returns an {@link InputStream} object on the file content.
-     * @throws CoreException
+     * @throws StreamException
      */
     InputStream getContents() throws StreamException;
 

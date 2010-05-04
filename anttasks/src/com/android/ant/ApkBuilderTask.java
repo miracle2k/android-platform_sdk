@@ -19,30 +19,23 @@ package com.android.ant;
 import com.android.apkbuilder.ApkBuilder.ApkCreationException;
 import com.android.apkbuilder.internal.ApkBuilderImpl;
 import com.android.apkbuilder.internal.ApkBuilderImpl.ApkFile;
-import com.android.sdklib.internal.project.ApkSettings;
-import com.android.sdklib.internal.project.ProjectProperties;
-import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.Path;
-import org.apache.tools.ant.types.Path.PathElement;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.Map.Entry;
 
 public class ApkBuilderTask extends Task {
 
-    // ref id to the <path> object containing all the boot classpaths.
-    private final static String REF_APK_PATH = "android.apks.path";
-
     private String mOutFolder;
-    private String mBaseName;
+    @Deprecated private String mBaseName;
+    private String mApkFilepath;
+    private String mResourceFile;
     private boolean mVerbose = false;
     private boolean mSigned = true;
     private boolean mDebug = false;
@@ -72,9 +65,28 @@ public class ApkBuilderTask extends Task {
     /**
      * Sets the value of the "basename" attribute.
      * @param baseName the value.
+     * @deprecated
      */
     public void setBasename(String baseName) {
+        System.out.println("WARNNG: Using deprecated 'basename' attribute in ApkBuilderTask." +
+                "Use 'apkFilename' (path) instead.");
         mBaseName = baseName;
+    }
+
+    /**
+     * Sets the full filepath to the apk to generate.
+     * @param filepath
+     */
+    public void setApkFilepath(String filepath) {
+        mApkFilepath = filepath;
+    }
+
+    /**
+     * Sets the
+     * @param resourceFile
+     */
+    public void setResourceFile(String resourceFile) {
+        mResourceFile = resourceFile;
     }
 
     /**
@@ -228,57 +240,38 @@ public class ApkBuilderTask extends Task {
                 }
             }
 
-            // create the Path item that will contain all the generated APKs
-            // for reuse by other targets (signing/zipaligning)
-            Path path = new Path(antProject);
-
-            // The createApk method uses mBaseName for the base name of the packages (resources
-            // and apk files).
-            // The generated apk file name is
-            // debug:   {base}[-{config}]-debug-unaligned.apk
-            // release: {base}[-{config}]-unsigned.apk
-            // Unfortunately for 1.5 projects and before the 'install' ant target expects the name
-            // of the default debug package to be {base}-debug.apk
-            // In order to support those package, we look for the 'out.debug.unaligned.package'
-            // property. If this exist, then we generate {base}[-{config}]-debug-unaligned.apk
-            // otherwise we generate {base}[-{config}]-debug.apk
-            // FIXME: Make apkbuilder export the package name used instead of
-            // having to keep apkbuilder and the rules file in sync
-            String debugPackageSuffix = "-debug-unaligned.apk";
-            if (antProject.getProperty("out.debug.unaligned.package") == null
-                    && antProject.getProperty("out-debug-unaligned-package") == null) {
-                debugPackageSuffix = "-debug.apk";
+            // get the rules revision
+            String rulesRevStr = antProject.getProperty(TaskHelper.PROP_RULES_REV);
+            int rulesRev = 1;
+            try {
+                rulesRev = Integer.parseInt(rulesRevStr);
+            } catch (NumberFormatException e) {
+                // this shouldn't happen since setup task is the one setting up every time.
             }
 
-            // first do a full resource package
-            createApk(apkBuilder, null /*configName*/, null /*resourceFilter*/, path,
-                    debugPackageSuffix);
 
-            // now see if we need to create file with filtered resources.
-            // Get the project base directory.
-            File baseDir = antProject.getBaseDir();
-            ProjectProperties properties = ProjectProperties.load(baseDir.getAbsolutePath(),
-                    PropertyType.DEFAULT);
-
-            ApkSettings apkSettings = new ApkSettings(properties);
-            if (apkSettings != null) {
-                Map<String, String> apkFilters = apkSettings.getResourceFilters();
-                if (apkFilters.size() > 0) {
-                    for (Entry<String, String> entry : apkFilters.entrySet()) {
-                        createApk(apkBuilder, entry.getKey(), entry.getValue(), path,
-                                debugPackageSuffix);
-                    }
+            File file;
+            if (mApkFilepath != null) {
+                file = new File(mApkFilepath);
+            } else if (rulesRev == 2) {
+                if (mSigned) {
+                    file = new File(mOutFolder, mBaseName + "-debug-unaligned.apk");
+                } else {
+                    file = new File(mOutFolder, mBaseName + "-unsigned.apk");
                 }
+            } else {
+                throw new BuildException("missing attribute 'apkFilepath'");
             }
 
-            // finally sets the path in the project with a reference
-            antProject.addReference(REF_APK_PATH, path);
+            // create the package.
+            createApk(apkBuilder, file);
 
         } catch (FileNotFoundException e) {
             throw new BuildException(e);
         } catch (IllegalArgumentException e) {
             throw new BuildException(e);
         } catch (ApkCreationException e) {
+            e.printStackTrace();
             throw new BuildException(e);
         }
     }
@@ -286,76 +279,28 @@ public class ApkBuilderTask extends Task {
     /**
      * Creates an application package.
      * @param apkBuilder
-     * @param configName the name of the filter config. Can be null in which case a full resource
-     * package will be generated.
-     * @param resourceFilter the resource configuration filter to pass to aapt (if configName is
-     * non null)
-     * @param path Ant {@link Path} to which add the generated APKs as {@link PathElement}
-     * @param debugPackageSuffix suffix for the debug packages.
+     * @param outputfile the file to generate
      * @throws FileNotFoundException
      * @throws ApkCreationException
      */
-    private void createApk(ApkBuilderImpl apkBuilder, String configName, String resourceFilter,
-            Path path, String debugPackageSuffix)
+    private void createApk(ApkBuilderImpl apkBuilder, File outputfile)
             throws FileNotFoundException, ApkCreationException {
-        // All the files to be included in the archive have already been prep'ed up, except
-        // the resource package.
-        // figure out its name.
-        String filename;
-        if (configName != null && resourceFilter != null) {
-            filename = mBaseName + "-" + configName + ".ap_";
-        } else {
-            filename = mBaseName + ".ap_";
-        }
 
-        // now we add it to the list of zip archive (it's just a zip file).
-
-        // it's used as a zip archive input
-        FileInputStream resoucePackageZipFile = new FileInputStream(new File(mOutFolder, filename));
+        // add the resource pack file as a zip archive input.
+        FileInputStream resoucePackageZipFile = new FileInputStream(
+                new File(mOutFolder, mResourceFile));
         mZipArchives.add(resoucePackageZipFile);
 
-        // prepare the filename to generate. Same thing as the resource file.
-        if (configName != null && resourceFilter != null) {
-            filename = mBaseName + "-" + configName;
-        } else {
-            filename = mBaseName;
-        }
-
         if (mSigned) {
-            filename = filename + debugPackageSuffix;
+            System.out.println(String.format(
+                    "Creating %s and signing it with a debug key...", outputfile.getName()));
         } else {
-            filename = filename + "-unsigned.apk";
+            System.out.println(String.format(
+                    "Creating %s for release...", outputfile.getName()));
         }
-
-        if (configName == null || resourceFilter == null) {
-            if (mSigned) {
-                System.out.println(String.format(
-                        "Creating %s and signing it with a debug key...", filename));
-            } else {
-                System.out.println(String.format(
-                        "Creating %s for release...", filename));
-            }
-        } else {
-            if (mSigned) {
-                System.out.println(String.format(
-                        "Creating %1$s (with %2$s) and signing it with a debug key...",
-                        filename, resourceFilter));
-            } else {
-                System.out.println(String.format(
-                        "Creating %1$s (with %2$s) for release...",
-                        filename, resourceFilter));
-            }
-        }
-
-        // out File
-        File f = new File(mOutFolder, filename);
-
-        // add it to the Path object
-        PathElement element = path.createPathElement();
-        element.setLocation(f);
 
         // and generate the apk
-        apkBuilder.createPackage(f.getAbsoluteFile(), mZipArchives,
+        apkBuilder.createPackage(outputfile.getAbsoluteFile(), mZipArchives,
                 mArchiveFiles, mJavaResources, mResourcesJars, mNativeLibraries);
 
         // we are done. We need to remove the resource package from the list of zip archives
