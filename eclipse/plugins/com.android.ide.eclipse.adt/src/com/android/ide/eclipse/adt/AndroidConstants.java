@@ -94,10 +94,12 @@ public class AndroidConstants {
     /** Name of the android sources directory */
     public static final String FD_ANDROID_SOURCES = "sources"; //$NON-NLS-1$
 
+    /** Resource base name for java files and classes */
+    public final static String FN_RESOURCE_BASE = "R"; //$NON-NLS-1$
     /** Resource java class  filename, i.e. "R.java" */
-    public final static String FN_RESOURCE_CLASS = "R.java"; //$NON-NLS-1$
+    public final static String FN_RESOURCE_CLASS = FN_RESOURCE_BASE + DOT_JAVA;
     /** Resource class file  filename, i.e. "R.class" */
-    public final static String FN_COMPILED_RESOURCE_CLASS = "R.class"; //$NON-NLS-1$
+    public final static String FN_COMPILED_RESOURCE_CLASS = FN_RESOURCE_BASE + DOT_CLASS;
     /** Manifest java class filename, i.e. "Manifest.java" */
     public final static String FN_MANIFEST_CLASS = "Manifest.java"; //$NON-NLS-1$
     /** Dex conversion output filname, i.e. "classes.dex" */
