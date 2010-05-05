@@ -216,12 +216,7 @@ public final class RawImage {
      * @param length
      * @return
      */
-    private int getMask(int length) {
-        int res = 0;
-        for (int i = 0 ; i < length ; i++) {
-            res = (res << 1) + 1;
-        }
-
-        return res;
+    private static int getMask(int length) {
+        return (1 << length) - 1;
     }
 }
