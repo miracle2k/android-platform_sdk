@@ -69,7 +69,7 @@ public class ApkBuilderTask extends Task {
      */
     public void setBasename(String baseName) {
         System.out.println("WARNNG: Using deprecated 'basename' attribute in ApkBuilderTask." +
-                "Use 'apkFilename' (path) instead.");
+                "Use 'apkfilepath' (path) instead.");
         mBaseName = baseName;
     }
 
@@ -77,15 +77,15 @@ public class ApkBuilderTask extends Task {
      * Sets the full filepath to the apk to generate.
      * @param filepath
      */
-    public void setApkFilepath(String filepath) {
+    public void setApkfilepath(String filepath) {
         mApkFilepath = filepath;
     }
 
     /**
-     * Sets the
+     * Sets the resourcefile attribute
      * @param resourceFile
      */
-    public void setResourceFile(String resourceFile) {
+    public void setResourcefile(String resourceFile) {
         mResourceFile = resourceFile;
     }
 

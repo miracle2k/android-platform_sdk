@@ -26,6 +26,10 @@
         classname="com.android.ant.XPathTask"
         classpathref="android.antlibs" />
 
+    <taskdef name="if"
+        classname="com.android.ant.IfElseTask"
+        classpathref="android.antlibs" />
+
     <!-- Properties -->
 
     <!-- Tells adb which device to target. You can change this from the command line
@@ -172,8 +176,8 @@
         <sequential>
             <apkbuilder
                     outfolder="${out.absolute.dir}"
-                    resourceFile="${resource.package.file.name}"
-                    apkFilepath="@{output.filepath}"
+                    resourcefile="${resource.package.file.name}"
+                    apkfilepath="@{output.filepath}"
                     signed="@{sign.package}"
                     debug="${manifest.debuggable}"
                     abifilter="${filter.abi}"
@@ -318,8 +322,8 @@
                 assets="${asset.absolute.dir}"
                 androidjar="${android.jar}"
                 apkfolder="${out.absolute.dir}"
-                resourceFilename="${resource.package.file.name}"
-                resourceFilter="${aapt.resource.filter}">
+                resourcefilename="${resource.package.file.name}"
+                resourcefilter="${aapt.resource.filter}">
             <res path="${resource.absolute.dir}" />
             <!-- <nocompress /> forces no compression on any files in assets or res/raw -->
             <!-- <nocompress extension="xml" /> forces no compression on specific file extensions in assets and res/raw -->
@@ -363,12 +367,17 @@
         </condition>
     </target>
 
+    <!-- Runs -release-check first, which sets release.sign, and then runs
+         only if release.sign is false. -->
     <target name="-release-nosign" depends="-release-check" unless="release.sign">
         <echo>No key.store and key.alias properties found in build.properties.</echo>
         <echo>Please sign ${out.unsigned.file} manually</echo>
         <echo>and run zipalign from the Android SDK tools.</echo>
     </target>
 
+    <!-- This runs -package-release and -release-nosign first and then runs
+         only if release-sign is true (set in -release-check,
+         called by -release-no-sign)-->
     <target name="release" depends="-package-release, -release-nosign" if="release.sign"
                 description="Builds the application. The generated apk file must be signed before
                             it is published.">

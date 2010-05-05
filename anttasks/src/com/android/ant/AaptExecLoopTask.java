@@ -197,7 +197,7 @@ public final class AaptExecLoopTask extends Task {
     @Deprecated
     public void setBasename(String baseName) {
         System.out.println("WARNNG: Using deprecated 'basename' attribute in AaptExecLoopTask." +
-                "Use 'resourceFilename' (string) instead.");
+                "Use 'resourcefilename' (string) instead.");
         mApkBaseName = baseName;
     }
 
@@ -207,15 +207,15 @@ public final class AaptExecLoopTask extends Task {
      */
     public void setApkbasename(String apkbaseName) {
         System.out.println("WARNNG: Using deprecated 'apkbasename' attribute in AaptExecLoopTask." +
-                "Use 'resourceFilename' (string) instead.");
+                "Use 'resourcefilename' (string) instead.");
         mApkBaseName = apkbaseName;
     }
 
     /**
-     * Sets the value of the apkname attribute
+     * Sets the value of the resourcefilename attribute
      * @param apkName the value
      */
-    public void setResourceFilename(String apkName) {
+    public void setResourcefilename(String apkName) {
         mApkName = apkName;
     }
 
@@ -227,7 +227,7 @@ public final class AaptExecLoopTask extends Task {
         mRFolder = TaskHelper.checkSinglePath("rfolder", rFolder);
     }
 
-    public void setresourceFilter(String filter) {
+    public void setresourcefilter(String filter) {
         if (filter != null && filter.length() > 0) {
             mResourceFilter = filter;
         }

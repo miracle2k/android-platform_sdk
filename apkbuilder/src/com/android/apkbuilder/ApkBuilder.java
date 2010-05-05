@@ -44,7 +44,6 @@ public final class ApkBuilder {
         public ApkCreationException(Throwable throwable) {
             super(throwable);
         }
-
     }
 
     /**

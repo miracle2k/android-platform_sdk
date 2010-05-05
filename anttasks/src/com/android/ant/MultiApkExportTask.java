@@ -53,6 +53,13 @@ import javax.xml.xpath.XPathFactory;
  */
 public class MultiApkExportTask extends Task {
 
+    /**
+     * Class representing one apk that needs to be generated. This contains
+     * which project it must be created from, and which filters should be used.
+     *
+     * This class is meant to be sortable in a way that allows generation of the buildInfo
+     * value that goes in the composite versionCode.
+     */
     private static class ExportData implements Comparable<ExportData> {
 
         String relativePath;
@@ -169,6 +176,10 @@ public class MultiApkExportTask extends Task {
         }
         System.out.println("versionCode: " + version);
 
+        // checks whether the projects can be signed.
+        boolean canSign = true;
+
+
         ExportData[] projects = getProjects(antProject, appPackage);
         HashSet<String> compiledProject = new HashSet<String>();
 
@@ -223,7 +234,6 @@ public class MultiApkExportTask extends Task {
                 // set the output file names/paths. Keep all the temporary files in the project
                 // folder, and only put the final file (which is different depending on whether
                 // the file can be signed) locally.
-                boolean canSign = false;
 
                 // read the base name from the build.xml file.
                 String name = null;
