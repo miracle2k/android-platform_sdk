@@ -124,6 +124,21 @@
         <istrue value="${verbose}" />
     </condition>
 
+    <!-- properties for signing in release mode -->
+    <condition property="has.keystore">
+        <and>
+            <isset property="key.store" />
+            <isset property="key.alias" />
+        </and>
+    </condition>
+    <condition property="has.password">
+        <and>
+            <isset property="has.keystore" />
+            <isset property="key.store.password" />
+            <isset property="key.alias.password" />
+        </and>
+    </condition>
+
     <!-- Tools -->
     <condition property="exe" value=".exe" else=""><os family="windows" /></condition>
     <property name="adb" location="${android.tools.dir}/adb${exe}" />
@@ -358,18 +373,21 @@
         <echo>Debug Package: ${out.debug.file}</echo>
     </target>
 
-    <target name="-release-check">
-        <condition property="release.sign">
-            <and>
-                <isset property="key.store" />
-                <isset property="key.alias" />
-            </and>
-        </condition>
+    <!-- called through target 'release'. Only executed if the keystore and
+         key alias are known but not their password. -->
+    <target name="-release-prompt-for-password" if="has.keystore" unless="has.password">
+        <!-- Gets passwords -->
+        <input
+                message="Please enter keystore password (store:${key.store}):"
+                addproperty="key.store.password" />
+        <input
+                message="Please enter password for alias '${key.alias}':"
+                addproperty="key.alias.password" />
     </target>
 
-    <!-- Runs -release-check first, which sets release.sign, and then runs
-         only if release.sign is false. -->
-    <target name="-release-nosign" depends="-release-check" unless="release.sign">
+    <!-- called through target 'release'. Only executed if there's no
+         keystore/key alias set -->
+    <target name="-release-nosign" unless="has.keystore">
         <echo>No key.store and key.alias properties found in build.properties.</echo>
         <echo>Please sign ${out.unsigned.file} manually</echo>
         <echo>and run zipalign from the Android SDK tools.</echo>
@@ -378,17 +396,11 @@
     <!-- This runs -package-release and -release-nosign first and then runs
          only if release-sign is true (set in -release-check,
          called by -release-no-sign)-->
-    <target name="release" depends="-package-release, -release-nosign" if="release.sign"
+    <target name="release"
+                depends="-package-release, -release-prompt-for-password, -release-nosign"
+                if="has.keystore"
                 description="Builds the application. The generated apk file must be signed before
                             it is published.">
-        <!-- Gets passwords -->
-        <input
-                message="Please enter keystore password (store:${key.store}):"
-                addproperty="key.store.password" />
-        <input
-                message="Please enter password for alias '${key.alias}':"
-                addproperty="key.alias.password" />
-
         <!-- Signs the APK -->
         <echo>Signing final apk...</echo>
         <signjar
