@@ -246,9 +246,10 @@ public final class ApkBuilderImpl {
      * @param file the {@link File} to process
      * @param resourcesJars the collection of FileInputStream to fill up with jar files.
      * @throws FileNotFoundException
+     * @throws ApkCreationException
      */
     public static void processJar(File file, Collection<FileInputStream> resourcesJars)
-            throws FileNotFoundException {
+            throws FileNotFoundException, ApkCreationException {
         if (file.isDirectory()) {
             String[] filenames = file.list(new FilenameFilter() {
                 public boolean accept(File dir, String name) {
@@ -260,8 +261,10 @@ public final class ApkBuilderImpl {
                 File f = new File(file, filename);
                 processJarFile(f, resourcesJars);
             }
-        } else {
+        } else if (file.isFile()) {
             processJarFile(file, resourcesJars);
+        } else {
+            throw new ApkCreationException(file.getAbsolutePath()+ " does not exist!");
         }
     }
 

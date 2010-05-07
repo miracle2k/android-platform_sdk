@@ -254,7 +254,11 @@ public class ApkBuilderTask extends Task {
             // now go through the list of jar folders.
             for (Path pathList : mJarfolderList) {
                 for (String path : pathList.list()) {
-                    ApkBuilderImpl.processJar(new File(path), mResourcesJars);
+                    // it's ok if top level folders are missing
+                    File folder = new File(path);
+                    if (folder.isDirectory()) {
+                        ApkBuilderImpl.processJar(folder, mResourcesJars);
+                    }
                 }
             }
 
@@ -268,8 +272,12 @@ public class ApkBuilderTask extends Task {
             // now the native lib folder.
             for (Path pathList : mNativeList) {
                 for (String path : pathList.list()) {
-                    ApkBuilderImpl.processNativeFolder(new File(path), mDebug,
-                            mNativeLibraries, mVerbose, mAbiFilter);
+                    // it's ok if top level folders are missing
+                    File folder = new File(path);
+                    if (folder.isDirectory()) {
+                        ApkBuilderImpl.processNativeFolder(folder, mDebug,
+                                mNativeLibraries, mVerbose, mAbiFilter);
+                    }
                 }
             }
 
