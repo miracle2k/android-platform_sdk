@@ -520,9 +520,11 @@ public final class SetupTask extends ImportTask {
             // get the jars from it too
             File libsFolder = new File(rootPath, SdkConstants.FD_NATIVE_LIBS);
             File[] jarFiles = libsFolder.listFiles(filter);
-            for (File jarFile : jarFiles) {
-                element = jarsPath.createPathElement();
-                element.setPath(jarFile.getAbsolutePath());
+            if (jarFiles != null) {
+                for (File jarFile : jarFiles) {
+                    element = jarsPath.createPathElement();
+                    element.setPath(jarFile.getAbsolutePath());
+                }
             }
 
             // get the package from the manifest.
