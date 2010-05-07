@@ -43,7 +43,10 @@
                 output="manifest.package" />
     <!-- Value of the debuggable attribute (Application node) extracted from manifest file -->
     <xpath input="AndroidManifest.xml" expression="/manifest/application/@android:debuggable"
-	            output="manifest.debuggable" default="false"/>
+                output="manifest.debuggable" default="false"/>
+    <!-- Value of the debuggable attribute (Application node) extracted from manifest file -->
+    <xpath input="AndroidManifest.xml" expression="/manifest/application/@android:hasCode"
+                output="manifest.hasCode" default="true"/>
 
     <!-- Input directories -->
     <property name="source.dir" value="src" />
@@ -196,10 +199,11 @@
                     signed="@{sign.package}"
                     debug="${manifest.debuggable}"
                     abifilter="${filter.abi}"
-                    verbose="${verbose}">
-                <file path="${intermediate.dex.file}" />
-                <sourcefolder path="${source.absolute.dir}" />
-                <sourcefolder refid="android.libraries.src" />
+                    verbose="${verbose}"
+                    hascode="${manifest.hasCode}">
+                <dex path="${intermediate.dex.file}"/>
+                <sourcefolder path="${source.absolute.dir}"/>
+                <sourcefolder refid="android.libraries.src"/>
                 <jarfolder path="${external.libs.absolute.dir}" />
                 <jarfolder refid="android.libraries.libs" />
                 <nativefolder path="${native.libs.absolute.dir}" />
@@ -247,9 +251,13 @@
         <echo>Creating output directories if needed...</echo>
         <mkdir dir="${resource.absolute.dir}" />
         <mkdir dir="${external.libs.absolute.dir}" />
-        <mkdir dir="${gen.absolute.dir}" />
         <mkdir dir="${out.absolute.dir}" />
-        <mkdir dir="${out.classes.absolute.dir}" />
+        <if condition="${manifest.hasCode}">
+            <then>
+                <mkdir dir="${gen.absolute.dir}" />
+                <mkdir dir="${out.classes.absolute.dir}" />
+            </then>
+        </if>
     </target>
 
     <!-- empty default pre-build target. Create a similar target in
@@ -258,28 +266,42 @@
 
     <!-- Generates the R.java file for this project's resources. -->
     <target name="-resource-src" depends="-dirs, -pre-build">
-        <echo>Generating R.java / Manifest.java from the resources...</echo>
-        <aaptexec executable="${aapt}"
-                command="package"
-                verbose="${verbose}"
-                manifest="AndroidManifest.xml"
-                androidjar="${android.jar}"
-                rfolder="${gen.absolute.dir}">
-            <res path="${resource.absolute.dir}" />
-        </aaptexec>
+        <if condition="${manifest.hasCode}">
+            <then>
+                <echo>Generating R.java / Manifest.java from the resources...</echo>
+                <aaptexec executable="${aapt}"
+                        command="package"
+                        verbose="${verbose}"
+                        manifest="AndroidManifest.xml"
+                        androidjar="${android.jar}"
+                        rfolder="${gen.absolute.dir}">
+                    <res path="${resource.absolute.dir}" />
+                </aaptexec>
+            </then>
+            <else>
+                <echo>hasCode = false. Skipping...</echo>
+            </else>
+        </if>
     </target>
 
     <!-- Generates java classes from .aidl files. -->
     <target name="-aidl" depends="-dirs">
-        <echo>Compiling aidl files into Java classes...</echo>
-        <apply executable="${aidl}" failonerror="true">
-            <arg value="-p${android.aidl}" />
-            <arg value="-I${source.absolute.dir}" />
-            <arg value="-o${gen.absolute.dir}" />
-            <fileset dir="${source.absolute.dir}">
-                <include name="**/*.aidl" />
-            </fileset>
-        </apply>
+        <if condition="${manifest.hasCode}">
+            <then>
+                <echo>Compiling aidl files into Java classes...</echo>
+                <apply executable="${aidl}" failonerror="true">
+                    <arg value="-p${android.aidl}" />
+                    <arg value="-I${source.absolute.dir}" />
+                    <arg value="-o${gen.absolute.dir}" />
+                    <fileset dir="${source.absolute.dir}">
+                        <include name="**/*.aidl" />
+                    </fileset>
+                </apply>
+            </then>
+            <else>
+                <echo>hasCode = false. Skipping...</echo>
+            </else>
+        </if>
     </target>
 
     <!-- empty default pre-compile target. Create a similar target in
@@ -289,29 +311,39 @@
     <!-- Compiles this project's .java files into .class files. -->
     <target name="compile" depends="-resource-src, -aidl, -pre-compile"
                 description="Compiles project's .java files into .class files">
-        <!-- If android rules are used for a test project, its classpath should include
-             tested project's location -->
-        <condition property="extensible.classpath"
-                           value="${tested.project.absolute.dir}/bin/classes" else=".">
-            <isset property="tested.project.absolute.dir" />
-        </condition>
-        <condition property="extensible.libs.classpath"
-                           value="${tested.project.absolute.dir}/libs" else="./libs">
-            <isset property="tested.project.absolute.dir" />
-        </condition>
-        <javac encoding="ascii" target="1.5" debug="true" extdirs=""
-                destdir="${out.classes.absolute.dir}"
-                bootclasspathref="android.target.classpath"
-                verbose="${verbose}" classpath="${extensible.classpath}"
-                classpathref="android.libraries.jars">
-            <src path="${source.absolute.dir}" />
-            <src path="${gen.absolute.dir}" />
-            <src refid="android.libraries.src" />
-            <classpath>
-                <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
-                <fileset dir="${extensible.libs.classpath}" includes="*.jar" />
-            </classpath>
-        </javac>
+        <if condition="${manifest.hasCode}">
+            <then>
+                <!-- If android rules are used for a test project, its classpath should include
+                     tested project's location -->
+                <condition property="extensible.classpath"
+                        value="${tested.project.absolute.dir}/bin/classes"
+                        else=".">
+                    <isset property="tested.project.absolute.dir" />
+                </condition>
+                <condition property="extensible.libs.classpath"
+                        value="${tested.project.absolute.dir}/libs"
+                        else="./libs">
+                    <isset property="tested.project.absolute.dir" />
+                </condition>
+                <javac encoding="ascii" target="1.5" debug="true" extdirs=""
+                        destdir="${out.classes.absolute.dir}"
+                        bootclasspathref="android.target.classpath"
+                        verbose="${verbose}"
+                        classpath="${extensible.classpath}"
+                        classpathref="android.libraries.jars">
+                    <src path="${source.absolute.dir}" />
+                    <src path="${gen.absolute.dir}" />
+                    <src refid="android.libraries.src" />
+                    <classpath>
+                        <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
+                        <fileset dir="${extensible.libs.classpath}" includes="*.jar" />
+                    </classpath>
+                </javac>
+            </then>
+            <else>
+                <echo>hasCode = false. Skipping...</echo>
+            </else>
+        </if>
     </target>
 
     <!-- empty default post-compile target. Create a similar target in
@@ -319,8 +351,16 @@
     <target name="-post-compile"/>
 
     <!-- Converts this project's .class files into .dex files -->
-    <target name="-dex" depends="compile, -post-compile" unless="do.not.compile">
-        <dex-helper />
+    <target name="-dex" depends="compile, -post-compile"
+            unless="do.not.compile">
+        <if condition="${manifest.hasCode}">
+            <then>
+                <dex-helper />
+            </then>
+            <else>
+                <echo>hasCode = false. Skipping...</echo>
+            </else>
+        </if>
     </target>
 
     <!-- Puts the project's resources into the output package file

@@ -107,7 +107,7 @@ public final class SetupTask extends ImportTask {
      */
     private final static int ANT_COMPATIBILITY_RANGES[][] = new int[][] {
         new int[] { 1, 1 },
-        new int[] { 2, 3 },
+        new int[] { 2, ANT_RULES_MAX_VERSION },
     };
 
     private boolean mDoImport = true;
@@ -357,6 +357,11 @@ public final class SetupTask extends ImportTask {
         }
     }
 
+    /**
+     * Returns the revision number of a newer but still compatible Ant rules available in the
+     * tools folder of the SDK, or -1 if none is found.
+     * @param rulesRev the revision of the rules file on which compatibility is based.
+     */
     private int getAntRulesFromTools(int rulesRev) {
         for (int[] range : ANT_COMPATIBILITY_RANGES) {
             if (range[0] <= rulesRev && rulesRev <= range[1]) {

@@ -39,9 +39,11 @@ public class ApkBuilderTask extends Task {
     private boolean mVerbose = false;
     private boolean mSigned = true;
     private boolean mDebug = false;
+    private boolean mHasCode = true;
     private String mAbiFilter = null;
 
     private final ArrayList<Path> mZipList = new ArrayList<Path>();
+    private final ArrayList<Path> mDexList = new ArrayList<Path>();
     private final ArrayList<Path> mFileList = new ArrayList<Path>();
     private final ArrayList<Path> mSourceList = new ArrayList<Path>();
     private final ArrayList<Path> mJarfolderList = new ArrayList<Path>();
@@ -129,11 +131,31 @@ public class ApkBuilderTask extends Task {
     }
 
     /**
+     * Sets the hascode attribute. Default is true.
+     * If set to false, then <dex> and <sourcefolder> nodes are ignored and not processed.
+     * @param hasCode the value of the attribute.
+     */
+    public void setHascode(boolean hasCode) {
+        mHasCode   = hasCode;
+    }
+
+    /**
      * Returns an object representing a nested <var>zip</var> element.
      */
     public Object createZip() {
         Path path = new Path(getProject());
         mZipList.add(path);
+        return path;
+    }
+
+    /**
+     * Returns an object representing a nested <var>dex</var> element.
+     * This is similar to a nested <var>file</var> element, except when {@link #mHasCode}
+     * is <code>false</code> in which case it's ignored.
+     */
+    public Object createDex() {
+        Path path = new Path(getProject());
+        mDexList.add(path);
         return path;
     }
 
@@ -210,11 +232,22 @@ public class ApkBuilderTask extends Task {
                 }
             }
 
+            // only attempt to add Dex files if hasCode is true.
+            if (mHasCode) {
+                for (Path pathList : mDexList) {
+                    for (String path : pathList.list()) {
+                        mArchiveFiles.add(ApkBuilderImpl.getInputFile(path));
+                    }
+                }
+            }
+
             // now go through the list of file to directly add the to the list.
-            for (Path pathList : mSourceList) {
-                for (String path : pathList.list()) {
-                    ApkBuilderImpl.processSourceFolderForResource(new File(path),
-                            mJavaResources);
+            if (mHasCode) {
+                for (Path pathList : mSourceList) {
+                    for (String path : pathList.list()) {
+                        ApkBuilderImpl.processSourceFolderForResource(new File(path),
+                                mJavaResources);
+                    }
                 }
             }
 
