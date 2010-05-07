@@ -131,6 +131,7 @@
     <condition property="has.keystore">
         <and>
             <isset property="key.store" />
+            <length string="${key.store}" when="greater" length="0" />
             <isset property="key.alias" />
         </and>
     </condition>

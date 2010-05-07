@@ -300,6 +300,12 @@ public class MultiApkExportTask extends Task {
                     addProp(subAnt, "out.release.file", new File(exportProjectOutput,
                             name + "-" + projectData.buildInfo + "-release.apk").getAbsolutePath());
                 } else {
+                    // put some empty prop. This is to override possible ones defined in the
+                    // project. The reason is that if there's more than one project, we don't
+                    // want some to signed and some not to be (and we don't want each project
+                    // to prompt for password.)
+                    addProp(subAnt, "key.store", "");
+                    addProp(subAnt, "key.alias", "");
                     // final file is the unsigned version. It gets stored locally.
                     addProp(subAnt, "out.unsigned.file", new File(exportProjectOutput,
                             name + "-" + projectData.buildInfo + "-unsigned.apk").getAbsolutePath());
