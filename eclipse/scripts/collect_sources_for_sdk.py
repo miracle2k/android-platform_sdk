@@ -38,7 +38,7 @@ _RE_PKG = re.compile("^\s*package\s+([^\s;]+)\s*;.*")
 class Params(object):
     def __init__(self):
         self.DRY = False
-        self.DIR = "frameworks"
+        self.DIR = "frameworks libcore"
         self.SRC = None
         self.DST = None
         self.CNT_USED = 0
@@ -70,7 +70,7 @@ def usage(error=None):
 def parseArgs(argv):
     p = Params()
     error = None
-    
+
     try:
         opts, args = getopt.getopt(argv[1:],
                                    "ns:",
@@ -105,6 +105,10 @@ def parseArgs(argv):
 
 # Recursively parses the given directory and process java files found
 def parseSrcDir(p, srcdir):
+    if not os.path.exists(srcdir):
+        print >>sys.stderr, "Error: Skipping unknown directory", srcdir
+        return
+
     for f in os.listdir(srcdir):
         fp = os.path.join(srcdir, f)
         if f.endswith(".java") and os.path.isfile(fp):
@@ -138,6 +142,7 @@ def checkJavaFile(path):
 
     return None
 
+
 # Create destination directory based on package name then copy the
 # source file in there
 def copy(p, fp, f, pkg):
@@ -145,12 +150,14 @@ def copy(p, fp, f, pkg):
     _mkdir(p, dstdir)
     _cp(p, fp, os.path.join(dstdir, f))
 
+
 def _mkdir(p, dir):
     if not os.path.isdir(dir):
         if p.DRY:
             print "mkdir", dir
         else:
             os.makedirs(dir)
+
 
 def _cp(p, src, dst):
     if p.DRY:
@@ -161,10 +168,13 @@ def _cp(p, src, dst):
 
 def main():
     p = parseArgs(sys.argv)
-    parseSrcDir(p, os.path.join(p.SRC, p.DIR))
+    for d in p.DIR.split():
+        if d:
+            parseSrcDir(p, os.path.join(p.SRC, d))
     print "%d java files copied" % p.CNT_USED
     if p.CNT_NOPKG: print "%d java files ignored (no package)" % p.CNT_NOPKG
     if p.DRY: print "This was in *DRY* mode. No copies done."
+
 
 if __name__ == "__main__":
     main()
