@@ -37,7 +37,7 @@ BASE_DIR="$1"
 [ -n "$1" ] || die "Usage: $0 <dest-dir>"
 
 # URL for 3.4.0 RCP Linux 32 Bits. Includes GEF, WTP as needed.
-DOWNLOAD_URL="http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/ganymede/R/eclipse-rcp-ganymede-linux-gtk.tar.gz&url=http://eclipse.unixheads.org/technology/epp/downloads/release/ganymede/R/eclipse-rcp-ganymede-linux-gtk.tar.gz&mirror_id=480"
+DOWNLOAD_URL="http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/ganymede/SR2/eclipse-rcp-ganymede-SR2-linux-gtk.tar.gz&url=http://eclipse.unixheads.org/technology/epp/downloads/release/ganymede/SR2/eclipse-rcp-ganymede-SR2-linux-gtk.tar.gz&mirror_id=480"
 
 BIN="$BASE_DIR/eclipse/eclipse"           # path to installed binary
 TARGZ="$BASE_DIR/eclipse-rcp-ganymede-linux-gtk.tar.gz"
