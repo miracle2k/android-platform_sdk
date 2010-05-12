@@ -16,18 +16,19 @@
 
 package com.android.ide.eclipse.adt.internal.project;
 
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser.Activity;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.tests.AdtTestData;
+import com.android.sdklib.xml.AndroidManifestParser.Activity;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import junit.framework.TestCase;
 
 /**
- * Tests for {@link AndroidManifestParser}
+ * Tests for {@link AndroidManifestHelper}
  */
 public class AndroidManifestParserTest extends TestCase {
-    private AndroidManifestParser mManifestTestApp;
-    private AndroidManifestParser mManifestInstrumentation;
+    private ManifestData mManifestTestApp;
+    private ManifestData mManifestInstrumentation;
 
     private static final String TESTDATA_PATH =
         "com/android/ide/eclipse/testdata/";  //$NON-NLS-1$
@@ -46,11 +47,11 @@ public class AndroidManifestParserTest extends TestCase {
         super.setUp();
 
         String testFilePath = AdtTestData.getInstance().getTestFilePath(TESTAPP_XML);
-        mManifestTestApp = AndroidManifestParser.parseForData(testFilePath);
+        mManifestTestApp = AndroidManifestHelper.parseForData(testFilePath);
         assertNotNull(mManifestTestApp);
 
         testFilePath = AdtTestData.getInstance().getTestFilePath(INSTRUMENTATION_XML);
-        mManifestInstrumentation = AndroidManifestParser.parseForData(testFilePath);
+        mManifestInstrumentation = AndroidManifestHelper.parseForData(testFilePath);
         assertNotNull(mManifestInstrumentation);
     }
 
@@ -68,7 +69,7 @@ public class AndroidManifestParserTest extends TestCase {
 
     public void testGetActivities() {
         assertEquals(1, mManifestTestApp.getActivities().length);
-        AndroidManifestParser.Activity activity = mManifestTestApp.getActivities()[0];
+        Activity activity = mManifestTestApp.getActivities()[0];
         assertEquals(ACTIVITY_NAME, activity.getName());
         assertTrue(activity.hasAction());
         assertTrue(activity.isHomeActivity());

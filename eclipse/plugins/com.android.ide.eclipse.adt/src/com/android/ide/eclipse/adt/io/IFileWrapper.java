@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.resources.manager.files;
+package com.android.ide.eclipse.adt.io;
 
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.StreamException;

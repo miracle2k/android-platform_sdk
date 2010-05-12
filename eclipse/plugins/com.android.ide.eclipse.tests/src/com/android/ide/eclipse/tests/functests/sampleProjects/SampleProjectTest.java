@@ -15,10 +15,10 @@
  */
 package com.android.ide.eclipse.tests.functests.sampleProjects;
 
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.wizards.newproject.StubProjectWizard;
 import com.android.ide.eclipse.tests.SdkTestCase;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -122,7 +122,7 @@ public class SampleProjectTest extends SdkTestCase {
         if (target.getVersion().isPreview()) {
             // need to explicitly set preview's version in manifest for project to compile
             final String manifestPath = path + File.separatorChar +
-                    AndroidConstants.FN_ANDROID_MANIFEST;
+                    SdkConstants.FN_ANDROID_MANIFEST_XML;
             AndroidManifestWriter manifestWriter =
                 AndroidManifestWriter.parse(manifestPath);
             assertNotNull(String.format("could not read manifest %s", manifestPath),

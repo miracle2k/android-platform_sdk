@@ -285,6 +285,36 @@ public final class SdkConstants {
     public final static String PROP_SDK_ANT_TEMPLATES_REVISION = "sdk.ant.templates.revision"; //$NON-NLS-1$
 
 
+    /* Android Class Constants */
+    public final static String CLASS_ACTIVITY = "android.app.Activity"; //$NON-NLS-1$
+    public final static String CLASS_SERVICE = "android.app.Service"; //$NON-NLS-1$
+    public final static String CLASS_BROADCASTRECEIVER = "android.content.BroadcastReceiver"; //$NON-NLS-1$
+    public final static String CLASS_CONTENTPROVIDER = "android.content.ContentProvider"; //$NON-NLS-1$
+    public final static String CLASS_INSTRUMENTATION = "android.app.Instrumentation"; //$NON-NLS-1$
+    public final static String CLASS_INSTRUMENTATION_RUNNER =
+        "android.test.InstrumentationTestRunner"; //$NON-NLS-1$
+    public final static String CLASS_BUNDLE = "android.os.Bundle"; //$NON-NLS-1$
+    public final static String CLASS_R = "android.R"; //$NON-NLS-1$
+    public final static String CLASS_MANIFEST_PERMISSION = "android.Manifest$permission"; //$NON-NLS-1$
+    public final static String CLASS_INTENT = "android.content.Intent"; //$NON-NLS-1$
+    public final static String CLASS_CONTEXT = "android.content.Context"; //$NON-NLS-1$
+    public final static String CLASS_VIEW = "android.view.View"; //$NON-NLS-1$
+    public final static String CLASS_VIEWGROUP = "android.view.ViewGroup"; //$NON-NLS-1$
+    public final static String CLASS_NAME_LAYOUTPARAMS = "LayoutParams"; //$NON-NLS-1$
+    public final static String CLASS_VIEWGROUP_LAYOUTPARAMS =
+        CLASS_VIEWGROUP + "$" + CLASS_NAME_LAYOUTPARAMS; //$NON-NLS-1$
+    public final static String CLASS_NAME_FRAMELAYOUT = "FrameLayout"; //$NON-NLS-1$
+    public final static String CLASS_FRAMELAYOUT =
+        "android.widget." + CLASS_NAME_FRAMELAYOUT; //$NON-NLS-1$
+    public final static String CLASS_PREFERENCE = "android.preference.Preference"; //$NON-NLS-1$
+    public final static String CLASS_NAME_PREFERENCE_SCREEN = "PreferenceScreen"; //$NON-NLS-1$
+    public final static String CLASS_PREFERENCES =
+        "android.preference." + CLASS_NAME_PREFERENCE_SCREEN; //$NON-NLS-1$
+    public final static String CLASS_PREFERENCEGROUP = "android.preference.PreferenceGroup"; //$NON-NLS-1$
+    public final static String CLASS_PARCELABLE = "android.os.Parcelable"; //$NON-NLS-1$
+
+
+
     /** Returns the appropriate name for the 'android' command, which is 'android.bat' for
      * Windows and 'android' for all other platforms. */
     public static String androidCmdName() {

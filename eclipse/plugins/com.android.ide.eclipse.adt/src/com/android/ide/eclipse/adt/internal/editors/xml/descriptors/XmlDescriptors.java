@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.editors.xml.descriptors;
 
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
@@ -45,41 +44,41 @@ public final class XmlDescriptors implements IDescriptorProvider {
     public static final String PREF_KEY_ATTR = "key"; //$NON-NLS-1$
 
     /** The root document descriptor for both searchable and preferences. */
-    private DocumentDescriptor mDescriptor = new DocumentDescriptor("xml_doc", null /* children */); //$NON-NLS-1$ 
+    private DocumentDescriptor mDescriptor = new DocumentDescriptor("xml_doc", null /* children */); //$NON-NLS-1$
 
     /** The root document descriptor for searchable. */
-    private DocumentDescriptor mSearchDescriptor = new DocumentDescriptor("xml_doc", null /* children */); //$NON-NLS-1$ 
+    private DocumentDescriptor mSearchDescriptor = new DocumentDescriptor("xml_doc", null /* children */); //$NON-NLS-1$
 
     /** The root document descriptor for preferences. */
-    private DocumentDescriptor mPrefDescriptor = new DocumentDescriptor("xml_doc", null /* children */); //$NON-NLS-1$ 
+    private DocumentDescriptor mPrefDescriptor = new DocumentDescriptor("xml_doc", null /* children */); //$NON-NLS-1$
 
     /** The root document descriptor for widget provider. */
-    private DocumentDescriptor mAppWidgetDescriptor = new DocumentDescriptor("xml_doc", null /* children */); //$NON-NLS-1$ 
+    private DocumentDescriptor mAppWidgetDescriptor = new DocumentDescriptor("xml_doc", null /* children */); //$NON-NLS-1$
 
     /** @return the root descriptor for both searchable and preferences. */
     public DocumentDescriptor getDescriptor() {
         return mDescriptor;
     }
-    
+
     public ElementDescriptor[] getRootElementDescriptors() {
         return mDescriptor.getChildren();
     }
-    
+
     /** @return the root descriptor for searchable. */
     public DocumentDescriptor getSearchableDescriptor() {
         return mSearchDescriptor;
     }
-    
+
     /** @return the root descriptor for preferences. */
     public DocumentDescriptor getPreferencesDescriptor() {
         return mPrefDescriptor;
     }
-    
+
     /** @return the root descriptor for widget providers. */
     public DocumentDescriptor getAppWidgetDescriptor() {
         return mAppWidgetDescriptor;
     }
-    
+
     public IDescriptorProvider getSearchableProvider() {
         return new IDescriptorProvider() {
             public ElementDescriptor getDescriptor() {
@@ -121,10 +120,10 @@ public final class XmlDescriptors implements IDescriptorProvider {
      * <p/>
      * It first computes the new children of the descriptor and then updates them
      * all at once.
-     * 
+     *
      * @param searchableStyleMap The map style=>attributes for <searchable> from the attrs.xml file
      * @param appWidgetStyleMap The map style=>attributes for <appwidget-provider> from the attrs.xml file
-     * @param prefs The list of non-group preference descriptions 
+     * @param prefs The list of non-group preference descriptions
      * @param prefGroups The list of preference group descriptions
      */
     public synchronized void updateDescriptors(
@@ -134,7 +133,7 @@ public final class XmlDescriptors implements IDescriptorProvider {
 
         XmlnsAttributeDescriptor xmlns = new XmlnsAttributeDescriptor(
                 "android", //$NON-NLS-1$
-                SdkConstants.NS_RESOURCES); 
+                SdkConstants.NS_RESOURCES);
 
         ElementDescriptor searchable = createSearchable(searchableStyleMap, xmlns);
         ElementDescriptor appWidget = createAppWidgetProviderInfo(appWidgetStyleMap, xmlns);
@@ -161,7 +160,7 @@ public final class XmlDescriptors implements IDescriptorProvider {
     //-------------------------
     // Creation of <searchable>
     //-------------------------
-    
+
     /**
      * Returns the new ElementDescriptor for <searchable>
      */
@@ -188,7 +187,7 @@ public final class XmlDescriptors implements IDescriptorProvider {
                 false /* mandatory */ );
         return searchable;
     }
-    
+
     /**
      * Returns the new ElementDescriptor for <appwidget-provider>
      */
@@ -199,7 +198,7 @@ public final class XmlDescriptors implements IDescriptorProvider {
         if (appWidgetStyleMap == null) {
             return null;
         }
-        
+
         ElementDescriptor appWidget = createElement(appWidgetStyleMap,
                 "AppWidgetProviderInfo", //$NON-NLS-1$ styleName
                 "appwidget-provider", //$NON-NLS-1$ xmlName
@@ -275,14 +274,14 @@ public final class XmlDescriptors implements IDescriptorProvider {
         }
 
         ElementDescriptor topPreferences = null;
-        
+
         ArrayList<ElementDescriptor> newGroups = new ArrayList<ElementDescriptor>();
         if (prefGroups != null) {
             for (ViewClassInfo info : prefGroups) {
                 ElementDescriptor desc = convertPref(info);
                 newGroups.add(desc);
-                
-                if (info.getFullClassName() == AndroidConstants.CLASS_PREFERENCES) {
+
+                if (info.getFullClassName() == SdkConstants.CLASS_PREFERENCES) {
                     topPreferences = desc;
                 }
             }
@@ -325,7 +324,7 @@ public final class XmlDescriptors implements IDescriptorProvider {
     private ElementDescriptor convertPref(ViewClassInfo info) {
         String xml_name = info.getShortClassName();
         String tooltip = info.getJavaDoc();
-        
+
         // Process all Preference attributes
         ArrayList<AttributeDescriptor> attributes = new ArrayList<AttributeDescriptor>();
         DescriptorsUtils.appendAttributes(attributes,
@@ -334,14 +333,14 @@ public final class XmlDescriptors implements IDescriptorProvider {
                 info.getAttributes(),
                 null,   // requiredAttributes
                 null);  // overrides
-        
+
         for (ViewClassInfo link = info.getSuperClass();
                 link != null;
                 link = link.getSuperClass()) {
             AttributeInfo[] attrList = link.getAttributes();
             if (attrList.length > 0) {
                 attributes.add(new SeparatorAttributeDescriptor(
-                        String.format("Attributes from %1$s", link.getShortClassName()))); 
+                        String.format("Attributes from %1$s", link.getShortClassName())));
                 DescriptorsUtils.appendAttributes(attributes,
                         null,   // elementName
                         SdkConstants.NS_RESOURCES,

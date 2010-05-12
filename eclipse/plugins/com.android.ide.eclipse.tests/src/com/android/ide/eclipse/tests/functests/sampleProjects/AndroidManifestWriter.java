@@ -15,7 +15,7 @@
  */
 package com.android.ide.eclipse.tests.functests.sampleProjects;
 
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
 
@@ -108,7 +108,7 @@ class AndroidManifestWriter {
      * Parses the manifest file, and collects data.
      *
      * @param osManifestFilePath The OS path of the manifest file to parse.
-     * @return an {@link AndroidManifestParser} or null if parsing failed
+     * @return an {@link AndroidManifestHelper} or null if parsing failed
      */
     public static AndroidManifestWriter parse(String osManifestFilePath) {
         try {

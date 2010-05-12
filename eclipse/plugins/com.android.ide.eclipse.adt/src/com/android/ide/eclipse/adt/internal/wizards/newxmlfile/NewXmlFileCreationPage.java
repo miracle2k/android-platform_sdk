@@ -239,7 +239,7 @@ class NewXmlFileCreationPage extends WizardPage {
                 "An XML file that describes preferences.",          // tooltip
                 ResourceFolderType.XML,                             // folder type
                 AndroidTargetData.DESCRIPTOR_PREFERENCES,           // root seed
-                AndroidConstants.CLASS_NAME_PREFERENCE_SCREEN,      // default root
+                SdkConstants.CLASS_NAME_PREFERENCE_SCREEN,          // default root
                 SdkConstants.NS_RESOURCES,                          // xmlns
                 null,                                               // default attributes
                 1                                                   // target API level

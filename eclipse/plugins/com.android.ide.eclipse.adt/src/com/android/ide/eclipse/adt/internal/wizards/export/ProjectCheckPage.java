@@ -18,12 +18,13 @@ package com.android.ide.eclipse.adt.internal.wizards.export;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper.NonLibraryProjectOnlyFilter;
 import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard.ExportWizardPage;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -189,11 +190,11 @@ final class ProjectCheckPage extends ExportWizardPage {
 
 
                     // project is an android project, we check the debuggable attribute.
-                    AndroidManifestParser manifestParser = AndroidManifestParser.parse(
-                            BaseProjectHelper.getJavaProject(project), null /* errorListener */,
-                            true /* gatherData */, false /* markErrors */);
-
-                    Boolean debuggable = manifestParser.getDebuggable();
+                    ManifestData manifestData = AndroidManifestHelper.parseForData(project);
+                    Boolean debuggable = null;
+                    if (manifestData != null) {
+                        debuggable = manifestData.getDebuggable();
+                    }
 
                     if (debuggable != null && debuggable == Boolean.TRUE) {
                         addWarning(mErrorComposite,

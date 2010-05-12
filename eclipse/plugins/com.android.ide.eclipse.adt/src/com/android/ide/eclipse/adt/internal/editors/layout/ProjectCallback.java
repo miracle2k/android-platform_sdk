@@ -18,14 +18,13 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectClassLoader;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.layoutlib.api.IProjectCallback;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
@@ -91,12 +90,10 @@ public final class ProjectCallback implements IProjectCallback {
      */
     public String getNamespace() {
         if (mNamespace == null) {
-            IFile manifestFile = AndroidManifestParser.getManifest(mProject);
-            try {
-                AndroidManifestParser data = AndroidManifestParser.parseForData(manifestFile);
-                String javaPackage = data.getPackage();
+            ManifestData manifestData = AndroidManifestHelper.parseForData(mProject);
+            if (manifestData != null) {
+                String javaPackage = manifestData.getPackage();
                 mNamespace = String.format(AndroidConstants.NS_CUSTOM_RESOURCES, javaPackage);
-            } catch (CoreException e) {
             }
         }
 

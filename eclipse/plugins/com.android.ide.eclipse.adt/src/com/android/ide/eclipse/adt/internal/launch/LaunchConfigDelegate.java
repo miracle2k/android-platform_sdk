@@ -20,10 +20,10 @@ import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchConfiguration.TargetMode;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
-import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser.Activity;
+import com.android.sdklib.xml.AndroidManifestParser.Activity;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -222,24 +222,22 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
         }
 
         // we need some information from the manifest
-        AndroidManifestParser manifestParser = AndroidManifestParser.parse(
-                BaseProjectHelper.getJavaProject(project), null /* errorListener */,
-                true /* gatherData */, false /* markErrors */);
+        ManifestData manifestData = AndroidManifestHelper.parseForData(project);
 
-        if (manifestParser == null) {
+        if (manifestData == null) {
             AdtPlugin.printErrorToConsole(project, "Failed to parse AndroidManifest: aborting!");
             androidLaunch.stopLaunch();
             return;
         }
 
         doLaunch(configuration, mode, monitor, project, androidLaunch, config, controller,
-                applicationPackage, manifestParser);
+                applicationPackage, manifestData);
     }
 
     protected void doLaunch(ILaunchConfiguration configuration, String mode,
             IProgressMonitor monitor, IProject project, AndroidLaunch androidLaunch,
             AndroidLaunchConfiguration config, AndroidLaunchController controller,
-            IFile applicationPackage, AndroidManifestParser manifestParser) {
+            IFile applicationPackage, ManifestData manifestData) {
 
        String activityName = null;
 
@@ -248,7 +246,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
             activityName = getActivityName(configuration);
 
             // Get the full activity list and make sure the one we got matches.
-            Activity[] activities = manifestParser.getActivities();
+            Activity[] activities = manifestData.getActivities();
 
             // first we check that there are, in fact, activities.
             if (activities.length == 0) {
@@ -262,7 +260,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                 // if the activity we got is null, we look for the default one.
                 AdtPlugin.printErrorToConsole(project,
                         "No activity specified! Getting the launcher activity.");
-                Activity launcherActivity = manifestParser.getLauncherActivity();
+                Activity launcherActivity = manifestData.getLauncherActivity();
                 if (launcherActivity != null) {
                     activityName = launcherActivity.getName();
                 }
@@ -286,7 +284,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                 if (match == false) {
                     AdtPlugin.printErrorToConsole(project,
                             "The specified activity does not exist! Getting the launcher activity.");
-                    Activity launcherActivity = manifestParser.getLauncherActivity();
+                    Activity launcherActivity = manifestData.getLauncherActivity();
                     if (launcherActivity != null) {
                         activityName = launcherActivity.getName();
                     } else {
@@ -296,7 +294,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
                 }
             }
         } else if (config.mLaunchAction == ACTION_DEFAULT) {
-            Activity launcherActivity = manifestParser.getLauncherActivity();
+            Activity launcherActivity = manifestData.getLauncherActivity();
             if (launcherActivity != null) {
                 activityName = launcherActivity.getName();
             }
@@ -316,9 +314,9 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
 
         // everything seems fine, we ask the launch controller to handle
         // the rest
-        controller.launch(project, mode, applicationPackage,manifestParser.getPackage(),
-                manifestParser.getPackage(), manifestParser.getDebuggable(),
-                manifestParser.getApiLevelRequirement(), launchAction, config, androidLaunch,
+        controller.launch(project, mode, applicationPackage,manifestData.getPackage(),
+                manifestData.getPackage(), manifestData.getDebuggable(),
+                manifestData.getApiLevelRequirement(), launchAction, config, androidLaunch,
                 monitor);
     }
 

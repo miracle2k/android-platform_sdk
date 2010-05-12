@@ -158,7 +158,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
 
         // check the manifest.
         if (pathSegments.length == 2 &&
-                AndroidConstants.FN_ANDROID_MANIFEST.equalsIgnoreCase(pathSegments[1])) {
+                SdkConstants.FN_ANDROID_MANIFEST_XML.equalsIgnoreCase(pathSegments[1])) {
             // if the manifest changed we have to repackage the
             // resources.
             mPackageResources = true;

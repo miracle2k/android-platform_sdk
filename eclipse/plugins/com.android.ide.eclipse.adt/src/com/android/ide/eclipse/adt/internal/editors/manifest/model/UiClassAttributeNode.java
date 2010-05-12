@@ -26,6 +26,7 @@ import com.android.ide.eclipse.adt.internal.editors.ui.SectionHelper;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiTextAttributeNode;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
 
 import org.eclipse.core.resources.IFile;
@@ -309,7 +310,7 @@ public class UiClassAttributeNode extends UiTextAttributeNode {
                             javaPackage, textValue);
 
                     // only test the vilibility for activities.
-                    boolean testVisibility = AndroidConstants.CLASS_ACTIVITY.equals(
+                    boolean testVisibility = SdkConstants.CLASS_ACTIVITY.equals(
                             mReferenceClass);
 
                     // test the class

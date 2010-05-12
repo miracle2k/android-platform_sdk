@@ -23,13 +23,14 @@ import com.android.ide.eclipse.adt.internal.editors.manifest.ManifestEditor;
 import com.android.ide.eclipse.adt.internal.editors.ui.SectionHelper;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiTextAttributeNode;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.wizards.actions.NewProjectAction;
 import com.android.ide.eclipse.adt.internal.wizards.newproject.NewProjectWizard;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -239,24 +240,19 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
         // Look for the first project that uses this package name
         for (IJavaProject project : BaseProjectHelper.getAndroidProjects(null /*filter*/)) {
             // check that there is indeed a manifest file.
-            IFile manifestFile = AndroidManifestParser.getManifest(project.getProject());
+            IFile manifestFile = ProjectHelper.getManifest(project.getProject());
             if (manifestFile == null) {
                 // no file? skip this project.
                 continue;
             }
 
-            AndroidManifestParser parser = null;
-            try {
-                parser = AndroidManifestParser.parseForData(manifestFile);
-            } catch (CoreException e) {
-                // ignore, handled below.
-            }
-            if (parser == null) {
+            ManifestData manifestData = AndroidManifestHelper.parseForData(manifestFile);
+            if (manifestData == null) {
                 // skip this project.
                 continue;
             }
 
-            if (package_name.equals(parser.getPackage())) {
+            if (package_name.equals(manifestData.getPackage())) {
                 // Found the project.
 
                 IWorkbenchWindow win = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
@@ -312,24 +308,13 @@ public class UiManifestPkgAttrNode extends UiTextAttributeNode {
 
         for (IJavaProject project : BaseProjectHelper.getAndroidProjects(null /*filter*/)) {
             // check that there is indeed a manifest file.
-            IFile manifestFile = AndroidManifestParser.getManifest(project.getProject());
-            if (manifestFile == null) {
-                // no file? skip this project.
-                continue;
-            }
-
-            AndroidManifestParser parser = null;
-            try {
-                parser = AndroidManifestParser.parseForData(manifestFile);
-            } catch (CoreException e) {
-                // ignore, handled below.
-            }
-            if (parser == null) {
+            ManifestData manifestData = AndroidManifestHelper.parseForData(project.getProject());
+            if (manifestData == null) {
                 // skip this project.
                 continue;
             }
 
-            packages.add(parser.getPackage());
+            packages.add(manifestData.getPackage());
         }
 
         return packages.toArray(new String[packages.size()]);

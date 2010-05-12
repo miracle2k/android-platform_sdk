@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.uimodel;
 
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
@@ -83,7 +82,7 @@ public class UiViewElementNode extends UiElementNode {
             if (layoutDescriptors != null) {
                 for (ElementDescriptor desc : layoutDescriptors) {
                     if (desc instanceof ViewElementDescriptor &&
-                            desc.getXmlName().equals(AndroidConstants.CLASS_NAME_FRAMELAYOUT)) {
+                            desc.getXmlName().equals(SdkConstants.CLASS_NAME_FRAMELAYOUT)) {
                         layout_attrs = ((ViewElementDescriptor) desc).getLayoutAttributes();
                         need_xmlns = true;
                         break;

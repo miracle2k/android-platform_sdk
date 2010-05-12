@@ -30,7 +30,7 @@ import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchConfiguration.Ta
 import com.android.ide.eclipse.adt.internal.launch.DelayedLaunchInfo.InstallRetryMode;
 import com.android.ide.eclipse.adt.internal.launch.DeviceChooserDialog.DeviceChooserResponse;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.ApkInstallManager;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
@@ -42,6 +42,7 @@ import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.NullSdkLog;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -257,7 +258,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
         ArrayList<IResource> array = new ArrayList<IResource>(2);
         array.add(project);
 
-        IFile manifest = AndroidManifestParser.getManifest(project);
+        IFile manifest = ProjectHelper.getManifest(project);
         if (manifest != null) {
             array.add(manifest);
         }
@@ -933,16 +934,10 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
         for (IJavaProject androidProject : androidProjectList) {
             // Parse the Manifest to get various required information
             // copied from LaunchConfigDelegate
-            AndroidManifestParser manifestParser;
-            try {
-                manifestParser = AndroidManifestParser.parse(
-                        androidProject, null /* errorListener */,
-                        true /* gatherData */, false /* markErrors */);
-            } catch (CoreException e) {
-                AdtPlugin.printErrorToConsole(
-                        launchInfo.getProject(),
-                        String.format("Error parsing manifest of %s",
-                                androidProject.getElementName()));
+            ManifestData manifestData = AndroidManifestHelper.parseForData(
+                    androidProject.getProject());
+
+            if (manifestData == null) {
                 continue;
             }
 
@@ -956,12 +951,12 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
             // Create new launchInfo as an hybrid between parent and dependency information
             DelayedLaunchInfo delayedLaunchInfo = new DelayedLaunchInfo(
                     androidProject.getProject(),
-                    manifestParser.getPackage(),
-                    manifestParser.getPackage(),
+                    manifestData.getPackage(),
+                    manifestData.getPackage(),
                     launchInfo.getLaunchAction(),
                     apk,
-                    manifestParser.getDebuggable(),
-                    manifestParser.getApiLevelRequirement(),
+                    manifestData.getDebuggable(),
+                    manifestData.getApiLevelRequirement(),
                     launchInfo.getLaunch(),
                     launchInfo.getMonitor());
 

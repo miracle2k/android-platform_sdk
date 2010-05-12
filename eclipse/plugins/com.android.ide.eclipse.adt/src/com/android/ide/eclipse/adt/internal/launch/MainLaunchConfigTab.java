@@ -17,11 +17,11 @@
 package com.android.ide.eclipse.adt.internal.launch;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
-import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper.NonLibraryProjectOnlyFilter;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser.Activity;
+import com.android.sdklib.xml.AndroidManifestParser.Activity;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -405,42 +405,34 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
      */
     private void loadActivities(IProject project) {
         if (project != null) {
-            try {
-                // parse the manifest for the list of activities.
-                AndroidManifestParser manifestParser = AndroidManifestParser.parse(
-                        BaseProjectHelper.getJavaProject(project), null /* errorListener */,
-                        true /* gatherData */, false /* markErrors */);
-                if (manifestParser != null) {
-                    Activity[] activities = manifestParser.getActivities();
+            // parse the manifest for the list of activities.
+            ManifestData manifestData = AndroidManifestHelper.parseForData(project);
+            if (manifestData != null) {
+                Activity[] activities = manifestData.getActivities();
 
-                    mActivities.clear();
-                    mActivityCombo.removeAll();
+                mActivities.clear();
+                mActivityCombo.removeAll();
 
-                    for (Activity activity : activities) {
-                        if (activity.isExported() && activity.hasAction()) {
-                            mActivities.add(activity);
-                            mActivityCombo.add(activity.getName());
-                        }
+                for (Activity activity : activities) {
+                    if (activity.isExported() && activity.hasAction()) {
+                        mActivities.add(activity);
+                        mActivityCombo.add(activity.getName());
                     }
-
-                    if (mActivities.size() > 0) {
-                        if (mLaunchAction == LaunchConfigDelegate.ACTION_ACTIVITY) {
-                            mActivityCombo.setEnabled(true);
-                        }
-                    } else {
-                        mActivityCombo.setEnabled(false);
-                    }
-
-                    // the selection will be set when we update the ui from the current
-                    // config object.
-                    mActivityCombo.clearSelection();
-
-                    return;
                 }
 
-            } catch (CoreException e) {
-                // The AndroidManifest parsing failed. The builders must have reported the errors
-                // already so there's nothing to do.
+                if (mActivities.size() > 0) {
+                    if (mLaunchAction == LaunchConfigDelegate.ACTION_ACTIVITY) {
+                        mActivityCombo.setEnabled(true);
+                    }
+                } else {
+                    mActivityCombo.setEnabled(false);
+                }
+
+                // the selection will be set when we update the ui from the current
+                // config object.
+                mActivityCombo.clearSelection();
+
+                return;
             }
         }
 

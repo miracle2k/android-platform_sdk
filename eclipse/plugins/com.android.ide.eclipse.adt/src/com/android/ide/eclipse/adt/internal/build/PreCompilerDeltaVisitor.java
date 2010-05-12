@@ -21,9 +21,10 @@ import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.build.BaseBuilder.BaseDeltaVisitor;
 import com.android.ide.eclipse.adt.internal.build.PreCompilerBuilder.AidlData;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
-import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
+import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -213,17 +214,27 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
                 mInRes = true;
                 mSourceFolder = null;
                 return true;
-            } else if (AndroidConstants.FN_ANDROID_MANIFEST.equalsIgnoreCase(segments[1])) {
+            } else if (SdkConstants.FN_ANDROID_MANIFEST_XML.equalsIgnoreCase(segments[1])) {
                 // any change in the manifest could trigger a new R.java
                 // class, so we don't need to check the delta kind
                 if (delta.getKind() != IResourceDelta.REMOVED) {
-                    // parse the manifest for errors
-                    AndroidManifestParser parser = BaseProjectHelper.parseManifestForError(
-                            (IFile)resource, this);
+                    // clean the error markers on the file.
+                    IFile manifestFile = (IFile)resource;
 
-                    if (parser != null) {
-                        mJavaPackage = parser.getPackage();
-                        mMinSdkVersion = parser.getApiLevelRequirement();
+                    if (manifestFile.exists()) {
+                        manifestFile.deleteMarkers(AndroidConstants.MARKER_XML, true,
+                                IResource.DEPTH_ZERO);
+                        manifestFile.deleteMarkers(AndroidConstants.MARKER_ANDROID, true,
+                                IResource.DEPTH_ZERO);
+                    }
+
+                    // parse the manifest for data and error
+                    ManifestData manifestData = AndroidManifestHelper.parse(
+                            new IFileWrapper(manifestFile), true /*gatherData*/, this);
+
+                    if (manifestData != null) {
+                        mJavaPackage = manifestData.getPackage();
+                        mMinSdkVersion = manifestData.getApiLevelRequirement();
                     }
 
                     mCheckedManifestXml = true;

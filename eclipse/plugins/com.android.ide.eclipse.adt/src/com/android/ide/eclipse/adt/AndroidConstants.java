@@ -88,9 +88,6 @@ public class AndroidConstants {
     /** Dot-Extension of aidl files, i.e. ".aidl" */
     public final static String DOT_AIDL = DOT + EXT_AIDL;
 
-    /** Name of the manifest file, i.e. "AndroidManifest.xml". */
-    public static final String FN_ANDROID_MANIFEST = "AndroidManifest.xml"; //$NON-NLS-1$
-
     /** Name of the android sources directory */
     public static final String FD_ANDROID_SOURCES = "sources"; //$NON-NLS-1$
 
@@ -187,33 +184,6 @@ public class AndroidConstants {
     public final static String MARKER_ATTR_TYPE_RECEIVER = "receiver"; //$NON-NLS-1$
     /** provider value for marker attribute "type" */
     public final static String MARKER_ATTR_TYPE_PROVIDER = "provider"; //$NON-NLS-1$
-
-    public final static String CLASS_ACTIVITY = "android.app.Activity"; //$NON-NLS-1$
-    public final static String CLASS_SERVICE = "android.app.Service"; //$NON-NLS-1$
-    public final static String CLASS_BROADCASTRECEIVER = "android.content.BroadcastReceiver"; //$NON-NLS-1$
-    public final static String CLASS_CONTENTPROVIDER = "android.content.ContentProvider"; //$NON-NLS-1$
-    public final static String CLASS_INSTRUMENTATION = "android.app.Instrumentation"; //$NON-NLS-1$
-    public final static String CLASS_INSTRUMENTATION_RUNNER =
-        "android.test.InstrumentationTestRunner"; //$NON-NLS-1$
-    public final static String CLASS_BUNDLE = "android.os.Bundle"; //$NON-NLS-1$
-    public final static String CLASS_R = "android.R"; //$NON-NLS-1$
-    public final static String CLASS_MANIFEST_PERMISSION = "android.Manifest$permission"; //$NON-NLS-1$
-    public final static String CLASS_INTENT = "android.content.Intent"; //$NON-NLS-1$
-    public final static String CLASS_CONTEXT = "android.content.Context"; //$NON-NLS-1$
-    public final static String CLASS_VIEW = "android.view.View"; //$NON-NLS-1$
-    public final static String CLASS_VIEWGROUP = "android.view.ViewGroup"; //$NON-NLS-1$
-    public final static String CLASS_NAME_LAYOUTPARAMS = "LayoutParams"; //$NON-NLS-1$
-    public final static String CLASS_VIEWGROUP_LAYOUTPARAMS =
-        CLASS_VIEWGROUP + "$" + CLASS_NAME_LAYOUTPARAMS; //$NON-NLS-1$
-    public final static String CLASS_NAME_FRAMELAYOUT = "FrameLayout"; //$NON-NLS-1$
-    public final static String CLASS_FRAMELAYOUT =
-        "android.widget." + CLASS_NAME_FRAMELAYOUT; //$NON-NLS-1$
-    public final static String CLASS_PREFERENCE = "android.preference.Preference"; //$NON-NLS-1$
-    public final static String CLASS_NAME_PREFERENCE_SCREEN = "PreferenceScreen"; //$NON-NLS-1$
-    public final static String CLASS_PREFERENCES =
-        "android.preference." + CLASS_NAME_PREFERENCE_SCREEN; //$NON-NLS-1$
-    public final static String CLASS_PREFERENCEGROUP = "android.preference.PreferenceGroup"; //$NON-NLS-1$
-    public final static String CLASS_PARCELABLE = "android.os.Parcelable"; //$NON-NLS-1$
 
     public final static String CLASS_BRIDGE = "com.android.layoutlib.bridge.Bridge"; //$NON-NLS-1$
 

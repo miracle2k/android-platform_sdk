@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.descriptors;
 
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
@@ -90,7 +89,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
             for (ElementDescriptor desc : mViewDescriptors) {
                 if (desc instanceof ViewElementDescriptor) {
                     ViewElementDescriptor viewDesc = (ViewElementDescriptor) desc;
-                    if (AndroidConstants.CLASS_VIEW.equals(viewDesc.getFullClassName())) {
+                    if (SdkConstants.CLASS_VIEW.equals(viewDesc.getFullClassName())) {
                         mBaseViewDescriptor = viewDesc;
                         break;
                     }
@@ -234,7 +233,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
                 if (need_separator) {
                     String title;
                     if (layoutParams.getShortClassName().equals(
-                            AndroidConstants.CLASS_NAME_LAYOUTPARAMS)) {
+                            SdkConstants.CLASS_NAME_LAYOUTPARAMS)) {
                         title = String.format("Layout Attributes from %1$s",
                                     layoutParams.getViewLayoutClass().getShortClassName());
                     } else {
@@ -302,7 +301,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
 
         // Find View and inherit all its layout attributes
         AttributeDescriptor[] viewLayoutAttribs = findViewLayoutAttributes(
-                AndroidConstants.CLASS_VIEW, knownViews);
+                SdkConstants.CLASS_VIEW, knownViews);
 
         // Create the include descriptor
         ViewElementDescriptor desc = new ViewElementDescriptor(xml_name,  // xml_name
@@ -328,7 +327,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
 
         // Find View and inherit all its layout attributes
         AttributeDescriptor[] viewLayoutAttribs = findViewLayoutAttributes(
-                AndroidConstants.CLASS_FRAMELAYOUT, knownLayouts);
+                SdkConstants.CLASS_FRAMELAYOUT, knownLayouts);
 
         // Create the include descriptor
         ViewElementDescriptor desc = new ViewElementDescriptor(xml_name,  // xml_name

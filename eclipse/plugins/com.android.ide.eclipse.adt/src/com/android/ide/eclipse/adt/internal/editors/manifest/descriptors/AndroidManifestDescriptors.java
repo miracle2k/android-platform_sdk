@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -201,11 +200,11 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                       ListAttributeDescriptor.class);
         overrides.put("application/" + ANDROID_NAME_ATTR, ApplicationAttributeDescriptor.class);  //$NON-NLS-1$
 
-        overrideClassName(overrides, "activity", AndroidConstants.CLASS_ACTIVITY);           //$NON-NLS-1$
-        overrideClassName(overrides, "receiver", AndroidConstants.CLASS_BROADCASTRECEIVER);  //$NON-NLS-1$
-        overrideClassName(overrides, "service", AndroidConstants.CLASS_SERVICE);             //$NON-NLS-1$
-        overrideClassName(overrides, "provider", AndroidConstants.CLASS_CONTENTPROVIDER);    //$NON-NLS-1$
-        overrideClassName(overrides, "instrumentation", AndroidConstants.CLASS_INSTRUMENTATION);    //$NON-NLS-1$
+        overrideClassName(overrides, "activity", SdkConstants.CLASS_ACTIVITY);           //$NON-NLS-1$
+        overrideClassName(overrides, "receiver", SdkConstants.CLASS_BROADCASTRECEIVER);  //$NON-NLS-1$
+        overrideClassName(overrides, "service", SdkConstants.CLASS_SERVICE);             //$NON-NLS-1$
+        overrideClassName(overrides, "provider", SdkConstants.CLASS_CONTENTPROVIDER);    //$NON-NLS-1$
+        overrideClassName(overrides, "instrumentation", SdkConstants.CLASS_INSTRUMENTATION);    //$NON-NLS-1$
 
         // -- list element nodes already created --
         // These elements are referenced by already opened editors, so we want to update them
@@ -246,7 +245,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
             public TextAttributeDescriptor create(String xmlName, String uiName, String nsUri,
                     String tooltip) {
                 uiName += "*";  //$NON-NLS-1$
-                if (AndroidConstants.CLASS_ACTIVITY.equals(className)) {
+                if (SdkConstants.CLASS_ACTIVITY.equals(className)) {
                     return new ClassAttributeDescriptor(
                             className,
                             PostActivityCreationAction.getAction(),
@@ -256,7 +255,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                             tooltip,
                             true /*mandatory */,
                             true /*defaultToProjectOnly*/);
-                } else if (AndroidConstants.CLASS_BROADCASTRECEIVER.equals(className)) {
+                } else if (SdkConstants.CLASS_BROADCASTRECEIVER.equals(className)) {
                     return new ClassAttributeDescriptor(
                             className,
                             PostReceiverCreationAction.getAction(),
@@ -266,7 +265,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                             tooltip,
                             true /*mandatory */,
                             true /*defaultToProjectOnly*/);
-                } else if (AndroidConstants.CLASS_INSTRUMENTATION.equals(className)) {
+                } else if (SdkConstants.CLASS_INSTRUMENTATION.equals(className)) {
                     return new ClassAttributeDescriptor(
                             className,
                             null, // no post action

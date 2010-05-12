@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.sdk;
 
-import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
@@ -42,12 +42,12 @@ import javax.management.InvalidAttributeValueException;
  * are the fully qualified name of the classes.
  */
 public final class WidgetClassLoader implements IAndroidClassLoader {
-    
+
     /**
-     * Basic class containing the class descriptions found in the text file. 
+     * Basic class containing the class descriptions found in the text file.
      */
     private final static class ClassDescriptor implements IClassDescriptor {
-        
+
         private String mFqcn;
         private String mSimpleName;
         private ClassDescriptor mSuperClass;
@@ -80,14 +80,14 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
         public IClassDescriptor getEnclosingClass() {
             return mEnclosingClass;
         }
-        
+
         void setEnclosingClass(ClassDescriptor enclosingClass) {
             // set the enclosing class.
             mEnclosingClass = enclosingClass;
-            
+
             // add this to the list of declared class in the enclosing class.
             mEnclosingClass.addDeclaredClass(this);
-            
+
             // finally change the name of declared class to make sure it uses the
             // convention: package.enclosing$declared instead of package.enclosing.declared
             mFqcn = enclosingClass.mFqcn + "$" + mFqcn.substring(enclosingClass.mFqcn.length() + 1);
@@ -96,11 +96,11 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
         public IClassDescriptor getSuperclass() {
             return mSuperClass;
         }
-        
+
         void setSuperClass(ClassDescriptor superClass) {
             mSuperClass = superClass;
         }
-        
+
         @Override
         public boolean equals(Object clazz) {
             if (clazz instanceof ClassDescriptor) {
@@ -108,20 +108,20 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
             }
             return super.equals(clazz);
         }
-        
+
         @Override
         public int hashCode() {
             return mFqcn.hashCode();
         }
-        
+
         public boolean isInstantiable() {
             return mIsInstantiable;
         }
-        
+
         void setInstantiable(boolean state) {
             mIsInstantiable = state;
         }
-        
+
         private String getSimpleName(String fqcn) {
             String[] segments = fqcn.split("\\.");
             return segments[segments.length-1];
@@ -155,7 +155,7 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
     public String getSource() {
         return mOsFilePath;
     }
-    
+
     /**
      * Parses the text file and return true if the file was successfully parsed.
      * @param monitor
@@ -200,10 +200,10 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
                     }
                 }
             }
-            
+
             // reconciliate the layout and their layout params
             postProcess();
-            
+
             return true;
         } catch (IOException e) {
         } finally {
@@ -212,10 +212,10 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
             } catch (IOException e) {
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * Parses a View class and adds a ViewClassInfo for it in mWidgetMap.
      * It calls itself recursively to handle super classes which are also Views.
@@ -228,9 +228,9 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
         if (index >= classes.length) {
             return null;
         }
-        
+
         String fqcn = classes[index];
-        
+
         if ("java.lang.Object".equals(fqcn)) { //$NON-NLS-1$
             return null;
         }
@@ -246,16 +246,16 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
         if (map != null) {
             map.put(fqcn, clazz);
         }
-        
+
         // get the super class
         ClassDescriptor superClass = processClass(classes, index+1, map);
         if (superClass != null) {
             clazz.setSuperClass(superClass);
         }
-        
+
         return clazz;
     }
-    
+
     /**
      * Goes through the layout params and look for the enclosed class. If the layout params
      * has no known enclosed type it is dropped.
@@ -265,17 +265,17 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
 
         for (ClassDescriptor param : params) {
             String fqcn = param.getFullClassName();
-            
+
             // get the enclosed name.
             String enclosed = getEnclosedName(fqcn);
-            
+
             // look for a match in the layouts. We don't use the layout map as it only contains the
             // end classes, but in this case we also need to process the layout params for the base
             // layout classes.
             ClassDescriptor enclosingType = mMap.get(enclosed);
             if (enclosingType != null) {
                 param.setEnclosingClass(enclosingType);
-                
+
                 // remove the class from the map, and put it back with the fixed name
                 mMap.remove(fqcn);
                 mMap.put(param.getFullClassName(), param);
@@ -290,13 +290,13 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
 
     /**
      * Finds and loads all classes that derive from a given set of super classes.
-     * 
+     *
      * @param rootPackage Root package of classes to find. Use an empty string to find everyting.
-     * @param superClasses The super classes of all the classes to find. 
+     * @param superClasses The super classes of all the classes to find.
      * @return An hash map which keys are the super classes looked for and which values are
      *         ArrayList of the classes found. The array lists are always created for all the
      *         valid keys, they are simply empty if no deriving class is found for a given
-     *         super class. 
+     *         super class.
      * @throws IOException
      * @throws InvalidAttributeValueException
      * @throws ClassFormatError
@@ -306,18 +306,18 @@ public final class WidgetClassLoader implements IAndroidClassLoader {
             ClassFormatError {
         HashMap<String, ArrayList<IClassDescriptor>> map =
                 new HashMap<String, ArrayList<IClassDescriptor>>();
-        
+
         ArrayList<IClassDescriptor> list = new ArrayList<IClassDescriptor>();
         list.addAll(mWidgetMap.values());
-        map.put(AndroidConstants.CLASS_VIEW, list);
-        
+        map.put(SdkConstants.CLASS_VIEW, list);
+
         list = new ArrayList<IClassDescriptor>();
         list.addAll(mLayoutMap.values());
-        map.put(AndroidConstants.CLASS_VIEWGROUP, list);
+        map.put(SdkConstants.CLASS_VIEWGROUP, list);
 
         list = new ArrayList<IClassDescriptor>();
         list.addAll(mLayoutParamsMap.values());
-        map.put(AndroidConstants.CLASS_VIEWGROUP_LAYOUTPARAMS, list);
+        map.put(SdkConstants.CLASS_VIEWGROUP_LAYOUTPARAMS, list);
 
         return map;
     }

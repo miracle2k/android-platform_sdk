@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.manifest.model.UiClassAttributeNode.IPostTypeCreationAction;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.ICompilationUnit;
@@ -29,14 +29,14 @@ import org.eclipse.jdt.core.JavaModelException;
  * Action to be executed after an Activity class is created.
  */
 class PostActivityCreationAction implements IPostTypeCreationAction {
-    
+
     private final static PostActivityCreationAction sAction = new PostActivityCreationAction();
-    
+
     private PostActivityCreationAction() {
         // private constructor to enforce singleton.
     }
-    
-    
+
+
     /**
      * Returns the action.
      */
@@ -46,11 +46,11 @@ class PostActivityCreationAction implements IPostTypeCreationAction {
 
     /**
      * Processes a newly created Activity.
-     * 
+     *
      */
     public void processNewType(IType newType) {
         try {
-            String methodContent = 
+            String methodContent =
                 "    /** Called when the activity is first created. */\n" +
                 "    @Override\n" +
                 "    public void onCreate(Bundle savedInstanceState) {\n" +
@@ -71,15 +71,15 @@ class PostActivityCreationAction implements IPostTypeCreationAction {
                     if (parentElement.getElementType() == IJavaElement.COMPILATION_UNIT) {
                         compilationUnit = (ICompilationUnit)parentElement;
                     }
-                    
+
                     element = parentElement;
                 } else {
                     break;
                 }
             } while (compilationUnit == null);
-            
+
             if (compilationUnit != null) {
-                compilationUnit.createImport(AndroidConstants.CLASS_BUNDLE,
+                compilationUnit.createImport(SdkConstants.CLASS_BUNDLE,
                         null /* sibling */, new NullProgressMonitor());
             }
         } catch (JavaModelException e) {

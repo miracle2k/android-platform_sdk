@@ -18,9 +18,10 @@ package com.android.ide.eclipse.adt.internal.actions;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -175,18 +176,12 @@ public class RenamePackageAction implements IObjectActionDelegate {
      */
     private void promptNewName(final IProject project) {
 
-        IFile manifestFile = AndroidManifestParser.getManifest(project.getProject());
-        AndroidManifestParser parser = null;
-        try {
-            parser = AndroidManifestParser.parseForData(manifestFile);
-        } catch (CoreException e) {
-            Status s = new Status(Status.ERROR, AdtPlugin.PLUGIN_ID, e.getMessage(), e);
-            AdtPlugin.getDefault().getLog().log(s);
-        }
-        if (parser == null)
+        ManifestData manifestData = AndroidManifestHelper.parseForData(project);
+        if (manifestData == null) {
             return;
+        }
 
-        final String old_package_name_string = parser.getPackage();
+        final String old_package_name_string = manifestData.getPackage();
 
         final AST ast_validator = AST.newAST(AST.JLS3);
         this.mOldPackageName = ast_validator.newName(old_package_name_string);
@@ -521,7 +516,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
                     // its context.
                 } else if (AndroidConstants.EXT_XML.equals(file.getFileExtension())) {
 
-                    if (AndroidConstants.FN_ANDROID_MANIFEST.equals(file.getName())) {
+                    if (SdkConstants.FN_ANDROID_MANIFEST_XML.equals(file.getName())) {
 
                         TextFileChange manifest_change = editAndroidManifest(file);
                         mChanges.add(manifest_change);

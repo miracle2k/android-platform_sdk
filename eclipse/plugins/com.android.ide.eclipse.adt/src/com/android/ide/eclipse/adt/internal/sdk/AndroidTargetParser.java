@@ -33,6 +33,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.layoutlib.api.ILayoutBridge;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -312,7 +313,7 @@ public final class AndroidTargetParser {
     private IResourceRepository collectResourceIds(
             AndroidJarLoader classLoader) {
         try {
-            Class<?> r = classLoader.loadClass(AndroidConstants.CLASS_R);
+            Class<?> r = classLoader.loadClass(SdkConstants.CLASS_R);
 
             if (r != null) {
                 Map<ResourceType, List<ResourceItem>> map = parseRClass(r);
@@ -323,7 +324,7 @@ public final class AndroidTargetParser {
         } catch (ClassNotFoundException e) {
             AdtPlugin.logAndPrintError(e, TAG,
                     "Collect resource IDs failed, class %1$s not found in %2$s", //$NON-NLS-1$
-                    AndroidConstants.CLASS_R,
+                    SdkConstants.CLASS_R,
                     mAndroidTarget.getPath(IAndroidTarget.ANDROID_JAR));
         }
 
@@ -378,7 +379,7 @@ public final class AndroidTargetParser {
     private String[] collectPermissions(AndroidJarLoader classLoader) {
         try {
             Class<?> permissionClass =
-                classLoader.loadClass(AndroidConstants.CLASS_MANIFEST_PERMISSION);
+                classLoader.loadClass(SdkConstants.CLASS_MANIFEST_PERMISSION);
 
             if (permissionClass != null) {
                 ArrayList<String> list = new ArrayList<String>();
@@ -411,7 +412,7 @@ public final class AndroidTargetParser {
         } catch (ClassNotFoundException e) {
             AdtPlugin.logAndPrintError(e, TAG,
                     "Collect permissions failed, class %1$s not found in %2$s", //$NON-NLS-1$
-                    AndroidConstants.CLASS_MANIFEST_PERMISSION,
+                    SdkConstants.CLASS_MANIFEST_PERMISSION,
                     mAndroidTarget.getPath(IAndroidTarget.ANDROID_JAR));
         }
 

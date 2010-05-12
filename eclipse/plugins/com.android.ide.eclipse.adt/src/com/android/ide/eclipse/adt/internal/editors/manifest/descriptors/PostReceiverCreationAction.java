@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.manifest.model.UiClassAttributeNode.IPostTypeCreationAction;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.ICompilationUnit;
@@ -29,13 +29,13 @@ import org.eclipse.jdt.core.JavaModelException;
  * Action to be executed after an BroadcastReceiver class is created.
  */
 class PostReceiverCreationAction implements IPostTypeCreationAction {
-    
+
     private final static PostReceiverCreationAction sAction = new PostReceiverCreationAction();
-    
+
     private PostReceiverCreationAction() {
         // private constructor to enforce singleton.
     }
-    
+
     /**
      * Returns the action.
      */
@@ -45,11 +45,11 @@ class PostReceiverCreationAction implements IPostTypeCreationAction {
 
     /**
      * Processes a newly created Activity.
-     * 
+     *
      */
     public void processNewType(IType newType) {
         try {
-            String methodContent = 
+            String methodContent =
                 "    @Override\n" +
                 "    public void onReceive(Context context, Intent intent) {\n" +
                 "        // TODO Auto-generated method stub\n" +
@@ -67,17 +67,17 @@ class PostReceiverCreationAction implements IPostTypeCreationAction {
                     if (parentElement.getElementType() == IJavaElement.COMPILATION_UNIT) {
                         compilationUnit = (ICompilationUnit)parentElement;
                     }
-                    
+
                     element = parentElement;
                 } else {
                     break;
                 }
             } while (compilationUnit == null);
-            
+
             if (compilationUnit != null) {
-                compilationUnit.createImport(AndroidConstants.CLASS_CONTEXT,
+                compilationUnit.createImport(SdkConstants.CLASS_CONTEXT,
                         null /* sibling */, new NullProgressMonitor());
-                compilationUnit.createImport(AndroidConstants.CLASS_INTENT,
+                compilationUnit.createImport(SdkConstants.CLASS_INTENT,
                         null /* sibling */, new NullProgressMonitor());
             }
         } catch (JavaModelException e) {

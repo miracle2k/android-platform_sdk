@@ -21,6 +21,7 @@ import com.android.ide.eclipse.adt.internal.launch.LaunchMessages;
 import com.android.ide.eclipse.adt.internal.launch.MainLaunchConfigTab;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -971,7 +972,7 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
         } catch (CoreException e) {
             AdtPlugin.logAndPrintError(e, project.getName(),
                     LaunchMessages.AndroidJUnitTab_LoadInstrError_s,
-                    AndroidConstants.FN_ANDROID_MANIFEST);
+                    SdkConstants.FN_ANDROID_MANIFEST_XML);
         }
         // if we reach this point, either project is null, or we got an exception during
         // the parsing. In either case, we empty the instrumentation list.

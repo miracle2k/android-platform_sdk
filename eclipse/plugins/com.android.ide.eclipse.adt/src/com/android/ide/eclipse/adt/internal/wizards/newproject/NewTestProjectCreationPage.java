@@ -23,7 +23,7 @@
 package com.android.ide.eclipse.adt.internal.wizards.newproject;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
@@ -31,15 +31,14 @@ import com.android.ide.eclipse.adt.internal.wizards.newproject.NewProjectCreatio
 import com.android.ide.eclipse.adt.internal.wizards.newproject.NewProjectCreationPage.MainInfo;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 import com.android.sdkuilib.internal.widgets.SdkTargetSelector;
 
 import org.eclipse.core.filesystem.URIUtil;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
@@ -830,16 +829,7 @@ public class NewTestProjectCreationPage extends WizardPage {
                  !mSdkTargetModifiedByUser       ||
                  !mMinSdkVersionModifiedByUser)) {
 
-            IFile file = AndroidManifestParser.getManifest(project);
-            AndroidManifestParser manifestData = null;
-            if (file != null) {
-                try {
-                    manifestData = AndroidManifestParser.parseForData(file);
-                } catch (CoreException e) {
-                    // pass
-                }
-            }
-
+            ManifestData manifestData = AndroidManifestHelper.parseForData(project);
             if (manifestData != null) {
                 String appName = String.format("%1$sTest", project.getName());
                 String packageName = manifestData.getPackage();

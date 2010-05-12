@@ -24,8 +24,7 @@ package com.android.ide.eclipse.adt.internal.wizards.newproject;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser.Activity;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.internal.wizards.newproject.NewTestProjectCreationPage.TestInfo;
@@ -34,6 +33,8 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.xml.AndroidManifest;
+import com.android.sdklib.xml.AndroidManifestParser.Activity;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 import com.android.sdkuilib.internal.widgets.SdkTargetSelector;
 
 import org.eclipse.core.filesystem.URIUtil;
@@ -990,9 +991,9 @@ public class NewProjectCreationPage extends WizardPage {
         }
 
         Path path = new Path(f.getPath());
-        String osPath = path.append(AndroidConstants.FN_ANDROID_MANIFEST).toOSString();
+        String osPath = path.append(SdkConstants.FN_ANDROID_MANIFEST_XML).toOSString();
 
-        AndroidManifestParser manifestData = AndroidManifestParser.parseForData(osPath);
+        ManifestData manifestData = AndroidManifestHelper.parseForData(osPath);
         if (manifestData == null) {
             return;
         }
@@ -1377,17 +1378,17 @@ public class NewProjectCreationPage extends WizardPage {
             }
 
             // Check there's an android manifest in the directory
-            String osPath = path.append(AndroidConstants.FN_ANDROID_MANIFEST).toOSString();
+            String osPath = path.append(SdkConstants.FN_ANDROID_MANIFEST_XML).toOSString();
             File manifestFile = new File(osPath);
             if (!manifestFile.isFile()) {
                 return setStatus(
                         String.format("File %1$s not found in %2$s.",
-                                AndroidConstants.FN_ANDROID_MANIFEST, f.getName()),
+                                SdkConstants.FN_ANDROID_MANIFEST_XML, f.getName()),
                                 MSG_ERROR);
             }
 
             // Parse it and check the important fields.
-            AndroidManifestParser manifestData = AndroidManifestParser.parseForData(osPath);
+            ManifestData manifestData = AndroidManifestHelper.parseForData(osPath);
             if (manifestData == null) {
                 return setStatus(
                         String.format("File %1$s could not be parsed.", osPath),

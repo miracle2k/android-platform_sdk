@@ -76,7 +76,11 @@ public class MultiApkExportTask extends Task {
         private final static int INDEX_MINOR      = 2;
         private final static int INDEX_MINSDK     = 3;
         private final static int INDEX_ABI        = 4;
-        private final static int INDEX_MAX        = 5;
+        private final static int INDEX_OPENGL     = 5;
+        private final static int INDEX_SCREENSIZE = 6;
+        private final static int INDEX_LOCALES    = 7;
+        private final static int INDEX_DENSITY    = 8;
+        private final static int INDEX_MAX        = 9;
 
         String outputName;
         String relativePath;
@@ -564,6 +568,8 @@ public class MultiApkExportTask extends Task {
             ApkData data = new ApkData();
             dataList.add(data);
             data.minSdkVersion = minSdkVersion;
+
+
 
             // only look for more exports if the target is not clean.
             if (mTarget != Target.CLEAN) {

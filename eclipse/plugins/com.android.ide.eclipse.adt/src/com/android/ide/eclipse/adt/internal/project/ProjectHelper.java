@@ -18,6 +18,8 @@ package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.sdklib.SdkConstants;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -72,7 +74,7 @@ public final class ProjectHelper {
      *
      * @param javaProject The java project of which path entries to update.
      * @param new_entry The parent source folder to remove.
-     * @throws JavaModelException 
+     * @throws JavaModelException
      */
     public static void addEntryToClasspath(
             IJavaProject javaProject, IClasspathEntry new_entry)
@@ -203,7 +205,7 @@ public final class ProjectHelper {
             AdtPlugin.printToConsole(project, "Unknown SDK Location, project not fixed.");
             return;
         }
-        
+
         // get a java project
         IJavaProject javaProject = JavaCore.create(project);
         fixProjectClasspathEntries(javaProject);
@@ -237,7 +239,7 @@ public final class ProjectHelper {
 
         // get the output folder
         IPath outputFolder = javaProject.getOutputLocation();
-        
+
         boolean foundContainer = false;
 
         for (int i = 0 ; i < entries.length ;) {
@@ -247,10 +249,10 @@ public final class ProjectHelper {
 
             if (kind == IClasspathEntry.CPE_SOURCE) {
                 IPath path = entry.getPath();
-                
+
                 if (path.equals(outputFolder)) {
                     entries = ProjectHelper.removeEntryFromClasspath(entries, i);
-                    
+
                     // continue, to skip the i++;
                     continue;
                 }
@@ -259,7 +261,7 @@ public final class ProjectHelper {
                     foundContainer = true;
                 }
             }
-            
+
             i++;
         }
 
@@ -278,8 +280,8 @@ public final class ProjectHelper {
         // If needed, check and fix compiler compliance and source compatibility
         ProjectHelper.checkAndFixCompilerCompliance(javaProject);
     }
-    
-    
+
+
     /**
      * Checks the project compiler compliance level is supported.
      * @param javaProject The project to check
@@ -393,7 +395,7 @@ public final class ProjectHelper {
         // Get the list of project for the current workspace
         IWorkspace workspace = ResourcesPlugin.getWorkspace();
         IProject[] projects = workspace.getRoot().getProjects();
-        
+
         // look for a project that matches the packageName of the app
         // we're trying to debug
         for (IProject p : projects) {
@@ -409,24 +411,19 @@ public final class ProjectHelper {
                 }
 
                 // check that there is indeed a manifest file.
-                IFile manifestFile = AndroidManifestParser.getManifest(p);
+                IFile manifestFile = getManifest(p);
                 if (manifestFile == null) {
                     // no file? skip this project.
                     continue;
                 }
 
-                AndroidManifestParser parser = null;
-                try {
-                    parser = AndroidManifestParser.parseForData(manifestFile);
-                } catch (CoreException e) {
-                    // ignore, handled below.
-                }
-                if (parser == null) {
+                ManifestData data = AndroidManifestHelper.parseForData(manifestFile);
+                if (data == null) {
                     // skip this project.
                     continue;
                 }
 
-                String manifestPackage = parser.getPackage();
+                String manifestPackage = data.getPackage();
 
                 if (manifestPackage != null && manifestPackage.equals(applicationName)) {
                     // this is the project we were looking for!
@@ -434,7 +431,7 @@ public final class ProjectHelper {
                 } else {
                     // if the package and application name don't match,
                     // we look for other possible process names declared in the manifest.
-                    String[] processes = parser.getProcesses();
+                    String[] processes = data.getProcesses();
                     for (String process : processes) {
                         if (process.equals(applicationName)) {
                             return p;
@@ -451,31 +448,31 @@ public final class ProjectHelper {
     public static void fixProjectNatureOrder(IProject project) throws CoreException {
         IProjectDescription description = project.getDescription();
         String[] natures = description.getNatureIds();
-        
+
         // if the android nature is not the first one, we reorder them
         if (AndroidConstants.NATURE.equals(natures[0]) == false) {
             // look for the index
             for (int i = 0 ; i < natures.length ; i++) {
                 if (AndroidConstants.NATURE.equals(natures[i])) {
-                    // if we try to just reorder the array in one pass, this doesn't do 
+                    // if we try to just reorder the array in one pass, this doesn't do
                     // anything. I guess JDT check that we are actually adding/removing nature.
                     // So, first we'll remove the android nature, and then add it back.
 
                     // remove the android nature
                     removeNature(project, AndroidConstants.NATURE);
-                    
+
                     // now add it back at the first index.
                     description = project.getDescription();
                     natures = description.getNatureIds();
-                    
+
                     String[] newNatures = new String[natures.length + 1];
 
                     // first one is android
                     newNatures[0] = AndroidConstants.NATURE;
-                    
+
                     // next the rest that was before the android nature
                     System.arraycopy(natures, 0, newNatures, 1, natures.length);
-                    
+
                     // set the new natures
                     description.setNatureIds(newNatures);
                     project.setDescription(description, null);
@@ -534,11 +531,11 @@ public final class ProjectHelper {
                 }
             }
         }
-        
+
         // test the referenced projects if needed.
         if (includeReferencedProjects) {
             IProject[] projects = getReferencedProjects(project);
-            
+
             for (IProject p : projects) {
                 if (hasError(p, false)) {
                     return true;
@@ -649,7 +646,7 @@ public final class ProjectHelper {
 
         return null;
     }
-    
+
     /**
      * Returns the list of referenced project that are opened and Java projects.
      * @param project
@@ -658,9 +655,9 @@ public final class ProjectHelper {
      */
     public static IProject[] getReferencedProjects(IProject project) throws CoreException {
         IProject[] projects = project.getReferencedProjects();
-        
+
         ArrayList<IProject> list = new ArrayList<IProject>();
-        
+
         for (IProject p : projects) {
             if (p.isOpen() && p.hasNature(JavaCore.NATURE_ID)) {
                 list.add(p);
@@ -685,7 +682,7 @@ public final class ProjectHelper {
 
         return false;
     }
-    
+
     /**
      * Returns the apk filename for the given project
      * @param project The project.
@@ -693,31 +690,31 @@ public final class ProjectHelper {
      */
     public static String getApkFilename(IProject project, String config) {
         if (config != null) {
-            return project.getName() + "-" + config + AndroidConstants.DOT_ANDROID_PACKAGE; //$NON-NLS-1$ 
+            return project.getName() + "-" + config + AndroidConstants.DOT_ANDROID_PACKAGE; //$NON-NLS-1$
         }
-        
+
         return project.getName() + AndroidConstants.DOT_ANDROID_PACKAGE;
     }
 
     /**
      * Find the list of projects on which this JavaProject is dependent on at the compilation level.
-     * 
+     *
      * @param javaProject Java project that we are looking for the dependencies.
      * @return A list of Java projects for which javaProject depend on.
      * @throws JavaModelException
      */
-    public static List<IJavaProject> getAndroidProjectDependencies(IJavaProject javaProject) 
+    public static List<IJavaProject> getAndroidProjectDependencies(IJavaProject javaProject)
         throws JavaModelException {
         String[] requiredProjectNames = javaProject.getRequiredProjectNames();
-    
+
         // Go from java project name to JavaProject name
         IJavaModel javaModel = javaProject.getJavaModel();
-    
+
         // loop through all dependent projects and keep only those that are Android projects
         List<IJavaProject> projectList = new ArrayList<IJavaProject>(requiredProjectNames.length);
         for (String javaProjectName : requiredProjectNames) {
             IJavaProject androidJavaProject = javaModel.getJavaProject(javaProjectName);
-            
+
             //Verify that the project has also the Android Nature
             try {
                 if (!androidJavaProject.getProject().hasNature(AndroidConstants.NATURE)) {
@@ -726,10 +723,10 @@ public final class ProjectHelper {
             } catch (CoreException e) {
                 continue;
             }
-            
+
             projectList.add(androidJavaProject);
         }
-        
+
         return projectList;
     }
 
@@ -742,27 +739,44 @@ public final class ProjectHelper {
     public static IFile getApplicationPackage(IProject project) {
         // get the output folder
         IFolder outputLocation = BaseProjectHelper.getOutputFolder(project);
-    
+
         if (outputLocation == null) {
             AdtPlugin.printErrorToConsole(project,
                     "Failed to get the output location of the project. Check build path properties"
                     );
             return null;
         }
-        
-    
+
+
         // get the package path
         String packageName = project.getName() + AndroidConstants.DOT_ANDROID_PACKAGE;
         IResource r = outputLocation.findMember(packageName);
-    
+
         // check the package is present
         if (r instanceof IFile && r.exists()) {
             return (IFile)r;
         }
-    
+
         String msg = String.format("Could not find %1$s!", packageName);
         AdtPlugin.printErrorToConsole(project, msg);
-    
+
         return null;
+    }
+
+    /**
+     * Returns an {@link IFile} object representing the manifest for the given project.
+     *
+     * @param project The project containing the manifest file.
+     * @return An IFile object pointing to the manifest or null if the manifest
+     *         is missing.
+     */
+    public static IFile getManifest(IProject project) {
+        IResource r = project.findMember(AndroidConstants.WS_SEP
+                + SdkConstants.FN_ANDROID_MANIFEST_XML);
+
+        if (r == null || r.exists() == false || (r instanceof IFile) == false) {
+            return null;
+        }
+        return (IFile) r;
     }
 }

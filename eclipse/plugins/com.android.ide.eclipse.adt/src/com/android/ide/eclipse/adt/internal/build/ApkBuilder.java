@@ -458,12 +458,12 @@ public class ApkBuilder extends BaseBuilder {
             // but not the intermediary ones.
             if (mPackageResources || mConvertToDex || mBuildFinalPackage) {
                 // resource to the AndroidManifest.xml file
-                IFile manifestFile = project.getFile(AndroidConstants.FN_ANDROID_MANIFEST);
+                IFile manifestFile = project.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
 
                 if (manifestFile == null || manifestFile.exists() == false) {
                     // mark project and exit
                     String msg = String.format(Messages.s_File_Missing,
-                            AndroidConstants.FN_ANDROID_MANIFEST);
+                            SdkConstants.FN_ANDROID_MANIFEST_XML);
                     markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
                     return allRefProjects;
                 }

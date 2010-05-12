@@ -18,10 +18,12 @@ package com.android.ide.eclipse.adt.internal.resources.manager;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
@@ -221,23 +223,13 @@ public final class CompiledResourcesMonitor implements IFileListener, IProjectLi
      * @return A class name (e.g. "my.app.R") or null if there's no valid package in the manifest.
      */
     private String getRClassName(IProject project) {
-        try {
-            IFile manifestFile = AndroidManifestParser.getManifest(project);
-            if (manifestFile != null && manifestFile.isSynchronized(IResource.DEPTH_ZERO)) {
-                AndroidManifestParser data = AndroidManifestParser.parseForData(manifestFile);
-                if (data != null) {
-                    String javaPackage = data.getPackage();
-                    return javaPackage + ".R"; //$NON-NLS-1$
-                }
+        IFile manifestFile = ProjectHelper.getManifest(project);
+        if (manifestFile != null && manifestFile.isSynchronized(IResource.DEPTH_ZERO)) {
+            ManifestData data = AndroidManifestHelper.parseForData(manifestFile);
+            if (data != null) {
+                String javaPackage = data.getPackage();
+                return javaPackage + ".R"; //$NON-NLS-1$
             }
-        } catch (CoreException e) {
-            // This will typically happen either because the manifest file is not present
-            // and/or the workspace needs to be refreshed.
-            AdtPlugin.logAndPrintError(e,
-                    "Android Resources",
-                    "Failed to find the package of the AndroidManifest of project %1$s. Reason: %2$s",
-                    project.getName(),
-                    e.getMessage());
         }
         return null;
     }

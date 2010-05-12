@@ -22,10 +22,11 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescrip
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ReferenceAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestParser;
+import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -1259,23 +1260,18 @@ public class ExtractStringRefactoring extends Refactoring {
         // the FQCN of the R class.
         String packageName = null;
         String error = null;
-        IResource manifestFile = mProject.findMember(AndroidConstants.FN_ANDROID_MANIFEST);
+        IResource manifestFile = mProject.findMember(SdkConstants.FN_ANDROID_MANIFEST_XML);
         if (manifestFile == null || manifestFile.getType() != IResource.FILE) {
             error = "File not found";
         } else {
-            try {
-                AndroidManifestParser manifest = AndroidManifestParser.parseForData(
-                        (IFile) manifestFile);
-                if (manifest == null) {
-                    error = "Invalid content";
-                } else {
-                    packageName = manifest.getPackage();
-                    if (packageName == null) {
-                        error = "Missing package definition";
-                    }
+            ManifestData manifestData = AndroidManifestHelper.parseForData((IFile) manifestFile);
+            if (manifestData == null) {
+                error = "Invalid content";
+            } else {
+                packageName = manifestData.getPackage();
+                if (packageName == null) {
+                    error = "Missing package definition";
                 }
-            } catch (CoreException e) {
-                error = e.getLocalizedMessage();
             }
         }
 

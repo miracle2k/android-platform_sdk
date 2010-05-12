@@ -17,11 +17,11 @@
 package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.resources.AttrsXmlParser;
 import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo;
 import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo.LayoutParamsInfo;
 import com.android.ide.eclipse.adt.internal.sdk.IAndroidClassLoader.IClassDescriptor;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
@@ -131,15 +131,15 @@ public class LayoutParamsParser {
      */
     public void parseLayoutClasses(IProgressMonitor monitor) {
         parseClasses(monitor,
-                AndroidConstants.CLASS_VIEW,
-                AndroidConstants.CLASS_VIEWGROUP,
-                AndroidConstants.CLASS_VIEWGROUP_LAYOUTPARAMS);
+                SdkConstants.CLASS_VIEW,
+                SdkConstants.CLASS_VIEWGROUP,
+                SdkConstants.CLASS_VIEWGROUP_LAYOUTPARAMS);
     }
 
     public void parsePreferencesClasses(IProgressMonitor monitor) {
         parseClasses(monitor,
-                AndroidConstants.CLASS_PREFERENCE,
-                AndroidConstants.CLASS_PREFERENCEGROUP,
+                SdkConstants.CLASS_PREFERENCE,
+                SdkConstants.CLASS_PREFERENCEGROUP,
                 null /* paramsClassName */ );
     }
 
@@ -352,7 +352,7 @@ public class LayoutParamsParser {
     private IClassDescriptor findLayoutParams(IClassDescriptor groupClass) {
         IClassDescriptor[] innerClasses = groupClass.getDeclaredClasses();
         for (IClassDescriptor innerClass : innerClasses) {
-            if (innerClass.getSimpleName().equals(AndroidConstants.CLASS_NAME_LAYOUTPARAMS)) {
+            if (innerClass.getSimpleName().equals(SdkConstants.CLASS_NAME_LAYOUTPARAMS)) {
                 return innerClass;
             }
         }

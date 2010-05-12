@@ -24,8 +24,8 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQua
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFolderListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IFileWrapper;
-import com.android.ide.eclipse.adt.internal.resources.manager.files.IFolderWrapper;
+import com.android.ide.eclipse.adt.io.IFileWrapper;
+import com.android.ide.eclipse.adt.io.IFolderWrapper;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.FolderWrapper;

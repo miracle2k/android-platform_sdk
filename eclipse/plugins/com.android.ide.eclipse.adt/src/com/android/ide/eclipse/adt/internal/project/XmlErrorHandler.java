@@ -17,9 +17,13 @@
 package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.sdklib.xml.AndroidManifestParser.ManifestErrorHandler;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.IJavaProject;
+import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -27,13 +31,13 @@ import org.xml.sax.helpers.DefaultHandler;
 /**
  * XML error handler used by the parser to report errors/warnings.
  */
-public class XmlErrorHandler extends DefaultHandler {
+public class XmlErrorHandler extends DefaultHandler implements ManifestErrorHandler {
 
+    private final IJavaProject mJavaProject;
     /** file being parsed */
-    private IFile mFile;
-
+    private final IFile mFile;
     /** link to the delta visitor, to set the xml error flag */
-    private XmlErrorListener mErrorListener;
+    private final XmlErrorListener mErrorListener;
 
     /**
      * Classes which implement this interface provide a method that deals
@@ -54,9 +58,14 @@ public class XmlErrorHandler extends DefaultHandler {
         }
     }
 
-    public XmlErrorHandler(IFile file, XmlErrorListener errorListener) {
+    public XmlErrorHandler(IJavaProject javaProject, IFile file, XmlErrorListener errorListener) {
+        mJavaProject = javaProject;
         mFile = file;
         mErrorListener = errorListener;
+    }
+
+    public XmlErrorHandler(IFile file, XmlErrorListener errorListener) {
+        this(null, file, errorListener);
     }
 
     /**
@@ -104,7 +113,7 @@ public class XmlErrorHandler extends DefaultHandler {
      * @param exception
      * @param lineNumber
      */
-    protected void handleError(Exception exception, int lineNumber) {
+    public void handleError(Exception exception, int lineNumber) {
         if (mErrorListener != null) {
             mErrorListener.errorFound();
         }
@@ -120,6 +129,44 @@ public class XmlErrorHandler extends DefaultHandler {
                     message,
                     lineNumber,
                     IMarker.SEVERITY_ERROR);
+        }
+    }
+
+    /**
+     * Checks that a class is valid and can be used in the Android Manifest.
+     * <p/>
+     * Errors are put as {@link IMarker} on the manifest file.
+     * @param locator
+     * @param className the fully qualified name of the class to test.
+     * @param superClassName the fully qualified name of the class it is supposed to extend.
+     * @param testVisibility if <code>true</code>, the method will check the visibility of
+     * the class or of its constructors.
+     */
+    public void checkClass(Locator locator, String className, String superClassName,
+            boolean testVisibility) {
+        if (mJavaProject == null) {
+            return;
+        }
+        // we need to check the validity of the activity.
+        String result = BaseProjectHelper.testClassForManifest(mJavaProject,
+                className, superClassName, testVisibility);
+        if (result != BaseProjectHelper.TEST_CLASS_OK) {
+            // get the line number
+            int line = locator.getLineNumber();
+
+            // mark the file
+            IMarker marker = BaseProjectHelper.markResource(getFile(),
+                    AndroidConstants.MARKER_ANDROID, result, line, IMarker.SEVERITY_ERROR);
+
+            // add custom attributes to be used by the manifest editor.
+            if (marker != null) {
+                try {
+                    marker.setAttribute(AndroidConstants.MARKER_ATTR_TYPE,
+                            AndroidConstants.MARKER_ATTR_TYPE_ACTIVITY);
+                    marker.setAttribute(AndroidConstants.MARKER_ATTR_CLASS, className);
+                } catch (CoreException e) {
+                }
+            }
         }
     }
 }

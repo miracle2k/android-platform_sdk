@@ -751,7 +751,7 @@ public class NewProjectWizard extends Wizard implements INewWizard {
             throws CoreException, IOException {
 
         // get IFile to the manifest and check if it's not already there.
-        IFile file = project.getFile(AndroidConstants.FN_ANDROID_MANIFEST);
+        IFile file = project.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
         if (!file.exists()) {
 
             // Read manifest template

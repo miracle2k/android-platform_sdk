@@ -18,9 +18,7 @@ package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.project.XmlErrorHandler.XmlErrorListener;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -272,29 +270,6 @@ public final class BaseProjectHelper {
         } catch (JavaModelException e) {
             return String.format("%1$s: %2$s", className, e.getMessage());
         }
-    }
-
-    /**
-     * Parses the manifest file for errors.
-     * <p/>
-     * This starts by removing the current XML marker, and then parses the xml for errors, both
-     * of XML type and of Android type (checking validity of class files).
-     * @param manifestFile
-     * @param errorListener
-     * @throws CoreException
-     */
-    public static AndroidManifestParser parseManifestForError(IFile manifestFile,
-            XmlErrorListener errorListener) throws CoreException {
-        // remove previous markers
-        if (manifestFile.exists()) {
-            manifestFile.deleteMarkers(AndroidConstants.MARKER_XML, true, IResource.DEPTH_ZERO);
-            manifestFile.deleteMarkers(AndroidConstants.MARKER_ANDROID, true, IResource.DEPTH_ZERO);
-        }
-
-        // and parse
-        return AndroidManifestParser.parseForError(
-                BaseProjectHelper.getJavaProject(manifestFile.getProject()),
-                manifestFile, errorListener);
     }
 
     /**
