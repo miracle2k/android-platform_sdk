@@ -645,9 +645,7 @@ public class NewProjectWizard extends Wizard implements INewWizard {
 
         // Setup class path: mark folders as source folders
         IJavaProject javaProject = JavaCore.create(project);
-        for (String sourceFolder : sourceFolders) {
-            setupSourceFolder(javaProject, sourceFolder, monitor);
-        }
+        setupSourceFolders(javaProject, sourceFolders, monitor);
 
         // Mark the gen source folder as derived
         IFolder genSrcFolder = project.getFolder(AndroidConstants.WS_ROOT + GEN_SRC_DIRECTORY);
@@ -1030,19 +1028,25 @@ public class NewProjectWizard extends Wizard implements INewWizard {
      * @param monitor An existing monitor.
      * @throws JavaModelException if the classpath could not be set.
      */
-    private void setupSourceFolder(IJavaProject javaProject, String sourceFolder,
+    private void setupSourceFolders(IJavaProject javaProject, String[] sourceFolders,
             IProgressMonitor monitor) throws JavaModelException {
         IProject project = javaProject.getProject();
 
-        // Add "src" to class path
-        IFolder srcFolder = project.getFolder(sourceFolder);
-
+        // get the list of entries.
         IClasspathEntry[] entries = javaProject.getRawClasspath();
-        entries = removeSourceClasspath(entries, srcFolder);
-        entries = removeSourceClasspath(entries, srcFolder.getParent());
 
-        entries = ProjectHelper.addEntryToClasspath(entries,
-                JavaCore.newSourceEntry(srcFolder.getFullPath()));
+        // remove the project as a source folder (This is the default)
+        entries = removeSourceClasspath(entries, project);
+
+        // add the source folders.
+        for (String sourceFolder : sourceFolders) {
+            IFolder srcFolder = project.getFolder(sourceFolder);
+
+            // remove it first in case.
+            entries = removeSourceClasspath(entries, srcFolder);
+            entries = ProjectHelper.addEntryToClasspath(entries,
+                    JavaCore.newSourceEntry(srcFolder.getFullPath()));
+        }
 
         javaProject.setRawClasspath(entries, new SubProgressMonitor(monitor, 10));
     }
