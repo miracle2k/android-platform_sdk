@@ -65,7 +65,11 @@ public class ProjectChooserHelper {
     public final static class NonLibraryProjectOnlyFilter implements IProjectChooserFilter {
         public boolean accept(IProject project) {
             ProjectState state = Sdk.getProjectState(project);
-            return state.isLibrary() == false;
+            if (state != null) {
+                return state.isLibrary() == false;
+            }
+
+            return false;
         }
 
         public boolean useCache() {
