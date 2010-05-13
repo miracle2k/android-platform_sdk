@@ -19,7 +19,7 @@ package com.android.ide.eclipse.adt.internal.project;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;

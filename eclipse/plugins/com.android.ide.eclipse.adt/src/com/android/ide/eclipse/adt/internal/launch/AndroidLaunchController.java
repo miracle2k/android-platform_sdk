@@ -42,7 +42,7 @@ import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.NullSdkLog;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;

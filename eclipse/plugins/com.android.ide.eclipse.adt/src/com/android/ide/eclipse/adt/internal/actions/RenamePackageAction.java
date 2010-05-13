@@ -21,7 +21,7 @@ import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;

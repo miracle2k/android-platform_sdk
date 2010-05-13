@@ -20,6 +20,9 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.io.StreamException;
+import com.android.sdklib.xml.ManifestData.Activity;
+import com.android.sdklib.xml.ManifestData.Instrumentation;
+import com.android.sdklib.xml.ManifestData.SupportsScreens;
 import com.sun.rowset.internal.XmlErrorHandler;
 
 import org.xml.sax.Attributes;
@@ -32,9 +35,6 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.TreeSet;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -50,187 +50,6 @@ public class AndroidManifestParser {
 
     private final static String ACTION_MAIN = "android.intent.action.MAIN"; //$NON-NLS-1$
     private final static String CATEGORY_LAUNCHER = "android.intent.category.LAUNCHER"; //$NON-NLS-1$
-
-    /**
-     * Class containing the manifest info obtained during the parsing.
-     */
-    public static class ManifestData {
-
-        /** Application package */
-        private String mPackage;
-        /** List of all activities */
-        private final ArrayList<Activity> mActivities = new ArrayList<Activity>();
-        /** Launcher activity */
-        private Activity mLauncherActivity = null;
-        /** list of process names declared by the manifest */
-        private Set<String> mProcesses = null;
-        /** debuggable attribute value. If null, the attribute is not present. */
-        private Boolean mDebuggable = null;
-        /** API level requirement. if null the attribute was not present. */
-        private String mApiLevelRequirement = null;
-        /** List of all instrumentations declared by the manifest */
-        private final ArrayList<Instrumentation> mInstrumentations =
-            new ArrayList<Instrumentation>();
-        /** List of all libraries in use declared by the manifest */
-        private final ArrayList<String> mLibraries = new ArrayList<String>();
-
-        /**
-         * Returns the package defined in the manifest, if found.
-         * @return The package name or null if not found.
-         */
-        public String getPackage() {
-            return mPackage;
-        }
-
-        /**
-         * Returns the list of activities found in the manifest.
-         * @return An array of fully qualified class names, or empty if no activity were found.
-         */
-        public Activity[] getActivities() {
-            return mActivities.toArray(new Activity[mActivities.size()]);
-        }
-
-        /**
-         * Returns the name of one activity found in the manifest, that is configured to show
-         * up in the HOME screen.
-         * @return the fully qualified name of a HOME activity or null if none were found.
-         */
-        public Activity getLauncherActivity() {
-            return mLauncherActivity;
-        }
-
-        /**
-         * Returns the list of process names declared by the manifest.
-         */
-        public String[] getProcesses() {
-            if (mProcesses != null) {
-                return mProcesses.toArray(new String[mProcesses.size()]);
-            }
-
-            return new String[0];
-        }
-
-        /**
-         * Returns the <code>debuggable</code> attribute value or null if it is not set.
-         */
-        public Boolean getDebuggable() {
-            return mDebuggable;
-        }
-
-        /**
-         * Returns the <code>minSdkVersion</code> attribute, or null if it's not set.
-         */
-        public String getApiLevelRequirement() {
-            return mApiLevelRequirement;
-        }
-
-        /**
-         * Returns the list of instrumentations found in the manifest.
-         * @return An array of {@link Instrumentation}, or empty if no instrumentations were
-         * found.
-         */
-        public Instrumentation[] getInstrumentations() {
-            return mInstrumentations.toArray(new Instrumentation[mInstrumentations.size()]);
-        }
-
-        /**
-         * Returns the list of libraries in use found in the manifest.
-         * @return An array of library names, or empty if no libraries were found.
-         */
-        public String[] getUsesLibraries() {
-            return mLibraries.toArray(new String[mLibraries.size()]);
-        }
-
-        private void addProcessName(String processName) {
-            if (mProcesses == null) {
-                mProcesses = new TreeSet<String>();
-            }
-
-            mProcesses.add(processName);
-        }
-
-    }
-
-    /**
-     * Instrumentation info obtained from manifest
-     */
-    public static class Instrumentation {
-        private final String mName;
-        private final String mTargetPackage;
-
-        Instrumentation(String name, String targetPackage) {
-            mName = name;
-            mTargetPackage = targetPackage;
-        }
-
-        /**
-         * Returns the fully qualified instrumentation class name
-         */
-        public String getName() {
-            return mName;
-        }
-
-        /**
-         * Returns the Android app package that is the target of this instrumentation
-         */
-        public String getTargetPackage() {
-            return mTargetPackage;
-        }
-    }
-
-    /**
-     * Activity info obtained from the manifest.
-     */
-    public static class Activity {
-        private final String mName;
-        private final boolean mIsExported;
-        private boolean mHasAction = false;
-        private boolean mHasMainAction = false;
-        private boolean mHasLauncherCategory = false;
-
-        public Activity(String name, boolean exported) {
-            mName = name;
-            mIsExported = exported;
-        }
-
-        public String getName() {
-            return mName;
-        }
-
-        public boolean isExported() {
-            return mIsExported;
-        }
-
-        public boolean hasAction() {
-            return mHasAction;
-        }
-
-        public boolean isHomeActivity() {
-            return mHasMainAction && mHasLauncherCategory;
-        }
-
-        void setHasAction(boolean hasAction) {
-            mHasAction = hasAction;
-        }
-
-        /** If the activity doesn't yet have a filter set for the launcher, this resets both
-         * flags. This is to handle multiple intent-filters where one could have the valid
-         * action, and another one of the valid category.
-         */
-        void resetIntentFilter() {
-            if (isHomeActivity() == false) {
-                mHasMainAction = mHasLauncherCategory = false;
-            }
-        }
-
-        void setHasMainAction(boolean hasMainAction) {
-            mHasMainAction = hasMainAction;
-        }
-
-        void setHasLauncherCategory(boolean hasLauncherCategory) {
-            mHasLauncherCategory = hasLauncherCategory;
-        }
-    }
 
     public interface ManifestErrorHandler extends ErrorHandler {
         /**
@@ -286,7 +105,6 @@ public class AndroidManifestParser {
             mErrorHandler = errorHandler;
         }
 
-
         /* (non-Javadoc)
          * @see org.xml.sax.helpers.DefaultHandler#setDocumentLocator(org.xml.sax.Locator)
          */
@@ -318,6 +136,17 @@ public class AndroidManifestParser {
                                 mManifestData.mPackage = getAttributeValue(attributes,
                                         AndroidManifest.ATTRIBUTE_PACKAGE,
                                         false /* hasNamespace */);
+
+                                // and the versionCode
+                                String tmp = getAttributeValue(attributes,
+                                        AndroidManifest.ATTRIBUTE_VERSIONCODE, true);
+                                if (tmp != null) {
+                                    try {
+                                        mManifestData.mVersionCode = Integer.getInteger(tmp);
+                                    } catch (NumberFormatException e) {
+                                        // keep null in the field.
+                                    }
+                                }
                                 mValidLevel++;
                             }
                             break;
@@ -344,6 +173,8 @@ public class AndroidManifestParser {
                                         true /* hasNamespace */);
                             } else if (AndroidManifest.NODE_INSTRUMENTATION.equals(localName)) {
                                 processInstrumentationNode(attributes);
+                            } else if (AndroidManifest.NODE_SUPPORTS_SCREENS.equals(localName)) {
+                                processSupportsScreensNode(attributes);
                             }
                             break;
                         case LEVEL_ACTIVITY:
@@ -549,9 +380,8 @@ public class AndroidManifestParser {
         }
 
         /**
-         * Processes the instrumentation nodes.
-         * @param attributes the attributes for the activity node.
-         * node is representing
+         * Processes the instrumentation node.
+         * @param attributes the attributes for the instrumentation node.
          */
         private void processInstrumentationNode(Attributes attributes) {
             // lets get the class name, and check it if required.
@@ -572,6 +402,31 @@ public class AndroidManifestParser {
                 }
             }
         }
+
+        /**
+         * Processes the supports-screens node.
+         * @param attributes the attributes for the supports-screens node.
+         */
+        private void processSupportsScreensNode(Attributes attributes) {
+            mManifestData.mSupportsScreens = new SupportsScreens();
+
+            mManifestData.mSupportsScreens.mResizeable = Boolean.valueOf(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_RESIZABLE, true /*hasNamespace*/));
+            mManifestData.mSupportsScreens.mAnyDensity = Boolean.valueOf(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_ANYDENSITY, true /*hasNamespace*/));
+            mManifestData.mSupportsScreens.mSmallScreens = Boolean.valueOf(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_SMALLSCREENS, true /*hasNamespace*/));
+            mManifestData.mSupportsScreens.mNormalScreens = Boolean.valueOf(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_NORMALSCREENS, true /*hasNamespace*/));
+            mManifestData.mSupportsScreens.mLargeScreens = Boolean.valueOf(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_LARGESCREENS, true /*hasNamespace*/));
+        }
+
 
         /**
          * Searches through the attributes list for a particular one and returns its value.

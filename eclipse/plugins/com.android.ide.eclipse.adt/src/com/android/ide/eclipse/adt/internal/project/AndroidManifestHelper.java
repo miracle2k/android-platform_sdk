@@ -23,7 +23,7 @@ import com.android.sdklib.io.FileWrapper;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.StreamException;
 import com.android.sdklib.xml.AndroidManifestParser;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;

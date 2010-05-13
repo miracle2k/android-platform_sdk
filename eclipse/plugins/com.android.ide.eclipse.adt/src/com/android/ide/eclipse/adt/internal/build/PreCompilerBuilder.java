@@ -33,7 +33,7 @@ import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;

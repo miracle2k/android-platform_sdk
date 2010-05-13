@@ -31,7 +31,7 @@ import com.android.ide.eclipse.adt.internal.wizards.newproject.NewProjectCreatio
 import com.android.ide.eclipse.adt.internal.wizards.newproject.NewProjectCreationPage.MainInfo;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 import com.android.sdkuilib.internal.widgets.SdkTargetSelector;
 
 import org.eclipse.core.filesystem.URIUtil;

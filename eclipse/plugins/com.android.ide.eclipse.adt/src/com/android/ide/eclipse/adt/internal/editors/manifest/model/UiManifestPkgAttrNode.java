@@ -28,7 +28,7 @@ import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.wizards.actions.NewProjectAction;
 import com.android.ide.eclipse.adt.internal.wizards.newproject.NewProjectWizard;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.core.IJavaProject;

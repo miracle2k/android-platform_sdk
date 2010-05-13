@@ -18,8 +18,7 @@ package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.tests.AdtTestData;
-import com.android.sdklib.xml.AndroidManifestParser.Activity;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 
 import junit.framework.TestCase;
 
@@ -37,6 +36,7 @@ public class AndroidManifestParserTest extends TestCase {
     private static final String TESTAPP_XML = TESTDATA_PATH +
         "AndroidManifest-testapp.xml";  //$NON-NLS-1$
     private static final String PACKAGE_NAME =  "com.android.testapp"; //$NON-NLS-1$
+    private static final Integer VERSION_CODE = 42;
     private static final String ACTIVITY_NAME = "com.android.testapp.MainActivity"; //$NON-NLS-1$
     private static final String LIBRARY_NAME = "android.test.runner"; //$NON-NLS-1$
     private static final String INSTRUMENTATION_NAME = "android.test.InstrumentationTestRunner"; //$NON-NLS-1$
@@ -67,9 +67,18 @@ public class AndroidManifestParserTest extends TestCase {
         assertEquals(PACKAGE_NAME, mManifestTestApp.getPackage());
     }
 
+    public void testGetVersionCode() {
+        assertEquals(VERSION_CODE, mManifestTestApp.getVersionCode());
+        assertEquals(null, mManifestInstrumentation.getVersionCode());
+    }
+
+    public void testMinSdkVersion() {
+        assertEquals("7", mManifestTestApp.getApiLevelRequirement());
+    }
+
     public void testGetActivities() {
         assertEquals(1, mManifestTestApp.getActivities().length);
-        Activity activity = mManifestTestApp.getActivities()[0];
+        ManifestData.Activity activity = mManifestTestApp.getActivities()[0];
         assertEquals(ACTIVITY_NAME, activity.getName());
         assertTrue(activity.hasAction());
         assertTrue(activity.isHomeActivity());
@@ -78,13 +87,13 @@ public class AndroidManifestParserTest extends TestCase {
     }
 
     public void testGetLauncherActivity() {
-        Activity activity = mManifestTestApp.getLauncherActivity();
+        ManifestData.Activity activity = mManifestTestApp.getLauncherActivity();
         assertEquals(ACTIVITY_NAME, activity.getName());
         assertTrue(activity.hasAction());
         assertTrue(activity.isHomeActivity());
     }
 
-    private void assertEquals(Activity lhs, Activity rhs) {
+    private void assertEquals(ManifestData.Activity lhs, ManifestData.Activity rhs) {
         assertTrue(lhs == rhs || (lhs != null && rhs != null));
         if (lhs != null && rhs != null) {
             assertEquals(lhs.getName(),        rhs.getName());

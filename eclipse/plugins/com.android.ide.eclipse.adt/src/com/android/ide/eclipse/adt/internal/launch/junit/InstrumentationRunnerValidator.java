@@ -20,8 +20,8 @@ import com.android.ide.eclipse.adt.internal.launch.LaunchMessages;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.xml.AndroidManifestParser.Instrumentation;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
+import com.android.sdklib.xml.ManifestData.Instrumentation;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;

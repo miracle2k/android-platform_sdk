@@ -22,7 +22,7 @@ import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectClassLoader;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.layoutlib.api.IProjectCallback;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IProject;
 

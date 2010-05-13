@@ -24,7 +24,7 @@ import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper.NonLibraryProjectOnlyFilter;
 import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard.ExportWizardPage;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;

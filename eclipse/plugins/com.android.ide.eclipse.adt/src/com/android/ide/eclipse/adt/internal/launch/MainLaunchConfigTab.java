@@ -20,8 +20,8 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper.NonLibraryProjectOnlyFilter;
-import com.android.sdklib.xml.AndroidManifestParser.Activity;
-import com.android.sdklib.xml.AndroidManifestParser.ManifestData;
+import com.android.sdklib.xml.ManifestData;
+import com.android.sdklib.xml.ManifestData.Activity;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
