@@ -274,10 +274,6 @@ class SdkCommandLine extends CommandLineProcessor {
                 VERB_UPDATE, OBJECT_LIB_PROJECT,
                 "t", KEY_TARGET_ID,
                 "Target id to set for the project", null);
-        define(Mode.STRING, false,
-                VERB_UPDATE, OBJECT_LIB_PROJECT,
-                "l", KEY_LIBRARY,
-                "Location path of an Android Library to add, relative to the main project", null);
     }
 
     @Override

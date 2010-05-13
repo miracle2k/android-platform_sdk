@@ -503,8 +503,8 @@ public class Main {
 
         String projectDir = getProjectLocation(mSdkCommandLine.getParamLocationPath());
 
-        String libraryPath = mSdkCommandLine.getParamProjectLibrary(
-                library ? SdkCommandLine.OBJECT_LIB_PROJECT : SdkCommandLine.OBJECT_PROJECT);
+        String libraryPath = library ? null :
+            mSdkCommandLine.getParamProjectLibrary(SdkCommandLine.OBJECT_PROJECT);
 
         creator.updateProject(projectDir,
                 target,
