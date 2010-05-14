@@ -770,7 +770,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         // create Device menu items
         final MenuItem screenShotItem = new MenuItem(deviceMenu, SWT.NONE);
-        screenShotItem.setText("&Screen capture...\tCTrl-S");
+        screenShotItem.setText("&Screen capture...\tCtrl-S");
         screenShotItem.setAccelerator('S' | SWT.CONTROL);
         screenShotItem.addSelectionListener(new SelectionAdapter() {
             @Override
