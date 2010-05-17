@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
  *
- * Licensed under the Eclipse Public License, Version 1.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.eclipse.org/org/documents/epl-v10.php
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.project;
+package com.android.sdklib.xml;
 
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
-import com.android.ide.eclipse.tests.AdtTestData;
-import com.android.sdklib.xml.ManifestData;
+import java.io.InputStream;
 
 import junit.framework.TestCase;
 
 /**
- * Tests for {@link AndroidManifestHelper}
+ * Tests for {@link AndroidManifestParser}
  */
 public class AndroidManifestParserTest extends TestCase {
     private ManifestData mManifestTestApp;
     private ManifestData mManifestInstrumentation;
 
     private static final String TESTDATA_PATH =
-        "com/android/ide/eclipse/testdata/";  //$NON-NLS-1$
+        "/com/android/sdklib/testdata/";  //$NON-NLS-1$
     private static final String INSTRUMENTATION_XML = TESTDATA_PATH +
         "AndroidManifest-instrumentation.xml";  //$NON-NLS-1$
     private static final String TESTAPP_XML = TESTDATA_PATH +
@@ -46,12 +44,13 @@ public class AndroidManifestParserTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
 
-        String testFilePath = AdtTestData.getInstance().getTestFilePath(TESTAPP_XML);
-        mManifestTestApp = AndroidManifestHelper.parseForData(testFilePath);
+        InputStream manifestStream = this.getClass().getResourceAsStream(TESTAPP_XML);
+
+        mManifestTestApp = AndroidManifestParser.parse(manifestStream);
         assertNotNull(mManifestTestApp);
 
-        testFilePath = AdtTestData.getInstance().getTestFilePath(INSTRUMENTATION_XML);
-        mManifestInstrumentation = AndroidManifestHelper.parseForData(testFilePath);
+        manifestStream = this.getClass().getResourceAsStream(INSTRUMENTATION_XML);
+        mManifestInstrumentation = AndroidManifestParser.parse(manifestStream);
         assertNotNull(mManifestInstrumentation);
     }
 

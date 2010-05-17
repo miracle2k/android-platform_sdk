@@ -35,6 +35,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -142,7 +143,7 @@ public class AndroidManifestParser {
                                         AndroidManifest.ATTRIBUTE_VERSIONCODE, true);
                                 if (tmp != null) {
                                     try {
-                                        mManifestData.mVersionCode = Integer.getInteger(tmp);
+                                        mManifestData.mVersionCode = Integer.valueOf(tmp);
                                     } catch (NumberFormatException e) {
                                         // keep null in the field.
                                     }
@@ -427,7 +428,6 @@ public class AndroidManifestParser {
                             AndroidManifest.ATTRIBUTE_LARGESCREENS, true /*hasNamespace*/));
         }
 
-
         /**
          * Searches through the attributes list for a particular one and returns its value.
          * @param attributes the attribute list to search through
@@ -522,6 +522,33 @@ public class AndroidManifestParser {
         }
 
         return parse(manifestFile, true, null);
+    }
+
+    /**
+     * Parses the Android Manifest from an {@link InputStream}, and returns a {@link ManifestData}
+     * object containing the result of the parsing.
+     *
+     * @param manifestFileStream the {@link InputStream} representing the manifest file.
+     * @return
+     * @throws StreamException
+     * @throws IOException
+     * @throws SAXException
+     * @throws ParserConfigurationException
+     */
+    public static ManifestData parse(InputStream manifestFileStream)
+            throws SAXException, IOException, StreamException, ParserConfigurationException {
+        if (manifestFileStream != null) {
+            SAXParser parser = sParserFactory.newSAXParser();
+
+            ManifestData data = new ManifestData();
+
+            ManifestHandler manifestHandler = new ManifestHandler(null, data, null);
+            parser.parse(new InputSource(manifestFileStream), manifestHandler);
+
+            return data;
+        }
+
+        return null;
     }
 
     /**
