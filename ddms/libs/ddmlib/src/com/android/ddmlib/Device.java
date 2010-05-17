@@ -516,4 +516,12 @@ final class Device implements IDevice {
         executeShellCommand("pm uninstall " + packageName, receiver);
         return receiver.getErrorMessage();
     }
+
+    /*
+     * (non-Javadoc)
+     * @see com.android.ddmlib.IDevice#reboot()
+     */
+    public void reboot(String into) throws IOException {
+        AdbHelper.reboot(into, AndroidDebugBridge.getSocketAddress(), this);
+    }
 }

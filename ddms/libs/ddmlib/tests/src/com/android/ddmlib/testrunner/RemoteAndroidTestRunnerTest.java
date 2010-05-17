@@ -248,6 +248,9 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
             throw new UnsupportedOperationException();
         }
 
+        public void reboot(String into) throws IOException {
+            throw new UnsupportedOperationException();
+        }
     }
 
     /**

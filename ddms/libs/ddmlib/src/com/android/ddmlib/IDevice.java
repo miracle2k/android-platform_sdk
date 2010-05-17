@@ -275,4 +275,11 @@ public interface IDevice {
      */
     public String uninstallPackage(String packageName) throws IOException;
 
+    /**
+     * Reboot the device.
+     *
+     * @param into the bootloader name to reboot into, or null to just reboot the device.
+     * @throws IOException
+     */
+    public void reboot(String into) throws IOException;
 }

@@ -728,4 +728,36 @@ final class AdbHelper {
         }
 
     }
+
+    /**
+     * Reboot the device.
+     *
+     * @param into what to reboot into (recovery, bootloader).  Or null to just reboot.
+     */
+    public static void reboot(String into, InetSocketAddress adbSockAddr,
+            Device device) throws IOException {
+        byte[] request;
+        if (into == null) {
+            request = formAdbRequest("reboot:"); //$NON-NLS-1$
+        } else {
+            request = formAdbRequest("reboot:" + into); //$NON-NLS-1$
+        }
+
+        SocketChannel adbChan = null;
+        try {
+            adbChan = SocketChannel.open(adbSockAddr);
+            adbChan.configureBlocking(false);
+
+            // if the device is not -1, then we first tell adb we're looking to talk
+            // to a specific device
+            setDevice(adbChan, device);
+
+            if (write(adbChan, request) == false)
+                throw new IOException("failed asking for reboot");
+        } finally {
+            if (adbChan != null) {
+                adbChan.close();
+            }
+        }
+    }
 }
