@@ -108,6 +108,7 @@ public class MultiApkExportTask extends Task {
             glVersion = data.glVersion;
         }
 
+        @Override
         public String toString() {
             StringBuilder sb = new StringBuilder(outputName);
             sb.append(" / ").append(relativePath);
@@ -151,7 +152,7 @@ public class MultiApkExportTask extends Task {
         /**
          * Writes the apk description in the given writer. a single line is used to write
          * everything.
-         * @param writer
+         * @param writer The {@link FileWriter} to write to.
          * @throws IOException
          *
          * @see {@link #read(String)}
@@ -164,7 +165,7 @@ public class MultiApkExportTask extends Task {
 
         /**
          * reads the apk description from a log line.
-         * @param data
+         * @param line The fields to read, comma-separated.
          *
          * @see #write(FileWriter)
          */
@@ -538,10 +539,13 @@ public class MultiApkExportTask extends Task {
     /**
      * Checks a manifest of the project for inclusion in the list of exported APK.
      * If the manifest is correct, a list of apk to export is created and returned.
+     *
      * @param androidManifest the manifest to check
      * @param appPackage the package name of the application being exported, as read from
      * export.properties.
-     * @return
+     * @return A new non-null {@link ArrayList} of {@link ApkData}.
+     *
+     * @throws BuildException in case of error.
      */
     private ArrayList<ApkData> checkManifest(FileWrapper androidManifest, String appPackage) {
         try {
@@ -611,8 +615,9 @@ public class MultiApkExportTask extends Task {
 
     /**
      * Finds ABIs in a project folder. This is based on the presence of libs/<abi>/ folder.
-     * @param projectPath
-     * @return
+     *
+     * @param projectPath The OS path of the project.
+     * @return A new non-null, possibly empty, list of ABI strings.
      */
     private List<String> findAbis(String projectPath) {
         ArrayList<String> abiList = new ArrayList<String>();
@@ -669,7 +674,7 @@ public class MultiApkExportTask extends Task {
      * Returns the {@link File} for the build log.
      * @param appPackage
      * @param versionCode
-     * @return
+     * @return A new non-null {@link File} mapping to the build log.
      */
     private File getBuildLog(String appPackage, int versionCode) {
         return new File(appPackage + "." + versionCode + ".log");
@@ -678,7 +683,8 @@ public class MultiApkExportTask extends Task {
     /**
      * Loads and returns a list of {@link ApkData} from a build log.
      * @param log
-     * @return
+     * @return A new non-null, possibly empty, array of {@link ApkData}.
+     * @throws BuildException in case of error.
      */
     private ApkData[] getProjects(File log) {
         ArrayList<ApkData> datalist = new ArrayList<ApkData>();
