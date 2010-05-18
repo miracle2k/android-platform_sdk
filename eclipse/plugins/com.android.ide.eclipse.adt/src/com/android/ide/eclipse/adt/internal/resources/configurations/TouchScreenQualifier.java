@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.TouchScreen;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -29,82 +30,17 @@ public final class TouchScreenQualifier extends ResourceQualifier {
 
     public static final String NAME = "Touch Screen";
 
-    private TouchScreenType mValue;
-
-    /**
-     * Screen Orientation enum.
-     */
-    public static enum TouchScreenType {
-        NOTOUCH("notouch", "No Touch"), //$NON-NLS-1$
-        STYLUS("stylus", "Stylus"), //$NON-NLS-1$
-        FINGER("finger", "Finger"); //$NON-NLS-1$
-
-        private String mValue;
-        private String mDisplayValue;
-
-        private TouchScreenType(String value, String displayValue) {
-            mValue = value;
-            mDisplayValue = displayValue;
-        }
-
-        /**
-         * Returns the enum for matching the provided qualifier value.
-         * @param value The qualifier value.
-         * @return the enum for the qualifier value or null if no matching was found.
-         */
-        public static TouchScreenType getEnum(String value) {
-            for (TouchScreenType orient : values()) {
-                if (orient.mValue.equals(value)) {
-                    return orient;
-                }
-            }
-
-            return null;
-        }
-
-        public String getValue() {
-            return mValue;
-        }
-
-        public String getDisplayValue() {
-            return mDisplayValue;
-        }
-
-        public static int getIndex(TouchScreenType touch) {
-            int i = 0;
-            for (TouchScreenType t : values()) {
-                if (t == touch) {
-                    return i;
-                }
-
-                i++;
-            }
-
-            return -1;
-        }
-
-        public static TouchScreenType getByIndex(int index) {
-            int i = 0;
-            for (TouchScreenType value : values()) {
-                if (i == index) {
-                    return value;
-                }
-                i++;
-            }
-
-            return null;
-        }
-    }
+    private TouchScreen mValue;
 
     public TouchScreenQualifier() {
         // pass
     }
 
-    public TouchScreenQualifier(TouchScreenType touchValue) {
+    public TouchScreenQualifier(TouchScreen touchValue) {
         mValue = touchValue;
     }
 
-    public TouchScreenType getValue() {
+    public TouchScreen getValue() {
         return mValue;
     }
 
@@ -130,7 +66,7 @@ public final class TouchScreenQualifier extends ResourceQualifier {
 
     @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
-        TouchScreenType type = TouchScreenType.getEnum(value);
+        TouchScreen type = TouchScreen.getEnum(value);
         if (type != null) {
             TouchScreenQualifier qualifier = new TouchScreenQualifier();
             qualifier.mValue = type;

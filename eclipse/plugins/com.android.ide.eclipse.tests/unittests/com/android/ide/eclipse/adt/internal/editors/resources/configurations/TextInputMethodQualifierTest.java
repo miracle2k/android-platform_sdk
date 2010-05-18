@@ -18,11 +18,12 @@ package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier;
+import com.android.sdklib.resources.Keyboard;
 
 import junit.framework.TestCase;
 
 public class TextInputMethodQualifierTest extends TestCase {
-    
+
     private TextInputMethodQualifier timq;
     private FolderConfiguration config;
 
@@ -43,24 +44,21 @@ public class TextInputMethodQualifierTest extends TestCase {
     public void testQuerty() {
         assertEquals(true, timq.checkAndSet("qwerty", config)); //$NON-NLS-1$
         assertTrue(config.getTextInputMethodQualifier() != null);
-        assertEquals(TextInputMethodQualifier.TextInputMethod.QWERTY,
-                config.getTextInputMethodQualifier().getValue());
+        assertEquals(Keyboard.QWERTY, config.getTextInputMethodQualifier().getValue());
         assertEquals("qwerty", config.getTextInputMethodQualifier().toString()); //$NON-NLS-1$
     }
 
     public void test12Key() {
         assertEquals(true, timq.checkAndSet("12key", config)); //$NON-NLS-1$
         assertTrue(config.getTextInputMethodQualifier() != null);
-        assertEquals(TextInputMethodQualifier.TextInputMethod.TWELVEKEYS,
-                config.getTextInputMethodQualifier().getValue());
+        assertEquals(Keyboard.TWELVEKEYS, config.getTextInputMethodQualifier().getValue());
         assertEquals("12key", config.getTextInputMethodQualifier().toString()); //$NON-NLS-1$
     }
 
     public void testNoKey() {
         assertEquals(true, timq.checkAndSet("nokeys", config)); //$NON-NLS-1$
         assertTrue(config.getTextInputMethodQualifier() != null);
-        assertEquals(TextInputMethodQualifier.TextInputMethod.NOKEY,
-                config.getTextInputMethodQualifier().getValue());
+        assertEquals(Keyboard.NOKEY, config.getTextInputMethodQualifier().getValue());
         assertEquals("nokeys", config.getTextInputMethodQualifier().toString()); //$NON-NLS-1$
     }
 

@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.resources.configurations;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.ScreenSize;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -31,70 +32,6 @@ public class ScreenSizeQualifier extends ResourceQualifier {
 
     private ScreenSize mValue = null;
 
-    /**
-     * Screen Orientation enum.
-     */
-    public static enum ScreenSize {
-        SMALL("small", "Small"), //$NON-NLS-1$
-        NORMAL("normal", "Normal"), //$NON-NLS-1$
-        LARGE("large", "Large"); //$NON-NLS-1$
-
-        private String mValue;
-        private String mDisplayValue;
-
-        private ScreenSize(String value, String displayValue) {
-            mValue = value;
-            mDisplayValue = displayValue;
-        }
-
-        /**
-         * Returns the enum for matching the provided qualifier value.
-         * @param value The qualifier value.
-         * @return the enum for the qualifier value or null if no matching was found.
-         */
-        public static ScreenSize getEnum(String value) {
-            for (ScreenSize orient : values()) {
-                if (orient.mValue.equals(value)) {
-                    return orient;
-                }
-            }
-
-            return null;
-        }
-
-        public String getValue() {
-            return mValue;
-        }
-
-        public String getDisplayValue() {
-            return mDisplayValue;
-        }
-
-        public static int getIndex(ScreenSize orientation) {
-            int i = 0;
-            for (ScreenSize orient : values()) {
-                if (orient == orientation) {
-                    return i;
-                }
-
-                i++;
-            }
-
-            return -1;
-        }
-
-        public static ScreenSize getByIndex(int index) {
-            int i = 0;
-            for (ScreenSize orient : values()) {
-                if (i == index) {
-                    return orient;
-                }
-                i++;
-            }
-
-            return null;
-        }
-    }
 
     public ScreenSizeQualifier() {
     }

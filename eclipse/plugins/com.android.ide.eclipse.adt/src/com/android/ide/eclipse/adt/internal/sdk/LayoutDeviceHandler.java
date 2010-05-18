@@ -28,14 +28,14 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenRatio
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier;
-import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier.KeyboardState;
-import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationMethodQualifier.NavigationMethod;
-import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier.Density;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier.ScreenOrientation;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenRatioQualifier.ScreenRatio;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQualifier.ScreenSize;
-import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier.TextInputMethod;
-import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier.TouchScreenType;
+import com.android.sdklib.resources.Density;
+import com.android.sdklib.resources.Keyboard;
+import com.android.sdklib.resources.KeyboardState;
+import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.ScreenOrientation;
+import com.android.sdklib.resources.ScreenRatio;
+import com.android.sdklib.resources.ScreenSize;
+import com.android.sdklib.resources.TouchScreen;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -145,7 +145,7 @@ class LayoutDeviceHandler extends DefaultHandler {
             mCurrentConfig.setPixelDensityQualifier(pdq);
         } else if (LayoutDevicesXsd.NODE_TOUCH_TYPE.equals(localName)) {
             TouchScreenQualifier tsq = new TouchScreenQualifier(
-                    TouchScreenType.getEnum(mStringAccumulator.toString()));
+                    TouchScreen.getEnum(mStringAccumulator.toString()));
             mCurrentConfig.setTouchTypeQualifier(tsq);
         } else if (LayoutDevicesXsd.NODE_KEYBOARD_STATE.equals(localName)) {
             KeyboardStateQualifier ksq = new KeyboardStateQualifier(
@@ -153,11 +153,11 @@ class LayoutDeviceHandler extends DefaultHandler {
             mCurrentConfig.setKeyboardStateQualifier(ksq);
         } else if (LayoutDevicesXsd.NODE_TEXT_INPUT_METHOD.equals(localName)) {
             TextInputMethodQualifier timq = new TextInputMethodQualifier(
-                    TextInputMethod.getEnum(mStringAccumulator.toString()));
+                    Keyboard.getEnum(mStringAccumulator.toString()));
             mCurrentConfig.setTextInputMethodQualifier(timq);
         } else if (LayoutDevicesXsd.NODE_NAV_METHOD.equals(localName)) {
             NavigationMethodQualifier nmq = new NavigationMethodQualifier(
-                    NavigationMethod.getEnum(mStringAccumulator.toString()));
+                    Navigation.getEnum(mStringAccumulator.toString()));
             mCurrentConfig.setNavigationMethodQualifier(nmq);
         } else if (LayoutDevicesXsd.NODE_SCREEN_DIMENSION.equals(localName)) {
             ScreenDimensionQualifier qual = ScreenDimensionQualifier.getQualifier(mSize1, mSize2);

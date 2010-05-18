@@ -102,6 +102,7 @@ Export-Package: com.android.ide.eclipse.adt;x-friends:="com.android.ide.eclipse.
  com.android.sdklib.internal.repository;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib.io;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib.repository;x-friends:="com.android.ide.eclipse.tests",
+ com.android.sdklib.resources;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib.xml;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdkstats;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdkuilib.internal.repository;x-friends:="com.android.ide.eclipse.tests",

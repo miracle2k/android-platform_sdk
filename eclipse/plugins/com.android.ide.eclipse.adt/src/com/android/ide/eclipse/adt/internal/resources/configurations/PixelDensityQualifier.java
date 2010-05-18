@@ -17,9 +17,9 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.layoutlib.api.IDensityBasedResourceValue;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.Density;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -35,114 +35,6 @@ public final class PixelDensityQualifier extends ResourceQualifier {
     public static final String NAME = "Pixel Density";
 
     private Density mValue = Density.MEDIUM;
-
-    /**
-     * Screen Orientation enum.
-     */
-    public static enum Density {
-        HIGH("hdpi", "High Density", IDensityBasedResourceValue.Density.HIGH), //$NON-NLS-1$
-        MEDIUM("mdpi", "Medium Density", IDensityBasedResourceValue.Density.MEDIUM), //$NON-NLS-1$
-        LOW("ldpi", "Low Density", IDensityBasedResourceValue.Density.LOW), //$NON-NLS-1$
-        NODPI("nodpi", "No Density", IDensityBasedResourceValue.Density.NODPI); //$NON-NLS-1$
-
-        private final String mValue;
-        private final String mDisplayValue;
-        private final IDensityBasedResourceValue.Density mDensity;
-
-        private Density(String value, String displayValue,
-                IDensityBasedResourceValue.Density density) {
-            mValue = value;
-            mDisplayValue = displayValue;
-            mDensity = density;
-        }
-
-        /**
-         * Returns the enum for matching the provided qualifier value.
-         * @param value The qualifier value.
-         * @return the enum for the qualifier value or null if no matching was found.
-         */
-        public static Density getEnum(String value) {
-            for (Density orient : values()) {
-                if (orient.mValue.equals(value)) {
-                    return orient;
-                }
-            }
-
-            return null;
-        }
-
-        static Density getLegacyEnum(String value) {
-            Matcher m = sDensityLegacyPattern.matcher(value);
-            if (m.matches()) {
-                String v = m.group(1);
-
-                try {
-                    int density = Integer.parseInt(v);
-                    for (Density orient : values()) {
-                        if (orient.mDensity.getValue() == density) {
-                            return orient;
-                        }
-                    }
-                } catch (NumberFormatException e) {
-                    // looks like the string we extracted wasn't a valid number
-                    // which really shouldn't happen since the regexp would have failed.
-                }
-            }
-            return null;
-        }
-
-        public String getValue() {
-            return mValue;
-        }
-
-        public int getDpiValue() {
-            return mDensity.getValue();
-        }
-
-        public String getLegacyValue() {
-            if (this != NODPI) {
-                return String.format("%1$ddpi", getDpiValue());
-            }
-
-            return "";
-        }
-
-        public String getDisplayValue() {
-            return mDisplayValue;
-        }
-
-        /**
-         * Returns the {@link com.android.layoutlib.api.IDensityBasedResourceValue.Density} value
-         * associated to this {@link Density}.
-         */
-        public IDensityBasedResourceValue.Density getDensity() {
-            return mDensity;
-        }
-
-        public static int getIndex(Density value) {
-            int i = 0;
-            for (Density input : values()) {
-                if (value == input) {
-                    return i;
-                }
-
-                i++;
-            }
-
-            return -1;
-        }
-
-        public static Density getByIndex(int index) {
-            int i = 0;
-            for (Density value : values()) {
-                if (i == index) {
-                    return value;
-                }
-                i++;
-            }
-            return null;
-        }
-    }
 
     public PixelDensityQualifier() {
         // pass
@@ -180,7 +72,19 @@ public final class PixelDensityQualifier extends ResourceQualifier {
     public boolean checkAndSet(String value, FolderConfiguration config) {
         Density density = Density.getEnum(value);
         if (density == null) {
-            density = Density.getLegacyEnum(value);
+
+            // attempt to read a legacy value.
+            Matcher m = sDensityLegacyPattern.matcher(value);
+            if (m.matches()) {
+                String v = m.group(1);
+
+                try {
+                    density = Density.getEnum(Integer.parseInt(v));
+                } catch (NumberFormatException e) {
+                    // looks like the string we extracted wasn't a valid number
+                    // which really shouldn't happen since the regexp would have failed.
+                }
+            }
         }
 
         if (density != null) {
@@ -221,7 +125,7 @@ public final class PixelDensityQualifier extends ResourceQualifier {
             // if reference is high, we want highest dpi.
             // if reference is medium, we'll prefer to scale down high dpi, than scale up low dpi
             // if reference if low, we'll prefer to scale down high than medium (2:1 over 4:3)
-            return mValue.mDensity.getValue() > compareQ.mValue.mDensity.getValue();
+            return mValue.getDpiValue() > compareQ.mValue.getDpiValue();
         }
     }
 

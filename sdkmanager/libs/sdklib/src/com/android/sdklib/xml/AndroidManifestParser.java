@@ -23,7 +23,6 @@ import com.android.sdklib.io.StreamException;
 import com.android.sdklib.xml.ManifestData.Activity;
 import com.android.sdklib.xml.ManifestData.Instrumentation;
 import com.android.sdklib.xml.ManifestData.SupportsScreens;
-import com.sun.rowset.internal.XmlErrorHandler;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.ErrorHandler;

@@ -18,10 +18,9 @@ package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.KeyboardState;
 
 import org.eclipse.swt.graphics.Image;
-
-
 
 /**
  * Resource Qualifier for keyboard state.
@@ -31,70 +30,6 @@ public final class KeyboardStateQualifier extends ResourceQualifier {
     public static final String NAME = "Keyboard State";
 
     private KeyboardState mValue = null;
-
-    /**
-     * Screen Orientation enum.
-     */
-    public static enum KeyboardState {
-        EXPOSED("keysexposed", "Exposed"), //$NON-NLS-1$
-        HIDDEN("keyshidden", "Hidden"),    //$NON-NLS-1$
-        SOFT("keyssoft", "Soft");          //$NON-NLS-1$
-
-        private String mValue;
-        private String mDisplayValue;
-
-        private KeyboardState(String value, String displayValue) {
-            mValue = value;
-            mDisplayValue = displayValue;
-        }
-
-        /**
-         * Returns the enum for matching the provided qualifier value.
-         * @param value The qualifier value.
-         * @return the enum for the qualifier value or null if no matching was found.
-         */
-        public static KeyboardState getEnum(String value) {
-            for (KeyboardState orient : values()) {
-                if (orient.mValue.equals(value)) {
-                    return orient;
-                }
-            }
-
-            return null;
-        }
-
-        public String getValue() {
-            return mValue;
-        }
-
-        public String getDisplayValue() {
-            return mDisplayValue;
-        }
-
-        public static int getIndex(KeyboardState value) {
-            int i = 0;
-            for (KeyboardState input : values()) {
-                if (value == input) {
-                    return i;
-                }
-
-                i++;
-            }
-
-            return -1;
-        }
-
-        public static KeyboardState getByIndex(int index) {
-            int i = 0;
-            for (KeyboardState value : values()) {
-                if (i == index) {
-                    return value;
-                }
-                i++;
-            }
-            return null;
-        }
-    }
 
     public KeyboardStateQualifier() {
         // pass

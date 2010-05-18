@@ -18,10 +18,9 @@ package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.Navigation;
 
 import org.eclipse.swt.graphics.Image;
-
-
 
 /**
  * Resource Qualifier for Navigation Method.
@@ -30,82 +29,17 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     public static final String NAME = "Navigation Method";
 
-    private NavigationMethod mValue;
-
-    /**
-     * Navigation Method enum.
-     */
-    public static enum NavigationMethod {
-        DPAD("dpad", "D-pad"), //$NON-NLS-1$
-        TRACKBALL("trackball", "Trackball"), //$NON-NLS-1$
-        WHEEL("wheel", "Wheel"), //$NON-NLS-1$
-        NONAV("nonav", "No Navigation"); //$NON-NLS-1$
-
-        private String mValue;
-        private String mDisplay;
-
-        private NavigationMethod(String value, String display) {
-            mValue = value;
-            mDisplay = display;
-        }
-
-        /**
-         * Returns the enum for matching the provided qualifier value.
-         * @param value The qualifier value.
-         * @return the enum for the qualifier value or null if no matching was found.
-         */
-        public static NavigationMethod getEnum(String value) {
-            for (NavigationMethod orient : values()) {
-                if (orient.mValue.equals(value)) {
-                    return orient;
-                }
-            }
-
-            return null;
-        }
-
-        public String getValue() {
-            return mValue;
-        }
-
-        public String getDisplayValue() {
-            return mDisplay;
-        }
-
-        public static int getIndex(NavigationMethod value) {
-            int i = 0;
-            for (NavigationMethod nav : values()) {
-                if (nav == value) {
-                    return i;
-                }
-
-                i++;
-            }
-
-            return -1;
-        }
-
-        public static NavigationMethod getByIndex(int index) {
-            int i = 0;
-            for (NavigationMethod value : values()) {
-                if (i == index) {
-                    return value;
-                }
-                i++;
-            }
-            return null;
-        }
-    }
+    private Navigation mValue;
 
     public NavigationMethodQualifier() {
         // pass
     }
 
-    public NavigationMethodQualifier(NavigationMethod value) {
+    public NavigationMethodQualifier(Navigation value) {
         mValue = value;
     }
 
-    public NavigationMethod getValue() {
+    public Navigation getValue() {
         return mValue;
     }
 
@@ -132,7 +66,7 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
-        NavigationMethod method = NavigationMethod.getEnum(value);
+        Navigation method = Navigation.getEnum(value);
         if (method != null) {
             NavigationMethodQualifier qualifier = new NavigationMethodQualifier(method);
             config.setNavigationMethodQualifier(qualifier);

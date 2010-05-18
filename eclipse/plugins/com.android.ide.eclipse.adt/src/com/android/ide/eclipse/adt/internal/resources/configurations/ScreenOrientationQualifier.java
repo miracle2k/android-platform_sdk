@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.ScreenOrientation;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -29,71 +30,6 @@ public final class ScreenOrientationQualifier extends ResourceQualifier {
     public static final String NAME = "Screen Orientation";
 
     private ScreenOrientation mValue = null;
-
-    /**
-     * Screen Orientation enum.
-     */
-    public static enum ScreenOrientation {
-        PORTRAIT("port", "Portrait"), //$NON-NLS-1$
-        LANDSCAPE("land", "Landscape"), //$NON-NLS-1$
-        SQUARE("square", "Square"); //$NON-NLS-1$
-
-        private String mValue;
-        private String mDisplayValue;
-
-        private ScreenOrientation(String value, String displayValue) {
-            mValue = value;
-            mDisplayValue = displayValue;
-        }
-
-        /**
-         * Returns the enum for matching the provided qualifier value.
-         * @param value The qualifier value.
-         * @return the enum for the qualifier value or null if no matching was found.
-         */
-        public static ScreenOrientation getEnum(String value) {
-            for (ScreenOrientation orient : values()) {
-                if (orient.mValue.equals(value)) {
-                    return orient;
-                }
-            }
-
-            return null;
-        }
-
-        public String getValue() {
-            return mValue;
-        }
-
-        public String getDisplayValue() {
-            return mDisplayValue;
-        }
-
-        public static int getIndex(ScreenOrientation orientation) {
-            int i = 0;
-            for (ScreenOrientation orient : values()) {
-                if (orient == orientation) {
-                    return i;
-                }
-
-                i++;
-            }
-
-            return -1;
-        }
-
-        public static ScreenOrientation getByIndex(int index) {
-            int i = 0;
-            for (ScreenOrientation orient : values()) {
-                if (i == index) {
-                    return orient;
-                }
-                i++;
-            }
-
-            return null;
-        }
-    }
 
     public ScreenOrientationQualifier() {
     }

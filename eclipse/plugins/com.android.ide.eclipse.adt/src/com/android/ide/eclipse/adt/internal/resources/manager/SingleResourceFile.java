@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.resources.manager;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier;
 import com.android.layoutlib.api.IResourceValue;
+import com.android.layoutlib.api.IDensityBasedResourceValue.Density;
 import com.android.layoutlib.utils.DensityBasedResourceValue;
 import com.android.layoutlib.utils.ResourceValue;
 import com.android.sdklib.io.IAbstractFile;
@@ -75,8 +76,12 @@ public class SingleResourceFile extends ResourceFile {
             mValue = new ResourceValue(mType.getName(), getResourceName(mType),
                     file.getOsLocation(), isFramework());
         } else {
-            mValue = new DensityBasedResourceValue(mType.getName(), getResourceName(mType),
-                    file.getOsLocation(), qualifier.getValue().getDensity(), isFramework());
+            mValue = new DensityBasedResourceValue(
+                    mType.getName(),
+                    getResourceName(mType),
+                    file.getOsLocation(),
+                    Density.getEnum(qualifier.getValue().getDpiValue()),
+                    isFramework());
         }
     }
 

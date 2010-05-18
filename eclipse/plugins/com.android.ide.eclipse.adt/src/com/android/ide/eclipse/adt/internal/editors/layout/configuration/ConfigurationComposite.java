@@ -26,8 +26,6 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.RegionQuali
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenDimensionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier;
-import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier.Density;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier.ScreenOrientation;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
@@ -43,6 +41,8 @@ import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.LanguageReg
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IStyleResourceValue;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.Density;
+import com.android.sdklib.resources.ScreenOrientation;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;

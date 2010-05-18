@@ -92,6 +92,16 @@ public class AndroidManifestParserTest extends TestCase {
         assertTrue(activity.isHomeActivity());
     }
 
+    public void testSupportsScreen() {
+        ManifestData.SupportsScreens supportsScreens = mManifestTestApp.getSupportsScreens();
+
+        assertEquals(Boolean.TRUE, supportsScreens.getAnyDensity());
+        assertEquals(Boolean.TRUE, supportsScreens.getResizeable());
+        assertEquals(Boolean.TRUE, supportsScreens.getSmallScreens());
+        assertEquals(Boolean.TRUE, supportsScreens.getNormalScreens());
+        assertEquals(Boolean.TRUE, supportsScreens.getLargeScreens());
+    }
+
     private void assertEquals(ManifestData.Activity lhs, ManifestData.Activity rhs) {
         assertTrue(lhs == rhs || (lhs != null && rhs != null));
         if (lhs != null && rhs != null) {

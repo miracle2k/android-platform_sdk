@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationMethodQualifier;
+import com.android.sdklib.resources.Navigation;
 
 import junit.framework.TestCase;
 
@@ -39,28 +40,25 @@ public class NavigationMethodQualifierTest extends TestCase {
         config = null;
         nmq = null;
     }
-    
+
     public void testDPad() {
         assertEquals(true, nmq.checkAndSet("dpad", config)); //$NON-NLS-1$
         assertTrue(config.getNavigationMethodQualifier() != null);
-        assertEquals(NavigationMethodQualifier.NavigationMethod.DPAD,
-                config.getNavigationMethodQualifier().getValue());
+        assertEquals(Navigation.DPAD, config.getNavigationMethodQualifier().getValue());
         assertEquals("dpad", config.getNavigationMethodQualifier().toString()); //$NON-NLS-1$
     }
 
     public void testTrackball() {
         assertEquals(true, nmq.checkAndSet("trackball", config)); //$NON-NLS-1$
         assertTrue(config.getNavigationMethodQualifier() != null);
-        assertEquals(NavigationMethodQualifier.NavigationMethod.TRACKBALL,
-                config.getNavigationMethodQualifier().getValue());
+        assertEquals(Navigation.TRACKBALL, config.getNavigationMethodQualifier().getValue());
         assertEquals("trackball", config.getNavigationMethodQualifier().toString()); //$NON-NLS-1$
     }
 
     public void testWheel() {
         assertEquals(true, nmq.checkAndSet("wheel", config)); //$NON-NLS-1$
         assertTrue(config.getNavigationMethodQualifier() != null);
-        assertEquals(NavigationMethodQualifier.NavigationMethod.WHEEL,
-                config.getNavigationMethodQualifier().getValue());
+        assertEquals(Navigation.WHEEL, config.getNavigationMethodQualifier().getValue());
         assertEquals("wheel", config.getNavigationMethodQualifier().toString()); //$NON-NLS-1$
     }
 

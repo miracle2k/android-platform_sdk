@@ -23,7 +23,7 @@ import java.util.TreeSet;
 /**
  * Class containing the manifest info obtained during the parsing.
  */
-public class ManifestData {
+public final class ManifestData {
     /** Application package */
     String mPackage;
     /** Application version Code, null if the attribute is not present. */
@@ -49,7 +49,7 @@ public class ManifestData {
     /**
      * Instrumentation info obtained from manifest
      */
-    public static class Instrumentation {
+    public final static class Instrumentation {
         private final String mName;
         private final String mTargetPackage;
 
@@ -76,7 +76,7 @@ public class ManifestData {
     /**
      * Activity info obtained from the manifest.
      */
-    public static class Activity {
+    public final static class Activity {
         private final String mName;
         private final boolean mIsExported;
         private boolean mHasAction = false;
@@ -127,12 +127,37 @@ public class ManifestData {
         }
     }
 
-    public static class SupportsScreens {
+    public final static class SupportsScreens {
         Boolean mResizeable;
-        Boolean mSmallScreens;
         Boolean mAnyDensity;
+        Boolean mSmallScreens;
         Boolean mLargeScreens;
         Boolean mNormalScreens;
+
+        public Boolean getResizeable() {
+            return mResizeable;
+        }
+
+        public Boolean getAnyDensity() {
+            return mAnyDensity;
+        }
+
+        public Boolean getSmallScreens() {
+            return mSmallScreens;
+        }
+
+        public Boolean getNormalScreens() {
+            return mNormalScreens;
+        }
+
+        public Boolean getLargeScreens() {
+            return mLargeScreens;
+        }
+    }
+
+    public final static class UsesConfiguration {
+        Boolean mReqFiveWayNav;
+        Boolean mReqHardKeyboard;
     }
 
     /**
@@ -208,6 +233,10 @@ public class ManifestData {
      */
     public String[] getUsesLibraries() {
         return mLibraries.toArray(new String[mLibraries.size()]);
+    }
+
+    public SupportsScreens getSupportsScreens() {
+        return mSupportsScreens;
     }
 
     void addProcessName(String processName) {

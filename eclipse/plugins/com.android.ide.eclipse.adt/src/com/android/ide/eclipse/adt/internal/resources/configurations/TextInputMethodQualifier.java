@@ -18,11 +18,9 @@ package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.Keyboard;
 
 import org.eclipse.swt.graphics.Image;
-
-
-
 
 /**
  * Resource Qualifier for Text Input Method.
@@ -31,81 +29,18 @@ public final class TextInputMethodQualifier extends ResourceQualifier {
 
     public static final String NAME = "Text Input Method";
 
-    private TextInputMethod mValue;
+    private Keyboard mValue;
 
-    /**
-     * Screen Orientation enum.
-     */
-    public static enum TextInputMethod {
-        NOKEY("nokeys", "No Keys"), //$NON-NLS-1$
-        QWERTY("qwerty", "Qwerty"), //$NON-NLS-1$
-        TWELVEKEYS("12key", "12 Key"); //$NON-NLS-1$
-
-        private String mValue;
-        private String mDisplayValue;
-
-        private TextInputMethod(String value, String displayValue) {
-            mValue = value;
-            mDisplayValue = displayValue;
-        }
-
-        /**
-         * Returns the enum for matching the provided qualifier value.
-         * @param value The qualifier value.
-         * @return the enum for the qualifier value or null if no matching was found.
-         */
-        public static TextInputMethod getEnum(String value) {
-            for (TextInputMethod orient : values()) {
-                if (orient.mValue.equals(value)) {
-                    return orient;
-                }
-            }
-
-            return null;
-        }
-
-        public String getValue() {
-            return mValue;
-        }
-
-        public String getDisplayValue() {
-            return mDisplayValue;
-        }
-
-        public static int getIndex(TextInputMethod value) {
-            int i = 0;
-            for (TextInputMethod input : values()) {
-                if (value == input) {
-                    return i;
-                }
-
-                i++;
-            }
-
-            return -1;
-        }
-
-        public static TextInputMethod getByIndex(int index) {
-            int i = 0;
-            for (TextInputMethod value : values()) {
-                if (i == index) {
-                    return value;
-                }
-                i++;
-            }
-            return null;
-        }
-    }
 
     public TextInputMethodQualifier() {
         // pass
     }
 
-    public TextInputMethodQualifier(TextInputMethod value) {
+    public TextInputMethodQualifier(Keyboard value) {
         mValue = value;
     }
 
-    public TextInputMethod getValue() {
+    public Keyboard getValue() {
         return mValue;
     }
 
@@ -131,7 +66,7 @@ public final class TextInputMethodQualifier extends ResourceQualifier {
 
     @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
-        TextInputMethod method = TextInputMethod.getEnum(value);
+        Keyboard method = Keyboard.getEnum(value);
         if (method != null) {
             TextInputMethodQualifier qualifier = new TextInputMethodQualifier();
             qualifier.mValue = method;

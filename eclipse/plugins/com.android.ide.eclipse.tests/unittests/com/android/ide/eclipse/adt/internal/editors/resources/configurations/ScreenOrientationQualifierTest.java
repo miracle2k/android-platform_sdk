@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier;
+import com.android.sdklib.resources.ScreenOrientation;
 
 import junit.framework.TestCase;
 
@@ -43,15 +44,14 @@ public class ScreenOrientationQualifierTest extends TestCase {
     public void testPortrait() {
         assertEquals(true, soq.checkAndSet("port", config)); //$NON-NLS-1$
         assertTrue(config.getScreenOrientationQualifier() != null);
-        assertEquals(ScreenOrientationQualifier.ScreenOrientation.PORTRAIT,
-                config.getScreenOrientationQualifier().getValue());
+        assertEquals(ScreenOrientation.PORTRAIT, config.getScreenOrientationQualifier().getValue());
         assertEquals("port", config.getScreenOrientationQualifier().toString()); //$NON-NLS-1$
     }
 
     public void testLanscape() {
         assertEquals(true, soq.checkAndSet("land", config)); //$NON-NLS-1$
         assertTrue(config.getScreenOrientationQualifier() != null);
-        assertEquals(ScreenOrientationQualifier.ScreenOrientation.LANDSCAPE,
+        assertEquals(ScreenOrientation.LANDSCAPE,
                 config.getScreenOrientationQualifier().getValue());
         assertEquals("land", config.getScreenOrientationQualifier().toString()); //$NON-NLS-1$
     }
@@ -59,7 +59,7 @@ public class ScreenOrientationQualifierTest extends TestCase {
     public void testSquare() {
         assertEquals(true, soq.checkAndSet("square", config)); //$NON-NLS-1$
         assertTrue(config.getScreenOrientationQualifier() != null);
-        assertEquals(ScreenOrientationQualifier.ScreenOrientation.SQUARE,
+        assertEquals(ScreenOrientation.SQUARE,
                 config.getScreenOrientationQualifier().getValue());
         assertEquals("square", config.getScreenOrientationQualifier().toString()); //$NON-NLS-1$
     }

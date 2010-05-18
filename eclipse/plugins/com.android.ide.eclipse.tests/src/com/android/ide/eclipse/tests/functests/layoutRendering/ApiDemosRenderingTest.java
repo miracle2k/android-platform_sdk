@@ -26,14 +26,6 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenRatio
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier;
-import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier.KeyboardState;
-import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationMethodQualifier.NavigationMethod;
-import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier.Density;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier.ScreenOrientation;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenRatioQualifier.ScreenRatio;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQualifier.ScreenSize;
-import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier.TextInputMethod;
-import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier.TouchScreenType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
@@ -47,6 +39,14 @@ import com.android.layoutlib.api.IXmlPullParser;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.FolderWrapper;
+import com.android.sdklib.resources.Density;
+import com.android.sdklib.resources.Keyboard;
+import com.android.sdklib.resources.KeyboardState;
+import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.ScreenOrientation;
+import com.android.sdklib.resources.ScreenRatio;
+import com.android.sdklib.resources.ScreenSize;
+import com.android.sdklib.resources.TouchScreen;
 
 import org.kxml2.io.KXmlParser;
 import org.xmlpull.v1.XmlPullParser;
@@ -242,10 +242,10 @@ public class ApiDemosRenderingTest extends SdkTestCase {
         config.addQualifier(new ScreenRatioQualifier(ScreenRatio.NOTLONG));
         config.addQualifier(new ScreenOrientationQualifier(ScreenOrientation.PORTRAIT));
         config.addQualifier(new PixelDensityQualifier(Density.MEDIUM));
-        config.addQualifier(new TouchScreenQualifier(TouchScreenType.FINGER));
+        config.addQualifier(new TouchScreenQualifier(TouchScreen.FINGER));
         config.addQualifier(new KeyboardStateQualifier(KeyboardState.HIDDEN));
-        config.addQualifier(new TextInputMethodQualifier(TextInputMethod.QWERTY));
-        config.addQualifier(new NavigationMethodQualifier(NavigationMethod.TRACKBALL));
+        config.addQualifier(new TextInputMethodQualifier(Keyboard.QWERTY));
+        config.addQualifier(new NavigationMethodQualifier(Navigation.TRACKBALL));
         config.addQualifier(new ScreenDimensionQualifier(480, 320));
 
         return config;
