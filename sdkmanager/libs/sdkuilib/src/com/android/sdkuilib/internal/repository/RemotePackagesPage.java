@@ -320,7 +320,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         }
 
         if (mUpdaterData != null) {
-            mUpdaterData.updateOrInstallAll(archives);
+            mUpdaterData.updateOrInstallAll_WithGUI(archives);
         }
     }
 

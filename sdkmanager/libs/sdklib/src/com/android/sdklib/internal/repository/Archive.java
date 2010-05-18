@@ -42,7 +42,7 @@ import java.util.Properties;
  * A package has some attributes (revision, description) and a list of archives
  * which represent the downloadable bits.
  * <p/>
- * Packages are contained in offered by a {@link RepoSource} (a download site).
+ * Packages are offered by a {@link RepoSource} (a download site).
  */
 public class Archive implements IDescription {
 

@@ -18,6 +18,9 @@ package com.android.sdkmanager;
 
 import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkManager;
+import com.android.sdklib.repository.SdkRepository;
+
+import java.util.Arrays;
 
 
 /**
@@ -68,6 +71,10 @@ class SdkCommandLine extends CommandLineProcessor {
     public static final String KEY_RENAME       = "rename";
     public static final String KEY_SUBPROJECTS  = "subprojects";
     public static final String KEY_MAIN_PROJECT = "main";
+    public static final String KEY_NO_UI        = "no-ui";
+    public static final String KEY_NO_HTTPS     = "no-https";
+    public static final String KEY_DRY_MODE     = "dry-mode";
+    public static final String KEY_OBSOLETE     = "obsolete";
 
     /**
      * Action definitions for SdkManager command line.
@@ -174,6 +181,36 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.STRING, true,
                 VERB_UPDATE, OBJECT_AVD, "n", KEY_NAME,
                 "Name of the AVD to update", null);
+
+        // --- update sdk ---
+
+        define(Mode.BOOLEAN, false,
+                VERB_UPDATE, OBJECT_SDK, "u", KEY_NO_UI,
+                "Update from command-line, without any UI", false);
+
+        define(Mode.BOOLEAN, false,
+                VERB_UPDATE, OBJECT_SDK, "s", KEY_NO_HTTPS,
+                "Use HTTP instead of the default HTTPS for downloads", false);
+
+        define(Mode.BOOLEAN, false,
+                VERB_UPDATE, OBJECT_SDK, "f", KEY_FORCE,
+                "Force replacing things that have been modified (samples, adb)", false);
+
+        define(Mode.STRING, false,
+                VERB_UPDATE, OBJECT_SDK, "t", KEY_FILTER,
+                "A coma-separated list of " + Arrays.toString(SdkRepository.NODES) +
+                " to limit update to specified types of packages",
+                null);
+
+        define(Mode.BOOLEAN, false,
+                VERB_UPDATE, OBJECT_SDK, "o", KEY_OBSOLETE,
+                "Install obsolete packages",
+                false);
+
+        define(Mode.BOOLEAN, false,
+                VERB_UPDATE, OBJECT_SDK, "n", KEY_DRY_MODE,
+                "Only simulates what would be updated but does not download/install anything",
+                false);
 
         // --- create project ---
 
@@ -362,5 +399,33 @@ class SdkCommandLine extends CommandLineProcessor {
     /** Helper to retrieve the --main value. */
     public String getParamTestProjectMain() {
         return ((String) getValue(null, null, KEY_MAIN_PROJECT));
+    }
+
+
+    // -- some helpers for update sdk flags
+
+    /** Helper to retrieve the --force flag. */
+    public boolean getFlagNoUI() {
+        return ((Boolean) getValue(null, null, KEY_NO_UI)).booleanValue();
+    }
+
+    /** Helper to retrieve the --no-https flag. */
+    public boolean getFlagNoHttps() {
+        return ((Boolean) getValue(null, null, KEY_NO_HTTPS)).booleanValue();
+    }
+
+    /** Helper to retrieve the --dry-mode flag. */
+    public boolean getFlagDryMode() {
+        return ((Boolean) getValue(null, null, KEY_DRY_MODE)).booleanValue();
+    }
+
+    /** Helper to retrieve the --obsolete flag. */
+    public boolean getFlagObsolete() {
+        return ((Boolean) getValue(null, null, KEY_OBSOLETE)).booleanValue();
+    }
+
+    /** Helper to retrieve the --filter value. */
+    public String getParamFilter() {
+        return ((String) getValue(null, null, KEY_FILTER));
     }
 }

@@ -31,9 +31,11 @@ import com.android.sdklib.internal.project.ProjectCreator;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectCreator.OutputLevel;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
+import com.android.sdklib.repository.SdkRepository;
 import com.android.sdklib.xml.AndroidXPathFactory;
 import com.android.sdkmanager.internal.repository.AboutPage;
 import com.android.sdkmanager.internal.repository.SettingsPage;
+import com.android.sdkuilib.internal.repository.UpdateNoWindow;
 import com.android.sdkuilib.internal.repository.LocalPackagesPage;
 import com.android.sdkuilib.internal.widgets.MessageBoxLog;
 import com.android.sdkuilib.repository.UpdaterWindow;
@@ -45,6 +47,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -206,8 +210,10 @@ public class Main {
             // list action.
             if (SdkCommandLine.OBJECT_TARGET.equals(directObject)) {
                 displayTargetList();
+
             } else if (SdkCommandLine.OBJECT_AVD.equals(directObject)) {
                 displayAvdList();
+
             } else {
                 displayTargetList();
                 displayAvdList();
@@ -216,24 +222,35 @@ public class Main {
         } else if (SdkCommandLine.VERB_CREATE.equals(verb)) {
             if (SdkCommandLine.OBJECT_AVD.equals(directObject)) {
                 createAvd();
+
             } else if (SdkCommandLine.OBJECT_PROJECT.equals(directObject)) {
                 createProject(false /*library*/);
+
             } else if (SdkCommandLine.OBJECT_TEST_PROJECT.equals(directObject)) {
                 createTestProject();
+
             } else if (SdkCommandLine.OBJECT_LIB_PROJECT.equals(directObject)) {
                 createProject(true /*library*/);
             }
         } else if (SdkCommandLine.VERB_UPDATE.equals(verb)) {
             if (SdkCommandLine.OBJECT_AVD.equals(directObject)) {
                 updateAvd();
+
             } else if (SdkCommandLine.OBJECT_PROJECT.equals(directObject)) {
                 updateProject(false /*library*/);
+
             } else if (SdkCommandLine.OBJECT_TEST_PROJECT.equals(directObject)) {
                 updateTestProject();
+
             } else if (SdkCommandLine.OBJECT_LIB_PROJECT.equals(directObject)) {
                 updateProject(true /*library*/);
+
             } else if (SdkCommandLine.OBJECT_SDK.equals(directObject)) {
-                showMainWindow(true /*autoUpdate*/);
+                if (mSdkCommandLine.getFlagNoUI()) {
+                    updateSdkNoUI();
+                } else {
+                    showMainWindow(true /*autoUpdate*/);
+                }
             } else if (SdkCommandLine.OBJECT_ADB.equals(directObject)) {
                 updateAdb();
             }
@@ -285,6 +302,47 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Updates the whole SDK without any UI, just using console output.
+     */
+    private void updateSdkNoUI() {
+        boolean force = mSdkCommandLine.getFlagForce();
+        boolean useHttp = mSdkCommandLine.getFlagNoHttps();
+        boolean dryMode = mSdkCommandLine.getFlagDryMode();
+        boolean obsolete = mSdkCommandLine.getFlagObsolete();
+
+        // Check filter types.
+        ArrayList<String> pkgFilter = new ArrayList<String>();
+        String filter = mSdkCommandLine.getParamFilter();
+        if (filter != null && filter.length() > 0) {
+            for (String t : filter.split(",")) {    //$NON-NLS-1$
+                if (t != null) {
+                    t = t.trim();
+                    if (t.length() > 0) {
+                        boolean found = false;
+                        for (String t2 : SdkRepository.NODES) {
+                            if (t2.equals(t)) {
+                                pkgFilter.add(t2);
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            errorAndExit(
+                                "Unknown package filter type '%1$s'.\nAccepted values are: %2$s",
+                                t,
+                                Arrays.toString(SdkRepository.NODES));
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        UpdateNoWindow upd = new UpdateNoWindow(mOsSdkFolder, mSdkManager, mSdkLog, force, useHttp);
+        upd.updateAll(pkgFilter, obsolete, dryMode);
     }
 
     /**

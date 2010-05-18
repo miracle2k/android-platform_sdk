@@ -61,6 +61,17 @@ public class SdkRepository {
     /** An extra package. */
     public static final String NODE_EXTRA    = "extra";                         //$NON-NLS-1$
 
+    // Warning: if you edit this list, please also update the package-to-class map
+    // com.android.sdkuilib.internal.repository.UpdaterData.updateOrInstallAll_NoGUI().
+    public static final String[] NODES = {
+        NODE_PLATFORM,
+        NODE_ADD_ON,
+        NODE_TOOL,
+        NODE_DOC,
+        NODE_SAMPLE,
+        NODE_EXTRA
+    };
+
     /** The license definition. */
     public static final String NODE_LICENSE       = "license";                  //$NON-NLS-1$
     /** The optional uses-license for all packages or for a lib. */
