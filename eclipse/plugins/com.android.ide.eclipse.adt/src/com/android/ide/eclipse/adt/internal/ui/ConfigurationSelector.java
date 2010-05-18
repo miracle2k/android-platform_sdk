@@ -32,15 +32,15 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQ
 import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.VersionQualifier;
-import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier.KeyboardState;
-import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationMethodQualifier.NavigationMethod;
-import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier.Density;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier.ScreenOrientation;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenRatioQualifier.ScreenRatio;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQualifier.ScreenSize;
-import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier.TextInputMethod;
-import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier.TouchScreenType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
+import com.android.sdklib.resources.Density;
+import com.android.sdklib.resources.Keyboard;
+import com.android.sdklib.resources.KeyboardState;
+import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.ScreenOrientation;
+import com.android.sdklib.resources.ScreenRatio;
+import com.android.sdklib.resources.ScreenSize;
+import com.android.sdklib.resources.TouchScreen;
 
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -1152,8 +1152,8 @@ public class ConfigurationSelector extends Composite {
             super(parent, TouchScreenQualifier.NAME);
 
             mTouchScreen = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            TouchScreenType[] tstValues = TouchScreenType.values();
-            for (TouchScreenType value : tstValues) {
+            TouchScreen[] tstValues = TouchScreen.values();
+            for (TouchScreen value : tstValues) {
                 mTouchScreen.add(value.getDisplayValue());
             }
 
@@ -1174,7 +1174,7 @@ public class ConfigurationSelector extends Composite {
 
             if (index != -1) {
                 mSelectedConfiguration.setTouchTypeQualifier(new TouchScreenQualifier(
-                        TouchScreenType.getByIndex(index)));
+                        TouchScreen.getByIndex(index)));
             } else {
                 // empty selection, means no qualifier.
                 // Since the qualifier classes are immutable, and we don't want to
@@ -1190,11 +1190,11 @@ public class ConfigurationSelector extends Composite {
         public void setQualifier(ResourceQualifier qualifier) {
             TouchScreenQualifier q = (TouchScreenQualifier)qualifier;
 
-            TouchScreenType value = q.getValue();
+            TouchScreen value = q.getValue();
             if (value == null) {
                 mTouchScreen.clearSelection();
             } else {
-                mTouchScreen.select(TouchScreenType.getIndex(value));
+                mTouchScreen.select(TouchScreen.getIndex(value));
             }
         }
     }
@@ -1269,8 +1269,8 @@ public class ConfigurationSelector extends Composite {
             super(parent, TextInputMethodQualifier.NAME);
 
             mTextInput = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            TextInputMethod[] timValues = TextInputMethod.values();
-            for (TextInputMethod value : timValues) {
+            Keyboard[] timValues = Keyboard.values();
+            for (Keyboard value : timValues) {
                 mTextInput.add(value.getDisplayValue());
             }
 
@@ -1291,7 +1291,7 @@ public class ConfigurationSelector extends Composite {
 
             if (index != -1) {
                 mSelectedConfiguration.setTextInputMethodQualifier(new TextInputMethodQualifier(
-                        TextInputMethod.getByIndex(index)));
+                        Keyboard.getByIndex(index)));
             } else {
                 // empty selection, means no qualifier.
                 // Since the qualifier classes are immutable, and we don't want to
@@ -1308,11 +1308,11 @@ public class ConfigurationSelector extends Composite {
         public void setQualifier(ResourceQualifier qualifier) {
             TextInputMethodQualifier q = (TextInputMethodQualifier)qualifier;
 
-            TextInputMethod value = q.getValue();
+            Keyboard value = q.getValue();
             if (value == null) {
                 mTextInput.clearSelection();
             } else {
-                mTextInput.select(TextInputMethod.getIndex(value));
+                mTextInput.select(Keyboard.getIndex(value));
             }
         }
     }
@@ -1328,8 +1328,8 @@ public class ConfigurationSelector extends Composite {
             super(parent, NavigationMethodQualifier.NAME);
 
             mNavigation = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            NavigationMethod[] nmValues = NavigationMethod.values();
-            for (NavigationMethod value : nmValues) {
+            Navigation[] nmValues = Navigation.values();
+            for (Navigation value : nmValues) {
                 mNavigation.add(value.getDisplayValue());
             }
 
@@ -1350,7 +1350,7 @@ public class ConfigurationSelector extends Composite {
 
             if (index != -1) {
                 mSelectedConfiguration.setNavigationMethodQualifier(new NavigationMethodQualifier(
-                        NavigationMethod.getByIndex(index)));
+                        Navigation.getByIndex(index)));
             } else {
                 // empty selection, means no qualifier.
                 // Since the qualifier classes are immutable, and we don't want to
@@ -1367,11 +1367,11 @@ public class ConfigurationSelector extends Composite {
         public void setQualifier(ResourceQualifier qualifier) {
             NavigationMethodQualifier q = (NavigationMethodQualifier)qualifier;
 
-            NavigationMethod value = q.getValue();
+            Navigation value = q.getValue();
             if (value == null) {
                 mNavigation.clearSelection();
             } else {
-                mNavigation.select(NavigationMethod.getIndex(value));
+                mNavigation.select(Navigation.getIndex(value));
             }
         }
     }

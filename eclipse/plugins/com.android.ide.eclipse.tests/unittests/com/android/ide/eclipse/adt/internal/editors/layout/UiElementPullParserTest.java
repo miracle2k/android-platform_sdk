@@ -19,11 +19,10 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
 import com.android.ide.eclipse.adt.internal.editors.mock.MockXmlNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier.Density;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.resources.Density;
 
 import org.w3c.dom.Node;
 import org.xmlpull.v1.XmlPullParser;

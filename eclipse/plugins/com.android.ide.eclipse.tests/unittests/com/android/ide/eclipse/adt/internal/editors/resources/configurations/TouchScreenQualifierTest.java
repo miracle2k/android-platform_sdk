@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier;
+import com.android.sdklib.resources.TouchScreen;
 
 import junit.framework.TestCase;
 
@@ -43,24 +44,21 @@ public class TouchScreenQualifierTest extends TestCase {
     public void testNoTouch() {
         assertEquals(true, tsq.checkAndSet("notouch", config)); //$NON-NLS-1$
         assertTrue(config.getTouchTypeQualifier() != null);
-        assertEquals(TouchScreenQualifier.TouchScreenType.NOTOUCH,
-                config.getTouchTypeQualifier().getValue());
+        assertEquals(TouchScreen.NOTOUCH, config.getTouchTypeQualifier().getValue());
         assertEquals("notouch", config.getTouchTypeQualifier().toString()); //$NON-NLS-1$
     }
 
     public void testFinger() {
         assertEquals(true, tsq.checkAndSet("finger", config)); //$NON-NLS-1$
         assertTrue(config.getTouchTypeQualifier() != null);
-        assertEquals(TouchScreenQualifier.TouchScreenType.FINGER,
-                config.getTouchTypeQualifier().getValue());
+        assertEquals(TouchScreen.FINGER, config.getTouchTypeQualifier().getValue());
         assertEquals("finger", config.getTouchTypeQualifier().toString()); //$NON-NLS-1$
     }
 
     public void testStylus() {
         assertEquals(true, tsq.checkAndSet("stylus", config)); //$NON-NLS-1$
         assertTrue(config.getTouchTypeQualifier() != null);
-        assertEquals(TouchScreenQualifier.TouchScreenType.STYLUS,
-                config.getTouchTypeQualifier().getValue());
+        assertEquals(TouchScreen.STYLUS, config.getTouchTypeQualifier().getValue());
         assertEquals("stylus", config.getTouchTypeQualifier().toString()); //$NON-NLS-1$
     }
 
@@ -69,5 +67,4 @@ public class TouchScreenQualifierTest extends TestCase {
         assertEquals(false, tsq.checkAndSet("STYLUS", config));//$NON-NLS-1$
         assertEquals(false, tsq.checkAndSet("other", config));//$NON-NLS-1$
     }
-
 }

@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier;
+import com.android.sdklib.resources.KeyboardState;
 
 import junit.framework.TestCase;
 
@@ -43,16 +44,14 @@ public class KeyboardStateQualifierTest extends TestCase {
     public void testExposed() {
         assertEquals(true, ksq.checkAndSet("keysexposed", config)); //$NON-NLS-1$
         assertTrue(config.getKeyboardStateQualifier() != null);
-        assertEquals(KeyboardStateQualifier.KeyboardState.EXPOSED,
-                config.getKeyboardStateQualifier().getValue());
+        assertEquals(KeyboardState.EXPOSED, config.getKeyboardStateQualifier().getValue());
         assertEquals("keysexposed", config.getKeyboardStateQualifier().toString()); //$NON-NLS-1$
     }
 
     public void testHidden() {
         assertEquals(true, ksq.checkAndSet("keyshidden", config)); //$NON-NLS-1$
         assertTrue(config.getKeyboardStateQualifier() != null);
-        assertEquals(KeyboardStateQualifier.KeyboardState.HIDDEN,
-                config.getKeyboardStateQualifier().getValue());
+        assertEquals(KeyboardState.HIDDEN, config.getKeyboardStateQualifier().getValue());
         assertEquals("keyshidden", config.getKeyboardStateQualifier().toString()); //$NON-NLS-1$
     }
 

@@ -18,11 +18,6 @@ package com.android.ide.eclipse.adt.internal.editors.resources.manager;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
-import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier.KeyboardState;
-import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationMethodQualifier.NavigationMethod;
-import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier.ScreenOrientation;
-import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier.TextInputMethod;
-import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier.TouchScreenType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
@@ -35,6 +30,11 @@ import com.android.ide.eclipse.mock.FileMock;
 import com.android.ide.eclipse.mock.FolderMock;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.io.IAbstractFolder;
+import com.android.sdklib.resources.Keyboard;
+import com.android.sdklib.resources.KeyboardState;
+import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.ScreenOrientation;
+import com.android.sdklib.resources.TouchScreen;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -164,10 +164,10 @@ public class ConfigMatchTest extends TestCase {
                 "notlong", // screen ratio
                 ScreenOrientation.LANDSCAPE.getValue(), // screen orientation
                 "mdpi", // dpi
-                TouchScreenType.FINGER.getValue(), // touch mode
+                TouchScreen.FINGER.getValue(), // touch mode
                 KeyboardState.EXPOSED.getValue(), // keyboard state
-                TextInputMethod.QWERTY.getValue(), // text input
-                NavigationMethod.DPAD.getValue(), // navigation
+                Keyboard.QWERTY.getValue(), // text input
+                Navigation.DPAD.getValue(), // navigation
                 "480x320", // screen dimension
                 "v3"); // version
 
@@ -190,10 +190,10 @@ public class ConfigMatchTest extends TestCase {
                 "notlong", // screen ratio
                 ScreenOrientation.LANDSCAPE.getValue(), // screen orientation
                 "mdpi", // dpi
-                TouchScreenType.FINGER.getValue(), // touch mode
+                TouchScreen.FINGER.getValue(), // touch mode
                 KeyboardState.EXPOSED.getValue(), // keyboard state
-                TextInputMethod.QWERTY.getValue(), // text input
-                NavigationMethod.DPAD.getValue(), // navigation
+                Keyboard.QWERTY.getValue(), // text input
+                Navigation.DPAD.getValue(), // navigation
                 "480x320", // screen dimension
                 "v3"); // version
 

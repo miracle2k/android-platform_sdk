@@ -38,6 +38,21 @@ public interface IDensityBasedResourceValue extends IResourceValue {
         public int getValue() {
             return mValue;
         }
+
+        /**
+         * Returns the enum matching the given density value
+         * @param value The density value.
+         * @return the enum for the density value or null if no match was found.
+         */
+        public static Density getEnum(int value) {
+            for (Density d : values()) {
+                if (d.mValue == value) {
+                    return d;
+                }
+            }
+
+            return null;
+        }
     }
 
     /**
