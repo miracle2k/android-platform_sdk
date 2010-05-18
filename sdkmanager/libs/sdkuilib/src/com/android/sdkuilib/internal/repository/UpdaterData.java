@@ -23,14 +23,19 @@ import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.repository.AddonPackage;
 import com.android.sdklib.internal.repository.Archive;
+import com.android.sdklib.internal.repository.DocPackage;
+import com.android.sdklib.internal.repository.ExtraPackage;
 import com.android.sdklib.internal.repository.ITask;
 import com.android.sdklib.internal.repository.ITaskFactory;
 import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.LocalSdkParser;
 import com.android.sdklib.internal.repository.Package;
+import com.android.sdklib.internal.repository.PlatformPackage;
 import com.android.sdklib.internal.repository.RepoSource;
 import com.android.sdklib.internal.repository.RepoSources;
+import com.android.sdklib.internal.repository.SamplePackage;
 import com.android.sdklib.internal.repository.ToolPackage;
+import com.android.sdklib.repository.SdkRepository;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
 
@@ -42,7 +47,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * Data shared between {@link UpdaterWindowImpl} and its pages.
@@ -185,15 +192,22 @@ class UpdaterData {
                 example = "~";                 //$NON-NLS-1$
             }
 
-            MessageDialog.openError(mWindowShell,
-                "Android Virtual Devices Manager",
-                String.format(
-                    "The AVD manager normally uses the user's profile directory to store " +
-                    "AVD files. However it failed to find the default profile directory. " +
-                    "\n" +
-                    "To fix this, please set the environment variable ANDROID_SDK_HOME to " +
-                    "a valid path such as \"%s\".",
-                    example));
+            String error = String.format(
+                "The AVD manager normally uses the user's profile directory to store " +
+                "AVD files. However it failed to find the default profile directory. " +
+                "\n" +
+                "To fix this, please set the environment variable ANDROID_SDK_HOME to " +
+                "a valid path such as \"%s\".",
+                example);
+
+            // We may not have any UI. Only display a dialog if there's a window shell available.
+            if (mWindowShell != null) {
+                MessageDialog.openError(mWindowShell,
+                    "Android Virtual Devices Manager",
+                    error);
+            } else {
+                mSdkLog.error(null /* Throwable */, "%s", error);  //$NON-NLS-1$
+            }
 
             return true;
         }
@@ -222,17 +236,16 @@ class UpdaterData {
             mAvdManagerInitError = e;
         }
 
-        // notify adapters/parsers
-        // TODO
-
         // notify listeners.
         notifyListeners(false /*init*/);
     }
 
     /**
      * Reloads the SDK content (targets).
-     * <p/> This also reloads the AVDs in case their status changed.
-     * <p/>This does not notify the listeners ({@link ISdkListener}).
+     * <p/>
+     * This also reloads the AVDs in case their status changed.
+     * <p/>
+     * This does not notify the listeners ({@link ISdkListener}).
      */
     public void reloadSdk() {
         // reload SDK
@@ -257,7 +270,8 @@ class UpdaterData {
 
     /**
      * Reloads the AVDs.
-     * <p/>This does not notify the listeners.
+     * <p/>
+     * This does not notify the listeners.
      */
     public void reloadAvds() {
         // reload AVDs
@@ -266,6 +280,52 @@ class UpdaterData {
                 mAvdManager.reloadAvds(mSdkLog);
             } catch (AndroidLocationException e) {
                 mSdkLog.error(e, null);
+            }
+        }
+    }
+
+    /**
+     * Sets up the default sources: <br/>
+     * - the default google SDK repository, <br/>
+     * - the extra repo URLs from the environment, <br/>
+     * - the user sources from prefs <br/>
+     * - and finally the extra user repo URLs from the environment.
+     */
+    public void setupDefaultSources() {
+        RepoSources sources = getSources();
+        sources.add(new RepoSource(SdkRepository.URL_GOOGLE_SDK_REPO_SITE, false /*userSource*/));
+
+        // SDK_UPDATER_URLS is a semicolon-separated list of URLs that can be used to
+        // seed the SDK Updater list for full repositories.
+        String str = System.getenv("SDK_UPDATER_URLS");
+        if (str != null) {
+            String[] urls = str.split(";");
+            for (String url : urls) {
+                if (url != null && url.length() > 0) {
+                    RepoSource s = new RepoSource(url, false /*userSource*/);
+                    if (!sources.hasSource(s)) {
+                        sources.add(s);
+                    }
+                }
+            }
+        }
+
+        // Load user sources
+        sources.loadUserSources(getSdkLog());
+
+        // SDK_UPDATER_USER_URLS is a semicolon-separated list of URLs that can be used to
+        // seed the SDK Updater list for user-only repositories. User sources can only provide
+        // add-ons and extra packages.
+        str = System.getenv("SDK_UPDATER_USER_URLS");
+        if (str != null) {
+            String[] urls = str.split(";");
+            for (String url : urls) {
+                if (url != null && url.length() > 0) {
+                    RepoSource s = new RepoSource(url, true /*userSource*/);
+                    if (!sources.hasSource(s)) {
+                        sources.add(s);
+                    }
+                }
             }
         }
     }
@@ -288,7 +348,9 @@ class UpdaterData {
 
     /**
      * Notify the listeners ({@link ISdkListener}) that the SDK was reloaded.
-     * <p/>This can be called from any thread.
+     * <p/>
+     * This can be called from any thread.
+     *
      * @param init whether the SDK loaded for the first time.
      */
     public void notifyListeners(final boolean init) {
@@ -458,22 +520,23 @@ class UpdaterData {
     }
 
     /**
-     * Attemps to restart ADB.
-     *
+     * Attempts to restart ADB.
+     * <p/>
      * If the "ask before restart" setting is set (the default), prompt the user whether
      * now is a good time to restart ADB.
+     *
      * @param monitor
      */
     private void askForAdbRestart(ITaskMonitor monitor) {
         final boolean[] canRestart = new boolean[] { true };
 
-        if (getSettingsController().getAskBeforeAdbRestart()) {
+        if (getWindowShell() != null && getSettingsController().getAskBeforeAdbRestart()) {
             // need to ask for permission first
-            Display display = mWindowShell.getDisplay();
+            Display display = getWindowShell().getDisplay();
 
             display.syncExec(new Runnable() {
                 public void run() {
-                    canRestart[0] = MessageDialog.openQuestion(mWindowShell,
+                    canRestart[0] = MessageDialog.openQuestion(getWindowShell(),
                             "ADB Restart",
                             "A package that depends on ADB has been updated. It is recommended " +
                             "to restart ADB. Is it OK to do it now? If not, you can restart it " +
@@ -490,11 +553,16 @@ class UpdaterData {
     }
 
     private void notifyToolsNeedsToBeRestarted() {
-        Display display = mWindowShell.getDisplay();
+        if (getWindowShell() == null) {
+            // We don't need to print anything if this is a standalone console update.
+            return;
+        }
+
+        Display display = getWindowShell().getDisplay();
 
         display.syncExec(new Runnable() {
             public void run() {
-                MessageDialog.openInformation(mWindowShell,
+                MessageDialog.openInformation(getWindowShell(),
                         "Android Tools Updated",
                         "The Android SDK and AVD Manager that you are currently using has been updated. " +
                         "It is recommended that you now close the manager window and re-open it. " +
@@ -507,6 +575,7 @@ class UpdaterData {
 
     /**
      * Tries to update all the *existing* local packages.
+     * This version *requires* to be run with a GUI.
      * <p/>
      * There are two modes of operation:
      * <ul>
@@ -517,11 +586,11 @@ class UpdaterData {
      * the user wants to install or update, so just process these.
      * </ul>
      *
-     * @param selectedArchives The list of remote archive to consider for the update.
+     * @param selectedArchives The list of remote archives to consider for the update.
      *  This can be null, in which case a list of remote archive is fetched from all
      *  available sources.
      */
-    public void updateOrInstallAll(Collection<Archive> selectedArchives) {
+    public void updateOrInstallAll_WithGUI(Collection<Archive> selectedArchives) {
         if (selectedArchives == null) {
             refreshSources(true);
         }
@@ -536,7 +605,7 @@ class UpdaterData {
             ul.addNewPlatforms(archives, getSources(), getLocalSdkParser().getPackages());
         }
 
-        // TODO if selectedArchives is null and archives.len==0, find if there's
+        // TODO if selectedArchives is null and archives.len==0, find if there are
         // any new platform we can suggest to install instead.
 
         UpdateChooserDialog dialog = new UpdateChooserDialog(getWindowShell(), this, archives);
@@ -547,6 +616,140 @@ class UpdaterData {
             installArchives(result);
         }
     }
+
+    /**
+     * Tries to update all the *existing* local packages.
+     * This version is intended to run without a GUI and
+     * only outputs to the current {@link ISdkLog}.
+     *
+     * @param pkgFilter A list of {@link SdkRepository#NODES} to limit the type of packages
+     *   we can update. A null or empty list means to update everything possible.
+     * @param includeObsoletes True to also list and install obsolete packages.
+     * @param dryMode True to check what would be updated/installed but do not actually
+     *   download or install anything.
+     */
+    public void updateOrInstallAll_NoGUI(
+            Collection<String> pkgFilter,
+            boolean includeObsoletes,
+            boolean dryMode) {
+
+        refreshSources(true);
+
+        UpdaterLogic ul = new UpdaterLogic();
+        ArrayList<ArchiveInfo> archives = ul.computeUpdates(
+                null /*selectedArchives*/,
+                getSources(),
+                getLocalSdkParser().getPackages());
+
+        ul.addNewPlatforms(archives, getSources(), getLocalSdkParser().getPackages());
+
+        // Filter the selected archives to only keep the ones matching the filter
+        if (pkgFilter != null && pkgFilter.size() > 0 && archives != null && archives.size() > 0) {
+            // Map filter types to an SdkRepository Package type.
+            HashMap<String, Class<? extends Package>> pkgMap =
+                new HashMap<String, Class<? extends Package>>();
+            pkgMap.put(SdkRepository.NODE_PLATFORM, PlatformPackage.class);
+            pkgMap.put(SdkRepository.NODE_ADD_ON,   AddonPackage.class);
+            pkgMap.put(SdkRepository.NODE_TOOL,     ToolPackage.class);
+            pkgMap.put(SdkRepository.NODE_DOC,      DocPackage.class);
+            pkgMap.put(SdkRepository.NODE_SAMPLE,   SamplePackage.class);
+            pkgMap.put(SdkRepository.NODE_EXTRA,    ExtraPackage.class);
+
+            if (SdkRepository.NODES.length != pkgMap.size()) {
+                // Sanity check in case we forget to update this package map.
+                // We don't cancel the operation though.
+                mSdkLog.error(null,
+                    "Filter Mismatch!\nThe package filter list has changed. Please report this.");
+            }
+
+            // Now make a set of the types that are allowed by the filter.
+            HashSet<Class<? extends Package>> allowedPkgSet =
+                new HashSet<Class<? extends Package>>();
+            for (String type : pkgFilter) {
+                if (pkgMap.containsKey(type)) {
+                    allowedPkgSet.add(pkgMap.get(type));
+                } else {
+                    // This should not happen unless there's a mismatch in the package map.
+                    mSdkLog.error(null, "Ignoring unknown package filter '%1$s'", type);
+                }
+            }
+
+            // we don't need the map anymore
+            pkgMap = null;
+
+            Iterator<ArchiveInfo> it = archives.iterator();
+            while (it.hasNext()) {
+                boolean keep = false;
+                ArchiveInfo ai = it.next();
+                Archive a = ai.getNewArchive();
+                if (a != null) {
+                    Package p = a.getParentPackage();
+                    if (p != null && allowedPkgSet.contains(p.getClass())) {
+                        keep = true;
+                    }
+                }
+
+                if (!keep) {
+                    it.remove();
+                }
+            }
+
+            if (archives.size() == 0) {
+                mSdkLog.warning("The package filter removed all packages. There is nothing to install.\n" +
+                        "Please consider trying updating again without a package filter.");
+                return;
+            }
+        }
+
+        if (!includeObsoletes && archives != null && archives.size() > 0) {
+            // Filter obsolete packages out
+            Iterator<ArchiveInfo> it = archives.iterator();
+            while (it.hasNext()) {
+                boolean keep = false;
+                ArchiveInfo ai = it.next();
+                Archive a = ai.getNewArchive();
+                if (a != null) {
+                    Package p = a.getParentPackage();
+                    if (p != null && !p.isObsolete()) {
+                        keep = true;
+                    }
+                }
+
+                if (!keep) {
+                    it.remove();
+                }
+            }
+
+            if (archives.size() == 0) {
+                mSdkLog.warning("All candidate packages were obsolete. Nothing to install.");
+                return;
+            }
+        }
+
+        // TODO if selectedArchives is null and archives.len==0, find if there are
+        // any new platform we can suggest to install instead.
+
+        if (archives != null && archives.size() > 0) {
+            if (dryMode) {
+                mSdkLog.printf("Packages selected for install:\n");
+                for (ArchiveInfo ai : archives) {
+                    Archive a = ai.getNewArchive();
+                    if (a != null) {
+                        Package p = a.getParentPackage();
+                        if (p != null) {
+                            mSdkLog.printf("- %1$s\n", p.getShortDescription());
+                        }
+                    }
+                }
+                mSdkLog.printf("\nDry mode is on so nothing will actually be installed.\n");
+            } else {
+                installArchives(archives);
+            }
+        } else {
+            mSdkLog.printf("There is nothing to install or update.\n");
+        }
+    }
+
     /**
      * Refresh all sources. This is invoked either internally (reusing an existing monitor)
      * or as a UI callback on the remote page "Refresh" button (in which case the monitor is
@@ -560,7 +763,7 @@ class UpdaterData {
 
         final boolean forceHttp = getSettingsController().getForceHttp();
 
-        mTaskFactory.start("Refresh Sources",new ITask() {
+        mTaskFactory.start("Refresh Sources", new ITask() {
             public void run(ITaskMonitor monitor) {
                 RepoSource[] sources = mSources.getSources();
                 monitor.setProgressMax(sources.length);

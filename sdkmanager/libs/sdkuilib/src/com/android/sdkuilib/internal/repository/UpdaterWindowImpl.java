@@ -19,9 +19,6 @@ package com.android.sdkuilib.internal.repository;
 
 import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.internal.repository.RepoSource;
-import com.android.sdklib.internal.repository.RepoSources;
-import com.android.sdklib.repository.SdkRepository;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 import com.android.sdkuilib.internal.tasks.ProgressTaskFactory;
 import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
@@ -295,7 +292,7 @@ public class UpdaterWindowImpl {
         mUpdaterData.notifyListeners(true /*init*/);
 
         if (mRequestAutoUpdate) {
-            mUpdaterData.updateOrInstallAll(null /*selectedArchives*/);
+            mUpdaterData.updateOrInstallAll_WithGUI(null /*selectedArchives*/);
         }
 
         return true;
@@ -395,43 +392,7 @@ public class UpdaterWindowImpl {
      * Used to initialize the sources.
      */
     private void setupSources() {
-        RepoSources sources = mUpdaterData.getSources();
-        sources.add(new RepoSource(SdkRepository.URL_GOOGLE_SDK_REPO_SITE, false /*userSource*/));
-
-        // SDK_UPDATER_URLS is a semicolon-separated list of URLs that can be used to
-        // seed the SDK Updater list for full repositories.
-        String str = System.getenv("SDK_UPDATER_URLS");
-        if (str != null) {
-            String[] urls = str.split(";");
-            for (String url : urls) {
-                if (url != null && url.length() > 0) {
-                    RepoSource s = new RepoSource(url, false /*userSource*/);
-                    if (!sources.hasSource(s)) {
-                        sources.add(s);
-                    }
-                }
-            }
-        }
-
-        // Load user sources
-        sources.loadUserSources(mUpdaterData.getSdkLog());
-
-        // SDK_UPDATER_USER_URLS is a semicolon-separated list of URLs that can be used to
-        // seed the SDK Updater list for user-only repositories. User sources can only provide
-        // add-ons and extra packages.
-        str = System.getenv("SDK_UPDATER_USER_URLS");
-        if (str != null) {
-            String[] urls = str.split(";");
-            for (String url : urls) {
-                if (url != null && url.length() > 0) {
-                    RepoSource s = new RepoSource(url, true /*userSource*/);
-                    if (!sources.hasSource(s)) {
-                        sources.add(s);
-                    }
-                }
-            }
-        }
-
+        mUpdaterData.setupDefaultSources();
         mRemotePackagesPage.onSdkChange(false /*init*/);
     }
 

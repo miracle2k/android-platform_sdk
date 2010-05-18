@@ -122,7 +122,7 @@ public class SettingsController {
     /**
      * Internal helper to set a boolean setting.
      */
-    private void setSetting(String key, boolean value) {
+    void setSetting(String key, boolean value) {
         mProperties.setProperty(key, Boolean.toString(value));
     }
 
