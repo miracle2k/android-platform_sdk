@@ -1,11 +1,15 @@
 Change log for Android SDK Tools.
 
+Revision 7:
+- Support for Ant rules provided by the Tools components (override the one in
+  the platform component)
+
 Revision 6:
 - Support for library project to share code/resources among projects
     - Updated Ant rules and custom tasks
     - New "android create lib-project", "android update lib-project" actions.
     - New parameter for "android update project"
- 
+
 
 Revision 5 (03/2010):
 - AVD/SDK Manager:
