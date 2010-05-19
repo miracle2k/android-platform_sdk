@@ -257,7 +257,7 @@ class CommandLineProcessor {
                                 a);
                             return;
                         } else {
-                            // It looks like a dashed parameter and but it is unknown by this
+                            // It looks like a dashed parameter but it is unknown by this
                             // verb-object combination
 
                             errorMsg = String.format(
@@ -309,6 +309,12 @@ class CommandLineProcessor {
                             return;
 
                         }
+                    } else {
+                        // The argument is not a dashed parameter and we already
+                        // have a verb/object. Must be some extra unknown argument.
+                        errorMsg = String.format(
+                                "Argument '%1$s' is not recognized.",
+                                a);
                     }
                 } else if (arg != null) {
                     // This argument was present on the command line
@@ -321,8 +327,22 @@ class CommandLineProcessor {
                             errorMsg = String.format("Missing argument for flag %1$s.", a);
                             return;
                         }
+                        String b = args[i];
 
-                        error = arg.getMode().process(arg, args[i]);
+                        Arg dummyArg = null;
+                        if (b.startsWith("--")) {
+                            dummyArg = findLongArg(verb, directObject, b.substring(2));
+                        } else if (b.startsWith("-")) {
+                            dummyArg = findShortArg(verb, directObject, b.substring(1));
+                        }
+                        if (dummyArg != null) {
+                            errorMsg = String.format(
+                                    "Oops, it looks like you didn't provide an argument for '%1$s'.\n'%2$s' was found instead.",
+                                    a, b);
+                            return;
+                        }
+
+                        error = arg.getMode().process(arg, b);
                     } else {
                         error = arg.getMode().process(arg, null);
 
