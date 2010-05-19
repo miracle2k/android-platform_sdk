@@ -51,7 +51,7 @@ public class TextInputMethodQualifierTest extends TestCase {
     public void test12Key() {
         assertEquals(true, timq.checkAndSet("12key", config)); //$NON-NLS-1$
         assertTrue(config.getTextInputMethodQualifier() != null);
-        assertEquals(Keyboard.TWELVEKEYS, config.getTextInputMethodQualifier().getValue());
+        assertEquals(Keyboard.TWELVEKEY, config.getTextInputMethodQualifier().getValue());
         assertEquals("12key", config.getTextInputMethodQualifier().toString()); //$NON-NLS-1$
     }
 

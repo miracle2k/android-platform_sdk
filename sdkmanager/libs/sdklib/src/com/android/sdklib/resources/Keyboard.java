@@ -21,15 +21,16 @@ package com.android.sdklib.resources;
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
 public enum Keyboard {
-    NOKEY("nokeys", "No Keys"), //$NON-NLS-1$
-    QWERTY("qwerty", "Qwerty"), //$NON-NLS-1$
-    TWELVEKEYS("12key", "12 Key"); //$NON-NLS-1$
+    NOKEY("nokeys", null, "No Keys"), //$NON-NLS-1$
+    QWERTY("qwerty", null, "Qwerty"), //$NON-NLS-1$
+    TWELVEKEY("12key", "twelvekey", "12 Key"); //$NON-NLS-1$
 
-    private String mValue;
+    private String mValue, mValue2;
     private String mDisplayValue;
 
-    private Keyboard(String value, String displayValue) {
+    private Keyboard(String value, String value2, String displayValue) {
         mValue = value;
+        mValue2 = value2;
         mDisplayValue = displayValue;
     }
 
@@ -39,9 +40,10 @@ public enum Keyboard {
      * @return the enum for the qualifier value or null if no matching was found.
      */
     public static Keyboard getEnum(String value) {
-        for (Keyboard orient : values()) {
-            if (orient.mValue.equals(value)) {
-                return orient;
+        for (Keyboard kbrd : values()) {
+            if (kbrd.mValue.equals(value) ||
+                    (kbrd.mValue2 != null && kbrd.mValue2.equals(value))) {
+                return kbrd;
             }
         }
 

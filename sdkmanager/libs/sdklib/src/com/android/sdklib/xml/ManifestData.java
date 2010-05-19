@@ -16,6 +16,10 @@
 
 package com.android.sdklib.xml;
 
+import com.android.sdklib.resources.Keyboard;
+import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.TouchScreen;
+
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.TreeSet;
@@ -45,6 +49,7 @@ public final class ManifestData {
     final ArrayList<String> mLibraries = new ArrayList<String>();
 
     SupportsScreens mSupportsScreens;
+    UsesConfiguration mUsesConfiguration;
 
     /**
      * Instrumentation info obtained from manifest
@@ -127,6 +132,9 @@ public final class ManifestData {
         }
     }
 
+    /**
+     * Class representing the <code>supports-screens</code> node in the manifest.
+     */
     public final static class SupportsScreens {
         Boolean mResizeable;
         Boolean mAnyDensity;
@@ -134,30 +142,86 @@ public final class ManifestData {
         Boolean mLargeScreens;
         Boolean mNormalScreens;
 
+        /**
+         * returns the value of the <code>resizeable</code> attribute or null if not present.
+         */
         public Boolean getResizeable() {
             return mResizeable;
         }
 
+        /**
+         * returns the value of the <code>anyDensity</code> attribute or null if not present.
+         */
         public Boolean getAnyDensity() {
             return mAnyDensity;
         }
 
+        /**
+         * returns the value of the <code>smallScreens</code> attribute or null if not present.
+         */
         public Boolean getSmallScreens() {
             return mSmallScreens;
         }
 
+        /**
+         * returns the value of the <code>normalScreens</code> attribute or null if not present.
+         */
         public Boolean getNormalScreens() {
             return mNormalScreens;
         }
 
+        /**
+         * returns the value of the <code>largeScreens</code> attribute or null if not present.
+         */
         public Boolean getLargeScreens() {
             return mLargeScreens;
         }
     }
 
+    /**
+     * Class representing the <code>uses-configuration</code> node in the manifest.
+     */
     public final static class UsesConfiguration {
         Boolean mReqFiveWayNav;
         Boolean mReqHardKeyboard;
+        Keyboard mReqKeyboardType;
+        TouchScreen mReqTouchScreen;
+        Navigation mReqNavigation;
+
+        /**
+         * returns the value of the <code>reqFiveWayNav</code> attribute or null if not present.
+         */
+        public Boolean getReqFiveWayNav() {
+            return mReqFiveWayNav;
+        }
+
+        /**
+         * returns the value of the <code>reqNavigation</code> attribute or null if not present.
+         */
+        public Navigation getReqNavigation() {
+            return mReqNavigation;
+        }
+
+        /**
+         * returns the value of the <code>reqHardKeyboard</code> attribute or null if not present.
+         */
+        public Boolean getReqHardKeyboard() {
+            return mReqHardKeyboard;
+        }
+
+        /**
+         * returns the value of the <code>reqKeyboardType</code> attribute or null if not present.
+         */
+        public Keyboard getReqKeyboardType() {
+            return mReqKeyboardType;
+        }
+
+        /**
+         * returns the value of the <code>reqTouchScreen</code> attribute or null if not present.
+         */
+        public TouchScreen getReqTouchScreen() {
+            return mReqTouchScreen;
+        }
     }
 
     /**
@@ -235,8 +299,20 @@ public final class ManifestData {
         return mLibraries.toArray(new String[mLibraries.size()]);
     }
 
+    /**
+     * Returns the {@link SupportsScreens} object representing the <code>supports-screens</code>
+     * node, or null if the node doesn't exist at all.
+     */
     public SupportsScreens getSupportsScreens() {
         return mSupportsScreens;
+    }
+
+    /**
+     * Returns the {@link UsesConfiguration} object representing the <code>uses-configuration</code>
+     * node, or null if the node doesn't exist at all.
+     */
+    public UsesConfiguration getUsesConfiguration() {
+        return mUsesConfiguration;
     }
 
     void addProcessName(String processName) {

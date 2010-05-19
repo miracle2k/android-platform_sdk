@@ -16,6 +16,10 @@
 
 package com.android.sdklib.xml;
 
+import com.android.sdklib.resources.Keyboard;
+import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.TouchScreen;
+
 import java.io.InputStream;
 
 import junit.framework.TestCase;
@@ -95,11 +99,23 @@ public class AndroidManifestParserTest extends TestCase {
     public void testSupportsScreen() {
         ManifestData.SupportsScreens supportsScreens = mManifestTestApp.getSupportsScreens();
 
+        assertNotNull(supportsScreens);
         assertEquals(Boolean.TRUE, supportsScreens.getAnyDensity());
         assertEquals(Boolean.TRUE, supportsScreens.getResizeable());
         assertEquals(Boolean.TRUE, supportsScreens.getSmallScreens());
         assertEquals(Boolean.TRUE, supportsScreens.getNormalScreens());
         assertEquals(Boolean.TRUE, supportsScreens.getLargeScreens());
+    }
+
+    public void testUsesConfiguration() {
+        ManifestData.UsesConfiguration usesConfig = mManifestTestApp.getUsesConfiguration();
+
+        assertNotNull(usesConfig);
+        assertEquals(Boolean.TRUE, usesConfig.getReqFiveWayNav());
+        assertEquals(Navigation.NONAV, usesConfig.getReqNavigation());
+        assertEquals(Boolean.TRUE, usesConfig.getReqHardKeyboard());
+        assertEquals(Keyboard.TWELVEKEY, usesConfig.getReqKeyboardType());
+        assertEquals(TouchScreen.FINGER, usesConfig.getReqTouchScreen());
     }
 
     private void assertEquals(ManifestData.Activity lhs, ManifestData.Activity rhs) {

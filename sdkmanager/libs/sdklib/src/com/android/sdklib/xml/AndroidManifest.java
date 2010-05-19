@@ -46,7 +46,8 @@ public final class AndroidManifest {
     public final static String NODE_USES_SDK = "uses-sdk";
     public final static String NODE_INSTRUMENTATION = "instrumentation";
     public final static String NODE_USES_LIBRARY = "uses-library";
-    public static final String NODE_SUPPORTS_SCREENS = "supports-screens";
+    public final static String NODE_SUPPORTS_SCREENS = "supports-screens";
+    public final static String NODE_USES_CONFIGURATION = "uses-configuration";
 
     public final static String ATTRIBUTE_PACKAGE = "package";
     public final static String ATTRIBUTE_VERSIONCODE = "versionCode";
@@ -56,11 +57,16 @@ public final class AndroidManifest {
     public final static String ATTRIBUTE_MIN_SDK_VERSION = "minSdkVersion";
     public final static String ATTRIBUTE_TARGET_PACKAGE = "targetPackage";
     public final static String ATTRIBUTE_EXPORTED = "exported";
-    public final static String ATTRIBUTE_RESIZABLE = "resizeable";
+    public final static String ATTRIBUTE_RESIZEABLE = "resizeable";
     public final static String ATTRIBUTE_ANYDENSITY = "anyDensity";
     public final static String ATTRIBUTE_SMALLSCREENS = "smallScreens";
     public final static String ATTRIBUTE_NORMALSCREENS = "normalScreens";
     public final static String ATTRIBUTE_LARGESCREENS = "largeScreens";
+    public final static String ATTRIBUTE_REQ_5WAYNAV = "reqFiveWayNav";
+    public final static String ATTRIBUTE_REQ_NAVIGATION = "reqNavigation";
+    public final static String ATTRIBUTE_REQ_HARDKEYBOARD = "reqHardKeyboard";
+    public final static String ATTRIBUTE_REQ_KEYBOARDTYPE = "reqKeyboardType";
+    public final static String ATTRIBUTE_REQ_TOUCHSCREEN = "reqTouchScreen";
 
     /**
      * Returns the package for a given project.

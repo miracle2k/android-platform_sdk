@@ -20,9 +20,13 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.io.StreamException;
+import com.android.sdklib.resources.Keyboard;
+import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.TouchScreen;
 import com.android.sdklib.xml.ManifestData.Activity;
 import com.android.sdklib.xml.ManifestData.Instrumentation;
 import com.android.sdklib.xml.ManifestData.SupportsScreens;
+import com.android.sdklib.xml.ManifestData.UsesConfiguration;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.ErrorHandler;
@@ -76,8 +80,8 @@ public class AndroidManifestParser {
     /**
      * XML error & data handler used when parsing the AndroidManifest.xml file.
      * <p/>
-     * This serves both as an {@link XmlErrorHandler} to report errors and as a data repository
-     * to collect data from the manifest.
+     * During parsing this will fill up the {@link ManifestData} object given to the constructor
+     * and call out errors to the given {@link ManifestErrorHandler}.
      */
     private static class ManifestHandler extends DefaultHandler {
 
@@ -90,7 +94,7 @@ public class AndroidManifestParser {
         private Locator mLocator;
 
         /**
-         * Creates a new {@link ManifestHandler}, which is also an {@link XmlErrorHandler}.
+         * Creates a new {@link ManifestHandler}.
          *
          * @param manifestFile The manifest file being parsed. Can be null.
          * @param errorListener An optional error listener.
@@ -173,8 +177,13 @@ public class AndroidManifestParser {
                                         true /* hasNamespace */);
                             } else if (AndroidManifest.NODE_INSTRUMENTATION.equals(localName)) {
                                 processInstrumentationNode(attributes);
+
                             } else if (AndroidManifest.NODE_SUPPORTS_SCREENS.equals(localName)) {
                                 processSupportsScreensNode(attributes);
+
+                            } else if (AndroidManifest.NODE_USES_CONFIGURATION.equals(localName)) {
+                                processUsesConfiguration(attributes);
+
                             }
                             break;
                         case LEVEL_ACTIVITY:
@@ -412,7 +421,7 @@ public class AndroidManifestParser {
 
             mManifestData.mSupportsScreens.mResizeable = Boolean.valueOf(
                     getAttributeValue(attributes,
-                            AndroidManifest.ATTRIBUTE_RESIZABLE, true /*hasNamespace*/));
+                            AndroidManifest.ATTRIBUTE_RESIZEABLE, true /*hasNamespace*/));
             mManifestData.mSupportsScreens.mAnyDensity = Boolean.valueOf(
                     getAttributeValue(attributes,
                             AndroidManifest.ATTRIBUTE_ANYDENSITY, true /*hasNamespace*/));
@@ -425,6 +434,30 @@ public class AndroidManifestParser {
             mManifestData.mSupportsScreens.mLargeScreens = Boolean.valueOf(
                     getAttributeValue(attributes,
                             AndroidManifest.ATTRIBUTE_LARGESCREENS, true /*hasNamespace*/));
+        }
+
+        /**
+         * Processes the supports-screens node.
+         * @param attributes the attributes for the supports-screens node.
+         */
+        private void processUsesConfiguration(Attributes attributes) {
+            mManifestData.mUsesConfiguration = new UsesConfiguration();
+
+            mManifestData.mUsesConfiguration.mReqFiveWayNav = Boolean.valueOf(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_REQ_5WAYNAV, true /*hasNamespace*/));
+            mManifestData.mUsesConfiguration.mReqNavigation = Navigation.getEnum(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_REQ_NAVIGATION, true /*hasNamespace*/));
+            mManifestData.mUsesConfiguration.mReqHardKeyboard = Boolean.valueOf(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_REQ_HARDKEYBOARD, true /*hasNamespace*/));
+            mManifestData.mUsesConfiguration.mReqKeyboardType = Keyboard.getEnum(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_REQ_KEYBOARDTYPE, true /*hasNamespace*/));
+            mManifestData.mUsesConfiguration.mReqTouchScreen = TouchScreen.getEnum(
+                    getAttributeValue(attributes,
+                            AndroidManifest.ATTRIBUTE_REQ_TOUCHSCREEN, true /*hasNamespace*/));
         }
 
         /**
