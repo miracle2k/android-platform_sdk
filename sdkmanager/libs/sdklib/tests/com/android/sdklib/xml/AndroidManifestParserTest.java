@@ -19,6 +19,8 @@ package com.android.sdklib.xml;
 import com.android.sdklib.resources.Keyboard;
 import com.android.sdklib.resources.Navigation;
 import com.android.sdklib.resources.TouchScreen;
+import com.android.sdklib.xml.ManifestData.UsesFeature;
+import com.android.sdklib.xml.ManifestData.UsesLibrary;
 
 import java.io.InputStream;
 
@@ -41,6 +43,8 @@ public class AndroidManifestParserTest extends TestCase {
     private static final Integer VERSION_CODE = 42;
     private static final String ACTIVITY_NAME = "com.android.testapp.MainActivity"; //$NON-NLS-1$
     private static final String LIBRARY_NAME = "android.test.runner"; //$NON-NLS-1$
+    private static final String LIBRARY_NAME2 = "android.test.runner2"; //$NON-NLS-1$
+    private static final String FEATURE_NAME = "com.foo.feature"; //$NON-NLS-1$
     private static final String INSTRUMENTATION_NAME = "android.test.InstrumentationTestRunner"; //$NON-NLS-1$
     private static final String INSTRUMENTATION_TARGET = "com.android.AndroidProject"; //$NON-NLS-1$
 
@@ -129,8 +133,23 @@ public class AndroidManifestParserTest extends TestCase {
     }
 
     public void testGetUsesLibraries() {
-        assertEquals(1, mManifestTestApp.getUsesLibraries().length);
-        assertEquals(LIBRARY_NAME, mManifestTestApp.getUsesLibraries()[0]);
+        UsesLibrary[] libraries = mManifestTestApp.getUsesLibraries();
+
+        assertEquals(2,             libraries.length);
+        assertEquals(LIBRARY_NAME,  libraries[0].getName());
+        assertEquals(Boolean.FALSE, libraries[0].getRequired());
+        assertEquals(LIBRARY_NAME2, libraries[1].getName());
+        assertEquals(Boolean.TRUE,  libraries[1].getRequired());
+    }
+
+    public void testGetUsesFeatures() {
+        UsesFeature[] features = mManifestTestApp.getUsesFeatures();
+
+        assertEquals(2,            features.length);
+        assertEquals(0x00020001,   features[0].mGlEsVersion);
+        assertEquals(Boolean.TRUE, features[0].getRequired());
+        assertEquals(FEATURE_NAME, features[1].getName());
+        assertEquals(Boolean.TRUE, features[1].getRequired());
     }
 
     public void testGetPackageName() {

@@ -46,7 +46,9 @@ public final class ManifestData {
     final ArrayList<Instrumentation> mInstrumentations =
         new ArrayList<Instrumentation>();
     /** List of all libraries in use declared by the manifest */
-    final ArrayList<String> mLibraries = new ArrayList<String>();
+    final ArrayList<UsesLibrary> mLibraries = new ArrayList<UsesLibrary>();
+    /** List of all feature in use declared by the manifest */
+    final ArrayList<UsesFeature> mFeatures = new ArrayList<UsesFeature>();
 
     SupportsScreens mSupportsScreens;
     UsesConfiguration mUsesConfiguration;
@@ -179,6 +181,46 @@ public final class ManifestData {
     }
 
     /**
+     * Class representing a <code>uses-library</code> node in the manifest.
+     */
+    public final static class UsesLibrary {
+        String mName;
+        Boolean mRequired = Boolean.TRUE; // default is true even if missing
+
+        public String getName() {
+            return mName;
+        }
+
+        public Boolean getRequired() {
+            return mRequired;
+        }
+    }
+
+    /**
+     * Class representing a <code>uses-feature</code> node in the manifest.
+     */
+    public final static class UsesFeature {
+        String mName;
+        int mGlEsVersion = 0;
+        Boolean mRequired = Boolean.TRUE;  // default is true even if missing
+
+        public String getName() {
+            return mName;
+        }
+
+        /**
+         * Returns the value of the glEsVersion attribute, or 0 if the attribute was not present.
+         */
+        public int getGlEsVersion() {
+            return mGlEsVersion;
+        }
+
+        public Boolean getRequired() {
+            return mRequired;
+        }
+    }
+
+    /**
      * Class representing the <code>uses-configuration</code> node in the manifest.
      */
     public final static class UsesConfiguration {
@@ -293,10 +335,18 @@ public final class ManifestData {
 
     /**
      * Returns the list of libraries in use found in the manifest.
-     * @return An array of library names, or empty if no libraries were found.
+     * @return An array of {@link UsesLibrary} objects, or empty if no libraries were found.
      */
-    public String[] getUsesLibraries() {
-        return mLibraries.toArray(new String[mLibraries.size()]);
+    public UsesLibrary[] getUsesLibraries() {
+        return mLibraries.toArray(new UsesLibrary[mLibraries.size()]);
+    }
+
+    /**
+     * Returns the list of features in use found in the manifest.
+     * @return An array of {@link UsesFeature} objects, or empty if no libraries were found.
+     */
+    public UsesFeature[] getUsesFeatures() {
+        return mFeatures.toArray(new UsesFeature[mFeatures.size()]);
     }
 
     /**

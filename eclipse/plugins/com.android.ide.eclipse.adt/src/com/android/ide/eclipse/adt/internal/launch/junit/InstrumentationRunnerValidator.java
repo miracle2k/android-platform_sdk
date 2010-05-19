@@ -22,6 +22,7 @@ import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.ManifestData;
 import com.android.sdklib.xml.ManifestData.Instrumentation;
+import com.android.sdklib.xml.ManifestData.UsesLibrary;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -86,8 +87,8 @@ class InstrumentationRunnerValidator {
      * @return true if test runner library found, false otherwise
      */
     private boolean hasTestRunnerLibrary(ManifestData manifestData) {
-       for (String lib : manifestData.getUsesLibraries()) {
-           if (lib.equals(AndroidConstants.LIBRARY_TEST_RUNNER)) {
+       for (UsesLibrary lib : manifestData.getUsesLibraries()) {
+           if (AndroidConstants.LIBRARY_TEST_RUNNER.equals(lib.getName())) {
                return true;
            }
        }

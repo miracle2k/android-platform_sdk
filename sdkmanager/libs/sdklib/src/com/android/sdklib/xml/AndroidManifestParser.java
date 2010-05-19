@@ -27,6 +27,8 @@ import com.android.sdklib.xml.ManifestData.Activity;
 import com.android.sdklib.xml.ManifestData.Instrumentation;
 import com.android.sdklib.xml.ManifestData.SupportsScreens;
 import com.android.sdklib.xml.ManifestData.UsesConfiguration;
+import com.android.sdklib.xml.ManifestData.UsesFeature;
+import com.android.sdklib.xml.ManifestData.UsesLibrary;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.ErrorHandler;
@@ -46,11 +48,11 @@ import javax.xml.parsers.SAXParserFactory;
 
 public class AndroidManifestParser {
 
-    private final static int LEVEL_MANIFEST = 0;
-    private final static int LEVEL_APPLICATION = 1;
-    private final static int LEVEL_ACTIVITY = 2;
-    private final static int LEVEL_INTENT_FILTER = 3;
-    private final static int LEVEL_CATEGORY = 4;
+    private final static int LEVEL_TOP = 0;
+    private final static int LEVEL_INSIDE_MANIFEST = 1;
+    private final static int LEVEL_INSIDE_APPLICATION = 2;
+    private final static int LEVEL_INSIDE_APP_COMPONENT = 3;
+    private final static int LEVEL_INSIDE_INTENT_FILTER = 4;
 
     private final static String ACTION_MAIN = "android.intent.action.MAIN"; //$NON-NLS-1$
     private final static String CATEGORY_LAUNCHER = "android.intent.category.LAUNCHER"; //$NON-NLS-1$
@@ -134,7 +136,7 @@ public class AndroidManifestParser {
                 if (mValidLevel == mCurrentLevel) {
                     String value;
                     switch (mValidLevel) {
-                        case LEVEL_MANIFEST:
+                        case LEVEL_TOP:
                             if (AndroidManifest.NODE_MANIFEST.equals(localName)) {
                                 // lets get the package name.
                                 mManifestData.mPackage = getAttributeValue(attributes,
@@ -154,7 +156,7 @@ public class AndroidManifestParser {
                                 mValidLevel++;
                             }
                             break;
-                        case LEVEL_APPLICATION:
+                        case LEVEL_INSIDE_MANIFEST:
                             if (AndroidManifest.NODE_APPLICATION.equals(localName)) {
                                 value = getAttributeValue(attributes,
                                         AndroidManifest.ATTRIBUTE_PROCESS,
@@ -184,9 +186,46 @@ public class AndroidManifestParser {
                             } else if (AndroidManifest.NODE_USES_CONFIGURATION.equals(localName)) {
                                 processUsesConfiguration(attributes);
 
+                            } else if (AndroidManifest.NODE_USES_FEATURE.equals(localName)) {
+                                UsesFeature feature = new UsesFeature();
+
+                                // get the name
+                                value = getAttributeValue(attributes,
+                                        AndroidManifest.ATTRIBUTE_NAME,
+                                        true /* hasNamespace */);
+                                if (value != null) {
+                                    feature.mName = value;
+                                }
+
+                                // read the required attribute
+                                value = getAttributeValue(attributes,
+                                        AndroidManifest.ATTRIBUTE_REQUIRED,
+                                        true /*hasNamespace*/);
+                                if (value != null) {
+                                    Boolean b = Boolean.valueOf(value);
+                                    if (b != null) {
+                                        feature.mRequired = b;
+                                    }
+                                }
+
+                                // read the gl es attribute
+                                value = getAttributeValue(attributes,
+                                        AndroidManifest.ATTRIBUTE_GLESVERSION,
+                                        true /*hasNamespace*/);
+                                if (value != null) {
+                                    try {
+                                        int version = Integer.decode(value);
+                                        feature.mGlEsVersion = version;
+                                    } catch (NumberFormatException e) {
+                                        // ignore
+                                    }
+
+                                }
+
+                                mManifestData.mFeatures.add(feature);
                             }
                             break;
-                        case LEVEL_ACTIVITY:
+                        case LEVEL_INSIDE_APPLICATION:
                             if (AndroidManifest.NODE_ACTIVITY.equals(localName)) {
                                 processActivityNode(attributes);
                                 mValidLevel++;
@@ -204,11 +243,25 @@ public class AndroidManifestParser {
                                         AndroidManifest.ATTRIBUTE_NAME,
                                         true /* hasNamespace */);
                                 if (value != null) {
-                                    mManifestData.mLibraries.add(value);
+                                    UsesLibrary library = new UsesLibrary();
+                                    library.mName = value;
+
+                                    // read the required attribute
+                                    value = getAttributeValue(attributes,
+                                            AndroidManifest.ATTRIBUTE_REQUIRED,
+                                            true /*hasNamespace*/);
+                                    if (value != null) {
+                                        Boolean b = Boolean.valueOf(value);
+                                        if (b != null) {
+                                            library.mRequired = b;
+                                        }
+                                    }
+
+                                    mManifestData.mLibraries.add(library);
                                 }
                             }
                             break;
-                        case LEVEL_INTENT_FILTER:
+                        case LEVEL_INSIDE_APP_COMPONENT:
                             // only process this level if we are in an activity
                             if (mCurrentActivity != null &&
                                     AndroidManifest.NODE_INTENT.equals(localName)) {
@@ -216,7 +269,7 @@ public class AndroidManifestParser {
                                 mValidLevel++;
                             }
                             break;
-                        case LEVEL_CATEGORY:
+                        case LEVEL_INSIDE_INTENT_FILTER:
                             if (mCurrentActivity != null) {
                                 if (AndroidManifest.NODE_ACTION.equals(localName)) {
                                     // get the name attribute
@@ -271,10 +324,10 @@ public class AndroidManifestParser {
                 // process the end of the element
                 if (mValidLevel == mCurrentLevel) {
                     switch (mValidLevel) {
-                        case LEVEL_ACTIVITY:
+                        case LEVEL_INSIDE_APPLICATION:
                             mCurrentActivity = null;
                             break;
-                        case LEVEL_INTENT_FILTER:
+                        case LEVEL_INSIDE_APP_COMPONENT:
                             // if we found both a main action and a launcher category, this is our
                             // launcher activity!
                             if (mManifestData.mLauncherActivity == null &&

@@ -48,10 +48,13 @@ public final class AndroidManifest {
     public final static String NODE_USES_LIBRARY = "uses-library";
     public final static String NODE_SUPPORTS_SCREENS = "supports-screens";
     public final static String NODE_USES_CONFIGURATION = "uses-configuration";
+    public final static String NODE_USES_FEATURE = "uses-feature";
 
     public final static String ATTRIBUTE_PACKAGE = "package";
     public final static String ATTRIBUTE_VERSIONCODE = "versionCode";
     public final static String ATTRIBUTE_NAME = "name";
+    public final static String ATTRIBUTE_REQUIRED = "required";
+    public final static String ATTRIBUTE_GLESVERSION = "glEsVersion";
     public final static String ATTRIBUTE_PROCESS = "process";
     public final static String ATTRIBUTE_DEBUGGABLE = "debuggable";
     public final static String ATTRIBUTE_MIN_SDK_VERSION = "minSdkVersion";
