@@ -6,6 +6,11 @@ set -e
 D=`dirname "$0"`
 cd "$D/../../../"
 
+function die() {
+    echo "Error: $*"
+    exit 1
+}
+
 # computes relative ".." paths from $1 to here (in /android)
 function back() {
   echo $1 | sed 's@[^/]*@..@g'
