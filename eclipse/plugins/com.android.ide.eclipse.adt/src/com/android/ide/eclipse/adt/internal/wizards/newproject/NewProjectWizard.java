@@ -25,6 +25,7 @@ import com.android.ide.eclipse.adt.internal.wizards.newproject.NewProjectCreatio
 import com.android.ide.eclipse.adt.internal.wizards.newproject.NewTestProjectCreationPage.TestInfo;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.io.StreamException;
 import com.android.sdklib.resources.Density;
 
 import org.eclipse.core.resources.IContainer;
@@ -592,6 +593,8 @@ public class NewProjectWizard extends Wizard implements INewWizard {
             throw new InvocationTargetException(e);
         } catch (IOException e) {
             throw new InvocationTargetException(e);
+        } catch (StreamException e) {
+            throw new InvocationTargetException(e);
         } finally {
             monitor.done();
         }
@@ -607,13 +610,14 @@ public class NewProjectWizard extends Wizard implements INewWizard {
      * @param parameters Template parameters.
      * @param dictionary String definition.
      * @return The project newly created
+     * @throws StreamException
      */
     private IProject createEclipseProject(IProgressMonitor monitor,
             IProject project,
             IProjectDescription description,
             Map<String, Object> parameters,
             Map<String, String> dictionary)
-                throws CoreException, IOException {
+                throws CoreException, IOException, StreamException {
 
         // get the project target
         IAndroidTarget target = (IAndroidTarget) parameters.get(PARAM_SDK_TARGET);

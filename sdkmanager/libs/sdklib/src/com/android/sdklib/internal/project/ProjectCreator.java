@@ -391,9 +391,7 @@ public class ProjectCreator {
             installTemplate("build.template",
                     new File(projectFolder, SdkConstants.FN_BUILD_XML),
                     keywords);
-        } catch (ProjectCreateException e) {
-            mLog.error(e, null);
-        } catch (IOException e) {
+        } catch (Exception e) {
             mLog.error(e, null);
         }
     }
@@ -517,7 +515,7 @@ public class ProjectCreator {
             try {
                 props.save();
                 println("Updated %1$s", PropertyType.DEFAULT.getFilename());
-            } catch (IOException e) {
+            } catch (Exception e) {
                 mLog.error(e, "Failed to write %1$s file in '%2$s'",
                         PropertyType.DEFAULT.getFilename(),
                         folderPath);
@@ -538,7 +536,7 @@ public class ProjectCreator {
         try {
             props.save();
             println("Updated %1$s", PropertyType.LOCAL.getFilename());
-        } catch (IOException e) {
+        } catch (Exception e) {
             mLog.error(e, "Failed to write %1$s file in '%2$s'",
                     PropertyType.LOCAL.getFilename(),
                     folderPath);
@@ -718,7 +716,7 @@ public class ProjectCreator {
         try {
             buildProps.save();
             println("Updated %1$s", PropertyType.BUILD.getFilename());
-        } catch (IOException e) {
+        } catch (Exception e) {
             mLog.error(e, "Failed to write %1$s file in '%2$s'",
                     PropertyType.BUILD.getFilename(),
                     folderPath);

@@ -18,9 +18,11 @@ package com.android.sdklib.internal.project;
 
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
+import com.android.sdklib.io.FolderWrapper;
+import com.android.sdklib.io.IAbstractFile;
+import com.android.sdklib.io.IAbstractFolder;
+import com.android.sdklib.io.StreamException;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
@@ -129,7 +131,7 @@ public final class ProjectProperties {
                 "# Used by the 'uninstall' rule.\n");
     }
 
-    private final String mProjectFolderOsPath;
+    private final IAbstractFolder mProjectFolder;
     private final Map<String, String> mProperties;
     private final PropertyType mType;
 
@@ -141,13 +143,24 @@ public final class ProjectProperties {
      * @param type One the possible {@link PropertyType}s.
      */
     public static ProjectProperties load(String projectFolderOsPath, PropertyType type) {
-        File projectFolder = new File(projectFolderOsPath);
-        if (projectFolder.isDirectory()) {
-            File defaultFile = new File(projectFolder, type.mFilename);
-            if (defaultFile.isFile()) {
-                Map<String, String> map = SdkManager.parsePropertyFile(defaultFile, null /* log */);
+        IAbstractFolder wrapper = new FolderWrapper(projectFolderOsPath);
+        return load(wrapper, type);
+    }
+
+    /**
+     * Loads a project properties file and return a {@link ProjectProperties} object
+     * containing the properties
+     *
+     * @param projectFolder the project folder.
+     * @param type One the possible {@link PropertyType}s.
+     */
+    public static ProjectProperties load(IAbstractFolder projectFolder, PropertyType type) {
+        if (projectFolder.exists()) {
+            IAbstractFile propFile = projectFolder.getFile(type.mFilename);
+            if (propFile.exists()) {
+                Map<String, String> map = SdkManager.parsePropertyFile(propFile, null /* log */);
                 if (map != null) {
-                    return new ProjectProperties(projectFolderOsPath, map, type);
+                    return new ProjectProperties(projectFolder, map, type);
                 }
             }
         }
@@ -172,11 +185,10 @@ public final class ProjectProperties {
      * @return this object, for chaining.
      */
     public synchronized ProjectProperties merge(PropertyType type) {
-        File projectFolder = new File(mProjectFolderOsPath);
-        if (projectFolder.isDirectory()) {
-            File defaultFile = new File(projectFolder, type.mFilename);
-            if (defaultFile.isFile()) {
-                Map<String, String> map = SdkManager.parsePropertyFile(defaultFile, null /* log */);
+        if (mProjectFolder.exists()) {
+            IAbstractFile propFile = mProjectFolder.getFile(type.mFilename);
+            if (propFile.exists()) {
+                Map<String, String> map = SdkManager.parsePropertyFile(propFile, null /* log */);
                 if (map != null) {
                     for(Entry<String, String> entry : map.entrySet()) {
                         String key = entry.getKey();
@@ -195,11 +207,23 @@ public final class ProjectProperties {
      * Creates a new project properties object, with no properties.
      * <p/>The file is not created until {@link #save()} is called.
      * @param projectFolderOsPath the project folder.
-     * @param type
+     * @param type the type of property file to create
      */
     public static ProjectProperties create(String projectFolderOsPath, PropertyType type) {
         // create and return a ProjectProperties with an empty map.
-        return new ProjectProperties(projectFolderOsPath, new HashMap<String, String>(), type);
+        IAbstractFolder folder = new FolderWrapper(projectFolderOsPath);
+        return create(folder, type);
+    }
+
+    /**
+     * Creates a new project properties object, with no properties.
+     * <p/>The file is not created until {@link #save()} is called.
+     * @param projectFolder the project folder.
+     * @param type the type of property file to create
+     */
+    public static ProjectProperties create(IAbstractFolder projectFolder, PropertyType type) {
+        // create and return a ProjectProperties with an empty map.
+        return new ProjectProperties(projectFolder, new HashMap<String, String>(), type);
     }
 
     /**
@@ -249,11 +273,10 @@ public final class ProjectProperties {
      * Reloads the properties from the underlying file.
      */
     public synchronized void reload() {
-        File projectFolder = new File(mProjectFolderOsPath);
-        if (projectFolder.isDirectory()) {
-            File defaultFile = new File(projectFolder, mType.mFilename);
-            if (defaultFile.isFile()) {
-                Map<String, String> map = SdkManager.parsePropertyFile(defaultFile, null /* log */);
+        if (mProjectFolder.exists()) {
+            IAbstractFile propFile = mProjectFolder.getFile(mType.mFilename);
+            if (propFile.exists()) {
+                Map<String, String> map = SdkManager.parsePropertyFile(propFile, null /* log */);
                 if (map != null) {
                     mProperties.clear();
                     mProperties.putAll(map);
@@ -265,11 +288,12 @@ public final class ProjectProperties {
     /**
      * Saves the property file, using UTF-8 encoding.
      * @throws IOException
+     * @throws StreamException
      */
-    public synchronized void save() throws IOException {
-        File toSave = new File(mProjectFolderOsPath, mType.mFilename);
+    public synchronized void save() throws IOException, StreamException {
+        IAbstractFile toSave = mProjectFolder.getFile(mType.mFilename);
 
-        OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(toSave),
+        OutputStreamWriter writer = new OutputStreamWriter(toSave.getOutputStream(),
                 SdkConstants.INI_CHARSET);
 
         // write the header
@@ -298,9 +322,9 @@ public final class ProjectProperties {
      * Use {@link #load(String, PropertyType)} or {@link #create(String, PropertyType)}
      * to instantiate.
      */
-    private ProjectProperties(String projectFolderOsPath, Map<String, String> map,
+    private ProjectProperties(IAbstractFolder projectFolder, Map<String, String> map,
             PropertyType type) {
-        mProjectFolderOsPath = projectFolderOsPath;
+        mProjectFolder = projectFolder;
         mProperties = map;
         mType = type;
     }

@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 
 /**
@@ -115,6 +116,17 @@ public class FileWrapper extends File implements IAbstractFile {
         }
     }
 
+    public OutputStream getOutputStream() throws StreamException {
+        try {
+            return new FileOutputStream(this);
+        } catch (FileNotFoundException e) {
+            throw new StreamException(e);
+        }
+    }
+
+    public PreferredWriteMode getPreferredWriteMode() {
+        return PreferredWriteMode.OUTPUTSTREAM;
+    }
 
     public String getOsLocation() {
         return getAbsolutePath();
@@ -123,5 +135,13 @@ public class FileWrapper extends File implements IAbstractFile {
     @Override
     public boolean exists() {
         return isFile();
+    }
+
+    public IAbstractFolder getParentFolder() {
+        String p = this.getParent();
+        if (p == null) {
+            return null;
+        }
+        return new FolderWrapper(p);
     }
 }

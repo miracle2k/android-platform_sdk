@@ -17,13 +17,19 @@
 package com.android.ide.eclipse.adt.io;
 
 import com.android.sdklib.io.IAbstractFile;
+import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.io.StreamException;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * An implementation of {@link IAbstractFile} on top of an {@link IFile} object.
@@ -50,6 +56,26 @@ public class IFileWrapper implements IAbstractFile {
         } catch (CoreException e) {
             throw new StreamException(e);
         }
+    }
+
+    public OutputStream getOutputStream() throws StreamException {
+        return new ByteArrayOutputStream() {
+            @Override
+            public void close() throws IOException {
+                super.close();
+
+                byte[] data = toByteArray();
+                try {
+                    setContents(new ByteArrayInputStream(data));
+                } catch (StreamException e) {
+                    throw new IOException();
+                }
+            }
+        };
+    }
+
+    public PreferredWriteMode getPreferredWriteMode() {
+        return PreferredWriteMode.INPUTSTREAM;
     }
 
     public String getOsLocation() {
@@ -87,5 +113,14 @@ public class IFileWrapper implements IAbstractFile {
     @Override
     public int hashCode() {
         return mFile.hashCode();
+    }
+
+    public IAbstractFolder getParentFolder() {
+        IContainer p = mFile.getParent();
+        if (p != null) {
+            return new IFolderWrapper(p);
+        }
+
+        return null;
     }
 }

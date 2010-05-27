@@ -19,6 +19,7 @@ package com.android.sdklib.internal.export;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 /**
  * Class representing one apk that needs to be generated. This contains
@@ -174,12 +175,12 @@ public class ApkData implements Comparable<ApkData> {
     /**
      * Writes the apk description in the given writer. a single line is used to write
      * everything.
-     * @param writer The {@link FileWriter} to write to.
+     * @param writer The {@link OutputStreamWriter} to write to.
      * @throws IOException
      *
      * @see {@link #read(String)}
      */
-    public void write(FileWriter writer) throws IOException {
+    public void write(OutputStreamWriter writer) throws IOException {
         for (int i = 0 ; i < ApkData.INDEX_MAX ; i++) {
             write(i, writer);
         }
@@ -198,7 +199,7 @@ public class ApkData implements Comparable<ApkData> {
         }
     }
 
-    private void write(int index, FileWriter writer) throws IOException {
+    private void write(int index, OutputStreamWriter writer) throws IOException {
         switch (index) {
             case INDEX_OUTPUTNAME:
                 writeValue(writer, mOutputName);
@@ -240,11 +241,11 @@ public class ApkData implements Comparable<ApkData> {
         }
     }
 
-    private static void writeValue(FileWriter writer, String value) throws IOException {
+    private static void writeValue(OutputStreamWriter writer, String value) throws IOException {
         writer.append(value).append(',');
     }
 
-    private static void writeValue(FileWriter writer, int value) throws IOException {
+    private static void writeValue(OutputStreamWriter writer, int value) throws IOException {
         writeValue(writer, Integer.toString(value));
     }
 }

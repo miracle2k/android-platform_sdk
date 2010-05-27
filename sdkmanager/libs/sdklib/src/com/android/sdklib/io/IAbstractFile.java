@@ -17,11 +17,15 @@
 package com.android.sdklib.io;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * A file.
  */
 public interface IAbstractFile extends IAbstractResource {
+    public static enum PreferredWriteMode {
+        INPUTSTREAM, OUTPUTSTREAM;
+    }
 
     /**
      * Returns an {@link InputStream} object on the file content.
@@ -37,7 +41,13 @@ public interface IAbstractFile extends IAbstractResource {
     void setContents(InputStream source) throws StreamException;
 
     /**
-     * Returns the OS path of the file location.
+     * Returns an {@link OutputStream} to write into the file.
+     * @throws StreamException
      */
-    String getOsLocation();
+    OutputStream getOutputStream() throws StreamException;
+
+    /**
+     * Returns the preferred mode to write into the file.
+     */
+    PreferredWriteMode getPreferredWriteMode();
 }

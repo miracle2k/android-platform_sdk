@@ -16,11 +16,25 @@
 
 package com.android.sdklib.io;
 
-
 /**
  *  A folder.
  */
 public interface IAbstractFolder extends IAbstractResource {
+    /**
+     * Instances of classes that implement this interface are used to
+     * filter filenames.
+     */
+    public interface FilenameFilter {
+        /**
+         * Tests if a specified file should be included in a file list.
+         *
+         * @param   dir    the directory in which the file was found.
+         * @param   name   the name of the file.
+         * @return  <code>true</code> if and only if the name should be
+         * included in the file list; <code>false</code> otherwise.
+         */
+        boolean accept(IAbstractFolder dir, String name);
+    }
 
     /**
      * Returns true if the receiver contains a file with a given name
@@ -37,7 +51,16 @@ public interface IAbstractFolder extends IAbstractResource {
     IAbstractFile getFile(String name);
 
     /**
+     * returns an {@link IAbstractFolder} representing a child of the current folder with the
+     * given name. The folder may not actually exist.
+     * @param name the name of the folder.
+     */
+    IAbstractFolder getFolder(String name);
+
+    /**
      * returns a list of existing members in this folder.
      */
     IAbstractResource[] listMembers();
+
+    String[] list(FilenameFilter filter);
 }

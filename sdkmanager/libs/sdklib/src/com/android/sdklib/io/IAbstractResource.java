@@ -29,7 +29,17 @@ public interface IAbstractResource {
     String getName();
 
     /**
+     * Returns the OS path of the folder location.
+     */
+    String getOsLocation();
+
+    /**
      * Returns whether the resource actually exists.
      */
     boolean exists();
+
+    /**
+     * Returns the parent folder or null if there is no parent.
+     */
+    IAbstractFolder getParentFolder();
 }

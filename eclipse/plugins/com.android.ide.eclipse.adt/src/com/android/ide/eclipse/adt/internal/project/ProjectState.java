@@ -494,19 +494,24 @@ public final class ProjectState {
     /**
      * Saves the default.properties file and refreshes it to make sure that it gets reloaded
      * by Eclipse
+     * @throws Exception
      */
-    public void saveProperties() {
+    public void saveProperties() throws CoreException {
         try {
             mProperties.save();
 
             IResource defaultProp = mProject.findMember(SdkConstants.FN_DEFAULT_PROPERTIES);
             defaultProp.refreshLocal(IResource.DEPTH_ZERO, new NullProgressMonitor());
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (CoreException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        } catch (Exception e) {
+            String msg = String.format(
+                    "Failed to save %1$s for project %2$s",
+                    SdkConstants.FN_DEFAULT_PROPERTIES, mProject.getName());
+            AdtPlugin.log(e, msg);
+            if (e instanceof CoreException) {
+                throw (CoreException)e;
+            } else {
+                throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID, msg, e));
+            }
         }
     }
 
@@ -524,11 +529,12 @@ public final class ProjectState {
                 mProperties.setProperty(propName, newValue);
                 try {
                     mProperties.save();
-                } catch (IOException e) {
-                    return new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
-                            String.format("Failed to save %1$s for project %2$s",
-                                    mProperties.getType().getFilename(), mProject.getName()),
+                } catch (Exception e) {
+                    return new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID, String.format(
+                            "Failed to save %1$s for project %2$s",
+                                    mProperties.getType() .getFilename(), mProject.getName()),
                             e);
+
                 }
                 return Status.OK_STATUS;
             }

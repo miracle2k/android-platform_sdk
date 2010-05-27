@@ -18,8 +18,8 @@ package com.android.sdklib.io;
 
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.net.URI;
+import java.util.ArrayList;
 
 /**
  * An implementation of {@link IAbstractFolder} extending {@link File}.
@@ -100,7 +100,7 @@ public class FolderWrapper extends File implements IAbstractFolder {
 
     public boolean hasFile(final String name) {
         String[] match = list(new FilenameFilter() {
-            public boolean accept(File dir, String filename) {
+            public boolean accept(IAbstractFolder dir, String filename) {
                 return name.equals(filename);
             }
         });
@@ -112,8 +112,41 @@ public class FolderWrapper extends File implements IAbstractFolder {
         return new FileWrapper(this, name);
     }
 
+    public IAbstractFolder getFolder(String name) {
+        return new FolderWrapper(this, name);
+    }
+
+    public IAbstractFolder getParentFolder() {
+        String p = this.getParent();
+        if (p == null) {
+            return null;
+        }
+        return new FolderWrapper(p);
+    }
+
+    public String getOsLocation() {
+        return getAbsolutePath();
+    }
+
     @Override
     public boolean exists() {
         return isDirectory();
+    }
+
+    public String[] list(FilenameFilter filter) {
+        File[] files = listFiles();
+        if (files.length > 0) {
+            ArrayList<String> list = new ArrayList<String>();
+
+            for (File file : files) {
+                if (filter.accept(this, file.getName())) {
+                    list.add(file.getName());
+                }
+            }
+
+            return list.toArray(new String[list.size()]);
+        }
+
+        return new String[0];
     }
 }

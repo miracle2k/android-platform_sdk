@@ -19,6 +19,9 @@ package com.android.sdklib;
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion.AndroidVersionException;
+import com.android.sdklib.io.FileWrapper;
+import com.android.sdklib.io.IAbstractFile;
+import com.android.sdklib.io.StreamException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -613,13 +616,26 @@ public final class SdkManager {
      * @param propFile the property file to parse
      * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      * @return the map of (key,value) pairs, or null if the parsing failed.
+     * @deprecated Use {@link #parsePropertyFile(IAbstractFile, ISdkLog)}
      */
     public static Map<String, String> parsePropertyFile(File propFile, ISdkLog log) {
-        FileInputStream fis = null;
+        IAbstractFile wrapper = new FileWrapper(propFile);
+        return parsePropertyFile(wrapper, log);
+    }
+
+    /**
+     * Parses a property file (using UTF-8 encoding) and returns a map of the content.
+     * <p/>If the file is not present, null is returned with no error messages sent to the log.
+     *
+     * @param propFile the property file to parse
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
+     * @return the map of (key,value) pairs, or null if the parsing failed.
+     */
+    public static Map<String, String> parsePropertyFile(IAbstractFile propFile, ISdkLog log) {
         BufferedReader reader = null;
         try {
-            fis = new FileInputStream(propFile);
-            reader = new BufferedReader(new InputStreamReader(fis, SdkConstants.INI_CHARSET));
+            reader = new BufferedReader(new InputStreamReader(propFile.getContents(),
+                    SdkConstants.INI_CHARSET));
 
             String line = null;
             Map<String, String> map = new HashMap<String, String>();
@@ -631,7 +647,7 @@ public final class SdkManager {
                         map.put(m.group(1), m.group(2));
                     } else {
                         log.warning("Error parsing '%1$s': \"%2$s\" is not a valid syntax",
-                                propFile.getAbsolutePath(),
+                                propFile.getOsLocation(),
                                 line);
                         return null;
                     }
@@ -645,19 +661,16 @@ public final class SdkManager {
             // Return null below.
         } catch (IOException e) {
             log.warning("Error parsing '%1$s': %2$s.",
-                    propFile.getAbsolutePath(),
+                    propFile.getOsLocation(),
+                    e.getMessage());
+        } catch (StreamException e) {
+            log.warning("Error parsing '%1$s': %2$s.",
+                    propFile.getOsLocation(),
                     e.getMessage());
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
-                } catch (IOException e) {
-                    // pass
-                }
-            }
-            if (fis != null) {
-                try {
-                    fis.close();
                 } catch (IOException e) {
                     // pass
                 }

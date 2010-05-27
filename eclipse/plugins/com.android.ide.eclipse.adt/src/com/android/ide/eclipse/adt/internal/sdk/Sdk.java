@@ -36,6 +36,7 @@ import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
+import com.android.sdklib.io.StreamException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -289,8 +290,10 @@ public final class Sdk  {
      * @param project the project to intialize
      * @param target the project's target.
      * @throws IOException if creating the file failed in any way.
+     * @throws StreamException
      */
-    public void initProject(IProject project, IAndroidTarget target) throws IOException {
+    public void initProject(IProject project, IAndroidTarget target)
+            throws IOException, StreamException {
         if (project == null || target == null) {
             return;
         }

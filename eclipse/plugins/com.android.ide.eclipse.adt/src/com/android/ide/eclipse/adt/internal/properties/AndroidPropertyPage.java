@@ -23,6 +23,7 @@ import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdkuilib.internal.widgets.SdkTargetSelector;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -155,7 +156,11 @@ public class AndroidPropertyPage extends PropertyPage implements IWorkbenchPrope
             // TODO: update ApkSettings.
 
             if (mustSaveProp) {
-                state.saveProperties();
+                try {
+                    state.saveProperties();
+                } catch (CoreException e) {
+                    // pass
+                }
             }
         }
 

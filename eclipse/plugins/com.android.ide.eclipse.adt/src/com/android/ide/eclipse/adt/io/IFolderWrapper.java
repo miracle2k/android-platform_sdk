@@ -27,6 +27,8 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 
+import java.util.ArrayList;
+
 /**
  * An implementation of {@link IAbstractFolder} on top of either an {@link IFolder} or an
  * {@link IContainer} object.
@@ -125,5 +127,48 @@ public class IFolderWrapper implements IAbstractFolder {
     @Override
     public int hashCode() {
         return mContainer.hashCode();
+    }
+
+    public IAbstractFolder getFolder(String name) {
+        if (mFolder != null) {
+            IFolder folder = mFolder.getFolder(name);
+            return new IFolderWrapper(folder);
+        }
+
+        IFolder folder = mContainer.getFolder(new Path(name));
+        return new IFolderWrapper(folder);
+    }
+
+    public String getOsLocation() {
+        return mContainer.getLocation().toOSString();
+    }
+
+    public String[] list(FilenameFilter filter) {
+        try {
+            IResource[] members = mContainer.members();
+            if (members.length > 0) {
+                ArrayList<String> list = new ArrayList<String>();
+                for (IResource res : members) {
+                    if (filter.accept(this, res.getName())) {
+                        list.add(res.getName());
+                    }
+                }
+
+                return list.toArray(new String[list.size()]);
+            }
+        } catch (CoreException e) {
+            // can't read the members? return empty list below.
+        }
+
+        return new String[0];
+    }
+
+    public IAbstractFolder getParentFolder() {
+        IContainer p = mContainer.getParent();
+        if (p != null) {
+            return new IFolderWrapper(p);
+        }
+
+        return null;
     }
 }
