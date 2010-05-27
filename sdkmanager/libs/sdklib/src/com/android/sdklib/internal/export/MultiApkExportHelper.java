@@ -26,7 +26,10 @@ import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.io.IAbstractResource;
 import com.android.sdklib.io.StreamException;
 import com.android.sdklib.io.IAbstractFolder.FilenameFilter;
-import com.android.sdklib.xml.AndroidManifest;
+import com.android.sdklib.xml.AndroidManifestParser;
+import com.android.sdklib.xml.ManifestData;
+
+import org.xml.sax.SAXException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,8 +40,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.xml.xpath.XPathExpressionException;
+import javax.xml.parsers.ParserConfigurationException;
 
+/**
+ * Helper to export multiple APKs from 1 or or more projects.
+ */
 public class MultiApkExportHelper {
 
     private final String mAppPackage;
@@ -84,6 +90,20 @@ public class MultiApkExportHelper {
             }
 
             return null;
+        }
+    }
+
+    /**
+     * Simple class to hold a {@link ManifestData} and the {@link IAbstractFile} representing
+     * the parsed manifest file.
+     */
+    private static class Manifest {
+        final IAbstractFile file;
+        final ManifestData data;
+
+        Manifest(IAbstractFile file, ManifestData data) {
+            this.file = file;
+            this.data = data;
         }
     }
 
@@ -186,6 +206,7 @@ public class MultiApkExportHelper {
         String[] paths = projects.split("\\:");
 
         ArrayList<ApkData> datalist = new ArrayList<ApkData>();
+        ArrayList<Manifest> manifests = new ArrayList<Manifest>();
 
         for (String path : paths) {
             File projectFolder = new File(path);
@@ -212,7 +233,7 @@ public class MultiApkExportHelper {
                             SdkConstants.FN_ANDROID_MANIFEST_XML));
                 }
 
-                ArrayList<ApkData> datalist2 = checkManifest(androidManifest);
+                ArrayList<ApkData> datalist2 = checkManifest(androidManifest, manifests);
 
                 // if the method returns without throwing, this is a good project to
                 // export.
@@ -243,29 +264,60 @@ public class MultiApkExportHelper {
      * If the manifest is correct, a list of apk to export is created and returned.
      *
      * @param androidManifest the manifest to check
+     * @param manifests list of manifests that were already parsed. Must be filled with the current
+     * manifest being checked.
      * @return A new non-null {@link ArrayList} of {@link ApkData}.
      * @throws ExportException in case of error.
      */
-    private ArrayList<ApkData> checkManifest(IAbstractFile androidManifest) throws ExportException {
+    private ArrayList<ApkData> checkManifest(IAbstractFile androidManifest,
+            ArrayList<Manifest> manifests) throws ExportException {
         try {
-            String manifestPackage = AndroidManifest.getPackage(androidManifest);
+            ManifestData manifestData = AndroidManifestParser.parse(androidManifest);
+
+            String manifestPackage = manifestData.getPackage();
             if (mAppPackage.equals(manifestPackage) == false) {
                 throw new ExportException(String.format(
                         "%1$s package value is not valid. Found '%2$s', expected '%3$s'.",
                         androidManifest.getOsLocation(), manifestPackage, mAppPackage));
             }
 
-            if (AndroidManifest.hasVersionCode(androidManifest)) {
+            if (manifestData.getVersionCode() != null) {
                 throw new ExportException(String.format(
                         "%1$s is not valid: versionCode must not be set for multi-apk export.",
                         androidManifest.getOsLocation()));
             }
 
-            int minSdkVersion = AndroidManifest.getMinSdkVersion(androidManifest);
-            if (minSdkVersion == -1) {
+            int minSdkVersion = manifestData.getMinSdkVersion();
+            if (minSdkVersion == 0) { // means it's a codename
                 throw new ExportException(
                         "Codename in minSdkVersion is not supported by multi-apk export.");
             }
+
+            // compare to other existing manifest.
+            for (Manifest previousManifest : manifests) {
+                // Multiple apk export support difference in:
+                // - min SDK Version
+                // - Screen version
+                // - GL version
+                // - ABI (not managed at the Manifest level).
+                // if those values are the same between 2 manifest, then it's an error.
+                if (minSdkVersion == previousManifest.data.getMinSdkVersion() &&
+                        compareObjects(manifestData.getSupportsScreens(),
+                                previousManifest.data.getSupportsScreens()) &&
+                        manifestData.getGlEsVersion() == previousManifest.data.getGlEsVersion()) {
+                    throw new ExportException(String.format(
+                            "Android manifests must differ in at least one of the following values:\n" +
+                            "- minSdkVersion\n" +
+                            "- SupportsScreen\n" +
+                            "- GL ES version.\n" +
+                            "%1$s and %2$s are considered identical for multi-apk export.",
+                            androidManifest.getOsLocation(),
+                            previousManifest.file.getOsLocation()));
+                }
+            }
+
+            // add the current manifest to the list
+            manifests.add(new Manifest(androidManifest, manifestData));
 
             ArrayList<ApkData> dataList = new ArrayList<ApkData>();
             ApkData data = new ApkData();
@@ -301,13 +353,30 @@ public class MultiApkExportHelper {
             }
 
             return dataList;
-        } catch (XPathExpressionException e) {
+        } catch (SAXException e) {
+            throw new ExportException(
+                    String.format("Failed to validate %1$s", androidManifest.getOsLocation()), e);
+        } catch (IOException e) {
             throw new ExportException(
                     String.format("Failed to validate %1$s", androidManifest.getOsLocation()), e);
         } catch (StreamException e) {
             throw new ExportException(
                     String.format("Failed to validate %1$s", androidManifest.getOsLocation()), e);
+        } catch (ParserConfigurationException e) {
+            throw new ExportException(
+                    String.format("Failed to validate %1$s", androidManifest.getOsLocation()), e);
         }
+    }
+
+    /**
+     * Returns whether the two objects are equal, handling cases where one or both are null.
+     */
+    private boolean compareObjects(Object obj1, Object obj2) {
+        if (obj1 == null) {
+            return obj2 == null;
+        }
+
+        return obj1.equals(obj2);
     }
 
     /**

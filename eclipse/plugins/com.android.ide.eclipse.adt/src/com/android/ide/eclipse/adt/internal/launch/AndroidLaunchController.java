@@ -956,7 +956,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
                     launchInfo.getLaunchAction(),
                     apk,
                     manifestData.getDebuggable(),
-                    manifestData.getApiLevelRequirement(),
+                    manifestData.getMinSdkVersionString(),
                     launchInfo.getLaunch(),
                     launchInfo.getMonitor());
 

@@ -1004,7 +1004,7 @@ public class NewProjectCreationPage extends WizardPage {
         String minSdkVersion = null;
         try {
             packageName = manifestData.getPackage();
-            minSdkVersion = manifestData.getApiLevelRequirement();
+            minSdkVersion = manifestData.getMinSdkVersionString();
 
             // try to get the first launcher activity. If none, just take the first activity.
             activity = manifestData.getLauncherActivity();

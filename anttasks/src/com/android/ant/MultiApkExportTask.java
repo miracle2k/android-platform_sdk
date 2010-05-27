@@ -240,7 +240,10 @@ public class MultiApkExportTask extends Task {
                 helper.makeBuildLog(log, apks);
             }
         } catch (ExportException e) {
-            throw new BuildException(e);
+            // we only want to have Ant display the message, not the stack trace, since
+            // we use Exceptions to report errors, so we build the BuildException only
+            // with the message and not the cause exception.
+            throw new BuildException(e.getMessage());
         }
     }
 

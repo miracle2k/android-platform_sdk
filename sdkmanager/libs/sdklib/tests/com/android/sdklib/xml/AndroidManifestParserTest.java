@@ -80,7 +80,7 @@ public class AndroidManifestParserTest extends TestCase {
     }
 
     public void testMinSdkVersion() {
-        assertEquals("7", mManifestTestApp.getApiLevelRequirement());
+        assertEquals(7, mManifestTestApp.getMinSdkVersion());
     }
 
     public void testGetActivities() {

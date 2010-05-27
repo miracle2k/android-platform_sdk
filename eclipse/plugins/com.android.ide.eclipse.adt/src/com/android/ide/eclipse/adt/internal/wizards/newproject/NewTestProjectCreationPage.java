@@ -833,7 +833,7 @@ public class NewTestProjectCreationPage extends WizardPage {
             if (manifestData != null) {
                 String appName = String.format("%1$sTest", project.getName());
                 String packageName = manifestData.getPackage();
-                String minSdkVersion = manifestData.getApiLevelRequirement();
+                String minSdkVersion = manifestData.getMinSdkVersionString();
                 IAndroidTarget sdkTarget = null;
                 if (Sdk.getCurrent() != null) {
                     sdkTarget = Sdk.getCurrent().getTarget(project);

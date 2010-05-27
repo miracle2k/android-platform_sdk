@@ -355,7 +355,7 @@ public class PreCompilerBuilder extends BaseBuilder {
 
                 // get the java package from the parser
                 javaPackage = parser.getPackage();
-                minSdkVersion = parser.getApiLevelRequirement();
+                minSdkVersion = parser.getMinSdkVersionString();
             }
 
             if (minSdkVersion != null) {
