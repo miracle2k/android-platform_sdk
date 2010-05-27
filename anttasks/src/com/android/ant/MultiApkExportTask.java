@@ -17,6 +17,7 @@
 package com.android.ant;
 
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.internal.export.ApkData;
 import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
@@ -62,162 +63,6 @@ public class MultiApkExportTask extends Task {
     private final static int OFFSET_BUILD_INFO = MAX_MINOR;
     private final static int OFFSET_VERSION_CODE = OFFSET_BUILD_INFO * MAX_BUILDINFO;
 
-    /**
-     * Class representing one apk that needs to be generated. This contains
-     * which project it must be created from, and which filters should be used.
-     *
-     * This class is meant to be sortable in a way that allows generation of the buildInfo
-     * value that goes in the composite versionCode.
-     */
-    public static class ApkData implements Comparable<ApkData> {
-
-        private final static int INDEX_OUTPUTNAME = 0;
-        private final static int INDEX_PROJECT    = 1;
-        private final static int INDEX_MINOR      = 2;
-        private final static int INDEX_MINSDK     = 3;
-        private final static int INDEX_ABI        = 4;
-        private final static int INDEX_OPENGL     = 5;
-        private final static int INDEX_SCREENSIZE = 6;
-        private final static int INDEX_LOCALES    = 7;
-        private final static int INDEX_DENSITY    = 8;
-        private final static int INDEX_MAX        = 9;
-
-        String outputName;
-        String relativePath;
-        File project;
-        int buildInfo;
-        int minor;
-
-        // the following are used to sort the export data and generate buildInfo
-        int minSdkVersion;
-        String abi;
-        int glVersion;
-        // screen size?
-
-        public ApkData() {
-            // do nothing.
-        }
-
-        public ApkData(ApkData data) {
-            relativePath = data.relativePath;
-            project = data.project;
-            buildInfo = data.buildInfo;
-            minor = data.buildInfo;
-            minSdkVersion = data.minSdkVersion;
-            abi = data.abi;
-            glVersion = data.glVersion;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder(outputName);
-            sb.append(" / ").append(relativePath);
-            sb.append(" / ").append(buildInfo);
-            sb.append(" / ").append(minor);
-            sb.append(" / ").append(minSdkVersion);
-            sb.append(" / ").append(abi);
-
-            return sb.toString();
-        }
-
-        public int compareTo(ApkData o) {
-            int minSdkDiff = minSdkVersion - o.minSdkVersion;
-            if (minSdkDiff != 0) {
-                return minSdkDiff;
-            }
-
-            if (abi != null) {
-                if (o.abi != null) {
-                    return abi.compareTo(o.abi);
-                } else {
-                    return -1;
-                }
-            } else if (o.abi != null) {
-                return 1;
-            }
-
-            if (glVersion != 0) {
-                if (o.glVersion != 0) {
-                    return glVersion - o.glVersion;
-                } else {
-                    return -1;
-                }
-            } else if (o.glVersion != 0) {
-                return 1;
-            }
-
-            return 0;
-        }
-
-        /**
-         * Writes the apk description in the given writer. a single line is used to write
-         * everything.
-         * @param writer The {@link FileWriter} to write to.
-         * @throws IOException
-         *
-         * @see {@link #read(String)}
-         */
-        public void write(FileWriter writer) throws IOException {
-            for (int i = 0 ; i < ApkData.INDEX_MAX ; i++) {
-                write(i, writer);
-            }
-        }
-
-        /**
-         * reads the apk description from a log line.
-         * @param line The fields to read, comma-separated.
-         *
-         * @see #write(FileWriter)
-         */
-        public void read(String line) {
-            String[] dataStrs = line.split(",");
-            for (int i = 0 ; i < ApkData.INDEX_MAX ; i++) {
-                read(i, dataStrs);
-            }
-        }
-
-        private void write(int index, FileWriter writer) throws IOException {
-            switch (index) {
-                case INDEX_OUTPUTNAME:
-                    writeValue(writer, outputName);
-                    break;
-                case INDEX_PROJECT:
-                    writeValue(writer, relativePath);
-                    break;
-                case INDEX_MINOR:
-                    writeValue(writer, minor);
-                    break;
-                case INDEX_MINSDK:
-                    writeValue(writer, minSdkVersion);
-                    break;
-                case INDEX_ABI:
-                    writeValue(writer, abi != null ? abi : "");
-                    break;
-            }
-        }
-
-        private void read(int index, String[] data) {
-            switch (index) {
-                case INDEX_OUTPUTNAME:
-                    outputName = data[index];
-                    break;
-                case INDEX_PROJECT:
-                    relativePath = data[index];
-                    break;
-                case INDEX_MINOR:
-                    minor = Integer.parseInt(data[index]);
-                    break;
-                case INDEX_MINSDK:
-                    minSdkVersion = Integer.parseInt(data[index]);
-                    break;
-                case INDEX_ABI:
-                    if (index < data.length && data[index].length() > 0) {
-                        abi = data[index];
-                    }
-                    break;
-            }
-        }
-    }
 
     private static enum Target {
         RELEASE("release"), CLEAN("clean");
@@ -308,7 +153,7 @@ public class MultiApkExportTask extends Task {
 
             for (int i = 0 ; i < previousApks.length ; i++) {
                 // update the minor value from what is in the log file.
-                apks[i].minor = previousApks[i].minor;
+                apks[i].setMinor(previousApks[i].getMinor());
                 if (apks[i].compareTo(previousApks[i]) != 0) {
                     throw new BuildException(String.format(
                             "Project export is setup differently from previous export at versionCode %d.\n" +
@@ -352,13 +197,13 @@ public class MultiApkExportTask extends Task {
         for (ApkData apk : apks) {
             // this output is prepended by "[android-export] " (17 chars), so we put 61 stars
             System.out.println("\n*************************************************************");
-            System.out.println("Exporting project: " + apk.relativePath);
+            System.out.println("Exporting project: " + apk.getRelativePath());
 
             SubAnt subAnt = new SubAnt();
             subAnt.setTarget(mTarget.getTarget());
             subAnt.setProject(antProject);
 
-            File subProjectFolder = new File(antProject.getBaseDir(), apk.relativePath);
+            File subProjectFolder = new File(antProject.getBaseDir(), apk.getRelativePath());
 
             FileSet fileSet = new FileSet();
             fileSet.setProject(antProject);
@@ -373,8 +218,8 @@ public class MultiApkExportTask extends Task {
                 // this project.
                 // (projects can be export multiple time if some properties are set up to
                 // generate more than one APK (for instance ABI split).
-                if (compiledProject.contains(apk.relativePath) == false) {
-                    compiledProject.add(apk.relativePath);
+                if (compiledProject.contains(apk.getRelativePath()) == false) {
+                    compiledProject.add(apk.getRelativePath());
                 } else {
                     addProp(subAnt, "do.not.compile", "true");
                 }
@@ -383,9 +228,10 @@ public class MultiApkExportTask extends Task {
                 String compositeVersionCode = getVersionCodeString(versionCode, apk);
                 addProp(subAnt, "version.code", compositeVersionCode);
                 System.out.println("Composite versionCode: " + compositeVersionCode);
-                if (apk.abi != null) {
-                    addProp(subAnt, "filter.abi", apk.abi);
-                    System.out.println("ABI Filter: " + apk.abi);
+                String abi = apk.getAbi();
+                if (abi != null) {
+                    addProp(subAnt, "filter.abi", abi);
+                    System.out.println("ABI Filter: " + abi);
                 }
 
                 // end of the output by this task. Everything that follows will be output
@@ -412,7 +258,7 @@ public class MultiApkExportTask extends Task {
 
                 // override the resource pack file.
                 addProp(subAnt, "resource.package.file.name",
-                        name + "-" + apk.buildInfo + ".ap_");
+                        name + "-" + apk.getBuildInfo() + ".ap_");
 
                 if (canSign) {
                     // set the properties for the password.
@@ -424,14 +270,14 @@ public class MultiApkExportTask extends Task {
                     // temporary file only get a filename change (still stored in the project
                     // bin folder).
                     addProp(subAnt, "out.unsigned.file.name",
-                            name + "-" + apk.buildInfo + "-unsigned.apk");
+                            name + "-" + apk.getBuildInfo() + "-unsigned.apk");
                     addProp(subAnt, "out.unaligned.file",
-                            name + "-" + apk.buildInfo + "-unaligned.apk");
+                            name + "-" + apk.getBuildInfo() + "-unaligned.apk");
 
                     // final file is stored locally.
-                    apk.outputName = name + "-" + compositeVersionCode + "-release.apk";
+                    apk.setOutputName(name + "-" + compositeVersionCode + "-release.apk");
                     addProp(subAnt, "out.release.file", new File(exportProjectOutput,
-                            apk.outputName).getAbsolutePath());
+                            apk.getOutputName()).getAbsolutePath());
 
                 } else {
                     // put some empty prop. This is to override possible ones defined in the
@@ -441,9 +287,9 @@ public class MultiApkExportTask extends Task {
                     addProp(subAnt, "key.store", "");
                     addProp(subAnt, "key.alias", "");
                     // final file is the unsigned version. It gets stored locally.
-                    apk.outputName = name + "-" + compositeVersionCode + "-unsigned.apk";
+                    apk.setOutputName(name + "-" + compositeVersionCode + "-unsigned.apk");
                     addProp(subAnt, "out.unsigned.file", new File(exportProjectOutput,
-                            apk.outputName).getAbsolutePath());
+                            apk.getOutputName()).getAbsolutePath());
                 }
             }
 
@@ -515,8 +361,8 @@ public class MultiApkExportTask extends Task {
                 // if the method returns without throwing, this is a good project to
                 // export.
                 for (ApkData data : datalist2) {
-                    data.relativePath = path;
-                    data.project = projectFolder;
+                    data.setRelativePath(path);
+                    data.setProject(projectFolder);
                 }
 
                 datalist.addAll(datalist2);
@@ -530,7 +376,7 @@ public class MultiApkExportTask extends Task {
         Collections.sort(datalist);
         int buildInfo = 0;
         for (ApkData data : datalist) {
-            data.buildInfo = buildInfo++;
+            data.setBuildInfo(buildInfo++);
         }
 
         return datalist.toArray(new ApkData[datalist.size()]);
@@ -571,9 +417,7 @@ public class MultiApkExportTask extends Task {
             ArrayList<ApkData> dataList = new ArrayList<ApkData>();
             ApkData data = new ApkData();
             dataList.add(data);
-            data.minSdkVersion = minSdkVersion;
-
-
+            data.setMinSdkVersion(minSdkVersion);
 
             // only look for more exports if the target is not clean.
             if (mTarget != Target.CLEAN) {
@@ -597,7 +441,7 @@ public class MultiApkExportTask extends Task {
                             dataList.add(current);
                         }
 
-                        current.abi = abi;
+                        current.setAbi(abi);
                         current = null;
                     }
                 }
@@ -664,8 +508,8 @@ public class MultiApkExportTask extends Task {
      */
     private String getVersionCodeString(int versionCode, ApkData apkData) {
         int trueVersionCode = versionCode * OFFSET_VERSION_CODE;
-        trueVersionCode += apkData.buildInfo * OFFSET_BUILD_INFO;
-        trueVersionCode += apkData.minor;
+        trueVersionCode += apkData.getBuildInfo() * OFFSET_BUILD_INFO;
+        trueVersionCode += apkData.getMinor();
 
         return Integer.toString(trueVersionCode);
     }
@@ -715,10 +559,10 @@ public class MultiApkExportTask extends Task {
                     default:
                         // read apk description
                         ApkData data = new ApkData();
-                        data.buildInfo = apkIndex++;
+                        data.setBuildInfo(apkIndex++);
                         datalist.add(data);
                         data.read(line);
-                        if (data.minor >= MAX_MINOR) {
+                        if (data.getMinor() >= MAX_MINOR) {
                             throw new BuildException(
                                     "Valid minor version code values are 0-" + (MAX_MINOR-1));
                         }
@@ -779,14 +623,6 @@ public class MultiApkExportTask extends Task {
                 throw new BuildException("Failed to write build log", e);
             }
         }
-    }
-
-    private static void writeValue(FileWriter writer, String value) throws IOException {
-        writer.append(value).append(',');
-    }
-
-    private static void writeValue(FileWriter writer, int value) throws IOException {
-        writeValue(writer, Integer.toString(value));
     }
 
     private void writeValue(FileWriter writer, String name, String value) throws IOException {
