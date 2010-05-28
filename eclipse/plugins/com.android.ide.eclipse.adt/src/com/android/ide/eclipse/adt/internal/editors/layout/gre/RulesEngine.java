@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
@@ -212,13 +213,14 @@ public class RulesEngine {
      * If not interested in drop, return false.
      * Followed by a paint.
      */
-    public DropFeedback callOnDropEnter(NodeProxy targetNode, String fqcn) {
+    public DropFeedback callOnDropEnter(NodeProxy targetNode,
+            IDragElement[] elements) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
-                return rule.onDropEnter(targetNode, fqcn);
+                return rule.onDropEnter(targetNode, elements);
 
             } catch (Exception e) {
                 logError("%s.onDropEnter() failed: %s",
@@ -236,7 +238,7 @@ public class RulesEngine {
      * as input one).
      */
     public DropFeedback callOnDropMove(NodeProxy targetNode,
-            String fqcn,
+            IDragElement[] elements,
             DropFeedback feedback,
             Point where) {
         // try to find a rule for this element's FQCN
@@ -244,7 +246,7 @@ public class RulesEngine {
 
         if (rule != null) {
             try {
-                return rule.onDropMove(targetNode, fqcn, feedback, where);
+                return rule.onDropMove(targetNode, elements, feedback, where);
 
             } catch (Exception e) {
                 logError("%s.onDropMove() failed: %s",
@@ -259,13 +261,15 @@ public class RulesEngine {
     /**
      * Called when drop leaves the target without actually dropping
      */
-    public void callOnDropLeave(NodeProxy targetNode, String fqcn, DropFeedback feedback) {
+    public void callOnDropLeave(NodeProxy targetNode,
+            IDragElement[] elements,
+            DropFeedback feedback) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
-                rule.onDropLeave(targetNode, fqcn, feedback);
+                rule.onDropLeave(targetNode, elements, feedback);
 
             } catch (Exception e) {
                 logError("%s.onDropLeave() failed: %s",
@@ -279,15 +283,17 @@ public class RulesEngine {
      * Called when drop is released over the target to perform the actual drop.
      */
     public void callOnDropped(NodeProxy targetNode,
-            String fqcn,
+            IDragElement[] elements,
             DropFeedback feedback,
-            Point where) {
+            Point where,
+            boolean isCopy,
+            boolean sameCanvas) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
-                rule.onDropped(targetNode, fqcn, feedback, where);
+                rule.onDropped(targetNode, elements, feedback, where, isCopy, sameCanvas);
 
             } catch (Exception e) {
                 logError("%s.onDropped() failed: %s",
@@ -301,7 +307,9 @@ public class RulesEngine {
      * Called when a paint has been requested via DropFeedback.
      * @param targetNode
      */
-    public void callDropFeedbackPaint(IGraphics gc, NodeProxy targetNode, DropFeedback feedback) {
+    public void callDropFeedbackPaint(IGraphics gc,
+            NodeProxy targetNode,
+            DropFeedback feedback) {
         if (gc != null && feedback != null && feedback.paintClosure != null) {
             try {
                 feedback.paintClosure.call(new Object[] { gc, targetNode, feedback });

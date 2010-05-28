@@ -380,7 +380,7 @@ public class PaletteComposite extends Composite {
 
             // DND Reference: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
             mSource = new DragSource(this, DND.DROP_COPY);
-            mSource.setTransfer(new Transfer[] { ElementDescTransfer.getInstance() });
+            mSource.setTransfer(new Transfer[] { SimpleXmlTransfer.getInstance() });
             mSource.addDragListener(new DescDragSourceListener(desc));
         }
 
@@ -427,26 +427,22 @@ public class PaletteComposite extends Composite {
      */
     private static class DescDragSourceListener implements DragSourceListener {
 
-        private final ElementDescriptor mDesc;
+        private final SimpleElement[] mElements;
 
         public DescDragSourceListener(ElementDescriptor desc) {
-            mDesc = desc;
+            SimpleElement se = new SimpleElement(SimpleXmlTransfer.getFqcn(desc), null, null);
+            mElements = new SimpleElement[] { se };
         }
 
         public void dragStart(DragSourceEvent e) {
-            if (mDesc == null) {
-                e.doit = false;
-            } else {
-                // Register this as the current dragged data
-                GlobalCanvasDragInfo.getInstance().startDrag(ElementDescTransfer.getFqcn(mDesc));
-            }
+            // Register this as the current dragged data
+            GlobalCanvasDragInfo.getInstance().startDrag(mElements, null /*canvas*/);
         }
-
 
         public void dragSetData(DragSourceEvent e) {
             // Provide the data for the drop when requested by the other side.
-            if (ElementDescTransfer.getInstance().isSupportedType(e.dataType)) {
-                e.data = mDesc;
+            if (SimpleXmlTransfer.getInstance().isSupportedType(e.dataType)) {
+                e.data = mElements;
             }
         }
 

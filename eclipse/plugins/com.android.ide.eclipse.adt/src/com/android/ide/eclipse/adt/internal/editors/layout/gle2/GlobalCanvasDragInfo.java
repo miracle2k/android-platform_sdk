@@ -38,7 +38,8 @@ class GlobalCanvasDragInfo {
 
     private static final GlobalCanvasDragInfo sInstance = new GlobalCanvasDragInfo();
 
-    private String mCurrentFqcn = null;
+    private SimpleElement[] mCurrentElements = null;
+    private Object mSourceCanvas = null;
 
     /** Private constructor. Use {@link #getInstance()} to retrieve the singleton. */
     private GlobalCanvasDragInfo() {
@@ -50,19 +51,30 @@ class GlobalCanvasDragInfo {
         return sInstance;
     }
 
-    /** Registers this FQCN has being the Android View class being dragged. */
-    public void startDrag(String fqcn) {
-        mCurrentFqcn = fqcn;
+    /** Registers the XML elements being dragged. */
+    public void startDrag(SimpleElement[] elements, Object sourceCanvas) {
+        mCurrentElements = elements;
+        mSourceCanvas = sourceCanvas;
     }
 
-    /** Unregisters the current FQCN. */
+    /** Unregisters elements being dragged. */
     public void stopDrag() {
-        mCurrentFqcn = null;
+        mCurrentElements = null;
+        mSourceCanvas = null;
     }
 
-    /** Returns the currently registered FQCN. */
-    public String getCurrentFqcn() {
-        return mCurrentFqcn;
+    /** Returns the elements being dragged. */
+    public SimpleElement[] getCurrentElements() {
+        return mCurrentElements;
     }
 
+    /**
+     * Returns the object that call {@link #startDrag(SimpleElement[], Object)}. Can be null.
+     * This is not meant to access the object indirectly, it is just meant to compare if the
+     * source and the destination of the drag'n'drop are the same, so object identity
+     * is all what matters.
+     */
+    public Object getSourceCanvas() {
+        return mSourceCanvas;
+    }
 }

@@ -82,8 +82,10 @@ public interface IViewRule {
      * @param displayName The name to display, as returned by {@link #getDisplayName()}.
      * @param isMultipleSelection A boolean set to true if more than one element is selected.
      */
-    void onSelected(IGraphics gc, INode selectedNode,
-            String displayName, boolean isMultipleSelection);
+    void onSelected(IGraphics gc,
+            INode selectedNode,
+            String displayName,
+            boolean isMultipleSelection);
 
     /**
      * Called by the canvas when a single child view is being selected.
@@ -97,7 +99,9 @@ public interface IViewRule {
      * @param parentNode The parent of the node selected. Never null.
      * @param childNode The child node that was selected. Never null.
      */
-    void onChildSelected(IGraphics gc, INode parentNode, INode childNode);
+    void onChildSelected(IGraphics gc,
+            INode parentNode,
+            INode childNode);
 
 
     // ==== XML Creation ====
@@ -125,7 +129,8 @@ public interface IViewRule {
      * If not interested in drop, return null.
      * Followed by a paint.
      */
-    DropFeedback onDropEnter(INode targetNode, String fqcn);
+    DropFeedback onDropEnter(INode targetNode,
+            IDragElement[] elements);
 
     /**
      * Called after onDropEnter.
@@ -133,7 +138,10 @@ public interface IViewRule {
      * as input one).
      * Returning null will invalidate the drop workflow.
      */
-    DropFeedback onDropMove(INode targetNode, String fqcn, DropFeedback feedback, Point where);
+    DropFeedback onDropMove(INode targetNode,
+            IDragElement[] elements,
+            DropFeedback feedback,
+            Point where);
 
     /**
      * Called when drop leaves the target without actually dropping.
@@ -152,11 +160,18 @@ public interface IViewRule {
      * - onDropLeave(node2, feedback2)
      * </pre>
      */
-    void onDropLeave(INode targetNode, String fqcn, DropFeedback feedback);
+    void onDropLeave(INode targetNode,
+            IDragElement[] elements,
+            DropFeedback feedback);
 
     /**
      * Called when drop is released over the target to perform the actual drop.
      */
-    void onDropped(INode targetNode, String fqcn, DropFeedback feedback, Point where);
+    void onDropped(INode targetNode,
+            IDragElement[] elements,
+            DropFeedback feedback,
+            Point where,
+            boolean isCopy,
+            boolean sameCanvas);
 
 }

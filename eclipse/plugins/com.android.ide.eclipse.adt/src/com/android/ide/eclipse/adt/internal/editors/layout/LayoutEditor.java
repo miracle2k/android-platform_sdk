@@ -33,7 +33,6 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
 import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.core.resources.IFile;
