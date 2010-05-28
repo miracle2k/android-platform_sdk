@@ -16,6 +16,7 @@
 
 package com.android.sdklib.internal.export;
 
+import com.android.sdklib.xml.ManifestData;
 import com.android.sdklib.xml.ManifestData.SupportsScreens;
 
 import java.io.File;
@@ -49,7 +50,7 @@ public class ApkData implements Comparable<ApkData> {
     // the following are used to sort the export data and generate buildInfo
     private int mMinSdkVersion;
     private String mAbi;
-    private int mGlVersion = -1;
+    private int mGlVersion = ManifestData.GL_ES_VERSION_NOT_SET;
     private SupportsScreens mSupportsScreens;
 
     ApkData() {
@@ -163,7 +164,7 @@ public class ApkData implements Comparable<ApkData> {
         write(sb, PROP_PROJECT, mRelativePath);
         write(sb, PROP_API, mMinSdkVersion);
 
-        if (mGlVersion != -1) {
+        if (mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
             write(sb, PROP_GL, mGlVersion);
         }
 
@@ -197,14 +198,14 @@ public class ApkData implements Comparable<ApkData> {
         comp = mSupportsScreens.compareTo(o.mSupportsScreens);
         if (comp != 0) return comp;
 
-        if (mGlVersion != -1) {
-            if (o.mGlVersion != -1) {
+        if (mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
+            if (o.mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
                 comp = mGlVersion - o.mGlVersion;
                 if (comp != 0) return comp;
             } else {
                 return -1;
             }
-        } else if (o.mGlVersion != -1) {
+        } else if (o.mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
             return 1;
         }
 

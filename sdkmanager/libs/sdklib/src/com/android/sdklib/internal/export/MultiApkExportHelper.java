@@ -296,7 +296,7 @@ public class MultiApkExportHelper {
             }
 
             int minSdkVersion = manifestData.getMinSdkVersion();
-            if (minSdkVersion == 0) { // means it's a codename
+            if (minSdkVersion == ManifestData.MIN_SDK_CODENAME) {
                 throw new ExportException(
                         "Codename in minSdkVersion is not supported by multi-apk export.");
             }

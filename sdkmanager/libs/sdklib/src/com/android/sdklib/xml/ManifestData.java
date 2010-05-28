@@ -28,6 +28,19 @@ import java.util.TreeSet;
  * Class containing the manifest info obtained during the parsing.
  */
 public final class ManifestData {
+
+    /**
+     * Value returned by {@link #getMinSdkVersion()} when the value of the minSdkVersion attribute
+     * in the manifest is a codename and not an integer value.
+     */
+    public final static int MIN_SDK_CODENAME = 0;
+
+    /**
+     * Value returned by {@link #getGlEsVersion()} when there are no <uses-feature> node with the
+     * attribute glEsVersion set.
+     */
+    public final static int GL_ES_VERSION_NOT_SET = -1;
+
     /** Application package */
     String mPackage;
     /** Application version Code, null if the attribute is not present. */
@@ -174,6 +187,9 @@ public final class ManifestData {
             SupportsScreens result = new SupportsScreens();
 
             result.mNormalScreens = Boolean.TRUE;
+            // Screen size and density became available in Android 1.5/API3, so before that
+            // non normal screens were not supported by default. After they are considered
+            // supported.
             result.mResizeable = result.mAnyDensity = result.mSmallScreens = result.mLargeScreens =
                 targetSdkVersion <= 3 ? Boolean.FALSE : Boolean.TRUE;
 
@@ -452,7 +468,7 @@ public final class ManifestData {
             try {
                 mMinSdkVersion = Integer.parseInt(mMinSdkVersionString);
             } catch (NumberFormatException e) {
-                mMinSdkVersion = 0; // 0 means it's a codename.
+                mMinSdkVersion = MIN_SDK_CODENAME;
             }
         }
     }
@@ -517,13 +533,16 @@ public final class ManifestData {
         return mFeatures.toArray(new UsesFeature[mFeatures.size()]);
     }
 
+    /**
+     * Returns the glEsVersion from a <uses-feature> or {@link #GL_ES_VERSION_NOT_SET} if not set.
+     */
     public int getGlEsVersion() {
         for (UsesFeature feature : mFeatures) {
             if (feature.mGlEsVersion > 0) {
                 return feature.mGlEsVersion;
             }
         }
-        return -1;
+        return GL_ES_VERSION_NOT_SET;
     }
 
     /**
