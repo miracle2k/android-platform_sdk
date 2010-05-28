@@ -23,6 +23,7 @@
         <sequential>
             <echo>Running tests ...</echo>
             <exec executable="${adb}" failonerror="true">
+                <arg line="${adb.device.arg}" />
                 <arg value="shell" />
                 <arg value="am" />
                    <arg value="instrument" />
@@ -77,6 +78,7 @@
         </run-tests-helper>
         <echo>Downloading coverage file into project directory...</echo>
         <exec executable="${adb}" failonerror="true">
+            <arg line="${adb.device.arg}" />
             <arg value="pull" />
             <arg value="${emma.dump.file}" />
             <arg value="coverage.ec" />
