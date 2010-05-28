@@ -475,21 +475,20 @@ public class AndroidManifestParser {
         private void processSupportsScreensNode(Attributes attributes) {
             mManifestData.mSupportsScreensFromManifest = new SupportsScreens();
 
-            mManifestData.mSupportsScreensFromManifest.setResizeable(Boolean.valueOf(
-                    getAttributeValue(attributes,
-                            AndroidManifest.ATTRIBUTE_RESIZEABLE, true /*hasNamespace*/)));
-            mManifestData.mSupportsScreensFromManifest.setAnyDensity(Boolean.valueOf(
-                    getAttributeValue(attributes,
-                            AndroidManifest.ATTRIBUTE_ANYDENSITY, true /*hasNamespace*/)));
-            mManifestData.mSupportsScreensFromManifest.setSmallScreens(Boolean.valueOf(
-                    getAttributeValue(attributes,
-                            AndroidManifest.ATTRIBUTE_SMALLSCREENS, true /*hasNamespace*/)));
-            mManifestData.mSupportsScreensFromManifest.setNormalScreens(Boolean.valueOf(
-                    getAttributeValue(attributes,
-                            AndroidManifest.ATTRIBUTE_NORMALSCREENS, true /*hasNamespace*/)));
-            mManifestData.mSupportsScreensFromManifest.setLargeScreens(Boolean.valueOf(
-                    getAttributeValue(attributes,
-                            AndroidManifest.ATTRIBUTE_LARGESCREENS, true /*hasNamespace*/)));
+            mManifestData.mSupportsScreensFromManifest.setResizeable(getAttributeBooleanValue(
+                    attributes, AndroidManifest.ATTRIBUTE_RESIZEABLE, true /*hasNamespace*/));
+
+            mManifestData.mSupportsScreensFromManifest.setAnyDensity(getAttributeBooleanValue(
+                    attributes, AndroidManifest.ATTRIBUTE_ANYDENSITY, true /*hasNamespace*/));
+
+            mManifestData.mSupportsScreensFromManifest.setSmallScreens(getAttributeBooleanValue(
+                    attributes, AndroidManifest.ATTRIBUTE_SMALLSCREENS, true /*hasNamespace*/));
+
+            mManifestData.mSupportsScreensFromManifest.setNormalScreens(getAttributeBooleanValue(
+                    attributes, AndroidManifest.ATTRIBUTE_NORMALSCREENS, true /*hasNamespace*/));
+
+            mManifestData.mSupportsScreensFromManifest.setLargeScreens(getAttributeBooleanValue(
+                    attributes, AndroidManifest.ATTRIBUTE_LARGESCREENS, true /*hasNamespace*/));
         }
 
         /**
@@ -499,15 +498,15 @@ public class AndroidManifestParser {
         private void processUsesConfiguration(Attributes attributes) {
             mManifestData.mUsesConfiguration = new UsesConfiguration();
 
-            mManifestData.mUsesConfiguration.mReqFiveWayNav = Boolean.valueOf(
-                    getAttributeValue(attributes,
-                            AndroidManifest.ATTRIBUTE_REQ_5WAYNAV, true /*hasNamespace*/));
+            mManifestData.mUsesConfiguration.mReqFiveWayNav = getAttributeBooleanValue(
+                    attributes,
+                    AndroidManifest.ATTRIBUTE_REQ_5WAYNAV, true /*hasNamespace*/);
             mManifestData.mUsesConfiguration.mReqNavigation = Navigation.getEnum(
                     getAttributeValue(attributes,
                             AndroidManifest.ATTRIBUTE_REQ_NAVIGATION, true /*hasNamespace*/));
-            mManifestData.mUsesConfiguration.mReqHardKeyboard = Boolean.valueOf(
-                    getAttributeValue(attributes,
-                            AndroidManifest.ATTRIBUTE_REQ_HARDKEYBOARD, true /*hasNamespace*/));
+            mManifestData.mUsesConfiguration.mReqHardKeyboard = getAttributeBooleanValue(
+                    attributes,
+                    AndroidManifest.ATTRIBUTE_REQ_HARDKEYBOARD, true /*hasNamespace*/);
             mManifestData.mUsesConfiguration.mReqKeyboardType = Keyboard.getEnum(
                     getAttributeValue(attributes,
                             AndroidManifest.ATTRIBUTE_REQ_KEYBOARDTYPE, true /*hasNamespace*/));
@@ -533,6 +532,35 @@ public class AndroidManifestParser {
                                 SdkConstants.NS_RESOURCES.equals(attributes.getURI(i))) ||
                                 (hasNamespace == false && attributes.getURI(i).length() == 0))) {
                     return attributes.getValue(i);
+                }
+            }
+
+            return null;
+        }
+
+        /**
+         * Searches through the attributes list for a particular one and returns its value as a
+         * Boolean. If the attribute is not present, this will return null.
+         * @param attributes the attribute list to search through
+         * @param attributeName the name of the attribute to look for.
+         * @param hasNamespace Indicates whether the attribute has an android namespace.
+         * @return a String with the value or null if the attribute was not found.
+         * @see SdkConstants#NS_RESOURCES
+         */
+        private Boolean getAttributeBooleanValue(Attributes attributes, String attributeName,
+                boolean hasNamespace) {
+            int count = attributes.getLength();
+            for (int i = 0 ; i < count ; i++) {
+                if (attributeName.equals(attributes.getLocalName(i)) &&
+                        ((hasNamespace &&
+                                SdkConstants.NS_RESOURCES.equals(attributes.getURI(i))) ||
+                                (hasNamespace == false && attributes.getURI(i).length() == 0))) {
+                    String attr = attributes.getValue(i);
+                    if (attr != null) {
+                        return Boolean.valueOf(attr);
+                    } else {
+                        return null;
+                    }
                 }
             }
 

@@ -51,10 +51,10 @@ public class MultiApkExportHelper {
     private final int mVersionCode;
     private final Target mTarget;
 
-    public final static int MAX_MINOR = 100;
-    public final static int MAX_BUILDINFO = 100;
-    public final static int OFFSET_BUILD_INFO = MAX_MINOR;
-    public final static int OFFSET_VERSION_CODE = OFFSET_BUILD_INFO * MAX_BUILDINFO;
+    final static int MAX_MINOR = 100;
+    final static int MAX_BUILDINFO = 100;
+    final static int OFFSET_BUILD_INFO = MAX_MINOR;
+    final static int OFFSET_VERSION_CODE = OFFSET_BUILD_INFO * MAX_BUILDINFO;
 
     public static final class ExportException extends Exception {
         private static final long serialVersionUID = 1L;
@@ -157,18 +157,25 @@ public class MultiApkExportHelper {
         try {
             writer = new OutputStreamWriter(buildLog.getOutputStream());
 
-            writer.append("# Multi-APK BUILD log.\n");
-            writer.append("# Only edit manually to change minor versions.\n");
+            writer.append(
+                    "# Multi-APK BUILD LOG.\n" +
+                    "# This file serves two purpose:\n" +
+                    "# - A log of what was built, showing what went in each APK and their properties.\n" +
+                    "#   You can refer to this if you get a bug report for a specific versionCode." +
+                    "# - A way to update builds through minor revisions for specific APKs.\n" +
+                    "# Only edit manually to change the minor properties for build you wish to respin.\n" +
+                    "# Note that all APKs will be regenerated all the time.\n");
 
             writeValue(writer, "package", mAppPackage);
             writeValue(writer, "versionCode", mVersionCode);
 
-            writer.append("# what follows is one line per generated apk with its description.\n");
-            writer.append("# the format is CSV in the following order:\n");
-            writer.append("# apkname,project,minor, minsdkversion, abi filter,\n");
+            writer.append(
+                    "# The format of the following lines is:\n" +
+                    "# <build number>:<property1>;<property2>;<property3>;...\n" +
+                    "# Properties are written as <name>=<value>\n");
 
             for (ApkData apk : apks) {
-                apk.write(writer);
+                writer.append(apk.getLogLine());
                 writer.append('\n');
             }
 
@@ -199,7 +206,8 @@ public class MultiApkExportHelper {
      * gets the projects to export from the property, checks they exist, validates them,
      * loads their export info and return it.
      * If a project does not exist or is not valid, this will throw a {@link BuildException}.
-     * @param projects the Ant project.
+     * @param projects the string containing all the relative paths to the projects. This is
+     * usually read from export.properties.
      * @throws ExportException
      */
     private ApkData[] getProjects(String projects) throws ExportException {
@@ -321,9 +329,9 @@ public class MultiApkExportHelper {
             manifests.add(new Manifest(androidManifest, manifestData));
 
             ArrayList<ApkData> dataList = new ArrayList<ApkData>();
-            ApkData data = new ApkData();
+            ApkData data = new ApkData(minSdkVersion, manifestData.getSupportsScreensValues(),
+                    manifestData.getGlEsVersion());
             dataList.add(data);
-            data.setMinSdkVersion(minSdkVersion);
 
             // only look for more exports if the target is not clean.
             if (mTarget != Target.CLEAN) {
@@ -386,7 +394,6 @@ public class MultiApkExportHelper {
             bufferedReader = new BufferedReader(reader);
             String line;
             int lineIndex = 0;
-            int apkIndex = 0;
             while ((line = bufferedReader.readLine()) != null) {
                 line = line.trim();
                 if (line.length() == 0 || line.startsWith("#")) {
@@ -405,9 +412,8 @@ public class MultiApkExportHelper {
                     default:
                         // read apk description
                         ApkData data = new ApkData();
-                        data.setBuildInfo(apkIndex++);
                         datalist.add(data);
-                        data.read(line);
+                        data.initFromLogLine(line);
                         if (data.getMinor() >= MAX_MINOR) {
                             throw new ExportException(
                                     "Valid minor version code values are 0-" + (MAX_MINOR-1));

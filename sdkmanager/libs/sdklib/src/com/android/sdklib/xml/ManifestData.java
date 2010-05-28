@@ -152,6 +152,19 @@ public final class ManifestData {
         private Boolean mNormalScreens;
         private Boolean mLargeScreens;
 
+        public SupportsScreens() {
+        }
+
+        public SupportsScreens(String value) {
+            String[] values = value.split("\\|");
+
+            mAnyDensity = Boolean.valueOf(values[0]);
+            mResizeable = Boolean.valueOf(values[1]);
+            mSmallScreens = Boolean.valueOf(values[2]);
+            mNormalScreens = Boolean.valueOf(values[3]);
+            mLargeScreens = Boolean.valueOf(values[4]);
+        }
+
         /**
          * Returns an instance of {@link SupportsScreens} initialized with the default values
          * based on the given targetSdkVersion.
@@ -280,7 +293,7 @@ public final class ManifestData {
 
         @Override
         public String toString() {
-            return String.format("AD: %1$s, RS: %2$s, SS: %3$s, NS: %4$s, LS: %5$s",
+            return String.format("%1$s|%2$s|%3$s|%4$s|%5$s",
                     mAnyDensity, mResizeable, mSmallScreens, mNormalScreens, mLargeScreens);
         }
     }

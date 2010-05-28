@@ -165,8 +165,8 @@ public class MultiApkExportTask extends Task {
                     }
 
                     // set the version code, and filtering
-                    String compositeVersionCode = getVersionCodeString(versionCode, apk);
-                    addProp(subAnt, "version.code", compositeVersionCode);
+                    int compositeVersionCode = apk.getCompositeVersionCode(versionCode);
+                    addProp(subAnt, "version.code", Integer.toString(compositeVersionCode));
                     System.out.println("Composite versionCode: " + compositeVersionCode);
                     String abi = apk.getAbi();
                     if (abi != null) {
@@ -276,20 +276,6 @@ public class MultiApkExportTask extends Task {
         prop.setName(name);
         prop.setValue(value);
         task.addProperty(prop);
-    }
-
-    /**
-     * Computes and returns the composite version code
-     * @param versionCode the major version code.
-     * @param apkData the apk data.
-     * @return the composite versionCode to be used in the manifest.
-     */
-    private String getVersionCodeString(int versionCode, ApkData apkData) {
-        int trueVersionCode = versionCode * MultiApkExportHelper.OFFSET_VERSION_CODE;
-        trueVersionCode += apkData.getBuildInfo() * MultiApkExportHelper.OFFSET_BUILD_INFO;
-        trueVersionCode += apkData.getMinor();
-
-        return Integer.toString(trueVersionCode);
     }
 
     /**
