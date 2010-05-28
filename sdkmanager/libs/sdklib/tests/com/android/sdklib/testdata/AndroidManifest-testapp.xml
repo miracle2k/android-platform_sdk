@@ -15,7 +15,7 @@
             android:required="false" />
         <uses-library android:name="android.test.runner2" />
     </application>
-    <uses-sdk android:minSdkVersion="7" />
+    <uses-sdk android:minSdkVersion="7" android:targetSdkVersion="8" />
     <supports-screens android:resizeable="true"
         android:smallScreens="true" android:anyDensity="true"
         android:largeScreens="true" android:normalScreens="true" />

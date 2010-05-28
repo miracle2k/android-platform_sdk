@@ -14,5 +14,6 @@
     <application>
         <uses-library android:name="android.test.runner" />
     </application>
+    <uses-sdk android:minSdkVersion="foo"/>
 
 </manifest>

@@ -58,6 +58,7 @@ public final class AndroidManifest {
     public final static String ATTRIBUTE_PROCESS = "process";
     public final static String ATTRIBUTE_DEBUGGABLE = "debuggable";
     public final static String ATTRIBUTE_MIN_SDK_VERSION = "minSdkVersion";
+    public final static String ATTRIBUTE_TARGET_SDK_VERSION = "targetSdkVersion";
     public final static String ATTRIBUTE_TARGET_PACKAGE = "targetPackage";
     public final static String ATTRIBUTE_EXPORTED = "exported";
     public final static String ATTRIBUTE_RESIZEABLE = "resizeable";
