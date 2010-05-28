@@ -16,10 +16,11 @@
 
 package com.android.sdklib.internal.export;
 
+import com.android.sdklib.xml.ManifestData.SupportsScreens;
+
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Class representing one apk that needs to be generated. This contains
@@ -30,16 +31,14 @@ import java.io.OutputStreamWriter;
  */
 public class ApkData implements Comparable<ApkData> {
 
-    private final static int INDEX_OUTPUTNAME = 0;
-    private final static int INDEX_PROJECT    = 1;
-    private final static int INDEX_MINOR      = 2;
-    private final static int INDEX_MINSDK     = 3;
-    private final static int INDEX_ABI        = 4;
-    private final static int INDEX_OPENGL     = 5;
-    private final static int INDEX_SCREENSIZE = 6;
-    private final static int INDEX_LOCALES    = 7;
-    private final static int INDEX_DENSITY    = 8;
-    private final static int INDEX_MAX        = 9;
+    private static final String PROP_SCREENS = "screens";
+    private static final String PROP_ABI = "abi";
+    private static final String PROP_GL = "gl";
+    private static final String PROP_API = "api";
+    private static final String PROP_PROJECT = "project";
+    private static final String PROP_MINOR = "minor";
+    private static final String PROP_BUILDINFO = "buildinfo";
+    private static final String PROP_OUTPUTNAME = "outputname";
 
     private String mOutputName;
     private String mRelativePath;
@@ -50,11 +49,17 @@ public class ApkData implements Comparable<ApkData> {
     // the following are used to sort the export data and generate buildInfo
     private int mMinSdkVersion;
     private String mAbi;
-    private int mGlVersion;
-    // screen size?
+    private int mGlVersion = -1;
+    private SupportsScreens mSupportsScreens;
 
-    public ApkData() {
+    ApkData() {
         // do nothing.
+    }
+
+    public ApkData(int minSdkVersion, SupportsScreens supportsScreens, int glEsVersion) {
+        mMinSdkVersion = minSdkVersion;
+        mSupportsScreens = supportsScreens;
+        mGlVersion = glEsVersion;
     }
 
     public ApkData(ApkData data) {
@@ -65,6 +70,7 @@ public class ApkData implements Comparable<ApkData> {
         mMinSdkVersion = data.mMinSdkVersion;
         mAbi = data.mAbi;
         mGlVersion = data.mGlVersion;
+        mSupportsScreens = data.mSupportsScreens;
     }
 
     public String getOutputName() {
@@ -111,10 +117,6 @@ public class ApkData implements Comparable<ApkData> {
         return mMinSdkVersion;
     }
 
-    public void setMinSdkVersion(int minSdkVersion) {
-        mMinSdkVersion = minSdkVersion;
-    }
-
     public String getAbi() {
         return mAbi;
     }
@@ -127,18 +129,49 @@ public class ApkData implements Comparable<ApkData> {
         return mGlVersion;
     }
 
-    public void setGlVersion(int glVersion) {
-        mGlVersion = glVersion;
+    public SupportsScreens getSupportsScreens() {
+        return mSupportsScreens;
+    }
+
+    /**
+     * Computes and returns the composite version code
+     * @param versionCode the major version code.
+     * @return the composite versionCode to be used in the manifest.
+     */
+    public int getCompositeVersionCode(int versionCode) {
+        int trueVersionCode = versionCode * MultiApkExportHelper.OFFSET_VERSION_CODE;
+        trueVersionCode += getBuildInfo() * MultiApkExportHelper.OFFSET_BUILD_INFO;
+        trueVersionCode += getMinor();
+
+        return trueVersionCode;
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(mOutputName);
-        sb.append(" / ").append(mRelativePath);
-        sb.append(" / ").append(mBuildInfo);
-        sb.append(" / ").append(mMinor);
-        sb.append(" / ").append(mMinSdkVersion);
-        sb.append(" / ").append(mAbi);
+        StringBuilder sb = new StringBuilder();
+        write(sb, PROP_OUTPUTNAME, mOutputName);
+        write(sb, PROP_BUILDINFO, mBuildInfo);
+        sb.append(getLogLine());
+
+        return sb.toString();
+    }
+
+    public String getLogLine() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(mBuildInfo).append(':');
+        write(sb, PROP_MINOR, mMinor);
+        write(sb, PROP_PROJECT, mRelativePath);
+        write(sb, PROP_API, mMinSdkVersion);
+
+        if (mGlVersion != -1) {
+            write(sb, PROP_GL, mGlVersion);
+        }
+
+        if (mAbi != null) {
+            write(sb, PROP_ABI, mAbi);
+        }
+
+        write(sb, PROP_SCREENS, mSupportsScreens);
 
         return sb.toString();
     }
@@ -149,9 +182,11 @@ public class ApkData implements Comparable<ApkData> {
             return minSdkDiff;
         }
 
+        int comp;
         if (mAbi != null) {
             if (o.mAbi != null) {
-                return mAbi.compareTo(o.mAbi);
+                comp = mAbi.compareTo(o.mAbi);
+                if (comp != 0) return comp;
             } else {
                 return -1;
             }
@@ -159,13 +194,17 @@ public class ApkData implements Comparable<ApkData> {
             return 1;
         }
 
-        if (mGlVersion != 0) {
-            if (o.mGlVersion != 0) {
-                return mGlVersion - o.mGlVersion;
+        comp = mSupportsScreens.compareTo(o.mSupportsScreens);
+        if (comp != 0) return comp;
+
+        if (mGlVersion != -1) {
+            if (o.mGlVersion != -1) {
+                comp = mGlVersion - o.mGlVersion;
+                if (comp != 0) return comp;
             } else {
                 return -1;
             }
-        } else if (o.mGlVersion != 0) {
+        } else if (o.mGlVersion != -1) {
             return 1;
         }
 
@@ -173,79 +212,49 @@ public class ApkData implements Comparable<ApkData> {
     }
 
     /**
-     * Writes the apk description in the given writer. a single line is used to write
-     * everything.
-     * @param writer The {@link OutputStreamWriter} to write to.
-     * @throws IOException
-     *
-     * @see {@link #read(String)}
-     */
-    public void write(OutputStreamWriter writer) throws IOException {
-        for (int i = 0 ; i < ApkData.INDEX_MAX ; i++) {
-            write(i, writer);
-        }
-    }
-
-    /**
      * reads the apk description from a log line.
      * @param line The fields to read, comma-separated.
      *
-     * @see #write(FileWriter)
+     * @see #getLogLine()
      */
-    public void read(String line) {
-        String[] dataStrs = line.split(",");
-        for (int i = 0 ; i < ApkData.INDEX_MAX ; i++) {
-            read(i, dataStrs);
+    public void initFromLogLine(String line) {
+        int colon = line.indexOf(':');
+        mBuildInfo = Integer.parseInt(line.substring(0, colon));
+        String[] properties = line.substring(colon+1).split(";");
+        HashMap<String, String> map = new HashMap<String, String>();
+        for (String prop : properties) {
+            colon = prop.indexOf('=');
+            map.put(prop.substring(0, colon), prop.substring(colon+1));
+        }
+        setValues(map);
+    }
+
+    private void setValues(Map<String, String> values) {
+        mMinor = Integer.parseInt(values.get(PROP_MINOR));
+        mRelativePath = values.get(PROP_PROJECT);
+        mMinSdkVersion = Integer.parseInt(values.get(PROP_API));
+
+        String tmp = values.get(PROP_GL);
+        if (tmp != null) {
+            mGlVersion = Integer.parseInt(tmp);
+        }
+
+        tmp = values.get(PROP_ABI);
+        if (tmp != null) {
+            mAbi = tmp;
+        }
+
+        tmp = values.get(PROP_SCREENS);
+        if (tmp != null) {
+            mSupportsScreens = new SupportsScreens(tmp);
         }
     }
 
-    private void write(int index, OutputStreamWriter writer) throws IOException {
-        switch (index) {
-            case INDEX_OUTPUTNAME:
-                writeValue(writer, mOutputName);
-                break;
-            case INDEX_PROJECT:
-                writeValue(writer, mRelativePath);
-                break;
-            case INDEX_MINOR:
-                writeValue(writer, mMinor);
-                break;
-            case INDEX_MINSDK:
-                writeValue(writer, mMinSdkVersion);
-                break;
-            case INDEX_ABI:
-                writeValue(writer, mAbi != null ? mAbi : "");
-                break;
-        }
+    private void write(StringBuilder sb, String name, Object value) {
+        sb.append(name + "=").append(value).append(';');
     }
 
-    private void read(int index, String[] data) {
-        switch (index) {
-            case INDEX_OUTPUTNAME:
-                mOutputName = data[index];
-                break;
-            case INDEX_PROJECT:
-                mRelativePath = data[index];
-                break;
-            case INDEX_MINOR:
-                mMinor = Integer.parseInt(data[index]);
-                break;
-            case INDEX_MINSDK:
-                mMinSdkVersion = Integer.parseInt(data[index]);
-                break;
-            case INDEX_ABI:
-                if (index < data.length && data[index].length() > 0) {
-                    mAbi = data[index];
-                }
-                break;
-        }
-    }
-
-    private static void writeValue(OutputStreamWriter writer, String value) throws IOException {
-        writer.append(value).append(',');
-    }
-
-    private static void writeValue(OutputStreamWriter writer, int value) throws IOException {
-        writeValue(writer, Integer.toString(value));
+    private void write(StringBuilder sb, String name, int value) {
+        sb.append(name + "=").append(value).append(';');
     }
 }
