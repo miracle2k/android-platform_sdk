@@ -316,7 +316,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
         // the rest
         controller.launch(project, mode, applicationPackage,manifestData.getPackage(),
                 manifestData.getPackage(), manifestData.getDebuggable(),
-                manifestData.getApiLevelRequirement(), launchAction, config, androidLaunch,
+                manifestData.getMinSdkVersionString(), launchAction, config, androidLaunch,
                 monitor);
     }
 

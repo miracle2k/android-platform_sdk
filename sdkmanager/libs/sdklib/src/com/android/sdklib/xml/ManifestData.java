@@ -41,7 +41,10 @@ public final class ManifestData {
     /** debuggable attribute value. If null, the attribute is not present. */
     Boolean mDebuggable = null;
     /** API level requirement. if null the attribute was not present. */
-    String mApiLevelRequirement = null;
+    private String mMinSdkVersionString = null;
+    /** API level requirement. Default is 1 even if missing. If value is a codename, then it'll be
+     * 0 instead. */
+    private int mMinSdkVersion = 1;
     /** List of all instrumentations declared by the manifest */
     final ArrayList<Instrumentation> mInstrumentations =
         new ArrayList<Instrumentation>();
@@ -137,18 +140,22 @@ public final class ManifestData {
     /**
      * Class representing the <code>supports-screens</code> node in the manifest.
      */
-    public final static class SupportsScreens {
-        Boolean mResizeable;
-        Boolean mAnyDensity;
-        Boolean mSmallScreens;
-        Boolean mLargeScreens;
-        Boolean mNormalScreens;
+    public final static class SupportsScreens implements Comparable<SupportsScreens> {
+        private Boolean mResizeable;
+        private Boolean mAnyDensity;
+        private Boolean mSmallScreens;
+        private Boolean mLargeScreens;
+        private Boolean mNormalScreens;
 
         /**
          * returns the value of the <code>resizeable</code> attribute or null if not present.
          */
         public Boolean getResizeable() {
             return mResizeable;
+        }
+
+        void setResizeable(Boolean resizeable) {
+            mResizeable = getConstantBoolean(resizeable);
         }
 
         /**
@@ -158,11 +165,19 @@ public final class ManifestData {
             return mAnyDensity;
         }
 
+        void setAnyDensity(Boolean anyDensity) {
+            mAnyDensity = getConstantBoolean(anyDensity);
+        }
+
         /**
          * returns the value of the <code>smallScreens</code> attribute or null if not present.
          */
         public Boolean getSmallScreens() {
             return mSmallScreens;
+        }
+
+        void setSmallScreens(Boolean smallScreens) {
+            mSmallScreens = getConstantBoolean(smallScreens);
         }
 
         /**
@@ -172,11 +187,56 @@ public final class ManifestData {
             return mNormalScreens;
         }
 
+        void setNormalScreens(Boolean normalScreens) {
+            mNormalScreens = getConstantBoolean(normalScreens);
+        }
+
         /**
          * returns the value of the <code>largeScreens</code> attribute or null if not present.
          */
         public Boolean getLargeScreens() {
             return mLargeScreens;
+        }
+
+        void setLargeScreens(Boolean largeScreens) {
+            mLargeScreens = getConstantBoolean(largeScreens);
+        }
+
+        /**
+         * Returns either {@link Boolean#TRUE} or {@link Boolean#FALSE} based on the value of
+         * the given Boolean object.
+         */
+        private Boolean getConstantBoolean(Boolean v) {
+            if (v != null) {
+                if (v.equals(Boolean.TRUE)) {
+                    return Boolean.TRUE;
+                } else {
+                    return Boolean.FALSE;
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof SupportsScreens) {
+                SupportsScreens support = (SupportsScreens)obj;
+                // since all the fields are guaranteed to be either Boolean.TRUE or Boolean.FALSE
+                // (or null), we can simply check they are identical and not bother with
+                // calling equals (which would require to check != null.
+                // see #getConstanntBoolean(Boolean)
+                return mResizeable == support.mResizeable && mAnyDensity == support.mAnyDensity &&
+                        mSmallScreens == support.mSmallScreens &&
+                        mNormalScreens == support.mNormalScreens &&
+                        mLargeScreens == support.mLargeScreens;
+            }
+
+            return false;
+        }
+
+        public int compareTo(SupportsScreens o) {
+            return 0;
         }
     }
 
@@ -320,8 +380,29 @@ public final class ManifestData {
     /**
      * Returns the <code>minSdkVersion</code> attribute, or null if it's not set.
      */
-    public String getApiLevelRequirement() {
-        return mApiLevelRequirement;
+    public String getMinSdkVersionString() {
+        return mMinSdkVersionString;
+    }
+
+    /**
+     * Sets the value of the <code>minSdkVersion</code> attribute.
+     * @param apiLevelRequirement
+     */
+    public void setMinSdkVersionString(String minSdkVersion) {
+        mMinSdkVersionString = minSdkVersion;
+        try {
+            mMinSdkVersion = Integer.parseInt(mMinSdkVersionString);
+        } catch (NumberFormatException e) {
+            mMinSdkVersion = 0; // 0 means it's a codename.
+        }
+    }
+
+    /**
+     * Returns the <code>minSdkVersion</code> attribute, or 0 if it's not set or is a codename.
+     * @see #getMinSdkVersionString()
+     */
+    public int getMinSdkVersion() {
+        return mMinSdkVersion;
     }
 
     /**
@@ -347,6 +428,15 @@ public final class ManifestData {
      */
     public UsesFeature[] getUsesFeatures() {
         return mFeatures.toArray(new UsesFeature[mFeatures.size()]);
+    }
+
+    public int getGlEsVersion() {
+        for (UsesFeature feature : mFeatures) {
+            if (feature.mGlEsVersion > 0) {
+                return feature.mGlEsVersion;
+            }
+        }
+        return -1;
     }
 
     /**

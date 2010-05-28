@@ -90,7 +90,7 @@ public class AndroidJUnitLaunchConfigDelegate extends LaunchConfigDelegate {
         IAndroidLaunchAction junitLaunch = new AndroidJUnitLaunchAction(junitLaunchInfo);
 
         controller.launch(project, mode, applicationPackage, testAppPackage, targetAppPackage,
-                manifestData.getDebuggable(), manifestData.getApiLevelRequirement(),
+                manifestData.getDebuggable(), manifestData.getMinSdkVersionString(),
                 junitLaunch, config, androidLaunch, monitor);
     }
 

@@ -234,7 +234,7 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
 
                     if (manifestData != null) {
                         mJavaPackage = manifestData.getPackage();
-                        mMinSdkVersion = manifestData.getApiLevelRequirement();
+                        mMinSdkVersion = manifestData.getMinSdkVersionString();
                     }
 
                     mCheckedManifestXml = true;
