@@ -39,7 +39,6 @@ public class ApkData implements Comparable<ApkData> {
     private static final String PROP_PROJECT = "project";
     private static final String PROP_MINOR = "minor";
     private static final String PROP_BUILDINFO = "buildinfo";
-    private static final String PROP_OUTPUTNAME = "outputname";
 
     private String mOutputName;
     private String mRelativePath;
@@ -149,30 +148,26 @@ public class ApkData implements Comparable<ApkData> {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        write(sb, PROP_OUTPUTNAME, mOutputName);
-        write(sb, PROP_BUILDINFO, mBuildInfo);
-        sb.append(getLogLine());
-
-        return sb.toString();
+        return getLogLine();
     }
 
     public String getLogLine() {
         StringBuilder sb = new StringBuilder();
-        sb.append(mBuildInfo).append(':');
+        sb.append(mOutputName).append(':');
+        write(sb, PROP_BUILDINFO, mBuildInfo);
         write(sb, PROP_MINOR, mMinor);
         write(sb, PROP_PROJECT, mRelativePath);
         write(sb, PROP_API, mMinSdkVersion);
 
         if (mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
-            write(sb, PROP_GL, mGlVersion);
+            write(sb, PROP_GL, "0x" + Integer.toHexString(mGlVersion));
         }
 
         if (mAbi != null) {
             write(sb, PROP_ABI, mAbi);
         }
 
-        write(sb, PROP_SCREENS, mSupportsScreens);
+        write(sb, PROP_SCREENS, mSupportsScreens.getEncodedValues());
 
         return sb.toString();
     }
@@ -195,7 +190,7 @@ public class ApkData implements Comparable<ApkData> {
             return 1;
         }
 
-        comp = mSupportsScreens.compareTo(o.mSupportsScreens);
+        comp = mSupportsScreens.compareScreenSizesWith(o.mSupportsScreens);
         if (comp != 0) return comp;
 
         if (mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
@@ -212,6 +207,24 @@ public class ApkData implements Comparable<ApkData> {
         return 0;
     }
 
+    public boolean hasSameApkProperties(ApkData apk) {
+        if (mMinSdkVersion != apk.mMinSdkVersion ||
+                mSupportsScreens.equals(apk.mSupportsScreens) == false ||
+                mGlVersion != apk.mGlVersion) {
+            return false;
+        }
+
+        if (mAbi != null) {
+            if (mAbi.equals(apk.mAbi) == false) {
+                return false;
+            }
+        } else if (apk.mAbi != null) {
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * reads the apk description from a log line.
      * @param line The fields to read, comma-separated.
@@ -220,7 +233,7 @@ public class ApkData implements Comparable<ApkData> {
      */
     public void initFromLogLine(String line) {
         int colon = line.indexOf(':');
-        mBuildInfo = Integer.parseInt(line.substring(0, colon));
+        mOutputName = line.substring(0, colon);
         String[] properties = line.substring(colon+1).split(";");
         HashMap<String, String> map = new HashMap<String, String>();
         for (String prop : properties) {
@@ -231,13 +244,19 @@ public class ApkData implements Comparable<ApkData> {
     }
 
     private void setValues(Map<String, String> values) {
+        mBuildInfo = Integer.parseInt(values.get(PROP_BUILDINFO));
         mMinor = Integer.parseInt(values.get(PROP_MINOR));
         mRelativePath = values.get(PROP_PROJECT);
         mMinSdkVersion = Integer.parseInt(values.get(PROP_API));
 
         String tmp = values.get(PROP_GL);
         if (tmp != null) {
-            mGlVersion = Integer.parseInt(tmp);
+            try {
+                mGlVersion = Integer.decode(tmp);
+            } catch (NumberFormatException e) {
+                // pass. This is probably due to a manual edit, and it'll most likely
+                // generate an error when matching the log to the current setup.
+            }
         }
 
         tmp = values.get(PROP_ABI);

@@ -28,6 +28,7 @@ import com.android.sdklib.io.StreamException;
 import com.android.sdklib.io.IAbstractFolder.FilenameFilter;
 import com.android.sdklib.xml.AndroidManifestParser;
 import com.android.sdklib.xml.ManifestData;
+import com.android.sdklib.xml.ManifestData.SupportsScreens;
 
 import org.xml.sax.SAXException;
 
@@ -126,14 +127,14 @@ public class MultiApkExportHelper {
             if (previousApks.length != apks.length) {
                 throw new ExportException(String.format(
                         "Project export is setup differently from previous export at versionCode %d.\n" +
-                        "Any change in the multi-apk configuration requires an increment of the versionCode.",
+                        "Any change in the multi-apk configuration requires an increment of the versionCode in export.properties.",
                         mVersionCode));
             }
 
             for (int i = 0 ; i < previousApks.length ; i++) {
                 // update the minor value from what is in the log file.
                 apks[i].setMinor(previousApks[i].getMinor());
-                if (apks[i].compareTo(previousApks[i]) != 0) {
+                if (apks[i].hasSameApkProperties(previousApks[i]) == false) {
                     throw new ExportException(String.format(
                             "Project export is setup differently from previous export at versionCode %d.\n" +
                             "Any change in the multi-apk configuration requires an increment of the versionCode.",
@@ -143,7 +144,6 @@ public class MultiApkExportHelper {
         }
 
         return apks;
-
     }
 
     /**
@@ -161,7 +161,7 @@ public class MultiApkExportHelper {
                     "# Multi-APK BUILD LOG.\n" +
                     "# This file serves two purpose:\n" +
                     "# - A log of what was built, showing what went in each APK and their properties.\n" +
-                    "#   You can refer to this if you get a bug report for a specific versionCode." +
+                    "#   You can refer to this if you get a bug report for a specific versionCode.\n" +
                     "# - A way to update builds through minor revisions for specific APKs.\n" +
                     "# Only edit manually to change the minor properties for build you wish to respin.\n" +
                     "# Note that all APKs will be regenerated all the time.\n");
@@ -171,7 +171,7 @@ public class MultiApkExportHelper {
 
             writer.append(
                     "# The format of the following lines is:\n" +
-                    "# <build number>:<property1>;<property2>;<property3>;...\n" +
+                    "# <filename>:<property1>;<property2>;<property3>;...\n" +
                     "# Properties are written as <name>=<value>\n");
 
             for (ApkData apk : apks) {
@@ -309,19 +309,58 @@ public class MultiApkExportHelper {
                 // - GL version
                 // - ABI (not managed at the Manifest level).
                 // if those values are the same between 2 manifest, then it's an error.
-                if (minSdkVersion == previousManifest.data.getMinSdkVersion() &&
-                        manifestData.getSupportsScreensValues().equals(
-                                previousManifest.data.getSupportsScreensValues()) &&
-                        manifestData.getGlEsVersion() == previousManifest.data.getGlEsVersion()) {
 
-                    throw new ExportException(String.format(
-                            "Android manifests must differ in at least one of the following values:\n" +
-                            "- minSdkVersion\n" +
-                            "- SupportsScreen\n" +
-                            "- GL ES version.\n" +
-                            "%1$s and %2$s are considered identical for multi-apk export.",
-                            androidManifest.getOsLocation(),
-                            previousManifest.file.getOsLocation()));
+                // first the minSdkVersion.
+                if (minSdkVersion == previousManifest.data.getMinSdkVersion()) {
+                    // if it's the same compare the rest.
+                    SupportsScreens currentSS = manifestData.getSupportsScreensValues();
+                    SupportsScreens previousSS = previousManifest.data.getSupportsScreensValues();
+                    boolean sameSupportsScreens = currentSS.hasSameScreenSupportAs(previousSS);
+
+                    // if it's the same, then it's an error. Can't export 2 projects that have the
+                    // same approved (for multi-apk export) hard-properties.
+                    if (manifestData.getGlEsVersion() == previousManifest.data.getGlEsVersion() &&
+                            sameSupportsScreens) {
+
+                        throw new ExportException(String.format(
+                                "Android manifests must differ in at least one of the following values:\n" +
+                                "- minSdkVersion\n" +
+                                "- SupportsScreen (screen sizes only)\n" +
+                                "- GL ES version.\n" +
+                                "%1$s and %2$s are considered identical for multi-apk export.",
+                                androidManifest.getOsLocation(),
+                                previousManifest.file.getOsLocation()));
+                    }
+
+                    // At this point, either supports-screens or GL are different.
+                    // Because supports-screens is the highest priority properties to be
+                    // (potentially) different, we must do some extra checks on it.
+                    // It must either be the same in both projects (difference is only on GL value),
+                    // or follow theses rules:
+                    // - Property in each projects must be strictly different, ie both projects
+                    //   cannot support the same screen size(s).
+                    // - Property in each projects cannot overlap, ie a projects cannot support
+                    //   both a lower and a higher screen size than the other project.
+                    //   (ie APK1 supports small/large and APK2 supports normal).
+                    if (sameSupportsScreens == false) {
+                        if (currentSS.hasStrictlyDifferentScreenSupportAs(previousSS) == false) {
+                            throw new ExportException(String.format(
+                                    "APK differentiation by Supports-Screens cannot support different APKs supporting the same screen size.\n" +
+                                    "%1$s supports %2$s\n" +
+                                    "%3$s supports %4$s\n",
+                                    androidManifest.getOsLocation(), currentSS.toString(),
+                                    previousManifest.file.getOsLocation(), previousSS.toString()));
+                        }
+
+                        if (currentSS.overlapWith(previousSS)) {
+                            throw new ExportException(String.format(
+                                    "Unable to compute APK priority due to incompatible difference in Supports-Screens values.\n" +
+                                    "%1$s supports %2$s\n" +
+                                    "%3$s supports %4$s\n",
+                                    androidManifest.getOsLocation(), currentSS.toString(),
+                                    previousManifest.file.getOsLocation(), previousSS.toString()));
+                        }
+                    }
                 }
             }
 
