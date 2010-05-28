@@ -302,9 +302,10 @@ public class MultiApkExportHelper {
                 // - ABI (not managed at the Manifest level).
                 // if those values are the same between 2 manifest, then it's an error.
                 if (minSdkVersion == previousManifest.data.getMinSdkVersion() &&
-                        compareObjects(manifestData.getSupportsScreens(),
-                                previousManifest.data.getSupportsScreens()) &&
+                        manifestData.getSupportsScreensValues().equals(
+                                previousManifest.data.getSupportsScreensValues()) &&
                         manifestData.getGlEsVersion() == previousManifest.data.getGlEsVersion()) {
+
                     throw new ExportException(String.format(
                             "Android manifests must differ in at least one of the following values:\n" +
                             "- minSdkVersion\n" +
@@ -366,17 +367,6 @@ public class MultiApkExportHelper {
             throw new ExportException(
                     String.format("Failed to validate %1$s", androidManifest.getOsLocation()), e);
         }
-    }
-
-    /**
-     * Returns whether the two objects are equal, handling cases where one or both are null.
-     */
-    private boolean compareObjects(Object obj1, Object obj2) {
-        if (obj1 == null) {
-            return obj2 == null;
-        }
-
-        return obj1.equals(obj2);
     }
 
     /**

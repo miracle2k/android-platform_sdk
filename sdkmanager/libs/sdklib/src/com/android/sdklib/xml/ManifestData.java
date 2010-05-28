@@ -45,6 +45,7 @@ public final class ManifestData {
     /** API level requirement. Default is 1 even if missing. If value is a codename, then it'll be
      * 0 instead. */
     private int mMinSdkVersion = 1;
+    private int mTargetSdkVersion = 0;
     /** List of all instrumentations declared by the manifest */
     final ArrayList<Instrumentation> mInstrumentations =
         new ArrayList<Instrumentation>();
@@ -53,7 +54,8 @@ public final class ManifestData {
     /** List of all feature in use declared by the manifest */
     final ArrayList<UsesFeature> mFeatures = new ArrayList<UsesFeature>();
 
-    SupportsScreens mSupportsScreens;
+    SupportsScreens mSupportsScreensFromManifest;
+    SupportsScreens mSupportsScreensValues;
     UsesConfiguration mUsesConfiguration;
 
     /**
@@ -139,13 +141,50 @@ public final class ManifestData {
 
     /**
      * Class representing the <code>supports-screens</code> node in the manifest.
+     * By default, all the getters will return null if there was no value defined in the manifest.
+     *
+     * To get an instance with all the actual values, use {@link #resolveSupportsScreensValues(int)}
      */
     public final static class SupportsScreens implements Comparable<SupportsScreens> {
         private Boolean mResizeable;
         private Boolean mAnyDensity;
         private Boolean mSmallScreens;
-        private Boolean mLargeScreens;
         private Boolean mNormalScreens;
+        private Boolean mLargeScreens;
+
+        /**
+         * Returns an instance of {@link SupportsScreens} initialized with the default values
+         * based on the given targetSdkVersion.
+         * @param targetSdkVersion
+         */
+        public static SupportsScreens getDefaultValues(int targetSdkVersion) {
+            SupportsScreens result = new SupportsScreens();
+
+            result.mNormalScreens = Boolean.TRUE;
+            result.mResizeable = result.mAnyDensity = result.mSmallScreens = result.mLargeScreens =
+                targetSdkVersion <= 3 ? Boolean.FALSE : Boolean.TRUE;
+
+            return result;
+        }
+
+        /**
+         * Returns a version of the receiver for which all values have been set, even if they
+         * were not present in the manifest.
+         * @param targetSdkVersion the target api level of the app, since this has an effect
+         * on default values.
+         */
+        public SupportsScreens resolveSupportsScreensValues(int targetSdkVersion) {
+            SupportsScreens result = getDefaultValues(targetSdkVersion);
+
+            // Override the default with the existing values:
+            if (mResizeable != null) result.mResizeable = mResizeable;
+            if (mAnyDensity != null) result.mAnyDensity = mAnyDensity;
+            if (mSmallScreens != null) result.mSmallScreens = mSmallScreens;
+            if (mNormalScreens != null) result.mNormalScreens = mNormalScreens;
+            if (mLargeScreens != null) result.mLargeScreens = mLargeScreens;
+
+            return result;
+        }
 
         /**
          * returns the value of the <code>resizeable</code> attribute or null if not present.
@@ -237,6 +276,12 @@ public final class ManifestData {
 
         public int compareTo(SupportsScreens o) {
             return 0;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("AD: %1$s, RS: %2$s, SS: %3$s, NS: %4$s, LS: %5$s",
+                    mAnyDensity, mResizeable, mSmallScreens, mNormalScreens, mLargeScreens);
         }
     }
 
@@ -386,14 +431,16 @@ public final class ManifestData {
 
     /**
      * Sets the value of the <code>minSdkVersion</code> attribute.
-     * @param apiLevelRequirement
+     * @param minSdkVersion the string value of the attribute in the manifest.
      */
     public void setMinSdkVersionString(String minSdkVersion) {
         mMinSdkVersionString = minSdkVersion;
-        try {
-            mMinSdkVersion = Integer.parseInt(mMinSdkVersionString);
-        } catch (NumberFormatException e) {
-            mMinSdkVersion = 0; // 0 means it's a codename.
+        if (mMinSdkVersionString != null) {
+            try {
+                mMinSdkVersion = Integer.parseInt(mMinSdkVersionString);
+            } catch (NumberFormatException e) {
+                mMinSdkVersion = 0; // 0 means it's a codename.
+            }
         }
     }
 
@@ -403,6 +450,33 @@ public final class ManifestData {
      */
     public int getMinSdkVersion() {
         return mMinSdkVersion;
+    }
+
+
+    /**
+     * Sets the value of the <code>minSdkVersion</code> attribute.
+     * @param targetSdkVersion the string value of the attribute in the manifest.
+     */
+    public void setTargetSdkVersionString(String targetSdkVersion) {
+        if (targetSdkVersion != null) {
+            try {
+                mTargetSdkVersion = Integer.parseInt(targetSdkVersion);
+            } catch (NumberFormatException e) {
+                // keep the value at 0.
+            }
+        }
+    }
+
+    /**
+     * Returns the <code>targetSdkVersion</code> attribute, or the same value as
+     * {@link #getMinSdkVersion()} if it was not set in the manifest.
+     */
+    public int getTargetSdkVersion() {
+        if (mTargetSdkVersion == 0) {
+            return getMinSdkVersion();
+        }
+
+        return mTargetSdkVersion;
     }
 
     /**
@@ -442,9 +516,31 @@ public final class ManifestData {
     /**
      * Returns the {@link SupportsScreens} object representing the <code>supports-screens</code>
      * node, or null if the node doesn't exist at all.
+     * Some values in the {@link SupportsScreens} instance maybe null, indicating that they
+     * were not present in the manifest. To get an instance that contains the values, as seen
+     * by the Android platform when the app is running, use {@link #getSupportsScreensValues()}.
      */
-    public SupportsScreens getSupportsScreens() {
-        return mSupportsScreens;
+    public SupportsScreens getSupportsScreensFromManifest() {
+        return mSupportsScreensFromManifest;
+    }
+
+    /**
+     * Returns an always non-null instance of {@link SupportsScreens} that's been initialized with
+     * the default values, and the values from the manifest.
+     * The default values depends on the manifest values for minSdkVersion and targetSdkVersion.
+     */
+    public synchronized SupportsScreens getSupportsScreensValues() {
+        if (mSupportsScreensValues == null) {
+            if (mSupportsScreensFromManifest == null) {
+                mSupportsScreensValues = SupportsScreens.getDefaultValues(getTargetSdkVersion());
+            } else {
+                // get a SupportsScreen that replace the missing values with default values.
+                mSupportsScreensValues = mSupportsScreensFromManifest.resolveSupportsScreensValues(
+                        getTargetSdkVersion());
+            }
+        }
+
+        return mSupportsScreensValues;
     }
 
     /**

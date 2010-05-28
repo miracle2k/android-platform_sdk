@@ -177,6 +177,9 @@ public class AndroidManifestParser {
                                 mManifestData.setMinSdkVersionString(getAttributeValue(attributes,
                                         AndroidManifest.ATTRIBUTE_MIN_SDK_VERSION,
                                         true /* hasNamespace */));
+                                mManifestData.setTargetSdkVersionString(getAttributeValue(attributes,
+                                        AndroidManifest.ATTRIBUTE_TARGET_SDK_VERSION,
+                                        true /* hasNamespace */));
                             } else if (AndroidManifest.NODE_INSTRUMENTATION.equals(localName)) {
                                 processInstrumentationNode(attributes);
 
@@ -470,21 +473,21 @@ public class AndroidManifestParser {
          * @param attributes the attributes for the supports-screens node.
          */
         private void processSupportsScreensNode(Attributes attributes) {
-            mManifestData.mSupportsScreens = new SupportsScreens();
+            mManifestData.mSupportsScreensFromManifest = new SupportsScreens();
 
-            mManifestData.mSupportsScreens.setResizeable(Boolean.valueOf(
+            mManifestData.mSupportsScreensFromManifest.setResizeable(Boolean.valueOf(
                     getAttributeValue(attributes,
                             AndroidManifest.ATTRIBUTE_RESIZEABLE, true /*hasNamespace*/)));
-            mManifestData.mSupportsScreens.setAnyDensity(Boolean.valueOf(
+            mManifestData.mSupportsScreensFromManifest.setAnyDensity(Boolean.valueOf(
                     getAttributeValue(attributes,
                             AndroidManifest.ATTRIBUTE_ANYDENSITY, true /*hasNamespace*/)));
-            mManifestData.mSupportsScreens.setSmallScreens(Boolean.valueOf(
+            mManifestData.mSupportsScreensFromManifest.setSmallScreens(Boolean.valueOf(
                     getAttributeValue(attributes,
                             AndroidManifest.ATTRIBUTE_SMALLSCREENS, true /*hasNamespace*/)));
-            mManifestData.mSupportsScreens.setNormalScreens(Boolean.valueOf(
+            mManifestData.mSupportsScreensFromManifest.setNormalScreens(Boolean.valueOf(
                     getAttributeValue(attributes,
                             AndroidManifest.ATTRIBUTE_NORMALSCREENS, true /*hasNamespace*/)));
-            mManifestData.mSupportsScreens.setLargeScreens(Boolean.valueOf(
+            mManifestData.mSupportsScreensFromManifest.setLargeScreens(Boolean.valueOf(
                     getAttributeValue(attributes,
                             AndroidManifest.ATTRIBUTE_LARGESCREENS, true /*hasNamespace*/)));
         }

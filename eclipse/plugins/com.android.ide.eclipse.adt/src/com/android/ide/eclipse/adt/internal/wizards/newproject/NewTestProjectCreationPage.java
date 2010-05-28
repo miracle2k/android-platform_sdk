@@ -405,7 +405,6 @@ public class NewTestProjectCreationPage extends WizardPage {
                 updateLocationPathField(null);
             }
         });
-
     }
 
     private final void createLocationGroup(Composite parent) {

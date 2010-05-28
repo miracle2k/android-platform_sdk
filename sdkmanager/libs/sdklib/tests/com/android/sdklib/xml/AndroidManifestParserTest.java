@@ -81,6 +81,10 @@ public class AndroidManifestParserTest extends TestCase {
 
     public void testMinSdkVersion() {
         assertEquals(7, mManifestTestApp.getMinSdkVersion());
+        assertEquals(8, mManifestTestApp.getTargetSdkVersion());
+
+        assertEquals("foo", mManifestInstrumentation.getMinSdkVersionString());
+        assertEquals(0, mManifestInstrumentation.getMinSdkVersion());
     }
 
     public void testGetActivities() {
@@ -101,7 +105,8 @@ public class AndroidManifestParserTest extends TestCase {
     }
 
     public void testSupportsScreen() {
-        ManifestData.SupportsScreens supportsScreens = mManifestTestApp.getSupportsScreens();
+        ManifestData.SupportsScreens supportsScreens =
+            mManifestTestApp.getSupportsScreensFromManifest();
 
         assertNotNull(supportsScreens);
         assertEquals(Boolean.TRUE, supportsScreens.getAnyDensity());
