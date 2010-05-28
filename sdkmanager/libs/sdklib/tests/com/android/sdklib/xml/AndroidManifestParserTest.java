@@ -84,7 +84,7 @@ public class AndroidManifestParserTest extends TestCase {
         assertEquals(8, mManifestTestApp.getTargetSdkVersion());
 
         assertEquals("foo", mManifestInstrumentation.getMinSdkVersionString());
-        assertEquals(0, mManifestInstrumentation.getMinSdkVersion());
+        assertEquals(ManifestData.MIN_SDK_CODENAME, mManifestInstrumentation.getMinSdkVersion());
     }
 
     public void testGetActivities() {
