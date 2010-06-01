@@ -20,6 +20,12 @@ public class BaseView implements IViewRule {
 
     private String mFqcn;
 
+    /**
+     * Namespace for the Android resource XML,
+     * i.e. "http://schemas.android.com/apk/res/android"
+     */
+    public static ANDROID_URI = "http://schemas.android.com/apk/res/android";
+
     public boolean onInitialize(String fqcn) {
         // This base rule can handle any class.
         mFqcn = fqcn

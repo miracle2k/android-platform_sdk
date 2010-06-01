@@ -19,7 +19,6 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -1147,7 +1146,7 @@ import java.util.ListIterator;
             e.doit = mDragSelection.size() > 0;
             if (e.doit) {
                 mDragElements = getSelectionAsElements();
-                GlobalCanvasDragInfo.getInstance().startDrag(mDragElements, this);
+                GlobalCanvasDragInfo.getInstance().startDrag(mDragElements, LayoutCanvas.this);
 
                 // TODO for debugging. remove later.
                 AdtPlugin.printToConsole("CanvasDND", String.format("dragStart %d items, type=%s", mDragSelection.size(), e.dataType));
@@ -1200,16 +1199,8 @@ import java.util.ListIterator;
             UiViewElementNode uiNode = vi.getUiViewKey();
             ElementDescriptor desc = uiNode.getDescriptor();
 
-            String elementName = SimpleXmlTransfer.getFqcn(desc);
-            Rect bounds = new Rect(vi.getAbsRect());
-            String parentName = null;
-
-            CanvasViewInfo pvi = vi.getParent();
-            if (pvi != null && pvi.getUiViewKey() != null) {
-                parentName = SimpleXmlTransfer.getFqcn(pvi.getUiViewKey().getDescriptor());
-            }
-
-            SimpleElement e = new SimpleElement(elementName, bounds, parentName);
+            SimpleElement e = new SimpleElement(
+                    SimpleXmlTransfer.getFqcn(desc), mNodeFactory.create(vi));
 
             for (UiAttributeNode attr : uiNode.getUiAttributes()) {
                 String value = attr.getCurrentValue();

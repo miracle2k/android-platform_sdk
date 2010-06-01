@@ -136,7 +136,20 @@ public class AndroidConstants {
     /** Regexp for aidl extension, i.e. "\.aidl$" */
     public final static String RE_AIDL_EXT = "\\.aidl$"; //$NON-NLS-1$
 
-    /** Namespace pattern for the custom resource XML, i.e. "http://schemas.android.com/apk/res/%s" */
+    /**
+     * Namespace pattern for the custom resource XML, i.e. "http://schemas.android.com/apk/res/%s"
+     * <p/>
+     * This string contains a %s. It must be combined with the desired Java package, e.g.:
+     * <pre>
+     *    String.format(AndroidConstants.NS_CUSTOM_RESOURCES, "android");
+     *    String.format(AndroidConstants.NS_CUSTOM_RESOURCES, "com.test.mycustomapp");
+     * </pre>
+     *
+     * Note: if you need an URI specifically for the "android" namespace, consider using
+     * {@link SdkConstants#NS_RESOURCES} instead.
+     */
+    // TODO rename NS_CUSTOM_RESOURCES to NS_CUSTOM_RESOURCES_S (denoting it takes a %s) in
+    // another CL.
     public final static String NS_CUSTOM_RESOURCES = "http://schemas.android.com/apk/res/%1$s"; //$NON-NLS-1$
 
     /** The old common plug-in ID. Please do not use for new features. */

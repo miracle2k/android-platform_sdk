@@ -17,7 +17,8 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,21 +35,25 @@ import java.util.List;
  */
 class SimpleElement implements IDragElement {
 
+    /** Version number of the internal serialized string format. */
+    private static final String FORMAT_VERSION = "1";
+
     private final String mName;
-    private final Rect mBounds;
-    private final String mParentLayoutFqcn;
+    private final INode mNode;
     private final ArrayList<IDragAttribute> mAttributes = new ArrayList<IDragAttribute>();
     private final ArrayList<IDragElement> mElements = new ArrayList<IDragElement>();
+
+    private List<IDragAttribute> mReadOnlyAttributes = null;
+    private List<IDragElement> mReadOnlyElements = null;
 
     /**
      * Creates a new {@link SimpleElement} with the specified element name.
      *
      * @param name A fully qualified class name of a View to inflate.
      */
-    public SimpleElement(String name, Rect bounds, String parentLayoutFqcn) {
+    public SimpleElement(String name, NodeProxy nodeProxy) {
         mName = name;
-        mBounds = bounds == null ? new Rect() : bounds;
-        mParentLayoutFqcn = parentLayoutFqcn;
+        mNode = nodeProxy;
     }
 
     /**
@@ -63,24 +68,32 @@ class SimpleElement implements IDragElement {
      * Returns the bounds of the element, if it came from an existing canvas.
      * The returned rect is invalid and non-nul if this is a new element being created.
      */
-    public Rect getBounds() {
-        return mBounds;
-    }
-
-    /**
-     * Returns the FQCN of the parent layout if the element came from an existing
-     * canvas. Returns null if this is a new element being created.
-     */
-    public String getParentLayoutFqcn() {
-        return mParentLayoutFqcn;
+    public INode getNode() {
+        return mNode;
     }
 
     public List<IDragAttribute> getAttributes() {
-        return Collections.unmodifiableList(mAttributes);
+        if (mReadOnlyAttributes == null) {
+            mReadOnlyAttributes = Collections.unmodifiableList(mAttributes);
+        }
+        return mReadOnlyAttributes;
+    }
+
+    public IDragAttribute getAttribute(String uri, String localName) {
+        for (IDragAttribute attr : mAttributes) {
+            if (attr.getUri().equals(uri) && attr.getName().equals(localName)) {
+                return attr;
+            }
+        }
+
+        return null;
     }
 
     public List<IDragElement> getInnerElements() {
-        return Collections.unmodifiableList(mElements);
+        if (mReadOnlyElements == null) {
+            mReadOnlyElements = Collections.unmodifiableList(mElements);
+        }
+        return mReadOnlyElements;
     }
 
     public void addAttribute(SimpleAttribute attr) {
@@ -96,16 +109,8 @@ class SimpleElement implements IDragElement {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("{$N=").append(mName);
-        if (mBounds.isValid()) {
-            sb.append("$B=").append(mBounds.x).append(' ')
-                           .append(mBounds.y).append(' ')
-                           .append(mBounds.w).append(' ')
-                           .append(mBounds.h);
-        }
-        if (mParentLayoutFqcn != null) {
-            sb.append("$P=").append(mParentLayoutFqcn);
-        }
+        // "1" is the version number of the format.
+        sb.append('{').append(FORMAT_VERSION).append(',').append(mName);
         sb.append('\n');
         for (IDragAttribute a : mAttributes) {
             sb.append(a.toString());
@@ -141,36 +146,12 @@ class SimpleElement implements IDragElement {
             String s = line.trim();
             if (s.startsWith("{")) {                                //$NON-NLS-1$
                 if (e == null) {
-                    // This is the element's opening
-                    String name = null;
-                    Rect bounds = new Rect();
-                    String parentLayout = null;
-                    for (String a : s.substring(1).split("\\$")) {  //$NON-NLS-1$
-                        a = a.trim();
-                        if (a.length() < 2) {
-                            continue;
-                        }
-                        if (a.startsWith("N=")) {                   //$NON-NLS-1$
-                            name = a.substring(2);
-
-                        } else if (a.startsWith("P=")) {            //$NON-NLS-1$
-                            parentLayout = a.substring(2);
-
-                        } else if (a.startsWith("B=")) {            //$NON-NLS-1$
-                            String[] b = a.split(" ");              //$NON-NLS-1$
-                            if (b.length == 4) {
-                                try {
-                                    bounds.x = Integer.parseInt(b[0]);
-                                    bounds.y = Integer.parseInt(b[1]);
-                                    bounds.w = Integer.parseInt(b[2]);
-                                    bounds.h = Integer.parseInt(b[3]);
-                                } catch (NumberFormatException ex) {
-                                    // ignore
-                                }
-                            }
-                        }
+                    // This is the element's opening, it should have
+                    // the format "version_number,element_name"
+                    String[] s2 = s.substring(1).split(",");        //$NON-NLS-1$
+                    if (s2.length == 2 && s2[0].equals(FORMAT_VERSION)) {
+                        e = new SimpleElement(s2[1], null);
                     }
-                    e = new SimpleElement(name, bounds, parentLayout);
                 } else {
                     // This is an inner element
                     inOutIndex[0] = index;
@@ -202,10 +183,11 @@ class SimpleElement implements IDragElement {
         if (obj instanceof SimpleElement) {
             SimpleElement se = (SimpleElement) obj;
 
+            // Note: INode objects should come from the NodeFactory and be unique
+            // for a given UiViewNode so it's OK to compare mNode pointers here.
+
             return mName.equals(se.mName) &&
-                    mBounds.equals(se.mBounds) &&
-                    ((mParentLayoutFqcn == null && se.mParentLayoutFqcn == null) ||
-                     (mParentLayoutFqcn.equals(mParentLayoutFqcn))) &&
+                    mNode == se.mNode &&
                     mAttributes.size() == se.mAttributes.size() &&
                     mElements.size() == se.mElements.size() &&
                     mAttributes.equals(se.mAttributes) &&
@@ -220,10 +202,10 @@ class SimpleElement implements IDragElement {
         // uses the formula defined in java.util.List.hashCode()
         c = 31*c + mAttributes.hashCode();
         c = 31*c + mElements.hashCode();
-        c = 31*c + mBounds.hashCode();
-        if (mParentLayoutFqcn != null) {
-            c = 31*c + mParentLayoutFqcn.hashCode();
+        if (mNode != null) {
+            c = 31*c + mNode.hashCode();
         }
+
         if (c > 0x0FFFFFFFFL) {
             // wrap any overflow
             c = c ^ (c >> 32);

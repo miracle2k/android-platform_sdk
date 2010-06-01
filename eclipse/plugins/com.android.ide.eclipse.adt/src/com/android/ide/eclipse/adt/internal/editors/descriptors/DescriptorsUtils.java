@@ -715,19 +715,31 @@ public final class DescriptorsUtils {
         // both W/H. Otherwise default to wrap_layout.
         boolean fill = ui_node.getDescriptor().hasChildren() &&
                        ui_node.getUiParent() instanceof UiDocumentNode;
-        ui_node.setAttributeValue(LayoutConstants.ATTR_LAYOUT_WIDTH,
+        ui_node.setAttributeValue(
+                LayoutConstants.ATTR_LAYOUT_WIDTH,
+                SdkConstants.NS_RESOURCES,
                 fill ? LayoutConstants.VALUE_FILL_PARENT : LayoutConstants.VALUE_WRAP_CONTENT,
                 false /* override */);
-        ui_node.setAttributeValue(LayoutConstants.ATTR_LAYOUT_HEIGHT,
+        ui_node.setAttributeValue(
+                LayoutConstants.ATTR_LAYOUT_HEIGHT,
+                SdkConstants.NS_RESOURCES,
                 fill ? LayoutConstants.VALUE_FILL_PARENT : LayoutConstants.VALUE_WRAP_CONTENT,
                 false /* override */);
 
         String widget_id = getFreeWidgetId(ui_node);
         if (widget_id != null) {
-            ui_node.setAttributeValue(LayoutConstants.ATTR_ID, widget_id, false /* override */);
+            ui_node.setAttributeValue(
+                    LayoutConstants.ATTR_ID,
+                    SdkConstants.NS_RESOURCES,
+                    widget_id,
+                    false /* override */);
         }
 
-        ui_node.setAttributeValue(LayoutConstants.ATTR_TEXT, widget_id, false /*override*/);
+        ui_node.setAttributeValue(
+                LayoutConstants.ATTR_TEXT,
+                SdkConstants.NS_RESOURCES,
+                widget_id,
+                false /*override*/);
 
         if (updateLayout) {
             UiElementNode ui_parent = ui_node.getUiParent();
@@ -739,7 +751,10 @@ public final class DescriptorsUtils {
                     String id = ui_previous.getAttributeValue(LayoutConstants.ATTR_ID);
                     if (id != null && id.length() > 0) {
                         id = id.replace("@+", "@");                     //$NON-NLS-1$ //$NON-NLS-2$
-                        ui_node.setAttributeValue(LayoutConstants.ATTR_LAYOUT_BELOW, id,
+                        ui_node.setAttributeValue(
+                                LayoutConstants.ATTR_LAYOUT_BELOW,
+                                SdkConstants.NS_RESOURCES,
+                                id,
                                 false /* override */);
                     }
                 }

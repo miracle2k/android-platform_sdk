@@ -33,21 +33,31 @@ public interface IDragElement {
     public abstract String getFqcn();
 
     /**
-     * Returns the bounds of the element, if it came from an existing canvas.
-     * The returned rect is invalid and non-nul if this is a new element being created.
+     * Returns the node matching the element, if it came from an existing canvas
+     * in the same Eclipse instance. <br/>
+     * The node is null if this is a new element being created or if the element
+     * originated on a canvas in a different instance of Eclipse.
      */
-    public abstract Rect getBounds();
+    public abstract INode getNode();
 
     /**
-     * Returns the FQCN of the parent layout if the element came from an existing
-     * canvas. Returns null if this is a new element being created.
+     * Returns a list of attributes. The list can be empty but is never null.
      */
-    public abstract String getParentLayoutFqcn();
-
     public abstract List<IDragAttribute> getAttributes();
 
+    /**
+     * Returns the requested attribute or null if not found.
+     */
+    public abstract IDragAttribute getAttribute(String uri, String localName);
+
+    /**
+     * Returns a list of inner elements. The list can be empty but is never null.
+     */
     public abstract List<IDragElement> getInnerElements();
 
+    /**
+     * An XML attribute in the {@link IDragElement}.
+     */
     public interface IDragAttribute {
 
         /** Returns the namespace URI of the attribute. Cannot be null nor empty. */

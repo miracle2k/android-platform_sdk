@@ -91,6 +91,26 @@ public class Rect {
         return contains(p.x, p.y);
     }
 
+    /**
+     * Moves this rectangle by setting it's x,y coordinates to the new values.
+     * @return Returns self, for chaining.
+     */
+    public Rect moveTo(int x, int y) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+
+    /**
+     * Offsets this rectangle by adding the given x,y deltas to the x,y coordinates.
+     * @return Returns self, for chaining.
+     */
+    public Rect offsetBy(int x, int y) {
+        this.x += x;
+        this.y += y;
+        return this;
+    }
+
     public Point center() {
         return new Point(x + (w > 0 ? w / 2 : 0),
                          y + (h > 0 ? h / 2 : 0));

@@ -1133,14 +1133,7 @@ public class UiElementNode implements IPropertySource {
                     }
                 }
                 if (uiAttr == null) {
-                    // Create a new unknown attribute
-                    TextAttributeDescriptor desc = new TextAttributeDescriptor(
-                            xmlAttrLocalName, // xml name
-                            xmlFullName, // ui name
-                            xmlNsUri, // NS uri
-                            "Unknown XML attribute"); // tooltip, translatable
-                    uiAttr = desc.createUiNode(this);
-                    mUnknownUiAttributes.add(uiAttr);
+                    uiAttr = addUnknownAttribute(xmlFullName, xmlAttrLocalName, xmlNsUri);
                 }
 
                 uiAttr.updateValue(xmlAttr);
@@ -1151,6 +1144,19 @@ public class UiElementNode implements IPropertySource {
                 mUnknownUiAttributes.remove(a);
             }
         }
+    }
+
+    private UiAttributeNode addUnknownAttribute(String xmlFullName,
+            String xmlAttrLocalName, String xmlNsUri) {
+        // Create a new unknown attribute
+        TextAttributeDescriptor desc = new TextAttributeDescriptor(
+                xmlAttrLocalName,           // xml name
+                xmlFullName,                // ui name
+                xmlNsUri,                   // NS uri
+                "Unknown XML attribute");   // tooltip, translatable
+        UiAttributeNode uiAttr = desc.createUiNode(this);
+        mUnknownUiAttributes.add(uiAttr);
+        return uiAttr;
     }
 
     /**
@@ -1252,9 +1258,9 @@ public class UiElementNode implements IPropertySource {
     /**
      * Helper method to commit all dirty attributes values to XML.
      * <p/>
-     * This method is useful if {@link #setAttributeValue(String, String, boolean)} has been
-     * called more than once and all the attributes marked as dirty must be commited to the
-     * XML. It calls {@link #commitAttributeToXml(UiAttributeNode, String)} on each dirty
+     * This method is useful if {@link #setAttributeValue(String, String, String, boolean)} has
+     * been called more than once and all the attributes marked as dirty must be committed to
+     * the XML. It calls {@link #commitAttributeToXml(UiAttributeNode, String)} on each dirty
      * attribute.
      * <p/>
      * Note that the caller MUST ensure that modifying the underlying XML model is
@@ -1306,6 +1312,19 @@ public class UiElementNode implements IPropertySource {
         HashSet<String> visited = new HashSet<String>();
         Document doc = node == null ? null : node.getOwnerDocument();
 
+        // Ask the document about it. This method may not be implemented by the Document.
+        String nsPrefix = null;
+        try {
+            nsPrefix = doc.lookupPrefix(nsUri);
+            if (nsPrefix != null) {
+                return nsPrefix;
+            }
+        } catch (Throwable t) {
+            // ignore
+        }
+
+        // If that failed, try to look it up manually.
+        // This also gathers prefixed in use in the case we want to generate a new one below.
         for (; node != null && node.getNodeType() == Node.ELEMENT_NODE;
                node = node.getParentNode()) {
             NamedNodeMap attrs = node.getAttributes();
@@ -1313,7 +1332,7 @@ public class UiElementNode implements IPropertySource {
                 Node attr = attrs.item(n);
                 if ("xmlns".equals(attr.getPrefix())) {  //$NON-NLS-1$
                     String uri = attr.getNodeValue();
-                    String nsPrefix = attr.getLocalName();
+                    nsPrefix = attr.getLocalName();
                     // Is this the URI we are looking for? If yes, we found its prefix.
                     if (nsUri.equals(uri)) {
                         return nsPrefix;
@@ -1323,7 +1342,8 @@ public class UiElementNode implements IPropertySource {
             }
         }
 
-        // Use a sensible default prefix if we can't find one.
+        // Failed the find a prefix. Generate a new sensible default prefix.
+        //
         // We need to make sure the prefix is not one that was declared in the scope
         // visited above. Use a default namespace prefix "android" for the Android resource
         // NS and use "ns" for all other custom namespaces.
@@ -1332,7 +1352,6 @@ public class UiElementNode implements IPropertySource {
         for (int i = 1; visited.contains(prefix); i++) {
             prefix = base + Integer.toString(i);
         }
-
         // Also create & define this prefix/URI in the XML document as an attribute in the
         // first element of the document.
         if (doc != null) {
@@ -1366,37 +1385,74 @@ public class UiElementNode implements IPropertySource {
      * @see #commitDirtyAttributesToXml()
      *
      * @param attrXmlName The XML <em>local</em> name of the attribute to modify
+     * @param attrNsUri The namespace URI of the attribute.
+     *                  Can be null if the attribute uses the global namespace.
      * @param value The new value for the attribute. If set to null, the attribute is removed.
      * @param override True if the value must be set even if one already exists.
      * @return The {@link UiAttributeNode} that has been modified or null.
      */
-    public UiAttributeNode setAttributeValue(String attrXmlName, String value, boolean override) {
-        HashMap<AttributeDescriptor, UiAttributeNode> attributeMap = getInternalUiAttributes();
-
+    public UiAttributeNode setAttributeValue(
+            String attrXmlName,
+            String attrNsUri,
+            String value,
+            boolean override) {
         if (value == null) {
             value = ""; //$NON-NLS-1$ -- this removes an attribute
         }
 
-        for (Entry<AttributeDescriptor, UiAttributeNode> entry : attributeMap.entrySet()) {
-            AttributeDescriptor ui_desc = entry.getKey();
-            if (ui_desc.getXmlLocalName().equals(attrXmlName)) {
-                UiAttributeNode ui_attr = entry.getValue();
-                // Not all attributes are editable, ignore those which are not
-                if (ui_attr instanceof IUiSettableAttributeNode) {
-                    String current = ui_attr.getCurrentValue();
-                    // Only update (and mark as dirty) if the attribute did not have any
-                    // value or if the value was different.
-                    if (override || current == null || !current.equals(value)) {
-                        ((IUiSettableAttributeNode) ui_attr).setCurrentValue(value);
-                        // mark the attribute as dirty since their internal content
-                        // as been modified, but not the underlying XML model
-                        ui_attr.setDirty(true);
-                        return ui_attr;
+        // Try with all internal attributes
+        UiAttributeNode uiAttr = setInternalAttrValue(
+                getInternalUiAttributes().values(), attrXmlName, attrNsUri, value, override);
+
+        // Look at existing unknown (aka custom) attributes
+        uiAttr = setInternalAttrValue(
+                getUnknownUiAttributes(), attrXmlName, attrNsUri, value, override);
+
+        if (uiAttr == null) {
+            // Failed to find the attribute. For non-android attributes that is mostly expected,
+            // in which case we just create a new custom one.
+
+            uiAttr = addUnknownAttribute(attrXmlName, attrXmlName, attrNsUri);
+        }
+
+        return uiAttr;
+    }
+
+    private UiAttributeNode setInternalAttrValue(
+            Collection<UiAttributeNode> attributes,
+            String attrXmlName,
+            String attrNsUri,
+            String value,
+            boolean override) {
+        for (UiAttributeNode uiAttr : attributes) {
+            AttributeDescriptor uiDesc = uiAttr.getDescriptor();
+
+            if (uiDesc.getXmlLocalName().equals(attrXmlName)) {
+                // Both NS URI must be either null or equal.
+                if ((attrNsUri == null && uiDesc.getNamespaceUri() == null) ||
+                        (attrNsUri != null && attrNsUri.equals(uiDesc.getNamespaceUri()))) {
+
+                    // Not all attributes are editable, ignore those which are not.
+                    if (uiAttr instanceof IUiSettableAttributeNode) {
+                        String current = uiAttr.getCurrentValue();
+                        // Only update (and mark as dirty) if the attribute did not have any
+                        // value or if the value was different.
+                        if (override || current == null || !current.equals(value)) {
+                            ((IUiSettableAttributeNode) uiAttr).setCurrentValue(value);
+                            // mark the attribute as dirty since their internal content
+                            // as been modified, but not the underlying XML model
+                            uiAttr.setDirty(true);
+                            return uiAttr;
+                        }
                     }
+
+                    // We found the attribute but it's not settable. Since attributes are
+                    // not duplicated, just abandon here.
+                    break;
                 }
-                break;
             }
         }
+
         return null;
     }
 

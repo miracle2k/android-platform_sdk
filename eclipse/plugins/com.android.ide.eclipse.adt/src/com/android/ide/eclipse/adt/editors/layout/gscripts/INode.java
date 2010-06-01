@@ -114,16 +114,18 @@ public interface INode {
      * Attributes are not written immediately -- instead the XML editor batches edits and
      * then commits them all together at once later.
      * <p/>
-     * The attribute will only be set if the underlying element's descriptor is aware of
-     * this attribute.
+     * Custom attributes will be created on the fly.
+     * <p/>
+     * Passing an empty value actually <em>removes</em> an attribute from the XML.
      * <p/>
      * This call must be done in the context of editXml().
      *
-     * @param attributeName The XML <em>local</em> name of the attribute to set.
-     * @param value It's value. Cannot be null.
+     * @param uri The XML namespace URI of the attribute.
+     * @param localName The XML <em>local</em> name of the attribute to set.
+     * @param value It's value. Cannot be null. An empty value <em>removes</em> the attribute.
      * @return Whether the attribute was actually set or not.
      */
-    boolean setAttribute(String attributeName, String value);
+    boolean setAttribute(String uri, String localName, String value);
 
     /**
      * Returns a given XML attribute.

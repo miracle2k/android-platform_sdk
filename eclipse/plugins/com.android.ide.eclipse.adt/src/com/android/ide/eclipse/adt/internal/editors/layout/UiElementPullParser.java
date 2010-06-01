@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
@@ -228,7 +227,7 @@ public final class UiElementPullParser extends BasePullParser {
             if (i == 0) {
                 // figure out the prefix associated with the android namespace.
                 Document doc = mRoot.getXmlDocument();
-                return doc.lookupPrefix(AndroidConstants.NS_CUSTOM_RESOURCES);
+                return doc.lookupPrefix(SdkConstants.NS_RESOURCES);
             } else {
                 i--;
             }

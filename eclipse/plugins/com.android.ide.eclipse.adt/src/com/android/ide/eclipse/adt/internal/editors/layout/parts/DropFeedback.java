@@ -22,6 +22,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor.UiEditorActions;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.UiLayoutEditPart.HighlightInfo;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.Rectangle;
@@ -220,10 +221,14 @@ class DropFeedback {
         }
         uiNode.getEditor().editXmlModel(new Runnable() {
             public void run() {
-                uiNode.setAttributeValue(LayoutConstants.ATTR_LAYOUT_X,
+                uiNode.setAttributeValue(
+                        LayoutConstants.ATTR_LAYOUT_X,
+                        SdkConstants.NS_RESOURCES,
                         String.format(LayoutConstants.VALUE_N_DIP, where.x),
                         false /* override */);
-                uiNode.setAttributeValue(LayoutConstants.ATTR_LAYOUT_Y,
+                uiNode.setAttributeValue(
+                        LayoutConstants.ATTR_LAYOUT_Y,
+                        SdkConstants.NS_RESOURCES,
                         String.format(LayoutConstants.VALUE_N_DIP, where.y),
                         false /* override */);
 
@@ -271,12 +276,16 @@ class DropFeedback {
 
                 UiElementNode anchorUiNode = anchorPart != null ? anchorPart.getUiNode() : null;
                 String anchorId = anchorUiNode != null
-                                    ? anchorUiNode.getAttributeValue("id")          //$NON-NLS-1$
+                                    ? anchorUiNode.getAttributeValue(LayoutConstants.ATTR_ID)
                                     : null;
 
                 if (anchorId == null) {
                     anchorId = DescriptorsUtils.getFreeWidgetId(anchorUiNode);
-                    anchorUiNode.setAttributeValue("id", anchorId, true /*override*/); //$NON-NLS-1$
+                    anchorUiNode.setAttributeValue(
+                            LayoutConstants.ATTR_ID,
+                            SdkConstants.NS_RESOURCES,
+                            anchorId,
+                            true /*override*/);
                 }
 
                 if (anchorId != null) {
@@ -348,7 +357,11 @@ class DropFeedback {
                 }
 
                 for (Entry<String, String> entry : map.entrySet()) {
-                    uiNode.setAttributeValue(entry.getKey(), entry.getValue(), true /* override */);
+                    uiNode.setAttributeValue(
+                            entry.getKey(),
+                            SdkConstants.NS_RESOURCES,
+                            entry.getValue(),
+                            true /* override */);
                 }
                 uiNode.commitDirtyAttributesToXml();
             }

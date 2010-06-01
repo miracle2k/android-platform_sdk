@@ -236,10 +236,10 @@ public class NodeProxy implements INode {
         return mFactory.create((UiViewElementNode) uiNew);
     }
 
-    public boolean setAttribute(String attributeName, String value) {
+    public boolean setAttribute(String uri, String name, String value) {
         checkEditOK();
 
-        UiAttributeNode attr = mNode.setAttributeValue(attributeName, value, true /* override */);
+        UiAttributeNode attr = mNode.setAttributeValue(name, uri, value, true /* override */);
         mNode.commitDirtyAttributesToXml();
 
         return attr != null;

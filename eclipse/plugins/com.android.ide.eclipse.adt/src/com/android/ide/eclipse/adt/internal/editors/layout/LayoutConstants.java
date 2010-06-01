@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
+
 /**
  * A bunch of constants that map to either:
  * <ul>

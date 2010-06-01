@@ -27,6 +27,8 @@ import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TransferData;
 
+import java.util.Arrays;
+
 /**
  * Handles drop operations on top of the canvas.
  * <p/>
@@ -94,53 +96,51 @@ import org.eclipse.swt.dnd.TransferData;
     public void dragEnter(DropTargetEvent event) {
         AdtPlugin.printErrorToConsole("DEBUG", "drag enter", event);
 
-        checkDataType(event);
+        // Make sure we don't have any residual data from an earlier operation.
+        clearDropInfo();
 
-        if (event.detail == DND.DROP_DEFAULT) {
-            // We set the default operation to COPY.
-            // TODO: for a SimpleXmlTransfer whithin the *same* canvas, we want to use MOVE as default.
-            // TODO: see dragOperationChanged() below which must match behavior.
-            if ((event.operations & DND.DROP_COPY) != 0) {
-                event.detail = DND.DROP_COPY;
-            }
-        }
+        // Get the dragged elements.
+        //
+        // The current transfered type can be extracted from the event.
+        // As described in dragOver(), this works basically works on Windows but
+        // not on Linux or Mac, in which case we can't get the type until we
+        // receive dropAccept/drop().
+        // For consistency we try to use the GlobalCanvasDragInfo instance first,
+        // and if it fails we use the event transfer type as a backup (but as said
+        // before it will most likely work only on Windows.)
+        // In any case this can be null even for a valid transfer.
 
-        if (event.detail == DND.DROP_COPY) {
+        mCurrentDragElements = GlobalCanvasDragInfo.getInstance().getCurrentElements();
 
-            // Get the dragged elements.
-            // The current transfered type can be extracted from the event.
-            // As described in dragOver(), this works basically works on Windows but
-            // not on Linux or Mac, in which case we can't get the type until we
-            // receive dropAccept/drop().
-            // For consistency we try to use the GlobalCanvasDragInfo instance first,
-            // and if it fails we use the event transfer type as a backup (but as said
-            // before it will most likely work only on Windows.)
-            // In any case this can be null even for a valid transfer.
+        SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
+        if (sxt.isSupportedType(event.currentDataType)) {
+            SimpleElement[] data = (SimpleElement[]) sxt.nativeToJava(event.currentDataType);
+            if (data != null) {
+                if (mCurrentDragElements == null) {
+                    mCurrentDragElements = data;
 
-            mCurrentDragElements = GlobalCanvasDragInfo.getInstance().getCurrentElements();
-
-            SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
-            if (sxt.isSupportedType(event.currentDataType)) {
-                SimpleElement[] data = (SimpleElement[]) sxt.nativeToJava(event.currentDataType);
-                if (data != null) {
-                    if (mCurrentDragElements == null) {
-                        mCurrentDragElements = data;
-
-                    } else if (!mCurrentDragElements.equals(data)) {
-                        // Mostly for debugging purposes we compare them. They should always match.
-                        // TODO use an error for right now. Later move this to a log warning only.
-                        AdtPlugin.logAndPrintError(null /*exception*/, "CanvasDrop",
-                                "TransferType mismatch: Global=%s, drag.event=%s",
-                                mCurrentDragElements, data);
-                    }
+                } else if (!Arrays.equals(mCurrentDragElements, data)) {
+                    // Mostly for debugging purposes we compare them. They should always match.
+                    // TODO use an error for right now. Later move this to a log warning only.
+                    AdtPlugin.logAndPrintError(null /*exception*/, "CanvasDrop",
+                            "TransferType mismatch: Global=%s, drag.event=%s",
+                            mCurrentDragElements, data);
                 }
             }
-
-            processDropEvent(event);
-        } else {
-            event.detail = DND.DROP_NONE;
-            clearDropInfo();
         }
+
+        // if there is no data to transfer, invalidate the drag'n'drop.
+        // The assumption is that the transfer should have at least one element with a
+        // a non-null non-empty FQCN. Everything else is optional.
+        if (mCurrentDragElements == null ||
+                mCurrentDragElements.length == 0 ||
+                mCurrentDragElements[0] == null ||
+                mCurrentDragElements[0].getFqcn() == null ||
+                mCurrentDragElements[0].getFqcn().length() == 0) {
+            event.detail = DND.DROP_NONE;
+        }
+
+        dragOperationChanged(event);
     }
 
     /*
@@ -151,18 +151,26 @@ import org.eclipse.swt.dnd.TransferData;
         AdtPlugin.printErrorToConsole("DEBUG", "drag changed", event);
 
         checkDataType(event);
+        recomputeDragType(event);
+    }
 
+    private void recomputeDragType(DropTargetEvent event) {
         if (event.detail == DND.DROP_DEFAULT) {
-            if ((event.operations & DND.DROP_COPY) != 0) {
+            // Default means we can now choose the default operation, either copy or move.
+            // If the drag comes from the same canvas we default to move, otherwise we
+            // default to copy.
+
+            if (GlobalCanvasDragInfo.getInstance().getSourceCanvas() == mCanvas &&
+                    (event.operations & DND.DROP_MOVE) != 0) {
+                event.detail = DND.DROP_MOVE;
+            } else if ((event.operations & DND.DROP_COPY) != 0) {
                 event.detail = DND.DROP_COPY;
             }
         }
 
-        if (event.detail == DND.DROP_COPY) {
-            processDropEvent(event);
-        } else {
+        // We don't support other types than copy and move
+        if (event.detail != DND.DROP_COPY && event.detail != DND.DROP_MOVE) {
             event.detail = DND.DROP_NONE;
-            clearDropInfo();
         }
     }
 
@@ -344,11 +352,11 @@ import org.eclipse.swt.dnd.TransferData;
 
             if (vi == null) {
                 // vi is null but mCurrentView is not, no view is a target anymore
-                callDropLeave();
-
                 // We don't need onDropMove in this case
                 isMove = false;
                 needRedraw = true;
+                event.detail = DND.DROP_NONE;
+                clearDropInfo(); // this will call callDropLeave.
 
             } else {
                 // vi is a new current view.
@@ -370,12 +378,24 @@ import org.eclipse.swt.dnd.TransferData;
                     // Release the previous one, if any.
                     callDropLeave();
 
+                    // If we previously provided visual feedback that we were refusing
+                    // the drop, we now need to change it to mean we're accepting it.
+                    if (event.detail == DND.DROP_NONE) {
+                        event.detail = DND.DROP_DEFAULT;
+                        recomputeDragType(event);
+                    }
+
                     // And assign the new one
                     mTargetNode = targetNode;
                     mFeedback = df;
 
                     // We don't need onDropMove in this case
                     isMove = false;
+
+                } else if (df == null && event.detail != DND.DROP_NONE) {
+                    // Provide visual feedback that we are refusing the drop
+                    event.detail = DND.DROP_NONE;
+                    clearDropInfo();
                 }
             }
 

@@ -430,7 +430,7 @@ public class PaletteComposite extends Composite {
         private final SimpleElement[] mElements;
 
         public DescDragSourceListener(ElementDescriptor desc) {
-            SimpleElement se = new SimpleElement(SimpleXmlTransfer.getFqcn(desc), null, null);
+            SimpleElement se = new SimpleElement(SimpleXmlTransfer.getFqcn(desc), null);
             mElements = new SimpleElement[] { se };
         }
 

@@ -180,6 +180,8 @@ public class GCWrapper implements IGraphics {
         }
     }
 
+    // lines
+
     public void drawLine(int x1, int y1, int x2, int y2) {
         checkGC();
         x1 = mHScale.translate(x1);
@@ -192,6 +194,8 @@ public class GCWrapper implements IGraphics {
     public void drawLine(Point p1, Point p2) {
         drawLine(p1.x, p1.y, p2.x, p2.y);
     }
+
+    // rectangles
 
     public void drawRect(int x1, int y1, int x2, int y2) {
         checkGC();
@@ -236,6 +240,55 @@ public class GCWrapper implements IGraphics {
         int h = mVScale.scale(r.h);
         getGc().fillRectangle(x, y, w, h);
     }
+
+    // circles (actually ovals)
+
+    public void drawOval(int x1, int y1, int x2, int y2) {
+        checkGC();
+        int x = mHScale.translate(x1);
+        int y = mVScale.translate(y1);
+        int w = mHScale.scale(x2 - x1);
+        int h = mVScale.scale(y2 - y1);
+        getGc().drawOval(x, y, w, h);
+    }
+
+    public void drawOval(Point p1, Point p2) {
+        drawOval(p1.x, p1.y, p2.x, p2.y);
+    }
+
+    public void drawOval(Rect r) {
+        checkGC();
+        int x = mHScale.translate(r.x);
+        int y = mVScale.translate(r.y);
+        int w = mHScale.scale(r.w);
+        int h = mVScale.scale(r.h);
+        getGc().drawOval(x, y, w, h);
+    }
+
+    public void fillOval(int x1, int y1, int x2, int y2) {
+        checkGC();
+        int x = mHScale.translate(x1);
+        int y = mVScale.translate(y1);
+        int w = mHScale.scale(x2 - x1);
+        int h = mVScale.scale(y2 - y1);
+        getGc().fillOval(x, y, w, h);
+    }
+
+    public void fillOval(Point p1, Point p2) {
+        fillOval(p1.x, p1.y, p2.x, p2.y);
+    }
+
+    public void fillOval(Rect r) {
+        checkGC();
+        int x = mHScale.translate(r.x);
+        int y = mVScale.translate(r.y);
+        int w = mHScale.scale(r.w);
+        int h = mVScale.scale(r.h);
+        getGc().fillOval(x, y, w, h);
+    }
+
+
+    // strings
 
     public void drawString(String string, int x, int y) {
         checkGC();
