@@ -73,7 +73,7 @@ public class MultiApkExportTask extends Task {
 
         String appPackage = getValidatedProperty(antProject, "package");
         System.out.println("Multi APK export for: " + appPackage);
-        String version = getValidatedProperty(antProject, "version");
+        String version = getValidatedProperty(antProject, "versionCode");
         int versionCode;
         try {
             versionCode = Integer.parseInt(version);
