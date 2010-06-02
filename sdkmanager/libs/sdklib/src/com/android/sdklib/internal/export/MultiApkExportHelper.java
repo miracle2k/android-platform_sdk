@@ -179,14 +179,16 @@ public class MultiApkExportHelper {
                 writer.append(apk.getLogLine(null));
                 writer.append('\n');
 
-                // display the soft variant as comments to the log file.
+                // display the soft variants for this apkData as comments to the log file.
+                // since they all share the same Build Info and cannot be modified by the dev
+                // and we won't read them back from the log.
                 Map<String, String> softVariants = apk.getSoftVariantMap();
                 if (softVariants.size() > 0) {
-                    writer.append("# Soft Variants -- DO NOT UNCOMMENT:\n");
+                    writer.append(" # Soft Variants -- DO NOT UNCOMMENT:\n");
                 }
 
                 for (String softVariant : softVariants.keySet()) {
-                    writer.append("# ");
+                    writer.append(" # ");
                     writer.append(apk.getLogLine(softVariant));
                     writer.append('\n');
                 }
@@ -399,6 +401,11 @@ public class MultiApkExportHelper {
                 }
 
                 ApkSettings apkSettings = new ApkSettings(projectProp);
+
+                // get the density/locale values
+                boolean splitByDensity = apkSettings.isSplitByDensity();
+                Map<String, String> localeFilters = apkSettings.getLocaleFilters();
+
                 if (apkSettings.isSplitByAbi()) {
                     // need to find the available ABIs.
                     List<String> abis = findAbis(projectFolder);
@@ -410,14 +417,10 @@ public class MultiApkExportHelper {
                         }
 
                         current.setAbi(abi);
-                        current = null;
-                    }
-                }
+                        current.setSplitDensity(splitByDensity);
+                        current.setLocaleFilters(localeFilters);
 
-                if (apkSettings.isSplitByDensity()) {
-                    // set this value for all the apk that were create.
-                    for (ApkData apk : dataList) {
-                        apk.setSplitDensity(true);
+                        current = null;
                     }
                 }
             }

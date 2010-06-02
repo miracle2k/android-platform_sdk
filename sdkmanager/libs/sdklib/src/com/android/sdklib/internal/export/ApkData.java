@@ -16,12 +16,15 @@
 
 package com.android.sdklib.internal.export;
 
+import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.xml.ManifestData;
 import com.android.sdklib.xml.ManifestData.SupportsScreens;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Class representing one apk that needs to be generated. This contains
@@ -40,6 +43,7 @@ public class ApkData implements Comparable<ApkData> {
     private static final String PROP_MINOR = "minor";
     private static final String PROP_BUILDINFO = "buildinfo";
     private static final String PROP_DENSITY = "splitDensity";
+    private static final String PROP_LOCALEFILTERS = "localeFilters";
 
     /**
      * List of ABI order.
@@ -51,6 +55,15 @@ public class ApkData implements Comparable<ApkData> {
      */
     private static final String[][] ABI_SORTING = new String[][] {
         new String[] { "armeabi", "armeabi-v7a" }
+    };
+
+    /**
+     * List of densities and their associated aapt filter.
+     */
+    private static final String[][] DENSITY_LIST = new String[][] {
+        new String[] { "hdpi", "hdpi,nodpi" },
+        new String[] { "mdpi", "mdpi,nodpi" },
+        new String[] { "ldpi", "ldpi,nodpi" },
     };
 
     private final HashMap<String, String> mOutputNames = new HashMap<String, String>();
@@ -67,18 +80,20 @@ public class ApkData implements Comparable<ApkData> {
 
     // additional apk generation that doesn't impact the build info.
     private boolean mSplitDensity;
+    private final HashMap<String, String> mLocaleFilters = new HashMap<String, String>();
+    private Map<String, String> mSoftVariantMap;
 
     ApkData() {
         // do nothing.
     }
 
-    public ApkData(int minSdkVersion, SupportsScreens supportsScreens, int glEsVersion) {
+    ApkData(int minSdkVersion, SupportsScreens supportsScreens, int glEsVersion) {
         mMinSdkVersion = minSdkVersion;
         mSupportsScreens = supportsScreens;
         mGlVersion = glEsVersion;
     }
 
-    public ApkData(ApkData data) {
+    ApkData(ApkData data) {
         mRelativePath = data.mRelativePath;
         mProject = data.mProject;
         mBuildInfo = data.mBuildInfo;
@@ -101,7 +116,7 @@ public class ApkData implements Comparable<ApkData> {
         return mRelativePath;
     }
 
-    public void setRelativePath(String relativePath) {
+    void setRelativePath(String relativePath) {
         mRelativePath = relativePath;
     }
 
@@ -109,7 +124,7 @@ public class ApkData implements Comparable<ApkData> {
         return mProject;
     }
 
-    public void setProject(File project) {
+    void setProject(File project) {
         mProject = project;
     }
 
@@ -117,7 +132,7 @@ public class ApkData implements Comparable<ApkData> {
         return mBuildInfo;
     }
 
-    public void setBuildInfo(int buildInfo) {
+    void setBuildInfo(int buildInfo) {
         mBuildInfo = buildInfo;
     }
 
@@ -125,7 +140,7 @@ public class ApkData implements Comparable<ApkData> {
         return mMinor;
     }
 
-    public void setMinor(int minor) {
+    void setMinor(int minor) {
         mMinor = minor;
     }
 
@@ -137,7 +152,7 @@ public class ApkData implements Comparable<ApkData> {
         return mAbi;
     }
 
-    public void setAbi(String abi) {
+    void setAbi(String abi) {
         mAbi = abi;
     }
 
@@ -162,27 +177,48 @@ public class ApkData implements Comparable<ApkData> {
         return trueVersionCode;
     }
 
-    public void setSplitDensity(boolean splitDensity) {
+    synchronized void setSplitDensity(boolean splitDensity) {
         mSplitDensity = splitDensity;
+        mSoftVariantMap = null;
+
     }
 
-    public boolean isSplitDensity() {
-        return mSplitDensity;
+    synchronized void setLocaleFilters(Map<String, String> localeFilters) {
+        mLocaleFilters.clear();
+        mLocaleFilters.putAll(localeFilters);
+        mSoftVariantMap = null;
     }
 
     /**
      * Returns a map of pair values (apk name suffix, aapt res filter) to be used to generate
      * multiple soft apk variants.
      */
-    public Map<String, String> getSoftVariantMap() {
-        HashMap<String, String> map = new HashMap<String, String>();
-        if (mSplitDensity) {
-            map.put("hdpi", "hdpi,nodpi");
-            map.put("mdpi", "mdpi,nodpi");
-            map.put("ldpi", "ldpi,nodpi");
+    public synchronized Map<String, String> getSoftVariantMap() {
+        if (mSoftVariantMap == null) {
+            HashMap<String, String> map = new HashMap<String, String>();
+
+            if (mSplitDensity && mLocaleFilters.size() > 0) {
+                for (String[] density : DENSITY_LIST) {
+                    for (Entry<String,String> entry : mLocaleFilters.entrySet()) {
+                        map.put(density[0] + "-" + entry.getKey(),
+                                density[1] + "," + entry.getValue());
+                    }
+                }
+
+            } else if (mSplitDensity) {
+                for (String[] density : DENSITY_LIST) {
+                    map.put(density[0], density[1]);
+                }
+
+            } else if (mLocaleFilters.size() > 0) {
+                map.putAll(mLocaleFilters);
+
+            }
+
+            mSoftVariantMap = Collections.unmodifiableMap(map);
         }
 
-        return map;
+        return mSoftVariantMap;
     }
 
     @Override
@@ -209,6 +245,10 @@ public class ApkData implements Comparable<ApkData> {
 
             if (mSplitDensity) {
                 write(sb, PROP_DENSITY, Boolean.toString(true));
+            }
+
+            if (mLocaleFilters.size() > 0) {
+                write(sb, PROP_LOCALEFILTERS, ApkSettings.writeLocaleFilters(mLocaleFilters));
             }
 
             write(sb, PROP_SCREENS, mSupportsScreens.getEncodedValues());
@@ -249,6 +289,9 @@ public class ApkData implements Comparable<ApkData> {
             if (comp != 0) return comp;
         }
 
+        // Do not compare mSplitDensity or mLocaleFilter because they do not generate build info,
+        // and also, we should already have a difference at this point.
+
         return 0;
     }
 
@@ -279,7 +322,8 @@ public class ApkData implements Comparable<ApkData> {
         if (mMinSdkVersion != apk.mMinSdkVersion ||
                 mSupportsScreens.equals(apk.mSupportsScreens) == false ||
                 mGlVersion != apk.mGlVersion ||
-                mSplitDensity != apk.mSplitDensity) {
+                mSplitDensity != apk.mSplitDensity ||
+                mLocaleFilters.equals(apk.mLocaleFilters) == false) {
             return false;
         }
 
@@ -312,7 +356,7 @@ public class ApkData implements Comparable<ApkData> {
         setValues(map);
     }
 
-    private void setValues(Map<String, String> values) {
+    private synchronized void setValues(Map<String, String> values) {
         String tmp;
         try {
             mBuildInfo = Integer.parseInt(values.get(PROP_BUILDINFO));
@@ -343,6 +387,12 @@ public class ApkData implements Comparable<ApkData> {
         if (tmp != null) {
             mSupportsScreens = new SupportsScreens(tmp);
         }
+
+        tmp = values.get(PROP_LOCALEFILTERS);
+        if (tmp != null) {
+            mLocaleFilters.putAll(ApkSettings.readLocaleFilters(tmp));
+        }
+        mSoftVariantMap = null;
     }
 
     private void write(StringBuilder sb, String name, Object value) {

@@ -51,6 +51,7 @@ public final class ProjectProperties {
 
     public final static String PROPERTY_SPLIT_BY_DENSITY = "split.density";
     public final static String PROPERTY_SPLIT_BY_ABI = "split.abi";
+    public final static String PROPERTY_SPLIT_BY_LOCALE = "split.locale";
 
     public final static String PROPERTY_TESTED_PROJECT = "tested.project.dir";
 

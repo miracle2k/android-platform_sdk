@@ -16,16 +16,24 @@
 
 package com.android.sdklib.internal.project;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
+
 
 /**
  * Settings for multiple APK generation.
  */
 public class ApkSettings {
+    private final static char CHAR_EQUAL = ':';
+    private final static char CHAR_SEP = '|';
+    private final static String STR_SEP = Pattern.quote(new String(new char[] { CHAR_SEP }));
+
     private boolean mSplitByDensity = false;
     private boolean mSplitByAbi = false;
-
-    public ApkSettings() {
-    }
+    private final Map<String, String> mSplitByLocale;
 
     /**
      * Creates an ApkSettings and fills it from the project settings read from a
@@ -36,6 +44,12 @@ public class ApkSettings {
                 ProjectProperties.PROPERTY_SPLIT_BY_DENSITY));
         mSplitByAbi =  Boolean.parseBoolean(properties.getProperty(
                 ProjectProperties.PROPERTY_SPLIT_BY_ABI));
+        String locale = properties.getProperty(ProjectProperties.PROPERTY_SPLIT_BY_LOCALE);
+        if (locale != null && locale.length() > 0) {
+            mSplitByLocale = readLocaleFilters(locale);
+        } else {
+            mSplitByLocale = Collections.unmodifiableMap(new HashMap<String, String>());
+        }
     }
 
     /**
@@ -84,5 +98,40 @@ public class ApkSettings {
         return Integer.valueOf(
                 (mSplitByDensity ? 1 : 0) +
                 (mSplitByAbi ? 2 : 0)).hashCode();
+    }
+
+    public static Map<String, String> readLocaleFilters(String locale) {
+        HashMap<String, String> map = new HashMap<String, String>();
+        String[] filters = locale.split(STR_SEP);
+        for (String filter : filters) {
+            int charPos = filter.indexOf(CHAR_EQUAL);
+            if (charPos > 0) {
+                map.put(filter.substring(0, charPos), filter.substring(charPos+1));
+            }
+        }
+
+        return Collections.unmodifiableMap(map);
+    }
+
+    public static String writeLocaleFilters(Map<String, String> filterMap) {
+        StringBuilder sb = new StringBuilder();
+
+        boolean first = true;
+        for (Entry<String, String> entry : filterMap.entrySet()) {
+            if (first == false) {
+                sb.append(CHAR_SEP);
+            }
+            first = false;
+
+            sb.append(entry.getKey());
+            sb.append(CHAR_EQUAL);
+            sb.append(entry.getValue());
+        }
+
+        return sb.toString();
+    }
+
+    public Map<String, String> getLocaleFilters() {
+        return mSplitByLocale;
     }
 }

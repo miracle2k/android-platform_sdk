@@ -205,7 +205,8 @@ public class MultiApkExportTask extends Task {
         fileSet.setIncludes("build.xml");
         subAnt.addFileset(fileSet);
 
-//        subAnt.setVerbose(true);
+        // TODO: send the verbose flag from the main build.xml to the subAnt project.
+        //subAnt.setVerbose(true);
 
         if (mTarget == Target.RELEASE) {
             // only do the compilation part if it's the first time we export
