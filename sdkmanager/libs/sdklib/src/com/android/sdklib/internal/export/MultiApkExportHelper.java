@@ -40,6 +40,7 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -175,8 +176,20 @@ public class MultiApkExportHelper {
                     "# Properties are written as <name>=<value>\n");
 
             for (ApkData apk : apks) {
-                writer.append(apk.getLogLine());
+                writer.append(apk.getLogLine(null));
                 writer.append('\n');
+
+                // display the soft variant as comments to the log file.
+                Map<String, String> softVariants = apk.getSoftVariantMap();
+                if (softVariants.size() > 0) {
+                    writer.append("# Soft Variants -- DO NOT UNCOMMENT:\n");
+                }
+
+                for (String softVariant : softVariants.keySet()) {
+                    writer.append("# ");
+                    writer.append(apk.getLogLine(softVariant));
+                    writer.append('\n');
+                }
             }
 
             writer.flush();
@@ -241,7 +254,7 @@ public class MultiApkExportHelper {
                             SdkConstants.FN_ANDROID_MANIFEST_XML));
                 }
 
-                ArrayList<ApkData> datalist2 = checkManifest(androidManifest, manifests);
+                ArrayList<ApkData> datalist2 = checkProject(androidManifest, manifests);
 
                 // if the method returns without throwing, this is a good project to
                 // export.
@@ -268,7 +281,9 @@ public class MultiApkExportHelper {
     }
 
     /**
-     * Checks a manifest of the project for inclusion in the list of exported APK.
+     * Checks a project inclusion in the list of exported APK.
+     * <p/>This performs a check on the manifest, as well as gathers more information about
+     * mutli-apk from the project's default.properties file.
      * If the manifest is correct, a list of apk to export is created and returned.
      *
      * @param androidManifest the manifest to check
@@ -277,7 +292,7 @@ public class MultiApkExportHelper {
      * @return A new non-null {@link ArrayList} of {@link ApkData}.
      * @throws ExportException in case of error.
      */
-    private ArrayList<ApkData> checkManifest(IAbstractFile androidManifest,
+    private ArrayList<ApkData> checkProject(IAbstractFile androidManifest,
             ArrayList<Manifest> manifests) throws ExportException {
         try {
             ManifestData manifestData = AndroidManifestParser.parse(androidManifest);
@@ -396,6 +411,13 @@ public class MultiApkExportHelper {
 
                         current.setAbi(abi);
                         current = null;
+                    }
+                }
+
+                if (apkSettings.isSplitByDensity()) {
+                    // set this value for all the apk that were create.
+                    for (ApkData apk : dataList) {
+                        apk.setSplitDensity(true);
                     }
                 }
             }

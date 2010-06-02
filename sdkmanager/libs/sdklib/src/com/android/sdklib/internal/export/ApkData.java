@@ -39,8 +39,9 @@ public class ApkData implements Comparable<ApkData> {
     private static final String PROP_PROJECT = "project";
     private static final String PROP_MINOR = "minor";
     private static final String PROP_BUILDINFO = "buildinfo";
+    private static final String PROP_DENSITY = "splitDensity";
 
-    private String mOutputName;
+    private final HashMap<String, String> mOutputNames = new HashMap<String, String>();
     private String mRelativePath;
     private File mProject;
     private int mBuildInfo;
@@ -51,6 +52,9 @@ public class ApkData implements Comparable<ApkData> {
     private String mAbi;
     private int mGlVersion = ManifestData.GL_ES_VERSION_NOT_SET;
     private SupportsScreens mSupportsScreens;
+
+    // additional apk generation that doesn't impact the build info.
+    private boolean mSplitDensity;
 
     ApkData() {
         // do nothing.
@@ -73,12 +77,12 @@ public class ApkData implements Comparable<ApkData> {
         mSupportsScreens = data.mSupportsScreens;
     }
 
-    public String getOutputName() {
-        return mOutputName;
+    public String getOutputName(String key) {
+        return mOutputNames.get(key);
     }
 
-    public void setOutputName(String outputName) {
-        mOutputName = outputName;
+    public void setOutputName(String key, String outputName) {
+        mOutputNames.put(key, outputName);
     }
 
     public String getRelativePath() {
@@ -146,28 +150,59 @@ public class ApkData implements Comparable<ApkData> {
         return trueVersionCode;
     }
 
-    @Override
-    public String toString() {
-        return getLogLine();
+    public void setSplitDensity(boolean splitDensity) {
+        mSplitDensity = splitDensity;
     }
 
-    public String getLogLine() {
+    public boolean isSplitDensity() {
+        return mSplitDensity;
+    }
+
+    /**
+     * Returns a map of pair values (apk name suffix, aapt res filter) to be used to generate
+     * multiple soft apk variants.
+     */
+    public Map<String, String> getSoftVariantMap() {
+        HashMap<String, String> map = new HashMap<String, String>();
+        if (mSplitDensity) {
+            map.put("hdpi", "hdpi,nodpi");
+            map.put("mdpi", "mdpi,nodpi");
+            map.put("ldpi", "ldpi,nodpi");
+        }
+
+        return map;
+    }
+
+    @Override
+    public String toString() {
+        return getLogLine(null);
+    }
+
+    public String getLogLine(String key) {
         StringBuilder sb = new StringBuilder();
-        sb.append(mOutputName).append(':');
-        write(sb, PROP_BUILDINFO, mBuildInfo);
-        write(sb, PROP_MINOR, mMinor);
-        write(sb, PROP_PROJECT, mRelativePath);
-        write(sb, PROP_API, mMinSdkVersion);
+        sb.append(getOutputName(key)).append(':');
+        if (key == null) {
+            write(sb, PROP_BUILDINFO, mBuildInfo);
+            write(sb, PROP_MINOR, mMinor);
+            write(sb, PROP_PROJECT, mRelativePath);
+            write(sb, PROP_API, mMinSdkVersion);
 
-        if (mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
-            write(sb, PROP_GL, "0x" + Integer.toHexString(mGlVersion));
+            if (mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
+                write(sb, PROP_GL, "0x" + Integer.toHexString(mGlVersion));
+            }
+
+            if (mAbi != null) {
+                write(sb, PROP_ABI, mAbi);
+            }
+
+            if (mSplitDensity) {
+                write(sb, PROP_DENSITY, Boolean.toString(true));
+            }
+
+            write(sb, PROP_SCREENS, mSupportsScreens.getEncodedValues());
+        } else {
+            write(sb, "resources", getSoftVariantMap().get(key));
         }
-
-        if (mAbi != null) {
-            write(sb, PROP_ABI, mAbi);
-        }
-
-        write(sb, PROP_SCREENS, mSupportsScreens.getEncodedValues());
 
         return sb.toString();
     }
@@ -210,7 +245,8 @@ public class ApkData implements Comparable<ApkData> {
     public boolean hasSameApkProperties(ApkData apk) {
         if (mMinSdkVersion != apk.mMinSdkVersion ||
                 mSupportsScreens.equals(apk.mSupportsScreens) == false ||
-                mGlVersion != apk.mGlVersion) {
+                mGlVersion != apk.mGlVersion ||
+                mSplitDensity != apk.mSplitDensity) {
             return false;
         }
 
@@ -233,7 +269,7 @@ public class ApkData implements Comparable<ApkData> {
      */
     public void initFromLogLine(String line) {
         int colon = line.indexOf(':');
-        mOutputName = line.substring(0, colon);
+        mOutputNames.put(null, line.substring(0, colon));
         String[] properties = line.substring(colon+1).split(";");
         HashMap<String, String> map = new HashMap<String, String>();
         for (String prop : properties) {
@@ -244,19 +280,25 @@ public class ApkData implements Comparable<ApkData> {
     }
 
     private void setValues(Map<String, String> values) {
-        mBuildInfo = Integer.parseInt(values.get(PROP_BUILDINFO));
-        mMinor = Integer.parseInt(values.get(PROP_MINOR));
-        mRelativePath = values.get(PROP_PROJECT);
-        mMinSdkVersion = Integer.parseInt(values.get(PROP_API));
+        String tmp;
+        try {
+            mBuildInfo = Integer.parseInt(values.get(PROP_BUILDINFO));
+            mMinor = Integer.parseInt(values.get(PROP_MINOR));
+            mRelativePath = values.get(PROP_PROJECT);
+            mMinSdkVersion = Integer.parseInt(values.get(PROP_API));
 
-        String tmp = values.get(PROP_GL);
-        if (tmp != null) {
-            try {
-                mGlVersion = Integer.decode(tmp);
-            } catch (NumberFormatException e) {
-                // pass. This is probably due to a manual edit, and it'll most likely
-                // generate an error when matching the log to the current setup.
+            tmp = values.get(PROP_GL);
+            if (tmp != null) {
+                    mGlVersion = Integer.decode(tmp);
             }
+        } catch (NumberFormatException e) {
+            // pass. This is probably due to a manual edit, and it'll most likely
+            // generate an error when matching the log to the current setup.
+        }
+
+        tmp = values.get(PROP_DENSITY);
+        if (tmp != null) {
+            mSplitDensity = Boolean.valueOf(tmp);
         }
 
         tmp = values.get(PROP_ABI);

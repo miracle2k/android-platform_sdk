@@ -4,8 +4,11 @@ Revision 7:
 - Support for Ant rules provided by the Tools components (override the one in
   the platform component)
 - Headless SDK update. See 'android -h update sdk' for more info.
+- Support for extension targets in Ant build to perform tasks between the
+  normal tasks: -pre-build, -pre-compile, -post-compile.
 
-Revision 6:
+
+Revision 6 (05/2010)
 - Support for library project to share code/resources among projects
     - Updated Ant rules and custom tasks
     - New "android create lib-project", "android update lib-project" actions.
