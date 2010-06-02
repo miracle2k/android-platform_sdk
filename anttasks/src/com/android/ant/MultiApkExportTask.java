@@ -36,6 +36,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
@@ -49,6 +52,7 @@ import javax.xml.xpath.XPathFactory;
 public class MultiApkExportTask extends Task {
 
     private Target mTarget;
+    private XPathFactory mXPathFactory;
 
     public void setTarget(String target) {
         mTarget = Target.getTarget(target);
@@ -105,9 +109,10 @@ public class MultiApkExportTask extends Task {
 
             // some temp var used by the project loop
             HashSet<String> compiledProject = new HashSet<String>();
-            XPathFactory xPathFactory = XPathFactory.newInstance();
+            mXPathFactory = XPathFactory.newInstance();
 
-            File exportProjectOutput = new File(getValidatedProperty(antProject, "out.absolute.dir"));
+            File exportProjectOutput = new File(getValidatedProperty(antProject,
+                    "out.absolute.dir"));
 
             // if there's no error, and we can sign, prompt for the passwords.
             String keyStorePassword = null;
@@ -135,105 +140,21 @@ public class MultiApkExportTask extends Task {
             }
 
             for (ApkData apk : apks) {
-                // this output is prepended by "[android-export] " (17 chars), so we put 61 stars
-                System.out.println("\n*************************************************************");
-                System.out.println("Exporting project: " + apk.getRelativePath());
 
-                SubAnt subAnt = new SubAnt();
-                subAnt.setTarget(mTarget.getTarget());
-                subAnt.setProject(antProject);
+                Map<String, String> variantMap = apk.getSoftVariantMap();
 
-                File subProjectFolder = new File(antProject.getBaseDir(), apk.getRelativePath());
+                // first, do the full export.
+                makeSubAnt(antProject, appPackage, versionCode, apk, null,
+                        exportProjectOutput, canSign, keyStore, keyAlias,
+                        keyStorePassword, keyAliasPassword, compiledProject);
 
-                FileSet fileSet = new FileSet();
-                fileSet.setProject(antProject);
-                fileSet.setDir(subProjectFolder);
-                fileSet.setIncludes("build.xml");
-                subAnt.addFileset(fileSet);
-
-    //            subAnt.setVerbose(true);
-
-                if (mTarget == Target.RELEASE) {
-                    // only do the compilation part if it's the first time we export
-                    // this project.
-                    // (projects can be export multiple time if some properties are set up to
-                    // generate more than one APK (for instance ABI split).
-                    if (compiledProject.contains(apk.getRelativePath()) == false) {
-                        compiledProject.add(apk.getRelativePath());
-                    } else {
-                        addProp(subAnt, "do.not.compile", "true");
-                    }
-
-                    // set the version code, and filtering
-                    int compositeVersionCode = apk.getCompositeVersionCode(versionCode);
-                    addProp(subAnt, "version.code", Integer.toString(compositeVersionCode));
-                    System.out.println("Composite versionCode: " + compositeVersionCode);
-                    String abi = apk.getAbi();
-                    if (abi != null) {
-                        addProp(subAnt, "filter.abi", abi);
-                        System.out.println("ABI Filter: " + abi);
-                    }
-
-                    // end of the output by this task. Everything that follows will be output
-                    // by the subant.
-                    System.out.println("Calling to project's Ant file...");
-                    System.out.println("----------\n");
-
-                    // set the output file names/paths. Keep all the temporary files in the project
-                    // folder, and only put the final file (which is different depending on whether
-                    // the file can be signed) locally.
-
-                    // read the base name from the build.xml file.
-                    String name = null;
-                    try {
-                        File buildFile = new File(subProjectFolder, "build.xml");
-                        XPath xPath = xPathFactory.newXPath();
-                        name = xPath.evaluate("/project/@name",
-                                new InputSource(new FileInputStream(buildFile)));
-                    } catch (XPathExpressionException e) {
-                        throw new BuildException("Failed to read build.xml", e);
-                    } catch (FileNotFoundException e) {
-                        throw new BuildException("build.xml is missing.", e);
-                    }
-
-                    // override the resource pack file.
-                    addProp(subAnt, "resource.package.file.name",
-                            name + "-" + apk.getBuildInfo() + ".ap_");
-
-                    if (canSign) {
-                        // set the properties for the password.
-                        addProp(subAnt, "key.store", keyStore);
-                        addProp(subAnt, "key.alias", keyAlias);
-                        addProp(subAnt, "key.store.password", keyStorePassword);
-                        addProp(subAnt, "key.alias.password", keyAliasPassword);
-
-                        // temporary file only get a filename change (still stored in the project
-                        // bin folder).
-                        addProp(subAnt, "out.unsigned.file.name",
-                                name + "-" + apk.getBuildInfo() + "-unsigned.apk");
-                        addProp(subAnt, "out.unaligned.file",
-                                name + "-" + apk.getBuildInfo() + "-unaligned.apk");
-
-                        // final file is stored locally.
-                        apk.setOutputName(name + "-" + compositeVersionCode + "-release.apk");
-                        addProp(subAnt, "out.release.file", new File(exportProjectOutput,
-                                apk.getOutputName()).getAbsolutePath());
-
-                    } else {
-                        // put some empty prop. This is to override possible ones defined in the
-                        // project. The reason is that if there's more than one project, we don't
-                        // want some to signed and some not to be (and we don't want each project
-                        // to prompt for password.)
-                        addProp(subAnt, "key.store", "");
-                        addProp(subAnt, "key.alias", "");
-                        // final file is the unsigned version. It gets stored locally.
-                        apk.setOutputName(name + "-" + compositeVersionCode + "-unsigned.apk");
-                        addProp(subAnt, "out.unsigned.file", new File(exportProjectOutput,
-                                apk.getOutputName()).getAbsolutePath());
-                    }
+                // then do the soft variants.
+                for (Entry<String, String> entry : variantMap.entrySet()) {
+                    makeSubAnt(antProject, appPackage, versionCode, apk, entry,
+                            exportProjectOutput, canSign, keyStore, keyAlias,
+                            keyStorePassword, keyAliasPassword, compiledProject);
                 }
 
-                subAnt.execute();
             }
 
             if (mTarget == Target.RELEASE) {
@@ -245,6 +166,143 @@ public class MultiApkExportTask extends Task {
             // with the message and not the cause exception.
             throw new BuildException(e.getMessage());
         }
+    }
+
+    /**
+     * Creates and executes a sub ant task.
+     * @param antProject the current Ant project
+     * @param appPackage the application package string.
+     * @param versionCode the current version of the application
+     * @param apk the {@link ApkData} being exported.
+     * @param softVariant the soft variant being exported, or null, if this is a full export.
+     * @param exportProjectOutput the folder in which the files must be exported.
+     * @param canSign whether the application package can be signed. This is dependent on the
+     * availability of some required values.
+     * @param keyStore the path to the keystore for signing
+     * @param keyAlias the alias of the key to be used for signing
+     * @param keyStorePassword the password of the keystore for signing
+     * @param keyAliasPassword the password of the key alias for signing
+     * @param compiledProject a list of projects that have already been compiled.
+     */
+    private void makeSubAnt(Project antProject, String appPackage, int versionCode,
+            ApkData apk, Entry<String, String> softVariant, File exportProjectOutput,
+            boolean canSign, String keyStore, String keyAlias,
+            String keyStorePassword, String keyAliasPassword, Set<String> compiledProject) {
+
+        // this output is prepended by "[android-export] " (17 chars), so we put 61 stars
+        System.out.println("\n*************************************************************");
+        System.out.println("Exporting project: " + apk.getRelativePath());
+
+        SubAnt subAnt = new SubAnt();
+        subAnt.setTarget(mTarget.getTarget());
+        subAnt.setProject(antProject);
+
+        File subProjectFolder = new File(antProject.getBaseDir(), apk.getRelativePath());
+
+        FileSet fileSet = new FileSet();
+        fileSet.setProject(antProject);
+        fileSet.setDir(subProjectFolder);
+        fileSet.setIncludes("build.xml");
+        subAnt.addFileset(fileSet);
+
+//        subAnt.setVerbose(true);
+
+        if (mTarget == Target.RELEASE) {
+            // only do the compilation part if it's the first time we export
+            // this project.
+            // (projects can be export multiple time if some properties are set up to
+            // generate more than one APK (for instance ABI split).
+            if (compiledProject.contains(apk.getRelativePath()) == false) {
+                compiledProject.add(apk.getRelativePath());
+            } else {
+                addProp(subAnt, "do.not.compile", "true");
+            }
+
+            // set the version code, and filtering
+            int compositeVersionCode = apk.getCompositeVersionCode(versionCode);
+            addProp(subAnt, "version.code", Integer.toString(compositeVersionCode));
+            System.out.println("Composite versionCode: " + compositeVersionCode);
+            String abi = apk.getAbi();
+            if (abi != null) {
+                addProp(subAnt, "filter.abi", abi);
+                System.out.println("ABI Filter: " + abi);
+            }
+
+            // set the output file names/paths. Keep all the temporary files in the project
+            // folder, and only put the final file (which is different depending on whether
+            // the file can be signed) locally.
+
+            // read the base name from the build.xml file.
+            String name = null;
+            try {
+                File buildFile = new File(subProjectFolder, "build.xml");
+                XPath xPath = mXPathFactory.newXPath();
+                name = xPath.evaluate("/project/@name",
+                        new InputSource(new FileInputStream(buildFile)));
+            } catch (XPathExpressionException e) {
+                throw new BuildException("Failed to read build.xml", e);
+            } catch (FileNotFoundException e) {
+                throw new BuildException("build.xml is missing.", e);
+            }
+
+            // override the resource pack file as well as the final name
+            String pkgName = name + "-" + apk.getBuildInfo();
+            String finalNameRoot = appPackage + "-" + compositeVersionCode;
+            if (softVariant != null) {
+                String tmp = "-" + softVariant.getKey();
+                pkgName += tmp;
+                finalNameRoot += tmp;
+
+                // set the resource filter.
+                addProp(subAnt, "aapt.resource.filter", softVariant.getValue());
+                System.out.println("res Filter: " + softVariant.getValue());
+            }
+
+            // set the resource pack file name.
+            addProp(subAnt, "resource.package.file.name", pkgName + ".ap_");
+
+
+            if (canSign) {
+                // set the properties for the password.
+                addProp(subAnt, "key.store", keyStore);
+                addProp(subAnt, "key.alias", keyAlias);
+                addProp(subAnt, "key.store.password", keyStorePassword);
+                addProp(subAnt, "key.alias.password", keyAliasPassword);
+
+                // temporary file only get a filename change (still stored in the project
+                // bin folder).
+                addProp(subAnt, "out.unsigned.file.name",
+                        name + "-" + apk.getBuildInfo() + "-unsigned.apk");
+                addProp(subAnt, "out.unaligned.file",
+                        name + "-" + apk.getBuildInfo() + "-unaligned.apk");
+
+                // final file is stored locally with a name based on the package
+                String outputName = finalNameRoot + "-release.apk";
+                apk.setOutputName(softVariant != null ? softVariant.getKey() : null, outputName);
+                addProp(subAnt, "out.release.file",
+                        new File(exportProjectOutput, outputName).getAbsolutePath());
+
+            } else {
+                // put some empty prop. This is to override possible ones defined in the
+                // project. The reason is that if there's more than one project, we don't
+                // want some to signed and some not to be (and we don't want each project
+                // to prompt for password.)
+                addProp(subAnt, "key.store", "");
+                addProp(subAnt, "key.alias", "");
+                // final file is the unsigned version. It gets stored locally.
+                String outputName = finalNameRoot + "-unsigned.apk";
+                apk.setOutputName(softVariant != null ? softVariant.getKey() : null, outputName);
+                addProp(subAnt, "out.unsigned.file",
+                        new File(exportProjectOutput, outputName).getAbsolutePath());
+            }
+        }
+
+        // end of the output by this task. Everything that follows will be output
+        // by the subant.
+        System.out.println("Calling to project's Ant file...");
+        System.out.println("----------\n");
+
+        subAnt.execute();
     }
 
     /**
