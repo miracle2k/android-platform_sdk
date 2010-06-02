@@ -41,6 +41,18 @@ public class ApkData implements Comparable<ApkData> {
     private static final String PROP_BUILDINFO = "buildinfo";
     private static final String PROP_DENSITY = "splitDensity";
 
+    /**
+     * List of ABI order.
+     * This is meant to be a list of CPU/CPU2 to indicate the order required by the build info.
+     * If the ABIs being compared in {@link #compareTo(ApkData)} are in the same String array,
+     * then the value returned must ensure that the {@link ApkData} will ordered the same as the
+     * array.
+     * If the ABIs are not in the same array, any order can be returned.
+     */
+    private static final String[][] ABI_SORTING = new String[][] {
+        new String[] { "armeabi", "armeabi-v7a" }
+    };
+
     private final HashMap<String, String> mOutputNames = new HashMap<String, String>();
     private String mRelativePath;
     private File mProject;
@@ -213,21 +225,13 @@ public class ApkData implements Comparable<ApkData> {
             return minSdkDiff;
         }
 
-        int comp;
-        if (mAbi != null) {
-            if (o.mAbi != null) {
-                comp = mAbi.compareTo(o.mAbi);
-                if (comp != 0) return comp;
-            } else {
-                return -1;
-            }
-        } else if (o.mAbi != null) {
-            return 1;
+        // only compare if they have don't have the same size support. This is because
+        // this compare method throws an exception if the values cannot be compared.
+        if (mSupportsScreens.hasSameScreenSupportAs(o.mSupportsScreens) == false) {
+            return mSupportsScreens.compareScreenSizesWith(o.mSupportsScreens);
         }
 
-        comp = mSupportsScreens.compareScreenSizesWith(o.mSupportsScreens);
-        if (comp != 0) return comp;
-
+        int comp;
         if (mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
             if (o.mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
                 comp = mGlVersion - o.mGlVersion;
@@ -237,6 +241,35 @@ public class ApkData implements Comparable<ApkData> {
             }
         } else if (o.mGlVersion != ManifestData.GL_ES_VERSION_NOT_SET) {
             return 1;
+        }
+
+        // here the returned value is only important if both abi are non null.
+        if (mAbi != null && o.mAbi != null) {
+            comp = compareAbi(mAbi, o.mAbi);
+            if (comp != 0) return comp;
+        }
+
+        return 0;
+    }
+
+    private int compareAbi(String abi, String abi2) {
+        // look for the abis in each of the ABI sorting array
+        for (String[] abiArray : ABI_SORTING) {
+            int abiIndex = -1, abiIndex2 = -1;
+            final int count = abiArray.length;
+            for (int i = 0 ; i < count ; i++) {
+                if (abiArray[i].equals(abi)) {
+                    abiIndex = i;
+                }
+                if (abiArray[i].equals(abi2)) {
+                    abiIndex2 = i;
+                }
+            }
+
+            // if both were found
+            if (abiIndex != -1 && abiIndex != -1) {
+                return abiIndex - abiIndex2;
+            }
         }
 
         return 0;
