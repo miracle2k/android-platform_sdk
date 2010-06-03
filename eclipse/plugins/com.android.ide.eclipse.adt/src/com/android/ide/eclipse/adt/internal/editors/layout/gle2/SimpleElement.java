@@ -21,8 +21,6 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Represents an XML element with a name, attributes and inner elements.
@@ -33,7 +31,7 @@ import java.util.List;
  * For a more detailed explanation of the purpose of this class,
  * please see {@link SimpleXmlTransfer}.
  */
-class SimpleElement implements IDragElement {
+public class SimpleElement implements IDragElement {
 
     /** Version number of the internal serialized string format. */
     private static final String FORMAT_VERSION = "1";
@@ -43,8 +41,8 @@ class SimpleElement implements IDragElement {
     private final ArrayList<IDragAttribute> mAttributes = new ArrayList<IDragAttribute>();
     private final ArrayList<IDragElement> mElements = new ArrayList<IDragElement>();
 
-    private List<IDragAttribute> mReadOnlyAttributes = null;
-    private List<IDragElement> mReadOnlyElements = null;
+    private IDragAttribute[] mCachedAttributes = null;
+    private IDragElement[] mCachedElements = null;
 
     /**
      * Creates a new {@link SimpleElement} with the specified element name.
@@ -72,11 +70,11 @@ class SimpleElement implements IDragElement {
         return mNode;
     }
 
-    public List<IDragAttribute> getAttributes() {
-        if (mReadOnlyAttributes == null) {
-            mReadOnlyAttributes = Collections.unmodifiableList(mAttributes);
+    public IDragAttribute[] getAttributes() {
+        if (mCachedAttributes == null) {
+            mCachedAttributes = mAttributes.toArray(new IDragAttribute[mAttributes.size()]);
         }
-        return mReadOnlyAttributes;
+        return mCachedAttributes;
     }
 
     public IDragAttribute getAttribute(String uri, String localName) {
@@ -89,18 +87,20 @@ class SimpleElement implements IDragElement {
         return null;
     }
 
-    public List<IDragElement> getInnerElements() {
-        if (mReadOnlyElements == null) {
-            mReadOnlyElements = Collections.unmodifiableList(mElements);
+    public IDragElement[] getInnerElements() {
+        if (mCachedElements == null) {
+            mCachedElements = mElements.toArray(new IDragElement[mElements.size()]);
         }
-        return mReadOnlyElements;
+        return mCachedElements;
     }
 
     public void addAttribute(SimpleAttribute attr) {
+        mCachedAttributes = null;
         mAttributes.add(attr);
     }
 
     public void addInnerElement(SimpleElement e) {
+        mCachedElements = null;
         mElements.add(e);
     }
 
@@ -153,8 +153,8 @@ class SimpleElement implements IDragElement {
                         e = new SimpleElement(s2[1], null);
                     }
                 } else {
-                    // This is an inner element
-                    inOutIndex[0] = index;
+                    // This is an inner element... need to parse the { line again.
+                    inOutIndex[0] = index - 1;
                     SimpleElement e2 = SimpleElement.parseLines(lines, inOutIndex);
                     if (e2 != null) {
                         e.addInnerElement(e2);

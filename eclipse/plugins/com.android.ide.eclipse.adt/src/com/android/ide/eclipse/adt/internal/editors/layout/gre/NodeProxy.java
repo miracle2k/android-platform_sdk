@@ -28,19 +28,20 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDes
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import groovy.lang.Closure;
+
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-
-import groovy.lang.Closure;
 
 /**
  *
@@ -101,6 +102,32 @@ public class NodeProxy implements INode {
 
 
     // ---- Hierarchy handling ----
+
+
+    public INode getRoot() {
+        if (mNode != null) {
+            UiElementNode p = mNode.getUiRoot();
+            // The node root should be a document. Instead what we really mean to
+            // return is the top level view element.
+            if (p instanceof UiDocumentNode) {
+                List<UiElementNode> children = p.getUiChildren();
+                if (children.size() > 0) {
+                    p = children.get(0);
+                }
+            }
+
+            // Cope with a badly structured XML layout
+            while (p != null && !(p instanceof UiViewElementNode)) {
+                p = p.getUiNextSibling();
+            }
+
+            if (p instanceof UiViewElementNode) {
+                return mFactory.create((UiViewElementNode) p);
+            }
+        }
+
+        return null;
+    }
 
     public INode getParent() {
         if (mNode != null) {
@@ -246,22 +273,14 @@ public class NodeProxy implements INode {
     }
 
 
-    // --- internal helpers ---
-
-    /**
-     * Returns a given XML attribute.
-     * @param attrName The local name of the attribute.
-     * @return the attribute as a {@link String}, if it exists, or <code>null</code>
-     */
-    public String getStringAttr(String attrName) {
-        // TODO this was just copy-pasted from the GLE1 edit code. Need to adapt to this context.
+    public String getStringAttr(String uri, String attrName) {
         UiElementNode uiNode = mNode;
         if (uiNode.getXmlNode() != null) {
             Node xmlNode = uiNode.getXmlNode();
             if (xmlNode != null) {
                 NamedNodeMap nodeAttributes = xmlNode.getAttributes();
                 if (nodeAttributes != null) {
-                    Node attr = nodeAttributes.getNamedItemNS(SdkConstants.NS_RESOURCES, attrName);
+                    Node attr = nodeAttributes.getNamedItemNS(uri, attrName);
                     if (attr != null) {
                         return attr.getNodeValue();
                     }
@@ -271,6 +290,8 @@ public class NodeProxy implements INode {
         return null;
     }
 
+
+    // --- internal helpers ---
 
     /**
      * Helper methods that returns a {@link ViewElementDescriptor} for the requested FQCN.

@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
-import java.util.List;
 
 /**
  * Represents an XML element with a name, attributes and inner elements.
@@ -43,7 +42,7 @@ public interface IDragElement {
     /**
      * Returns a list of attributes. The list can be empty but is never null.
      */
-    public abstract List<IDragAttribute> getAttributes();
+    public abstract IDragAttribute[] getAttributes();
 
     /**
      * Returns the requested attribute or null if not found.
@@ -53,7 +52,7 @@ public interface IDragElement {
     /**
      * Returns a list of inner elements. The list can be empty but is never null.
      */
-    public abstract List<IDragElement> getInnerElements();
+    public abstract IDragElement[] getInnerElements();
 
     /**
      * An XML attribute in the {@link IDragElement}.

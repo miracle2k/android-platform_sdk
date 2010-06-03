@@ -27,8 +27,6 @@ import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TransferData;
 
-import java.util.Arrays;
-
 /**
  * Handles drop operations on top of the canvas.
  * <p/>
@@ -83,6 +81,10 @@ import java.util.Arrays;
      * @see #mLeaveTargetNode
      */
     private DropFeedback mLeaveFeedback;
+    /**
+     * @see #mLeaveTargetNode
+     */
+    private CanvasViewInfo mLeaveView;
 
     public CanvasDropListener(LayoutCanvas canvas) {
         mCanvas = canvas;
@@ -98,6 +100,9 @@ import java.util.Arrays;
 
         // Make sure we don't have any residual data from an earlier operation.
         clearDropInfo();
+        mLeaveTargetNode = null;
+        mLeaveFeedback = null;
+        mLeaveView = null;
 
         // Get the dragged elements.
         //
@@ -112,20 +117,10 @@ import java.util.Arrays;
 
         mCurrentDragElements = GlobalCanvasDragInfo.getInstance().getCurrentElements();
 
+        if (mCurrentDragElements == null) {
         SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
         if (sxt.isSupportedType(event.currentDataType)) {
-            SimpleElement[] data = (SimpleElement[]) sxt.nativeToJava(event.currentDataType);
-            if (data != null) {
-                if (mCurrentDragElements == null) {
-                    mCurrentDragElements = data;
-
-                } else if (!Arrays.equals(mCurrentDragElements, data)) {
-                    // Mostly for debugging purposes we compare them. They should always match.
-                    // TODO use an error for right now. Later move this to a log warning only.
-                    AdtPlugin.logAndPrintError(null /*exception*/, "CanvasDrop",
-                            "TransferType mismatch: Global=%s, drag.event=%s",
-                            mCurrentDragElements, data);
-                }
+                mCurrentDragElements = (SimpleElement[]) sxt.nativeToJava(event.currentDataType);
             }
         }
 
@@ -185,9 +180,10 @@ import java.util.Arrays;
         // (between the last dropMove and the next dropAccept). That means we can't just
         // trash the current DropFeedback from the current view rule, we need to preserve
         // it in case a dropAccept happens next.
-        // See the corresponding kludge in drop().
+        // See the corresponding kludge in dropAccept().
         mLeaveTargetNode = mTargetNode;
         mLeaveFeedback = mFeedback;
+        mLeaveView = mCurrentView;
 
         clearDropInfo();
     }
@@ -208,10 +204,23 @@ import java.util.Arrays;
     public void dropAccept(DropTargetEvent event) {
         AdtPlugin.printErrorToConsole("DEBUG", "drop accept");
 
+        // If we have a valid target node and it matches the one we saved in
+        // dragLeave then we restore the DropFeedback that we saved in dragLeave.
+        if (mLeaveTargetNode != null) {
+            mTargetNode = mLeaveTargetNode;
+            mFeedback = mLeaveFeedback;
+            mCurrentView = mLeaveView;
+        }
+        mLeaveTargetNode = null;
+        mLeaveFeedback = null;
+        mLeaveView = null;
+
         checkDataType(event);
 
         if (event.detail != DND.DROP_NONE) {
             processDropEvent(event);
+        } else {
+            clearDropInfo();
         }
     }
 
@@ -227,14 +236,6 @@ import java.util.Arrays;
             AdtPlugin.printErrorToConsole("DEBUG", "dropped on null targetNode");
             return;
         }
-
-        // If we have a valid target node and it matches the one we saved in
-        // dragLeave then we restore the DropFeedback that we saved in dragLeave.
-        if (mTargetNode == mLeaveTargetNode) {
-            mFeedback = mLeaveFeedback;
-        }
-        mLeaveTargetNode = null;
-        mLeaveFeedback = null;
 
         SimpleElement[] elements = null;
 

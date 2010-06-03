@@ -31,11 +31,8 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
         }
 
         // If one of the top elements is ourselve, refuse the drop.
-        // TODO actually that is OK for a DROP_COPY but not for DROP_MOVE.
-        targetNode.debugPrintf("TARGET: ${targetNode}, FIRST: ${elements[0].getNode()}");
-
         for (elem in elements) {
-            if (elem.getNode() == targetNode) {
+            if (elem.getNode().is(targetNode)) {
                 return null;
             }
         }
@@ -120,6 +117,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
         // Update the data used by the DropFeedback.paintClosure above.
         feedback.userData.p = p;
         feedback.requestPaint = true;
+
         return feedback;
     }
 
@@ -142,15 +140,12 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
         int x = p.x - b.x;
         int y = p.y - b.y;
 
-        // TODO DEBUG remove later
-        targetNode.debugPrintf("AbsL.drop at coord ${x}x${y}");
-
         def id_map = [:];
 
         // Need to remap ids if necessary
         if (isCopy || !sameCanvas) {
-            collecIds(id_map, elements);
-            // TODO remap
+            collectIds(id_map, elements);
+            id_map = remapIds(targetNode, id_map);
         }
 
         targetNode.editXml("Add elements to AbsoluteLayout") {
@@ -158,81 +153,159 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
             elements.each { element ->
                 String fqcn = element.getFqcn();
                 def srcNode = element.getNode();
+
                 Rect be = srcNode == null ? null : srcNode.getBounds();
 
-                INode n = targetNode.appendChild(fqcn);
+                INode newChild = targetNode.appendChild(fqcn);
 
                 // Copy all the attributes, modifying them as needed.
-                boolean hasX = false;
-                boolean hasY = false;
-                element.getAttributes().each { attr ->
+                addAttributes(newChild, element.getAttributes(), id_map) {
+                    uri, name, value ->
+                    if (name == "layout_x" || name == "layout_y") {
+                        return false; // don't set these attributes
+                    } else {
+                        return value;
+                    }
+                };
+
+                // TODO for the 2..n elements see if the they have a x/y expressed
+                // in dp or dip and use it to recompute a relative position to the
+                // first dragged element. If they don't use dp/dip, we can still use
+                // the canvas bounds if available.
+                newChild.setAttribute(ANDROID_URI, "layout_x", "${x}dip");
+                x += 10;
+
+                newChild.setAttribute(ANDROID_URI, "layout_y", "${y}dip");
+                if (be != null && be.isValid()) {
+                    y += be.h;
+                } else {
+                    y += 10;
+                }
+
+                def children = element.getInnerElements();
+                addInnerElements(newChild, element.getInnerElements(), id_map);
+            }
+        }
+    }
+
+    void addAttributes(INode newNode, oldAttributes, id_map, Closure filter) {
+        for (attr in oldAttributes) {
                     String uri = attr.getUri();
                     String name = attr.getName();
                     String value = attr.getValue();
 
-                    if (uri == ANDROID_URI) {
-                        if (name == "id") {
-                            value = id_map.get(value, value);
+            if (uri == ANDROID_URI && name == "id") {
+                if (id_map.containsKey(value)) {
+                    value = id_map[value][0];
+                }
+            }
 
-                        } else if (name == "layout_x") {
-                            hasX = true;
+            if (filter != null) {
+                value = filter(uri, name, value);
+            }
+            if (value != null && value != false && value != "") {
+                newNode.setAttribute(uri, name, value);
+            }
+        }
+    }
 
-                        } else if (name == "layout_y") {
-                            hasY = true;
+    void addInnerElements(INode node, IDragElement[] elements, id_map) {
+
+        elements.each { element ->
+            String fqcn = element.getFqcn();
+            INode newNode = node.appendChild(fqcn);
+
+            addAttributes(newNode, element.getAttributes(), id_map, null /* closure */);
+            addInnerElements(newNode, element.getInnerElements(), id_map);
+        }
                         }
 
-                        n.setAttribute(uri, name, value);
-                    }
-                }
-
-                if (!hasX) {
-                    n.setAttribute("layout_x", "${x}dip");
-                    x += 10;
-                }
-                if (!hasY) {
-                    n.setAttribute("layout_y", "${y}dip");
-                    if (be != null && be.isValid()) {
-                        y += be.h;
-                    } else {
-                        y += 10;
-                    }
-                }
-
-                addInnerElements(n, element.getInnerElements(), id_map);
-            }
-        }
-    }
-
-    void addInnerElements(INode node, elements, id_map) {
+    /**
+     * Fills id_map with a map String id => tuple (String id, String fqcn)
+     * where fqcn is the FQCN of the element (in case we want to generate
+     * new IDs based on the element type.)
+     */
+    void collectIds(id_map, IDragElement[] elements) {
         elements.each { element ->
-            INode n = node.appendChild(element.getFqcn());
-
-            element.getAttributes().each { attr ->
-                String uri = attr.getUri();
-                String name = attr.getName();
-                String value = attr.getValue();
-
-                if (uri == ANDROID_URI) {
-                    if (name == "id") {
-                        value = id_map.get(value, value);
+            def attr = element.getAttribute(ANDROID_URI, "id");
+            if (attr != null) {
+                String id = attr.getValue();
+                if (id != null && id != "") {
+                    id_map.put(id, [id, element.getFqcn()]);
                     }
-
-                    n.setAttribute(uri, name, value);
                 }
-            }
-
-            addInnerElements(n, element.getInnerElements(), id_map);
-        }
-    }
-
-    void collectIds(id_map, elements) {
-        elements.each { element ->
-            String id = element.getAttribute(ANDROID_URI, "id");
-            if (id != null) {
-                id_map.put(id, id);
-            }
 
             collectIds(id_map, element.getInnerElements());
+                    }
+                }
+
+    Object remapIds(INode node, id_map) {
+        // Visit the document to get a list of existing ids
+        def existing_ids = [:];
+        collectExistingIds(node.getRoot(), existing_ids);
+
+        def new_map = [:];
+        id_map.each() { key, value ->
+            def id = normalizeId(key);
+
+            if (!existing_ids.containsKey(id)) {
+                // Not a conflict. Use as-is.
+                new_map.put(key, value);
+                if (key != id) {
+                    new_map.put(id, value);
+            }
+            } else {
+                // There is a conflict. Get a new id.
+                def new_id = findNewId(value[1], existing_ids);
+                value[0] = new_id;
+                new_map.put(id, value);
+                new_map.put(id.replaceFirst("@\\+", "@"), value);
         }
+    }
+
+        return new_map;
+    }
+
+    String findNewId(String fqcn, existing_ids) {
+        // Get the last component of the FQCN (e.g. "android.view.Button" => "Button")
+        String name = fqcn[fqcn.lastIndexOf(".")+1 .. fqcn.length()-1];
+
+        for (int i = 1; i < 1000000; i++) {
+            String id = String.format("@+id/%s%02d", name, i);
+            if (!existing_ids.containsKey(id)) {
+                existing_ids.put(id, id);
+                return id;
+            }
+                    }
+
+        // We'll never reach here.
+        return null;
+                }
+
+    void collectExistingIds(INode root, existing_ids) {
+        if (root == null) {
+            return;
+            }
+
+        def id = root.getStringAttr(ANDROID_URI, "id");
+        if (id != null) {
+            id = normalizeId(id);
+
+            if (!existing_ids.containsKey(id)) {
+                existing_ids.put(id, id);
+        }
+    }
+
+        root.getChildren().each {
+            collectExistingIds(it, existing_ids);
+        }
+            }
+
+    /** Transform @id/name into @+id/name to treat both forms the same way. */
+    String normalizeId(String id) {
+        if (id.indexOf("@+") == -1) {
+            id = id.replaceFirst("@", "@+");
+        }
+        return id;
     }
 }

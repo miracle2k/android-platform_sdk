@@ -52,6 +52,12 @@ public interface INode {
 
     // ---- Hierarchy handling ----
 
+    /**
+     * Returns the root element of the view hierarchy. This may be this node if this is
+     * the root element. It can also be null when the current node is not yet or no
+     * longer attached to the hierarchy.
+     */
+    INode getRoot();
 
     /**
      * Returns the parent node of this node, corresponding to the parent view in the layout.
@@ -64,6 +70,7 @@ public interface INode {
      * Returns the list of valid children nodes. The list can be empty but not null.
      */
     INode[] getChildren();
+
 
     // ---- XML Editing ---
 
@@ -129,10 +136,17 @@ public interface INode {
 
     /**
      * Returns a given XML attribute.
+     * <p/>
+     * This looks up an attribute in the <em>current</em> XML source, not the in-memory model.
+     * That means that if called in the context of {@link #editXml(String, Closure)}, the value
+     * returned here is not affected by {@link #setAttribute(String, String, String)} until
+     * the editXml closure is completed and the actual XML is updated.
+     *
+     * @param uri The XML name-space URI of the attribute.
      * @param attrName The <em>local</em> name of the attribute.
-     * @return the attribute as a {@link String}, if it exists, or <code>null</code>
+     * @return the attribute as a {@link String}, if it exists, or <code>null</code>.
      */
-    String getStringAttr(String attrName);
+    String getStringAttr(String uri, String attrName);
 
     // -----------
 
