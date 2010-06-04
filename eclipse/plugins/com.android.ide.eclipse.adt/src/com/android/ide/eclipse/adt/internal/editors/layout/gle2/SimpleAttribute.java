@@ -89,7 +89,7 @@ public class SimpleAttribute implements IDragAttribute {
 
             return mName.equals(sa.mName) &&
                     mUri.equals(sa.mUri) &&
-                    mValue.equals(mValue);
+                    mValue.equals(sa.mValue);
         }
         return false;
     }

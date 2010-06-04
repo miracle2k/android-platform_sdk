@@ -65,6 +65,7 @@ public class NodeProxy implements INode {
      *   - <b>*or*</b> null (or an invalid rect) for a view that has just been added dynamically
      *   to the model. We never store a null bounds rectangle in the node, a null rectangle
      *   will be converted to an invalid rectangle.
+     * @param factory A {@link NodeFactory} to create unique children nodes.
      */
     /*package*/ NodeProxy(UiViewElementNode uiNode, Rectangle bounds, NodeFactory factory) {
         mNode = uiNode;
