@@ -44,15 +44,16 @@ class SdkCommandLine extends CommandLineProcessor {
     public final static String VERB_DELETE = "delete";
     public final static String VERB_UPDATE = "update";
 
-    public static final String OBJECT_SDK          = "sdk";
-    public static final String OBJECT_AVD          = "avd";
-    public static final String OBJECT_AVDS         = "avds";
-    public static final String OBJECT_TARGET       = "target";
-    public static final String OBJECT_TARGETS      = "targets";
-    public static final String OBJECT_PROJECT      = "project";
-    public static final String OBJECT_TEST_PROJECT = "test-project";
-    public static final String OBJECT_LIB_PROJECT  = "lib-project";
-    public static final String OBJECT_ADB          = "adb";
+    public static final String OBJECT_SDK            = "sdk";
+    public static final String OBJECT_AVD            = "avd";
+    public static final String OBJECT_AVDS           = "avds";
+    public static final String OBJECT_TARGET         = "target";
+    public static final String OBJECT_TARGETS        = "targets";
+    public static final String OBJECT_PROJECT        = "project";
+    public static final String OBJECT_TEST_PROJECT   = "test-project";
+    public static final String OBJECT_LIB_PROJECT    = "lib-project";
+    public static final String OBJECT_EXPORT_PROJECT = "export-project";
+    public static final String OBJECT_ADB            = "adb";
 
     public static final String ARG_ALIAS        = "alias";
     public static final String ARG_ACTIVITY     = "activity";
@@ -124,6 +125,11 @@ class SdkCommandLine extends CommandLineProcessor {
                 "Creates a new Android Library Project." },
             { VERB_UPDATE, OBJECT_LIB_PROJECT,
                 "Updates an Android Library Project (must have an AndroidManifest.xml)." },
+
+            { VERB_CREATE, OBJECT_EXPORT_PROJECT,
+                "Creates a new Android Export Project." },
+            { VERB_UPDATE, OBJECT_EXPORT_PROJECT,
+                "Updates an Android Export Project (must have an export.properties)." },
 
             { VERB_UPDATE, OBJECT_ADB,
                 "Updates adb to support the USB devices declared in the SDK add-ons." },
@@ -267,6 +273,19 @@ class SdkCommandLine extends CommandLineProcessor {
                 VERB_CREATE, OBJECT_LIB_PROJECT, "k", KEY_PACKAGE,
                 "Package name", null);
 
+        // --- create export-project ---
+
+        define(Mode.STRING, true,
+                VERB_CREATE, OBJECT_EXPORT_PROJECT,
+                "p", KEY_PATH,
+                "Location path of new project", null);
+        define(Mode.STRING, false,
+                VERB_CREATE, OBJECT_EXPORT_PROJECT, "n", KEY_NAME,
+                "Project name", null);
+        define(Mode.STRING, true,
+                VERB_CREATE, OBJECT_EXPORT_PROJECT, "k", KEY_PACKAGE,
+                "Package name", null);
+
         // --- update project ---
 
         define(Mode.STRING, true,
@@ -311,6 +330,20 @@ class SdkCommandLine extends CommandLineProcessor {
                 VERB_UPDATE, OBJECT_LIB_PROJECT,
                 "t", KEY_TARGET_ID,
                 "Target id to set for the project", null);
+
+        // --- update export project ---
+
+        define(Mode.STRING, true,
+                VERB_UPDATE, OBJECT_EXPORT_PROJECT,
+                "p", KEY_PATH,
+                "Location path of the project", null);
+        define(Mode.STRING, false,
+                VERB_UPDATE, OBJECT_EXPORT_PROJECT,
+                "n", KEY_NAME,
+                "Project name", null);
+        define(Mode.BOOLEAN, false,
+                VERB_UPDATE, OBJECT_EXPORT_PROJECT, "f", KEY_FORCE,
+                "Force replacing the build.xml file", false);
     }
 
     @Override

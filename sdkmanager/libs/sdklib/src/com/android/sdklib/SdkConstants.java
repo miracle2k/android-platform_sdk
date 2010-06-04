@@ -86,6 +86,9 @@ public final class SdkConstants {
     /** project property file */
     public final static String FN_DEFAULT_PROPERTIES = "default.properties";
 
+    /** export property file */
+    public final static String FN_EXPORT_PROPERTIES = "export.properties";
+
     /** Skin layout file */
     public final static String FN_SKIN_LAYOUT = "layout";//$NON-NLS-1$
 

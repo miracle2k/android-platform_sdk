@@ -21,6 +21,7 @@ import com.android.sdklib.internal.export.MultiApkExportHelper;
 import com.android.sdklib.internal.export.ProjectConfig;
 import com.android.sdklib.internal.export.MultiApkExportHelper.ExportException;
 import com.android.sdklib.internal.export.MultiApkExportHelper.Target;
+import com.android.sdklib.internal.project.ProjectProperties;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
@@ -75,9 +76,9 @@ public class MultiApkExportTask extends Task {
             System.out.println("Android SDK Tools Revision " + toolsRevison);
         }
 
-        String appPackage = getValidatedProperty(antProject, "package");
+        String appPackage = getValidatedProperty(antProject, ProjectProperties.PROPERTY_PACKAGE);
         System.out.println("Multi APK export for: " + appPackage);
-        String version = getValidatedProperty(antProject, "versionCode");
+        String version = getValidatedProperty(antProject, ProjectProperties.PROPERTY_VERSIONCODE);
         int versionCode;
         try {
             versionCode = Integer.parseInt(version);
@@ -103,9 +104,9 @@ public class MultiApkExportTask extends Task {
                 }
             } else {
                 // checks whether the projects can be signed.
-                String value = antProject.getProperty("key.store");
+                String value = antProject.getProperty(ProjectProperties.PROPERTY_KEY_STORE);
                 String keyStore = value != null && value.length() > 0 ? value : null;
-                value = antProject.getProperty("key.alias");
+                value = antProject.getProperty(ProjectProperties.PROPERTY_KEY_ALIAS);
                 String keyAlias = value != null && value.length() > 0 ? value : null;
                 boolean canSign = keyStore != null && keyAlias != null;
 
@@ -115,8 +116,8 @@ public class MultiApkExportTask extends Task {
                 HashSet<String> compiledProject = new HashSet<String>();
                 mXPathFactory = XPathFactory.newInstance();
 
-                File exportProjectOutput = new File(getValidatedProperty(antProject,
-                        "out.absolute.dir"));
+                File exportProjectOutput = new File(
+                        getValidatedProperty(antProject, "out.absolute.dir"));
 
                 // if there's no error, and we can sign, prompt for the passwords.
                 String keyStorePassword = null;
@@ -307,8 +308,8 @@ public class MultiApkExportTask extends Task {
 
         if (canSign) {
             // set the properties for the password.
-            addProp(subAnt, "key.store", keyStore);
-            addProp(subAnt, "key.alias", keyAlias);
+            addProp(subAnt, ProjectProperties.PROPERTY_KEY_STORE, keyStore);
+            addProp(subAnt, ProjectProperties.PROPERTY_KEY_ALIAS, keyAlias);
             addProp(subAnt, "key.store.password", keyStorePassword);
             addProp(subAnt, "key.alias.password", keyAliasPassword);
 
@@ -330,8 +331,8 @@ public class MultiApkExportTask extends Task {
             // project. The reason is that if there's more than one project, we don't
             // want some to signed and some not to be (and we don't want each project
             // to prompt for password.)
-            addProp(subAnt, "key.store", "");
-            addProp(subAnt, "key.alias", "");
+            addProp(subAnt, ProjectProperties.PROPERTY_KEY_STORE, "");
+            addProp(subAnt, ProjectProperties.PROPERTY_KEY_ALIAS, "");
             // final file is the unsigned version. It gets stored locally.
             String outputName = finalNameRoot + "-unsigned.apk";
             apk.setOutputName(softVariant != null ? softVariant.getKey() : null, outputName);

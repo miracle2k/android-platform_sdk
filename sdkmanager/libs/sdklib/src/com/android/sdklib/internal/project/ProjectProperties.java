@@ -57,10 +57,17 @@ public final class ProjectProperties {
 
     public final static String PROPERTY_BUILD_SOURCE_DIR = "source.dir";
 
+    public final static String PROPERTY_PACKAGE = "package";
+    public final static String PROPERTY_VERSIONCODE = "versionCode";
+    public final static String PROPERTY_PROJECTS = "projects";
+    public final static String PROPERTY_KEY_STORE = "key.store";
+    public final static String PROPERTY_KEY_ALIAS = "key.alias";
+
     public static enum PropertyType {
         BUILD("build.properties", BUILD_HEADER),
         DEFAULT(SdkConstants.FN_DEFAULT_PROPERTIES, DEFAULT_HEADER),
-        LOCAL("local.properties", LOCAL_HEADER);
+        LOCAL("local.properties", LOCAL_HEADER),
+        EXPORT("export.properties", EXPORT_HEADER);
 
         private final String mFilename;
         private final String mHeader;
@@ -116,6 +123,24 @@ public final class ProjectProperties {
            "# The password will be asked during the build when you use the 'release' target.\n" +
            "\n";
 
+    private final static String EXPORT_HEADER =
+//          1-------10--------20--------30--------40--------50--------60--------70--------80
+           "# Export properties\n" +
+           "# \n" +
+           "# This file must be checked in Version Control Systems.\n" +
+           "\n" +
+           "# The main content for this file is:\n" +
+           "# - package name for the application being export\n" +
+           "# - list of the projects being export\n" +
+           "# - version code for the application\n" +
+           "\n" +
+           "# You can also use it define how the release builds are signed by declaring\n" +
+           "# the following properties:\n" +
+           "#  'key.store' for the location of your keystore and\n" +
+           "#  'key.alias' for the name of the key alias to use.\n" +
+           "# The password will be asked during the build when you use the 'release' target.\n" +
+           "\n";
+
     private final static Map<String, String> COMMENT_MAP = new HashMap<String, String>();
     static {
 //               1-------10--------20--------30--------40--------50--------60--------70--------80
@@ -130,6 +155,14 @@ public final class ProjectProperties {
         COMMENT_MAP.put(PROPERTY_APP_PACKAGE,
                 "# The name of your application package as defined in the manifest.\n" +
                 "# Used by the 'uninstall' rule.\n");
+        COMMENT_MAP.put(PROPERTY_PACKAGE,
+                "# Package of the application being exported\n");
+        COMMENT_MAP.put(PROPERTY_VERSIONCODE,
+                "# Major version code\n");
+        COMMENT_MAP.put(PROPERTY_PROJECTS,
+                "# List of the Android projects being used for the export.\n" +
+                "# The list is made of paths that are relative to this project,\n" +
+                "# using forward-slash (/) as separator, and are separated by colons (:).\n");
     }
 
     private final IAbstractFolder mProjectFolder;

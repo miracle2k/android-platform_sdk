@@ -21,6 +21,7 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
+import com.android.sdklib.io.StreamException;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.AndroidXPathFactory;
 
@@ -175,40 +176,9 @@ public class ProjectCreator {
             String pathToMainProject) {
 
         // create project folder if it does not exist
-        File projectFolder = new File(folderPath);
-        if (!projectFolder.exists()) {
-
-            boolean created = false;
-            Throwable t = null;
-            try {
-                created = projectFolder.mkdirs();
-            } catch (Exception e) {
-                t = e;
-            }
-
-            if (created) {
-                println("Created project directory: %1$s", projectFolder);
-            } else {
-                mLog.error(t, "Could not create directory: %1$s", projectFolder);
-                return;
-            }
-        } else {
-            Exception e = null;
-            String error = null;
-            try {
-                String[] content = projectFolder.list();
-                if (content == null) {
-                    error = "Project folder '%1$s' is not a directory.";
-                } else if (content.length != 0) {
-                    error = "Project folder '%1$s' is not empty. Please consider using '%2$s update' instead.";
-                }
-            } catch (Exception e1) {
-                e = e1;
-            }
-
-            if (e != null || error != null) {
-                mLog.error(e, error, projectFolder, SdkConstants.androidCmdName());
-            }
+        File projectFolder = checkNewProjectLocation(folderPath);
+        if (projectFolder == null) {
+            return;
         }
 
         try {
@@ -396,6 +366,88 @@ public class ProjectCreator {
         }
     }
 
+    public void createExportProject(String folderPath, String projectName, String packageName) {
+        // create project folder if it does not exist
+        File projectFolder = checkNewProjectLocation(folderPath);
+        if (projectFolder == null) {
+            return;
+        }
+
+        try {
+            // location of the SDK goes in localProperty
+            ProjectProperties localProperties = ProjectProperties.create(folderPath,
+                    PropertyType.LOCAL);
+            localProperties.setProperty(ProjectProperties.PROPERTY_SDK, mSdkFolder);
+            localProperties.save();
+
+            // package name goes in export properties
+            ProjectProperties exportProperties = ProjectProperties.create(folderPath,
+                    PropertyType.EXPORT);
+            exportProperties.setProperty(ProjectProperties.PROPERTY_PACKAGE, packageName);
+            exportProperties.setProperty(ProjectProperties.PROPERTY_VERSIONCODE, "1");
+            exportProperties.setProperty(ProjectProperties.PROPERTY_PROJECTS, "../some/path/here");
+            exportProperties.save();
+
+            // create the map for place-holders of values to replace in the build file template
+            final HashMap<String, String> keywords = new HashMap<String, String>();
+
+            // Take the project name from the command line if there's one
+            if (projectName != null) {
+                keywords.put(PH_PROJECT_NAME, projectName);
+            } else {
+                // We need a project name. Just pick up the basename of the project
+                // directory.
+                projectName = projectFolder.getName();
+                keywords.put(PH_PROJECT_NAME, projectName);
+            }
+
+            installTemplate("build.export.template",
+                    new File(projectFolder, SdkConstants.FN_BUILD_XML),
+                    keywords);
+        } catch (Exception e) {
+            mLog.error(e, null);
+        }
+    }
+
+    private File checkNewProjectLocation(String folderPath) {
+        File projectFolder = new File(folderPath);
+        if (!projectFolder.exists()) {
+
+            boolean created = false;
+            Throwable t = null;
+            try {
+                created = projectFolder.mkdirs();
+            } catch (Exception e) {
+                t = e;
+            }
+
+            if (created) {
+                println("Created project directory: %1$s", projectFolder);
+            } else {
+                mLog.error(t, "Could not create directory: %1$s", projectFolder);
+                return null;
+            }
+        } else {
+            Exception e = null;
+            String error = null;
+            try {
+                String[] content = projectFolder.list();
+                if (content == null) {
+                    error = "Project folder '%1$s' is not a directory.";
+                } else if (content.length != 0) {
+                    error = "Project folder '%1$s' is not empty. Please consider using '%2$s update' instead.";
+                }
+            } catch (Exception e1) {
+                e = e1;
+            }
+
+            if (e != null || error != null) {
+                mLog.error(e, error, projectFolder, SdkConstants.androidCmdName());
+            }
+        }
+        return projectFolder;
+    }
+
     /**
      * Updates an existing project.
      * <p/>
@@ -417,7 +469,7 @@ public class ProjectCreator {
     public boolean updateProject(String folderPath, IAndroidTarget target, String projectName,
             String libraryPath) {
         // since this is an update, check the folder does point to a project
-        File androidManifest = checkProjectFolder(folderPath);
+        File androidManifest = checkProjectFolder(folderPath, SdkConstants.FN_ANDROID_MANIFEST_XML);
         if (androidManifest == null) {
             return false;
         }
@@ -488,7 +540,7 @@ public class ProjectCreator {
             println("Resolved location of library project to: %1$s", resolvedPath);
 
             // check the lib project exists
-            if (checkProjectFolder(resolvedPath) == null) {
+            if (checkProjectFolder(resolvedPath, SdkConstants.FN_ANDROID_MANIFEST_XML) == null) {
                 mLog.error(null, "No Android Manifest at: %1$s", resolvedPath);
                 return false;
             }
@@ -617,7 +669,7 @@ public class ProjectCreator {
     public void updateTestProject(final String folderPath, final String pathToMainProject,
             final SdkManager sdkManager) {
         // since this is an update, check the folder does point to a project
-        if (checkProjectFolder(folderPath) == null) {
+        if (checkProjectFolder(folderPath, SdkConstants.FN_ANDROID_MANIFEST_XML) == null) {
             return;
         }
 
@@ -639,7 +691,7 @@ public class ProjectCreator {
         println("Resolved location of main project to: %1$s", resolvedPath);
 
         // check the main project exists
-        if (checkProjectFolder(resolvedPath) == null) {
+        if (checkProjectFolder(resolvedPath, SdkConstants.FN_ANDROID_MANIFEST_XML) == null) {
             mLog.error(null, "No Android Manifest at: %1$s", resolvedPath);
             return;
         }
@@ -726,14 +778,97 @@ public class ProjectCreator {
     }
 
     /**
+     * Updates an existing project.
+     * <p/>
+     * Workflow:
+     * <ul>
+     * <li> Check export.properties is present (required)
+     * <li> Refresh/create "sdk" in local.properties
+     * <li> Build.xml: create if not present or no <androidinit(\w|/>) in it
+     * </ul>
+     *
+     * @param folderPath the folder of the project to update. This folder must exist.
+     * @param projectName The project name from --name. Can be null.
+     * @param force whether to force a new build.xml file.
+     * @return true if the project was successfully updated.
+     */
+    public boolean updateExportProject(String folderPath, String projectName, boolean force) {
+        // since this is an update, check the folder does point to a project
+        File androidManifest = checkProjectFolder(folderPath, SdkConstants.FN_EXPORT_PROPERTIES);
+        if (androidManifest == null) {
+            return false;
+        }
+
+        // get the parent File.
+        File projectFolder = androidManifest.getParentFile();
+
+        // Refresh/create "sdk" in local.properties
+        // because the file may already exist and contain other values (like apk config),
+        // we first try to load it.
+        ProjectProperties props = ProjectProperties.load(folderPath, PropertyType.LOCAL);
+        if (props == null) {
+            props = ProjectProperties.create(folderPath, PropertyType.LOCAL);
+        }
+
+        // set or replace the sdk location.
+        props.setProperty(ProjectProperties.PROPERTY_SDK, mSdkFolder);
+        try {
+            props.save();
+            println("Updated %1$s", PropertyType.LOCAL.getFilename());
+        } catch (Exception e) {
+            mLog.error(e, "Failed to write %1$s file in '%2$s'",
+                    PropertyType.LOCAL.getFilename(),
+                    folderPath);
+            return false;
+        }
+
+        // Build.xml: create if not present
+        File buildXml = new File(projectFolder, SdkConstants.FN_BUILD_XML);
+        boolean needsBuildXml = force || projectName != null || !buildXml.exists();
+
+        if (needsBuildXml) {
+            // create the map for place-holders of values to replace in the templates
+            final HashMap<String, String> keywords = new HashMap<String, String>();
+
+            // Take the project name from the command line if there's one
+            if (projectName != null) {
+                keywords.put(PH_PROJECT_NAME, projectName);
+            } else {
+                // We need a project name. Just pick up the basename of the project
+                // directory.
+                projectName = projectFolder.getName();
+                keywords.put(PH_PROJECT_NAME, projectName);
+            }
+
+            if (mLevel == OutputLevel.VERBOSE) {
+                println("Regenerating %1$s with project name %2$s",
+                        SdkConstants.FN_BUILD_XML,
+                        keywords.get(PH_PROJECT_NAME));
+            }
+
+            try {
+                installTemplate("build.export.template",
+                        new File(projectFolder, SdkConstants.FN_BUILD_XML),
+                        keywords);
+            } catch (ProjectCreateException e) {
+                mLog.error(e, null);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Checks whether the give <var>folderPath</var> is a valid project folder, and returns
-     * a {@link File} to the AndroidManifest.xml file.
+     * a {@link File} to the required file.
      * <p/>This checks that the folder exists and contains an AndroidManifest.xml file in it.
      * <p/>Any error are output using {@link #mLog}.
      * @param folderPath the folder to check
+     * @param requiredFilename the file name of the file that's required.
      * @return a {@link File} to the AndroidManifest.xml file, or null otherwise.
      */
-    private File checkProjectFolder(String folderPath) {
+    private File checkProjectFolder(String folderPath, String requiredFilename) {
         // project folder must exist and be a directory, since this is an update
         File projectFolder = new File(folderPath);
         if (!projectFolder.isDirectory()) {
@@ -743,16 +878,15 @@ public class ProjectCreator {
         }
 
         // Check AndroidManifest.xml is present
-        File androidManifest = new File(projectFolder, SdkConstants.FN_ANDROID_MANIFEST_XML);
-        if (!androidManifest.isFile()) {
+        File requireFile = new File(projectFolder, requiredFilename);
+        if (!requireFile.isFile()) {
             mLog.error(null,
                     "%1$s is not a valid project (%2$s not found).",
-                    folderPath,
-                    SdkConstants.FN_ANDROID_MANIFEST_XML);
+                    folderPath, requiredFilename);
             return null;
         }
 
-        return androidManifest;
+        return requireFile;
     }
 
     /**
