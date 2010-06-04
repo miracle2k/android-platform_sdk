@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  * For a more detailed explanation of the purpose of this class,
  * please see {@link SimpleXmlTransfer}.
  */
-class SimpleAttribute implements IDragAttribute {
+public class SimpleAttribute implements IDragAttribute {
     private final String mName;
     private final String mValue;
     private final String mUri;

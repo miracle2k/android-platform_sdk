@@ -348,6 +348,11 @@ import java.util.ListIterator;
 
             mHScale.setSize(mImage.getImageData().width, getClientArea().width);
             mVScale.setSize(mImage.getImageData().height, getClientArea().height);
+
+            // Pre-load the android.view.View rule in the Rules Engine. Doing it here means
+            // it will be done after the first rendering is finished. Successive calls are
+            // superfluous but harmless since the rule will be cached.
+            mRulesEngine.preloadAndroidView();
         }
 
         redraw();

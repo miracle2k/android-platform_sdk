@@ -29,6 +29,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewEleme
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFolderListener;
+import com.android.sdklib.SdkConstants;
 
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.control.CompilationUnit;
@@ -129,6 +130,14 @@ public class RulesEngine {
             mProjectFolderListener = null;
         }
         clearCache();
+    }
+
+    /**
+     * Eventually all rules are going to try to load the base android.view.View rule.
+     * Clients can request to preload it to make the first call faster.
+     */
+    public void preloadAndroidView() {
+        loadRule(SdkConstants.CLASS_VIEW, SdkConstants.CLASS_VIEW);
     }
 
     /**
