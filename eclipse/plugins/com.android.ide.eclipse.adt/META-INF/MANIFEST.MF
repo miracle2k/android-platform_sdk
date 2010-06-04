@@ -49,6 +49,7 @@ Require-Bundle: com.android.ide.eclipse.ddms,
  org.eclipse.core.expressions
 Eclipse-LazyStart: true
 Export-Package: com.android.ide.eclipse.adt;x-friends:="com.android.ide.eclipse.tests",
+ com.android.ide.eclipse.adt.editors.layout.gscripts;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.actions;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.build;x-friends:="com.android.ide.eclipse.tests",
@@ -58,6 +59,8 @@ Export-Package: com.android.ide.eclipse.adt;x-friends:="com.android.ide.eclipse.
  com.android.ide.eclipse.adt.internal.editors.layout.configuration;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors.layout.descriptors;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors.layout.gle1;x-friends:="com.android.ide.eclipse.tests",
+ com.android.ide.eclipse.adt.internal.editors.layout.gle2;x-friends:="com.android.ide.eclipse.tests",
+ com.android.ide.eclipse.adt.internal.editors.layout.gre;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors.layout.parts;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors.layout.uimodel;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors.manifest;x-friends:="com.android.ide.eclipse.tests",

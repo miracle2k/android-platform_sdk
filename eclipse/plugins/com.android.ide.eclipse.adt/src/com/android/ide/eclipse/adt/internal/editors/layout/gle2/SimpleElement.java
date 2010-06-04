@@ -36,7 +36,7 @@ public class SimpleElement implements IDragElement {
     /** Version number of the internal serialized string format. */
     private static final String FORMAT_VERSION = "1";
 
-    private final String mName;
+    private final String mFqcn;
     private final INode mNode;
     private final ArrayList<IDragAttribute> mAttributes = new ArrayList<IDragAttribute>();
     private final ArrayList<IDragElement> mElements = new ArrayList<IDragElement>();
@@ -47,10 +47,11 @@ public class SimpleElement implements IDragElement {
     /**
      * Creates a new {@link SimpleElement} with the specified element name.
      *
-     * @param name A fully qualified class name of a View to inflate.
+     * @param fqcn A fully qualified class name of a View to inflate, e.g.
+     *             "android.view.Button"
      */
-    public SimpleElement(String name, NodeProxy nodeProxy) {
-        mName = name;
+    public SimpleElement(String fqcn, NodeProxy nodeProxy) {
+        mFqcn = fqcn;
         mNode = nodeProxy;
     }
 
@@ -59,12 +60,12 @@ public class SimpleElement implements IDragElement {
      * a View to inflate.
      */
     public String getFqcn() {
-        return mName;
+        return mFqcn;
     }
 
     /**
      * Returns the bounds of the element, if it came from an existing canvas.
-     * The returned rect is invalid and non-nul if this is a new element being created.
+     * The returned rect is invalid and non-null if this is a new element being created.
      */
     public INode getNode() {
         return mNode;
@@ -110,7 +111,7 @@ public class SimpleElement implements IDragElement {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         // "1" is the version number of the format.
-        sb.append('{').append(FORMAT_VERSION).append(',').append(mName);
+        sb.append('{').append(FORMAT_VERSION).append(',').append(mFqcn);
         sb.append('\n');
         for (IDragAttribute a : mAttributes) {
             sb.append(a.toString());
@@ -186,7 +187,7 @@ public class SimpleElement implements IDragElement {
             // Note: INode objects should come from the NodeFactory and be unique
             // for a given UiViewNode so it's OK to compare mNode pointers here.
 
-            return mName.equals(se.mName) &&
+            return mFqcn.equals(se.mFqcn) &&
                     mNode == se.mNode &&
                     mAttributes.size() == se.mAttributes.size() &&
                     mElements.size() == se.mElements.size() &&
@@ -198,7 +199,7 @@ public class SimpleElement implements IDragElement {
 
     @Override
     public int hashCode() {
-        long c = mName.hashCode();
+        long c = mFqcn.hashCode();
         // uses the formula defined in java.util.List.hashCode()
         c = 31*c + mAttributes.hashCode();
         c = 31*c + mElements.hashCode();
