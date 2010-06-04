@@ -265,6 +265,7 @@ import org.eclipse.swt.dnd.TransferData;
                 sameCanvas);
 
         clearDropInfo();
+        mCanvas.redraw();
     }
 
     /**

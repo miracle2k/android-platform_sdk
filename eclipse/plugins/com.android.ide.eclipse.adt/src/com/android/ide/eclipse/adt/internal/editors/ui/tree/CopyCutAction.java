@@ -57,11 +57,11 @@ public class CopyCutAction extends Action {
      * Creates a new Copy or Cut action.
      * 
      * @param selected The UI node to cut or copy. It *must* have a non-null XML node.
-     * @param perform_cut True if the operation is cut, false if it is copy.
+     * @param performCut True if the operation is cut, false if it is copy.
      */
     public CopyCutAction(AndroidEditor editor, Clipboard clipboard, ICommitXml xmlCommit,
-            UiElementNode selected, boolean perform_cut) {
-        this(editor, clipboard, xmlCommit, toList(selected), perform_cut);
+            UiElementNode selected, boolean performCut) {
+        this(editor, clipboard, xmlCommit, toList(selected), performCut);
     }
 
     /**
@@ -69,17 +69,17 @@ public class CopyCutAction extends Action {
      * 
      * @param selected The UI nodes to cut or copy. They *must* have a non-null XML node.
      *                 The list becomes owned by the {@link CopyCutAction}.
-     * @param perform_cut True if the operation is cut, false if it is copy.
+     * @param performCut True if the operation is cut, false if it is copy.
      */
     public CopyCutAction(AndroidEditor editor, Clipboard clipboard, ICommitXml xmlCommit,
-            List<UiElementNode> selected, boolean perform_cut) {
-        super(perform_cut ? "Cut" : "Copy");
+            List<UiElementNode> selected, boolean performCut) {
+        super(performCut ? "Cut" : "Copy");
         mEditor = editor;
         mClipboard = clipboard;
         mXmlCommit = xmlCommit;
         
         ISharedImages images = PlatformUI.getWorkbench().getSharedImages();
-        if (perform_cut) {
+        if (performCut) {
             setImageDescriptor(images.getImageDescriptor(ISharedImages.IMG_TOOL_CUT));
             setHoverImageDescriptor(images.getImageDescriptor(ISharedImages.IMG_TOOL_CUT));
             setDisabledImageDescriptor(
@@ -92,7 +92,7 @@ public class CopyCutAction extends Action {
         }
 
         mUiNodes = selected;
-        mPerformCut = perform_cut;
+        mPerformCut = performCut;
     }
 
     /**

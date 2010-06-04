@@ -26,7 +26,9 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
+import com.android.ide.eclipse.adt.internal.editors.ui.tree.CopyCutAction;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.ILayoutResult;
 
 import org.eclipse.jface.text.BadLocationException;
@@ -101,6 +103,9 @@ import java.util.ListIterator;
 
     /** The Groovy Rules Engine, associated with the current project. */
     private RulesEngine mRulesEngine;
+
+    /** SWT clipboard instance. */
+    private Clipboard mClipboard;
 
     /*
      * The last valid ILayoutResult passed to {@link #setResult(ILayoutResult)}.
@@ -189,6 +194,8 @@ import java.util.ListIterator;
         mLayoutEditor = layoutEditor;
         mRulesEngine = rulesEngine;
 
+        mClipboard = new Clipboard(parent.getDisplay());
+
         mHScale = new ScaleInfo(getHorizontalBar());
         mVScale = new ScaleInfo(getVerticalBar());
 
@@ -269,6 +276,11 @@ import java.util.ListIterator;
             mRulesEngine.dispose();
             mRulesEngine = null;
         }
+
+        if (mClipboard != null) {
+            mClipboard.dispose();
+            mClipboard = null;
+        }
     }
 
     /**
@@ -300,6 +312,11 @@ import java.util.ListIterator;
      */
     public NodeFactory getNodeFactory() {
         return mNodeFactory;
+    }
+
+    /** Returns the shared SWT keyboard. */
+    public Clipboard getClipboard() {
+        return mClipboard;
     }
 
     /**
@@ -1152,9 +1169,6 @@ import java.util.ListIterator;
             if (e.doit) {
                 mDragElements = getSelectionAsElements();
                 GlobalCanvasDragInfo.getInstance().startDrag(mDragElements, LayoutCanvas.this);
-
-                // TODO for debugging. remove later.
-                AdtPlugin.printToConsole("CanvasDND", String.format("dragStart %d items, type=%s", mDragSelection.size(), e.dataType));
             }
         }
 
@@ -1166,17 +1180,12 @@ import java.util.ListIterator;
          * {@inheritDoc}
          */
         public void dragSetData(DragSourceEvent e) {
-            // TODO for debugging. remove later.
-            AdtPlugin.printToConsole("CanvasDND", "dragSetData");
-
             if (TextTransfer.getInstance().isSupportedType(e.dataType)) {
                 e.data = getSelectionAsText();
                 return;
             }
 
             if (SimpleXmlTransfer.getInstance().isSupportedType(e.dataType)) {
-                // TODO for debugging. remove later.
-                AdtPlugin.printToConsole("CanvasDND", "=> SimpleXmlTransfer");
                 e.data = mDragElements;
                 return;
             }
@@ -1281,18 +1290,47 @@ import java.util.ListIterator;
          * On a successful move, remove the originating elements.
          */
         public void dragFinished(DragSourceEvent e) {
-            // TODO for debugging. remove later.
-            AdtPlugin.printToConsole("CanvasDND", "dragFinished");
-
             if (e.detail == DND.DROP_MOVE) {
-                // remove from source
+                // Remove from source. Since we know the selection, we'll simply
+                // create a cut operation on the existing drag selection.
                 AdtPlugin.printToConsole("CanvasDND", "dragFinished => MOVE");
+
+                // Create an undo wrapper, which takes a runnable
+                mLayoutEditor.wrapUndoRecording(
+                        "Remove drag'n'drop source elements",
+                        new Runnable() {
+                            public void run() {
+                                // Create an edit-XML wrapper, which takes a runnable
+                                mLayoutEditor.editXmlModel(new Runnable() {
+                                    public void run() {
+                                        cutDragSelection();
+                                    }
+                                });
+                            }
+                        });
             }
 
             // Clear the selection
             mDragSelection.clear();
             mDragElements = null;
             GlobalCanvasDragInfo.getInstance().stopDrag();
+        }
+
+        private void cutDragSelection() {
+            List<UiElementNode> selected = new ArrayList<UiElementNode>();
+
+            for (CanvasSelection cs : mDragSelection) {
+                selected.add(cs.getViewInfo().getUiViewKey());
+            }
+
+            CopyCutAction action = new CopyCutAction(
+                    mLayoutEditor,
+                    getClipboard(),
+                    null, /* xml commit callback */
+                    selected,
+                    true /* cut */);
+
+            action.run();
         }
 
     }
