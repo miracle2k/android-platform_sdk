@@ -506,6 +506,7 @@ public class MultiApkExportHelper {
 
             // store the project that doesn't match.
             ProjectConfig badMatch = null;
+            String errorMsg = null;
 
             // recorded whether we checked the version code. this is for when we compare
             // a project config
@@ -584,7 +585,8 @@ public class MultiApkExportHelper {
                             map.put(prop.substring(0, equalPos), prop.substring(equalPos + 1));
                         }
 
-                        if (found.compareToProperties(map) == false) {
+                        errorMsg = found.compareToProperties(map);
+                        if (errorMsg != null) {
                             // bad project config, record the project
                             badMatch = found;
 
@@ -602,9 +604,10 @@ public class MultiApkExportHelper {
 
             if (badMatch != null) {
                 throw new ExportException(
-                        "Config for project %1$s has changed from previous export with versionCode %2$d.\n" +
+                        "Config for project %1$s has changed from previous export with versionCode %2$d:\n" +
+                        "\t%3$s\n" +
                         "Any change in the multi-apk configuration requires an increment of the versionCode in export.properties.",
-                        badMatch.getRelativePath(), mVersionCode);
+                        badMatch.getRelativePath(), mVersionCode, errorMsg);
             } else if (projectsToCheck.size() > 0) {
                 throw new ExportException(
                         "Project %1$s was not part of the previous export with versionCode %2$d.\n" +

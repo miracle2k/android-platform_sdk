@@ -28,6 +28,7 @@ import com.android.sdklib.xml.ManifestData.SupportsScreens;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +69,9 @@ public final class ProjectConfig {
     private final boolean mSplitByAbi;
     private final boolean mSplitByDensity;
     private final Map<String, String> mLocaleFilters;
+    /** List of ABIs not defined in the properties but actually existing in the project as valid
+     * .so files */
+    private final List<String> mAbis;
 
     static ProjectConfig create(File projectFolder, String relativePath,
             ManifestData manifestData) throws ExportException {
@@ -104,6 +108,11 @@ public final class ProjectConfig {
         mSplitByAbi = splitByAbi;
         mSplitByDensity = splitByDensity;
         mLocaleFilters = localeFilters;
+        if (mSplitByAbi) {
+            mAbis = findAbis();
+        } else {
+            mAbis = null;
+        }
     }
 
     public File getProjectFolder() {
@@ -129,9 +138,8 @@ public final class ProjectConfig {
         Map<String, String> softVariants = computeSoftVariantMap();
 
         if (mSplitByAbi) {
-            List<String> abis = findAbis();
-            if (abis.size() > 0) {
-                for (String abi : abis) {
+            if (mAbis.size() > 0) {
+                for (String abi : mAbis) {
                     list.add(new ApkData(this, abi, softVariants));
                 }
             } else {
@@ -234,7 +242,22 @@ public final class ProjectConfig {
         }
 
         if (onlyManifestData == false) {
-            LogHelper.write(sb, PROP_ABI, mSplitByAbi);
+            if (mSplitByAbi) {
+                // need to not only encode true, but also the list of ABIs that will be used when
+                // the project is exported. This is because the hard property is not so much
+                // whether an apk is generated per ABI, but *how many* of them (since they all take
+                // a different build Info).
+                StringBuilder value = new StringBuilder(Boolean.toString(true));
+                for (String abi : mAbis) {
+                    value.append('|').append(abi);
+                }
+                LogHelper.write(sb, PROP_ABI, value);
+            } else {
+                LogHelper.write(sb, PROP_ABI, false);
+            }
+
+            // in this case we're simply always going to make 3 versions (which may not make sense)
+            // so the boolean is enough.
             LogHelper.write(sb, PROP_DENSITY, Boolean.toString(mSplitByDensity));
 
             if (mLocaleFilters.size() > 0) {
@@ -249,57 +272,79 @@ public final class ProjectConfig {
      * Compares the current project config to a list of properties.
      * These properties are in the format output by {@link #getConfigString()}.
      * @param values the properties to compare to.
-     * @return true if the properties exactly match the current config.
+     * @return null if the properties exactly match the current config, an error message otherwise
      */
-    boolean compareToProperties(Map<String, String> values) {
+    String compareToProperties(Map<String, String> values) {
         String tmp;
         // Note that most properties must always be present in the map.
         try {
             // api must always be there
             if (mMinSdkVersion != Integer.parseInt(values.get(PROP_API))) {
-                return false;
+                return "Attribute minSdkVersion changed";
             }
+        } catch (NumberFormatException e) {
+            // failed to convert an integer? consider the configs not equal.
+            return "Failed to convert attribute minSdkVersion to an Integer";
+        }
 
+        try {
             tmp = values.get(PROP_GL); // GL is optional in the config string.
             if (tmp != null) {
                 if (mGlEsVersion != Integer.decode(tmp)) {
-                    return false;
+                    return "Attribute glEsVersion changed";
                 }
             }
         } catch (NumberFormatException e) {
             // failed to convert an integer? consider the configs not equal.
-            return false;
+            return "Failed to convert attribute glEsVersion to an Integer";
         }
 
         tmp = values.get(PROP_DENSITY);
         if (tmp == null || mSplitByDensity != Boolean.valueOf(tmp)) {
-            return false;
+            return "Property split.density changed or is missing from config file";
         }
 
+        // compare the ABI. If splitByAbi is true, then compares the ABIs present in the project
+        // as they must match.
         tmp = values.get(PROP_ABI);
-        if (tmp == null || mSplitByAbi != Boolean.valueOf(tmp)) {
-            return false;
+        if (tmp == null) {
+            return "Property split.abi is missing from config file";
+        }
+        String[] abis = tmp.split("\\|");
+        System.out.println("ABIS: " + Arrays.toString(abis));
+        System.out.println("current: " + mSplitByAbi);
+        if (mSplitByAbi != Boolean.valueOf(abis[0])) { // first value is always the split boolean
+            return "Property split.abi changed";
+        }
+        // now compare the rest.
+        if (abis.length - 1 != mAbis.size()) {
+            return "The number of ABIs available in the project changed";
+        }
+        for (int i = 1 ; i < abis.length ; i++) {
+            if (mAbis.indexOf(abis[i]) == -1) {
+                return "The list of ABIs available in the project changed";
+            }
         }
 
         tmp = values.get(PROP_SCREENS);
         if (tmp != null) {
             SupportsScreens supportsScreens = new SupportsScreens(tmp);
             if (supportsScreens.equals(mSupportsScreens) == false) {
-                return false;
+                return "Supports-Screens value changed";
             }
         } else {
-            return false;
+            return "Supports-screens value missing from config file";
         }
 
         tmp = values.get(PROP_LOCALEFILTERS);
         if (tmp != null) {
             if (mLocaleFilters.equals(ApkSettings.readLocaleFilters(tmp)) == false) {
-                return false;
+                return "Locale resource filter changed";
             }
         } else {
             // do nothing. locale filter is optional in the config string.
         }
 
-        return true;
+        return null;
     }
 }
