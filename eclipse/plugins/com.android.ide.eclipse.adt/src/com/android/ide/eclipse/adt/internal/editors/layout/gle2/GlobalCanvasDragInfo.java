@@ -39,6 +39,7 @@ class GlobalCanvasDragInfo {
     private static final GlobalCanvasDragInfo sInstance = new GlobalCanvasDragInfo();
 
     private SimpleElement[] mCurrentElements = null;
+    private CanvasSelection[] mCurrentSelection;
     private Object mSourceCanvas = null;
 
     /** Private constructor. Use {@link #getInstance()} to retrieve the singleton. */
@@ -52,8 +53,9 @@ class GlobalCanvasDragInfo {
     }
 
     /** Registers the XML elements being dragged. */
-    public void startDrag(SimpleElement[] elements, Object sourceCanvas) {
+    public void startDrag(SimpleElement[] elements, CanvasSelection[] selection, Object sourceCanvas) {
         mCurrentElements = elements;
+        mCurrentSelection = selection;
         mSourceCanvas = sourceCanvas;
     }
 
@@ -68,8 +70,16 @@ class GlobalCanvasDragInfo {
         return mCurrentElements;
     }
 
+    /** Returns the selection originally dragged.
+     * Can be null if the drag did not start in a canvas.
+     */
+    public CanvasSelection[] getCurrentSelection() {
+        return mCurrentSelection;
+    }
+
     /**
-     * Returns the object that call {@link #startDrag(SimpleElement[], Object)}. Can be null.
+     * Returns the object that call {@link #startDrag(SimpleElement[], CanvasSelection[], Object)}.
+     * Can be null.
      * This is not meant to access the object indirectly, it is just meant to compare if the
      * source and the destination of the drag'n'drop are the same, so object identity
      * is all what matters.

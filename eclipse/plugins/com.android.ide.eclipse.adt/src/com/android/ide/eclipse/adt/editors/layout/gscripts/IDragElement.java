@@ -32,12 +32,18 @@ public interface IDragElement {
     public abstract String getFqcn();
 
     /**
-     * Returns the node matching the element, if it came from an existing canvas
-     * in the same Eclipse instance. <br/>
-     * The node is null if this is a new element being created or if the element
-     * originated on a canvas in a different instance of Eclipse.
+     * Returns the bounds of the element's node, if it originated from an existing
+     * canvas. The rectangle is invalid and non-null when the element originated
+     * from the object palette.
      */
-    public abstract INode getNode();
+    public abstract Rect getBounds();
+
+    /**
+     * Returns the fully qualified class name of the parent, if the element originated
+     * from an existing canvas. Returns null if the element has no parent, such as a top
+     * level element or an element originating from the object palette.
+     */
+    public abstract String getParentFqcn();
 
     /**
      * Returns a list of attributes. The list can be empty but is never null.

@@ -430,13 +430,17 @@ public class PaletteComposite extends Composite {
         private final SimpleElement[] mElements;
 
         public DescDragSourceListener(ElementDescriptor desc) {
-            SimpleElement se = new SimpleElement(SimpleXmlTransfer.getFqcn(desc), null);
+            SimpleElement se = new SimpleElement(
+                    SimpleXmlTransfer.getFqcn(desc), null /* parentFqcn */, null /* bounds */);
             mElements = new SimpleElement[] { se };
         }
 
         public void dragStart(DragSourceEvent e) {
             // Register this as the current dragged data
-            GlobalCanvasDragInfo.getInstance().startDrag(mElements, null /*canvas*/);
+            GlobalCanvasDragInfo.getInstance().startDrag(
+                    mElements,
+                    null /* selection */,
+                    null /*canvas*/);
         }
 
         public void dragSetData(DragSourceEvent e) {

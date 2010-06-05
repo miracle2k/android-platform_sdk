@@ -19,9 +19,9 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
@@ -1168,7 +1168,10 @@ import java.util.ListIterator;
             e.doit = mDragSelection.size() > 0;
             if (e.doit) {
                 mDragElements = getSelectionAsElements();
-                GlobalCanvasDragInfo.getInstance().startDrag(mDragElements, LayoutCanvas.this);
+                GlobalCanvasDragInfo.getInstance().startDrag(
+                        mDragElements,
+                        mDragSelection.toArray(new CanvasSelection[mDragSelection.size()]),
+                        LayoutCanvas.this);
             }
         }
 
@@ -1211,10 +1214,17 @@ import java.util.ListIterator;
         private SimpleElement transformToSimpleElement(CanvasViewInfo vi) {
 
             UiViewElementNode uiNode = vi.getUiViewKey();
-            ElementDescriptor desc = uiNode.getDescriptor();
 
-            SimpleElement e = new SimpleElement(
-                    SimpleXmlTransfer.getFqcn(desc), mNodeFactory.create(vi));
+            String fqcn = SimpleXmlTransfer.getFqcn(uiNode.getDescriptor());
+            String parentFqcn = null;
+            Rect bounds = new Rect(vi.getAbsRect());
+
+            UiElementNode uiParent = uiNode.getUiParent();
+            if (uiParent != null) {
+                parentFqcn = SimpleXmlTransfer.getFqcn(uiParent.getDescriptor());
+            }
+
+            SimpleElement e = new SimpleElement(fqcn, parentFqcn, bounds);
 
             for (UiAttributeNode attr : uiNode.getUiAttributes()) {
                 String value = attr.getCurrentValue();

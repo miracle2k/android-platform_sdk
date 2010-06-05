@@ -30,13 +30,6 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
             return null;
         }
 
-        // If one of the top elements is ourselve, refuse the drop.
-        for (elem in elements) {
-            if (elem.getNode().is(targetNode)) {
-                return null;
-            }
-        }
-
         return new DropFeedback(
             [ "p": null ],      // Point: last cursor position
             {
@@ -73,10 +66,9 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
         int x = p.x;
         int y = p.y;
 
-        def firstNode = elements[0].getNode();
-        Rect be = firstNode == null ? null : firstNode.getBounds();
+        Rect be = elements[0].getBounds();
 
-        if (be != null && be.isValid()) {
+        if (be.isValid()) {
             // At least the first element has a bound. Draw rectangles
             // for all dropped elements with valid bounds, offset at
             // the drop point.
@@ -95,14 +87,10 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
     }
 
     void drawElement(IGraphics gc, IDragElement element, int offsetX, int offsetY) {
-        INode node = element.getNode();
-        if (node != null) {
-            Rect b = node.getBounds();
-
-            if (b.isValid()) {
-                b = b.copy().offsetBy(offsetX, offsetY);
-                gc.drawRect(b);
-            }
+        Rect b = element.getBounds();
+        if (b.isValid()) {
+            b = b.copy().offsetBy(offsetX, offsetY);
+            gc.drawRect(b);
         }
 
         element.getInnerElements().each {
@@ -149,12 +137,14 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
         }
 
         targetNode.editXml("Add elements to AbsoluteLayout") {
+
+            boolean first = true;
+            Point offset = null;
+
             // Now write the new elements.
             elements.each { element ->
                 String fqcn = element.getFqcn();
-                def srcNode = element.getNode();
-
-                Rect be = srcNode == null ? null : srcNode.getBounds();
+                Rect be = element.getBounds();
 
                 INode newChild = targetNode.appendChild(fqcn);
 
@@ -168,19 +158,26 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
                     }
                 };
 
-                // TODO for the 2..n elements see if the they have a x/y expressed
-                // in dp or dip and use it to recompute a relative position to the
-                // first dragged element. If they don't use dp/dip, we can still use
-                // the canvas bounds if available.
-                newChild.setAttribute(ANDROID_URI, "layout_x", "${x}dip");
-                x += 10;
+                targetNode.debugPrintf("POS: $offset , $x, $y, $be\n");
 
-                newChild.setAttribute(ANDROID_URI, "layout_y", "${y}dip");
-                if (be != null && be.isValid()) {
-                    y += be.h;
+                if (first) {
+                    first = false;
+                    if (be.isValid()) {
+                        offset = new Point(x - be.x, y - be.y);
+                        targetNode.debugPrintf("FIRST OFFSET: $offset\n");
+                    }
+                } else if (offset != null && be.isValid()) {
+                    x = offset.x + be.x;
+                    y = offset.y + be.y;
+                    targetNode.debugPrintf("NEXT X,Y: $x , $y");
                 } else {
-                    y += 10;
+                    x += 10;
+                    y += be.isValid() ? be.h : 10;
+                    targetNode.debugPrintf("DEFAULT X,Y: $x , $y\n");
                 }
+
+                newChild.setAttribute(ANDROID_URI, "layout_x", "${x}dip");
+                newChild.setAttribute(ANDROID_URI, "layout_y", "${y}dip");
 
                 def children = element.getInnerElements();
                 addInnerElements(newChild, element.getInnerElements(), id_map);

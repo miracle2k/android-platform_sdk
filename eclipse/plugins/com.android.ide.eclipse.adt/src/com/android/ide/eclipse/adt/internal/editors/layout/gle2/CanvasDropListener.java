@@ -27,6 +27,8 @@ import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TransferData;
 
+import java.util.Arrays;
+
 /**
  * Handles drop operations on top of the canvas.
  * <p/>
@@ -86,10 +88,13 @@ import org.eclipse.swt.dnd.TransferData;
      */
     private CanvasViewInfo mLeaveView;
 
+    /** Singleton used to keep track of drag selection in the same Eclipse instance. */
+    private final GlobalCanvasDragInfo mGlobalDragInfo;
+
     public CanvasDropListener(LayoutCanvas canvas) {
         mCanvas = canvas;
+        mGlobalDragInfo = GlobalCanvasDragInfo.getInstance();
     }
-
 
     /*
      * The cursor has entered the drop target boundaries.
@@ -115,11 +120,11 @@ import org.eclipse.swt.dnd.TransferData;
         // before it will most likely work only on Windows.)
         // In any case this can be null even for a valid transfer.
 
-        mCurrentDragElements = GlobalCanvasDragInfo.getInstance().getCurrentElements();
+        mCurrentDragElements = mGlobalDragInfo.getCurrentElements();
 
         if (mCurrentDragElements == null) {
-        SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
-        if (sxt.isSupportedType(event.currentDataType)) {
+            SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
+            if (sxt.isSupportedType(event.currentDataType)) {
                 mCurrentDragElements = (SimpleElement[]) sxt.nativeToJava(event.currentDataType);
             }
         }
@@ -155,7 +160,7 @@ import org.eclipse.swt.dnd.TransferData;
             // If the drag comes from the same canvas we default to move, otherwise we
             // default to copy.
 
-            if (GlobalCanvasDragInfo.getInstance().getSourceCanvas() == mCanvas &&
+            if (mGlobalDragInfo.getSourceCanvas() == mCanvas &&
                     (event.operations & DND.DROP_MOVE) != 0) {
                 event.detail = DND.DROP_MOVE;
             } else if ((event.operations & DND.DROP_COPY) != 0) {
@@ -252,10 +257,14 @@ import org.eclipse.swt.dnd.TransferData;
             return;
         }
 
+        if (mCurrentDragElements != null && Arrays.equals(elements, mCurrentDragElements)) {
+            elements = mCurrentDragElements;
+        }
+
         Point where = mCanvas.displayToCanvasPoint(event.x, event.y);
 
         boolean isCopy = event.detail == DND.DROP_COPY;
-        boolean sameCanvas = mCanvas == GlobalCanvasDragInfo.getInstance().getSourceCanvas();
+        boolean sameCanvas = mCanvas == mGlobalDragInfo.getSourceCanvas();
 
         mCanvas.getRulesEngine().callOnDropped(mTargetNode,
                 elements,
@@ -367,12 +376,30 @@ import org.eclipse.swt.dnd.TransferData;
 
                 DropFeedback df = null;
                 NodeProxy targetNode = null;
+                boolean invalidTarget = false;
 
-                for (CanvasViewInfo targetVi = vi;
-                        targetVi != null && df == null;
-                        targetVi = targetVi.getParent()) {
-                    targetNode = mCanvas.getNodeFactory().create(targetVi);
-                    df = mCanvas.getRulesEngine().callOnDropEnter(targetNode, mCurrentDragElements);
+                if (mCanvas == mGlobalDragInfo.getSourceCanvas()) {
+                    // If we're drag'n'drop in the same canvas, none of the objects being
+                    // dragged should be considered as valid targets.
+                    CanvasSelection[] selection = mGlobalDragInfo.getCurrentSelection();
+                    if (selection != null) {
+                        for (CanvasSelection cs : selection) {
+                            if (cs.getViewInfo() == vi) {
+                                invalidTarget = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!invalidTarget) {
+                    for (CanvasViewInfo targetVi = vi;
+                            targetVi != null && df == null;
+                            targetVi = targetVi.getParent()) {
+                        targetNode = mCanvas.getNodeFactory().create(targetVi);
+                        df = mCanvas.getRulesEngine().callOnDropEnter(targetNode,
+                                                                      mCurrentDragElements);
+                    }
                 }
 
                 if (df != null && targetNode != mTargetNode) {
@@ -394,7 +421,7 @@ import org.eclipse.swt.dnd.TransferData;
                     // We don't need onDropMove in this case
                     isMove = false;
 
-                } else if (df == null && event.detail != DND.DROP_NONE) {
+                } else if (df == null) {
                     // Provide visual feedback that we are refusing the drop
                     event.detail = DND.DROP_NONE;
                     clearDropInfo();

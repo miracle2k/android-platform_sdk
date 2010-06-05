@@ -17,8 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 
 import java.util.ArrayList;
 
@@ -34,10 +33,11 @@ import java.util.ArrayList;
 public class SimpleElement implements IDragElement {
 
     /** Version number of the internal serialized string format. */
-    private static final String FORMAT_VERSION = "1";
+    private static final String FORMAT_VERSION = "2";
 
     private final String mFqcn;
-    private final INode mNode;
+    private final String mParentFqcn;
+    private final Rect mBounds;
     private final ArrayList<IDragAttribute> mAttributes = new ArrayList<IDragAttribute>();
     private final ArrayList<IDragElement> mElements = new ArrayList<IDragElement>();
 
@@ -48,11 +48,16 @@ public class SimpleElement implements IDragElement {
      * Creates a new {@link SimpleElement} with the specified element name.
      *
      * @param fqcn A fully qualified class name of a View to inflate, e.g.
-     *             "android.view.Button"
+     *             "android.view.Button". Must not be null nor empty.
+     * @param parentFqcn The fully qualified class name of the parent of this element.
+     *                   Can be null but not empty.
+     * @param bounds The canvas bounds of the originating canvas node of the element.
+     *               If null, a non-null invalid rectangle will be assigned.
      */
-    public SimpleElement(String fqcn, NodeProxy nodeProxy) {
+    public SimpleElement(String fqcn, String parentFqcn, Rect bounds) {
         mFqcn = fqcn;
-        mNode = nodeProxy;
+        mParentFqcn = parentFqcn;
+        mBounds = bounds == null ? new Rect() : bounds.copy();
     }
 
     /**
@@ -64,11 +69,21 @@ public class SimpleElement implements IDragElement {
     }
 
     /**
-     * Returns the bounds of the element, if it came from an existing canvas.
-     * The returned rect is invalid and non-null if this is a new element being created.
+     * Returns the bounds of the element's node, if it originated from an existing
+     * canvas. The rectangle is invalid and non-null when the element originated
+     * from the object palette.
      */
-    public INode getNode() {
-        return mNode;
+    public Rect getBounds() {
+        return mBounds;
+    }
+
+    /**
+     * Returns the fully qualified class name of the parent, if the element originated
+     * from an existing canvas. Returns null if the element has no parent, such as a top
+     * level element or an element originating from the object palette.
+     */
+    public String getParentFqcn() {
+        return mParentFqcn;
     }
 
     public IDragAttribute[] getAttributes() {
@@ -110,8 +125,14 @@ public class SimpleElement implements IDragElement {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        // "1" is the version number of the format.
-        sb.append('{').append(FORMAT_VERSION).append(',').append(mFqcn);
+        sb.append("{V=").append(FORMAT_VERSION);
+        sb.append(",N=").append(mFqcn);
+        if (mParentFqcn != null) {
+            sb.append(",P=").append(mParentFqcn);
+        }
+        if (mBounds != null && mBounds.isValid()) {
+            sb.append(String.format(",R=%d %d %d %d", mBounds.x, mBounds.y, mBounds.w, mBounds.h));
+         }
         sb.append('\n');
         for (IDragAttribute a : mAttributes) {
             sb.append(a.toString());
@@ -147,11 +168,56 @@ public class SimpleElement implements IDragElement {
             String s = line.trim();
             if (s.startsWith("{")) {                                //$NON-NLS-1$
                 if (e == null) {
-                    // This is the element's opening, it should have
-                    // the format "version_number,element_name"
-                    String[] s2 = s.substring(1).split(",");        //$NON-NLS-1$
-                    if (s2.length == 2 && s2[0].equals(FORMAT_VERSION)) {
-                        e = new SimpleElement(s2[1], null);
+                    // This is the element's header, it should have
+                    // the format "key=value,key=value,..."
+                    String version = null;
+                    String fqcn = null;
+                    String parent = null;
+                    Rect bounds = null;
+
+                    for (String s2 : s.substring(1).split(",")) {   //$NON-NLS-1$
+                        int pos = s2.indexOf('=');
+                        if (pos <= 0 || pos == s2.length() - 1) {
+                            continue;
+                        }
+                        String key = s2.substring(0, pos).trim();
+                        String value = s2.substring(pos + 1).trim();
+
+                        if (key.equals("V")) {                      //$NON-NLS-1$
+                            version = value;
+                            if (!value.equals(FORMAT_VERSION)) {
+                                // Wrong format version. Don't even try to process anything
+                                // else and just give up everything.
+                                inOutIndex[0] = index;
+                                return null;
+                            }
+
+                        } else if (key.equals("N")) {               //$NON-NLS-1$
+                            fqcn = value;
+
+                        } else if (key.equals("P")) {               //$NON-NLS-1$
+                            parent = value;
+
+                        } else if (key.equals("R")) {               //$NON-NLS-1$
+                            // Parse the canvas bounds
+                            String[] sb = value.split(" +");        //$NON-NLS-1$
+                            if (sb != null && sb.length == 4) {
+                                try {
+                                    bounds = new Rect();
+                                    bounds.x = Integer.parseInt(sb[0]);
+                                    bounds.y = Integer.parseInt(sb[1]);
+                                    bounds.w = Integer.parseInt(sb[2]);
+                                    bounds.h = Integer.parseInt(sb[3]);
+                                } catch (NumberFormatException ignore) {
+                                    bounds = null;
+                                }
+                            }
+                        }
+                    }
+
+                    // We need at least a valid name to recreate an element
+                    if (version != null && fqcn != null && fqcn.length() > 0) {
+                        e = new SimpleElement(fqcn, parent, bounds);
                     }
                 } else {
                     // This is an inner element... need to parse the { line again.
@@ -184,11 +250,17 @@ public class SimpleElement implements IDragElement {
         if (obj instanceof SimpleElement) {
             SimpleElement se = (SimpleElement) obj;
 
-            // Note: INode objects should come from the NodeFactory and be unique
-            // for a given UiViewNode so it's OK to compare mNode pointers here.
+            // Bounds and parentFqcn must be null on both sides or equal.
+            if ((mBounds == null && se.mBounds != null) ||
+                    (mBounds != null && !mBounds.equals(se.mBounds))) {
+                return false;
+            }
+            if ((mParentFqcn == null && se.mParentFqcn != null) ||
+                    (mParentFqcn != null && !mParentFqcn.equals(se.mParentFqcn))) {
+                return false;
+            }
 
             return mFqcn.equals(se.mFqcn) &&
-                    mNode == se.mNode &&
                     mAttributes.size() == se.mAttributes.size() &&
                     mElements.size() == se.mElements.size() &&
                     mAttributes.equals(se.mAttributes) &&
@@ -203,8 +275,11 @@ public class SimpleElement implements IDragElement {
         // uses the formula defined in java.util.List.hashCode()
         c = 31*c + mAttributes.hashCode();
         c = 31*c + mElements.hashCode();
-        if (mNode != null) {
-            c = 31*c + mNode.hashCode();
+        if (mParentFqcn != null) {
+            c = 31*c + mParentFqcn.hashCode();
+        }
+        if (mBounds != null) {
+            c = 31*c + mBounds.hashCode();
         }
 
         if (c > 0x0FFFFFFFFL) {
