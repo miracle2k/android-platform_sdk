@@ -80,12 +80,13 @@ int  main(void)
     for (;;)
     {
 #define  BUFF_SIZE   (PROPERTY_KEY_MAX + PROPERTY_VALUE_MAX + 2)
-
+        DD("receiving..");
         char* q;
         char  temp[BUFF_SIZE];
         int   len = qemud_channel_recv(qemud_fd, temp, sizeof temp - 1);
 
-        if (len < 0 || len > BUFF_SIZE-1)
+        /* lone NUL-byte signals end of properties */
+        if (len < 0 || len > BUFF_SIZE-1 || temp[0] == '\0')
             break;
 
         temp[len] = '\0';  /* zero-terminate string */
@@ -106,6 +107,7 @@ int  main(void)
             count += 1;
         }
     }
+
 
     /* finally, close the channel and exit */
     close(qemud_fd);
