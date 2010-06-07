@@ -42,9 +42,6 @@ set jar_path=lib\sdkmanager.jar
 rem Set SWT.Jar path based on current architecture (x86 or x86_64)
 for /f %%a in ('%java_exe% -jar lib\archquery.jar') do set swt_path=lib\%%a
 
-rem Get the current content of java.ext.dirs so that we can add to it instead of replacing
-for /f %%a in ('%java_exe% -jar lib\archquery.jar java.ext.dirs') do set orig_java_ext_dirs=%%a
-
 if "%1 %2"=="update sdk" goto StartUi
 if not "%1"=="" goto EndTempCopy
 :StartUi
@@ -77,10 +74,7 @@ if exist %swt_path% goto SetPath
     echo Please set ANDROID_SWT to point to the folder containing swt.jar for your platform.
     goto :EOF
 
-:SetPath
-set java_ext_dirs=%orig_java_ext_dirs%;%swt_path%;lib\
-
 rem Finally exec the java program and end here.
-call %java_exe% -Djava.ext.dirs=%java_ext_dirs% -Dcom.android.sdkmanager.toolsdir="%tools_dir%" -Dcom.android.sdkmanager.workdir="%work_dir%" -jar %jar_path% %*
+call %java_exe% -Dcom.android.sdkmanager.toolsdir="%tools_dir%" -Dcom.android.sdkmanager.workdir="%work_dir%" -classpath "%jar_path%;%swt_path%\swt.jar" com.android.sdkmanager.Main %*
 
 rem EOF
