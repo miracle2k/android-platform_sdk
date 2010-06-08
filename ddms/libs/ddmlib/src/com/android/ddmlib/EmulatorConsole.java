@@ -25,7 +25,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
 import java.util.Calendar;
+import java.util.Formatter;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -540,13 +542,15 @@ public final class EmulatorConsole {
 
         double latMinute = (absLat - Math.floor(absLat)) * 60;
 
-        String command = String.format(COMMAND_GPS,
+        // need to make sure the string format uses dot and not comma
+        Formatter formatter = new Formatter(Locale.US);
+        formatter.format(COMMAND_GPS,
                 c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE),
                 c.get(Calendar.SECOND), c.get(Calendar.MILLISECOND),
                 latDegree, latMinute, latDirection,
                 longDegree, longMinute, longDirection);
 
-        return processCommand(command);
+        return processCommand(formatter.toString());
     }
 
     /**
