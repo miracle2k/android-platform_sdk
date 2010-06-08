@@ -24,7 +24,6 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
-import java.util.Calendar;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Locale;
@@ -67,10 +66,7 @@ public final class EmulatorConsole {
     private final static String COMMAND_NETWORK_STATUS = "network status\r\n"; //$NON-NLS-1$
     private final static String COMMAND_NETWORK_SPEED = "network speed %1$s\r\n"; //$NON-NLS-1$
     private final static String COMMAND_NETWORK_LATENCY = "network delay %1$s\r\n"; //$NON-NLS-1$
-    private final static String COMMAND_GPS =
-        "geo nmea $GPGGA,%1$02d%2$02d%3$02d.%4$03d," + //$NON-NLS-1$
-        "%5$03d%6$09.6f,%7$c,%8$03d%9$09.6f,%10$c," + //$NON-NLS-1$
-        "1,10,0.0,0.0,0,0.0,0,0.0,0000\r\n"; //$NON-NLS-1$
+    private final static String COMMAND_GPS = "geo fix %1$f %2$f %3$f\r\n"; //$NON-NLS-1$
 
     private final static Pattern RE_KO = Pattern.compile("KO:\\s+(.*)"); //$NON-NLS-1$
 
@@ -522,33 +518,9 @@ public final class EmulatorConsole {
 
     public synchronized String sendLocation(double longitude, double latitude, double elevation) {
 
-        Calendar c = Calendar.getInstance();
-
-        double absLong = Math.abs(longitude);
-        int longDegree = (int)Math.floor(absLong);
-        char longDirection = 'E';
-        if (longitude < 0) {
-            longDirection = 'W';
-        }
-
-        double longMinute = (absLong - Math.floor(absLong)) * 60;
-
-        double absLat = Math.abs(latitude);
-        int latDegree = (int)Math.floor(absLat);
-        char latDirection = 'N';
-        if (latitude < 0) {
-            latDirection = 'S';
-        }
-
-        double latMinute = (absLat - Math.floor(absLat)) * 60;
-
         // need to make sure the string format uses dot and not comma
         Formatter formatter = new Formatter(Locale.US);
-        formatter.format(COMMAND_GPS,
-                c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE),
-                c.get(Calendar.SECOND), c.get(Calendar.MILLISECOND),
-                latDegree, latMinute, latDirection,
-                longDegree, longMinute, longDirection);
+        formatter.format(COMMAND_GPS, longitude, latitude, elevation);
 
         return processCommand(formatter.toString());
     }

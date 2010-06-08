@@ -25,6 +25,9 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 
+import java.text.DecimalFormat;
+import java.text.ParseException;
+
 /**
  * Encapsulation of controls handling a location coordinate in decimal and sexagesimal.
  * <p/>This handle the conversion between both modes automatically by using a {@link ModifyListener}
@@ -39,11 +42,12 @@ public final class CoordinateControls {
     private Text mSexagesimalDegreeText;
     private Text mSexagesimalMinuteText;
     private Text mSexagesimalSecondText;
-    
+    private final DecimalFormat mDecimalFormat = new DecimalFormat();
+
     /** Internal flag to prevent {@link ModifyEvent} to be sent when {@link Text#setText(String)}
      * is called. This is an int instead of a boolean to act as a counter. */
     private int mManualTextChange = 0;
-    
+
     /**
      * ModifyListener for the 3 {@link Text} controls of the sexagesimal mode.
      */
@@ -56,14 +60,14 @@ public final class CoordinateControls {
                 mValue = getValueFromSexagesimalControls();
                 setValueIntoDecimalControl(mValue);
                 mValueValidity = true;
-            } catch (NumberFormatException e) {
+            } catch (ParseException e) {
                 // wrong format empty the decimal controls.
                 mValueValidity = false;
                 resetDecimalControls();
             }
         }
     };
-    
+
     /**
      * Creates the {@link Text} control for the decimal display of the coordinate.
      * <p/>The control is expected to be placed in a Composite using a {@link GridLayout}.
@@ -76,10 +80,10 @@ public final class CoordinateControls {
                     return;
                 }
                 try {
-                    mValue = Double.parseDouble(mDecimalText.getText());
+                    mValue = mDecimalFormat.parse(mDecimalText.getText()).doubleValue();
                     setValueIntoSexagesimalControl(mValue);
                     mValueValidity = true;
-                } catch (NumberFormatException e) {
+                } catch (ParseException e) {
                     // wrong format empty the sexagesimal controls.
                     mValueValidity = false;
                     resetSexagesimalControls();
@@ -87,7 +91,7 @@ public final class CoordinateControls {
             }
         });
     }
-    
+
     /**
      * Creates the {@link Text} control for the "degree" display of the coordinate in sexagesimal
      * mode.
@@ -97,7 +101,7 @@ public final class CoordinateControls {
     public void createSexagesimalDegreeText(Composite parent) {
         mSexagesimalDegreeText = createTextControl(parent, "-199", mSexagesimalListener); //$NON-NLS-1$
     }
-    
+
     /**
      * Creates the {@link Text} control for the "minute" display of the coordinate in sexagesimal
      * mode.
@@ -117,7 +121,7 @@ public final class CoordinateControls {
     public void createSexagesimalSecondText(Composite parent) {
         mSexagesimalSecondText = createTextControl(parent, "99.999", mSexagesimalListener); //$NON-NLS-1$
     }
-    
+
     /**
      * Sets the coordinate into the {@link Text} controls.
      * @param value the coordinate value to set.
@@ -128,7 +132,7 @@ public final class CoordinateControls {
         setValueIntoDecimalControl(value);
         setValueIntoSexagesimalControl(value);
     }
-    
+
     /**
      * Returns whether the value in the control(s) is valid.
      */
@@ -144,7 +148,7 @@ public final class CoordinateControls {
     public double getValue() {
         return mValue;
     }
-    
+
     /**
      * Enables or disables all the {@link Text} controls.
      * @param enabled the enabled state.
@@ -155,7 +159,7 @@ public final class CoordinateControls {
         mSexagesimalMinuteText.setEnabled(enabled);
         mSexagesimalSecondText.setEnabled(enabled);
     }
-    
+
     private void resetDecimalControls() {
         mManualTextChange++;
         mDecimalText.setText(""); //$NON-NLS-1$
@@ -169,7 +173,7 @@ public final class CoordinateControls {
         mSexagesimalSecondText.setText(""); //$NON-NLS-1$
         mManualTextChange--;
     }
-    
+
     /**
      * Creates a {@link Text} with a given parent, default string and a {@link ModifyListener}
      * @param parent the parent {@link Composite}.
@@ -182,10 +186,10 @@ public final class CoordinateControls {
             ModifyListener listener) {
         // create the control
         Text text = new Text(parent, SWT.BORDER | SWT.LEFT | SWT.SINGLE);
-        
+
         // add the standard listener to it.
         text.addModifyListener(listener);
-        
+
         // compute its size/
         mManualTextChange++;
         text.setText(defaultString);
@@ -193,23 +197,23 @@ public final class CoordinateControls {
         Point size = text.computeSize(SWT.DEFAULT, SWT.DEFAULT);
         text.setText(""); //$NON-NLS-1$
         mManualTextChange--;
-        
+
         GridData gridData = new GridData();
         gridData.widthHint = size.x;
         text.setLayoutData(gridData);
-        
+
         return text;
     }
-    
-    private double getValueFromSexagesimalControls() throws NumberFormatException {
-        double degrees = Double.parseDouble(mSexagesimalDegreeText.getText());
-        double minutes = Double.parseDouble(mSexagesimalMinuteText.getText());
-        double seconds = Double.parseDouble(mSexagesimalSecondText.getText());
-        
+
+    private double getValueFromSexagesimalControls() throws ParseException {
+        double degrees = mDecimalFormat.parse(mSexagesimalDegreeText.getText()).doubleValue();
+        double minutes = mDecimalFormat.parse(mSexagesimalMinuteText.getText()).doubleValue();
+        double seconds = mDecimalFormat.parse(mSexagesimalSecondText.getText()).doubleValue();
+
         boolean isPositive = (degrees >= 0.);
         degrees = Math.abs(degrees);
 
-        double value = degrees + minutes / 60. + seconds / 3600.; 
+        double value = degrees + minutes / 60. + seconds / 3600.;
         return isPositive ? value : - value;
     }
 
@@ -218,21 +222,21 @@ public final class CoordinateControls {
         mDecimalText.setText(String.format("%.6f", value));
         mManualTextChange--;
     }
-    
+
     private void setValueIntoSexagesimalControl(double value) {
         // get the sign and make the number positive no matter what.
         boolean isPositive = (value >= 0.);
         value = Math.abs(value);
-        
+
         // get the degree
         double degrees = Math.floor(value);
-        
+
         // get the minutes
         double minutes = Math.floor((value - degrees) * 60.);
-        
+
         // get the seconds.
         double seconds = (value - degrees) * 3600. - minutes * 60.;
-        
+
         mManualTextChange++;
         mSexagesimalDegreeText.setText(
                 Integer.toString(isPositive ? (int)degrees : (int)- degrees));
