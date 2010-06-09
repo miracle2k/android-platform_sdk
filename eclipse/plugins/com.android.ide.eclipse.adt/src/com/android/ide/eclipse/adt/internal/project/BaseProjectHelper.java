@@ -380,7 +380,7 @@ public final class BaseProjectHelper {
 
             // check if it's an android project based on its nature
             try {
-                if (project.hasNature(AndroidConstants.NATURE)) {
+                if (project.hasNature(AndroidConstants.NATURE_DEFAULT)) {
                     if (filter == null || filter.accept(project)) {
                         androidProjectList.add(javaProject);
                     }

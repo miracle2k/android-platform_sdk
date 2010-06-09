@@ -70,7 +70,7 @@
    </extension>
    <extension
          id="AndroidNature"
-         name="AndroidNature"
+         name="Android Project Nature"
          point="org.eclipse.core.resources.natures">
       <runtime>
          <run class="com.android.ide.eclipse.adt.internal.project.AndroidNature"/>
@@ -78,6 +78,14 @@
       <builder id="com.android.ide.eclipse.adt.ResourceManagerBuilder"/>
       <builder id="com.android.ide.eclipse.adt.PreCompilerBuilder"/>
       <builder id="com.android.ide.eclipse.adt.ApkBuilder"/>
+   </extension>
+   <extension
+         id="ExportNature"
+         name="Android Export Project Nature"
+         point="org.eclipse.core.resources.natures">
+      <runtime>
+         <run class="com.android.ide.eclipse.adt.internal.project.ExportNature"/>
+      </runtime>
    </extension>
    <extension
          point="org.eclipse.ui.newWizards">

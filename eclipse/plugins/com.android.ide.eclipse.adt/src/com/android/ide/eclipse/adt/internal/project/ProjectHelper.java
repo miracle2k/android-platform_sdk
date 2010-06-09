@@ -401,7 +401,7 @@ public final class ProjectHelper {
         for (IProject p : projects) {
             if (p.isOpen()) {
                 try {
-                    if (p.hasNature(AndroidConstants.NATURE) == false) {
+                    if (p.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
                         // ignore non android projects
                         continue;
                     }
@@ -450,16 +450,16 @@ public final class ProjectHelper {
         String[] natures = description.getNatureIds();
 
         // if the android nature is not the first one, we reorder them
-        if (AndroidConstants.NATURE.equals(natures[0]) == false) {
+        if (AndroidConstants.NATURE_DEFAULT.equals(natures[0]) == false) {
             // look for the index
             for (int i = 0 ; i < natures.length ; i++) {
-                if (AndroidConstants.NATURE.equals(natures[i])) {
+                if (AndroidConstants.NATURE_DEFAULT.equals(natures[i])) {
                     // if we try to just reorder the array in one pass, this doesn't do
                     // anything. I guess JDT check that we are actually adding/removing nature.
                     // So, first we'll remove the android nature, and then add it back.
 
                     // remove the android nature
-                    removeNature(project, AndroidConstants.NATURE);
+                    removeNature(project, AndroidConstants.NATURE_DEFAULT);
 
                     // now add it back at the first index.
                     description = project.getDescription();
@@ -468,7 +468,7 @@ public final class ProjectHelper {
                     String[] newNatures = new String[natures.length + 1];
 
                     // first one is android
-                    newNatures[0] = AndroidConstants.NATURE;
+                    newNatures[0] = AndroidConstants.NATURE_DEFAULT;
 
                     // next the rest that was before the android nature
                     System.arraycopy(natures, 0, newNatures, 1, natures.length);
@@ -717,7 +717,7 @@ public final class ProjectHelper {
 
             //Verify that the project has also the Android Nature
             try {
-                if (!androidJavaProject.getProject().hasNature(AndroidConstants.NATURE)) {
+                if (!androidJavaProject.getProject().hasNature(AndroidConstants.NATURE_DEFAULT)) {
                     continue;
                 }
             } catch (CoreException e) {

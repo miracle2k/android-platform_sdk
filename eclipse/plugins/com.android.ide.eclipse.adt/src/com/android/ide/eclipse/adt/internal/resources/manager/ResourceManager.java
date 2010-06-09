@@ -167,7 +167,7 @@ public final class ResourceManager {
             final IProject project = folder.getProject();
 
             try {
-                if (project.hasNature(AndroidConstants.NATURE) == false) {
+                if (project.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
                     return;
                 }
             } catch (CoreException e) {
@@ -256,7 +256,7 @@ public final class ResourceManager {
             final IProject project = file.getProject();
 
             try {
-                if (project.hasNature(AndroidConstants.NATURE) == false) {
+                if (project.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
                     return;
                 }
             } catch (CoreException e) {
@@ -481,7 +481,7 @@ public final class ResourceManager {
     private void createProject(IProject project) {
         if (project.isOpen()) {
             try {
-                if (project.hasNature(AndroidConstants.NATURE) == false) {
+                if (project.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
                     return;
                 }
             } catch (CoreException e1) {

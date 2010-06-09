@@ -385,7 +385,7 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
             return false;
         }
 
-        if (project.hasNature(AndroidConstants.NATURE) == false) {
+        if (project.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
             String msg = String.format("%1$s is not an Android project!", project.getName());
             AdtPlugin.displayError("Android Launch", msg);
             return false;

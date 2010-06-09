@@ -160,7 +160,7 @@ final class ProjectCheckPage extends ExportWizardPage {
             mHasMessage = true;
         } else {
             try {
-                if (project.hasNature(AndroidConstants.NATURE) == false) {
+                if (project.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
                     addError(mErrorComposite, "Project is not an Android project.");
                 } else {
                     // check for errors

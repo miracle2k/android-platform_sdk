@@ -127,7 +127,7 @@ public class AndroidNature implements IProjectNature {
         // Adding the java nature after the android one, would place the java builder before the
         // android builders.
         addNatureToProjectDescription(project, JavaCore.NATURE_ID, monitor);
-        addNatureToProjectDescription(project, AndroidConstants.NATURE, monitor);
+        addNatureToProjectDescription(project, AndroidConstants.NATURE_DEFAULT, monitor);
     }
 
     /**
@@ -149,16 +149,16 @@ public class AndroidNature implements IProjectNature {
             IProjectDescription description = project.getDescription();
             String[] natures = description.getNatureIds();
             String[] newNatures = new String[natures.length + 1];
-            
+
             // Android natures always come first.
-            if (natureId.equals(AndroidConstants.NATURE)) {
+            if (natureId.equals(AndroidConstants.NATURE_DEFAULT)) {
                 System.arraycopy(natures, 0, newNatures, 1, natures.length);
                 newNatures[0] = natureId;
             } else {
                 System.arraycopy(natures, 0, newNatures, 0, natures.length);
                 newNatures[natures.length] = natureId;
             }
-            
+
             description.setNatureIds(newNatures);
             project.setDescription(description, new SubProgressMonitor(monitor, 10));
         }

@@ -240,7 +240,7 @@ public class ResourceExplorerView extends ViewPart implements ISelectionListener
         try {
             // if it's an android project, then we get its resources, and feed them
             // to the tree viewer.
-            if (project.hasNature(AndroidConstants.NATURE)) {
+            if (project.hasNature(AndroidConstants.NATURE_DEFAULT)) {
                 if (mCurrentProject != project) {
                     ProjectResources projRes = ResourceManager.getInstance().getProjectResources(
                             project);

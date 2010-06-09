@@ -49,7 +49,7 @@ public class ConvertToAndroidAction implements IObjectActionDelegate {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see IObjectActionDelegate#setActivePart(IAction, IWorkbenchPart)
      */
     public void setActivePart(IAction action, IWorkbenchPart targetPart) {
@@ -58,7 +58,7 @@ public class ConvertToAndroidAction implements IObjectActionDelegate {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see IActionDelegate#run(IAction)
      */
     public void run(IAction action) {
@@ -80,7 +80,7 @@ public class ConvertToAndroidAction implements IObjectActionDelegate {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see IActionDelegate#selectionChanged(IAction, ISelection)
      */
     public void selectionChanged(IAction action, ISelection selection) {
@@ -89,7 +89,7 @@ public class ConvertToAndroidAction implements IObjectActionDelegate {
 
     /**
      * Toggles sample nature on a project
-     * 
+     *
      * @param project to have sample nature added or removed
      */
     private void convertProject(final IProject project) {
@@ -107,7 +107,7 @@ public class ConvertToAndroidAction implements IObjectActionDelegate {
 
                     // check if the project already has the android nature.
                     for (int i = 0; i < natures.length; ++i) {
-                        if (AndroidConstants.NATURE.equals(natures[i])) {
+                        if (AndroidConstants.NATURE_DEFAULT.equals(natures[i])) {
                             // we shouldn't be here as the visibility of the item
                             // is dependent on the project.
                             return new Status(Status.WARNING, AdtPlugin.PLUGIN_ID,
@@ -121,7 +121,7 @@ public class ConvertToAndroidAction implements IObjectActionDelegate {
 
                     String[] newNatures = new String[natures.length + 1];
                     System.arraycopy(natures, 0, newNatures, 1, natures.length);
-                    newNatures[0] = AndroidConstants.NATURE;
+                    newNatures[0] = AndroidConstants.NATURE_DEFAULT;
 
                     // set the new nature list in the project
                     description.setNatureIds(newNatures);
