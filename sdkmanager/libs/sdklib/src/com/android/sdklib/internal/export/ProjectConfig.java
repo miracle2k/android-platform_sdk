@@ -316,13 +316,15 @@ public final class ProjectConfig {
         if (mSplitByAbi != Boolean.valueOf(abis[0])) { // first value is always the split boolean
             return "Property split.abi changed";
         }
-        // now compare the rest.
-        if (abis.length - 1 != mAbis.size()) {
-            return "The number of ABIs available in the project changed";
-        }
-        for (int i = 1 ; i < abis.length ; i++) {
-            if (mAbis.indexOf(abis[i]) == -1) {
-                return "The list of ABIs available in the project changed";
+        // now compare the rest if needed.
+        if (mSplitByAbi) {
+            if (abis.length - 1 != mAbis.size()) {
+                return "The number of ABIs available in the project changed";
+            }
+            for (int i = 1 ; i < abis.length ; i++) {
+                if (mAbis.indexOf(abis[i]) == -1) {
+                    return "The list of ABIs available in the project changed";
+                }
             }
         }
 
