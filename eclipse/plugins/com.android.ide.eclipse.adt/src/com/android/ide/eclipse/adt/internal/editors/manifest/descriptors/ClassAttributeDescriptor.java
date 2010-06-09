@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.model.UiClassAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.manifest.model.UiClassAttributeNode.IPostTypeCreationAction;
@@ -31,14 +32,14 @@ public class ClassAttributeDescriptor extends TextAttributeDescriptor {
 
     /** Superclass of the class value. */
     private String mSuperClassName;
-    
+
     private IPostTypeCreationAction mPostCreationAction;
-    
+
     /** indicates if the class parameter is mandatory */
     boolean mMandatory;
 
     private final boolean mDefaultToProjectOnly;
-    
+
     /**
      * Creates a new {@link ClassAttributeDescriptor}
      * @param superClassName the fully qualified name of the superclass of the class represented
@@ -48,6 +49,7 @@ public class ClassAttributeDescriptor extends TextAttributeDescriptor {
      * @param nsUri The URI of the attribute. Can be null if attribute has no namespace.
      *              See {@link SdkConstants#NS_RESOURCES} for a common value.
      * @param tooltip A non-empty tooltip string or null.
+     * @param attrInfo The {@link IAttributeInfo} of this attribute. Can't be null.
      * @param mandatory indicates if the class attribute is mandatory.
      */
     public ClassAttributeDescriptor(String superClassName,
@@ -55,8 +57,9 @@ public class ClassAttributeDescriptor extends TextAttributeDescriptor {
             String uiName,
             String nsUri,
             String tooltip,
+            IAttributeInfo attrInfo,
             boolean mandatory) {
-        super(xmlLocalName, uiName, nsUri, tooltip);
+        super(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
         mSuperClassName = superClassName;
         mDefaultToProjectOnly = true;
     }
@@ -72,6 +75,7 @@ public class ClassAttributeDescriptor extends TextAttributeDescriptor {
      * @param nsUri The URI of the attribute. Can be null if attribute has no namespace.
      *              See {@link SdkConstants#NS_RESOURCES} for a common value.
      * @param tooltip A non-empty tooltip string or null.
+     * @param attrInfo The {@link IAttributeInfo} of this attribute. Can't be null.
      * @param mandatory indicates if the class attribute is mandatory.
      * @param defaultToProjectOnly True if only classes from the sources of this project should
      *         be shown by default in the class browser.
@@ -82,9 +86,10 @@ public class ClassAttributeDescriptor extends TextAttributeDescriptor {
             String uiName,
             String nsUri,
             String tooltip,
+            IAttributeInfo attrInfo,
             boolean mandatory,
             boolean defaultToProjectOnly) {
-        super(xmlLocalName, uiName, nsUri, tooltip);
+        super(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
         mSuperClassName = superClassName;
         mPostCreationAction = postCreationAction;
         mDefaultToProjectOnly = defaultToProjectOnly;

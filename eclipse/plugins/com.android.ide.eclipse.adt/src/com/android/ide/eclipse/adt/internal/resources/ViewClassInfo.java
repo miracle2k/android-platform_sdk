@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.resources;
 
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo.AttributeInfo;
 
 /**
  * Information needed to represent a View or ViewGroup (aka Layout) item

@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.resources;
 
 
+
 /**
  * Information needed to represent a View or ViewGroup (aka Layout) item
  * in the layout hierarchy, as extracted from the main android.jar and the
@@ -30,117 +31,11 @@ public class DeclareStyleableInfo {
     /** Short javadoc. Can be null. */
     private String mJavaDoc;
     /** Optional name of the parents stylable. Can be null. */
-    private String[] mParents;    
+    private String[] mParents;
 
-    public static class AttributeInfo {
-        /** XML Name of the attribute */
-        private String mName;
-        
-        public enum Format {
-            STRING,
-            BOOLEAN,
-            INTEGER,
-            FLOAT,
-            REFERENCE,
-            COLOR,
-            DIMENSION,
-            FRACTION,
-            ENUM,
-            FLAG,
-        }
-        
-        /** Formats of the attribute. Cannot be null. Should have at least one format. */
-        private Format[] mFormats;
-        /** Values for enum. null for other types. */
-        private String[] mEnumValues;
-        /** Values for flag. null for other types. */
-        private String[] mFlagValues;
-        /** Short javadoc (i.e. the first sentence). */
-        private String mJavaDoc;
-        /** Documentation for deprecated attributes. Null if not deprecated. */
-        private String mDeprecatedDoc;
-
-        /**
-         * @param name The XML Name of the attribute
-         * @param formats The formats of the attribute. Cannot be null.
-         *                Should have at least one format.
-         */
-        public AttributeInfo(String name, Format[] formats) {
-            mName = name;
-            mFormats = formats;
-        }
-
-        /**
-         * @param name The XML Name of the attribute
-         * @param formats The formats of the attribute. Cannot be null.
-         *                Should have at least one format.
-         * @param javadoc Short javadoc (i.e. the first sentence).
-         */
-        public AttributeInfo(String name, Format[] formats, String javadoc) {
-            mName = name;
-            mFormats = formats;
-            mJavaDoc = javadoc;
-        }
-
-        public AttributeInfo(AttributeInfo info) {
-            mName = info.mName;
-            mFormats = info.mFormats;
-            mEnumValues = info.mEnumValues;
-            mFlagValues = info.mFlagValues;
-            mJavaDoc = info.mJavaDoc;
-            mDeprecatedDoc = info.mDeprecatedDoc;
-        }
-        
-        /** Returns the XML Name of the attribute */
-        public String getName() {
-            return mName;
-        }
-        /** Returns the formats of the attribute. Cannot be null.
-         *  Should have at least one format. */
-        public Format[] getFormats() {
-            return mFormats;
-        }
-        /** Returns the values for enums. null for other types. */
-        public String[] getEnumValues() {
-            return mEnumValues;
-        }
-        /** Returns the values for flags. null for other types. */
-        public String[] getFlagValues() {
-            return mFlagValues;
-        }
-        /** Returns a short javadoc, .i.e. the first sentence. */
-        public String getJavaDoc() {
-            return mJavaDoc;
-        }
-        /** Returns the documentation for deprecated attributes. Null if not deprecated. */
-        public String getDeprecatedDoc() {
-            return mDeprecatedDoc;
-        }
-
-        /** Sets the values for enums. null for other types. */
-        public void setEnumValues(String[] values) {
-            mEnumValues = values;
-        }
-        /** Sets the values for flags. null for other types. */
-        public void setFlagValues(String[] values) {
-            mFlagValues = values;
-        }
-        /** Sets a short javadoc, .i.e. the first sentence. */
-        public void setJavaDoc(String javaDoc) {
-            mJavaDoc = javaDoc;
-        }
-        /** Sets the documentation for deprecated attributes. Null if not deprecated. */
-        public void setDeprecatedDoc(String deprecatedDoc) {
-            mDeprecatedDoc = deprecatedDoc;
-        }
-
-    }
-    
-    // --------
-    
     /**
      * Creates a new {@link DeclareStyleableInfo}.
-     * 
+     *
      * @param styleName The name of the style. Should not be empty nor null.
      * @param attributes The initial list of attributes. Can be null.
      */
@@ -148,7 +43,7 @@ public class DeclareStyleableInfo {
         mStyleName = styleName;
         mAttributes = attributes == null ? new AttributeInfo[0] : attributes;
     }
-    
+
     /** Returns style name */
     public String getStyleName() {
         return mStyleName;
@@ -163,7 +58,7 @@ public class DeclareStyleableInfo {
     public void setAttributes(AttributeInfo[] attributes) {
         mAttributes = attributes;
     }
-    
+
     /** Returns a short javadoc */
     public String getJavaDoc() {
         return mJavaDoc;

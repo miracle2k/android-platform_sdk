@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.resources.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.FlagAttributeDescriptor;
@@ -23,6 +24,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvi
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ListAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextValueDescriptor;
+import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 
 
@@ -68,7 +70,9 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
 
         // Elements
 
-         ElementDescriptor color_element = new ElementDescriptor(
+        AttributeInfo nameAttrInfo = new AttributeInfo(NAME_ATTR, new Format[] { Format.STRING } );
+
+        ElementDescriptor color_element = new ElementDescriptor(
                 "color", //$NON-NLS-1$
                 "Color",
                 "A @color@ value specifies an RGB value with an alpha channel, which can be used in various places such as specifying a solid color for a Drawable or the color to use for text.  It always begins with a # character and then is followed by the alpha-red-green-blue information in one of the following formats: #RGB, #ARGB, #RRGGBB or #AARRGGBB.",
@@ -77,7 +81,8 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                         new TextAttributeDescriptor(NAME_ATTR,
                                 "Name*",
                                 null /* nsUri */,
-                                "The mandatory name used in referring to this color."),
+                                "The mandatory name used in referring to this color.",
+                                nameAttrInfo),
                         new ColorValueDescriptor(
                                 "Value*",
                                 "A mandatory color value.")
@@ -85,7 +90,7 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                 null,  // no child nodes
                 false /* not mandatory */);
 
-         ElementDescriptor string_element = new ElementDescriptor(
+        ElementDescriptor string_element = new ElementDescriptor(
                 "string", //$NON-NLS-1$
                 "String",
                 "@Strings@, with optional simple formatting, can be stored and retrieved as resources. You can add formatting to your string by using three standard HTML tags: b, i, and u. If you use an apostrophe or a quote in your string, you must either escape it or enclose the whole string in the other kind of enclosing quotes.",
@@ -94,7 +99,8 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                         new TextAttributeDescriptor(NAME_ATTR,
                                 "Name*",
                                 null /* nsUri */,
-                                "The mandatory name used in referring to this string."),
+                                "The mandatory name used in referring to this string.",
+                                nameAttrInfo),
                         new TextValueDescriptor(
                                 "Value*",
                                 "A mandatory string value.")
@@ -102,7 +108,7 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                 null,  // no child nodes
                 false /* not mandatory */);
 
-         ElementDescriptor item_element = new ItemElementDescriptor(
+        ElementDescriptor item_element = new ItemElementDescriptor(
                  "item", //$NON-NLS-1$
                  "Item",
                  null,  // TODO find javadoc
@@ -111,27 +117,34 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                          new TextAttributeDescriptor(NAME_ATTR,
                                  "Name*",
                                  null /* nsUri */,
-                                 "The mandatory name used in referring to this resource."),
+                                 "The mandatory name used in referring to this resource.",
+                                 nameAttrInfo),
                          new ListAttributeDescriptor(TYPE_ATTR,
                                  "Type*",
                                  null /* nsUri */,
                                  "The mandatory type of this resource.",
-                                 ResourceType.getNames()
+                                 new AttributeInfo(TYPE_ATTR,
+                                         new Format[] { Format.STRING, Format.ENUM }
+                                 ).setEnumValues(ResourceType.getNames())
                          ),
-                         new FlagAttributeDescriptor("format",
+                         new FlagAttributeDescriptor("format",      //$NON-NLS-1$
                                  "Format",
                                  null /* nsUri */,
                                  "The optional format of this resource.",
-                                 new String[] {
-                                     "boolean",     //$NON-NLS-1$
-                                     "color",       //$NON-NLS-1$
-                                     "dimension",   //$NON-NLS-1$
-                                     "float",       //$NON-NLS-1$
-                                     "fraction",    //$NON-NLS-1$
-                                     "integer",     //$NON-NLS-1$
-                                     "reference",   //$NON-NLS-1$
-                                     "string"       //$NON-NLS-1$
-                         }),
+                                 new AttributeInfo("format",
+                                         new Format[] { Format.STRING, Format.FLAG }
+                                 ).setFlagValues(
+                                     new String[] {
+                                         "boolean",     //$NON-NLS-1$
+                                         "color",       //$NON-NLS-1$
+                                         "dimension",   //$NON-NLS-1$
+                                         "float",       //$NON-NLS-1$
+                                         "fraction",    //$NON-NLS-1$
+                                         "integer",     //$NON-NLS-1$
+                                         "reference",   //$NON-NLS-1$
+                                         "string"       //$NON-NLS-1$
+                                     } )
+                         ),
                          new TextValueDescriptor(
                                  "Value",
                                  "A standard string, hex color value, or reference to any other resource type.")
@@ -139,7 +152,7 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                  null,  // no child nodes
                  false /* not mandatory */);
 
-         ElementDescriptor drawable_element = new ElementDescriptor(
+        ElementDescriptor drawable_element = new ElementDescriptor(
                 "drawable", //$NON-NLS-1$
                 "Drawable",
                 "A @drawable@ defines a rectangle of color. Android accepts color values written in various web-style formats -- a hexadecimal constant in any of the following forms: #RGB, #ARGB, #RRGGBB, #AARRGGBB. Zero in the alpha channel means transparent. The default value is opaque.",
@@ -148,7 +161,8 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                         new TextAttributeDescriptor(NAME_ATTR,
                                 "Name*",
                                 null /* nsUri */,
-                                "The mandatory name used in referring to this drawable."),
+                                "The mandatory name used in referring to this drawable.",
+                                nameAttrInfo),
                         new TextValueDescriptor(
                                 "Value*",
                                 "A mandatory color value in the form #RGB, #ARGB, #RRGGBB or #AARRGGBB.")
@@ -156,7 +170,7 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                 null,  // no child nodes
                 false /* not mandatory */);
 
-         ElementDescriptor dimen_element = new ElementDescriptor(
+        ElementDescriptor dimen_element = new ElementDescriptor(
                 "dimen", //$NON-NLS-1$
                 "Dimension",
                 "You can create common dimensions to use for various screen elements by defining @dimension@ values in XML. A dimension resource is a number followed by a unit of measurement. Supported units are px (pixels), in (inches), mm (millimeters), pt (points at 72 DPI), dp (density-independent pixels) and sp (scale-independent pixels)",
@@ -165,7 +179,8 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                         new TextAttributeDescriptor(NAME_ATTR,
                                 "Name*",
                                 null /* nsUri */,
-                                "The mandatory name used in referring to this dimension."),
+                                "The mandatory name used in referring to this dimension.",
+                                nameAttrInfo),
                         new TextValueDescriptor(
                                 "Value*",
                                 "A mandatory dimension value is a number followed by a unit of measurement. For example: 10px, 2in, 5sp.")
@@ -182,11 +197,14 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                         new TextAttributeDescriptor(NAME_ATTR,
                                 "Name*",
                                 null /* nsUri */,
-                                "The mandatory name used in referring to this theme."),
+                                "The mandatory name used in referring to this theme.",
+                                nameAttrInfo),
                         new TextAttributeDescriptor("parent", // $NON-NLS-1$
                                 "Parent",
                                 null /* nsUri */,
-                                "An optional parent theme. All values from the specified theme will be inherited into this theme. Any values with identical names that you specify will override inherited values."),
+                                "An optional parent theme. All values from the specified theme will be inherited into this theme. Any values with identical names that you specify will override inherited values.",
+                                new AttributeInfo("parent",  //$NON-NLS-1$
+                                        new Format[] { Format.STRING })),
                 },
                 new ElementDescriptor[] {
                     new ElementDescriptor(
@@ -198,7 +216,8 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                             new TextAttributeDescriptor(NAME_ATTR,
                                 "Name*",
                                 null /* nsUri */,
-                                "The mandatory name used in referring to this item."),
+                                "The mandatory name used in referring to this item.",
+                                nameAttrInfo),
                             new TextValueDescriptor(
                                 "Value*",
                                 "A mandatory standard string, hex color value, or reference to any other resource type.")
@@ -217,7 +236,8 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                          new TextAttributeDescriptor(NAME_ATTR,
                                  "Name*",
                                  null /* nsUri */,
-                                 "The mandatory name used in referring to this string array."),
+                                 "The mandatory name used in referring to this string array.",
+                                 nameAttrInfo),
                  },
                  new ElementDescriptor[] {
                      new ElementDescriptor(
@@ -244,7 +264,8 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                          new TextAttributeDescriptor(NAME_ATTR,
                                  "Name*",
                                  null /* nsUri */,
-                                 "The mandatory name used in referring to this integer array."),
+                                 "The mandatory name used in referring to this integer array.",
+                                 nameAttrInfo),
                  },
                  new ElementDescriptor[] {
                      new ElementDescriptor(

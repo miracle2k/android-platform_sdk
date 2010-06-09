@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.uimodel;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -29,6 +30,7 @@ import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.Android
 import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.IUiUpdateListener.UiUpdateState;
 import com.android.ide.eclipse.adt.internal.editors.xml.descriptors.XmlDescriptors;
+import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.sdklib.SdkConstants;
 
@@ -1148,12 +1150,14 @@ public class UiElementNode implements IPropertySource {
 
     private UiAttributeNode addUnknownAttribute(String xmlFullName,
             String xmlAttrLocalName, String xmlNsUri) {
-        // Create a new unknown attribute
+        // Create a new unknown attribute of format string
         TextAttributeDescriptor desc = new TextAttributeDescriptor(
                 xmlAttrLocalName,           // xml name
                 xmlFullName,                // ui name
                 xmlNsUri,                   // NS uri
-                "Unknown XML attribute");   // tooltip, translatable
+                "Unknown XML attribute",    // tooltip, translatable
+                new AttributeInfo(xmlAttrLocalName, new Format[] { Format.STRING } )
+                );
         UiAttributeNode uiAttr = desc.createUiNode(this);
         mUnknownUiAttributes.add(uiAttr);
         return uiAttr;

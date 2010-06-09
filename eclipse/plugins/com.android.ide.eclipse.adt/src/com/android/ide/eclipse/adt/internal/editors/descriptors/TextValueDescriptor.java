@@ -27,15 +27,15 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiTextValueNode;
  * The value is a simple text string, displayed by an {@link UiTextValueNode}.
  */
 public class TextValueDescriptor extends TextAttributeDescriptor {
-    
+
     /**
      * Creates a new {@link TextValueDescriptor}
-     * 
+     *
      * @param uiName The UI name of the attribute. Cannot be an empty string and cannot be null.
      * @param tooltip A non-empty tooltip string or null
      */
     public TextValueDescriptor(String uiName, String tooltip) {
-        super("#text" /* xmlLocalName */, uiName, null /* nsUri */, tooltip);
+        super("#text" /* xmlLocalName */, uiName, null /* nsUri */, tooltip, null /* info */);
     }
 
     /**

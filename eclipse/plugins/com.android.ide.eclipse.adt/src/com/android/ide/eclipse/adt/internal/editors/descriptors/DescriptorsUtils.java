@@ -17,12 +17,12 @@
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo.AttributeInfo;
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo.AttributeInfo.Format;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.graphics.Image;
@@ -278,19 +278,20 @@ public final class DescriptorsUtils {
             if (attr == null) {
                 if (formats_set.contains(Format.REFERENCE)) {
                     // This is either a multi-type reference or a generic reference.
-                    attr = new ReferenceAttributeDescriptor(xmlLocalName, uiName, nsUri, tooltip);
+                    attr = new ReferenceAttributeDescriptor(
+                            xmlLocalName, uiName, nsUri, tooltip, info);
                 } else if (formats_set.contains(Format.ENUM)) {
-                    attr = new ListAttributeDescriptor(xmlLocalName, uiName, nsUri, tooltip,
-                            info.getEnumValues());
+                    attr = new ListAttributeDescriptor(
+                            xmlLocalName, uiName, nsUri, tooltip, info);
                 } else if (formats_set.contains(Format.FLAG)) {
-                    attr = new FlagAttributeDescriptor(xmlLocalName, uiName, nsUri, tooltip,
-                            info.getFlagValues());
+                    attr = new FlagAttributeDescriptor(
+                            xmlLocalName, uiName, nsUri, tooltip, info);
                 } else if (formats_set.contains(Format.BOOLEAN)) {
-                    attr = new BooleanAttributeDescriptor(xmlLocalName, uiName, nsUri, tooltip);
+                    attr = new BooleanAttributeDescriptor(
+                            xmlLocalName, uiName, nsUri, tooltip, info);
                 } else if (formats_set.contains(Format.STRING)) {
-                    attr = new ReferenceAttributeDescriptor(ResourceType.STRING,
-                            xmlLocalName, uiName, nsUri,
-                            tooltip);
+                    attr = new ReferenceAttributeDescriptor(
+                            ResourceType.STRING, xmlLocalName, uiName, nsUri, tooltip, info);
                 }
             }
         }
@@ -300,9 +301,8 @@ public final class DescriptorsUtils {
             if (tooltip == null) {
                 tooltip = formatTooltip(rawTooltip);
             }
-            attr = new TextAttributeDescriptor(xmlLocalName, uiName, nsUri, tooltip);
+            attr = new TextAttributeDescriptor(xmlLocalName, uiName, nsUri, tooltip, info);
         }
-        attr.setDeprecated(info.getDeprecatedDoc() != null);
         attributes.add(attr);
     }
 

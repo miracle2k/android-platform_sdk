@@ -17,9 +17,11 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -273,9 +275,13 @@ public class NodeProxy implements INode {
         return attr != null;
     }
 
-
     public String getStringAttr(String uri, String attrName) {
         UiElementNode uiNode = mNode;
+
+        if (attrName == null) {
+            return null;
+        }
+
         if (uiNode.getXmlNode() != null) {
             Node xmlNode = uiNode.getXmlNode();
             if (xmlNode != null) {
@@ -288,6 +294,26 @@ public class NodeProxy implements INode {
                 }
             }
         }
+        return null;
+    }
+
+    public IAttributeInfo getAttributeInfo(String uri, String attrName) {
+        UiElementNode uiNode = mNode;
+
+        if (attrName == null) {
+            return null;
+        }
+
+        for (AttributeDescriptor desc : uiNode.getAttributeDescriptors()) {
+            String dUri = desc.getNamespaceUri();
+            String dName = desc.getXmlLocalName();
+            if ((uri == null && dUri == null) || (uri != null && uri.equals(dUri))) {
+                if (attrName.equals(dName)) {
+                    return desc.getAttributeInfo();
+                }
+            }
+        }
+
         return null;
     }
 

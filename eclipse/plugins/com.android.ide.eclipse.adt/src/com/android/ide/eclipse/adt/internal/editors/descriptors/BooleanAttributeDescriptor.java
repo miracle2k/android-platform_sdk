@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiListAttributeNode;
 
 /**
@@ -25,9 +26,9 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiListAttributeNode;
 public class BooleanAttributeDescriptor extends ListAttributeDescriptor {
 
     public BooleanAttributeDescriptor(String xmlLocalName, String uiName, String nsUri,
-            String tooltip) {
-        super(xmlLocalName, uiName, nsUri, tooltip,
-                new String[] { "true", "false" } );
+            String tooltip, IAttributeInfo attrInfo) {
+        super(xmlLocalName, uiName, nsUri, tooltip, attrInfo,
+                new String[] { "true", "false" });  //$NON-NLS-1$ //$NON-NLS-2$
     }
 }
 

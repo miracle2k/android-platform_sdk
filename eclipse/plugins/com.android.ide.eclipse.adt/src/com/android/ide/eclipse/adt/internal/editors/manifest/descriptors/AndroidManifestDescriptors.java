@@ -17,6 +17,8 @@
 package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -24,7 +26,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvi
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ListAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ReferenceAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
+import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
@@ -110,7 +112,8 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
         PACKAGE_ATTR_DESC = new PackageAttributeDescriptor(PACKAGE_ATTR,
                 "Package",
                 null /* nsUri */,
-                "This attribute gives a unique name for the package, using a Java-style naming convention to avoid name collisions.\nFor example, applications published by Google could have names of the form com.google.app.appname");
+                "This attribute gives a unique name for the package, using a Java-style naming convention to avoid name collisions.\nFor example, applications published by Google could have names of the form com.google.app.appname",
+                new AttributeInfo(PACKAGE_ATTR, new Format[] { Format.REFERENCE }) );
     }
 
     public ElementDescriptor[] getRootElementDescriptors() {
@@ -164,10 +167,6 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
     public synchronized void updateDescriptors(
             Map<String, DeclareStyleableInfo> manifestMap) {
 
-        XmlnsAttributeDescriptor xmlns = new XmlnsAttributeDescriptor(
-                "android", //$NON-NLS-1$
-                SdkConstants.NS_RESOURCES);
-
         // -- setup the required attributes overrides --
 
         Set<String> required = new HashSet<String>();
@@ -186,7 +185,8 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                 return new ReferenceAttributeDescriptor(
                         ResourceType.DRAWABLE,
                         xmlName, uiName, nsUri,
-                        tooltip);
+                        tooltip,
+                        new AttributeInfo(xmlName, new Format[] { Format.REFERENCE }) );
             }
         });
 
@@ -245,6 +245,10 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
             public TextAttributeDescriptor create(String xmlName, String uiName, String nsUri,
                     String tooltip) {
                 uiName += "*";  //$NON-NLS-1$
+
+                IAttributeInfo attrInfo = new AttributeInfo(xmlName,
+                        new Format[] { Format.STRING } );
+
                 if (SdkConstants.CLASS_ACTIVITY.equals(className)) {
                     return new ClassAttributeDescriptor(
                             className,
@@ -253,6 +257,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                             uiName,
                             nsUri,
                             tooltip,
+                            attrInfo,
                             true /*mandatory */,
                             true /*defaultToProjectOnly*/);
                 } else if (SdkConstants.CLASS_BROADCASTRECEIVER.equals(className)) {
@@ -263,6 +268,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                             uiName,
                             nsUri,
                             tooltip,
+                            attrInfo,
                             true /*mandatory */,
                             true /*defaultToProjectOnly*/);
                 } else if (SdkConstants.CLASS_INSTRUMENTATION.equals(className)) {
@@ -273,6 +279,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                             uiName,
                             nsUri,
                             tooltip,
+                            attrInfo,
                             true /*mandatory */,
                             false /*defaultToProjectOnly*/);
                 } else {
@@ -282,6 +289,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                             uiName,
                             nsUri,
                             tooltip,
+                            attrInfo,
                             true /*mandatory */);
                 }
             }
@@ -366,6 +374,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
             String styleName) {
         assert elemDesc != null;
         assert styleName != null;
+        assert styleMap != null;
 
         // define attributes
         DeclareStyleableInfo style = styleMap != null ? styleMap.get(styleName) : null;
