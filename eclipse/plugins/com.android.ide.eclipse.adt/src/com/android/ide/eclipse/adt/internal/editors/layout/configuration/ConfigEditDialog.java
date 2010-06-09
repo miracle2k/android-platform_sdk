@@ -29,6 +29,10 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.ParseException;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -36,8 +40,18 @@ import java.util.regex.Pattern;
  */
 public class ConfigEditDialog extends GridDialog {
 
-    private static final Pattern FLOAT_PATTERN = Pattern.compile("\\d*(\\.\\d?)?");
+    private static final Pattern FLOAT_PATTERN;
+    static {
+        // get the decimal separator char
+        DecimalFormatSymbols dfs = new DecimalFormatSymbols();
 
+        // make a pattern that's basically ##.# where .# is optional and where . can be . or ,
+        // depending on the locale
+        FLOAT_PATTERN = Pattern.compile(
+            "\\d*(" +                                                       //$NON-NLS-1$
+            Pattern.quote(new String(new char[] { dfs.getDecimalSeparator() })) +
+            "\\d?)?");                                                      //$NON-NLS-1$
+    }
 
     private final FolderConfiguration mConfig = new FolderConfiguration();
 
@@ -52,6 +66,8 @@ public class ConfigEditDialog extends GridDialog {
     private String mConfigName;
     private float mXDpi = Float.NaN;
     private float mYDpi = Float.NaN;
+
+    private final DecimalFormat mDecimalFormat = new DecimalFormat();
 
 
     public ConfigEditDialog(Shell parentShell, FolderConfiguration config) {
@@ -150,7 +166,11 @@ public class ConfigEditDialog extends GridDialog {
                 if (value.length() == 0) {
                     mXDpi = Float.NaN;
                 } else {
-                    mXDpi = Float.parseFloat(value);
+                    try {
+                        mXDpi = mDecimalFormat.parse(value).floatValue();
+                    } catch (ParseException exception) {
+                        mXDpi = Float.NaN;
+                    }
                 }
             }
         });
@@ -170,7 +190,11 @@ public class ConfigEditDialog extends GridDialog {
                 if (value.length() == 0) {
                     mYDpi = Float.NaN;
                 } else {
-                    mYDpi = Float.parseFloat(value);
+                    try {
+                        mYDpi = mDecimalFormat.parse(value).floatValue();
+                    } catch (ParseException exception) {
+                        mYDpi = Float.NaN;
+                    }
                 }
             }
         });
