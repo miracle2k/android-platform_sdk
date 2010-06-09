@@ -357,6 +357,14 @@
       </image>
    </extension>
    <extension
+         point="org.eclipse.ui.ide.projectNatureImages">
+      <image
+            icon="icons/android_project.png"
+            id="com.android.ide.eclipse.adt.AndroidNature.image"
+            natureId="com.android.ide.eclipse.adt.AndroidExportNature">
+      </image>
+   </extension>
+   <extension
          point="org.eclipse.jdt.core.classpathContainerInitializer">
       <classpathContainerInitializer
             class="com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer"
