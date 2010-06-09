@@ -165,7 +165,7 @@ public class ExtractStringAction implements IWorkbenchWindowActionDelegate {
                 if (file.exists()) {
                     IProject proj = file.getProject();
                     try {
-                        if (proj != null && proj.hasNature(AndroidConstants.NATURE)) {
+                        if (proj != null && proj.hasNature(AndroidConstants.NATURE_DEFAULT)) {
                             return file;
                         }
                     } catch (CoreException e) {

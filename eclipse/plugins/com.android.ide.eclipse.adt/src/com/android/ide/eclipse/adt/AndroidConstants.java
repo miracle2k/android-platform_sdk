@@ -50,8 +50,10 @@ public class AndroidConstants {
      */
     public static final String EDITORS_NAMESPACE = "com.android.ide.eclipse.editors"; // $NON-NLS-1$
 
-    /** Nature of android projects */
-    public final static String NATURE = "com.android.ide.eclipse.adt.AndroidNature"; //$NON-NLS-1$
+    /** Nature of default Android projects */
+    public final static String NATURE_DEFAULT = "com.android.ide.eclipse.adt.AndroidNature"; //$NON-NLS-1$
+    /** Nature of Android export projects */
+    public final static String NATURE_EXPORT = "com.android.ide.eclipse.adt.AndroidExportNature"; //$NON-NLS-1$
 
     /** Separator for workspace path, i.e. "/". */
     public final static String WS_SEP = "/"; //$NON-NLS-1$

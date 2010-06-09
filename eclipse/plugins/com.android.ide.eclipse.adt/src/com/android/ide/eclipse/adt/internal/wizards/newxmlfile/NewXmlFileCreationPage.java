@@ -703,7 +703,7 @@ class NewXmlFileCreationPage extends WizardPage {
 
                 // Is this an Android project?
                 try {
-                    if (project == null || !project.hasNature(AndroidConstants.NATURE)) {
+                    if (project == null || !project.hasNature(AndroidConstants.NATURE_DEFAULT)) {
                         continue;
                     }
                 } catch (CoreException e) {

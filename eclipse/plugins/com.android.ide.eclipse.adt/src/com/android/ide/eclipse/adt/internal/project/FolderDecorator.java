@@ -52,7 +52,7 @@ public class FolderDecorator implements ILightweightLabelDecorator {
             IProject project = folder.getProject();
 
             try {
-                if (project.hasNature(AndroidConstants.NATURE)) {
+                if (project.hasNature(AndroidConstants.NATURE_DEFAULT)) {
                     // check the folder is directly under the project.
                     if (folder.getParent().getType() == IResource.PROJECT) {
                         String name = folder.getName();

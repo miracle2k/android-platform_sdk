@@ -113,7 +113,7 @@ public final class CompiledResourcesMonitor implements IFileListener, IProjectLi
     public void projectOpenedWithWorkspace(IProject project) {
         try {
             // check this is an android project
-            if (project.hasNature(AndroidConstants.NATURE)) {
+            if (project.hasNature(AndroidConstants.NATURE_DEFAULT)) {
                 loadAndParseRClass(project);
             }
         } catch (CoreException e) {

@@ -665,7 +665,7 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
         validateJavaProject(javaProject);
 
         try {
-            if (!project.hasNature(AndroidConstants.NATURE)) {
+            if (!project.hasNature(AndroidConstants.NATURE_DEFAULT)) {
                 setErrorMessage(
                         LaunchMessages.NonAndroidProjectError);
                 return;
