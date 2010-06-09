@@ -949,20 +949,19 @@ public final class Sdk  {
             ResourcesPlugin.getWorkspace().getPathVariableManager();
         IPath libPath = libProject.getLocation();
 
-        final String libName = libProject.getName();
-        final String varName = "_android_" + libName; //$NON-NLS-1$
+        final String varName = getLibraryVariableName(libProject.getName());
 
         if (libPath.equals(pathVarMgr.getValue(varName)) == false) {
             try {
                 pathVarMgr.setValue(varName, libPath);
             } catch (CoreException e) {
-                String message = String.format(
-                        "Unable to set linked path var '%1$s' for library %2$s", //$NON-NLS-1$
-                        varName, libPath.toOSString());
-                AdtPlugin.log(e, message);
+                AdtPlugin.logAndPrintError(e, "Library Project",
+                        "Unable to set linked path var '%1$s' for library %2$s: %3$s", //$NON-NLS-1$
+                        varName, libPath.toOSString(), e.getMessage());
             }
         }
     }
+
 
     private void disposeLibraryProject(IProject project) {
         disposeLibraryProject(project.getName());
@@ -972,7 +971,7 @@ public final class Sdk  {
         IPathVariableManager pathVarMgr =
             ResourcesPlugin.getWorkspace().getPathVariableManager();
 
-        final String varName = "_android_" + libName; //$NON-NLS-1$
+        final String varName = getLibraryVariableName(libName);
 
         // remove the value by setting the value to null.
         try {
@@ -982,6 +981,14 @@ public final class Sdk  {
                     varName);
             AdtPlugin.log(e, message);
         }
+    }
+
+    /**
+     * Returns a valid path variable name based on the name of a library project.
+     * @param name the name of the library project.
+     */
+    private String getLibraryVariableName(String name) {
+        return "_android_" + name.replaceAll("-", "_"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     }
 
     /**
@@ -1040,7 +1047,7 @@ public final class Sdk  {
 
                     // add a linked resource for the source of the library and add it to the project
                     final String libName = library.getName();
-                    final String varName = "_android_" + libName; //$NON-NLS-1$
+                    final String varName = getLibraryVariableName(libName);
 
                     // create a linked resource for the library using the path var.
                     IFolder libSrc = project.getFolder(libName);
@@ -1093,6 +1100,10 @@ public final class Sdk  {
 
                     return Status.OK_STATUS;
                 } catch (CoreException e) {
+                    AdtPlugin.logAndPrintError(e, "Library Project", "Failed to create link between library %1$s and project %2$s: %3$s",
+                            libraryState.getProjectState().getProject().getName(),
+                            projectState.getProject().getName(),
+                            e.getMessage());
                     return e.getStatus();
                 }
             }
