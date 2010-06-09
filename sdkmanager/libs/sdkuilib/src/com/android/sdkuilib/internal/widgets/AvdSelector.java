@@ -61,6 +61,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Formatter;
+import java.util.Locale;
 
 
 /**
@@ -1011,7 +1013,11 @@ public final class AvdSelector {
                 scale = Math.round(scale * 100);
                 scale /=  100.f;
                 list.add("-scale");                       //$NON-NLS-1$
-                list.add(String.format("%.2f", scale));   //$NON-NLS-1$
+                // because the emulator expects English decimal values, don't use String.format
+                // but a Formatter.
+                Formatter formatter = new Formatter(Locale.US);
+                formatter.format("%.2f", scale);   //$NON-NLS-1$
+                list.add(formatter.toString());
             }
 
             // convert the list into an array for the call to exec.
