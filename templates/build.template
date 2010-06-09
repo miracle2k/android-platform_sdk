@@ -3,7 +3,7 @@
 
 <!-- The local.properties file is created and updated by the 'android'
      tool.
-     It contains the path to the SDK. It should *NOT* be checked in in
+     It contains the path to the SDK. It should *NOT* be checked into
      Version Control Systems. -->
     <property file="local.properties" />
 
@@ -21,7 +21,7 @@
          be updated using the 'android' tool with the 'update' action.
 
          This file is an integral part of the build system for your
-         application and should be checked in in Version Control Systems.
+         application and should be checked into Version Control Systems.
 
          -->
     <property file="build.properties" />
@@ -29,7 +29,7 @@
     <!-- The default.properties file is created and updated by the 'android'
          tool, as well as ADT.
          This file is an integral part of the build system for your
-         application and should be checked in in Version Control Systems. -->
+         application and should be checked into Version Control Systems. -->
     <property file="default.properties" />
 
     <!-- Custom Android task to deal with the project target, and import the

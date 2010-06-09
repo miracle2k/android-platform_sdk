@@ -3,11 +3,14 @@
 
     <!-- The local.properties file is created and updated by the 'android'
          tool.
-         It contains the path to the SDK. It should *NOT* be checked in in
+         It contains the path to the SDK. It should *NOT* be checked into
          Version Control Systems. -->
     <property file="local.properties" />
 
-    <!-- ? -->
+    <!-- The export.properties file is created and updated by the 'android'
+         tool, as well as ADT.
+         This file is an integral part of the build system for multiple
+         apk export and should be checked in Version Control Systems. -->
     <property file="export.properties" />
 
     <!-- Custom Android task to deal with the project target, and import the proper rules.
