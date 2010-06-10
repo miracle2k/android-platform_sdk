@@ -719,7 +719,7 @@ public class PreCompilerBuilder extends BaseBuilder {
             execError = grabProcessOutput(process, results);
 
             // attempt to parse the error output
-            boolean parsingError = parseAaptOutput(results, project);
+            boolean parsingError = AaptParser.parseOutput(results, project);
 
             // if we couldn't parse the output we display it in the console.
             if (parsingError) {
