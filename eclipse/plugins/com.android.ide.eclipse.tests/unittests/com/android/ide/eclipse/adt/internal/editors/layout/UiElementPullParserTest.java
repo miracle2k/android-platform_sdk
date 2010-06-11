@@ -16,11 +16,13 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.mock.MockXmlNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.resources.Density;
 
@@ -39,6 +41,16 @@ public class UiElementPullParserTest extends TestCase {
     private HashMap<String, String> button2Map;
     private HashMap<String, String> textMap;
 
+    private TextAttributeDescriptor createTextAttrDesc(String xmlName) {
+        return new TextAttributeDescriptor(
+                xmlName,    // xmlLocalName
+                xmlName,    // uiName
+                SdkConstants.NS_RESOURCES, // ns uri
+                "",         // tooltip
+                new AttributeInfo(xmlName, new Format[] { Format.STRING })
+                );
+    }
+
     @Override
     protected void setUp() throws Exception {
         // set up some basic descriptors.
@@ -47,31 +59,30 @@ public class UiElementPullParserTest extends TestCase {
         // Also add some dummy attributes.
         ElementDescriptor buttonDescriptor = new ElementDescriptor("Button", "Button", "", "",
                 new AttributeDescriptor[] {
-                    new TextAttributeDescriptor("name", "name", SdkConstants.NS_RESOURCES, ""),
-                    new TextAttributeDescriptor("text", "text", SdkConstants.NS_RESOURCES, ""),
+                        createTextAttrDesc("name"),
+                        createTextAttrDesc("text"),
                     },
                 new ElementDescriptor[] {}, false);
 
         ElementDescriptor textDescriptor = new ElementDescriptor("TextView", "TextView", "", "",
                 new AttributeDescriptor[] {
-                new TextAttributeDescriptor("name", "name", SdkConstants.NS_RESOURCES, ""),
-                new TextAttributeDescriptor("text", "text", SdkConstants.NS_RESOURCES, ""), },
+                        createTextAttrDesc("name"),
+                        createTextAttrDesc("text"),
+                    },
                 new ElementDescriptor[] {}, false);
 
         ElementDescriptor linearDescriptor = new ElementDescriptor("LinearLayout", "Linear Layout",
                 "", "",
                 new AttributeDescriptor[] {
-                    new TextAttributeDescriptor("orientation", "orientation",
-                            SdkConstants.NS_RESOURCES, ""),
-                },
+                        createTextAttrDesc("orientation"),
+                    },
                 new ElementDescriptor[] { }, false);
 
         ElementDescriptor relativeDescriptor = new ElementDescriptor("RelativeLayout",
                 "Relative Layout", "", "",
                 new AttributeDescriptor[] {
-                    new TextAttributeDescriptor("orientation", "orientation",
-                            SdkConstants.NS_RESOURCES, ""),
-                },
+                        createTextAttrDesc("orientation"),
+                    },
                 new ElementDescriptor[] { }, false);
 
         ElementDescriptor[] a = new ElementDescriptor[] {
