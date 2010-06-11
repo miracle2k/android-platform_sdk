@@ -33,27 +33,20 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.JavaCore;
 import org.xml.sax.SAXException;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -65,101 +58,6 @@ import javax.xml.parsers.SAXParserFactory;
  */
 abstract class BaseBuilder extends IncrementalProjectBuilder {
 
-    // TODO: rename the pattern to something that makes sense + javadoc comments.
-
-    /**
-     * Single line aapt warning for skipping files.<br>
-     * "  (skipping hidden file '&lt;file path&gt;'"
-     */
-    private final static Pattern sPattern0Line1 = Pattern.compile(
-            "^\\s+\\(skipping hidden file\\s'(.*)'\\)$"); //$NON-NLS-1$
-
-    /**
-     * First line of dual line aapt error.<br>
-     * "ERROR at line &lt;line&gt;: &lt;error&gt;"<br>
-     * " (Occurred while parsing &lt;path&gt;)"
-     */
-    private final static Pattern sPattern1Line1 = Pattern.compile(
-            "^ERROR\\s+at\\s+line\\s+(\\d+):\\s+(.*)$"); //$NON-NLS-1$
-    /**
-     * Second line of dual line aapt error.<br>
-     * "ERROR at line &lt;line&gt;: &lt;error&gt;"<br>
-     * " (Occurred while parsing &lt;path&gt;)"<br>
-     * @see #sPattern1Line1
-     */
-    private final static Pattern sPattern1Line2 = Pattern.compile(
-            "^\\s+\\(Occurred while parsing\\s+(.*)\\)$");  //$NON-NLS-1$
-    /**
-     * First line of dual line aapt error.<br>
-     * "ERROR: &lt;error&gt;"<br>
-     * "Defined at file &lt;path&gt; line &lt;line&gt;"
-     */
-    private final static Pattern sPattern2Line1 = Pattern.compile(
-            "^ERROR:\\s+(.+)$"); //$NON-NLS-1$
-    /**
-     * Second line of dual line aapt error.<br>
-     * "ERROR: &lt;error&gt;"<br>
-     * "Defined at file &lt;path&gt; line &lt;line&gt;"<br>
-     * @see #sPattern2Line1
-     */
-    private final static Pattern sPattern2Line2 = Pattern.compile(
-            "Defined\\s+at\\s+file\\s+(.+)\\s+line\\s+(\\d+)"); //$NON-NLS-1$
-    /**
-     * Single line aapt error<br>
-     * "&lt;path&gt; line &lt;line&gt;: &lt;error&gt;"
-     */
-    private final static Pattern sPattern3Line1 = Pattern.compile(
-            "^(.+)\\sline\\s(\\d+):\\s(.+)$"); //$NON-NLS-1$
-    /**
-     * First line of dual line aapt error.<br>
-     * "ERROR parsing XML file &lt;path&gt;"<br>
-     * "&lt;error&gt; at line &lt;line&gt;"
-     */
-    private final static Pattern sPattern4Line1 = Pattern.compile(
-            "^Error\\s+parsing\\s+XML\\s+file\\s(.+)$"); //$NON-NLS-1$
-    /**
-     * Second line of dual line aapt error.<br>
-     * "ERROR parsing XML file &lt;path&gt;"<br>
-     * "&lt;error&gt; at line &lt;line&gt;"<br>
-     * @see #sPattern4Line1
-     */
-    private final static Pattern sPattern4Line2 = Pattern.compile(
-            "^(.+)\\s+at\\s+line\\s+(\\d+)$"); //$NON-NLS-1$
-
-    /**
-     * Single line aapt warning<br>
-     * "&lt;path&gt;:&lt;line&gt;: &lt;error&gt;"
-     */
-    private final static Pattern sPattern5Line1 = Pattern.compile(
-            "^(.+?):(\\d+):\\s+WARNING:(.+)$"); //$NON-NLS-1$
-
-    /**
-     * Single line aapt error<br>
-     * "&lt;path&gt;:&lt;line&gt;: &lt;error&gt;"
-     */
-    private final static Pattern sPattern6Line1 = Pattern.compile(
-            "^(.+?):(\\d+):\\s+(.+)$"); //$NON-NLS-1$
-
-    /**
-     * 4 line aapt error<br>
-     * "ERROR: 9-path image &lt;path&gt; malformed"<br>
-     * Line 2 and 3 are taken as-is while line 4 is ignored (it repeats with<br>
-     * 'ERROR: failure processing &lt;path&gt;)
-     */
-    private final static Pattern sPattern7Line1 = Pattern.compile(
-            "^ERROR:\\s+9-patch\\s+image\\s+(.+)\\s+malformed\\.$"); //$NON-NLS-1$
-
-    private final static Pattern sPattern8Line1 = Pattern.compile(
-            "^(invalid resource directory name): (.*)$"); //$NON-NLS-1$
-
-    /**
-     * 2 line aapt error<br>
-     * "ERROR: Invalid configuration: foo"<br>
-     * "                              ^^^"<br>
-     * There's no need to parse the 2nd line.
-     */
-    private final static Pattern sPattern9Line1 = Pattern.compile(
-            "^Invalid configuration: (.+)$"); //$NON-NLS-1$
 
     /** SAX Parser factory. */
     private SAXParserFactory mParserFactory;
@@ -352,6 +250,19 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
      * @throws InterruptedException
      */
     protected final int grabProcessOutput(final Process process,
+            final ArrayList<String> results) throws InterruptedException {
+        return grabProcessOutput(getProject(), process, results);
+    }
+
+
+    /**
+     * Get the stderr output of a process and return when the process is done.
+     * @param process The process to get the ouput from
+     * @param results The array to store the stderr output
+     * @return the process return code.
+     * @throws InterruptedException
+     */
+    protected final static int grabProcessOutput(final IProject project, final Process process,
             final ArrayList<String> results)
             throws InterruptedException {
         // Due to the limited buffer size on windows for the standard io (stderr, stdout), we
@@ -388,8 +299,6 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
                 InputStreamReader is = new InputStreamReader(process.getInputStream());
                 BufferedReader outReader = new BufferedReader(is);
 
-                IProject project = getProject();
-
                 try {
                     while (true) {
                         String line = outReader.readLine();
@@ -410,218 +319,6 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
         // get the return code from the process
         return process.waitFor();
     }
-
-    /**
-     * Parse the output of aapt and mark the incorrect file with error markers
-     *
-     * @param results the output of aapt
-     * @param project the project containing the file to mark
-     * @return true if the parsing failed, false if success.
-     */
-    protected final boolean parseAaptOutput(ArrayList<String> results,
-            IProject project) {
-        // nothing to parse? just return false;
-        if (results.size() == 0) {
-            return false;
-        }
-
-        // get the root of the project so that we can make IFile from full
-        // file path
-        String osRoot = project.getLocation().toOSString();
-
-        Matcher m;
-
-        for (int i = 0; i < results.size(); i++) {
-            String p = results.get(i);
-
-            m = sPattern0Line1.matcher(p);
-            if (m.matches()) {
-                // we ignore those (as this is an ignore message from aapt)
-                continue;
-            }
-
-            m = sPattern1Line1.matcher(p);
-            if (m.matches()) {
-                String lineStr = m.group(1);
-                String msg = m.group(2);
-
-                // get the matcher for the next line.
-                m = getNextLineMatcher(results, ++i, sPattern1Line2);
-                if (m == null) {
-                    return true;
-                }
-
-                String location = m.group(1);
-
-                // check the values and attempt to mark the file.
-                if (checkAndMark(location, lineStr, msg, osRoot, project,
-                        AndroidConstants.MARKER_AAPT_COMPILE, IMarker.SEVERITY_ERROR) == false) {
-                    return true;
-                }
-                continue;
-            }
-
-            // this needs to be tested before Pattern2 since they both start with 'ERROR:'
-            m = sPattern7Line1.matcher(p);
-            if (m.matches()) {
-                String location = m.group(1);
-                String msg = p; // default msg is the line in case we don't find anything else
-
-                if (++i < results.size()) {
-                    msg = results.get(i).trim();
-                    if (++i < results.size()) {
-                        msg = msg + " - " + results.get(i).trim(); //$NON-NLS-1$
-
-                        // skip the next line
-                        i++;
-                    }
-                }
-
-                // display the error
-                if (checkAndMark(location, null, msg, osRoot, project,
-                        AndroidConstants.MARKER_AAPT_COMPILE, IMarker.SEVERITY_ERROR) == false) {
-                    return true;
-                }
-
-                // success, go to the next line
-                continue;
-            }
-
-            m =  sPattern2Line1.matcher(p);
-            if (m.matches()) {
-                // get the msg
-                String msg = m.group(1);
-
-                // get the matcher for the next line.
-                m = getNextLineMatcher(results, ++i, sPattern2Line2);
-                if (m == null) {
-                    return true;
-                }
-
-                String location = m.group(1);
-                String lineStr = m.group(2);
-
-                // check the values and attempt to mark the file.
-                if (checkAndMark(location, lineStr, msg, osRoot, project,
-                        AndroidConstants.MARKER_AAPT_COMPILE, IMarker.SEVERITY_ERROR) == false) {
-                    return true;
-                }
-                continue;
-            }
-
-            m = sPattern3Line1.matcher(p);
-            if (m.matches()) {
-                String location = m.group(1);
-                String lineStr = m.group(2);
-                String msg = m.group(3);
-
-                // check the values and attempt to mark the file.
-                if (checkAndMark(location, lineStr, msg, osRoot, project,
-                        AndroidConstants.MARKER_AAPT_COMPILE, IMarker.SEVERITY_ERROR) == false) {
-                    return true;
-                }
-
-                // success, go to the next line
-                continue;
-            }
-
-            m = sPattern4Line1.matcher(p);
-            if (m.matches()) {
-                // get the filename.
-                String location = m.group(1);
-
-                // get the matcher for the next line.
-                m = getNextLineMatcher(results, ++i, sPattern4Line2);
-                if (m == null) {
-                    return true;
-                }
-
-                String msg = m.group(1);
-                String lineStr = m.group(2);
-
-                // check the values and attempt to mark the file.
-                if (checkAndMark(location, lineStr, msg, osRoot, project,
-                        AndroidConstants.MARKER_AAPT_COMPILE, IMarker.SEVERITY_ERROR) == false) {
-                    return true;
-                }
-
-                // success, go to the next line
-                continue;
-            }
-
-            m = sPattern5Line1.matcher(p);
-            if (m.matches()) {
-                String location = m.group(1);
-                String lineStr = m.group(2);
-                String msg = m.group(3);
-
-                // check the values and attempt to mark the file.
-                if (checkAndMark(location, lineStr, msg, osRoot, project,
-                        AndroidConstants.MARKER_AAPT_COMPILE, IMarker.SEVERITY_WARNING) == false) {
-                    return true;
-                }
-
-                // success, go to the next line
-                continue;
-            }
-
-            m = sPattern6Line1.matcher(p);
-            if (m.matches()) {
-                String location = m.group(1);
-                String lineStr = m.group(2);
-                String msg = m.group(3);
-
-                // check the values and attempt to mark the file.
-                if (checkAndMark(location, lineStr, msg, osRoot, project,
-                        AndroidConstants.MARKER_AAPT_COMPILE, IMarker.SEVERITY_ERROR) == false) {
-                    return true;
-                }
-
-                // success, go to the next line
-                continue;
-            }
-
-            m = sPattern8Line1.matcher(p);
-            if (m.matches()) {
-                String location = m.group(2);
-                String msg = m.group(1);
-
-                // check the values and attempt to mark the file.
-                if (checkAndMark(location, null, msg, osRoot, project,
-                        AndroidConstants.MARKER_AAPT_COMPILE, IMarker.SEVERITY_ERROR) == false) {
-                    return true;
-                }
-
-                // success, go to the next line
-                continue;
-            }
-
-            m = sPattern9Line1.matcher(p);
-            if (m.matches()) {
-                String badConfig = m.group(1);
-                String msg = String.format("APK Configuration filter '%1$s' is invalid", badConfig);
-
-                // skip the next line
-                i++;
-
-                // check the values and attempt to mark the file.
-                if (checkAndMark(null /*location*/, null, msg, osRoot, project,
-                        AndroidConstants.MARKER_AAPT_PACKAGE, IMarker.SEVERITY_ERROR) == false) {
-                    return true;
-                }
-
-                // success, go to the next line
-                continue;
-            }
-
-            // invalid line format, flag as error, and bail
-            return true;
-        }
-
-        return false;
-    }
-
-
 
     /**
      * Saves a String property into the persistent storage of the project.
@@ -688,195 +385,6 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
         return ProjectHelper.loadResourceProperty(project, propertyName);
     }
 
-    /**
-     * Check if the parameters gotten from the error output are valid, and mark
-     * the file with an AAPT marker.
-     * @param location the full OS path of the error file. If null, the project is marked
-     * @param lineStr
-     * @param message
-     * @param root The root directory of the project, in OS specific format.
-     * @param project
-     * @param markerId The marker id to put.
-     * @param severity The severity of the marker to put (IMarker.SEVERITY_*)
-     * @return true if the parameters were valid and the file was marked successfully.
-     *
-     * @see IMarker
-     */
-    private final  boolean checkAndMark(String location, String lineStr,
-            String message, String root, IProject project, String markerId, int severity) {
-        // check this is in fact a file
-        if (location != null) {
-            File f = new File(location);
-            if (f.exists() == false) {
-                return false;
-            }
-        }
-
-        // get the line number
-        int line = -1; // default value for error with no line.
-
-        if (lineStr != null) {
-            try {
-                line = Integer.parseInt(lineStr);
-            } catch (NumberFormatException e) {
-                // looks like the string we extracted wasn't a valid
-                // file number. Parsing failed and we return true
-                return false;
-            }
-        }
-
-        // add the marker
-        IResource f2 = project;
-        if (location != null) {
-            f2 = getResourceFromFullPath(location, root, project);
-            if (f2 == null) {
-                return false;
-            }
-        }
-
-        // check if there's a similar marker already, since aapt is launched twice
-        boolean markerAlreadyExists = false;
-        try {
-            IMarker[] markers = f2.findMarkers(markerId, true, IResource.DEPTH_ZERO);
-
-            for (IMarker marker : markers) {
-                int tmpLine = marker.getAttribute(IMarker.LINE_NUMBER, -1);
-                if (tmpLine != line) {
-                    break;
-                }
-
-                int tmpSeverity = marker.getAttribute(IMarker.SEVERITY, -1);
-                if (tmpSeverity != severity) {
-                    break;
-                }
-
-                String tmpMsg = marker.getAttribute(IMarker.MESSAGE, null);
-                if (tmpMsg == null || tmpMsg.equals(message) == false) {
-                    break;
-                }
-
-                // if we're here, all the marker attributes are equals, we found it
-                // and exit
-                markerAlreadyExists = true;
-                break;
-            }
-
-        } catch (CoreException e) {
-            // if we couldn't get the markers, then we just mark the file again
-            // (since markerAlreadyExists is initialized to false, we do nothing)
-        }
-
-        if (markerAlreadyExists == false) {
-            BaseProjectHelper.markResource(f2, markerId, message, line, severity);
-        }
-
-        return true;
-    }
-
-    /**
-     * Returns a matching matcher for the next line
-     * @param lines The array of lines
-     * @param nextIndex The index of the next line
-     * @param pattern The pattern to match
-     * @return null if error or no match, the matcher otherwise.
-     */
-    private final Matcher getNextLineMatcher(ArrayList<String> lines,
-            int nextIndex, Pattern pattern) {
-        // unless we can't, because we reached the last line
-        if (nextIndex == lines.size()) {
-            // we expected a 2nd line, so we flag as error
-            // and we bail
-            return null;
-        }
-
-        Matcher m = pattern.matcher(lines.get(nextIndex));
-        if (m.matches()) {
-           return m;
-        }
-
-        return null;
-    }
-
-    private IResource getResourceFromFullPath(String filename, String root,
-            IProject project) {
-        if (filename.startsWith(root)) {
-            String file = filename.substring(root.length());
-
-            // get the resource
-            IResource r = project.findMember(file);
-
-            // if the resource is valid, we add the marker
-            if (r.exists()) {
-                return r;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns an array of external jar files used by the project.
-     * @return an array of OS-specific absolute file paths
-     */
-    protected final String[] getExternalJars() {
-        // get the current project
-        IProject project = getProject();
-
-        // get a java project from it
-        IJavaProject javaProject = JavaCore.create(project);
-
-        IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
-
-        ArrayList<String> oslibraryList = new ArrayList<String>();
-        IClasspathEntry[] classpaths = javaProject.readRawClasspath();
-        if (classpaths != null) {
-            for (IClasspathEntry e : classpaths) {
-                if (e.getEntryKind() == IClasspathEntry.CPE_LIBRARY ||
-                        e.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
-                    // if this is a classpath variable reference, we resolve it.
-                    if (e.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
-                        e = JavaCore.getResolvedClasspathEntry(e);
-                    }
-
-                    // get the IPath
-                    IPath path = e.getPath();
-
-                    // check the name ends with .jar
-                    if (AndroidConstants.EXT_JAR.equalsIgnoreCase(path.getFileExtension())) {
-                        boolean local = false;
-                        IResource resource = wsRoot.findMember(path);
-                        if (resource != null && resource.exists() &&
-                                resource.getType() == IResource.FILE) {
-                            local = true;
-                            oslibraryList.add(resource.getLocation().toOSString());
-                        }
-
-                        if (local == false) {
-                            // if the jar path doesn't match a workspace resource,
-                            // then we get an OSString and check if this links to a valid file.
-                            String osFullPath = path.toOSString();
-
-                            File f = new File(osFullPath);
-                            if (f.exists()) {
-                                oslibraryList.add(osFullPath);
-                            } else {
-                                String message = String.format( Messages.Couldnt_Locate_s_Error,
-                                        path);
-                                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
-                                        project, message);
-
-                                // Also put a warning marker on the project
-                                markProject(AndroidConstants.MARKER_PACKAGING, message,
-                                        IMarker.SEVERITY_WARNING);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return oslibraryList.toArray(new String[oslibraryList.size()]);
-    }
 
     /**
      * Aborts the build if the SDK/project setups are broken. This does not

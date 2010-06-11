@@ -237,7 +237,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
             // inside the native library folder. Test if the changed resource is a .so file.
             if (type == IResource.FILE &&
                     (AndroidConstants.EXT_NATIVE_LIB.equalsIgnoreCase(path.getFileExtension())
-                            || ApkBuilder.GDBSERVER_NAME.equals(resource.getName()))) {
+                            || ApkBuilderHelper.GDBSERVER_NAME.equals(resource.getName()))) {
                 mMakeFinalPackage = true;
                 return false; // return false for file.
             }
@@ -260,9 +260,9 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
                         // Also excluded are aidl files, and package.html files
                         if (type == IResource.FOLDER) {
                             // always visit the subfolders, unless the folder is not to be included
-                            return ApkBuilder.checkFolderForPackaging((IFolder)resource);
+                            return ApkBuilderHelper.checkFolderForPackaging((IFolder)resource);
                         } else if (type == IResource.FILE) {
-                            if (ApkBuilder.checkFileForPackaging((IFile)resource)) {
+                            if (ApkBuilderHelper.checkFileForPackaging((IFile)resource)) {
                                 mMakeFinalPackage = true;
                             }
 
