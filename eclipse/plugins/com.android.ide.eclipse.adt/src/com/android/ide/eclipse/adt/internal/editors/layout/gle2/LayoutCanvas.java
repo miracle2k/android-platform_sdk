@@ -20,7 +20,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
@@ -1269,7 +1269,7 @@ import java.util.ListIterator;
         }
 
         /** Get the XML text directly from the editor. */
-        private String getXmlTextFromEditor(AndroidEditor editor, Node xml_node) {
+        private String getXmlTextFromEditor(AndroidXmlEditor editor, Node xml_node) {
             String data = null;
             IStructuredModel model = editor.getModelForRead();
             try {

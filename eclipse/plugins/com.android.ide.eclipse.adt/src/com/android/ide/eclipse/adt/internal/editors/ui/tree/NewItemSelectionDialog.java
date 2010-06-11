@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.ui.tree;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -153,7 +153,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
      */
     private String getLeafFileName(UiElementNode ui_node) {
         if (ui_node != null) {
-            AndroidEditor editor = ui_node.getEditor();
+            AndroidXmlEditor editor = ui_node.getEditor();
             if (editor != null) {
                 IEditorInput editorInput = editor.getEditorInput();
                 if (editorInput instanceof FileEditorInput) {
@@ -177,7 +177,7 @@ public class NewItemSelectionDialog extends AbstractElementListSelectionDialog {
      */
     private String getLastUsedXmlName(UiElementNode ui_node) {
         if (ui_node != null) {
-            AndroidEditor editor = ui_node.getEditor();
+            AndroidXmlEditor editor = ui_node.getEditor();
             if (editor != null) {
                 IEditorInput editorInput = editor.getEditorInput();
                 if (editorInput instanceof FileEditorInput) {

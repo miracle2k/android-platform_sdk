@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.uimodel;
 
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
@@ -133,7 +133,7 @@ public class UiTextAttributeNode extends UiAbstractTextAttributeNode {
             Object data = textWidget.getLayoutData();
             if (data == null) {
             } else if (data instanceof GridData) {
-                ((GridData)data).widthHint = AndroidEditor.TEXT_WIDTH_HINT;
+                ((GridData)data).widthHint = AndroidXmlEditor.TEXT_WIDTH_HINT;
             } else if (data instanceof TableWrapData) {
                 ((TableWrapData)data).maxWidth = 100;
             }

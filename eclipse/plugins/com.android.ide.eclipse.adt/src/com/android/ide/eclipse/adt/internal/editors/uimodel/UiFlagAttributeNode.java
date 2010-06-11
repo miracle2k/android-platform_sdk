@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.uimodel;
 
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.FlagAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
@@ -143,7 +143,7 @@ public class UiFlagAttributeNode extends UiTextAttributeNode {
         if (values == null) {
             // or from the AndroidTargetData
             UiElementNode uiNode = getUiParent();
-            AndroidEditor editor = uiNode.getEditor();
+            AndroidXmlEditor editor = uiNode.getEditor();
             AndroidTargetData data = editor.getTargetData();
             if (data != null) {
                 values = data.getAttributeValues(element_name, attr_name);

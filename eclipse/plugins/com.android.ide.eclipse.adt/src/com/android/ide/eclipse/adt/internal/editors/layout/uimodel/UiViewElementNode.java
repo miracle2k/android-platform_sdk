@@ -74,7 +74,9 @@ public class UiViewElementNode extends UiElementNode {
                     IAndroidTarget target = currentSdk.getTarget(project);
                     if (target != null) {
                         AndroidTargetData data = currentSdk.getTargetData(target);
-                        layoutDescriptors = data.getLayoutDescriptors().getLayoutDescriptors();
+                        if (data != null) {
+                            layoutDescriptors = data.getLayoutDescriptors().getLayoutDescriptors();
+                        }
                     }
                 }
             }

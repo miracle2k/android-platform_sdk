@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.uimodel;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ListAttributeDescriptor;
@@ -156,7 +156,7 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
         if (values == null) {
             // or from the AndroidTargetData
             UiElementNode uiNode = getUiParent();
-            AndroidEditor editor = uiNode.getEditor();
+            AndroidXmlEditor editor = uiNode.getEditor();
             AndroidTargetData data = editor.getTargetData();
             if (data != null) {
                 // get the great-grand-parent descriptor.

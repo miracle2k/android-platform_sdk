@@ -79,7 +79,7 @@ import java.net.URL;
  * Derived classes must implement createFormPages to create the forms before the
  * source editor. This can be a no-op if desired.
  */
-public abstract class AndroidEditor extends FormEditor implements IResourceChangeListener {
+public abstract class AndroidXmlEditor extends FormEditor implements IResourceChangeListener {
 
     /** Preference name for the current page of this file */
     private static final String PREF_CURRENT_PAGE = "_current_page";
@@ -114,9 +114,9 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
      * <p/>The editor will setup a {@link ITargetChangeListener} and call
      * {@link #initUiRootNode(boolean)}, when the SDK or the target changes.
      *
-     * @see #AndroidEditor(boolean)
+     * @see #AndroidXmlEditor(boolean)
      */
-    public AndroidEditor() {
+    public AndroidXmlEditor() {
         this(true);
     }
 
@@ -124,7 +124,7 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
      * Creates a form editor.
      * @param addTargetListener whether to create an {@link ITargetChangeListener}.
      */
-    public AndroidEditor(boolean addTargetListener) {
+    public AndroidXmlEditor(boolean addTargetListener) {
         super();
 
         if (addTargetListener) {
@@ -133,7 +133,7 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
             mTargetListener = new TargetChangeListener() {
                 @Override
                 public IProject getProject() {
-                    return AndroidEditor.this.getProject();
+                    return AndroidXmlEditor.this.getProject();
                 }
 
                 @Override
@@ -164,7 +164,7 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
     abstract protected void createFormPages();
 
     /**
-     * Called by the base class {@link AndroidEditor} once all pages (custom form pages
+     * Called by the base class {@link AndroidXmlEditor} once all pages (custom form pages
      * as well as text editor page) have been created. This give a chance to deriving
      * classes to adjust behavior once the text page has been created.
      */
@@ -270,7 +270,7 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
                 // AssertionError from setActivePage when the index is out of bounds.
                 // Generally speaking we just want to ignore any exception and fall back on the
                 // first page rather than crash the editor load. Logging the error is enough.
-                AdtPlugin.log(e, "Selecting page '%s' in AndroidEditor failed", defaultPageId);
+                AdtPlugin.log(e, "Selecting page '%s' in AndroidXmlEditor failed", defaultPageId);
             }
         }
     }
@@ -821,7 +821,7 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
          * model's ID or base Location. A typical use might be if a client might
          * want to suspend processing until all changes have been made.
          * <p/>
-         * This AndroidEditor implementation of IModelChangedListener is empty.
+         * This AndroidXmlEditor implementation of IModelChangedListener is empty.
          */
         public void modelAboutToBeChanged(IStructuredModel model) {
             // pass
@@ -832,7 +832,7 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
          * made. A typical use might be to refresh, or to resume processing that
          * was suspended as a result of modelAboutToBeChanged.
          * <p/>
-         * This AndroidEditor implementation calls the xmlModelChanged callback.
+         * This AndroidXmlEditor implementation calls the xmlModelChanged callback.
          */
         public void modelChanged(IStructuredModel model) {
             xmlModelChanged(getXmlDocument(model));
@@ -843,7 +843,7 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
          * in isDirty. A model becomes dirty when any change is made, and becomes
          * not-dirty when the model is saved.
          * <p/>
-         * This AndroidEditor implementation of IModelChangedListener is empty.
+         * This AndroidXmlEditor implementation of IModelChangedListener is empty.
          */
         public void modelDirtyStateChanged(IStructuredModel model, boolean isDirty) {
             // pass
@@ -855,7 +855,7 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
          * released it. Note: baseLocation is not (necessarily) changed in this
          * event, but may not be accurate.
          * <p/>
-         * This AndroidEditor implementation of IModelChangedListener is empty.
+         * This AndroidXmlEditor implementation of IModelChangedListener is empty.
          */
         public void modelResourceDeleted(IStructuredModel model) {
             // pass
@@ -866,21 +866,21 @@ public abstract class AndroidEditor extends FormEditor implements IResourceChang
          * case, the two paramenters are the same instance, and only contain the
          * new info for id and base location.
          * <p/>
-         * This AndroidEditor implementation of IModelChangedListener is empty.
+         * This AndroidXmlEditor implementation of IModelChangedListener is empty.
          */
         public void modelResourceMoved(IStructuredModel oldModel, IStructuredModel newModel) {
             // pass
         }
 
         /**
-         * This AndroidEditor implementation of IModelChangedListener is empty.
+         * This AndroidXmlEditor implementation of IModelChangedListener is empty.
          */
         public void modelAboutToBeReinitialized(IStructuredModel structuredModel) {
             // pass
         }
 
         /**
-         * This AndroidEditor implementation of IModelChangedListener is empty.
+         * This AndroidXmlEditor implementation of IModelChangedListener is empty.
          */
         public void modelReinitialized(IStructuredModel structuredModel) {
             // pass

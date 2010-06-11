@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.xml;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.FirstElementParser;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -39,7 +39,7 @@ import org.w3c.dom.Document;
 /**
  * Multi-page form editor for /res/xml XML files.
  */
-public class XmlEditor extends AndroidEditor {
+public class XmlEditor extends AndroidXmlEditor {
 
     public static final String ID = AndroidConstants.EDITORS_NAMESPACE + ".xml.XmlEditor"; //$NON-NLS-1$
 

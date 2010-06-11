@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.menu;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
@@ -39,7 +39,7 @@ import javax.xml.xpath.XPathExpressionException;
 /**
  * Multi-page form editor for /res/menu XML files. 
  */
-public class MenuEditor extends AndroidEditor {
+public class MenuEditor extends AndroidXmlEditor {
 
     public static final String ID = AndroidConstants.EDITORS_NAMESPACE + ".menu.MenuEditor"; //$NON-NLS-1$
 

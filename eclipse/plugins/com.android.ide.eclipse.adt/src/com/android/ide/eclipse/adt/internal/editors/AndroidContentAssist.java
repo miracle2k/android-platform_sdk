@@ -89,7 +89,7 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
 
     private final int mDescriptorId;
 
-    private AndroidEditor mEditor;
+    private AndroidXmlEditor mEditor;
 
     /**
      * Constructor for AndroidContentAssist
@@ -118,7 +118,7 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
     public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
 
         if (mEditor == null) {
-            mEditor = getAndroidEditor(viewer);
+            mEditor = getAndroidXmlEditor(viewer);
             if (mEditor == null) {
                 // This should not happen. Duck and forget.
                 AdtPlugin.log(IStatus.ERROR, "Editor not found during completion");
@@ -782,18 +782,18 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
     }
 
     /**
-     * Returns the active {@link AndroidEditor} matching this source viewer.
+     * Returns the active {@link AndroidXmlEditor} matching this source viewer.
      */
-    private AndroidEditor getAndroidEditor(ITextViewer viewer) {
+    private AndroidXmlEditor getAndroidXmlEditor(ITextViewer viewer) {
         IWorkbenchWindow wwin = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
         if (wwin != null) {
             IWorkbenchPage page = wwin.getActivePage();
             if (page != null) {
                 IEditorPart editor = page.getActiveEditor();
-                if (editor instanceof AndroidEditor) {
-                    ISourceViewer ssviewer = ((AndroidEditor) editor).getStructuredSourceViewer();
+                if (editor instanceof AndroidXmlEditor) {
+                    ISourceViewer ssviewer = ((AndroidXmlEditor) editor).getStructuredSourceViewer();
                     if (ssviewer == viewer) {
-                        return (AndroidEditor) editor;
+                        return (AndroidXmlEditor) editor;
                     }
                 }
             }

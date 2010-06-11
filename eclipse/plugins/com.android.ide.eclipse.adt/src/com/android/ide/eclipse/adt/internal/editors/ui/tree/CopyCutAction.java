@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.ui.tree;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
 import org.apache.xml.serialize.Method;
@@ -49,7 +49,7 @@ import java.util.List;
 public class CopyCutAction extends Action {
     private List<UiElementNode> mUiNodes;
     private boolean mPerformCut;
-    private final AndroidEditor mEditor;
+    private final AndroidXmlEditor mEditor;
     private final Clipboard mClipboard;
     private final ICommitXml mXmlCommit;
 
@@ -59,7 +59,7 @@ public class CopyCutAction extends Action {
      * @param selected The UI node to cut or copy. It *must* have a non-null XML node.
      * @param performCut True if the operation is cut, false if it is copy.
      */
-    public CopyCutAction(AndroidEditor editor, Clipboard clipboard, ICommitXml xmlCommit,
+    public CopyCutAction(AndroidXmlEditor editor, Clipboard clipboard, ICommitXml xmlCommit,
             UiElementNode selected, boolean performCut) {
         this(editor, clipboard, xmlCommit, toList(selected), performCut);
     }
@@ -71,7 +71,7 @@ public class CopyCutAction extends Action {
      *                 The list becomes owned by the {@link CopyCutAction}.
      * @param performCut True if the operation is cut, false if it is copy.
      */
-    public CopyCutAction(AndroidEditor editor, Clipboard clipboard, ICommitXml xmlCommit,
+    public CopyCutAction(AndroidXmlEditor editor, Clipboard clipboard, ICommitXml xmlCommit,
             List<UiElementNode> selected, boolean performCut) {
         super(performCut ? "Cut" : "Copy");
         mEditor = editor;

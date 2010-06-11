@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.ui.tree;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -377,7 +377,7 @@ class UiElementDetail implements IDetailsPage {
         if (parentNumCol > 1) {
             masterTable = SectionHelper.createTableLayout(masterTable, toolkit, 1);
             TableWrapData twd = new TableWrapData(TableWrapData.FILL_GRAB);
-            twd.maxWidth = AndroidEditor.TEXT_WIDTH_HINT;
+            twd.maxWidth = AndroidXmlEditor.TEXT_WIDTH_HINT;
             twd.colspan = parentNumCol;
             masterTable.setLayoutData(twd);
         }

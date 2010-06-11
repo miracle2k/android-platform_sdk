@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.ui.tree;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
@@ -40,10 +40,10 @@ import org.w3c.dom.Node;
  */
 public class PasteAction extends Action {
     private UiElementNode mUiNode;
-    private final AndroidEditor mEditor;
+    private final AndroidXmlEditor mEditor;
     private final Clipboard mClipboard;
 
-    public PasteAction(AndroidEditor editor, Clipboard clipboard, UiElementNode ui_node) {
+    public PasteAction(AndroidXmlEditor editor, Clipboard clipboard, UiElementNode ui_node) {
         super("Paste");
         mEditor = editor;
         mClipboard = clipboard;
