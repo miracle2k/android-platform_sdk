@@ -17,9 +17,8 @@
 package com.android.ide.eclipse.adt.internal.resources;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo.AttributeInfo;
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo.AttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo.LayoutParamsInfo;
 
 import org.eclipse.core.runtime.IStatus;
@@ -52,14 +51,14 @@ public final class AttrsXmlParser {
 
     /** Map of all attribute names for a given element */
     private HashMap<String, DeclareStyleableInfo> mStyleMap;
-    
+
     /** Map of all (constant, value) pairs for attributes of format enum or flag.
      * E.g. for attribute name=gravity, this tells us there's an enum/flag called "center"
-     * with value 0x11. 
+     * with value 0x11.
      */
     private Map<String, Map<String, Integer>> mEnumFlagValues;
-    
-    
+
+
     /**
      * Creates a new {@link AttrsXmlParser}, set to load things from the given
      * XML file. Nothing has been parsed yet. Callers should call {@link #preload()}
@@ -97,10 +96,10 @@ public final class AttrsXmlParser {
     public String getOsAttrsXmlPath() {
         return mOsAttrsXmlPath;
     }
-    
+
     /**
      * Preloads the document, parsing all attributes and declared styles.
-     * 
+     *
      * @return Self, for command chaining.
      */
     public AttrsXmlParser preload() {
@@ -118,13 +117,13 @@ public final class AttrsXmlParser {
                 !res.getNodeName().equals("resources")) { //$NON-NLS-1$
             res = res.getNextSibling();
         }
-        
+
         if (res == null) {
             AdtPlugin.log(IStatus.WARNING, "Failed to find a <resources> node in %1$s", //$NON-NLS-1$
                     mOsAttrsXmlPath);
             return this;
         }
-        
+
         parseResources(res);
         return this;
     }
@@ -160,14 +159,14 @@ public final class AttrsXmlParser {
             }
         }
     }
-    
+
     /**
      * Returns a list of all decleare-styleable found in the xml file.
      */
     public Map<String, DeclareStyleableInfo> getDeclareStyleableList() {
         return Collections.unmodifiableMap(mStyleMap);
     }
-    
+
     /**
      * Returns a map of all enum and flag constants sorted by parent attribute name.
      * The map is attribute_name => (constant_name => integer_value).
@@ -180,7 +179,7 @@ public final class AttrsXmlParser {
 
     /**
      * Creates an XML document from the attrs.xml OS path.
-     * May return null if the file doesn't exist or cannot be parsed. 
+     * May return null if the file doesn't exist or cannot be parsed.
      */
     private Document getDocument() {
         if (mDocument == null) {
@@ -218,10 +217,10 @@ public final class AttrsXmlParser {
                     Node nameNode = node.getAttributes().getNamedItem("name"); //$NON-NLS-1$
                     if (nameNode != null) {
                         String name = nameNode.getNodeValue();
-                        
+
                         Node parentNode = node.getAttributes().getNamedItem("parent"); //$NON-NLS-1$
                         String parents = parentNode == null ? null : parentNode.getNodeValue();
-                        
+
                         if (name != null && !mStyleMap.containsKey(name)) {
                             DeclareStyleableInfo style = parseDeclaredStyleable(name, node);
                             if (parents != null) {
@@ -276,9 +275,9 @@ public final class AttrsXmlParser {
     /**
      * Finds all the attributes for a particular style node,
      * e.g. a declare-styleable of name "TextView" or "LinearLayout_Layout".
-     * 
+     *
      * @param styleName The name of the declare-styleable node
-     * @param declareStyleableNode The declare-styleable node itself 
+     * @param declareStyleableNode The declare-styleable node itself
      */
     private DeclareStyleableInfo parseDeclaredStyleable(String styleName,
             Node declareStyleableNode) {
@@ -302,9 +301,9 @@ public final class AttrsXmlParser {
                 lastComment = null;
                 break;
             }
-            
+
         }
-        
+
         return new DeclareStyleableInfo(styleName, attrs.toArray(new AttributeInfo[attrs.size()]));
     }
 
@@ -323,7 +322,7 @@ public final class AttrsXmlParser {
      * <p/>
      * By design, <attr> nodes of the same name MUST have the same type.
      * Attribute nodes are thus cached by name and reused as much as possible.
-     * When reusing a node, it is duplicated and its javadoc reassigned. 
+     * When reusing a node, it is duplicated and its javadoc reassigned.
      */
     private AttributeInfo parseAttributeTypes(Node attrNode, String name) {
         TreeSet<AttributeInfo.Format> formats = new TreeSet<AttributeInfo.Format>();
@@ -377,11 +376,11 @@ public final class AttrsXmlParser {
      * <p/>
      * This method collects all the possible names of these children nodes and
      * return them.
-     * 
+     *
      * @param attrNode The <attr> XML node
      * @param filter The child node to look for, either "enum" or "flag".
-     * @param attrName The value of the name attribute of <attr> 
-     * 
+     * @param attrName The value of the name attribute of <attr>
+     *
      * @return Null if there are no such children nodes, otherwise an array of length >= 1
      *         of all the names of these children nodes.
      */
@@ -400,7 +399,7 @@ public final class AttrsXmlParser {
                     }
                     String name = nameNode.getNodeValue();
                     names.add(name);
-                    
+
                     Node valueNode = child.getAttributes().getNamedItem("value");  //$NON-NLS-1$
                     if (valueNode == null) {
                         AdtPlugin.log(IStatus.WARNING,
@@ -412,14 +411,14 @@ public final class AttrsXmlParser {
                             int i = value.startsWith("0x") ?
                                     Integer.parseInt(value.substring(2), 16 /* radix */) :
                                     Integer.parseInt(value);
-                            
+
                             Map<String, Integer> map = mEnumFlagValues.get(attrName);
                             if (map == null) {
                                 map = new HashMap<String, Integer>();
                                 mEnumFlagValues.put(attrName, map);
                             }
                             map.put(name, Integer.valueOf(i));
-                            
+
                         } catch(NumberFormatException e) {
                             AdtPlugin.log(e,
                                     "Value in <attr name=\"%s\"><%s name=\"%s\" value=\"%s\"></attr> is not a valid decimal or hexadecimal", //$NON-NLS-1$
@@ -431,7 +430,7 @@ public final class AttrsXmlParser {
         }
         return names == null ? null : names.toArray(new String[names.size()]);
     }
-    
+
     /**
      * Parses the javadoc comment.
      * Only keeps the first sentence.
@@ -443,7 +442,7 @@ public final class AttrsXmlParser {
         if (comment == null) {
             return null;
         }
-        
+
         // sanitize & collapse whitespace
         comment = comment.replaceAll("\\s+", " "); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -465,7 +464,7 @@ public final class AttrsXmlParser {
         //      - followed by a space (?= non-capturing zero-width positive look-ahead)
         // - anything else is ignored
         comment = comment.replaceFirst("^\\s*(.*?(?:$|(?<![a-zA-Z]\\.[a-zA-Z])\\.(?=\\s))).*", "$1"); //$NON-NLS-1$ //$NON-NLS-2$
-        
+
         return comment;
     }
 
@@ -485,7 +484,7 @@ public final class AttrsXmlParser {
         if (comment == null) {
             return null;
         }
-        
+
         // sanitize & collapse whitespace
         comment = comment.replaceAll("\\s+", " "); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -499,7 +498,7 @@ public final class AttrsXmlParser {
         } else {
             return null;
         }
-        
+
         return comment.trim();
     }
 }

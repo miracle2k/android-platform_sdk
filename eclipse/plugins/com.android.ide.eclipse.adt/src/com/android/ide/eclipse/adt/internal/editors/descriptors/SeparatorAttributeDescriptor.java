@@ -26,12 +26,12 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiSeparatorAttribute
  * It is used to separate groups of attributes visually.
  */
 public class SeparatorAttributeDescriptor extends AttributeDescriptor {
-    
+
     /**
      * Creates a new {@link SeparatorAttributeDescriptor}
      */
     public SeparatorAttributeDescriptor(String label) {
-        super(label /* xmlLocalName */, null /* nsUri */);
+        super(label /* xmlLocalName */, null /* nsUri */, null /* info */);
     }
 
     /**

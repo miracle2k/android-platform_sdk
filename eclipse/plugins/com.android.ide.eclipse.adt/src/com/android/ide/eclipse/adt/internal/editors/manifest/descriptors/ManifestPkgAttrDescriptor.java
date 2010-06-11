@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.model.UiManifestPkgAttrNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
@@ -23,14 +24,15 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
 /**
  * Describes a package XML attribute. It is displayed by a {@link UiManifestPkgAttrNode}.
+ * @deprecated Does not seem used anymore. Cleanup later.
  */
 public class ManifestPkgAttrDescriptor extends TextAttributeDescriptor {
 
     public ManifestPkgAttrDescriptor(String xmlLocalName, String uiName, String nsUri,
-            String tooltip) {
-        super(xmlLocalName, uiName, nsUri, tooltip);
+            String tooltip, IAttributeInfo attrInfo) {
+        super(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
     }
-    
+
     /**
      * @return A new {@link UiManifestPkgAttrNode} linked to this descriptor.
      */

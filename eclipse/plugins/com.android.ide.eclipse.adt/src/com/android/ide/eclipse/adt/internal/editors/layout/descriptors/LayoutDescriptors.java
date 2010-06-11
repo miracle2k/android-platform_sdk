@@ -16,15 +16,15 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvider;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.SeparatorAttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo;
+import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo;
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo.LayoutParamsInfo;
 import com.android.sdklib.SdkConstants;
 
@@ -182,11 +182,9 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         ArrayList<AttributeDescriptor> attributes = new ArrayList<AttributeDescriptor>();
 
         // All views and groups have an implicit "style" attribute which is a reference.
-        AttributeInfo styleInfo = new DeclareStyleableInfo.AttributeInfo(
+        AttributeInfo styleInfo = new AttributeInfo(
                 "style",    //$NON-NLS-1$ xmlLocalName
-                new DeclareStyleableInfo.AttributeInfo.Format[] {
-                        DeclareStyleableInfo.AttributeInfo.Format.REFERENCE
-                    });
+                new Format[] { Format.REFERENCE });
         styleInfo.setJavaDoc("A reference to a custom style"); //tooltip
         DescriptorsUtils.appendAttribute(attributes,
                 "style",    //$NON-NLS-1$
@@ -284,8 +282,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
                 null, //nsUri
                 new AttributeInfo(
                         "layout",       //$NON-NLS-1$
-                        new AttributeInfo.Format[] { AttributeInfo.Format.REFERENCE }
-                        ),
+                        new Format[] { Format.REFERENCE } ),
                 true,  //required
                 null); //overrides
 
@@ -294,8 +291,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
                 SdkConstants.NS_RESOURCES, //nsUri
                 new AttributeInfo(
                         "id",           //$NON-NLS-1$
-                        new AttributeInfo.Format[] { AttributeInfo.Format.REFERENCE }
-                        ),
+                        new Format[] { Format.REFERENCE } ),
                 true,  //required
                 null); //overrides
 

@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.model.UiPackageAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
@@ -27,10 +28,10 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 public class PackageAttributeDescriptor extends TextAttributeDescriptor {
 
     public PackageAttributeDescriptor(String xmlLocalName, String uiName, String nsUri,
-            String tooltip) {
-        super(xmlLocalName, uiName, nsUri, tooltip);
+            String tooltip, IAttributeInfo attrInfo) {
+        super(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
     }
-    
+
     /**
      * @return A new {@link UiPackageAttributeNode} linked to this descriptor.
      */

@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.ui.FlagValueCellEditor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -28,7 +29,7 @@ import org.eclipse.swt.widgets.Composite;
 /**
  * Describes a text attribute that can only contains some predefined values.
  * It is displayed by a {@link UiListAttributeNode}.
- * 
+ *
  * Note: in Android resources, a "flag" is a list of fixed values where one or
  * more values can be selected using an "or", e.g. "align='left|top'".
  * By contrast, an "enum" is a list of fixed values of which only one can be
@@ -42,20 +43,27 @@ public class FlagAttributeDescriptor extends TextAttributeDescriptor {
     private String[] mNames;
 
     /**
-     * Creates a new {@link FlagAttributeDescriptor} which automatically gets its
-     * values from the FrameworkResourceManager.
+     * Creates a new {@link FlagAttributeDescriptor}.
+     * <p/>
+     * If <code>attrInfo</code> is not null and has non-null flag values, these will be
+     * used for the list.
+     * Otherwise values are automatically extracted from the FrameworkResourceManager.
      */
     public FlagAttributeDescriptor(String xmlLocalName, String uiName, String nsUri,
-            String tooltip) {
-        super(xmlLocalName, uiName, nsUri, tooltip);
+            String tooltip, IAttributeInfo attrInfo) {
+        super(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
+        if (attrInfo != null) {
+            mNames = attrInfo.getFlagValues();
+        }
     }
 
     /**
-    * Creates a new {@link FlagAttributeDescriptor} which uses the provided values.
+    * Creates a new {@link FlagAttributeDescriptor} which uses the provided values
+    * and does not lookup the content of <code>attrInfo</code>.
     */
     public FlagAttributeDescriptor(String xmlLocalName, String uiName, String nsUri,
-            String tooltip, String[] names) {
-       super(xmlLocalName, uiName, nsUri, tooltip);
+            String tooltip, IAttributeInfo attrInfo, String[] names) {
+       super(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
        mNames = names;
     }
 
@@ -66,7 +74,7 @@ public class FlagAttributeDescriptor extends TextAttributeDescriptor {
     public String[] getNames() {
         return mNames;
     }
-    
+
     /**
      * @return A new {@link UiListAttributeNode} linked to this descriptor.
      */
@@ -74,7 +82,7 @@ public class FlagAttributeDescriptor extends TextAttributeDescriptor {
     public UiAttributeNode createUiNode(UiElementNode uiParent) {
         return new UiFlagAttributeNode(this, uiParent);
     }
-    
+
     // ------- IPropertyDescriptor Methods
 
     @Override

@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.ui.TextValueCellEditor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -40,19 +41,20 @@ import org.eclipse.ui.views.properties.IPropertyDescriptor;
 public class TextAttributeDescriptor extends AttributeDescriptor implements IPropertyDescriptor {
     private String mUiName;
     private String mTooltip;
-    
+
     /**
      * Creates a new {@link TextAttributeDescriptor}
-     * 
+     *
      * @param xmlLocalName The XML name of the attribute (case sensitive)
      * @param uiName The UI name of the attribute. Cannot be an empty string and cannot be null.
      * @param nsUri The URI of the attribute. Can be null if attribute has no namespace.
      *              See {@link SdkConstants#NS_RESOURCES} for a common value.
      * @param tooltip A non-empty tooltip string or null
+     * @param attrInfo The {@link IAttributeInfo} of this attribute. Can't be null.
      */
     public TextAttributeDescriptor(String xmlLocalName, String uiName,
-            String nsUri, String tooltip) {
-        super(xmlLocalName, nsUri);
+            String nsUri, String tooltip, IAttributeInfo attrInfo) {
+        super(xmlLocalName, nsUri, attrInfo);
         mUiName = uiName;
         mTooltip = (tooltip != null && tooltip.length() > 0) ? tooltip : null;
     }
@@ -73,13 +75,13 @@ public class TextAttributeDescriptor extends AttributeDescriptor implements IPro
      * <p/>
      * An empty string is converted to null, to match the behavior of setToolTipText() in
      * {@link Control}.
-     * 
+     *
      * @return A non-empty tooltip string or null
      */
     public final String getTooltip() {
         return mTooltip;
     }
-    
+
     /**
      * @return A new {@link UiTextAttributeNode} linked to this descriptor.
      */
@@ -87,7 +89,7 @@ public class TextAttributeDescriptor extends AttributeDescriptor implements IPro
     public UiAttributeNode createUiNode(UiElementNode uiParent) {
         return new UiTextAttributeNode(this, uiParent);
     }
-    
+
     // ------- IPropertyDescriptor Methods
 
     public CellEditor createPropertyEditor(Composite parent) {

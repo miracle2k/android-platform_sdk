@@ -148,6 +148,26 @@ public interface INode {
      */
     String getStringAttr(String uri, String attrName);
 
+    /**
+     * Returns the {@link IAttributeInfo} for a given attribute.
+     * <p/>
+     * The information is useful to determine the format of an attribute (e.g. reference, string,
+     * float, enum, flag, etc.) and in the case of enums and flags also gives the possible values.
+     * <p/>
+     * Note: in Android resources, an enum can only take one of the possible values (e.g.
+     * "visibility" can be either "visible" or "none"), whereas a flag can accept one or more
+     * value (e.g. "align" can be "center_vertical|center_horizontal".)
+     * <p/>
+     * Note that this method does not handle custom non-android attributes. It may either
+     * return null for these or it may return a synthetic "string" format attribute depending
+     * on how the attribute was loaded.
+     *
+     * @param uri The XML name-space URI of the attribute.
+     * @param attrName The <em>local</em> name of the attribute.
+     * @return the {@link IAttributeInfo} if the attribute is known, or <code>null</code>.
+     */
+    public IAttributeInfo getAttributeInfo(String uri, String attrName);
+
     // -----------
 
     /** TODO: this is a hack. Shouldn't be here but instead part of some kind of helper

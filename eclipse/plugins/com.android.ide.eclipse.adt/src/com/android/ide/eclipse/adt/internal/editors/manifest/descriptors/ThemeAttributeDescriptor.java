@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -24,14 +25,15 @@ import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 
 /**
  * Describes a Theme/Style XML attribute displayed by a {@link UiResourceAttributeNode}
+ * @deprecated Does not seem used anymore. Cleanup later.
  */
 public final class ThemeAttributeDescriptor extends TextAttributeDescriptor {
 
     public ThemeAttributeDescriptor(String xmlLocalName, String uiName, String nsUri,
-            String tooltip) {
-        super(xmlLocalName, uiName, nsUri, tooltip);
+            String tooltip, IAttributeInfo attrInfo) {
+        super(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
     }
-    
+
     /**
      * @return A new {@link UiResourceAttributeNode} linked to this theme descriptor.
      */

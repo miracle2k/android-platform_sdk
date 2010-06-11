@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.ui.ListValueCellEditor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -31,25 +32,32 @@ import org.eclipse.swt.widgets.Composite;
 public class ListAttributeDescriptor extends TextAttributeDescriptor {
 
     private String[] mValues = null;
-    
+
     /**
-     * Creates a new {@link ListAttributeDescriptor} which automatically gets its
-     * values from the FrameworkResourceManager.
+     * Creates a new {@link ListAttributeDescriptor}.
+     * <p/>
+     * If <code>attrInfo</code> is not null and has non-null enum values, these will be
+     * used for the list.
+     * Otherwise values are automatically extracted from the FrameworkResourceManager.
      */
     public ListAttributeDescriptor(String xmlLocalName, String uiName, String nsUri,
-            String tooltip) {
-        super(xmlLocalName, uiName, nsUri, tooltip);
+            String tooltip, IAttributeInfo attrInfo) {
+        super(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
+        if (attrInfo != null) {
+            mValues = attrInfo.getEnumValues();
+        }
     }
 
      /**
-     * Creates a new {@link ListAttributeDescriptor} which uses the provided values.
+     * Creates a new {@link ListAttributeDescriptor} which uses the provided values
+     * and does not lookup the content of <code>attrInfo</code>.
      */
-    public ListAttributeDescriptor(String xmlLocalName, String uiName, String nsUri, 
-            String tooltip, String[] values) {
-        super(xmlLocalName, uiName, nsUri, tooltip);
+    public ListAttributeDescriptor(String xmlLocalName, String uiName, String nsUri,
+            String tooltip, IAttributeInfo attrInfo, String[] values) {
+        super(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
         mValues = values;
     }
-   
+
     public String[] getValues() {
         return mValues;
     }
@@ -61,7 +69,7 @@ public class ListAttributeDescriptor extends TextAttributeDescriptor {
     public UiAttributeNode createUiNode(UiElementNode uiParent) {
         return new UiListAttributeNode(this, uiParent);
     }
-    
+
     // ------- IPropertyDescriptor Methods
 
     @Override

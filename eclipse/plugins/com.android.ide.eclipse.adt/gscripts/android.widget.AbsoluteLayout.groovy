@@ -187,13 +187,18 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
 
     void addAttributes(INode newNode, oldAttributes, id_map, Closure filter) {
         for (attr in oldAttributes) {
-                    String uri = attr.getUri();
-                    String name = attr.getName();
-                    String value = attr.getValue();
+            String uri = attr.getUri();
+            String name = attr.getName();
+            String value = attr.getValue();
 
-            if (uri == ANDROID_URI && name == "id") {
-                if (id_map.containsKey(value)) {
-                    value = id_map[value][0];
+            def attrInfo = newNode.getAttributeInfo(uri, name);
+            if (attrInfo != null) {
+                def formats = attrInfo.getFormats();
+                if (formats != null && IAttributeInfo.Format.REFERENCE in formats) {
+                    newNode.debugPrintf("REF attr: $name [$value]\n");
+                    if (id_map.containsKey(value)) {
+                        value = id_map[value][0];
+                    }
                 }
             }
 
@@ -215,7 +220,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
             addAttributes(newNode, element.getAttributes(), id_map, null /* closure */);
             addInnerElements(newNode, element.getInnerElements(), id_map);
         }
-                        }
+    }
 
     /**
      * Fills id_map with a map String id => tuple (String id, String fqcn)
@@ -233,8 +238,8 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
                 }
 
             collectIds(id_map, element.getInnerElements());
-                    }
-                }
+        }
+    }
 
     Object remapIds(INode node, id_map) {
         // Visit the document to get a list of existing ids
@@ -250,15 +255,15 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
                 new_map.put(key, value);
                 if (key != id) {
                     new_map.put(id, value);
-            }
+                }
             } else {
                 // There is a conflict. Get a new id.
                 def new_id = findNewId(value[1], existing_ids);
                 value[0] = new_id;
                 new_map.put(id, value);
                 new_map.put(id.replaceFirst("@\\+", "@"), value);
+            }
         }
-    }
 
         return new_map;
     }
@@ -273,16 +278,16 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
                 existing_ids.put(id, id);
                 return id;
             }
-                    }
+        }
 
         // We'll never reach here.
         return null;
-                }
+    }
 
     void collectExistingIds(INode root, existing_ids) {
         if (root == null) {
             return;
-            }
+        }
 
         def id = root.getStringAttr(ANDROID_URI, "id");
         if (id != null) {
@@ -290,13 +295,13 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
 
             if (!existing_ids.containsKey(id)) {
                 existing_ids.put(id, id);
+            }
         }
-    }
 
         root.getChildren().each {
             collectExistingIds(it, existing_ids);
         }
-            }
+    }
 
     /** Transform @id/name into @+id/name to treat both forms the same way. */
     String normalizeId(String id) {
