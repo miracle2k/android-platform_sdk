@@ -28,7 +28,6 @@ import com.android.sdklib.xml.ManifestData.SupportsScreens;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -311,8 +310,6 @@ public final class ProjectConfig {
             return "Property split.abi is missing from config file";
         }
         String[] abis = tmp.split("\\|");
-        System.out.println("ABIS: " + Arrays.toString(abis));
-        System.out.println("current: " + mSplitByAbi);
         if (mSplitByAbi != Boolean.valueOf(abis[0])) { // first value is always the split boolean
             return "Property split.abi changed";
         }
