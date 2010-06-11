@@ -135,6 +135,13 @@ public interface IRemoteAndroidTestRunner {
     public void addInstrumentationArg(String name, String value);
 
     /**
+     * Removes a previously added argument.
+     *
+     * @param name the name of the instrumentation bundle argument to remove
+     */
+    public void removeInstrumentationArg(String name);
+
+    /**
      * Adds a boolean argument to include in instrumentation command.
      * <p/>
      * @see RemoteAndroidTestRunner#addInstrumentationArg
