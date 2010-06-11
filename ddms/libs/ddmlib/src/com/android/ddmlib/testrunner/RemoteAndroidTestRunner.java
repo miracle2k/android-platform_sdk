@@ -156,6 +156,16 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     /**
      * {@inheritDoc}
      */
+    public void removeInstrumentationArg(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("name argument cannot be null");
+        }
+        mArgMap.remove(name);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void addBooleanArg(String name, boolean value) {
         addInstrumentationArg(name, Boolean.toString(value));
     }
