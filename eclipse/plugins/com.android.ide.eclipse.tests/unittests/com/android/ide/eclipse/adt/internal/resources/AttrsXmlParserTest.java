@@ -17,8 +17,7 @@
 package com.android.ide.eclipse.adt.internal.resources;
 
 
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo.AttributeInfo;
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo.AttributeInfo.Format;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.tests.AdtTestData;
 
 import org.w3c.dom.Document;
