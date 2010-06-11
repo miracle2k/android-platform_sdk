@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.uimodel;
 
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
@@ -122,7 +122,7 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
     public String showDialog(Shell shell, String currentValue) {
         // we need to get the project of the file being edited.
         UiElementNode uiNode = getUiParent();
-        AndroidEditor editor = uiNode.getEditor();
+        AndroidXmlEditor editor = uiNode.getEditor();
         IProject project = editor.getProject();
         if (project != null) {
             // get the resource repository for this project and the system resources.
@@ -198,7 +198,7 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
         boolean isSystem = false;
 
         UiElementNode uiNode = getUiParent();
-        AndroidEditor editor = uiNode.getEditor();
+        AndroidXmlEditor editor = uiNode.getEditor();
 
         if (prefix == null || prefix.indexOf("android:") < 0) {                 //$NON-NLS-1$
             IProject project = editor.getProject();

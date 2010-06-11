@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.manifest;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.manifest.pages.ApplicationPage;
@@ -54,7 +54,7 @@ import javax.xml.xpath.XPathExpressionException;
 /**
  * Multi-page form editor for AndroidManifest.xml.
  */
-public final class ManifestEditor extends AndroidEditor {
+public final class ManifestEditor extends AndroidXmlEditor {
 
     public static final String ID = AndroidConstants.EDITORS_NAMESPACE + ".manifest.ManifestEditor"; //$NON-NLS-1$
 

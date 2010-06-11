@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IUnknownDescriptorProvider;
@@ -60,7 +60,7 @@ import java.util.HashMap;
 /**
  * Multi-page form editor for /res/layout XML files.
  */
-public class LayoutEditor extends AndroidEditor implements IShowEditorInput, IPartListener {
+public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, IPartListener {
 
     public static final String ID = AndroidConstants.EDITORS_NAMESPACE + ".layout.LayoutEditor"; //$NON-NLS-1$
 

@@ -531,7 +531,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
                         // count must be 4.
                         // We don't need to check the type folder name because
                         // a/ we only accept
-                        // an AndroidEditor source and b/ aapt generates a
+                        // an AndroidXmlEditor source and b/ aapt generates a
                         // compilation error for
                         // unknown folders.
                         IPath path = file.getFullPath();

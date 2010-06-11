@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.manifest.model;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.ui.SectionHelper;
@@ -242,7 +242,7 @@ public class UiPackageAttributeNode extends UiTextAttributeNode {
      */
     private IProject getProject() {
         UiElementNode uiNode = getUiParent();
-        AndroidEditor editor = uiNode.getEditor();
+        AndroidXmlEditor editor = uiNode.getEditor();
         IEditorInput input = editor.getEditorInput();
         if (input instanceof IFileEditorInput) {
             // from the file editor we can get the IFile object, and from it, the IProject.

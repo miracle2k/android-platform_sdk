@@ -20,7 +20,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
@@ -162,7 +162,7 @@ public class NodeProxy implements INode {
     // ---- XML Editing ---
 
     public void editXml(String undoName, final Closure c) {
-        final AndroidEditor editor = mNode.getEditor();
+        final AndroidXmlEditor editor = mNode.getEditor();
 
         if (editor.isEditXmlModelPending()) {
             throw new RuntimeException("Error: calls to INode.editXml cannot be nested!");
@@ -190,7 +190,7 @@ public class NodeProxy implements INode {
     }
 
     private void checkEditOK() {
-        final AndroidEditor editor = mNode.getEditor();
+        final AndroidXmlEditor editor = mNode.getEditor();
         if (!editor.isEditXmlModelPending()) {
             throw new RuntimeException("Error: XML edit call without using INode.editXml!");
         }
@@ -327,7 +327,7 @@ public class NodeProxy implements INode {
      * isn't reloading, or we wouldn't be here editing XML for a groovy script.)
      */
     private ViewElementDescriptor getFqcnViewDescritor(String fqcn) {
-        AndroidEditor editor = mNode.getEditor();
+        AndroidXmlEditor editor = mNode.getEditor();
         if (editor != null) {
             AndroidTargetData data = editor.getTargetData();
             if (data != null) {

@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.ui.tree;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.ui.SectionHelper;
@@ -90,7 +90,7 @@ public final class UiTreeBlock extends MasterDetailsBlock implements ICommitXml 
     private static final int TREE_HEIGHT_HINT = 50;
 
     /** Container editor */
-    AndroidEditor mEditor;
+    AndroidXmlEditor mEditor;
     /** The root {@link UiElementNode} which contains all the elements that are to be
      *  manipulated by this tree view. In general this is the manifest UI node. */
     private UiElementNode mUiRootNode;
@@ -153,7 +153,7 @@ public final class UiTreeBlock extends MasterDetailsBlock implements ICommitXml 
      * @param title Title for the section
      * @param description Description for the section
      */
-    public UiTreeBlock(AndroidEditor editor,
+    public UiTreeBlock(AndroidXmlEditor editor,
             UiElementNode uiRootNode,
             boolean autoCreateRoot,
             ElementDescriptor[] descriptorFilters,
@@ -168,7 +168,7 @@ public final class UiTreeBlock extends MasterDetailsBlock implements ICommitXml 
     }
 
     /** @returns The container editor */
-    AndroidEditor getEditor() {
+    AndroidXmlEditor getEditor() {
         return mEditor;
     }
 
@@ -246,7 +246,7 @@ public final class UiTreeBlock extends MasterDetailsBlock implements ICommitXml 
         // However the class must be adapted to create an adapted toolkit tree.
         final Tree tree = toolkit.createTree(grid, SWT.MULTI);
         GridData gd = new GridData(GridData.FILL_BOTH);
-        gd.widthHint = AndroidEditor.TEXT_WIDTH_HINT;
+        gd.widthHint = AndroidXmlEditor.TEXT_WIDTH_HINT;
         gd.heightHint = TREE_HEIGHT_HINT;
         tree.setLayoutData(gd);
 
@@ -336,12 +336,16 @@ public final class UiTreeBlock extends MasterDetailsBlock implements ICommitXml 
         // Remove listeners when the tree widget gets disposed.
         tree.addDisposeListener(new DisposeListener() {
             public void widgetDisposed(DisposeEvent e) {
-                UiElementNode node = mUiRootNode.getUiParent() != null ?
-                                        mUiRootNode.getUiParent() :
-                                        mUiRootNode;
+                if (mUiRootNode != null) {
+                    UiElementNode node = mUiRootNode.getUiParent() != null ?
+                                            mUiRootNode.getUiParent() :
+                                            mUiRootNode;
 
-                node.removeUpdateListener(mUiRefreshListener);
-                mUiRootNode.removeUpdateListener(mUiEnableListener);
+                    if (node != null) {
+                        node.removeUpdateListener(mUiRefreshListener);
+                    }
+                    mUiRootNode.removeUpdateListener(mUiEnableListener);
+                }
 
                 AdtPlugin.getDefault().removeTargetListener(targetListener);
                 if (mClipboard != null) {
@@ -384,18 +388,24 @@ public final class UiTreeBlock extends MasterDetailsBlock implements ICommitXml 
         mUiRootNode = uiRootNode;
         mDescriptorFilters = descriptorFilters;
 
-        mTreeViewer.setContentProvider(new UiModelTreeContentProvider(mUiRootNode, mDescriptorFilters));
+        mTreeViewer.setContentProvider(
+                new UiModelTreeContentProvider(mUiRootNode, mDescriptorFilters));
 
         // Listen on structural changes on the root node of the tree
         // If the node has a parent, listen on the parent instead.
-        node = mUiRootNode.getUiParent() != null ? mUiRootNode.getUiParent() : mUiRootNode;
-        node.addUpdateListener(mUiRefreshListener);
+        if (mUiRootNode != null) {
+            node = mUiRootNode.getUiParent() != null ? mUiRootNode.getUiParent() : mUiRootNode;
 
-        // Use the root node to listen to its presence.
-        mUiRootNode.addUpdateListener(mUiEnableListener);
+            if (node != null) {
+                node.addUpdateListener(mUiRefreshListener);
+            }
 
-        // Initialize the enabled/disabled state
-        mUiEnableListener.uiElementNodeUpdated(mUiRootNode, null /* state, not used */);
+            // Use the root node to listen to its presence.
+            mUiRootNode.addUpdateListener(mUiEnableListener);
+
+            // Initialize the enabled/disabled state
+            mUiEnableListener.uiElementNodeUpdated(mUiRootNode, null /* state, not used */);
+        }
 
         if (forceRefresh) {
             mTreeViewer.refresh();

@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.resources;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -40,7 +40,7 @@ import javax.xml.xpath.XPathExpressionException;
 /**
  * Multi-page form editor for /res/values and /res/drawable XML files. 
  */
-public class ResourcesEditor extends AndroidEditor {
+public class ResourcesEditor extends AndroidXmlEditor {
 
     public static final String ID = AndroidConstants.EDITORS_NAMESPACE + ".resources.ResourcesEditor"; //$NON-NLS-1$
 

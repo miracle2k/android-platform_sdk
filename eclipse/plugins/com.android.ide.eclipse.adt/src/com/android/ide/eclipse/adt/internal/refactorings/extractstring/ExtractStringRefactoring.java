@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.refactorings.extractstring;
 
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ReferenceAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
@@ -369,7 +369,7 @@ public class ExtractStringRefactoring extends Refactoring {
                 //    project/res/<type>[-<configuration>]/*.xml
                 // There is no support for sub folders, so the segment count must be 4.
                 // We don't need to check the type folder name because a/ we only accept
-                // an AndroidEditor source and b/ aapt generates a compilation error for
+                // an AndroidXmlEditor source and b/ aapt generates a compilation error for
                 // unknown folders.
                 IPath path = mFile.getFullPath();
                 // check if we are inside the project/res/* folder.
@@ -478,18 +478,18 @@ public class ExtractStringRefactoring extends Refactoring {
             IProgressMonitor monitor) {
 
         try {
-            if (!(mEditor instanceof AndroidEditor)) {
+            if (!(mEditor instanceof AndroidXmlEditor)) {
                 status.addFatalError("Only the Android XML Editor is currently supported.");
                 return status.isOK();
             }
 
-            AndroidEditor editor = (AndroidEditor) mEditor;
+            AndroidXmlEditor editor = (AndroidXmlEditor) mEditor;
             IStructuredModel smodel = null;
             Node node = null;
             String currAttrName = null;
 
             try {
-                // See the portability note in AndroidEditor#getModelForRead() javadoc.
+                // See the portability note in AndroidXmlEditor#getModelForRead() javadoc.
                 smodel = editor.getModelForRead();
                 if (smodel != null) {
                     // The structured model gives the us the actual XML Node element where the
@@ -654,7 +654,7 @@ public class ExtractStringRefactoring extends Refactoring {
      * This sets mTokenString to null by side-effect when it fails and
      * adds a fatal error to the status as needed.
      */
-    private void validateSelectedAttribute(AndroidEditor editor, Node node,
+    private void validateSelectedAttribute(AndroidXmlEditor editor, Node node,
             String attrName, RefactoringStatus status) {
         UiElementNode rootUiNode = editor.getUiRootNode();
         UiElementNode currentUiNode =

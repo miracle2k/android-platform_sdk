@@ -17,7 +17,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.parts;
 
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor.UiEditorActions;
@@ -70,7 +70,7 @@ public class ElementCreateCommand extends Command {
         super.execute();
         UiElementNode uiParent = mParentPart.getUiNode();
         if (uiParent != null) {
-            final AndroidEditor editor = uiParent.getEditor();
+            final AndroidXmlEditor editor = uiParent.getEditor();
             if (editor instanceof LayoutEditor) {
                 ((LayoutEditor) editor).wrapUndoRecording(
                         String.format("Create %1$s", mDescriptor.getXmlLocalName()),

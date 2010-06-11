@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.ui;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 
 import org.eclipse.jface.text.DefaultInformationControl;
 import org.eclipse.swt.events.MouseEvent;
@@ -335,7 +335,7 @@ public final class SectionHelper {
         FormText text = toolkit.createFormText(parent, true /* track focus */);
         if (setupLayoutData) {
             TableWrapData twd = new TableWrapData(TableWrapData.FILL_GRAB);
-            twd.maxWidth = AndroidEditor.TEXT_WIDTH_HINT;
+            twd.maxWidth = AndroidXmlEditor.TEXT_WIDTH_HINT;
             if (parent.getLayout() instanceof TableWrapLayout) {
                 twd.colspan = ((TableWrapLayout) parent.getLayout()).numColumns;
             }

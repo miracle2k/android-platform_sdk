@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.uimodel;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
-import com.android.ide.eclipse.adt.internal.editors.AndroidEditor;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IUnknownDescriptorProvider;
@@ -84,9 +84,9 @@ public class UiElementNode implements IPropertySource {
     /** The parent element node in the UI model. It is null for a root element or until
      *  the node is attached to its parent. */
     private UiElementNode mUiParent;
-    /** The {@link AndroidEditor} handling the UI hierarchy. This is defined only for the
+    /** The {@link AndroidXmlEditor} handling the UI hierarchy. This is defined only for the
      *  root node. All children have the value set to null and query their parent. */
-    private AndroidEditor mEditor;
+    private AndroidXmlEditor mEditor;
     /** The XML {@link Document} model that is being mirror by the UI model. This is defined
      *  only for the root node. All children have the value set to null and query their parent. */
     private Document mXmlDocument;
@@ -412,11 +412,11 @@ public class UiElementNode implements IPropertySource {
     }
 
     /**
-     * Sets the {@link AndroidEditor} handling this {@link UiElementNode} hierarchy.
+     * Sets the {@link AndroidXmlEditor} handling this {@link UiElementNode} hierarchy.
      * <p/>
      * The editor must always be set on the root node. This method takes care of that.
      */
-    public void setEditor(AndroidEditor editor) {
+    public void setEditor(AndroidXmlEditor editor) {
         if (mUiParent == null) {
             mEditor = editor;
         } else {
@@ -425,14 +425,14 @@ public class UiElementNode implements IPropertySource {
     }
 
     /**
-     * Returns the {@link AndroidEditor} that embeds this {@link UiElementNode}.
+     * Returns the {@link AndroidXmlEditor} that embeds this {@link UiElementNode}.
      * <p/>
      * The value is initially null until the node is attached to its parent -- the value
      * of the root node is then propagated.
      *
-     * @return The embedding {@link AndroidEditor} or null.
+     * @return The embedding {@link AndroidXmlEditor} or null.
      */
-    public AndroidEditor getEditor() {
+    public AndroidXmlEditor getEditor() {
         return mUiParent == null ? mEditor : mUiParent.getEditor();
     }
 
@@ -690,7 +690,7 @@ public class UiElementNode implements IPropertySource {
      */
     public void reloadFromXmlNode(Node xml_node) {
         // The editor needs to be preserved, it is not affected by an XML change.
-        AndroidEditor editor = getEditor();
+        AndroidXmlEditor editor = getEditor();
         clearContent();
         setEditor(editor);
         if (xml_node != null) {
@@ -1224,7 +1224,7 @@ public class UiElementNode implements IPropertySource {
      * Note that the caller MUST ensure that modifying the underlying XML model is
      * safe and must take care of marking the model as dirty if necessary.
      *
-     * @see AndroidEditor#editXmlModel(Runnable)
+     * @see AndroidXmlEditor#editXmlModel(Runnable)
      *
      * @param uiAttr The attribute node to commit. Must be a child of this UiElementNode.
      * @param newValue The new value to set.
@@ -1270,7 +1270,7 @@ public class UiElementNode implements IPropertySource {
      * Note that the caller MUST ensure that modifying the underlying XML model is
      * safe and must take care of marking the model as dirty if necessary.
      *
-     * @see AndroidEditor#editXmlModel(Runnable)
+     * @see AndroidXmlEditor#editXmlModel(Runnable)
      *
      * @return True if one or more values were actually modified or removed,
      *         false if nothing changed.
@@ -1629,7 +1629,7 @@ public class UiElementNode implements IPropertySource {
             }
 
             final UiAttributeNode fAttribute = attribute;
-            AndroidEditor editor = getEditor();
+            AndroidXmlEditor editor = getEditor();
             editor.editXmlModel(new Runnable() {
                 public void run() {
                     commitAttributeToXml(fAttribute, newValue);
