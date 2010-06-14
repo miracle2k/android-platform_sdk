@@ -213,7 +213,7 @@ public class ApkBuilder extends BaseBuilder {
 
             // get the list of referenced projects.
             javaProjects = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = getJavaProjects(javaProjects);
+            IJavaProject[] referencedJavaProjects = ApkBuilderHelper.getJavaProjects(javaProjects);
 
             // mix the java project and the library projects
             final int libCount = libProjects != null ? libProjects.length : 0;
@@ -427,7 +427,8 @@ public class ApkBuilder extends BaseBuilder {
                     removeMarkersFromContainer(project, AndroidConstants.MARKER_AAPT_PACKAGE);
 
                     // need to figure out some path before we can execute aapt;
-                    if (helper.packageResources( manifestFile, libProjects, osBinPath,
+                    if (helper.packageResources( manifestFile, libProjects, null /*resfilter*/,
+                            0 /*versionCode */, osBinPath,
                             AndroidConstants.FN_RESOURCES_AP_) == false) {
                         // aapt failed. Whatever files that needed to be marked
                         // have already been marked. We just return.
@@ -477,9 +478,10 @@ public class ApkBuilder extends BaseBuilder {
 
                 String classesDexPath = osBinPath + File.separator +
                         AndroidConstants.FN_CLASSES_DEX;
-                if (helper.finalPackage(osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
-                                classesDexPath, osFinalPackagePath, javaProject, libProjects,
-                                referencedJavaProjects, debuggable) == false) {
+                if (helper.finalPackage(
+                        osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
+                        classesDexPath, osFinalPackagePath, javaProject, libProjects,
+                        referencedJavaProjects, null /*abiFilter*/, debuggable) == false) {
                     return allRefProjects;
                 }
 
@@ -535,25 +537,6 @@ public class ApkBuilder extends BaseBuilder {
         mConvertToDex = loadProjectBooleanProperty(PROPERTY_CONVERT_TO_DEX , true);
         mPackageResources = loadProjectBooleanProperty(PROPERTY_PACKAGE_RESOURCES, true);
         mBuildFinalPackage = loadProjectBooleanProperty(PROPERTY_BUILD_APK, true);
-    }
-
-    /**
-     * Returns an array of {@link IJavaProject} matching the provided {@link IProject} objects.
-     * @param projects the IProject objects.
-     * @return an array, always. Can be empty.
-     * @throws CoreException
-     */
-    private IJavaProject[] getJavaProjects(IProject[] projects) throws CoreException {
-        ArrayList<IJavaProject> list = new ArrayList<IJavaProject>();
-
-        for (IProject p : projects) {
-            if (p.isOpen() && p.hasNature(JavaCore.NATURE_ID)) {
-
-                list.add(JavaCore.create(p));
-            }
-        }
-
-        return list.toArray(new IJavaProject[list.size()]);
     }
 
     @Override

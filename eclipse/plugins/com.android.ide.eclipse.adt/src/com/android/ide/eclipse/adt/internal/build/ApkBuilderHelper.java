@@ -66,7 +66,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-class ApkBuilderHelper {
+public class ApkBuilderHelper {
 
     final static String GDBSERVER_NAME = "gdbserver"; //$NON-NLS-1$
 
@@ -121,15 +121,26 @@ class ApkBuilderHelper {
 
     private final JavaAndNativeResourceFilter mResourceFilter = new JavaAndNativeResourceFilter();
 
-    ApkBuilderHelper(IProject project, PrintStream outStream, PrintStream errStream) {
+    public ApkBuilderHelper(IProject project, PrintStream outStream, PrintStream errStream) {
         mProject = project;
         mOutStream = outStream;
         mErrStream = errStream;
     }
 
-
-    boolean packageResources(IFile manifestFile, IProject[] libProjects,
-            String outputFolder, String outputFilename) {
+    /**
+     * Packages the resources of the projet into a .ap_ file.
+     * @param manifestFile the manifest of the project.
+     * @param libProjects the list of library projects that this project depends on.
+     * @param resFilter an optional resource filter to be used with the -c option of aapt. If null
+     * no filters are used.
+     * @param versionCode an optional versionCode to be inserted in the manifest during packaging.
+     * If the value is <=0, no values are inserted.
+     * @param outputFolder where to write the resource ap_ file.
+     * @param outputFilename the name of the resource ap_ file.
+     * @return true if success.
+     */
+    public boolean packageResources(IFile manifestFile, IProject[] libProjects, String resFilter,
+            int versionCode, String outputFolder, String outputFilename) {
         // need to figure out some path before we can execute aapt;
 
         // get the resource folder
@@ -170,8 +181,8 @@ class ApkBuilderHelper {
 
             // build the default resource package
             if (executeAapt(osManifestPath, osResPaths, osAssetsPath,
-                    outputFolder + File.separator + outputFilename,
-                    null /*configFilter*/) == false) {
+                    outputFolder + File.separator + outputFilename, resFilter,
+                    versionCode) == false) {
                 // aapt failed. Whatever files that needed to be marked
                 // have already been marked. We just return.
                 return false;
@@ -191,13 +202,15 @@ class ApkBuilderHelper {
      * @param javaProject the java project being compiled
      * @param libProjects an optional list of library projects (can be null)
      * @param referencedJavaProjects referenced projects.
+     * @param abiFilter an optional filter. If not null, then only the matching ABI is included in
+     * the final archive
      * @param debuggable whether the project manifest has debuggable==true. If true, any gdbserver
      * executables will be packaged with the native libraries.
      * @return true if success, false otherwise.
      */
-    boolean finalPackage(String intermediateApk, String dex, String output,
+    public boolean finalPackage(String intermediateApk, String dex, String output,
             final IJavaProject javaProject, IProject[] libProjects,
-            IJavaProject[] referencedJavaProjects, boolean debuggable) {
+            IJavaProject[] referencedJavaProjects, String abiFilter, boolean debuggable) {
 
         FileOutputStream fos = null;
         try {
@@ -327,7 +340,7 @@ class ApkBuilderHelper {
             if (libFolder != null && libFolder.exists() &&
                     libFolder.getType() == IResource.FOLDER) {
                 // look inside and put .so in lib/* by keeping the relative folder path.
-                writeNativeLibraries((IFolder) libFolder, builder, debuggable);
+                writeNativeLibraries((IFolder) libFolder, builder, abiFilter, debuggable);
             }
 
             // write the native libraries for the library projects.
@@ -337,7 +350,7 @@ class ApkBuilderHelper {
                     if (libFolder != null && libFolder.exists() &&
                             libFolder.getType() == IResource.FOLDER) {
                         // look inside and put .so in lib/* by keeping the relative folder path.
-                        writeNativeLibraries((IFolder) libFolder, builder, debuggable);
+                        writeNativeLibraries((IFolder) libFolder, builder, abiFilter, debuggable);
                     }
                 }
             }
@@ -505,11 +518,13 @@ class ApkBuilderHelper {
      * @param configFilter The configuration filter for the resources to include
      * (used with -c option, for example "port,en,fr" to include portrait, English and French
      * resources.)
+     * @param versionCode optional version code to insert in the manifest during packaging. If <=0
+     * then no value is inserted
      * @return true if success, false otherwise.
      */
     private boolean executeAapt(String osManifestPath,
             List<String> osResPaths, String osAssetsPath, String osOutFilePath,
-            String configFilter) {
+            String configFilter, int versionCode) {
         IAndroidTarget target = Sdk.getCurrent().getTarget(mProject);
 
         // Create the command line.
@@ -525,6 +540,11 @@ class ApkBuilderHelper {
         // to activate the auto-add-overlay
         if (osResPaths.size() > 1) {
             commandArray.add("--auto-add-overlay"); //$NON-NLS-1$
+        }
+
+        if (versionCode > 0) {
+            commandArray.add("--version-code"); //$NON-NLS-1$
+            commandArray.add(Integer.toString(versionCode));
         }
 
         if (configFilter != null) {
@@ -631,19 +651,26 @@ class ApkBuilderHelper {
      *
      * @param rootFolder The folder containing the native libraries.
      * @param jarBuilder the {@link SignedJarBuilder} used to create the archive.
+     * @param abiFilter an optional filter. If not null, then only the matching ABI is included in
+     * the final archive
      * @param debuggable whether the application is debuggable. If <code>true</code> then gdbserver
      * executables will be packaged as well.
      * @throws CoreException
      * @throws IOException
      */
     private void writeNativeLibraries(IFolder rootFolder, SignedJarBuilder jarBuilder,
-            boolean debuggable)
-            throws CoreException, IOException {
+            String abiFilter, boolean debuggable) throws CoreException, IOException {
         // the native files must be under a single sub-folder under the main root folder.
         // the sub-folder represents the abi for the native libs
         IResource[] abis = rootFolder.members();
         for (IResource abi : abis) {
             if (abi.getType() == IResource.FOLDER) { // ignore non folders.
+
+                // check the abi filter and reject all other ABIs
+                if (abiFilter != null && abiFilter.equals(abi.getName()) == false) {
+                    continue;
+                }
+
                 IResource[] libs = ((IFolder)abi).members();
 
                 for (IResource lib : libs) {
@@ -907,5 +934,25 @@ class ApkBuilderHelper {
         String name = folder.getName();
         return JavaResourceFilter.checkFolderForPackaging(name);
     }
+
+    /**
+     * Returns an array of {@link IJavaProject} matching the provided {@link IProject} objects.
+     * @param projects the IProject objects.
+     * @return an array, always. Can be empty.
+     * @throws CoreException
+     */
+    public static IJavaProject[] getJavaProjects(IProject[] projects) throws CoreException {
+        ArrayList<IJavaProject> list = new ArrayList<IJavaProject>();
+
+        for (IProject p : projects) {
+            if (p.isOpen() && p.hasNature(JavaCore.NATURE_ID)) {
+
+                list.add(JavaCore.create(p));
+            }
+        }
+
+        return list.toArray(new IJavaProject[list.size()]);
+    }
+
 
 }

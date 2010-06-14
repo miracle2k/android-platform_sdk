@@ -92,7 +92,7 @@ public class MultiApkExportTask extends Task {
 
         File rootFolder = antProject.getBaseDir();
         MultiApkExportHelper helper = new MultiApkExportHelper(rootFolder.getAbsolutePath(),
-                appPackage, versionCode, mTarget);
+                appPackage, versionCode, mTarget, System.out);
 
         try {
             if (mTarget == Target.CLEAN) {
@@ -304,7 +304,6 @@ public class MultiApkExportTask extends Task {
 
         // set the resource pack file name.
         addProp(subAnt, "resource.package.file.name", pkgName + ".ap_");
-
 
         if (canSign) {
             // set the properties for the password.

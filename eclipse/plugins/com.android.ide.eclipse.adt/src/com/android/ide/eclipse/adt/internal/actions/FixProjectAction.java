@@ -75,7 +75,7 @@ public class FixProjectAction implements IObjectActionDelegate {
     }
 
     public void selectionChanged(IAction action, ISelection selection) {
-        this.mSelection = selection;
+        mSelection = selection;
     }
 
     private void fixProject(final IProject project) {
@@ -92,7 +92,7 @@ public class FixProjectAction implements IObjectActionDelegate {
                     if (monitor != null) {
                         monitor.worked(1);
                     }
-                    
+
                     // fix the nature order to have the proper project icon
                     ProjectHelper.fixProjectNatureOrder(project);
                     if (monitor != null) {
@@ -114,7 +114,7 @@ public class FixProjectAction implements IObjectActionDelegate {
                     if (monitor != null) {
                         monitor.worked(1);
                     }
-                    
+
                     return Status.OK_STATUS;
                 } catch (JavaModelException e) {
                     return e.getJavaModelStatus();

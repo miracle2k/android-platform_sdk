@@ -84,7 +84,7 @@ public class ConvertToAndroidAction implements IObjectActionDelegate {
      * @see IActionDelegate#selectionChanged(IAction, ISelection)
      */
     public void selectionChanged(IAction action, ISelection selection) {
-        this.mSelection = selection;
+        mSelection = selection;
     }
 
     /**

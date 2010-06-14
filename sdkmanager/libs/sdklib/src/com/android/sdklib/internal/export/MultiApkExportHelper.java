@@ -33,6 +33,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -68,6 +69,7 @@ public class MultiApkExportHelper {
     private final static String FILE_CONFIG = "projects.config";
     private final static String FILE_MINOR_CODE = "minor.codes";
     private final static String FOLDER_LOG = "logs";
+    private final PrintStream mStdio;
 
     public static final class ExportException extends Exception {
         private static final long serialVersionUID = 1L;
@@ -115,11 +117,12 @@ public class MultiApkExportHelper {
     }
 
     public MultiApkExportHelper(String exportProjectRoot, String appPackage,
-            int versionCode, Target target) {
+            int versionCode, Target target, PrintStream stdio) {
         mExportProjectRoot = exportProjectRoot;
         mAppPackage = appPackage;
         mVersionCode = versionCode;
         mTarget = target;
+        mStdio = stdio;
     }
 
     public List<ApkData> getApkData(String projectList) throws ExportException {
@@ -373,7 +376,7 @@ public class MultiApkExportHelper {
             }
 
             // output the relative path resolution.
-            System.out.println(String.format("%1$s => %2$s", relativePath,
+            mStdio.println(String.format("%1$s => %2$s", relativePath,
                     projectFolder.getAbsolutePath()));
 
             // parse the manifest of the project.

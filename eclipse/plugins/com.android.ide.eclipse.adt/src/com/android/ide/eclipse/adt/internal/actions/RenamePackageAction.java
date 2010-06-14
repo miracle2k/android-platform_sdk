@@ -126,11 +126,11 @@ public class RenamePackageAction implements IObjectActionDelegate {
      * @see IObjectActionDelegate#setActivePart(IAction, IWorkbenchPart)
      */
     public void setActivePart(IAction action, IWorkbenchPart targetPart) {
-        this.mTargetPart = targetPart;
+        mTargetPart = targetPart;
     }
 
     public void selectionChanged(IAction action, ISelection selection) {
-        this.mSelection = selection;
+        mSelection = selection;
     }
 
     /**
@@ -184,7 +184,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
         final String old_package_name_string = manifestData.getPackage();
 
         final AST ast_validator = AST.newAST(AST.JLS3);
-        this.mOldPackageName = ast_validator.newName(old_package_name_string);
+        mOldPackageName = ast_validator.newName(old_package_name_string);
 
         IInputValidator validator = new IInputValidator() {
 
@@ -207,7 +207,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
                 validator);
 
         if (dialog.open() == Window.OK) {
-            this.mNewPackageName = ast_validator.newName(dialog.getValue());
+            mNewPackageName = ast_validator.newName(dialog.getValue());
             initiateAndroidPackageRefactoring(project);
         }
     }
@@ -565,8 +565,8 @@ public class RenamePackageAction implements IObjectActionDelegate {
         final ASTRewrite mRewriter;
 
         ImportVisitor(AST ast) {
-            this.mAst = ast;
-            this.mRewriter = ASTRewrite.create(ast);
+            mAst = ast;
+            mRewriter = ASTRewrite.create(ast);
         }
 
         public TextEdit getTextEdit() {
@@ -591,7 +591,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
 
                 if (qualified_import_name.getName().getIdentifier()
                         .equals(AndroidConstants.FN_RESOURCE_BASE)) {
-                    this.mRewriter.replace(qualified_import_name.getQualifier(), mNewPackageName,
+                    mRewriter.replace(qualified_import_name.getQualifier(), mNewPackageName,
                             null);
                 }
             }
@@ -619,7 +619,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
         IProject mProject;
 
         ApplicationPackageNameRefactoring(final IProject project) {
-            this.mProject = project;
+            mProject = project;
         }
 
         @Override
@@ -636,7 +636,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
             // Accurate refactoring of the "shorthand" names in
             // AndroidManifest.xml
             // depends on not having compilation errors.
-            if (this.mProject.findMaxProblemSeverity(
+            if (mProject.findMaxProblemSeverity(
                     IMarker.PROBLEM,
                     true,
                     IResource.DEPTH_INFINITE) == IMarker.SEVERITY_ERROR) {
@@ -653,7 +653,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
 
             // Traverse all files in the project, building up a list of changes
             JavaFileVisitor file_visitor = new JavaFileVisitor();
-            this.mProject.accept(file_visitor);
+            mProject.accept(file_visitor);
             return file_visitor.getChange();
         }
 
