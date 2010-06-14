@@ -926,7 +926,7 @@ public class Main {
                         File skinFolder = avdManager.getSkinPath(skin, target);
                         File skinHardwareFile = new File(skinFolder, AvdManager.HARDWARE_INI);
                         if (skinHardwareFile.isFile()) {
-                            skinHardwareConfig = SdkManager.parsePropertyFile(
+                            skinHardwareConfig = ProjectProperties.parsePropertyFile(
                                     skinHardwareFile, mSdkLog);
                         }
                         break;

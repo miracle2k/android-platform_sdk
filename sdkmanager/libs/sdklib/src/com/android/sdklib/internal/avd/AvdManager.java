@@ -23,6 +23,7 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo.AvdStatus;
+import com.android.sdklib.internal.project.ProjectProperties;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -690,7 +691,7 @@ public final class AvdManager {
 
             File targetHardwareFile = new File(target.getLocation(), AvdManager.HARDWARE_INI);
             if (targetHardwareFile.isFile()) {
-                Map<String, String> targetHardwareConfig = SdkManager.parsePropertyFile(
+                Map<String, String> targetHardwareConfig = ProjectProperties.parsePropertyFile(
                         targetHardwareFile, log);
                 if (targetHardwareConfig != null) {
                     finalHardwareValues.putAll(targetHardwareConfig);
@@ -702,7 +703,7 @@ public final class AvdManager {
             File skinFolder = getSkinPath(skinName, target);
             File skinHardwareFile = new File(skinFolder, AvdManager.HARDWARE_INI);
             if (skinHardwareFile.isFile()) {
-                Map<String, String> skinHardwareConfig = SdkManager.parsePropertyFile(
+                Map<String, String> skinHardwareConfig = ProjectProperties.parsePropertyFile(
                         skinHardwareFile, log);
                 if (skinHardwareConfig != null) {
                     finalHardwareValues.putAll(skinHardwareConfig);
@@ -1140,7 +1141,7 @@ public final class AvdManager {
      *         valid or not.
      */
     private AvdInfo parseAvdInfo(File path, ISdkLog log) {
-        Map<String, String> map = SdkManager.parsePropertyFile(path, log);
+        Map<String, String> map = ProjectProperties.parsePropertyFile(path, log);
 
         String avdPath = map.get(AVD_INFO_PATH);
         String targetHash = map.get(AVD_INFO_TARGET);
@@ -1162,7 +1163,7 @@ public final class AvdManager {
             if (!configIniFile.isFile()) {
                 log.warning("Missing file '%1$s'.",  configIniFile.getPath());
             } else {
-                properties = SdkManager.parsePropertyFile(configIniFile, log);
+                properties = ProjectProperties.parsePropertyFile(configIniFile, log);
             }
         }
 
