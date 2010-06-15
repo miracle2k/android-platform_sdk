@@ -171,9 +171,7 @@ public class PlatformPackage extends MinToolsPackage implements IPackageVersion 
 
         // First find if this platform is already installed. If so, reuse the same directory.
         for (IAndroidTarget target : sdkManager.getTargets()) {
-            if (target.isPlatform() &&
-                    target.getVersion().equals(mVersion) &&
-                    target.getVersionName().equals(getVersionName())) {
+            if (target.isPlatform() && target.getVersion().equals(mVersion)) {
                 return new File(target.getLocation());
             }
         }
