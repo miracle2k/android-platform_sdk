@@ -19,17 +19,13 @@ package com.android.sdklib;
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion.AndroidVersionException;
-import com.android.sdklib.io.FileWrapper;
-import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.StreamException;
+import com.android.sdklib.internal.project.ProjectProperties;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,8 +56,6 @@ public final class SdkManager {
     private final static String ADDON_REVISION = "revision";
     private final static String ADDON_REVISION_OLD = "version";
 
-    private final static Pattern PATTERN_PROP = Pattern.compile(
-            "^([a-zA-Z0-9._-]+)\\s*=\\s*(.*)\\s*$");
 
     private final static Pattern PATTERN_LIB_DATA = Pattern.compile(
             "^([a-zA-Z0-9._-]+\\.jar);(.*)$", Pattern.CASE_INSENSITIVE);
@@ -280,7 +274,7 @@ public final class SdkManager {
         File buildProp = new File(platform, SdkConstants.FN_BUILD_PROP);
 
         if (buildProp.isFile()) {
-            Map<String, String> map = parsePropertyFile(buildProp, log);
+            Map<String, String> map = ProjectProperties.parsePropertyFile(buildProp, log);
 
             if (map != null) {
                 // look for some specific values in the map.
@@ -328,7 +322,8 @@ public final class SdkManager {
                 // platform rev number
                 int revision = 1;
                 File sourcePropFile = new File(platform, SdkConstants.FN_SOURCE_PROP);
-                Map<String, String> sourceProp = parsePropertyFile(sourcePropFile, log);
+                Map<String, String> sourceProp = ProjectProperties.parsePropertyFile(sourcePropFile,
+                        log);
                 if (sourceProp != null) {
                     try {
                         revision = Integer.parseInt(sourceProp.get("Pkg.Revision"));
@@ -340,7 +335,7 @@ public final class SdkManager {
 
                 // Ant properties
                 File sdkPropFile = new File(platform, SdkConstants.FN_SDK_PROP);
-                Map<String, String> antProp = parsePropertyFile(sdkPropFile, log);
+                Map<String, String> antProp = ProjectProperties.parsePropertyFile(sdkPropFile, log);
                 if (antProp != null) {
                     map.putAll(antProp);
                 }
@@ -419,7 +414,8 @@ public final class SdkManager {
         File addOnManifest = new File(addon, SdkConstants.FN_MANIFEST_INI);
 
         if (addOnManifest.isFile()) {
-            Map<String, String> propertyMap = parsePropertyFile(addOnManifest, log);
+            Map<String, String> propertyMap = ProjectProperties.parsePropertyFile(addOnManifest,
+                    log);
 
             if (propertyMap != null) {
                 // look for some specific values in the map.
@@ -609,76 +605,6 @@ public final class SdkManager {
     }
 
 
-    /**
-     * Parses a property file (using UTF-8 encoding) and returns a map of the content.
-     * <p/>If the file is not present, null is returned with no error messages sent to the log.
-     *
-     * @param propFile the property file to parse
-     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
-     * @return the map of (key,value) pairs, or null if the parsing failed.
-     * @deprecated Use {@link #parsePropertyFile(IAbstractFile, ISdkLog)}
-     */
-    public static Map<String, String> parsePropertyFile(File propFile, ISdkLog log) {
-        IAbstractFile wrapper = new FileWrapper(propFile);
-        return parsePropertyFile(wrapper, log);
-    }
-
-    /**
-     * Parses a property file (using UTF-8 encoding) and returns a map of the content.
-     * <p/>If the file is not present, null is returned with no error messages sent to the log.
-     *
-     * @param propFile the property file to parse
-     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
-     * @return the map of (key,value) pairs, or null if the parsing failed.
-     */
-    public static Map<String, String> parsePropertyFile(IAbstractFile propFile, ISdkLog log) {
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(propFile.getContents(),
-                    SdkConstants.INI_CHARSET));
-
-            String line = null;
-            Map<String, String> map = new HashMap<String, String>();
-            while ((line = reader.readLine()) != null) {
-                if (line.length() > 0 && line.charAt(0) != '#') {
-
-                    Matcher m = PATTERN_PROP.matcher(line);
-                    if (m.matches()) {
-                        map.put(m.group(1), m.group(2));
-                    } else {
-                        log.warning("Error parsing '%1$s': \"%2$s\" is not a valid syntax",
-                                propFile.getOsLocation(),
-                                line);
-                        return null;
-                    }
-                }
-            }
-
-            return map;
-        } catch (FileNotFoundException e) {
-            // this should not happen since we usually test the file existence before
-            // calling the method.
-            // Return null below.
-        } catch (IOException e) {
-            log.warning("Error parsing '%1$s': %2$s.",
-                    propFile.getOsLocation(),
-                    e.getMessage());
-        } catch (StreamException e) {
-            log.warning("Error parsing '%1$s': %2$s.",
-                    propFile.getOsLocation(),
-                    e.getMessage());
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    // pass
-                }
-            }
-        }
-
-        return null;
-    }
 
     /**
      * Parses the skin folder and builds the skin list.

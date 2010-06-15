@@ -16,26 +16,40 @@
 
 package com.android.sdklib.internal.project;
 
+import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.SdkManager;
+import com.android.sdklib.io.FileWrapper;
 import com.android.sdklib.io.FolderWrapper;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.io.StreamException;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class to load and save project properties for both ADT and Ant-based build.
  *
  */
 public final class ProjectProperties {
+    private final static Pattern PATTERN_PROP = Pattern.compile(
+    "^([a-zA-Z0-9._-]+)\\s*=\\s*(.*)\\s*$");
+
     /** The property name for the project target */
     public final static String PROPERTY_TARGET = "target";
 
@@ -56,6 +70,7 @@ public final class ProjectProperties {
     public final static String PROPERTY_TESTED_PROJECT = "tested.project.dir";
 
     public final static String PROPERTY_BUILD_SOURCE_DIR = "source.dir";
+    public final static String PROPERTY_BUILD_OUT_DIR = "out.dir";
 
     public final static String PROPERTY_PACKAGE = "package";
     public final static String PROPERTY_VERSIONCODE = "versionCode";
@@ -64,21 +79,43 @@ public final class ProjectProperties {
     public final static String PROPERTY_KEY_ALIAS = "key.alias";
 
     public static enum PropertyType {
-        BUILD("build.properties", BUILD_HEADER),
-        DEFAULT(SdkConstants.FN_DEFAULT_PROPERTIES, DEFAULT_HEADER),
-        LOCAL("local.properties", LOCAL_HEADER),
-        EXPORT("export.properties", EXPORT_HEADER);
+        BUILD(SdkConstants.FN_BUILD_PROPERTIES, BUILD_HEADER, new String[] {
+                PROPERTY_BUILD_SOURCE_DIR, PROPERTY_BUILD_OUT_DIR
+            }),
+        DEFAULT(SdkConstants.FN_DEFAULT_PROPERTIES, DEFAULT_HEADER, new String[] {
+                PROPERTY_TARGET, PROPERTY_LIBRARY, PROPERTY_LIB_REF,
+                PROPERTY_KEY_STORE, PROPERTY_KEY_ALIAS
+            }),
+        LOCAL(SdkConstants.FN_LOCAL_PROPERTIES, LOCAL_HEADER, new String[] {
+                PROPERTY_SDK
+            }),
+        EXPORT(SdkConstants.FN_EXPORT_PROPERTIES, EXPORT_HEADER, new String[] {
+                PROPERTY_PACKAGE, PROPERTY_VERSIONCODE, PROPERTY_PROJECTS,
+                PROPERTY_KEY_STORE, PROPERTY_KEY_ALIAS
+            });
 
         private final String mFilename;
         private final String mHeader;
+        private final Set<String> mValidProps;
 
-        PropertyType(String filename, String header) {
+        PropertyType(String filename, String header, String[] validProps) {
             mFilename = filename;
             mHeader = header;
+            HashSet<String> s = new HashSet<String>();
+            s.addAll(Arrays.asList(validProps));
+            mValidProps = Collections.unmodifiableSet(s);
         }
 
         public String getFilename() {
             return mFilename;
+        }
+
+        /**
+         * Returns an unmodifyable {@link Set} of the known properties for that type of
+         * property file.
+         */
+        public Set<String> getValidProps() {
+            return mValidProps;
         }
     }
 
@@ -192,7 +229,7 @@ public final class ProjectProperties {
         if (projectFolder.exists()) {
             IAbstractFile propFile = projectFolder.getFile(type.mFilename);
             if (propFile.exists()) {
-                Map<String, String> map = SdkManager.parsePropertyFile(propFile, null /* log */);
+                Map<String, String> map = parsePropertyFile(propFile, null /* log */);
                 if (map != null) {
                     return new ProjectProperties(projectFolder, map, type);
                 }
@@ -222,7 +259,7 @@ public final class ProjectProperties {
         if (mProjectFolder.exists()) {
             IAbstractFile propFile = mProjectFolder.getFile(type.mFilename);
             if (propFile.exists()) {
-                Map<String, String> map = SdkManager.parsePropertyFile(propFile, null /* log */);
+                Map<String, String> map = parsePropertyFile(propFile, null /* log */);
                 if (map != null) {
                     for(Entry<String, String> entry : map.entrySet()) {
                         String key = entry.getKey();
@@ -310,7 +347,7 @@ public final class ProjectProperties {
         if (mProjectFolder.exists()) {
             IAbstractFile propFile = mProjectFolder.getFile(mType.mFilename);
             if (propFile.exists()) {
-                Map<String, String> map = SdkManager.parsePropertyFile(propFile, null /* log */);
+                Map<String, String> map = parsePropertyFile(propFile, null /* log */);
                 if (map != null) {
                     mProperties.clear();
                     mProperties.putAll(map);
@@ -327,28 +364,148 @@ public final class ProjectProperties {
     public synchronized void save() throws IOException, StreamException {
         IAbstractFile toSave = mProjectFolder.getFile(mType.mFilename);
 
-        OutputStreamWriter writer = new OutputStreamWriter(toSave.getOutputStream(),
-                SdkConstants.INI_CHARSET);
+        // write the whole file in a byte array before dumping it in the file. This
+        // This is so that if the file already existing
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        OutputStreamWriter writer = new OutputStreamWriter(baos, SdkConstants.INI_CHARSET);
 
-        // write the header
-        writer.write(mType.mHeader);
+        if (toSave.exists()) {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(toSave.getContents(),
+                    SdkConstants.INI_CHARSET));
 
-        // write the properties.
-        for (Entry<String, String> entry : mProperties.entrySet()) {
-            String comment = COMMENT_MAP.get(entry.getKey());
-            if (comment != null) {
-                writer.write(comment);
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                // check if this is a line containing a property.
+                if (line.length() > 0 && line.charAt(0) != '#') {
+
+                    Matcher m = PATTERN_PROP.matcher(line);
+                    if (m.matches()) {
+                        String key = m.group(1);
+                        String value = m.group(2);
+                        // check if the property still exists.
+                        if (mProperties.containsKey(key)) {
+                            // put the new value.
+                            value = mProperties.get(key);
+                        } else {
+                            // property doesn't exist. Check if it's a known property.
+                            // if it's a known one, we'll remove it, otherwise, leave it untouched.
+                            if (mType.getValidProps().contains(key)) {
+                                value = null;
+                            }
+                        }
+
+                        // if the value is still valid, write it down.
+                        if (value != null) {
+                            value = value.replaceAll("\\\\", "\\\\\\\\");
+                            writer.write(String.format("%s=%s\n", key, value));
+                        }
+                    } else  {
+                        // the line was wrong, let's just ignore it so that it's removed from the
+                        // file.
+                    }
+                } else {
+                    // non-property line: just write the line in the output as-is.
+                    writer.append(line).append('\n');
+                }
             }
-            String value = entry.getValue();
-            if (value != null) {
-                value = value.replaceAll("\\\\", "\\\\\\\\");
-                writer.write(String.format("%s=%s\n", entry.getKey(), value));
+        } else {
+            // new file, just write it all
+            // write the header
+            writer.write(mType.mHeader);
+
+            // write the properties.
+            for (Entry<String, String> entry : mProperties.entrySet()) {
+                String comment = COMMENT_MAP.get(entry.getKey());
+                if (comment != null) {
+                    writer.write(comment);
+                }
+                String value = entry.getValue();
+                if (value != null) {
+                    value = value.replaceAll("\\\\", "\\\\\\\\");
+                    writer.write(String.format("%s=%s\n", entry.getKey(), value));
+                }
             }
         }
 
-        // close the file to flush
-        writer.close();
+        writer.flush();
+
+        // now put the content in the file.
+        OutputStream filestream = toSave.getOutputStream();
+        filestream.write(baos.toByteArray());
+        filestream.flush();
     }
+
+    /**
+     * Parses a property file (using UTF-8 encoding) and returns a map of the content.
+     * <p/>If the file is not present, null is returned with no error messages sent to the log.
+     *
+     * @param propFile the property file to parse
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
+     * @return the map of (key,value) pairs, or null if the parsing failed.
+     * @deprecated Use {@link #parsePropertyFile(IAbstractFile, ISdkLog)}
+     */
+    public static Map<String, String> parsePropertyFile(File propFile, ISdkLog log) {
+        IAbstractFile wrapper = new FileWrapper(propFile);
+        return parsePropertyFile(wrapper, log);
+    }
+
+    /**
+     * Parses a property file (using UTF-8 encoding) and returns a map of the content.
+     * <p/>If the file is not present, null is returned with no error messages sent to the log.
+     *
+     * @param propFile the property file to parse
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
+     * @return the map of (key,value) pairs, or null if the parsing failed.
+     */
+    public static Map<String, String> parsePropertyFile(IAbstractFile propFile, ISdkLog log) {
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(propFile.getContents(),
+                    SdkConstants.INI_CHARSET));
+
+            String line = null;
+            Map<String, String> map = new HashMap<String, String>();
+            while ((line = reader.readLine()) != null) {
+                if (line.length() > 0 && line.charAt(0) != '#') {
+
+                    Matcher m = PATTERN_PROP.matcher(line);
+                    if (m.matches()) {
+                        map.put(m.group(1), m.group(2));
+                    } else {
+                        log.warning("Error parsing '%1$s': \"%2$s\" is not a valid syntax",
+                                propFile.getOsLocation(),
+                                line);
+                        return null;
+                    }
+                }
+            }
+
+            return map;
+        } catch (FileNotFoundException e) {
+            // this should not happen since we usually test the file existence before
+            // calling the method.
+            // Return null below.
+        } catch (IOException e) {
+            log.warning("Error parsing '%1$s': %2$s.",
+                    propFile.getOsLocation(),
+                    e.getMessage());
+        } catch (StreamException e) {
+            log.warning("Error parsing '%1$s': %2$s.",
+                    propFile.getOsLocation(),
+                    e.getMessage());
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    // pass
+                }
+            }
+        }
+
+        return null;
+    }
+
 
     /**
      * Private constructor.
