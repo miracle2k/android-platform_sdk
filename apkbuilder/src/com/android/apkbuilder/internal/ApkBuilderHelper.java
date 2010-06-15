@@ -16,8 +16,6 @@
 
 package com.android.apkbuilder.internal;
 
-import com.android.apkbuilder.ApkBuilder.WrongOptionException;
-import com.android.apkbuilder.ApkBuilder.ApkCreationException;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.internal.build.DebugKeyProvider;
 import com.android.sdklib.internal.build.JavaResourceFilter;
@@ -41,7 +39,7 @@ import java.util.regex.Pattern;
 /**
  * Command line APK builder with signing support.
  */
-public final class ApkBuilderImpl {
+public final class ApkBuilderHelper {
 
     private final static Pattern PATTERN_JAR_EXT = Pattern.compile("^.+\\.jar$",
             Pattern.CASE_INSENSITIVE);
@@ -50,6 +48,19 @@ public final class ApkBuilderImpl {
 
     private final static String NATIVE_LIB_ROOT = "lib/";
     private final static String GDBSERVER_NAME = "gdbserver";
+
+    public final static class ApkCreationException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        public ApkCreationException(String message) {
+            super(message);
+        }
+
+        public ApkCreationException(Throwable throwable) {
+            super(throwable);
+        }
+    }
+
 
     /**
      * A File to be added to the APK archive.
@@ -76,6 +87,10 @@ public final class ApkBuilderImpl {
         mVerbose = verbose;
     }
 
+    public boolean isVerbose() {
+        return mVerbose;
+    }
+
     public void setSignedPackage(boolean signedPackage) {
         mSignedPackage = signedPackage;
     }
@@ -84,89 +99,27 @@ public final class ApkBuilderImpl {
         mDebugMode = debugMode;
     }
 
-    public void run(String[] args) throws WrongOptionException, FileNotFoundException,
-            ApkCreationException {
-        if (args.length < 1) {
-            throw new WrongOptionException("No options specified");
-        }
-
-        // read the first args that should be a file path
-        File outFile = getOutFile(args[0]);
-
-        ArrayList<FileInputStream> zipArchives = new ArrayList<FileInputStream>();
-        ArrayList<File> archiveFiles = new ArrayList<File>();
-        ArrayList<ApkFile> javaResources = new ArrayList<ApkFile>();
-        ArrayList<FileInputStream> resourcesJars = new ArrayList<FileInputStream>();
-        ArrayList<ApkFile> nativeLibraries = new ArrayList<ApkFile>();
-
-        int index = 1;
-        do {
-            String argument = args[index++];
-
-            if ("-v".equals(argument)) {
-                mVerbose = true;
-            } else if ("-d".equals(argument)) {
-                mDebugMode = true;
-            } else if ("-u".equals(argument)) {
-                mSignedPackage = false;
-            } else if ("-z".equals(argument)) {
-                // quick check on the next argument.
-                if (index == args.length)  {
-                    throw new WrongOptionException("Missing value for -z");
-                }
-
-                try {
-                    FileInputStream input = new FileInputStream(args[index++]);
-                    zipArchives.add(input);
-                } catch (FileNotFoundException e) {
-                    throw new ApkCreationException("-z file is not found");
-                }
-            } else if ("-f". equals(argument)) {
-                // quick check on the next argument.
-                if (index == args.length) {
-                    throw new WrongOptionException("Missing value for -f");
-                }
-
-                archiveFiles.add(getInputFile(args[index++]));
-            } else if ("-rf". equals(argument)) {
-                // quick check on the next argument.
-                if (index == args.length) {
-                    throw new WrongOptionException("Missing value for -rf");
-                }
-
-                processSourceFolderForResource(new File(args[index++]), javaResources);
-            } else if ("-rj". equals(argument)) {
-                // quick check on the next argument.
-                if (index == args.length) {
-                    throw new WrongOptionException("Missing value for -rj");
-                }
-
-                processJar(new File(args[index++]), resourcesJars);
-            } else if ("-nf".equals(argument)) {
-                // quick check on the next argument.
-                if (index == args.length) {
-                    throw new WrongOptionException("Missing value for -nf");
-                }
-
-                processNativeFolder(new File(args[index++]), mDebugMode, nativeLibraries,
-                        mVerbose, null /*abiFilter*/);
-            } else if ("-storetype".equals(argument)) {
-                // quick check on the next argument.
-                if (index == args.length) {
-                    throw new WrongOptionException("Missing value for -storetype");
-                }
-
-                mStoreType  = args[index++];
-            } else {
-                throw new WrongOptionException("Unknown argument: " + argument);
-            }
-        } while (index < args.length);
-
-        createPackage(outFile, zipArchives, archiveFiles, javaResources, resourcesJars,
-                nativeLibraries);
+    public boolean getDebugMode() {
+        return mDebugMode;
     }
 
-    private File getOutFile(String filepath) throws ApkCreationException {
+    /**
+     * Set the type of the keystore. <code>null</code> means the default.
+     * @param storeType
+     */
+    public void setStoreType(String storeType) {
+        mStoreType = storeType;
+    }
+
+    /**
+     * Returns the store type. <code>null</code> means default.
+     * @return
+     */
+    public String getStoreType() {
+        return mStoreType;
+    }
+
+    public File getOutFile(String filepath) throws ApkCreationException {
         File f = new File(filepath);
 
         if (f.isDirectory()) {
