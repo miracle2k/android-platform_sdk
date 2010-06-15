@@ -20,9 +20,9 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.jarutils.KeystoreHelper;
-import com.android.jarutils.SignedJarBuilder;
-import com.android.jarutils.DebugKeyProvider.IKeyGenOutput;
+import com.android.sdklib.internal.build.KeystoreHelper;
+import com.android.sdklib.internal.build.SignedJarBuilder;
+import com.android.sdklib.internal.build.DebugKeyProvider.IKeyGenOutput;
 
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.jarutils;
+package com.android.sdklib.internal.build;
 
-import com.android.jarutils.DebugKeyProvider.IKeyGenOutput;
-import com.android.jarutils.DebugKeyProvider.KeytoolException;
+import com.android.sdklib.internal.build.DebugKeyProvider.IKeyGenOutput;
+import com.android.sdklib.internal.build.DebugKeyProvider.KeytoolException;
 
 import java.io.BufferedReader;
 import java.io.File;

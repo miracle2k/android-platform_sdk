@@ -21,7 +21,7 @@ LOCAL_SRC_FILES := $(call all-subdir-java-files)
 LOCAL_JAR_MANIFEST := ../etc/manifest.txt
 LOCAL_JAVA_LIBRARIES := \
         androidprefs \
-        jarutils
+        sdklib
 
 LOCAL_MODULE := apkbuilder
 

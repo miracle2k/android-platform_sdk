@@ -18,9 +18,9 @@ package com.android.ide.eclipse.adt.internal.preferences;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
-import com.android.jarutils.DebugKeyProvider;
-import com.android.jarutils.DebugKeyProvider.KeytoolException;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
+import com.android.sdklib.internal.build.DebugKeyProvider;
+import com.android.sdklib.internal.build.DebugKeyProvider.KeytoolException;
 
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.jarutils;
+package com.android.sdklib.internal.build;
 
 import sun.misc.BASE64Encoder;
 import sun.security.pkcs.ContentInfo;

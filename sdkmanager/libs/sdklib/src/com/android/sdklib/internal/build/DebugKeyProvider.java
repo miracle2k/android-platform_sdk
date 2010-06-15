@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.jarutils;
+package com.android.sdklib.internal.build;
 
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;

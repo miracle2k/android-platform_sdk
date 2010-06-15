@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.jarutils;
+package com.android.sdklib.internal.build;
 
-import com.android.jarutils.SignedJarBuilder.IZipEntryFilter;
+import com.android.sdklib.internal.build.SignedJarBuilder.IZipEntryFilter;
 
 /**
  * A basic implementation of {@link IZipEntryFilter} to filter out anything that is not a

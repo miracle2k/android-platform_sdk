@@ -18,11 +18,11 @@ package com.android.apkbuilder.internal;
 
 import com.android.apkbuilder.ApkBuilder.WrongOptionException;
 import com.android.apkbuilder.ApkBuilder.ApkCreationException;
-import com.android.jarutils.DebugKeyProvider;
-import com.android.jarutils.JavaResourceFilter;
-import com.android.jarutils.SignedJarBuilder;
-import com.android.jarutils.DebugKeyProvider.KeytoolException;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
+import com.android.sdklib.internal.build.DebugKeyProvider;
+import com.android.sdklib.internal.build.JavaResourceFilter;
+import com.android.sdklib.internal.build.SignedJarBuilder;
+import com.android.sdklib.internal.build.DebugKeyProvider.KeytoolException;
 
 import java.io.File;
 import java.io.FileInputStream;
