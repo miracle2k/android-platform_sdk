@@ -440,6 +440,14 @@
             name="Android Manifest Editor">
       </editor>
       <editor
+            class="com.android.ide.eclipse.adt.internal.editors.export.ExportEditor"
+            default="true"
+            filenames="export.properties"
+            icon="icons/android_file.png"
+            id="com.android.ide.eclipse.editors.export.ExportEditor"
+            name="Android Export Editor">
+      </editor>
+      <editor
             class="com.android.ide.eclipse.adt.internal.editors.resources.ResourcesEditor"
             default="false"
             extensions="xml"
