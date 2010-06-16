@@ -4,7 +4,6 @@ Bundle-Name: Android Development Toolkit
 Bundle-SymbolicName: com.android.ide.eclipse.adt;singleton:=true
 Bundle-Version: 0.9.8.qualifier
 Bundle-ClassPath: .,
- jarutils.jar,
  androidprefs.jar,
  sdkstats.jar,
  kxml2-2.3.0.jar,

@@ -3,7 +3,6 @@ com.android.ide.eclipse.ddms/bin
 com.android.ide.eclipse.tests/bin
 
 com.android.ide.eclipse.adt/androidprefs.jar
-com.android.ide.eclipse.adt/jarutils.jar
 com.android.ide.eclipse.adt/kxml2-2.3.0.jar
 com.android.ide.eclipse.adt/layoutlib_api.jar
 com.android.ide.eclipse.adt/layoutlib_utils.jar
