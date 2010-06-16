@@ -18,7 +18,7 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
 LOCAL_JAVA_RESOURCE_DIRS := .
-
+LOCAL_JAR_MANIFEST := ../manifest.txt
 LOCAL_JAVA_LIBRARIES := \
         androidprefs \
         commons-compress-1.0

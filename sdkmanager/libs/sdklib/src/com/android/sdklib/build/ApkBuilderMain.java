@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.apkbuilder;
+package com.android.sdklib.build;
 
-import com.android.apkbuilder.internal.ApkBuilderHelper;
-import com.android.apkbuilder.internal.ApkBuilderHelper.ApkCreationException;
-import com.android.apkbuilder.internal.ApkBuilderHelper.ApkFile;
+import com.android.sdklib.internal.build.ApkBuilderHelper;
+import com.android.sdklib.internal.build.ApkBuilderHelper.ApkCreationException;
+import com.android.sdklib.internal.build.ApkBuilderHelper.ApkFile;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -139,6 +139,12 @@ public final class ApkBuilderMain {
 
     private static void printUsageAndQuit() {
         // 80 cols marker:  01234567890123456789012345678901234567890123456789012345678901234567890123456789
+        System.err.println("\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        System.err.println("THIS TOOL IS DEPRECATED!\n");
+        System.err.println("If you wish to use apkbuilder for a custom build system, please look at the");
+        System.err.println("com.android.sdklib.build.ApkBuilder which provides support for");
+        System.err.println("recent build improvements including library projects.");
+        System.err.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
         System.err.println("A command line tool to package an Android application from various sources.");
         System.err.println("Usage: apkbuilder <out archive> [-v][-u][-storetype STORE_TYPE] [-z inputzip]");
         System.err.println("            [-f inputfile] [-rf input-folder] [-rj -input-path]");
@@ -174,5 +180,8 @@ public final class ApkBuilderMain {
             System.err.println(message);
         }
         System.exit(1);
+    }
+
+    private ApkBuilderMain() {
     }
 }

@@ -20,7 +20,6 @@ LOCAL_SRC_FILES := $(call all-subdir-java-files)
 
 LOCAL_JAVA_LIBRARIES := \
         sdklib \
-        apkbuilder \
         ant
 
 LOCAL_MODULE := anttasks

@@ -16,9 +16,9 @@
 
 package com.android.ant;
 
-import com.android.apkbuilder.internal.ApkBuilderHelper;
-import com.android.apkbuilder.internal.ApkBuilderHelper.ApkCreationException;
-import com.android.apkbuilder.internal.ApkBuilderHelper.ApkFile;
+import com.android.sdklib.internal.build.ApkBuilderHelper;
+import com.android.sdklib.internal.build.ApkBuilderHelper.ApkCreationException;
+import com.android.sdklib.internal.build.ApkBuilderHelper.ApkFile;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;

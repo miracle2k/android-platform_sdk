@@ -29,20 +29,17 @@ set java_exe=
 call lib\find_java.bat
 if not defined java_exe goto :EOF
 
-set jarfile=apkbuilder.jar
+set jarfile=sdklib.jar
 set frameworkdir=
-set libdir=
 
 if exist %frameworkdir%%jarfile% goto JarFileOk
     set frameworkdir=lib\
-    set libdir=lib\
 
 if exist %frameworkdir%%jarfile% goto JarFileOk
     set frameworkdir=..\framework\
-    set libdir=..\lib\
 
 :JarFileOk
 
 set jarpath=%frameworkdir%%jarfile%
 
-call %java_exe% -Djava.ext.dirs=%frameworkdir% -Djava.library.path=%libdir% -jar %jarpath% %*
+call %java_exe% -classpath %jarpath% com.android.sdklib.build.ApkBuilderMain %*

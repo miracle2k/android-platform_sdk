@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.apkbuilder.internal;
+package com.android.sdklib.internal.build;
 
 import com.android.prefs.AndroidLocation.AndroidLocationException;
-import com.android.sdklib.internal.build.DebugKeyProvider;
-import com.android.sdklib.internal.build.JavaResourceFilter;
-import com.android.sdklib.internal.build.SignedJarBuilder;
 import com.android.sdklib.internal.build.DebugKeyProvider.KeytoolException;
 
 import java.io.File;

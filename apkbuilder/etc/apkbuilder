@@ -33,18 +33,15 @@ progdir=`pwd`
 prog="${progdir}"/`basename "${prog}"`
 cd "${oldwd}"
 
-jarfile=apkbuilder.jar
+jarfile=sdklib.jar
 frameworkdir="$progdir"
-libdir="$progdir"
 if [ ! -r "$frameworkdir/$jarfile" ]
 then
     frameworkdir=`dirname "$progdir"`/tools/lib
-    libdir=`dirname "$progdir"`/tools/lib
 fi
 if [ ! -r "$frameworkdir/$jarfile" ]
 then
     frameworkdir=`dirname "$progdir"`/framework
-    libdir=`dirname "$progdir"`/lib
 fi
 if [ ! -r "$frameworkdir/$jarfile" ]
 then
@@ -62,20 +59,11 @@ else
     java_debug=
 fi
 
-# Mac OS X needs an additional arg, or you get an "illegal thread" complaint.
-if [ `uname` = "Darwin" ]; then
-    os_opts="-XstartOnFirstThread"
-else
-    os_opts=
-fi
-
 if [ "$OSTYPE" = "cygwin" ] ; then
     jarpath=`cygpath -w  "$frameworkdir/$jarfile"`
-    progdir=`cygpath -w  "$progdir"`
 else
     jarpath="$frameworkdir/$jarfile"
 fi
 
-# need to use "java.ext.dirs" because "-jar" causes classpath to be ignored
 # might need more memory, e.g. -Xmx128M
-exec java -Xmx128M $os_opts $java_debug -Djava.ext.dirs="$frameworkdir" -Djava.library.path="$libdir" -jar "$jarpath" "$@"
+exec java -Xmx128M $java_debug -classpath "$jarpath" com.android.sdklib.build.ApkBuilderMain "$@"
