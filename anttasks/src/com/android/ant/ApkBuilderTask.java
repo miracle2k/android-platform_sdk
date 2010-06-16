@@ -16,9 +16,9 @@
 
 package com.android.ant;
 
-import com.android.apkbuilder.ApkBuilder.ApkCreationException;
-import com.android.apkbuilder.internal.ApkBuilderImpl;
-import com.android.apkbuilder.internal.ApkBuilderImpl.ApkFile;
+import com.android.apkbuilder.internal.ApkBuilderHelper;
+import com.android.apkbuilder.internal.ApkBuilderHelper.ApkCreationException;
+import com.android.apkbuilder.internal.ApkBuilderHelper.ApkFile;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
@@ -208,7 +208,7 @@ public class ApkBuilderTask extends Task {
     public void execute() throws BuildException {
         Project antProject = getProject();
 
-        ApkBuilderImpl apkBuilder = new ApkBuilderImpl();
+        ApkBuilderHelper apkBuilder = new ApkBuilderHelper();
         apkBuilder.setVerbose(mVerbose);
         apkBuilder.setSignedPackage(mSigned);
         apkBuilder.setDebugMode(mDebug);
@@ -228,7 +228,7 @@ public class ApkBuilderTask extends Task {
             // now go through the list of file to directly add the to the list.
             for (Path pathList : mFileList) {
                 for (String path : pathList.list()) {
-                    mArchiveFiles.add(ApkBuilderImpl.getInputFile(path));
+                    mArchiveFiles.add(ApkBuilderHelper.getInputFile(path));
                 }
             }
 
@@ -236,7 +236,7 @@ public class ApkBuilderTask extends Task {
             if (mHasCode) {
                 for (Path pathList : mDexList) {
                     for (String path : pathList.list()) {
-                        mArchiveFiles.add(ApkBuilderImpl.getInputFile(path));
+                        mArchiveFiles.add(ApkBuilderHelper.getInputFile(path));
                     }
                 }
             }
@@ -245,7 +245,7 @@ public class ApkBuilderTask extends Task {
             if (mHasCode) {
                 for (Path pathList : mSourceList) {
                     for (String path : pathList.list()) {
-                        ApkBuilderImpl.processSourceFolderForResource(new File(path),
+                        ApkBuilderHelper.processSourceFolderForResource(new File(path),
                                 mJavaResources);
                     }
                 }
@@ -257,7 +257,7 @@ public class ApkBuilderTask extends Task {
                     // it's ok if top level folders are missing
                     File folder = new File(path);
                     if (folder.isDirectory()) {
-                        ApkBuilderImpl.processJar(folder, mResourcesJars);
+                        ApkBuilderHelper.processJar(folder, mResourcesJars);
                     }
                 }
             }
@@ -265,7 +265,7 @@ public class ApkBuilderTask extends Task {
             // now go through the list of jar files.
             for (Path pathList : mJarfileList) {
                 for (String path : pathList.list()) {
-                    ApkBuilderImpl.processJar(new File(path), mResourcesJars);
+                    ApkBuilderHelper.processJar(new File(path), mResourcesJars);
                 }
             }
 
@@ -275,7 +275,7 @@ public class ApkBuilderTask extends Task {
                     // it's ok if top level folders are missing
                     File folder = new File(path);
                     if (folder.isDirectory()) {
-                        ApkBuilderImpl.processNativeFolder(folder, mDebug,
+                        ApkBuilderHelper.processNativeFolder(folder, mDebug,
                                 mNativeLibraries, mVerbose, mAbiFilter);
                     }
                 }
@@ -324,7 +324,7 @@ public class ApkBuilderTask extends Task {
      * @throws FileNotFoundException
      * @throws ApkCreationException
      */
-    private void createApk(ApkBuilderImpl apkBuilder, File outputfile)
+    private void createApk(ApkBuilderHelper apkBuilder, File outputfile)
             throws FileNotFoundException, ApkCreationException {
 
         // add the resource pack file as a zip archive input.
