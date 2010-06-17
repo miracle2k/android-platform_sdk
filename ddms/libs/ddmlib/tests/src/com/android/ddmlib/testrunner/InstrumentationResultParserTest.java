@@ -20,6 +20,8 @@ import com.android.ddmlib.testrunner.ITestRunListener.TestFailure;
 
 import junit.framework.TestCase;
 
+import java.util.Map;
+
 
 /**
  * Tests InstrumentationResultParser.
@@ -205,6 +207,24 @@ public class InstrumentationResultParserTest extends TestCase {
     }
 
     /**
+     * Test parsing of a test run that produces INSTRUMENTATION_RESULT output. This mimics launch
+     * performance test output.
+     */
+    public void testRunWithInstrumentationResults() {
+        StringBuilder output = new StringBuilder();
+        addResultKey(output, "other_pss", "2390");
+        addResultKey(output, "java_allocated", "2539");
+        addResultKey(output, "foo", "bar");
+        addLine(output, "INSTRUMENTATION_CODE: -1");
+
+        injectTestString(output.toString());
+
+        assertEquals("2390", mTestResult.mResultBundle.get("other_pss"));
+        assertEquals("2539", mTestResult.mResultBundle.get("java_allocated"));
+        assertEquals("bar", mTestResult.mResultBundle.get("foo"));
+    }
+
+    /**
      * Builds a common test result using TEST_NAME and TEST_CLASS.
      */
     private StringBuilder buildCommonResult() {
@@ -246,6 +266,18 @@ public class InstrumentationResultParserTest extends TestCase {
         outputBuilder.append('=');
         outputBuilder.append(value);
         addLineBreak(outputBuilder);
+    }
+
+    /**
+     * Helper method to add a result key value bundle.
+     */
+    private void addResultKey(StringBuilder outputBuilder, String key,
+          String value) {
+      outputBuilder.append("INSTRUMENTATION_RESULT: ");
+      outputBuilder.append(key);
+      outputBuilder.append('=');
+      outputBuilder.append(value);
+      addLineBreak(outputBuilder);
     }
 
     /**
@@ -313,12 +345,14 @@ public class InstrumentationResultParserTest extends TestCase {
         boolean mStopped;
         /** stores the error message provided to testRunFailed */
         String mRunFailedMessage;
+        Map<String, String> mResultBundle;
 
         VerifyingTestResult() {
             mNumTestsRun = 0;
             mTestStatus = null;
             mStopped = false;
             mRunFailedMessage = null;
+            mResultBundle = null;
         }
 
         public void testEnded(TestIdentifier test) {
@@ -335,9 +369,9 @@ public class InstrumentationResultParserTest extends TestCase {
             assertEquals("Unexpected test ended", mTestName, test.getTestName());
         }
 
-        public void testRunEnded(long elapsedTime) {
+        public void testRunEnded(long elapsedTime, Map<String, String> resultBundle) {
             mTestTime = elapsedTime;
-
+            mResultBundle = resultBundle;
         }
 
         public void testRunStarted(int testCount) {
