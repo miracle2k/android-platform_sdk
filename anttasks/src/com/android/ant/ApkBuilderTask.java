@@ -16,9 +16,10 @@
 
 package com.android.ant;
 
-import com.android.sdklib.internal.build.ApkBuilderHelper;
-import com.android.sdklib.internal.build.ApkBuilderHelper.ApkCreationException;
-import com.android.sdklib.internal.build.ApkBuilderHelper.ApkFile;
+import com.android.sdklib.build.ApkBuilder;
+import com.android.sdklib.build.ApkBuilder.ApkCreationException;
+import com.android.sdklib.build.ApkBuilder.DuplicateFileException;
+import com.android.sdklib.build.ApkBuilder.SealedApkException;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
@@ -26,11 +27,14 @@ import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.Path;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 public class ApkBuilderTask extends Task {
+
+    private final static Pattern PATTERN_JAR_EXT = Pattern.compile("^.+\\.jar$",
+            Pattern.CASE_INSENSITIVE);
 
     private String mOutFolder;
     @Deprecated private String mBaseName;
@@ -42,19 +46,14 @@ public class ApkBuilderTask extends Task {
     private boolean mHasCode = true;
     private String mAbiFilter = null;
 
+    private Path mDexPath;
+
     private final ArrayList<Path> mZipList = new ArrayList<Path>();
-    private final ArrayList<Path> mDexList = new ArrayList<Path>();
     private final ArrayList<Path> mFileList = new ArrayList<Path>();
     private final ArrayList<Path> mSourceList = new ArrayList<Path>();
     private final ArrayList<Path> mJarfolderList = new ArrayList<Path>();
     private final ArrayList<Path> mJarfileList = new ArrayList<Path>();
     private final ArrayList<Path> mNativeList = new ArrayList<Path>();
-
-    private final ArrayList<FileInputStream> mZipArchives = new ArrayList<FileInputStream>();
-    private final ArrayList<File> mArchiveFiles = new ArrayList<File>();
-    private final ArrayList<ApkFile> mJavaResources = new ArrayList<ApkFile>();
-    private final ArrayList<FileInputStream> mResourcesJars = new ArrayList<FileInputStream>();
-    private final ArrayList<ApkFile> mNativeLibraries = new ArrayList<ApkFile>();
 
     /**
      * Sets the value of the "outfolder" attribute.
@@ -70,7 +69,7 @@ public class ApkBuilderTask extends Task {
      * @deprecated
      */
     public void setBasename(String baseName) {
-        System.out.println("WARNNG: Using deprecated 'basename' attribute in ApkBuilderTask." +
+        System.out.println("WARNING: Using deprecated 'basename' attribute in ApkBuilderTask." +
                 "Use 'apkfilepath' (path) instead.");
         mBaseName = baseName;
     }
@@ -154,15 +153,19 @@ public class ApkBuilderTask extends Task {
      * is <code>false</code> in which case it's ignored.
      */
     public Object createDex() {
-        Path path = new Path(getProject());
-        mDexList.add(path);
-        return path;
+        if (mDexPath == null) {
+            return mDexPath = new Path(getProject());
+        } else {
+            throw new BuildException("Only one <dex> inner element can be provided");
+        }
     }
 
     /**
      * Returns an object representing a nested <var>file</var> element.
      */
     public Object createFile() {
+        System.out.println("WARNING: Using deprecated <file> inner element in ApkBuilderTask." +
+        "Use <dex path=...> instead.");
         Path path = new Path(getProject());
         mFileList.add(path);
         return path;
@@ -208,36 +211,70 @@ public class ApkBuilderTask extends Task {
     public void execute() throws BuildException {
         Project antProject = getProject();
 
-        ApkBuilderHelper apkBuilder = new ApkBuilderHelper();
-        apkBuilder.setVerbose(mVerbose);
-        apkBuilder.setSignedPackage(mSigned);
-        apkBuilder.setDebugMode(mDebug);
+        // get the rules revision to figure out how to build the output file.
+        String rulesRevStr = antProject.getProperty(TaskHelper.PROP_RULES_REV);
+        int rulesRev = 1;
+        try {
+            rulesRev = Integer.parseInt(rulesRevStr);
+        } catch (NumberFormatException e) {
+            // this shouldn't happen since setup task is the one setting up every time.
+        }
+
+        File outputFile;
+        if (mApkFilepath != null) {
+            outputFile = new File(mApkFilepath);
+        } else if (rulesRev == 2) {
+            if (mSigned) {
+                outputFile = new File(mOutFolder, mBaseName + "-debug-unaligned.apk");
+            } else {
+                outputFile = new File(mOutFolder, mBaseName + "-unsigned.apk");
+            }
+        } else {
+            throw new BuildException("missing attribute 'apkFilepath'");
+        }
+
+        // check dexPath is only one file.
+        File dexFile = null;
+        if (mHasCode) {
+            String[] dexFiles = mDexPath.list();
+            if (dexFiles.length != 1) {
+                throw new BuildException(String.format(
+                        "Expected one dex file but path value resolve to %d files.",
+                        dexFiles.length));
+            }
+            dexFile = new File(dexFiles[0]);
+        }
 
         try {
-            // setup the list of everything that needs to go in the archive.
+            if (mSigned) {
+                System.out.println(String.format(
+                        "Creating %s and signing it with a debug key...", outputFile.getName()));
+            } else {
+                System.out.println(String.format(
+                        "Creating %s for release...", outputFile.getName()));
+            }
 
-            // go through the list of zip files to add. This will not include
-            // the resource package, which is handled separaly for each apk to create.
+            ApkBuilder apkBuilder = new ApkBuilder(
+                    outputFile,
+                    new File(mOutFolder, mResourceFile),
+                    dexFile,
+                    mSigned ? ApkBuilder.getDebugKeystore() : null,
+                    mVerbose ? System.out : null);
+            apkBuilder.setDebugMode(mDebug);
+
+
+            // add the content of the zip files.
             for (Path pathList : mZipList) {
                 for (String path : pathList.list()) {
-                    FileInputStream input = new FileInputStream(path);
-                    mZipArchives.add(input);
+                    apkBuilder.addZipFile(new File(path));
                 }
             }
 
-            // now go through the list of file to directly add the to the list.
+            // add the files that go to the root of the archive (this is deprecated)
             for (Path pathList : mFileList) {
                 for (String path : pathList.list()) {
-                    mArchiveFiles.add(ApkBuilderHelper.getInputFile(path));
-                }
-            }
-
-            // only attempt to add Dex files if hasCode is true.
-            if (mHasCode) {
-                for (Path pathList : mDexList) {
-                    for (String path : pathList.list()) {
-                        mArchiveFiles.add(ApkBuilderHelper.getInputFile(path));
-                    }
+                    File f = new File(path);
+                    apkBuilder.addFile(f, f.getName());
                 }
             }
 
@@ -245,8 +282,7 @@ public class ApkBuilderTask extends Task {
             if (mHasCode) {
                 for (Path pathList : mSourceList) {
                     for (String path : pathList.list()) {
-                        ApkBuilderHelper.processSourceFolderForResource(new File(path),
-                                mJavaResources);
+                        apkBuilder.addSourceFolder(new File(path));
                     }
                 }
             }
@@ -257,7 +293,15 @@ public class ApkBuilderTask extends Task {
                     // it's ok if top level folders are missing
                     File folder = new File(path);
                     if (folder.isDirectory()) {
-                        ApkBuilderHelper.processJar(folder, mResourcesJars);
+                        String[] filenames = folder.list(new FilenameFilter() {
+                            public boolean accept(File dir, String name) {
+                                return PATTERN_JAR_EXT.matcher(name).matches();
+                            }
+                        });
+
+                        for (String filename : filenames) {
+                            apkBuilder.addResourcesFromJar(new File(folder, filename));
+                        }
                     }
                 }
             }
@@ -265,7 +309,7 @@ public class ApkBuilderTask extends Task {
             // now go through the list of jar files.
             for (Path pathList : mJarfileList) {
                 for (String path : pathList.list()) {
-                    ApkBuilderHelper.processJar(new File(path), mResourcesJars);
+                    apkBuilder.addResourcesFromJar(new File(path));
                 }
             }
 
@@ -275,77 +319,26 @@ public class ApkBuilderTask extends Task {
                     // it's ok if top level folders are missing
                     File folder = new File(path);
                     if (folder.isDirectory()) {
-                        ApkBuilderHelper.processNativeFolder(folder, mDebug,
-                                mNativeLibraries, mVerbose, mAbiFilter);
+                        apkBuilder.addNativeLibraries(folder, mAbiFilter);
                     }
                 }
             }
 
-            // get the rules revision
-            String rulesRevStr = antProject.getProperty(TaskHelper.PROP_RULES_REV);
-            int rulesRev = 1;
-            try {
-                rulesRev = Integer.parseInt(rulesRevStr);
-            } catch (NumberFormatException e) {
-                // this shouldn't happen since setup task is the one setting up every time.
-            }
 
+            // close the archive
+            apkBuilder.sealApk();
 
-            File file;
-            if (mApkFilepath != null) {
-                file = new File(mApkFilepath);
-            } else if (rulesRev == 2) {
-                if (mSigned) {
-                    file = new File(mOutFolder, mBaseName + "-debug-unaligned.apk");
-                } else {
-                    file = new File(mOutFolder, mBaseName + "-unsigned.apk");
-                }
-            } else {
-                throw new BuildException("missing attribute 'apkFilepath'");
-            }
-
-            // create the package.
-            createApk(apkBuilder, file);
-
-        } catch (FileNotFoundException e) {
+        } catch (DuplicateFileException e) {
+            System.err.println(String.format(
+                    "Found duplicate file for APK: %1$s\nOrigin 1: %2$s\nOrigin 2: %3$s",
+                    e.getArchivePath(), e.getFile1(), e.getFile2()));
+            throw new BuildException(e);
+        } catch (ApkCreationException e) {
+            throw new BuildException(e);
+        } catch (SealedApkException e) {
             throw new BuildException(e);
         } catch (IllegalArgumentException e) {
             throw new BuildException(e);
-        } catch (ApkCreationException e) {
-            e.printStackTrace();
-            throw new BuildException(e);
         }
-    }
-
-    /**
-     * Creates an application package.
-     * @param apkBuilder
-     * @param outputfile the file to generate
-     * @throws FileNotFoundException
-     * @throws ApkCreationException
-     */
-    private void createApk(ApkBuilderHelper apkBuilder, File outputfile)
-            throws FileNotFoundException, ApkCreationException {
-
-        // add the resource pack file as a zip archive input.
-        FileInputStream resoucePackageZipFile = new FileInputStream(
-                new File(mOutFolder, mResourceFile));
-        mZipArchives.add(resoucePackageZipFile);
-
-        if (mSigned) {
-            System.out.println(String.format(
-                    "Creating %s and signing it with a debug key...", outputfile.getName()));
-        } else {
-            System.out.println(String.format(
-                    "Creating %s for release...", outputfile.getName()));
-        }
-
-        // and generate the apk
-        apkBuilder.createPackage(outputfile.getAbsoluteFile(), mZipArchives,
-                mArchiveFiles, mJavaResources, mResourcesJars, mNativeLibraries);
-
-        // we are done. We need to remove the resource package from the list of zip archives
-        // in case we have another apk to generate.
-        mZipArchives.remove(resoucePackageZipFile);
     }
 }

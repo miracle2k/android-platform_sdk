@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.actions;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.build.ApkBuilderHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectState;
@@ -282,17 +281,23 @@ public class MultiApkExportAction implements IObjectActionDelegate {
         apk.setOutputName(softVariant != null ? softVariant.getKey() : null, outputName);
 
         // do the final export.
-        IFile dexFile = projectBinFolder.getFile(AndroidConstants.FN_CLASSES_DEX);
+        IFile dexFile = projectBinFolder.getFile(SdkConstants.FN_APK_CLASSES_DEX);
         String outputFile = binFolder.getFile(outputName).getLocation().toOSString();
 
         // get the list of referenced projects.
         IProject[] javaRefs = ProjectHelper.getReferencedProjects(project);
         IJavaProject[] referencedJavaProjects = ApkBuilderHelper.getJavaProjects(javaRefs);
 
-        helper.finalPackage(new File(projectBinFolderPath, pkgName).getAbsolutePath(),
+        helper.finalPackage(
+                new File(projectBinFolderPath, pkgName).getAbsolutePath(),
                 dexFile.getLocation().toOSString(),
-                outputFile, javaProject, libProjects, referencedJavaProjects,
-                apk.getAbi(), false /*debuggable*/);
+                outputFile,
+                false /*debugSign */,
+                javaProject,
+                libProjects,
+                referencedJavaProjects,
+                apk.getAbi(),
+                false /*debuggable*/);
 
     }
 }

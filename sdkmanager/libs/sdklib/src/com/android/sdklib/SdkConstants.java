@@ -48,6 +48,9 @@ public final class SdkConstants {
 
     /** An SDK Project's AndroidManifest.xml file */
     public static final String FN_ANDROID_MANIFEST_XML= "AndroidManifest.xml";
+    /** Dex filename inside the APK. i.e. "classes.dex" */
+    public final static String FN_APK_CLASSES_DEX = "classes.dex"; //$NON-NLS-1$
+
     /** An SDK Project's build.xml file */
     public final static String FN_BUILD_XML = "build.xml";
 
@@ -131,6 +134,11 @@ public final class SdkConstants {
     public final static String FN_CONTENT_HASH_PROP = "content_hash.properties"; //$NON-NLS-1$
     /** properties file for the SDK */
     public final static String FN_SDK_PROP = "sdk.properties"; //$NON-NLS-1$
+
+    /**
+     * filename for gdbserver.
+     */
+    public final static String FN_GDBSERVER = "gdbserver";
 
     /* Folder Names for Android Projects . */
 
