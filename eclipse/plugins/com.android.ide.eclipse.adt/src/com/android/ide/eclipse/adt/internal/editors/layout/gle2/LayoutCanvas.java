@@ -1218,13 +1218,17 @@ import java.util.ListIterator;
             String fqcn = SimpleXmlTransfer.getFqcn(uiNode.getDescriptor());
             String parentFqcn = null;
             Rect bounds = new Rect(vi.getAbsRect());
+            Rect parentBounds = null;
 
             UiElementNode uiParent = uiNode.getUiParent();
             if (uiParent != null) {
                 parentFqcn = SimpleXmlTransfer.getFqcn(uiParent.getDescriptor());
             }
+            if (vi.getParent() != null) {
+                parentBounds = new Rect(vi.getParent().getAbsRect());
+            }
 
-            SimpleElement e = new SimpleElement(fqcn, parentFqcn, bounds);
+            SimpleElement e = new SimpleElement(fqcn, parentFqcn, bounds, parentBounds);
 
             for (UiAttributeNode attr : uiNode.getUiAttributes()) {
                 String value = attr.getCurrentValue();

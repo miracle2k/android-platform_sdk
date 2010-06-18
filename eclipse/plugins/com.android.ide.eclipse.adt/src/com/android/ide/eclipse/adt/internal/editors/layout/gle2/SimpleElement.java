@@ -33,11 +33,12 @@ import java.util.ArrayList;
 public class SimpleElement implements IDragElement {
 
     /** Version number of the internal serialized string format. */
-    private static final String FORMAT_VERSION = "2";
+    private static final String FORMAT_VERSION = "3";
 
     private final String mFqcn;
     private final String mParentFqcn;
     private final Rect mBounds;
+    private final Rect mParentBounds;
     private final ArrayList<IDragAttribute> mAttributes = new ArrayList<IDragAttribute>();
     private final ArrayList<IDragElement> mElements = new ArrayList<IDragElement>();
 
@@ -53,11 +54,13 @@ public class SimpleElement implements IDragElement {
      *                   Can be null but not empty.
      * @param bounds The canvas bounds of the originating canvas node of the element.
      *               If null, a non-null invalid rectangle will be assigned.
+     * @param parentBounds The canvas bounds of the parent of this element. Can be null.
      */
-    public SimpleElement(String fqcn, String parentFqcn, Rect bounds) {
+    public SimpleElement(String fqcn, String parentFqcn, Rect bounds, Rect parentBounds) {
         mFqcn = fqcn;
         mParentFqcn = parentFqcn;
         mBounds = bounds == null ? new Rect() : bounds.copy();
+        mParentBounds = parentBounds == null ? new Rect() : parentBounds.copy();
     }
 
     /**
@@ -84,6 +87,14 @@ public class SimpleElement implements IDragElement {
      */
     public String getParentFqcn() {
         return mParentFqcn;
+    }
+
+    /**
+     * Returns the bounds of the element's parent, absolute for the canvas, or null if there
+     * is no suitable parent. This is null when {@link #getParentFqcn()} is null.
+     */
+    public Rect getParentBounds() {
+        return mParentBounds;
     }
 
     public IDragAttribute[] getAttributes() {
@@ -132,7 +143,11 @@ public class SimpleElement implements IDragElement {
         }
         if (mBounds != null && mBounds.isValid()) {
             sb.append(String.format(",R=%d %d %d %d", mBounds.x, mBounds.y, mBounds.w, mBounds.h));
-         }
+        }
+        if (mParentBounds != null && mParentBounds.isValid()) {
+            sb.append(String.format(",Q=%d %d %d %d",
+                    mParentBounds.x, mParentBounds.y, mParentBounds.w, mParentBounds.h));
+        }
         sb.append('\n');
         for (IDragAttribute a : mAttributes) {
             sb.append(a.toString());
@@ -174,6 +189,7 @@ public class SimpleElement implements IDragElement {
                     String fqcn = null;
                     String parent = null;
                     Rect bounds = null;
+                    Rect pbounds = null;
 
                     for (String s2 : s.substring(1).split(",")) {   //$NON-NLS-1$
                         int pos = s2.indexOf('=');
@@ -198,18 +214,24 @@ public class SimpleElement implements IDragElement {
                         } else if (key.equals("P")) {               //$NON-NLS-1$
                             parent = value;
 
-                        } else if (key.equals("R")) {               //$NON-NLS-1$
+                        } else if (key.equals("R") || key.equals("Q")) { //$NON-NLS-1$ //$NON-NLS-2$
                             // Parse the canvas bounds
                             String[] sb = value.split(" +");        //$NON-NLS-1$
                             if (sb != null && sb.length == 4) {
+                                Rect r = null;
                                 try {
-                                    bounds = new Rect();
-                                    bounds.x = Integer.parseInt(sb[0]);
-                                    bounds.y = Integer.parseInt(sb[1]);
-                                    bounds.w = Integer.parseInt(sb[2]);
-                                    bounds.h = Integer.parseInt(sb[3]);
+                                    r = new Rect();
+                                    r.x = Integer.parseInt(sb[0]);
+                                    r.y = Integer.parseInt(sb[1]);
+                                    r.w = Integer.parseInt(sb[2]);
+                                    r.h = Integer.parseInt(sb[3]);
+
+                                    if (key.equals("R")) {
+                                        bounds = r;
+                                    } else {
+                                        pbounds = r;
+                                    }
                                 } catch (NumberFormatException ignore) {
-                                    bounds = null;
                                 }
                             }
                         }
@@ -217,7 +239,7 @@ public class SimpleElement implements IDragElement {
 
                     // We need at least a valid name to recreate an element
                     if (version != null && fqcn != null && fqcn.length() > 0) {
-                        e = new SimpleElement(fqcn, parent, bounds);
+                        e = new SimpleElement(fqcn, parent, bounds, pbounds);
                     }
                 } else {
                     // This is an inner element... need to parse the { line again.
@@ -259,6 +281,10 @@ public class SimpleElement implements IDragElement {
                     (mParentFqcn != null && !mParentFqcn.equals(se.mParentFqcn))) {
                 return false;
             }
+            if ((mParentBounds == null && se.mParentBounds != null) ||
+                    (mParentBounds != null && !mParentBounds.equals(se.mParentBounds))) {
+                return false;
+            }
 
             return mFqcn.equals(se.mFqcn) &&
                     mAttributes.size() == se.mAttributes.size() &&
@@ -278,8 +304,11 @@ public class SimpleElement implements IDragElement {
         if (mParentFqcn != null) {
             c = 31*c + mParentFqcn.hashCode();
         }
-        if (mBounds != null) {
+        if (mBounds != null && mBounds.isValid()) {
             c = 31*c + mBounds.hashCode();
+        }
+        if (mParentBounds != null && mParentBounds.isValid()) {
+            c = 31*c + mParentBounds.hashCode();
         }
 
         if (c > 0x0FFFFFFFFL) {

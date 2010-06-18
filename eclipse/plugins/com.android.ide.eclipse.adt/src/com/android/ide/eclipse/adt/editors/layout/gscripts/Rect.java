@@ -125,6 +125,15 @@ public class Rect {
     public boolean equals(Object obj) {
         if (obj instanceof Rect) {
             Rect rhs = (Rect) obj;
+            // validity must be equal on both sides.
+            if (isValid() != rhs.isValid()) {
+                return false;
+            }
+            // an invalid rect is equal to any other invalid rect regardless of coordinates
+            if (!isValid() && !rhs.isValid()) {
+                return true;
+            }
+
             return this.x == rhs.x && this.y == rhs.y && this.w == rhs.w && this.h == rhs.h;
 
         } else if (obj instanceof Rectangle) {
