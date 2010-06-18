@@ -28,16 +28,6 @@ public class BaseLayout extends BaseView {
 
     // ==== Utility methods used by derived layouts ====
 
-    /*
-     * Groovy tip:
-     *
-     * Warning: methods here should probably be all protected. Due to the
-     * way Groovy looks up methods, private methods will *not* be found by
-     * same-class methods if invoked by a derived class in the context of
-     * a closure (which is about the case of all these helper methods.)
-     */
-
-
     /**
      * Draws the bounds of the given elements and all its children elements
      * in the canvas with the specified offet.
