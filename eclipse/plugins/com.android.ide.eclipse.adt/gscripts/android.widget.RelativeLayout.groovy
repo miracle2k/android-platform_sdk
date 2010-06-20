@@ -49,7 +49,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         def infos = [];
 
         def addAttr = {
-            def a = childNode.getStringAttr("layout_${it}");
+            def a = childNode.getStringAttr(ANDROID_URI, "layout_${it}");
             if (a) {
                 infos += "${it}: ${a}";
             }
@@ -88,12 +88,19 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
     // ==== Drag'n'drop support ====
 
-    DropFeedback onDropEnter(INode targetNode, String fqcn) {
+    DropFeedback onDropEnter(INode targetNode, IDragElement[] elements) {
+
+        if (elements.length == 0) {
+            return null;
+        }
 
         def bn = targetNode.getBounds();
         if (!bn.isValid()) {
             return;
         }
+
+        // Collect the ids of the elements being dragged
+        def movedIds = collectIds([:], elements).keySet().asList();
 
         // Prepare the drop feedback
         return new DropFeedback(
@@ -101,15 +108,20 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                   "index": 0,       // int: Index of child in the parent children list
                   "zones": null,    // Valid "anchor" zones for the current child
                                     // of type list(map(rect:Rect, attr:[String]))
-                  "curr":  null,     // map: Current zone
+                  "curr":  null,    // map: Current zone
+                  "movedIds": movedIds,
+                  "cachedLinkIds": [:]
                 ],
                 { gc, node, feedback ->
                     // Paint closure for the RelativeLayout just defers to the method below
-                    drawRelativeDropFeedback(gc, node, feedback);
+                    drawRelativeDropFeedback(gc, node, elements, feedback);
                 });
     }
 
-    DropFeedback onDropMove(INode layoutNode, String fqcn, DropFeedback feedback, Point p) {
+    DropFeedback onDropMove(INode targetNode,
+                            IDragElement[] elements,
+                            DropFeedback feedback,
+                            Point p) {
 
         def  data = feedback.userData;
         Rect area = feedback.captureArea;
@@ -123,9 +135,35 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             // Find the current direct children under the cursor
             def childNode = null;
             def childIndex = -1;
-            for(child in layoutNode.getChildren()) {
+            nextChild: for(child in targetNode.getChildren()) {
                 childIndex++;
-                if (child.getBounds().contains(p)) {
+                def bc = child.getBounds();
+                if (bc.contains(p)) {
+
+                    // TODO visually indicate this target node has been rejected,
+                    // e.g. by drawing a semi-transp rect on it or drawing a red cross at
+                    // the cursor point.
+
+                    // If we're doing a move operation within the same canvas, we can't
+                    // attach the moved object to one belonging to the selection since
+                    // it will disappear after the move.
+                    if (feedback.sameCanvas && !feedback.isCopy) {
+                        for (element in elements) {
+                            if (bc == element.getBounds()) {
+                                continue nextChild;
+                            }
+                        }
+                    }
+
+                    // One more limitation: if we're moving one or more elements, we can't
+                    // drop them on a child which relative position is expressed directly or
+                    // indirectly based on the element being moved.
+                    if (!feedback.isCopy) {
+                        if (searchRelativeIds(child, data.movedIds, data.cachedLinkIds)) {
+                            continue nextChild;
+                        }
+                    }
+
                     childNode = child;
                     break;
                 }
@@ -151,7 +189,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                 data.index = -1;
                 data.curr  = null;
 
-                def zone = computeBorderDropZone(layoutNode.getBounds(), p);
+                def zone = computeBorderDropZone(targetNode.getBounds(), p);
 
                 if (zone == null) {
                     data.zones = null;
@@ -181,6 +219,71 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         }
 
         return feedback;
+    }
+
+    /**
+     * Returns true if the child has any attribute of Format.REFERENCE which
+     * value matches one of the ids in movedIds.
+     */
+    def searchRelativeIds(INode node, List movedIds, Map cachedLinkIds) {
+        def ids = getLinkedIds(node, cachedLinkIds);
+
+        for (id in ids) {
+            if (id in movedIds) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    def getLinkedIds(INode node, Map cachedLinkIds) {
+        def ids = cachedLinkIds[node];
+
+        if (ids != null) {
+            return ids;
+        }
+
+        // we don't have cached data on this child, so create a list of
+        // all the linked id it is referencing.
+        ids = [];
+        cachedLinkIds[node] = ids;
+        for (attr in node.getAttributes()) {
+            def attrInfo = node.getAttributeInfo(attr.getUri(), attr.getName());
+            if (attrInfo == null) {
+                continue;
+            }
+            def formats = attrInfo.getFormats();
+            if (formats == null || !(IAttributeInfo.Format.REFERENCE in formats)) {
+                continue;
+            }
+            def id = attr.getValue();
+            id = normalizeId(id);
+            if (id in ids) {
+                continue;
+            }
+            ids.add(id);
+
+            // Find the sibling with that id
+            def p = node.getParent();
+            if (p == null) {
+                continue;
+            }
+            for (child in p.getChildren()) {
+                if (child == node) {
+                    continue;
+                }
+                def childId = child.getStringAttr(ANDROID_URI, "id");
+                childId = normalizeId(childId);
+                if (id == childId) {
+                    def linkedIds = getLinkedIds(child, cachedLinkIds);
+                    ids.addAll(linkedIds);
+                    break;
+                }
+            }
+        }
+
+        return ids;
     }
 
     def computeBorderDropZone(Rect bounds, Point p) {
@@ -320,8 +423,11 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         return [ bounds, zones ];
     }
 
-    void drawRelativeDropFeedback(IGraphics gc, INode layoutNode, DropFeedback feedback) {
-        Rect b = layoutNode.getBounds();
+    void drawRelativeDropFeedback(IGraphics gc,
+                                  INode targetNode,
+                                  IDragElement[] elements,
+                                  DropFeedback feedback) {
+        Rect b = targetNode.getBounds();
         if (!b.isValid()) {
             return;
         }
@@ -356,7 +462,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             int h = gc.getFontHeight();
             String id = null;
             if (data.child) {
-                id = data.child.getStringAttr("id");
+                id = data.child.getStringAttr(ANDROID_URI, "id");
             }
             data.curr.attr.each {
                 String s = it;
@@ -376,41 +482,87 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                 y = mark.y;
                 gc.drawLine(x - 10, y - 10, x + 10, y + 10);
                 gc.drawLine(x + 10, y - 10, x - 10, y + 10);
-                gc.drawRect(x - 10, y - 10, x + 10, y + 10);
-            }
+                gc.drawOval(x - 10, y - 10, x + 10, y + 10);
 
+                Rect be = elements[0].getBounds();
+
+                if (be.isValid()) {
+                    // At least the first element has a bound. Draw rectangles
+                    // for all dropped elements with valid bounds, offset at
+                    // the drop point.
+
+                    int offsetX = x - be.x;
+                    int offsetY = y - be.y;
+
+                    gc.setForeground(gc.registerColor(0x00FFFF00));
+
+                    for (element in elements) {
+                        drawElement(gc, element, offsetX, offsetY);
+                    }
+                }
+            }
         }
     }
 
-    void onDropLeave(INode targetNode, String fqcn, DropFeedback feedback) {
+    void onDropLeave(INode targetNode, IDragElement[] elements, DropFeedback feedback) {
         // Free the last captured rect, if any
         feedback.captureArea = null;
     }
 
-    void onDropped(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
+    void onDropped(INode targetNode,
+                   IDragElement[] elements,
+                   DropFeedback feedback,
+                   Point p) {
         def data = feedback.userData;
         if (!data.curr) {
             return;
         }
 
         def index = data.index;
+        def insertPos = data.insertPos;
 
-        targetNode.debugPrintf("Relative.drop: add ${fqcn} after index ${index}");
+        // Collect IDs from dropped elements and remap them to new IDs
+        // if this is a copy or from a different canvas.
+        def idMap = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
 
-        // Get the last component of the FQCN (e.g. "android.view.Button" => "Button")
-        String name = fqcn;
-        name = name[name.lastIndexOf(".")+1 .. name.length()-1];
+        targetNode.editXml("Add elements to RelativeLayout") {
 
-        targetNode.editXml("Add ${name} to RelativeLayout") {
-            INode e = targetNode.insertChildAt(fqcn, index + 1);
+            // Now write the new elements.
+            for (element in elements) {
+                String fqcn = element.getFqcn();
+                Rect be = element.getBounds();
 
-            String id = null;
-            if (data.child) {
-                id = data.child.getStringAttr("id");
-            }
+                // index==-1 means to insert at the end.
+                // Otherwise increment the insertion position.
+                if (index >= 0) {
+                    index++;
+                }
 
-            data.curr.attr.each {
-                e.setAttribute("layout_${it}", id ? id : "true");
+                INode newChild = targetNode.insertChildAt(fqcn, index);
+
+                // Copy all the attributes, modifying them as needed.
+                def attrFilter = getLayoutAttrFilter();
+                addAttributes(newChild, element, idMap) {
+                    uri, name, value ->
+                    // TODO need a better way to exclude other layout attributes dynamically
+                    if (uri == ANDROID_URI && name in attrFilter) {
+                        return false; // don't set these attributes
+                    } else {
+                        return value;
+                    }
+                };
+
+// TODO... seems totally wrong. REVISIT or EXPLAIN
+                String id = null;
+                if (data.child) {
+                    id = data.child.getStringAttr(ANDROID_URI, "id");
+                }
+
+                data.curr.attr.each {
+                    newChild.setAttribute(ANDROID_URI, "layout_${it}", id ? id : "true");
+                }
+
+                addInnerElements(newChild, element, idMap);
             }
         }
     }

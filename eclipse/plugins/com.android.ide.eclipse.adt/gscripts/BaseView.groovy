@@ -114,8 +114,7 @@ public class BaseView implements IViewRule {
         // ignore
     }
 
-    void onDropped(INode targetNode, IDragElement[] elements, DropFeedback feedback,
-                   Point p, boolean isCopy, boolean sameCanvas) {
+    void onDropped(INode targetNode, IDragElement[] elements, DropFeedback feedback, Point p) {
         // ignore
     }
 

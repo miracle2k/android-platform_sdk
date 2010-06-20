@@ -209,6 +209,8 @@ import java.util.Arrays;
     public void dropAccept(DropTargetEvent event) {
         AdtPlugin.printErrorToConsole("DEBUG", "drop accept");
 
+        checkDataType(event);
+
         // If we have a valid target node and it matches the one we saved in
         // dragLeave then we restore the DropFeedback that we saved in dragLeave.
         if (mLeaveTargetNode != null) {
@@ -216,17 +218,14 @@ import java.util.Arrays;
             mFeedback = mLeaveFeedback;
             mCurrentView = mLeaveView;
         }
+
+        if (mLeaveTargetNode == null || event.detail == DND.DROP_NONE) {
+            clearDropInfo();
+        }
+
         mLeaveTargetNode = null;
         mLeaveFeedback = null;
         mLeaveView = null;
-
-        checkDataType(event);
-
-        if (event.detail != DND.DROP_NONE) {
-            processDropEvent(event);
-        } else {
-            clearDropInfo();
-        }
     }
 
     /*
@@ -263,18 +262,29 @@ import java.util.Arrays;
 
         Point where = mCanvas.displayToCanvasPoint(event.x, event.y);
 
-        boolean isCopy = event.detail == DND.DROP_COPY;
-        boolean sameCanvas = mCanvas == mGlobalDragInfo.getSourceCanvas();
-
+        updateDropFeedback(mFeedback, event);
         mCanvas.getRulesEngine().callOnDropped(mTargetNode,
                 elements,
                 mFeedback,
-                where,
-                isCopy,
-                sameCanvas);
+                where);
 
         clearDropInfo();
         mCanvas.redraw();
+    }
+
+    /**
+     * Updates the {@link DropFeedback#isCopy} and {@link DropFeedback#sameCanvas} fields
+     * of the given {@link DropFeedback}. This is generally called right before invoking
+     * one of the callOnXyz methods of GRE to refresh the fields.
+     *
+     * @param df The current {@link DropFeedback}.
+     * @param event An optional event to determine if the current operaiton is copy or move.
+     */
+    private void updateDropFeedback(DropFeedback df, DropTargetEvent event) {
+        if (event != null) {
+            df.isCopy = event.detail == DND.DROP_COPY;
+        }
+        df.sameCanvas = mCanvas == mGlobalDragInfo.getSourceCanvas();
     }
 
     /**
@@ -371,34 +381,43 @@ import java.util.Arrays;
 
             } else {
                 // vi is a new current view.
-                // Query GRE for onDropEnter on the view till we find one that returns a non-null
-                // object.
+                // Query GRE for onDropEnter on the ViewInfo hierarchy, starting from the child
+                // towards its parent, till we find one that returns a non-null drop feedback.
 
                 DropFeedback df = null;
                 NodeProxy targetNode = null;
-                boolean invalidTarget = false;
 
-                if (mCanvas == mGlobalDragInfo.getSourceCanvas()) {
-                    // If we're drag'n'drop in the same canvas, none of the objects being
-                    // dragged should be considered as valid targets.
-                    CanvasSelection[] selection = mGlobalDragInfo.getCurrentSelection();
-                    if (selection != null) {
-                        for (CanvasSelection cs : selection) {
-                            if (cs.getViewInfo() == vi) {
-                                invalidTarget = true;
-                                break;
+                for (CanvasViewInfo targetVi = vi;
+                     targetVi != null && df == null;
+                     targetVi = targetVi.getParent()) {
+                    targetNode = mCanvas.getNodeFactory().create(targetVi);
+                    df = mCanvas.getRulesEngine().callOnDropEnter(targetNode,
+                                                                  mCurrentDragElements);
+
+                    if (df != null &&
+                            event.detail == DND.DROP_MOVE &&
+                            mCanvas == mGlobalDragInfo.getSourceCanvas()) {
+                        // You can't move an object into itself in the same canvas.
+                        // E.g. case of moving a layout and the node under the mouse is the
+                        // layout itself: a copy would be ok but not a move operation of the
+                        // layout into himself.
+
+                        CanvasSelection[] selection = mGlobalDragInfo.getCurrentSelection();
+                        if (selection != null) {
+                            for (CanvasSelection cs : selection) {
+                                if (cs.getViewInfo() == targetVi) {
+                                    // The node that responded is one of the selection roots.
+                                    // Simply invalidate the drop feedback and move on the
+                                    // parent in the ViewInfo chain.
+
+                                    updateDropFeedback(df, event);
+                                    mCanvas.getRulesEngine().callOnDropLeave(
+                                            targetNode, mCurrentDragElements, df);
+                                    df = null;
+                                    targetNode = null;
+                                }
                             }
                         }
-                    }
-                }
-
-                if (!invalidTarget) {
-                    for (CanvasViewInfo targetVi = vi;
-                            targetVi != null && df == null;
-                            targetVi = targetVi.getParent()) {
-                        targetNode = mCanvas.getNodeFactory().create(targetVi);
-                        df = mCanvas.getRulesEngine().callOnDropEnter(targetNode,
-                                                                      mCurrentDragElements);
                     }
                 }
 
@@ -435,11 +454,14 @@ import java.util.Arrays;
             // this is a move inside the same view
             com.android.ide.eclipse.adt.editors.layout.gscripts.Point p2 =
                 new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(x, y);
+            updateDropFeedback(mFeedback, event);
             DropFeedback df = mCanvas.getRulesEngine().callOnDropMove(
                     mTargetNode, mCurrentDragElements, mFeedback, p2);
             if (df == null) {
                 // The target is no longer interested in the drop move.
                 callDropLeave();
+            } else if (df != mFeedback) {
+                mFeedback = df;
             }
         }
 
@@ -454,6 +476,7 @@ import java.util.Arrays;
      */
     private void callDropLeave() {
         if (mTargetNode != null && mFeedback != null) {
+            updateDropFeedback(mFeedback, null);
             mCanvas.getRulesEngine().callOnDropLeave(mTargetNode, mCurrentDragElements, mFeedback);
         }
 

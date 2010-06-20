@@ -28,6 +28,34 @@ public class BaseLayout extends BaseView {
 
     // ==== Utility methods used by derived layouts ====
 
+    // TODO revisit.
+    protected String[] getLayoutAttrFilter() {
+        return [
+            // from AbsoluteLayout
+            "layout_x",
+            "layout_y",
+
+            // from RelativeLayout
+            "layout_above",
+            "layout_below",
+            "layout_toLeftOf",
+            "layout_toRightOf",
+            "layout_alignBaseline",
+            "layout_alignTop",
+            "layout_alignBottom",
+            "layout_alignLeft",
+            "layout_alignRight",
+            "layout_alignParentTop",
+            "layout_alignParentBottom",
+            "layout_alignParentLeft",
+            "layout_alignParentRight",
+            "layout_alignWithParentMissing",
+            "layout_centerHorizontal",
+            "layout_centerInParent",
+            "layout_centerVertical",
+        ];
+    }
+
     /**
      * Draws the bounds of the given elements and all its children elements
      * in the canvas with the specified offet.
@@ -61,7 +89,7 @@ public class BaseLayout extends BaseView {
         def idMap = [:];
 
         if (createNewIds) {
-            collectIds(targetNode, idMap, elements);
+            collectIds(idMap, elements);
             // Need to remap ids if necessary
             idMap = remapIds(targetNode, idMap);
         }
@@ -77,7 +105,7 @@ public class BaseLayout extends BaseView {
      *
      * @see #getDropIdMap
      */
-    protected void collectIds(INode targetNode, Map idMap, IDragElement[] elements) {
+    protected Map collectIds(Map idMap, IDragElement[] elements) {
         for (element in elements) {
             def attr = element.getAttribute(ANDROID_URI, "id");
             if (attr != null) {
@@ -87,8 +115,10 @@ public class BaseLayout extends BaseView {
                 }
             }
 
-            collectIds(targetNode, idMap, element.getInnerElements());
+            collectIds(idMap, element.getInnerElements());
         }
+
+        return idMap;
     }
 
     /**

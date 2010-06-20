@@ -104,9 +104,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
     void onDropped(INode targetNode,
                    IDragElement[] elements,
                    DropFeedback feedback,
-                   Point p,
-                   boolean isCopy,
-                   boolean sameCanvas) {
+                   Point p) {
 
         Rect b = targetNode.getBounds();
         if (!b.isValid()) {
@@ -118,7 +116,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
 
         // Collect IDs from dropped elements and remap them to new IDs
         // if this is a copy or from a different canvas.
-        def id_map = getDropIdMap(targetNode, elements, isCopy || !sameCanvas);
+        def id_map = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
 
         targetNode.editXml("Add elements to AbsoluteLayout") {
 

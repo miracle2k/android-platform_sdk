@@ -72,10 +72,18 @@ public interface IDragElement {
 
     /**
      * An XML attribute in the {@link IDragElement}.
+     * <p/>
+     * The attribute is always represented by a namespace URI, a name and a value.
+     * The name cannot be empty.
+     * The namespace URI can be empty for an attribute without a namespace but is never null.
+     * The value can be empty but cannot be null.
      */
     public interface IDragAttribute {
 
-        /** Returns the namespace URI of the attribute. Cannot be null nor empty. */
+        /**
+         * Returns the namespace URI of the attribute.
+         * Can be empty for an attribute without a namespace but is never null.
+         */
         public abstract String getUri();
 
         /** Returns the XML local name of the attribute. Cannot be null nor empty. */

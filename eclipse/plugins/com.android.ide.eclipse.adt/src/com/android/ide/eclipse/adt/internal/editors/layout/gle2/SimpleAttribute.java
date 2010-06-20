@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement.IDragAttribute;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode.IAttribute;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,31 +25,39 @@ import java.util.regex.Pattern;
 /**
  * Represents one XML attribute in a {@link SimpleElement}.
  * <p/>
- * The attribute is always represented by a namespace URI, a name and a value, none of which
- * can be null. The name and URI cannot be empty.
+ * The attribute is always represented by a namespace URI, a name and a value.
+ * The name cannot be empty.
+ * The namespace URI can be empty for an attribute without a namespace but is never null.
+ * The value can be empty but cannot be null.
  * <p/>
  * For a more detailed explanation of the purpose of this class,
  * please see {@link SimpleXmlTransfer}.
  */
-public class SimpleAttribute implements IDragAttribute {
+public class SimpleAttribute implements IDragAttribute, IAttribute {
     private final String mName;
     private final String mValue;
     private final String mUri;
 
     /**
      * Creates a new {@link SimpleAttribute}.
+     * <p/>
+     * Any null value will be converted to an empty non-null string.
+     * However it is a semantic error to use an empty name -- no assertion is done though.
      *
-     * @param uri The URI of the attribute. Cannot be null nor empty.
-     * @param name The XML local name of the attribute. Cannot be null nor empty.
-     * @param value The value of the attribute. Can be empty but not null.
+     * @param uri The URI of the attribute.
+     * @param name The XML local name of the attribute.
+     * @param value The value of the attribute.
      */
     public SimpleAttribute(String uri, String name, String value) {
-        mUri = uri;
-        mName = name;
-        mValue = value;
+        mUri = uri == null ? "" : uri;
+        mName = name == null ? "" : name;
+        mValue = value == null ? "" : value;
     }
 
-    /** Returns the namespace URI of the attribute. Cannot be null nor empty. */
+    /**
+     * Returns the namespace URI of the attribute.
+     * Can be empty for an attribute without a namespace but is never null.
+     */
     public String getUri() {
         return mUri;
     }
@@ -67,11 +76,14 @@ public class SimpleAttribute implements IDragAttribute {
 
     @Override
     public String toString() {
-        return String.format("@%s:%s=%s\n", mName, mUri, mValue);    //$NON-NLS-1$
+        return String.format("@%s:%s=%s\n", //$NON-NLS-1$
+                mName,
+                mUri,
+                mValue);
     }
 
     private static final Pattern REGEXP =
-        Pattern.compile("[^@]*@([^:]+):([^=]+)=([^\n]*)\n*");       //$NON-NLS-1$
+        Pattern.compile("[^@]*@([^:]+):([^=]*)=([^\n]*)\n*");       //$NON-NLS-1$
 
     static SimpleAttribute parseString(String value) {
         Matcher m = REGEXP.matcher(value);

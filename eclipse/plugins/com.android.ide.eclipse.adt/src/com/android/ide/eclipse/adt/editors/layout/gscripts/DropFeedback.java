@@ -52,6 +52,19 @@ public class DropFeedback {
     public Rect captureArea;
 
     /**
+     * Set to true by the drag'n'drop engine when the current drag operation is a copy.
+     * When false the operation is a move and <em>after</em> a successful drop the source
+     * elements will be deleted.
+     */
+    public boolean isCopy;
+
+    /**
+     * Set to true when the drag'n'drop starts and ends in the same canvas of the
+     * same Eclipse instance.
+     */
+    public boolean sameCanvas;
+
+    /**
      * Initializes the drop feedback with the given user data and paint closure.
      * A paint is requested if the paint closure is non-null.
      */

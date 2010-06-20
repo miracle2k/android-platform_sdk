@@ -61,9 +61,9 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         return new DropFeedback(
           [ "isVertical": isVertical,   // boolean: True if vertical linear layout
             "indexes": indexes,         // list(tuple(0:int, 1:int)): insert points (pixels + index)
-            "curr_x": null,             // int: Current marker X position
-            "curr_y": null,             // int: Current marker Y position
-            "insert_pos": -1            // int: Current drop insert index (-1 for "at the end")
+            "currX": null,              // int: Current marker X position
+            "currY": null,              // int: Current marker Y position
+            "insertPos": -1             // int: Current drop insert index (-1 for "at the end")
           ],
           {
             gc, node, feedback ->
@@ -106,12 +106,12 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
             }
         }
 
-        def curr_x = feedback.userData.curr_x;
-        def curr_y = feedback.userData.curr_y;
+        def currX = feedback.userData.currX;
+        def currY = feedback.userData.currY;
 
-        if (curr_x != null && curr_y != null) {
-            int x = curr_x;
-            int y = curr_y;
+        if (currX != null && currY != null) {
+            int x = currX;
+            int y = currY;
 
             // Draw a mark at the drop point.
             gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
@@ -120,8 +120,6 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
             gc.drawLine(x - 10, y - 10, x + 10, y + 10);
             gc.drawLine(x + 10, y - 10, x - 10, y + 10);
             gc.drawOval(x - 10, y - 10, x + 10, y + 10);
-
-            gc.setLineWidth(1);
 
             Rect be = elements[0].getBounds();
 
@@ -143,8 +141,8 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
                     }
                 }
 
-                elements.each {
-                    drawElement(gc, it, offsetX, offsetY);
+                for (element in elements) {
+                    drawElement(gc, element, offsetX, offsetY);
                 }
             }
         }
@@ -181,20 +179,20 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         }
 
         if (bestIndex != Integer.MIN_VALUE) {
-            def old_x = data.curr_x;
-            def old_y = data.curr_y;
+            def old_x = data.currX;
+            def old_y = data.currY;
 
             if (isVertical) {
-                data.curr_x = b.x + b.w / 2;
-                data.curr_y = bestIndex;
+                data.currX = b.x + b.w / 2;
+                data.currY = bestIndex;
             } else {
-                data.curr_x = bestIndex;
-                data.curr_y = b.y + b.h / 2;
+                data.currX = bestIndex;
+                data.currY = b.y + b.h / 2;
             }
 
-            data.insert_pos = bestPos;
+            data.insertPos = bestPos;
 
-            feedback.requestPaint = (old_x != data.curr_x) || (old_y != data.curr_y);
+            feedback.requestPaint = (old_x != data.currX) || (old_y != data.currY);
         }
 
         return feedback;
@@ -207,33 +205,31 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
     void onDropped(INode targetNode,
                    IDragElement[] elements,
                    DropFeedback feedback,
-                   Point p,
-                   boolean isCopy,
-                   boolean sameCanvas) {
+                   Point p) {
 
-        int insert_pos = feedback.userData.insert_pos;
+        int insertPos = feedback.userData.insertPos;
 
         // Collect IDs from dropped elements and remap them to new IDs
         // if this is a copy or from a different canvas.
-        def id_map = getDropIdMap(targetNode, elements, isCopy || !sameCanvas);
+        def idMap = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
 
         targetNode.editXml("Add elements to LinearLayout") {
 
             // Now write the new elements.
-            elements.each { element ->
+            for (element in elements) {
                 String fqcn = element.getFqcn();
                 Rect be = element.getBounds();
 
-                INode newChild = targetNode.insertChildAt(fqcn, insert_pos);
+                INode newChild = targetNode.insertChildAt(fqcn, insertPos);
 
-                // insert_pos==-1 means to insert at the end. Otherwise
+                // insertPos==-1 means to insert at the end. Otherwise
                 // increment the insertion position.
-                if (insert_pos >= 0) {
-                    insert_pos++;
+                if (insertPos >= 0) {
+                    insertPos++;
                 }
 
                 // Copy all the attributes, modifying them as needed.
-                addAttributes(newChild, element, id_map) {
+                addAttributes(newChild, element, idMap) {
                     uri, name, value ->
                     // TODO exclude original parent attributes
                     if (name == "layout_x" || name == "layout_y") {
@@ -243,7 +239,7 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
                     }
                 };
 
-                addInnerElements(newChild, element, id_map);
+                addInnerElements(newChild, element, idMap);
             }
         }
 

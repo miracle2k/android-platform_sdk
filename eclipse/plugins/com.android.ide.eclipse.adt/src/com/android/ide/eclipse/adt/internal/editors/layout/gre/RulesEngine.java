@@ -294,15 +294,13 @@ public class RulesEngine {
     public void callOnDropped(NodeProxy targetNode,
             IDragElement[] elements,
             DropFeedback feedback,
-            Point where,
-            boolean isCopy,
-            boolean sameCanvas) {
+            Point where) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
-                rule.onDropped(targetNode, elements, feedback, where, isCopy, sameCanvas);
+                rule.onDropped(targetNode, elements, feedback, where);
 
             } catch (Exception e) {
                 logError("%s.onDropped() failed: %s",
