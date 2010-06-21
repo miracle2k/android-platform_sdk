@@ -76,7 +76,7 @@ public class BaseLayout extends BaseView {
      * Collect all the "android:id" IDs from the dropped elements.
      *
      * When moving objects within the same canvas, that's all there is to do.
-     * However if the objects are move to a different canvas or are copied
+     * However if the objects are moved to a different canvas or are copied
      * then set createNewIds to true to find the existing IDs under targetNode
      * and create a map with new non-conflicting unique IDs as needed.
      *
@@ -107,7 +107,7 @@ public class BaseLayout extends BaseView {
      */
     protected Map collectIds(Map idMap, IDragElement[] elements) {
         for (element in elements) {
-            def attr = element.getAttribute(ANDROID_URI, "id");
+            def attr = element.getAttribute(ANDROID_URI, ATTR_ID);
             if (attr != null) {
                 String id = attr.getValue();
                 if (id != null && id != "") {
@@ -178,7 +178,7 @@ public class BaseLayout extends BaseView {
             return;
         }
 
-        def id = root.getStringAttr(ANDROID_URI, "id");
+        def id = root.getStringAttr(ANDROID_URI, ATTR_ID);
         if (id != null) {
             id = normalizeId(id);
 
@@ -209,14 +209,14 @@ public class BaseLayout extends BaseView {
      * If filter is non-null, it's a closure that takes for argument:
      *   String attribue-uri (namespace), String attribute-name, String attribute-value
      * The closure should return a valid replacement string.
-     * The closure can reutnr either null, false or an empty string to prevent the attribute
+     * The closure can return either null, false or an empty string to prevent the attribute
      * from being copied into the new node.
      */
     protected void addAttributes(INode newNode, IDragElement oldElement,
                                  Map idMap, Closure filter) {
 
         // A little trick here: when creating new UI widgets by dropping them from
-        // the palette, we compute them a new id and then set the text attribute
+        // the palette, we assign them a new id and then set the text attribute
         // to that id, so for example a Button will have android:text="@+id/Button01".
         // Here we detect if such an id is being remapped to a new id and if there's
         // a text attribute with exactly the same id name, we update it too.
@@ -230,9 +230,9 @@ public class BaseLayout extends BaseView {
             String value = attr.getValue();
 
             if (uri == ANDROID_URI) {
-                if (name == "id") {
+                if (name == ATTR_ID) {
                     oldId = value;
-                } else if (name == "text") {
+                } else if (name == ATTR_TEXT) {
                     oldText = value;
                 }
             }
@@ -253,14 +253,14 @@ public class BaseLayout extends BaseView {
             if (value != null && value != false && value != "") {
                 newNode.setAttribute(uri, name, value);
 
-                if (uri == ANDROID_URI && name == "id" && oldId != null && value != oldId) {
+                if (uri == ANDROID_URI && name == ATTR_ID && oldId != null && value != oldId) {
                     newId = value;
                 }
             }
         }
 
         if (newId != null && oldText == oldId) {
-            newNode.setAttribute(ANDROID_URI, "text", newId);
+            newNode.setAttribute(ANDROID_URI, ATTR_TEXT, newId);
         }
     }
 

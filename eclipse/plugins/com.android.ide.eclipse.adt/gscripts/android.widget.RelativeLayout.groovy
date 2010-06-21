@@ -273,7 +273,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                 if (child == node) {
                     continue;
                 }
-                def childId = child.getStringAttr(ANDROID_URI, "id");
+                def childId = child.getStringAttr(ANDROID_URI, ATTR_ID);
                 childId = normalizeId(childId);
                 if (id == childId) {
                     def linkedIds = getLinkedIds(child, cachedLinkIds);
@@ -462,7 +462,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             int h = gc.getFontHeight();
             String id = null;
             if (data.child) {
-                id = data.child.getStringAttr(ANDROID_URI, "id");
+                id = data.child.getStringAttr(ANDROID_URI, ATTR_ID);
             }
             data.curr.attr.each {
                 String s = it;
@@ -555,7 +555,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 // TODO... seems totally wrong. REVISIT or EXPLAIN
                 String id = null;
                 if (data.child) {
-                    id = data.child.getStringAttr(ANDROID_URI, "id");
+                    id = data.child.getStringAttr(ANDROID_URI, ATTR_ID);
                 }
 
                 data.curr.attr.each {

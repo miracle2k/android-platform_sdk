@@ -30,8 +30,8 @@ public class AndroidWidgetListViewRule extends BaseView {
      * However ListView is special in that ideally we want fill_parent width by default.
      */
     public Map<?, ?> getDefaultAttributes() {
-        // TODO: find a way to plug in the new value match_parent.
-        return [ "layout_width"  : "fill_parent" ];
+        // TODO: find a way to plug in the new value VALUE_MATCH_PARENT.
+        return [ ATTR_LAYOUT_WIDTH  : VALUE_FILL_PARENT ];
     }
 
 }

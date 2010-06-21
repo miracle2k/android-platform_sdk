@@ -21,6 +21,9 @@ package com.android.adt.gscripts;
  */
 public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
+    public static String ATTR_ORIENTATION = "orientation";
+    public static String VALUE_VERTICAL = "vertical";
+
     // ==== Drag'n'drop support ====
 
     DropFeedback onDropEnter(INode targetNode, IDragElement[] elements) {
@@ -34,7 +37,8 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
             return;
         }
 
-        boolean isVertical = targetNode.getStringAttr(ANDROID_URI, "orientation") == "vertical";
+        boolean isVertical =
+            targetNode.getStringAttr(ANDROID_URI, ATTR_ORIENTATION) == VALUE_VERTICAL;
 
         // Prepare a list of insertion points: X coords for horizontal, Y for vertical.
         // Each list is a tuple: 0=pixel coordinate, 1=index of children or -1 for "at end".
@@ -229,10 +233,11 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
                 }
 
                 // Copy all the attributes, modifying them as needed.
+                def attrFilter = getLayoutAttrFilter();
                 addAttributes(newChild, element, idMap) {
                     uri, name, value ->
-                    // TODO exclude original parent attributes
-                    if (name == "layout_x" || name == "layout_y") {
+                    // TODO need a better way to exclude other layout attributes dynamically
+                    if (uri == ANDROID_URI && name in attrFilter) {
                         return false; // don't set these attributes
                     } else {
                         return value;
