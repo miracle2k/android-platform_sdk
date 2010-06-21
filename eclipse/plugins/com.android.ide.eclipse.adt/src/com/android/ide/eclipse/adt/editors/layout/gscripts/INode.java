@@ -17,6 +17,8 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement.IDragAttribute;
+
 import groovy.lang.Closure;
 
 
@@ -168,10 +170,35 @@ public interface INode {
      */
     public IAttributeInfo getAttributeInfo(String uri, String attrName);
 
+
+    /**
+     * Returns the list of all attributes defined in the XML for this node.
+     * <p/>
+     * This looks up an attribute in the <em>current</em> XML source, not the in-memory model.
+     * That means that if called in the context of {@link #editXml(String, Closure)}, the value
+     * returned here is not affected by {@link #setAttribute(String, String, String)} until
+     * the editXml closure is completed and the actual XML is updated.
+     *
+     * @return A non-null possible-empty list of {@link IAttribute}.
+     */
+    public IAttribute[] getAttributes();
+
     // -----------
 
     /** TODO: this is a hack. Shouldn't be here but instead part of some kind of helper
      *  given to IViewRule implementations.
      */
     void debugPrintf(String msg, Object...params);
+
+    // -----------
+
+    /**
+     * An XML attribute in an {@link INode}.
+     * <p/>
+     * The attribute is always represented by a namespace URI, a name and a value.
+     * The name cannot be empty.
+     * The namespace URI can be empty for an attribute without a namespace but is never null.
+     * The value can be empty but cannot be null.
+     */
+    public static interface IAttribute extends IDragAttribute { }
 }

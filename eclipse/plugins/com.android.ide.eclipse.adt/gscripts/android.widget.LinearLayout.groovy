@@ -21,20 +21,28 @@ package com.android.adt.gscripts;
  */
 public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
+    public static String ATTR_ORIENTATION = "orientation";
+    public static String VALUE_VERTICAL = "vertical";
+
     // ==== Drag'n'drop support ====
 
-    DropFeedback onDropEnter(INode targetNode, String fqcn) {
+    DropFeedback onDropEnter(INode targetNode, IDragElement[] elements) {
+
+        if (elements.length == 0) {
+            return null;
+        }
 
         def bn = targetNode.getBounds();
         if (!bn.isValid()) {
             return;
         }
 
-        boolean isVertical = targetNode.getStringAttr("orientation") == "vertical";
+        boolean isVertical =
+            targetNode.getStringAttr(ANDROID_URI, ATTR_ORIENTATION) == VALUE_VERTICAL;
 
         // Prepare a list of insertion points: X coords for horizontal, Y for vertical.
         // Each list is a tuple: 0=pixel coordinate, 1=index of children or -1 for "at end".
-        def indexes = [ ] ;
+        def indexes = [ ];
 
         int last = isVertical ? bn.y : bn.x;
         int pos = 0;
@@ -57,56 +65,97 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         return new DropFeedback(
           [ "isVertical": isVertical,   // boolean: True if vertical linear layout
             "indexes": indexes,         // list(tuple(0:int, 1:int)): insert points (pixels + index)
-            "curr_x": null,             // int: Current marker X position
-            "curr_y": null,             // int: Current marker Y position
-            "insert_pos": -1            // int: Current drop insert index (-1 for "at the end")
+            "currX": null,              // int: Current marker X position
+            "currY": null,              // int: Current marker Y position
+            "insertPos": -1             // int: Current drop insert index (-1 for "at the end")
           ],
           {
             gc, node, feedback ->
             // Paint closure for the LinearLayout.
+            // This is called by the canvas when a draw is needed.
 
-            Rect b = node.getBounds();
-            if (!b.isValid()) {
-                return;
-            }
-
-            gc.setForeground(gc.registerColor(0x00FFFF00));
-
-            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-            gc.setLineWidth(2);
-            gc.drawRect(b);
-
-            gc.setLineStyle(IGraphics.LineStyle.LINE_DOT);
-            gc.setLineWidth(1);
-
-            indexes.each {
-                int i = it[0];
-                if (isVertical) {
-                    // draw horizontal lines
-                    gc.drawLine(b.x, i, b.x + b.w, i);
-                } else {
-                    // draw vertical lines
-                    gc.drawLine(i, b.y, i, b.y + b.h);
-                }
-            }
-
-            def curr_x = feedback.userData.curr_x;
-            def curr_y = feedback.userData.curr_y;
-
-            if (curr_x != null && curr_y != null) {
-                gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-                gc.setLineWidth(2);
-
-                int x = curr_x;
-                int y = curr_y;
-                gc.drawLine(x - 10, y - 10, x + 10, y + 10);
-                gc.drawLine(x + 10, y - 10, x - 10, y + 10);
-                gc.drawRect(x - 10, y - 10, x + 10, y + 10);
-            }
-        })
+            drawFeedback(gc, node, elements, feedback);
+        });
     }
 
-    DropFeedback onDropMove(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
+    void drawFeedback(IGraphics gc,
+                      INode node,
+                      IDragElement[] elements,
+                      DropFeedback feedback) {
+        Rect b = node.getBounds();
+        if (!b.isValid()) {
+            return;
+        }
+
+        // Highlight the receiver
+        gc.setForeground(gc.registerColor(0x00FFFF00));
+        gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+        gc.setLineWidth(2);
+        gc.drawRect(b);
+
+        gc.setLineStyle(IGraphics.LineStyle.LINE_DOT);
+        gc.setLineWidth(1);
+
+        def indexes = feedback.userData.indexes;
+        boolean isVertical = feedback.userData.isVertical;
+
+        indexes.each {
+            int i = it[0];
+            if (isVertical) {
+                // draw horizontal lines
+                gc.drawLine(b.x, i, b.x + b.w, i);
+            } else {
+                // draw vertical lines
+                gc.drawLine(i, b.y, i, b.y + b.h);
+            }
+        }
+
+        def currX = feedback.userData.currX;
+        def currY = feedback.userData.currY;
+
+        if (currX != null && currY != null) {
+            int x = currX;
+            int y = currY;
+
+            // Draw a mark at the drop point.
+            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+            gc.setLineWidth(2);
+
+            gc.drawLine(x - 10, y - 10, x + 10, y + 10);
+            gc.drawLine(x + 10, y - 10, x - 10, y + 10);
+            gc.drawOval(x - 10, y - 10, x + 10, y + 10);
+
+            Rect be = elements[0].getBounds();
+
+            if (be.isValid()) {
+                // At least the first element has a bound. Draw rectangles
+                // for all dropped elements with valid bounds, offset at
+                // the drop point.
+
+                int offsetX = x - be.x;
+                int offsetY = y - be.y;
+
+                // If there's a parent, keep the X/Y coordinate the same relative to the parent.
+                Rect pb = elements[0].getParentBounds();
+                if (pb.isValid()) {
+                    if (isVertical) {
+                        offsetX = b.x - pb.x;
+                    } else {
+                        offsetY = b.y - pb.y;
+                    }
+                }
+
+                for (element in elements) {
+                    drawElement(gc, element, offsetX, offsetY);
+                }
+            }
+        }
+    }
+
+    DropFeedback onDropMove(INode targetNode,
+                            IDragElement[] elements,
+                            DropFeedback feedback,
+                            Point p) {
         def data = feedback.userData;
 
         Rect b = targetNode.getBounds();
@@ -134,40 +183,71 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         }
 
         if (bestIndex != Integer.MIN_VALUE) {
-            def old_x = data.curr_x;
-            def old_y = data.curr_y;
+            def old_x = data.currX;
+            def old_y = data.currY;
 
             if (isVertical) {
-                data.curr_x = b.x + b.w / 2;
-                data.curr_y = bestIndex;
+                data.currX = b.x + b.w / 2;
+                data.currY = bestIndex;
             } else {
-                data.curr_x = bestIndex;
-                data.curr_y = b.y + b.h / 2;
+                data.currX = bestIndex;
+                data.currY = b.y + b.h / 2;
             }
 
-            data.insert_pos = bestPos;
+            data.insertPos = bestPos;
 
-            feedback.requestPaint = (old_x != data.curr_x) || (old_y != data.curr_y);
+            feedback.requestPaint = (old_x != data.currX) || (old_y != data.currY);
         }
 
         return feedback;
     }
 
-    void onDropLeave(INode targetNode, String fqcn, DropFeedback feedback) {
+    void onDropLeave(INode targetNode, IDragElement[] elements, DropFeedback feedback) {
         // ignore
     }
 
-    void onDropped(INode targetNode, String fqcn, DropFeedback feedback, Point p) {
-        int insert_pos = feedback.userData.insert_pos;
+    void onDropped(INode targetNode,
+                   IDragElement[] elements,
+                   DropFeedback feedback,
+                   Point p) {
 
-        targetNode.debugPrintf("Linear.drop: add ${fqcn} at position ${insert_pos}");
+        int insertPos = feedback.userData.insertPos;
 
-        // Get the last component of the FQCN (e.g. "android.view.Button" => "Button")
-        String name = fqcn;
-        name = name[name.lastIndexOf(".")+1 .. name.length()-1];
+        // Collect IDs from dropped elements and remap them to new IDs
+        // if this is a copy or from a different canvas.
+        def idMap = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
 
-        targetNode.editXml("Add ${name} to LinearLayout") {
-            INode e = targetNode.insertChildAt(fqcn, insert_pos);
+        targetNode.editXml("Add elements to LinearLayout") {
+
+            // Now write the new elements.
+            for (element in elements) {
+                String fqcn = element.getFqcn();
+                Rect be = element.getBounds();
+
+                INode newChild = targetNode.insertChildAt(fqcn, insertPos);
+
+                // insertPos==-1 means to insert at the end. Otherwise
+                // increment the insertion position.
+                if (insertPos >= 0) {
+                    insertPos++;
+                }
+
+                // Copy all the attributes, modifying them as needed.
+                def attrFilter = getLayoutAttrFilter();
+                addAttributes(newChild, element, idMap) {
+                    uri, name, value ->
+                    // TODO need a better way to exclude other layout attributes dynamically
+                    if (uri == ANDROID_URI && name in attrFilter) {
+                        return false; // don't set these attributes
+                    } else {
+                        return value;
+                    }
+                };
+
+                addInnerElements(newChild, element, idMap);
+            }
         }
+
+
     }
 }

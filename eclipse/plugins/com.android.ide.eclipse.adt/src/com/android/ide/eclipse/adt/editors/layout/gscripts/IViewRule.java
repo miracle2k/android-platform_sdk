@@ -170,8 +170,6 @@ public interface IViewRule {
     void onDropped(INode targetNode,
             IDragElement[] elements,
             DropFeedback feedback,
-            Point where,
-            boolean isCopy,
-            boolean sameCanvas);
+            Point where);
 
 }

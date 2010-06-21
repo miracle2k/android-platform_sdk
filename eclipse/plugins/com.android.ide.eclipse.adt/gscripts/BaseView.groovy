@@ -20,11 +20,24 @@ public class BaseView implements IViewRule {
 
     private String mFqcn;
 
+    // Some common Android layout attribute names used by the view rules.
+    // All these belong to the attribute namespace ANDROID_URI.
+    public static String ATTR_ID = "id";
+    public static String ATTR_TEXT = "text";
+    public static String ATTR_LAYOUT_WIDTH = "layout_width";
+    public static String ATTR_LAYOUT_HEIGHT = "layout_height";
+
+    // Some common Android layout attribute values used by the view rules.
+    public static String VALUE_FILL_PARENT = "fill_parent";
+    public static String VALUE_MATCH_PARENT = "match_parent";
+    public static String VALUE_MATCH_CONTENT = "match_content";
+
+
     /**
      * Namespace for the Android resource XML,
      * i.e. "http://schemas.android.com/apk/res/android"
      */
-    public static ANDROID_URI = "http://schemas.android.com/apk/res/android";
+    public static String ANDROID_URI = "http://schemas.android.com/apk/res/android";
 
     public boolean onInitialize(String fqcn) {
         // This base rule can handle any class.
@@ -114,8 +127,7 @@ public class BaseView implements IViewRule {
         // ignore
     }
 
-    void onDropped(INode targetNode, IDragElement[] elements, DropFeedback feedback,
-                   Point p, boolean isCopy, boolean sameCanvas) {
+    void onDropped(INode targetNode, IDragElement[] elements, DropFeedback feedback, Point p) {
         // ignore
     }
 

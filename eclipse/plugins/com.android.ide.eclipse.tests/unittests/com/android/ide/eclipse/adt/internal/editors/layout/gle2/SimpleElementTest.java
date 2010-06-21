@@ -58,7 +58,8 @@ public class SimpleElementTest extends TestCase {
 
         e = new SimpleElement("android.view.LinearLayout", // fqcn
                 "android.view.FrameLayout", // parentFqcn
-                new Rect(10, 5, 60, 40));
+                new Rect(10, 5, 60, 40),    // bounds
+                new Rect(0, 0, 320, 480));  // parentBounds
     }
 
     public final void testGetFqcn() {
@@ -73,15 +74,19 @@ public class SimpleElementTest extends TestCase {
         assertEquals(new Rect(10, 5, 60, 40), e.getBounds());
     }
 
+    public final void testGetParentBounds() {
+        assertEquals(new Rect(0, 0, 320, 480), e.getParentBounds());
+    }
+
     public final void testToString() {
-        assertEquals("{V=2,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40\n" +
+        assertEquals("{V=3,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40,Q=0 0 320 480\n" +
                      "}\n",
                 e.toString());
 
         e.addAttribute(new SimpleAttribute("uri", "name", "value"));
         e.addAttribute(new SimpleAttribute("my-uri", "second-name", "my = value "));
 
-        assertEquals("{V=2,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40\n" +
+        assertEquals("{V=3,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40,Q=0 0 320 480\n" +
                 "@name:uri=value\n" +
                 "@second-name:my-uri=my = value \n" +
                 "}\n",
@@ -89,23 +94,25 @@ public class SimpleElementTest extends TestCase {
 
         SimpleElement e2 = new SimpleElement("android.view.Button",
                                              "android.view.LinearLayout",
-                                             new Rect(10, 20, 30, 40));
+                                             new Rect(10, 20, 30, 40),
+                                             new Rect(0, 0, 320, 480));
         e2.addAttribute(new SimpleAttribute("uri1", "name1", "value1"));
         SimpleElement e3 = new SimpleElement("android.view.CheckBox",
                                              "android.view.LinearLayout",
-                                             new Rect(-1, -2, -3, -4)); // invalid rect is ignored
+                                             new Rect(-1, -2, -3, -4), // invalid rect is ignored
+                                             new Rect(-1, -2, -3, -4)); // invalid rectis ignored
         e3.addAttribute(new SimpleAttribute("uri2", "name2", "value2"));
         e3.addAttribute(new SimpleAttribute("uri3", "name3", "value3"));
         e.addInnerElement(e2);
         e.addInnerElement(e3);
 
-        assertEquals("{V=2,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40\n" +
+        assertEquals("{V=3,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40,Q=0 0 320 480\n" +
                 "@name:uri=value\n" +
                 "@second-name:my-uri=my = value \n" +
-                "{V=2,N=android.view.Button,P=android.view.LinearLayout,R=10 20 30 40\n" +
+                "{V=3,N=android.view.Button,P=android.view.LinearLayout,R=10 20 30 40,Q=0 0 320 480\n" +
                 "@name1:uri1=value1\n" +
                 "}\n" +
-                "{V=2,N=android.view.CheckBox,P=android.view.LinearLayout\n" +
+                "{V=3,N=android.view.CheckBox,P=android.view.LinearLayout\n" +
                 "@name2:uri2=value2\n" +
                 "@name3:uri3=value3\n" +
                 "}\n" +
@@ -115,32 +122,34 @@ public class SimpleElementTest extends TestCase {
 
     public final void testParseString() {
         assertArrayEquals(
-            new SimpleElement[] { new SimpleElement("android.view.LinearLayout", null, null) },
+            new SimpleElement[] { new SimpleElement("android.view.LinearLayout",
+                                                    null, null, null) },
             SimpleElement.parseString(
-                "{V=2,N=android.view.LinearLayout\n" +
+                "{V=3,N=android.view.LinearLayout\n" +
                 "}\n"));
 
         assertArrayEquals(
                 new SimpleElement[] { new SimpleElement("android.view.LinearLayout",
                                                         "android.view.FrameLayout",
-                                                        null) },
+                                                        null, null) },
                 SimpleElement.parseString(
-                    "{V=2,N=android.view.LinearLayout,P=android.view.FrameLayout\n" +
+                    "{V=3,N=android.view.LinearLayout,P=android.view.FrameLayout\n" +
                     "}\n"));
 
         assertArrayEquals(
                 new SimpleElement[] { new SimpleElement("android.view.LinearLayout",
                                                         null,
-                                                        new Rect(10, 5, 60, 40)) },
+                                                        new Rect(10, 5, 60, 40),
+                                                        new Rect(0, 0, 320, 480)) },
                 SimpleElement.parseString(
-                    "{V=2,N=android.view.LinearLayout,R=10 5 60 40\n" +
+                    "{V=3,N=android.view.LinearLayout,R=10 5 60 40,Q=0 0 320 480\n" +
                     "}\n"));
 
 
         assertArrayEquals(
             new SimpleElement[] { e },
             SimpleElement.parseString(
-                "{V=2,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40\n" +
+                "{V=3,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40,Q=0 0 320 480\n" +
                 "}\n"));
 
 
@@ -150,7 +159,7 @@ public class SimpleElementTest extends TestCase {
         assertArrayEquals(
                 new SimpleElement[] { e },
                 SimpleElement.parseString(
-                        "{V=2,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40\n" +
+                        "{V=3,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40,Q=0 0 320 480\n" +
                         "@name:uri=value\n" +
                         "@second-name:my-uri=my = value \n" +
                         "}\n"));
@@ -158,10 +167,12 @@ public class SimpleElementTest extends TestCase {
 
         SimpleElement e2 = new SimpleElement("android.view.Button",
                                              "android.view.LinearLayout",
-                                             new Rect(10, 20, 30, 40));
+                                             new Rect(10, 20, 30, 40),
+                                             new Rect(0, 0, 320, 480));
         e2.addAttribute(new SimpleAttribute("uri1", "name1", "value1"));
         SimpleElement e3 = new SimpleElement("android.view.CheckBox",
                                              "android.view.LinearLayout",
+                                             new Rect(-1, -2, -3, -4),
                                              new Rect(-1, -2, -3, -4));
         e3.addAttribute(new SimpleAttribute("uri2", "name2", "value2"));
         e3.addAttribute(new SimpleAttribute("uri3", "name3", "value3"));
@@ -171,13 +182,13 @@ public class SimpleElementTest extends TestCase {
         assertArrayEquals(
                 new SimpleElement[] { e },
                 SimpleElement.parseString(
-                        "{V=2,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40\n" +
+                        "{V=3,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40,Q=0 0 320 480\n" +
                         "@name:uri=value\n" +
                         "@second-name:my-uri=my = value \n" +
-                        "{V=2,N=android.view.Button,P=android.view.LinearLayout,R=10 20 30 40\n" +
+                        "{V=3,N=android.view.Button,P=android.view.LinearLayout,R=10 20 30 40,Q=0 0 320 480\n" +
                         "@name1:uri1=value1\n" +
                         "}\n" +
-                        "{V=2,N=android.view.CheckBox,P=android.view.LinearLayout,R=-1 -2 -3 -4\n" +
+                        "{V=3,N=android.view.CheckBox,P=android.view.LinearLayout,R=-1 -2 -3 -4,Q=-1 -2 -3 -4\n" +
                         "@name2:uri2=value2\n" +
                         "@name3:uri3=value3\n" +
                         "}\n" +
@@ -187,21 +198,21 @@ public class SimpleElementTest extends TestCase {
         assertArrayEquals(
                 new SimpleElement[] { e, e2, e3 },
                 SimpleElement.parseString(
-                        "{V=2,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40\n" +
+                        "{V=3,N=android.view.LinearLayout,P=android.view.FrameLayout,R=10 5 60 40,Q=0 0 320 480\n" +
                         "@name:uri=value\n" +
                         "@second-name:my-uri=my = value \n" +
-                        "{V=2,N=android.view.Button,P=android.view.LinearLayout,R=10 20 30 40\n" +
+                        "{V=3,N=android.view.Button,P=android.view.LinearLayout,R=10 20 30 40,Q=0 0 320 480\n" +
                         "@name1:uri1=value1\n" +
                         "}\n" +
-                        "{V=2,N=android.view.CheckBox,P=android.view.LinearLayout,R=-1 -2 -3 -4\n" +
+                        "{V=3,N=android.view.CheckBox,P=android.view.LinearLayout,R=-1 -2 -3 -4\n" +
                         "@name2:uri2=value2\n" +
                         "@name3:uri3=value3\n" +
                         "}\n" +
                         "}\n" +
-                        "{V=2,N=android.view.Button,P=android.view.LinearLayout,R=10 20 30 40\n" +
+                        "{V=3,N=android.view.Button,P=android.view.LinearLayout,R=10 20 30 40,Q=0 0 320 480\n" +
                         "@name1:uri1=value1\n" +
                         "}\n" +
-                        "{V=2,N=android.view.CheckBox,P=android.view.LinearLayout,R=-1 -2 -3 -4\n" +
+                        "{V=3,N=android.view.CheckBox,P=android.view.LinearLayout,R=-1 -2 -3 -4,Q=-1 -2 -3 -4\n" +
                         "@name2:uri2=value2\n" +
                         "@name3:uri3=value3\n" +
                         "}\n"));
@@ -239,16 +250,16 @@ public class SimpleElementTest extends TestCase {
                 new SimpleElement[] {},
                 e.getInnerElements());
 
-        e.addInnerElement(new SimpleElement("android.view.Button", null, null));
+        e.addInnerElement(new SimpleElement("android.view.Button", null, null, null));
         assertArrayEquals(
-                new SimpleElement[] { new SimpleElement("android.view.Button", null, null) },
+                new SimpleElement[] { new SimpleElement("android.view.Button", null, null, null) },
                 e.getInnerElements());
 
-        e.addInnerElement(new SimpleElement("android.view.CheckBox", null, null));
+        e.addInnerElement(new SimpleElement("android.view.CheckBox", null, null, null));
         assertArrayEquals(
-                new SimpleElement[] { new SimpleElement("android.view.Button", null, null),
-                                      new SimpleElement("android.view.CheckBox", null, null) },
-                e.getInnerElements());
+               new SimpleElement[] { new SimpleElement("android.view.Button", null, null, null),
+                                     new SimpleElement("android.view.CheckBox", null, null, null) },
+               e.getInnerElements());
     }
 
     public final void testEqualsObject() {
@@ -257,30 +268,42 @@ public class SimpleElementTest extends TestCase {
 
         assertNotSame(new SimpleElement("android.view.LinearLayout",
                                         "android.view.FrameLayout",
-                                        new Rect(10, 5, 60, 40)),
+                                        new Rect(10, 5, 60, 40),
+                                        new Rect(0, 0, 320, 480)),
                       e);
         assertEquals(new SimpleElement("android.view.LinearLayout",
                                        "android.view.FrameLayout",
-                                       new Rect(10, 5, 60, 40)),
+                                       new Rect(10, 5, 60, 40),
+                                       new Rect(0, 0, 320, 480)),
                       e);
         assertTrue(e.equals(new SimpleElement("android.view.LinearLayout",
                                               "android.view.FrameLayout",
-                                              new Rect(10, 5, 60, 40))));
+                                              new Rect(10, 5, 60, 40),
+                                              new Rect(0, 0, 320, 480))));
 
         // not the same FQCN
         assertFalse(e.equals(new SimpleElement("android.view.Button",
                                                "android.view.FrameLayout",
-                                               new Rect(10, 5, 60, 40))));
+                                               new Rect(10, 5, 60, 40),
+                                               new Rect(0, 0, 320, 480))));
 
         // not the same parent
         assertFalse(e.equals(new SimpleElement("android.view.LinearLayout",
                                                "android.view.LinearLayout",
-                                               new Rect(10, 5, 60, 40))));
+                                               new Rect(10, 5, 60, 40),
+                                               new Rect(0, 0, 320, 480))));
 
         // not the same bounds
         assertFalse(e.equals(new SimpleElement("android.view.LinearLayout",
-                                               "android.view.LinearLayout",
-                                               new Rect(10, 25, 30, 40))));
+                                               "android.view.FrameLayout",
+                                               new Rect(10, 25, 30, 40),
+                                               new Rect(0, 0, 320, 480))));
+
+        // not the same parent bounds
+        assertFalse(e.equals(new SimpleElement("android.view.LinearLayout",
+                                               "android.view.FrameLayout",
+                                               new Rect(10, 5, 60, 40),
+                                               new Rect(10, 100, 160, 240))));
     }
 
     public final void testHashCode() {
@@ -288,23 +311,33 @@ public class SimpleElementTest extends TestCase {
 
         assertEquals(he, new SimpleElement("android.view.LinearLayout",
                                            "android.view.FrameLayout",
-                                           new Rect(10, 5, 60, 40)).hashCode());
+                                           new Rect(10, 5, 60, 40),
+                                           new Rect(0, 0, 320, 480)).hashCode());
 
 
         // not the same FQCN
         assertFalse(he == new SimpleElement("android.view.Button",
                                             "android.view.FrameLayout",
-                                            new Rect(10, 5, 60, 40)).hashCode());
+                                            new Rect(10, 5, 60, 40),
+                                            new Rect(0, 0, 320, 480)).hashCode());
 
         // not the same parent
         assertFalse(he == new SimpleElement("android.view.LinearLayout",
                                             "android.view.Button",
-                                            new Rect(10, 5, 60, 40)).hashCode());
+                                            new Rect(10, 5, 60, 40),
+                                            new Rect(0, 0, 320, 480)).hashCode());
 
         // not the same bounds
         assertFalse(he == new SimpleElement("android.view.LinearLayout",
-                                            "android.view.LinearLayout",
-                                            new Rect(10, 25, 30, 40)).hashCode());
+                                            "android.view.FrameLayout",
+                                            new Rect(10, 25, 30, 40),
+                                            new Rect(0, 0, 320, 480)).hashCode());
+
+        // not the same parent bounds
+        assertFalse(he == new SimpleElement("android.view.LinearLayout",
+                                            "android.view.FrameLayout",
+                                            new Rect(10, 25, 30, 40),
+                                            new Rect(10, 100, 160, 240)).hashCode());
     }
 
 }

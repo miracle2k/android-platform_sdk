@@ -35,6 +35,8 @@ public interface IDragElement {
      * Returns the bounds of the element's node, if it originated from an existing
      * canvas. The rectangle is invalid and non-null when the element originated
      * from the object palette.
+     *
+     * The bounds are absolute for the canvas.
      */
     public abstract Rect getBounds();
 
@@ -44,6 +46,14 @@ public interface IDragElement {
      * level element or an element originating from the object palette.
      */
     public abstract String getParentFqcn();
+
+    /**
+     * Returns the bounds of the element's parent, absolute for the canvas, or invalid if there
+     * is no suitable parent. This is generally invalid when {@link #getParentFqcn()} is null.
+     *
+     * The returned rectangle can be invalid. It is never null.
+     */
+    public abstract Rect getParentBounds();
 
     /**
      * Returns a list of attributes. The list can be empty but is never null.
@@ -62,10 +72,18 @@ public interface IDragElement {
 
     /**
      * An XML attribute in the {@link IDragElement}.
+     * <p/>
+     * The attribute is always represented by a namespace URI, a name and a value.
+     * The name cannot be empty.
+     * The namespace URI can be empty for an attribute without a namespace but is never null.
+     * The value can be empty but cannot be null.
      */
     public interface IDragAttribute {
 
-        /** Returns the namespace URI of the attribute. Cannot be null nor empty. */
+        /**
+         * Returns the namespace URI of the attribute.
+         * Can be empty for an attribute without a namespace but is never null.
+         */
         public abstract String getUri();
 
         /** Returns the XML local name of the attribute. Cannot be null nor empty. */

@@ -28,6 +28,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescripto
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleAttribute;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
@@ -315,6 +316,33 @@ public class NodeProxy implements INode {
         }
 
         return null;
+    }
+
+    public IAttribute[] getAttributes() {
+        UiElementNode uiNode = mNode;
+
+        if (uiNode.getXmlNode() != null) {
+            Node xmlNode = uiNode.getXmlNode();
+            if (xmlNode != null) {
+                NamedNodeMap nodeAttributes = xmlNode.getAttributes();
+                if (nodeAttributes != null) {
+
+                    int n = nodeAttributes.getLength();
+                    IAttribute[] result = new IAttribute[n];
+                    for (int i = 0; i < n; i++) {
+                        Node attr = nodeAttributes.item(i);
+                        String uri = attr.getNamespaceURI();
+                        String name = attr.getLocalName();
+                        String value = attr.getNodeValue();
+
+                        result[i] = new SimpleAttribute(uri, name, value);
+                    }
+                    return result;
+                }
+            }
+        }
+        return null;
+
     }
 
 
