@@ -460,21 +460,23 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             int x = r.x + 5;
             int y = r.y + r.h + 5;
             int h = gc.getFontHeight();
+
             String id = null;
             if (data.child) {
                 id = data.child.getStringAttr(ANDROID_URI, ATTR_ID);
             }
-            data.curr.attr.each {
-                String s = it;
+
+            for (s in data.curr.attr) {
                 if (id) s = "$s=$id";
                 gc.drawString(s, x, y);
                 y += h;
             }
 
+            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+            gc.setLineWidth(2);
+
             def mark = data.curr.get("mark");
             if (mark) {
-                gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-                gc.setLineWidth(2);
                 def black = gc.registerColor(0);
                 gc.setForeground(black);
 
@@ -484,21 +486,38 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                 gc.drawLine(x + 10, y - 10, x - 10, y + 10);
                 gc.drawOval(x - 10, y - 10, x + 10, y + 10);
 
-                Rect be = elements[0].getBounds();
+            } else {
 
-                if (be.isValid()) {
-                    // At least the first element has a bound. Draw rectangles
-                    // for all dropped elements with valid bounds, offset at
-                    // the drop point.
+                r = data.curr.rect;
+                x = r.x + r.w / 2;
+                y = r.y + r.h / 2;
+            }
 
-                    int offsetX = x - be.x;
-                    int offsetY = y - be.y;
+            Rect be = elements[0].getBounds();
 
-                    gc.setForeground(gc.registerColor(0x00FFFF00));
+            if (be.isValid()) {
+                // At least the first element has a bound. Draw rectangles
+                // for all dropped elements with valid bounds, offset at
+                // the drop point.
 
-                    for (element in elements) {
-                        drawElement(gc, element, offsetX, offsetY);
-                    }
+                int offsetX = x - be.x;
+                int offsetY = y - be.y;
+
+                if ("alignTop" in data.curr.attr && "alignBottom" in data.curr.attr) {
+                    offsetY -= be.h / 2;
+                } else if ("above" in data.curr.attr || "alignTop" in data.curr.attr) {
+                    offsetY -= be.h;
+                }
+                if ("alignRight" in data.curr.attr && "alignLeft" in data.curr.attr) {
+                    offsetX -= be.w / 2;
+                } else if ("toLeftOf" in data.curr.attr || "alignLeft" in data.curr.attr) {
+                    offsetX -= be.w;
+                }
+
+                gc.setForeground(gc.registerColor(0x00FFFF00));
+
+                for (element in elements) {
+                    drawElement(gc, element, offsetX, offsetY);
                 }
             }
         }
