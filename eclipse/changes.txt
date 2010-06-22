@@ -1,5 +1,6 @@
 0.9.8:
 - Fixed issue with library project names containing characters that aren't compatible with Eclipse path variable. The link between the main project and the library would fail to create.
+- added support for new resource qualifiers: car/desk, night/notnight and navexposed/navhidden
 
 0.9.7:
 - Support for library projects
