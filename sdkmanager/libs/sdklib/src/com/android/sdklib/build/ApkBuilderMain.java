@@ -16,9 +16,6 @@
 
 package com.android.sdklib.build;
 
-import com.android.sdklib.build.ApkBuilder.ApkCreationException;
-import com.android.sdklib.build.ApkBuilder.DuplicateFileException;
-import com.android.sdklib.build.ApkBuilder.SealedApkException;
 
 import java.io.File;
 import java.io.FilenameFilter;
