@@ -52,10 +52,12 @@ import java.util.Map;
 
 import javax.xml.xpath.XPath;
 
-public class ApkBuilder extends BaseBuilder {
+public class PostCompilerBuilder extends BaseBuilder {
 
-    private static final String DX_PREFIX = "Dx"; //$NON-NLS-1$
+    private static final String CONSOLE_PREFIX_DX = "Dx"; //$NON-NLS-1$
 
+    /** This ID is used in plugin.xml and in each project's .project file.
+     * It cannot be changed even if the class is renamed/moved */
     public static final String ID = "com.android.ide.eclipse.adt.ApkBuilder"; //$NON-NLS-1$
 
     private static final String PROPERTY_CONVERT_TO_DEX = "convertToDex"; //$NON-NLS-1$
@@ -136,7 +138,7 @@ public class ApkBuilder extends BaseBuilder {
                         if (type == IResource.FILE) {
                             // check if the file is a valid file that would be
                             // included during the final packaging.
-                            if (ApkBuilderHelper.checkFileForPackaging((IFile)resource)) {
+                            if (PostCompilerHelper.checkFileForPackaging((IFile)resource)) {
                                 mMakeFinalPackage = true;
                             }
 
@@ -145,7 +147,7 @@ public class ApkBuilder extends BaseBuilder {
                             // if this is a folder, we check if this is a valid folder as well.
                             // If this is a folder that needs to be ignored, we must return false,
                             // so that we ignore its content.
-                            return ApkBuilderHelper.checkFolderForPackaging((IFolder)resource);
+                            return PostCompilerHelper.checkFolderForPackaging((IFolder)resource);
                         }
                     }
                 }
@@ -166,7 +168,7 @@ public class ApkBuilder extends BaseBuilder {
         }
     }
 
-    public ApkBuilder() {
+    public PostCompilerBuilder() {
         super();
     }
 
@@ -213,7 +215,7 @@ public class ApkBuilder extends BaseBuilder {
 
             // get the list of referenced projects.
             javaProjects = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = ApkBuilderHelper.getJavaProjects(javaProjects);
+            IJavaProject[] referencedJavaProjects = PostCompilerHelper.getJavaProjects(javaProjects);
 
             // mix the java project and the library projects
             final int libCount = libProjects != null ? libProjects.length : 0;
@@ -235,7 +237,7 @@ public class ApkBuilder extends BaseBuilder {
 
             // First thing we do is go through the resource delta to not
             // lose it if we have to abort the build for any reason.
-            ApkDeltaVisitor dv = null;
+            PostCompilerDeltaVisitor dv = null;
             if (kind == FULL_BUILD) {
                 AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                         Messages.Start_Full_Apk_Build);
@@ -254,7 +256,7 @@ public class ApkBuilder extends BaseBuilder {
                     mConvertToDex = true;
                     mBuildFinalPackage = true;
                 } else {
-                    dv = new ApkDeltaVisitor(this, sourceList, outputFolder);
+                    dv = new PostCompilerDeltaVisitor(this, sourceList, outputFolder);
                     delta.accept(dv);
 
                     // save the state
@@ -382,14 +384,14 @@ public class ApkBuilder extends BaseBuilder {
             // Get the DX output stream. Since the builder is created for the life of the
             // project, they can be kept around.
             if (mDxOutStream == null) {
-                mDxOutStream = AdtPlugin.getOutPrintStream(project, DX_PREFIX);
-                mDxErrStream = AdtPlugin.getErrPrintStream(project, DX_PREFIX);
+                mDxOutStream = AdtPlugin.getOutPrintStream(project, CONSOLE_PREFIX_DX);
+                mDxErrStream = AdtPlugin.getErrPrintStream(project, CONSOLE_PREFIX_DX);
             }
 
             // we need to test all three, as we may need to make the final package
             // but not the intermediary ones.
             if (mPackageResources || mConvertToDex || mBuildFinalPackage) {
-                ApkBuilderHelper helper = new ApkBuilderHelper(project, mDxOutStream, mDxErrStream);
+                PostCompilerHelper helper = new PostCompilerHelper(project, mDxOutStream, mDxErrStream);
 
                 // resource to the AndroidManifest.xml file
                 IFile manifestFile = project.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);

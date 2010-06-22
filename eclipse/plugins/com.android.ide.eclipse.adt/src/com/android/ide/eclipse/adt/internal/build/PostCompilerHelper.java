@@ -73,13 +73,13 @@ import java.util.List;
  * will make the apk from all the previous components.
  *
  */
-public class ApkBuilderHelper {
+public class PostCompilerHelper {
 
     private final IProject mProject;
     private final PrintStream mOutStream;
     private final PrintStream mErrStream;
 
-    public ApkBuilderHelper(IProject project, PrintStream outStream, PrintStream errStream) {
+    public PostCompilerHelper(IProject project, PrintStream outStream, PrintStream errStream) {
         mProject = project;
         mOutStream = outStream;
         mErrStream = errStream;

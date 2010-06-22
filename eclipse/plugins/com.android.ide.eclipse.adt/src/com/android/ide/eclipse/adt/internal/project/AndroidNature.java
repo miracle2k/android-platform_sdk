@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.build.ApkBuilder;
+import com.android.ide.eclipse.adt.internal.build.PostCompilerBuilder;
 import com.android.ide.eclipse.adt.internal.build.PreCompilerBuilder;
 import com.android.ide.eclipse.adt.internal.build.ResourceManagerBuilder;
 
@@ -81,7 +81,7 @@ public class AndroidNature implements IProjectNature {
         // remove the android builders
         removeBuilder(mProject, ResourceManagerBuilder.ID);
         removeBuilder(mProject, PreCompilerBuilder.ID);
-        removeBuilder(mProject, ApkBuilder.ID);
+        removeBuilder(mProject, PostCompilerBuilder.ID);
     }
 
     /**
@@ -251,7 +251,7 @@ public class AndroidNature implements IProjectNature {
         ICommand[] commands = desc.getBuildSpec();
 
         for (int i = 0; i < commands.length; ++i) {
-            if (ApkBuilder.ID.equals(commands[i].getBuilderName())) {
+            if (PostCompilerBuilder.ID.equals(commands[i].getBuilderName())) {
                 return;
             }
         }
@@ -259,7 +259,7 @@ public class AndroidNature implements IProjectNature {
         ICommand[] newCommands = new ICommand[commands.length + 1];
         System.arraycopy(commands, 0, newCommands, 0, commands.length);
         ICommand command = desc.newCommand();
-        command.setBuilderName(ApkBuilder.ID);
+        command.setBuilderName(PostCompilerBuilder.ID);
         newCommands[commands.length] = command;
         desc.setBuildSpec(newCommands);
         project.setDescription(desc, null);
