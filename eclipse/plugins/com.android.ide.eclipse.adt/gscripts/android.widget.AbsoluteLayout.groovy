@@ -116,7 +116,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
 
         // Collect IDs from dropped elements and remap them to new IDs
         // if this is a copy or from a different canvas.
-        def id_map = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
+        def idMap = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
 
         targetNode.editXml("Add elements to AbsoluteLayout") {
 
@@ -131,10 +131,11 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
                 INode newChild = targetNode.appendChild(fqcn);
 
                 // Copy all the attributes, modifying them as needed.
-                addAttributes(newChild, element, id_map) {
+                def attrFilter = getLayoutAttrFilter();
+                addAttributes(newChild, element, idMap) {
                     uri, name, value ->
-                    // TODO exclude original parent attributes
-                    if (name == "layout_x" || name == "layout_y") {
+                    // TODO need a better way to exclude other layout attributes dynamically
+                    if (uri == ANDROID_URI && name in attrFilter) {
                         return false; // don't set these attributes
                     } else {
                         return value;
@@ -157,7 +158,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
                 newChild.setAttribute(ANDROID_URI, "layout_x", "${x}dip");
                 newChild.setAttribute(ANDROID_URI, "layout_y", "${y}dip");
 
-                addInnerElements(newChild, element, id_map);
+                addInnerElements(newChild, element, idMap);
             }
         }
     }
