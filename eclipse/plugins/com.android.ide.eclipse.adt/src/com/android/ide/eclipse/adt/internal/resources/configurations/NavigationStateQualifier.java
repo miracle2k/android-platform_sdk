@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,28 +18,28 @@ package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.sdklib.IAndroidTarget;
-import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.NavigationState;
 
 import org.eclipse.swt.graphics.Image;
 
 /**
- * Resource Qualifier for Navigation Method.
+ * Resource Qualifier for navigation state.
  */
-public final class NavigationMethodQualifier extends ResourceQualifier {
+public final class NavigationStateQualifier extends ResourceQualifier {
 
-    public static final String NAME = "Navigation Method";
+    public static final String NAME = "Navigation State";
 
-    private Navigation mValue;
+    private NavigationState mValue = null;
 
-    public NavigationMethodQualifier() {
+    public NavigationStateQualifier() {
         // pass
     }
 
-    public NavigationMethodQualifier(Navigation value) {
+    public NavigationStateQualifier(NavigationState value) {
         mValue = value;
     }
 
-    public Navigation getValue() {
+    public NavigationState getValue() {
         return mValue;
     }
 
@@ -53,7 +53,6 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
         return NAME;
     }
 
-
     @Override
     public Image getIcon() {
         return IconFactory.getInstance().getIcon("navpad"); //$NON-NLS-1$
@@ -66,10 +65,11 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
-        Navigation method = Navigation.getEnum(value);
-        if (method != null) {
-            NavigationMethodQualifier qualifier = new NavigationMethodQualifier(method);
-            config.setNavigationMethodQualifier(qualifier);
+        NavigationState state = NavigationState.getEnum(value);
+        if (state != null) {
+            NavigationStateQualifier qualifier = new NavigationStateQualifier();
+            qualifier.mValue = state;
+            config.setNavigationStateQualifier(qualifier);
             return true;
         }
 
@@ -78,8 +78,8 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     @Override
     public boolean equals(Object qualifier) {
-        if (qualifier instanceof NavigationMethodQualifier) {
-            return mValue == ((NavigationMethodQualifier)qualifier).mValue;
+        if (qualifier instanceof NavigationStateQualifier) {
+            return mValue == ((NavigationStateQualifier)qualifier).mValue;
         }
 
         return false;

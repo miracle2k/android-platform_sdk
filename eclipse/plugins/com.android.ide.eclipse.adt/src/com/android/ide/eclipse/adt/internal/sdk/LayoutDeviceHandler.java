@@ -20,6 +20,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.CountryCode
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationMethodQualifier;
+import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationStateQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.NetworkCodeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenDimensionQualifier;
@@ -32,6 +33,7 @@ import com.android.sdklib.resources.Density;
 import com.android.sdklib.resources.Keyboard;
 import com.android.sdklib.resources.KeyboardState;
 import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.NavigationState;
 import com.android.sdklib.resources.ScreenOrientation;
 import com.android.sdklib.resources.ScreenRatio;
 import com.android.sdklib.resources.ScreenSize;
@@ -155,6 +157,10 @@ class LayoutDeviceHandler extends DefaultHandler {
             TextInputMethodQualifier timq = new TextInputMethodQualifier(
                     Keyboard.getEnum(mStringAccumulator.toString()));
             mCurrentConfig.setTextInputMethodQualifier(timq);
+        } else if (LayoutDevicesXsd.NODE_NAV_STATE.equals(localName)) {
+            NavigationStateQualifier nsq = new NavigationStateQualifier(
+                    NavigationState.getEnum(mStringAccumulator.toString()));
+            mCurrentConfig.setNavigationStateQualifier(nsq);
         } else if (LayoutDevicesXsd.NODE_NAV_METHOD.equals(localName)) {
             NavigationMethodQualifier nmq = new NavigationMethodQualifier(
                     Navigation.getEnum(mStringAccumulator.toString()));

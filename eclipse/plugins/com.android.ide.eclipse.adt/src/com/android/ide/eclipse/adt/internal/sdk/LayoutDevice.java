@@ -20,6 +20,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.CountryCode
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationMethodQualifier;
+import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationStateQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.NetworkCodeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenDimensionQualifier;
@@ -180,6 +181,12 @@ public class LayoutDevice {
         if (timq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_TEXT_INPUT_METHOD);
             node.setTextContent(timq.getFolderSegment(null));
+        }
+
+        NavigationStateQualifier nsq = config.getNavigationStateQualifier();
+        if (nsq != null) {
+            Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_NAV_STATE);
+            node.setTextContent(nsq.getFolderSegment(null));
         }
 
         NavigationMethodQualifier nmq = config.getNavigationMethodQualifier();

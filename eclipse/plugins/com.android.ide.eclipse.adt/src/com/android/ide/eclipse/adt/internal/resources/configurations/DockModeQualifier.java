@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,28 +18,28 @@ package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.sdklib.IAndroidTarget;
-import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.DockMode;
 
 import org.eclipse.swt.graphics.Image;
 
 /**
  * Resource Qualifier for Navigation Method.
  */
-public final class NavigationMethodQualifier extends ResourceQualifier {
+public final class DockModeQualifier extends ResourceQualifier {
 
-    public static final String NAME = "Navigation Method";
+    public static final String NAME = "Dock Mode";
 
-    private Navigation mValue;
+    private DockMode mValue;
 
-    public NavigationMethodQualifier() {
+    public DockModeQualifier() {
         // pass
     }
 
-    public NavigationMethodQualifier(Navigation value) {
+    public DockModeQualifier(DockMode value) {
         mValue = value;
     }
 
-    public Navigation getValue() {
+    public DockMode getValue() {
         return mValue;
     }
 
@@ -50,13 +50,13 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     @Override
     public String getShortName() {
-        return NAME;
+        return "Dock Mode";
     }
 
 
     @Override
     public Image getIcon() {
-        return IconFactory.getInstance().getIcon("navpad"); //$NON-NLS-1$
+        return IconFactory.getInstance().getIcon("dockmode"); //$NON-NLS-1$
     }
 
     @Override
@@ -66,10 +66,10 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
-        Navigation method = Navigation.getEnum(value);
-        if (method != null) {
-            NavigationMethodQualifier qualifier = new NavigationMethodQualifier(method);
-            config.setNavigationMethodQualifier(qualifier);
+        DockMode mode = DockMode.getEnum(value);
+        if (mode != null) {
+            DockModeQualifier qualifier = new DockModeQualifier(mode);
+            config.setDockModeQualifier(qualifier);
             return true;
         }
 
@@ -78,8 +78,8 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     @Override
     public boolean equals(Object qualifier) {
-        if (qualifier instanceof NavigationMethodQualifier) {
-            return mValue == ((NavigationMethodQualifier)qualifier).mValue;
+        if (qualifier instanceof DockModeQualifier) {
+            return mValue == ((DockModeQualifier)qualifier).mValue;
         }
 
         return false;

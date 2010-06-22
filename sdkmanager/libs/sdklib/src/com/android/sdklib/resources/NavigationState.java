@@ -17,21 +17,19 @@
 package com.android.sdklib.resources;
 
 /**
- * Navigation enum.
- * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
+ * Navigation state enum.
+ * <p/>This is used in the resource folder names.
  */
-public enum Navigation {
-    NONAV("nonav", "No Navigation"), //$NON-NLS-1$
-    DPAD("dpad", "D-pad"), //$NON-NLS-1$
-    TRACKBALL("trackball", "Trackball"), //$NON-NLS-1$
-    WHEEL("wheel", "Wheel"); //$NON-NLS-1$
+public enum NavigationState {
+    EXPOSED("navexposed", "Exposed"), //$NON-NLS-1$
+    HIDDEN("navhidden", "Hidden");    //$NON-NLS-1$
 
     private String mValue;
-    private String mDisplay;
+    private String mDisplayValue;
 
-    private Navigation(String value, String display) {
+    private NavigationState(String value, String displayValue) {
         mValue = value;
-        mDisplay = display;
+        mDisplayValue = displayValue;
     }
 
     /**
@@ -39,10 +37,10 @@ public enum Navigation {
      * @param value The qualifier value.
      * @return the enum for the qualifier value or null if no matching was found.
      */
-    public static Navigation getEnum(String value) {
-        for (Navigation nav : values()) {
-            if (nav.mValue.equals(value)) {
-                return nav;
+    public static NavigationState getEnum(String value) {
+        for (NavigationState state : values()) {
+            if (state.mValue.equals(value)) {
+                return state;
             }
         }
 
@@ -54,13 +52,13 @@ public enum Navigation {
     }
 
     public String getDisplayValue() {
-        return mDisplay;
+        return mDisplayValue;
     }
 
-    public static int getIndex(Navigation value) {
+    public static int getIndex(NavigationState value) {
         int i = 0;
-        for (Navigation nav : values()) {
-            if (nav == value) {
+        for (NavigationState input : values()) {
+            if (value == input) {
                 return i;
             }
 
@@ -70,9 +68,9 @@ public enum Navigation {
         return -1;
     }
 
-    public static Navigation getByIndex(int index) {
+    public static NavigationState getByIndex(int index) {
         int i = 0;
-        for (Navigation value : values()) {
+        for (NavigationState value : values()) {
             if (i == index) {
                 return value;
             }

@@ -17,11 +17,14 @@
 package com.android.ide.eclipse.adt.internal.ui;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.CountryCodeQualifier;
+import com.android.ide.eclipse.adt.internal.resources.configurations.DockModeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.LanguageQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationMethodQualifier;
+import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationStateQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.NetworkCodeQualifier;
+import com.android.ide.eclipse.adt.internal.resources.configurations.NightModeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.RegionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
@@ -34,9 +37,12 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreen
 import com.android.ide.eclipse.adt.internal.resources.configurations.VersionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.sdklib.resources.Density;
+import com.android.sdklib.resources.DockMode;
 import com.android.sdklib.resources.Keyboard;
 import com.android.sdklib.resources.KeyboardState;
 import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.NavigationState;
+import com.android.sdklib.resources.NightMode;
 import com.android.sdklib.resources.ScreenOrientation;
 import com.android.sdklib.resources.ScreenRatio;
 import com.android.sdklib.resources.ScreenSize;
@@ -391,10 +397,13 @@ public class ConfigurationSelector extends Composite {
         mUiMap.put(ScreenSizeQualifier.class, new ScreenSizeEdit(mQualifierEditParent));
         mUiMap.put(ScreenRatioQualifier.class, new ScreenRatioEdit(mQualifierEditParent));
         mUiMap.put(ScreenOrientationQualifier.class, new OrientationEdit(mQualifierEditParent));
+        mUiMap.put(DockModeQualifier.class, new DockModeEdit(mQualifierEditParent));
+        mUiMap.put(NightModeQualifier.class, new NightModeEdit(mQualifierEditParent));
         mUiMap.put(PixelDensityQualifier.class, new PixelDensityEdit(mQualifierEditParent));
         mUiMap.put(TouchScreenQualifier.class, new TouchEdit(mQualifierEditParent));
         mUiMap.put(KeyboardStateQualifier.class, new KeyboardEdit(mQualifierEditParent));
         mUiMap.put(TextInputMethodQualifier.class, new TextInputEdit(mQualifierEditParent));
+        mUiMap.put(NavigationStateQualifier.class, new NavigationStateEdit(mQualifierEditParent));
         mUiMap.put(NavigationMethodQualifier.class, new NavigationEdit(mQualifierEditParent));
         mUiMap.put(ScreenDimensionQualifier.class, new ScreenDimensionEdit(mQualifierEditParent));
         mUiMap.put(VersionQualifier.class, new VersionEdit(mQualifierEditParent));
@@ -1082,6 +1091,123 @@ public class ConfigurationSelector extends Composite {
     }
 
     /**
+     * Edit widget for {@link DockModeQualifier}.
+     */
+    private class DockModeEdit extends QualifierEditBase {
+
+        private Combo mDockMode;
+
+        public DockModeEdit(Composite parent) {
+            super(parent, DockModeQualifier.NAME);
+
+            mDockMode = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+            DockMode[] values = DockMode.values();
+            for (DockMode value : values) {
+                mDockMode.add(value.getDisplayValue());
+            }
+
+            mDockMode.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+            mDockMode.addSelectionListener(new SelectionListener() {
+                public void widgetDefaultSelected(SelectionEvent e) {
+                    onDockModeChange();
+                }
+                public void widgetSelected(SelectionEvent e) {
+                    onDockModeChange();
+                }
+            });
+        }
+
+        protected void onDockModeChange() {
+            // update the current config
+            int index = mDockMode.getSelectionIndex();
+
+            if (index != -1) {
+                mSelectedConfiguration.setDockModeQualifier(
+                        new DockModeQualifier(DockMode.getByIndex(index)));
+            } else {
+                // empty selection, means no qualifier.
+                // Since the qualifier classes are immutable, and we don't want to
+                // remove the qualifier from the configuration, we create a new default one.
+                mSelectedConfiguration.setDockModeQualifier(new DockModeQualifier());
+            }
+
+            // notify of change
+            onChange(true /* keepSelection */);
+        }
+
+        @Override
+        public void setQualifier(ResourceQualifier qualifier) {
+            DockModeQualifier q = (DockModeQualifier)qualifier;
+
+            DockMode value = q.getValue();
+            if (value == null) {
+                mDockMode.clearSelection();
+            } else {
+                mDockMode.select(DockMode.getIndex(value));
+            }
+        }
+    }
+
+    /**
+     * Edit widget for {@link NightModeQualifier}.
+     */
+    private class NightModeEdit extends QualifierEditBase {
+
+        private Combo mNightMode;
+
+        public NightModeEdit(Composite parent) {
+            super(parent, NightModeQualifier.NAME);
+
+            mNightMode = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+            NightMode[] values = NightMode.values();
+            for (NightMode value : values) {
+                mNightMode.add(value.getDisplayValue());
+            }
+
+            mNightMode.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+            mNightMode.addSelectionListener(new SelectionListener() {
+                public void widgetDefaultSelected(SelectionEvent e) {
+                    onNightModeChange();
+                }
+                public void widgetSelected(SelectionEvent e) {
+                    onNightModeChange();
+                }
+            });
+        }
+
+        protected void onNightModeChange() {
+            // update the current config
+            int index = mNightMode.getSelectionIndex();
+
+            if (index != -1) {
+                mSelectedConfiguration.setNightModeQualifier(
+                        new NightModeQualifier(NightMode.getByIndex(index)));
+            } else {
+                // empty selection, means no qualifier.
+                // Since the qualifier classes are immutable, and we don't want to
+                // remove the qualifier from the configuration, we create a new default one.
+                mSelectedConfiguration.setNightModeQualifier(new NightModeQualifier());
+            }
+
+            // notify of change
+            onChange(true /* keepSelection */);
+        }
+
+        @Override
+        public void setQualifier(ResourceQualifier qualifier) {
+            NightModeQualifier q = (NightModeQualifier)qualifier;
+
+            NightMode value = q.getValue();
+            if (value == null) {
+                mNightMode.clearSelection();
+            } else {
+                mNightMode.select(NightMode.getIndex(value));
+            }
+        }
+    }
+
+
+    /**
      * Edit widget for {@link PixelDensityQualifier}.
      */
     private class PixelDensityEdit extends QualifierEditBase {
@@ -1316,6 +1442,65 @@ public class ConfigurationSelector extends Composite {
             }
         }
     }
+
+    /**
+     * Edit widget for {@link NavigationStateQualifier}.
+     */
+    private class NavigationStateEdit extends QualifierEditBase {
+
+        private Combo mNavigation;
+
+        public NavigationStateEdit(Composite parent) {
+            super(parent, NavigationStateQualifier.NAME);
+
+            mNavigation = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+            NavigationState[] values = NavigationState.values();
+            for (NavigationState value : values) {
+                mNavigation.add(value.getDisplayValue());
+            }
+
+            mNavigation.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+            mNavigation.addSelectionListener(new SelectionListener() {
+                public void widgetDefaultSelected(SelectionEvent e) {
+                    onNavigationChange();
+                }
+                public void widgetSelected(SelectionEvent e) {
+                    onNavigationChange();
+                }
+            });
+        }
+
+        protected void onNavigationChange() {
+            // update the current config
+            int index = mNavigation.getSelectionIndex();
+
+            if (index != -1) {
+                mSelectedConfiguration.setNavigationStateQualifier(
+                        new NavigationStateQualifier(NavigationState.getByIndex(index)));
+            } else {
+                // empty selection, means no qualifier.
+                // Since the qualifier classes are immutable, and we don't want to
+                // remove the qualifier from the configuration, we create a new default one.
+                mSelectedConfiguration.setNavigationStateQualifier(new NavigationStateQualifier());
+            }
+
+            // notify of change
+            onChange(true /* keepSelection */);
+        }
+
+        @Override
+        public void setQualifier(ResourceQualifier qualifier) {
+            NavigationStateQualifier q = (NavigationStateQualifier)qualifier;
+
+            NavigationState value = q.getValue();
+            if (value == null) {
+                mNavigation.clearSelection();
+            } else {
+                mNavigation.select(NavigationState.getIndex(value));
+            }
+        }
+    }
+
 
     /**
      * Edit widget for {@link NavigationMethodQualifier}.

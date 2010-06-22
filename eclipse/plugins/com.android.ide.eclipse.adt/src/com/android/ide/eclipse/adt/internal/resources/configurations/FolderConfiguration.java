@@ -39,14 +39,17 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
     private final static int INDEX_SCREEN_SIZE        = 4;
     private final static int INDEX_SCREEN_RATIO       = 5;
     private final static int INDEX_SCREEN_ORIENTATION = 6;
-    private final static int INDEX_PIXEL_DENSITY      = 7;
-    private final static int INDEX_TOUCH_TYPE         = 8;
-    private final static int INDEX_KEYBOARD_STATE     = 9;
-    private final static int INDEX_TEXT_INPUT_METHOD  = 10;
-    private final static int INDEX_NAVIGATION_METHOD  = 11;
-    private final static int INDEX_SCREEN_DIMENSION   = 12;
-    private final static int INDEX_VERSION            = 13;
-    private final static int INDEX_COUNT              = 14;
+    private final static int INDEX_DOCK_MODE          = 7;
+    private final static int INDEX_NIGHT_MODE         = 8;
+    private final static int INDEX_PIXEL_DENSITY      = 9;
+    private final static int INDEX_TOUCH_TYPE         = 10;
+    private final static int INDEX_KEYBOARD_STATE     = 11;
+    private final static int INDEX_TEXT_INPUT_METHOD  = 12;
+    private final static int INDEX_NAVIGATION_STATE   = 14;
+    private final static int INDEX_NAVIGATION_METHOD  = 15;
+    private final static int INDEX_SCREEN_DIMENSION   = 16;
+    private final static int INDEX_VERSION            = 17;
+    private final static int INDEX_COUNT              = 18;
 
     /**
      * Returns the number of {@link ResourceQualifier} that make up a Folder configuration.
@@ -126,6 +129,10 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
             mQualifiers[INDEX_SCREEN_RATIO] = qualifier;
         } else if (qualifier instanceof ScreenOrientationQualifier) {
             mQualifiers[INDEX_SCREEN_ORIENTATION] = qualifier;
+        } else if (qualifier instanceof DockModeQualifier) {
+            mQualifiers[INDEX_DOCK_MODE] = qualifier;
+        } else if (qualifier instanceof NightModeQualifier) {
+            mQualifiers[INDEX_NIGHT_MODE] = qualifier;
         } else if (qualifier instanceof PixelDensityQualifier) {
             mQualifiers[INDEX_PIXEL_DENSITY] = qualifier;
         } else if (qualifier instanceof TouchScreenQualifier) {
@@ -134,6 +141,8 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
             mQualifiers[INDEX_KEYBOARD_STATE] = qualifier;
         } else if (qualifier instanceof TextInputMethodQualifier) {
             mQualifiers[INDEX_TEXT_INPUT_METHOD] = qualifier;
+        } else if (qualifier instanceof NavigationStateQualifier) {
+            mQualifiers[INDEX_NAVIGATION_STATE] = qualifier;
         } else if (qualifier instanceof NavigationMethodQualifier) {
             mQualifiers[INDEX_NAVIGATION_METHOD] = qualifier;
         } else if (qualifier instanceof ScreenDimensionQualifier) {
@@ -222,6 +231,22 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
         return (ScreenOrientationQualifier)mQualifiers[INDEX_SCREEN_ORIENTATION];
     }
 
+    public void setDockModeQualifier(DockModeQualifier qualifier) {
+        mQualifiers[INDEX_DOCK_MODE] = qualifier;
+    }
+
+    public DockModeQualifier getDockModeQualifier() {
+        return (DockModeQualifier)mQualifiers[INDEX_DOCK_MODE];
+    }
+
+    public void setNightModeQualifier(NightModeQualifier qualifier) {
+        mQualifiers[INDEX_NIGHT_MODE] = qualifier;
+    }
+
+    public NightModeQualifier getNightModeQualifier() {
+        return (NightModeQualifier)mQualifiers[INDEX_NIGHT_MODE];
+    }
+
     public void setPixelDensityQualifier(PixelDensityQualifier qualifier) {
         mQualifiers[INDEX_PIXEL_DENSITY] = qualifier;
     }
@@ -252,6 +277,14 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
 
     public TextInputMethodQualifier getTextInputMethodQualifier() {
         return (TextInputMethodQualifier)mQualifiers[INDEX_TEXT_INPUT_METHOD];
+    }
+
+    public void setNavigationStateQualifier(NavigationStateQualifier qualifier) {
+        mQualifiers[INDEX_NAVIGATION_STATE] = qualifier;
+    }
+
+    public NavigationStateQualifier getNavigationStateQualifier() {
+        return (NavigationStateQualifier)mQualifiers[INDEX_NAVIGATION_STATE];
     }
 
     public void setNavigationMethodQualifier(NavigationMethodQualifier qualifier) {
@@ -516,10 +549,13 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
         mQualifiers[INDEX_SCREEN_SIZE] = new ScreenSizeQualifier();
         mQualifiers[INDEX_SCREEN_RATIO] = new ScreenRatioQualifier();
         mQualifiers[INDEX_SCREEN_ORIENTATION] = new ScreenOrientationQualifier();
+        mQualifiers[INDEX_DOCK_MODE] = new DockModeQualifier();
+        mQualifiers[INDEX_NIGHT_MODE] = new NightModeQualifier();
         mQualifiers[INDEX_PIXEL_DENSITY] = new PixelDensityQualifier();
         mQualifiers[INDEX_TOUCH_TYPE] = new TouchScreenQualifier();
         mQualifiers[INDEX_KEYBOARD_STATE] = new KeyboardStateQualifier();
         mQualifiers[INDEX_TEXT_INPUT_METHOD] = new TextInputMethodQualifier();
+        mQualifiers[INDEX_NAVIGATION_STATE] = new NavigationStateQualifier();
         mQualifiers[INDEX_NAVIGATION_METHOD] = new NavigationMethodQualifier();
         mQualifiers[INDEX_SCREEN_DIMENSION] = new ScreenDimensionQualifier();
         mQualifiers[INDEX_VERSION] = new VersionQualifier();

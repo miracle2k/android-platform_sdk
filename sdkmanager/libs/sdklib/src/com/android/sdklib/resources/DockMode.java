@@ -17,19 +17,17 @@
 package com.android.sdklib.resources;
 
 /**
- * Navigation enum.
- * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
+ * Dock enum.
+ * <p/>This is used in the resource folder names.
  */
-public enum Navigation {
-    NONAV("nonav", "No Navigation"), //$NON-NLS-1$
-    DPAD("dpad", "D-pad"), //$NON-NLS-1$
-    TRACKBALL("trackball", "Trackball"), //$NON-NLS-1$
-    WHEEL("wheel", "Wheel"); //$NON-NLS-1$
+public enum DockMode {
+    CAR("car", "Car"),
+    DESK("desk", "Desk");
 
     private String mValue;
     private String mDisplay;
 
-    private Navigation(String value, String display) {
+    private DockMode(String value, String display) {
         mValue = value;
         mDisplay = display;
     }
@@ -39,10 +37,10 @@ public enum Navigation {
      * @param value The qualifier value.
      * @return the enum for the qualifier value or null if no matching was found.
      */
-    public static Navigation getEnum(String value) {
-        for (Navigation nav : values()) {
-            if (nav.mValue.equals(value)) {
-                return nav;
+    public static DockMode getEnum(String value) {
+        for (DockMode mode : values()) {
+            if (mode.mValue.equals(value)) {
+                return mode;
             }
         }
 
@@ -57,10 +55,10 @@ public enum Navigation {
         return mDisplay;
     }
 
-    public static int getIndex(Navigation value) {
+    public static int getIndex(DockMode value) {
         int i = 0;
-        for (Navigation nav : values()) {
-            if (nav == value) {
+        for (DockMode mode : values()) {
+            if (mode == value) {
                 return i;
             }
 
@@ -70,9 +68,9 @@ public enum Navigation {
         return -1;
     }
 
-    public static Navigation getByIndex(int index) {
+    public static DockMode getByIndex(int index) {
         int i = 0;
-        for (Navigation value : values()) {
+        for (DockMode value : values()) {
             if (i == index) {
                 return value;
             }
