@@ -101,8 +101,6 @@ public class AndroidConstants {
     public final static String FN_COMPILED_RESOURCE_CLASS = FN_RESOURCE_BASE + DOT_CLASS;
     /** Manifest java class filename, i.e. "Manifest.java" */
     public final static String FN_MANIFEST_CLASS = "Manifest.java"; //$NON-NLS-1$
-    /** Dex conversion output filname, i.e. "classes.dex" */
-    public final static String FN_CLASSES_DEX = "classes.dex"; //$NON-NLS-1$
     /** Temporary packaged resources file name, i.e. "resources.ap_" */
     public final static String FN_RESOURCES_AP_ = "resources.ap_"; //$NON-NLS-1$
     /** Temporary packaged resources file name for a specific set of configuration */

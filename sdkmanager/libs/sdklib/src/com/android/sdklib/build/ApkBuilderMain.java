@@ -16,14 +16,14 @@
 
 package com.android.sdklib.build;
 
-import com.android.sdklib.internal.build.ApkBuilderHelper;
-import com.android.sdklib.internal.build.ApkBuilderHelper.ApkCreationException;
-import com.android.sdklib.internal.build.ApkBuilderHelper.ApkFile;
+import com.android.sdklib.build.ApkBuilder.ApkCreationException;
+import com.android.sdklib.build.ApkBuilder.DuplicateFileException;
+import com.android.sdklib.build.ApkBuilder.SealedApkException;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 
 /**
@@ -31,13 +31,8 @@ import java.util.ArrayList;
  */
 public final class ApkBuilderMain {
 
-    public final static class WrongOptionException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        public WrongOptionException(String message) {
-            super(message);
-        }
-    }
+    private final static Pattern PATTERN_JAR_EXT = Pattern.compile("^.+\\.jar$",
+            Pattern.CASE_INSENSITIVE);
 
     /**
      * Main method. This is meant to be called from the command line through an exec.
@@ -49,98 +44,146 @@ public final class ApkBuilderMain {
             printUsageAndQuit();
         }
 
+        System.err.println("\nTHIS TOOL IS DEPRECATED. See --help for more information.\n");
+
         try {
-            ApkBuilderHelper helper = new ApkBuilderHelper();
+            File outApk = new File(args[0]);
 
+            File dexFile = null;
+            ArrayList<File> zipArchives = new ArrayList<File>();
+            ArrayList<File> sourceFolders = new ArrayList<File>();
+            ArrayList<File> jarFiles = new ArrayList<File>();
+            ArrayList<File> nativeFolders = new ArrayList<File>();
 
-            // read the first args that should be a file path
-            File outFile = helper.getOutFile(args[0]);
-
-            ArrayList<FileInputStream> zipArchives = new ArrayList<FileInputStream>();
-            ArrayList<File> archiveFiles = new ArrayList<File>();
-            ArrayList<ApkFile> javaResources = new ArrayList<ApkFile>();
-            ArrayList<FileInputStream> resourcesJars = new ArrayList<FileInputStream>();
-            ArrayList<ApkFile> nativeLibraries = new ArrayList<ApkFile>();
+            boolean verbose = false;
+            boolean signed = true;
+            boolean debug = false;
 
             int index = 1;
             do {
                 String argument = args[index++];
 
                 if ("-v".equals(argument)) {
-                    helper.setVerbose(true);
+                    verbose = true;
+
                 } else if ("-d".equals(argument)) {
-                    helper.setDebugMode(true);
+                    debug = true;
+
                 } else if ("-u".equals(argument)) {
-                    helper.setSignedPackage(false);
+                    signed = false;
+
                 } else if ("-z".equals(argument)) {
                     // quick check on the next argument.
                     if (index == args.length)  {
                         printAndExit("Missing value for -z");
                     }
 
-                    try {
-                        FileInputStream input = new FileInputStream(args[index++]);
-                        zipArchives.add(input);
-                    } catch (FileNotFoundException e) {
-                        throw new ApkCreationException("-z file is not found");
-                    }
+                    zipArchives.add(new File(args[index++]));
                 } else if ("-f". equals(argument)) {
+                    if (dexFile != null) {
+                        // can't have more than one dex file.
+                        printAndExit("Can't have more than one dex file (-f)");
+                    }
                     // quick check on the next argument.
                     if (index == args.length) {
                         printAndExit("Missing value for -f");
                     }
 
-                    archiveFiles.add(ApkBuilderHelper.getInputFile(args[index++]));
+                    dexFile = new File(args[index++]);
                 } else if ("-rf". equals(argument)) {
                     // quick check on the next argument.
                     if (index == args.length) {
                         printAndExit("Missing value for -rf");
                     }
 
-                    ApkBuilderHelper.processSourceFolderForResource(
-                            new File(args[index++]), javaResources);
+                    sourceFolders.add(new File(args[index++]));
                 } else if ("-rj". equals(argument)) {
                     // quick check on the next argument.
                     if (index == args.length) {
                         printAndExit("Missing value for -rj");
                     }
 
-                    ApkBuilderHelper.processJar(new File(args[index++]), resourcesJars);
+                    jarFiles.add(new File(args[index++]));
                 } else if ("-nf".equals(argument)) {
                     // quick check on the next argument.
                     if (index == args.length) {
                         printAndExit("Missing value for -nf");
                     }
 
-                    ApkBuilderHelper.processNativeFolder(new File(args[index++]),
-                            helper.getDebugMode(), nativeLibraries,
-                            helper.isVerbose(), null /*abiFilter*/);
+                    nativeFolders.add(new File(args[index++]));
                 } else if ("-storetype".equals(argument)) {
                     // quick check on the next argument.
                     if (index == args.length) {
                         printAndExit("Missing value for -storetype");
                     }
 
-                    helper.setStoreType(args[index++]);
+                    // FIXME
                 } else {
                     printAndExit("Unknown argument: " + argument);
                 }
             } while (index < args.length);
 
-            helper.createPackage(outFile, zipArchives, archiveFiles, javaResources, resourcesJars,
-                    nativeLibraries);
+            if (zipArchives.size() == 0) {
+                printAndExit("No zip archive, there must be one for the resources");
+            }
 
-        } catch (FileNotFoundException e) {
-            printAndExit(e.getMessage());
+            // create the builder with the basic files.
+            ApkBuilder builder = new ApkBuilder(outApk, zipArchives.get(0), dexFile,
+                    signed ? ApkBuilder.getDebugKeystore() : null,
+                    verbose ? System.out : null);
+            builder.setDebugMode(debug);
+
+            // add the rest of the files.
+            // first zip Archive was used in the constructor.
+            for (int i = 1 ; i < zipArchives.size() ; i++) {
+                builder.addZipFile(zipArchives.get(i));
+            }
+
+            for (File sourceFolder : sourceFolders) {
+                builder.addSourceFolder(sourceFolder);
+            }
+
+            for (File jarFile : jarFiles) {
+                if (jarFile.isDirectory()) {
+                    String[] filenames = jarFile.list(new FilenameFilter() {
+                        public boolean accept(File dir, String name) {
+                            return PATTERN_JAR_EXT.matcher(name).matches();
+                        }
+                    });
+
+                    for (String filename : filenames) {
+                        builder.addResourcesFromJar(new File(jarFile, filename));
+                    }
+                } else {
+                    builder.addResourcesFromJar(jarFile);
+                }
+            }
+
+            for (File nativeFolder : nativeFolders) {
+                builder.addNativeLibraries(nativeFolder, null /*abiFilter*/);
+            }
+
+            // seal the apk
+            builder.sealApk();
+
+
         } catch (ApkCreationException e) {
             printAndExit(e.getMessage());
+        } catch (DuplicateFileException e) {
+            printAndExit(String.format(
+                    "Found duplicate file for APK: %1$s\nOrigin 1: %2$s\nOrigin 2: %3$s",
+                    e.getArchivePath(), e.getFile1(), e.getFile2()));
+        } catch (SealedApkException e) {
+            printAndExit(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     private static void printUsageAndQuit() {
         // 80 cols marker:  01234567890123456789012345678901234567890123456789012345678901234567890123456789
         System.err.println("\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-        System.err.println("THIS TOOL IS DEPRECATED!\n");
+        System.err.println("THIS TOOL IS DEPRECATED and may stop working at any time!\n");
         System.err.println("If you wish to use apkbuilder for a custom build system, please look at the");
         System.err.println("com.android.sdklib.build.ApkBuilder which provides support for");
         System.err.println("recent build improvements including library projects.");

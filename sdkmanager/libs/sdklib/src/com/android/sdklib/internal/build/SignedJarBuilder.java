@@ -16,6 +16,8 @@
 
 package com.android.sdklib.internal.build;
 
+import com.android.sdklib.internal.build.SignedJarBuilder.IZipEntryFilter.ZipAbortException;
+
 import sun.misc.BASE64Encoder;
 import sun.security.pkcs.ContentInfo;
 import sun.security.pkcs.PKCS7;
@@ -100,14 +102,42 @@ public class SignedJarBuilder {
      * be added to a Jar file.
      */
     public interface IZipEntryFilter {
+
+        /**
+         * An exception thrown during packaging of a zip file into APK file.
+         * This is typically thrown by implementations of
+         * {@link IZipEntryFilter#checkEntry(String)}.
+         */
+        public static class ZipAbortException extends Exception {
+            private static final long serialVersionUID = 1L;
+
+            public ZipAbortException() {
+                super();
+            }
+
+            public ZipAbortException(String format, Object... args) {
+                super(String.format(format, args));
+            }
+
+            public ZipAbortException(Throwable cause, String format, Object... args) {
+                super(String.format(format, args), cause);
+            }
+
+            public ZipAbortException(Throwable cause) {
+                super(cause);
+            }
+        }
+
+
         /**
          * Checks a file for inclusion in a Jar archive.
-         * @param name the archive file path of the entry
+         * @param archivePath the archive file path of the entry
          * @return <code>true</code> if the file should be included.
+         * @throws ZipAbortException if writing the file should be aborted.
          */
-        public boolean checkEntry(String name);
+        public boolean checkEntry(String archivePath) throws ZipAbortException;
     }
-    
+
     /**
      * Creates a {@link SignedJarBuilder} with a given output stream, and signing information.
      * <p/>If either <code>key</code> or <code>certificate</code> is <code>null</code> then
@@ -125,18 +155,18 @@ public class SignedJarBuilder {
         mOutputJar.setLevel(9);
         mKey = key;
         mCertificate = certificate;
-        
+
         if (mKey != null && mCertificate != null) {
             mManifest = new Manifest();
             Attributes main = mManifest.getMainAttributes();
             main.putValue("Manifest-Version", "1.0");
             main.putValue("Created-By", "1.0 (Android)");
-    
+
             mBase64Encoder = new BASE64Encoder();
             mMessageDigest = MessageDigest.getInstance(DIGEST_ALGORITHM);
         }
     }
-    
+
     /**
      * Writes a new {@link File} into the archive.
      * @param inputFile the {@link File} to write.
@@ -147,7 +177,7 @@ public class SignedJarBuilder {
         // Get an input stream on the file.
         FileInputStream fis = new FileInputStream(inputFile);
         try {
-            
+
             // create the zip entry
             JarEntry entry = new JarEntry(jarPath);
             entry.setTime(inputFile.lastModified());
@@ -166,8 +196,11 @@ public class SignedJarBuilder {
      * @param input the {@link InputStream} for the Jar/Zip to copy.
      * @param filter the filter or <code>null</code>
      * @throws IOException
+     * @throws ZipAbortException if the {@link IZipEntryFilter} filter indicated that the write
+     *                           must be aborted.
      */
-    public void writeZip(InputStream input, IZipEntryFilter filter) throws IOException {
+    public void writeZip(InputStream input, IZipEntryFilter filter)
+            throws IOException, ZipAbortException {
         ZipInputStream zis = new ZipInputStream(input);
 
         try {
@@ -175,19 +208,19 @@ public class SignedJarBuilder {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 String name = entry.getName();
-                
+
                 // do not take directories or anything inside a potential META-INF folder.
                 if (entry.isDirectory() || name.startsWith("META-INF/")) {
                     continue;
                 }
-    
+
                 // if we have a filter, we check the entry against it
                 if (filter != null && filter.checkEntry(name) == false) {
                     continue;
                 }
-    
+
                 JarEntry newEntry;
-    
+
                 // Preserve the STORED method of the input entry.
                 if (entry.getMethod() == JarEntry.STORED) {
                     newEntry = new JarEntry(entry);
@@ -195,9 +228,9 @@ public class SignedJarBuilder {
                     // Create a new entry so that the compressed len is recomputed.
                     newEntry = new JarEntry(name);
                 }
-                
+
                 writeEntry(zis, newEntry);
-    
+
                 zis.closeEntry();
             }
         } finally {
@@ -206,7 +239,7 @@ public class SignedJarBuilder {
     }
 
     /**
-     * Closes the Jar archive by creating the manifest, and signing the archive. 
+     * Closes the Jar archive by creating the manifest, and signing the archive.
      * @throws IOException
      * @throws GeneralSecurityException
      */
@@ -215,21 +248,21 @@ public class SignedJarBuilder {
             // write the manifest to the jar file
             mOutputJar.putNextEntry(new JarEntry(JarFile.MANIFEST_NAME));
             mManifest.write(mOutputJar);
-            
+
             // CERT.SF
             Signature signature = Signature.getInstance("SHA1with" + mKey.getAlgorithm());
             signature.initSign(mKey);
             mOutputJar.putNextEntry(new JarEntry("META-INF/CERT.SF"));
             writeSignatureFile(new SignatureOutputStream(mOutputJar, signature));
-    
+
             // CERT.*
             mOutputJar.putNextEntry(new JarEntry("META-INF/CERT." + mKey.getAlgorithm()));
             writeSignatureBlock(signature, mCertificate, mKey);
         }
-        
+
         mOutputJar.close();
     }
-    
+
     /**
      * Adds an entry to the output jar, and write its content from the {@link InputStream}
      * @param input The input stream from where to write the entry content.
@@ -241,10 +274,10 @@ public class SignedJarBuilder {
         mOutputJar.putNextEntry(entry);
 
         // read the content of the entry from the input stream, and write it into the archive.
-        int count; 
+        int count;
         while ((count = input.read(mBuffer)) != -1) {
             mOutputJar.write(mBuffer, 0, count);
-            
+
             // update the digest
             if (mMessageDigest != null) {
                 mMessageDigest.update(mBuffer, 0, count);
@@ -253,7 +286,7 @@ public class SignedJarBuilder {
 
         // close the entry for this file
         mOutputJar.closeEntry();
-        
+
         if (mManifest != null) {
             // update the manifest for this entry.
             Attributes attr = mManifest.getAttributes(entry.getName());
@@ -264,7 +297,7 @@ public class SignedJarBuilder {
             attr.putValue(DIGEST_ATTR, mBase64Encoder.encode(mMessageDigest.digest()));
         }
     }
-    
+
     /** Writes a .SF file with a digest to the manifest. */
     private void writeSignatureFile(OutputStream out)
             throws IOException, GeneralSecurityException {

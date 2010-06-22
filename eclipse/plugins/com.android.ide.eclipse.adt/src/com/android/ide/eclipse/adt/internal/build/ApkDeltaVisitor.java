@@ -193,7 +193,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
                     if (mOutputPath.equals(parentPath)) {
                         String resourceName = resource.getName();
                         // check if classes.dex was removed
-                        if (resourceName.equalsIgnoreCase(AndroidConstants.FN_CLASSES_DEX)) {
+                        if (resourceName.equalsIgnoreCase(SdkConstants.FN_APK_CLASSES_DEX)) {
                             mConvertToDex = true;
                             mMakeFinalPackage = true;
                         } else if (resourceName.equalsIgnoreCase(
@@ -237,7 +237,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
             // inside the native library folder. Test if the changed resource is a .so file.
             if (type == IResource.FILE &&
                     (AndroidConstants.EXT_NATIVE_LIB.equalsIgnoreCase(path.getFileExtension())
-                            || ApkBuilderHelper.GDBSERVER_NAME.equals(resource.getName()))) {
+                            || SdkConstants.FN_GDBSERVER.equals(resource.getName()))) {
                 mMakeFinalPackage = true;
                 return false; // return false for file.
             }

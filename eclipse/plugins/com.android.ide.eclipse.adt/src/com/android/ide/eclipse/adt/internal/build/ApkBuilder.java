@@ -350,7 +350,7 @@ public class ApkBuilder extends BaseBuilder {
 
             // check classes.dex is present. If not we force to recreate it.
             if (mConvertToDex == false) {
-                tmp = outputFolder.findMember(AndroidConstants.FN_CLASSES_DEX);
+                tmp = outputFolder.findMember(SdkConstants.FN_APK_CLASSES_DEX);
                 if (tmp == null || tmp.exists() == false) {
                     mConvertToDex = true;
                     mBuildFinalPackage = true;
@@ -445,7 +445,7 @@ public class ApkBuilder extends BaseBuilder {
                 // then we check if we need to package the .class into classes.dex
                 if (mConvertToDex) {
                     if (helper.executeDx(javaProject, osBinPath, osBinPath + File.separator +
-                            AndroidConstants.FN_CLASSES_DEX, referencedJavaProjects) == false) {
+                            SdkConstants.FN_APK_CLASSES_DEX, referencedJavaProjects) == false) {
                         // dx failed, we return
                         return allRefProjects;
                     }
@@ -477,10 +477,11 @@ public class ApkBuilder extends BaseBuilder {
                 // This is the default package with all the resources.
 
                 String classesDexPath = osBinPath + File.separator +
-                        AndroidConstants.FN_CLASSES_DEX;
+                        SdkConstants.FN_APK_CLASSES_DEX;
                 if (helper.finalPackage(
                         osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
-                        classesDexPath, osFinalPackagePath, javaProject, libProjects,
+                        classesDexPath, osFinalPackagePath, true /*debugSign*/,
+                        javaProject, libProjects,
                         referencedJavaProjects, null /*abiFilter*/, debuggable) == false) {
                     return allRefProjects;
                 }
