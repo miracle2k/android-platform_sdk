@@ -46,7 +46,7 @@ import java.util.ArrayList;
  * <li>Any change to .so file inside the lib (native library) folder</li>
  * </ul>
  */
-public class ApkDeltaVisitor extends BaseDeltaVisitor
+public class PostCompilerDeltaVisitor extends BaseDeltaVisitor
         implements IResourceDeltaVisitor {
 
     /**
@@ -90,7 +90,7 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
      * @param sourceFolders the list of source folders for the project, relative to the workspace.
      * @param outputfolder the output folder of the project.
      */
-    public ApkDeltaVisitor(BaseBuilder builder, ArrayList<IPath> sourceFolders,
+    public PostCompilerDeltaVisitor(BaseBuilder builder, ArrayList<IPath> sourceFolders,
             IFolder outputfolder) {
         super(builder);
         mSourceFolders = sourceFolders;
@@ -260,9 +260,9 @@ public class ApkDeltaVisitor extends BaseDeltaVisitor
                         // Also excluded are aidl files, and package.html files
                         if (type == IResource.FOLDER) {
                             // always visit the subfolders, unless the folder is not to be included
-                            return ApkBuilderHelper.checkFolderForPackaging((IFolder)resource);
+                            return PostCompilerHelper.checkFolderForPackaging((IFolder)resource);
                         } else if (type == IResource.FILE) {
-                            if (ApkBuilderHelper.checkFileForPackaging((IFile)resource)) {
+                            if (PostCompilerHelper.checkFileForPackaging((IFile)resource)) {
                                 mMakeFinalPackage = true;
                             }
 

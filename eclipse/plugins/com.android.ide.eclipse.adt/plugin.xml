@@ -65,7 +65,7 @@
          point="org.eclipse.core.resources.builders">
       <builder
             hasNature="true">
-         <run class="com.android.ide.eclipse.adt.internal.build.ApkBuilder"/>
+         <run class="com.android.ide.eclipse.adt.internal.build.PostCompilerBuilder"/>
       </builder>
    </extension>
    <extension
