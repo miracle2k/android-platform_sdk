@@ -17,9 +17,9 @@
 package com.android.ant;
 
 import com.android.sdklib.build.ApkBuilder;
-import com.android.sdklib.build.ApkBuilder.ApkCreationException;
-import com.android.sdklib.build.ApkBuilder.DuplicateFileException;
-import com.android.sdklib.build.ApkBuilder.SealedApkException;
+import com.android.sdklib.build.ApkCreationException;
+import com.android.sdklib.build.DuplicateFileException;
+import com.android.sdklib.build.SealedApkException;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;

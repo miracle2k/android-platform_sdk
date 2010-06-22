@@ -22,7 +22,6 @@ import com.android.sdklib.internal.build.SignedJarBuilder;
 import com.android.sdklib.internal.build.DebugKeyProvider.IKeyGenOutput;
 import com.android.sdklib.internal.build.DebugKeyProvider.KeytoolException;
 import com.android.sdklib.internal.build.SignedJarBuilder.IZipEntryFilter;
-import com.android.sdklib.internal.build.SignedJarBuilder.IZipEntryFilter.ZipAbortException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -164,78 +163,6 @@ public final class ApkBuilder {
     private final NullZipFilter mNullFilter = new NullZipFilter();
     private final JavaAndNativeResourceFilter mFilter = new JavaAndNativeResourceFilter();
     private final HashMap<String, File> mAddedFiles = new HashMap<String, File>();
-
-    /**
-     * An exception thrown during packaging of an APK file.
-     */
-    public final static class ApkCreationException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        public ApkCreationException(String format, Object... args) {
-            super(String.format(format, args));
-        }
-
-        public ApkCreationException(Throwable cause, String format, Object... args) {
-            super(String.format(format, args), cause);
-        }
-
-        public ApkCreationException(Throwable cause) {
-            super(cause);
-        }
-    }
-
-    /**
-     * An exception thrown during packaging of an APK file.
-     */
-    public final static class DuplicateFileException extends ZipAbortException {
-        private static final long serialVersionUID = 1L;
-        private final String mArchivePath;
-        private final File mFile1;
-        private final File mFile2;
-
-        public DuplicateFileException(String archivePath, File file1, File file2) {
-            super();
-            mArchivePath = archivePath;
-            mFile1 = file1;
-            mFile2 = file2;
-        }
-
-        public String getArchivePath() {
-            return mArchivePath;
-        }
-
-        public File getFile1() {
-            return mFile1;
-        }
-
-        public File getFile2() {
-            return mFile2;
-        }
-
-        @Override
-        public String getMessage() {
-            return "Duplicate files at the same path inside the APK";
-        }
-    }
-
-    /**
-     * An exception thrown when trying to add files to a sealed APK.
-     */
-    public final static class SealedApkException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        public SealedApkException(String format, Object... args) {
-            super(String.format(format, args));
-        }
-
-        public SealedApkException(Throwable cause, String format, Object... args) {
-            super(String.format(format, args), cause);
-        }
-
-        public SealedApkException(Throwable cause) {
-            super(cause);
-        }
-    }
 
     /**
      * Status for the addition of a jar file resources into the APK.
