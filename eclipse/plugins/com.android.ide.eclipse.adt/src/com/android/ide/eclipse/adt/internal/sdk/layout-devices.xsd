@@ -237,6 +237,21 @@
                 </xsd:simpleType>
             </xsd:element>
 
+            <xsd:element name="nav-state" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                        Specifies whether the primary non-touchscreen navigation control is
+                        exposed or hidden.
+                    </xsd:documentation>
+                </xsd:annotation>
+                <xsd:simpleType>
+                    <xsd:restriction base="xsd:token">
+                        <xsd:enumeration value="navexposed" />
+                        <xsd:enumeration value="navhidden" />
+                    </xsd:restriction>
+                </xsd:simpleType>
+            </xsd:element>
+
             <xsd:element name="nav-method" minOccurs="0">
                 <xsd:annotation>
                     <xsd:documentation xml:lang="en">

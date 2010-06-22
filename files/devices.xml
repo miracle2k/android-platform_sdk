@@ -11,6 +11,7 @@
             <d:pixel-density>mdpi</d:pixel-density>
             <d:touch-type>finger</d:touch-type>
             <d:text-input-method>qwerty</d:text-input-method>
+            <d:nav-state>navexposed</d:nav-state>
             <d:nav-method>trackball</d:nav-method>
             <d:screen-dimension>
                 <d:size>320</d:size>
@@ -43,6 +44,7 @@
             <d:touch-type>finger</d:touch-type>
             <d:keyboard-state>keyssoft</d:keyboard-state>
             <d:text-input-method>nokeys</d:text-input-method>
+            <d:nav-state>navexposed</d:nav-state>
             <d:nav-method>trackball</d:nav-method>
             <d:screen-dimension>
                 <d:size>320</d:size>
@@ -68,6 +70,7 @@
             <d:touch-type>finger</d:touch-type>
             <d:keyboard-state>keyssoft</d:keyboard-state>
             <d:text-input-method>nokeys</d:text-input-method>
+            <d:nav-state>navexposed</d:nav-state>
             <d:nav-method>trackball</d:nav-method>
             <d:screen-dimension>
                 <d:size>480</d:size>

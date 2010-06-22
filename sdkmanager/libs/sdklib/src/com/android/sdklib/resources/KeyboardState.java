@@ -39,9 +39,9 @@ public enum KeyboardState {
      * @return the enum for the qualifier value or null if no matching was found.
      */
     public static KeyboardState getEnum(String value) {
-        for (KeyboardState orient : values()) {
-            if (orient.mValue.equals(value)) {
-                return orient;
+        for (KeyboardState state : values()) {
+            if (state.mValue.equals(value)) {
+                return state;
             }
         }
 

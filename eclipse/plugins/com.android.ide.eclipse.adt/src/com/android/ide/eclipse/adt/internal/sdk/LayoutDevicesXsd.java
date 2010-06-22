@@ -94,6 +94,8 @@ public class LayoutDevicesXsd {
 
     public static final String NODE_TEXT_INPUT_METHOD = "text-input-method";        //$NON-NLS-1$
 
+    public static final String NODE_NAV_STATE = "nav-state";                        //$NON-NLS-1$
+
     public static final String NODE_NAV_METHOD = "nav-method";                      //$NON-NLS-1$
 
     public static final String NODE_SCREEN_DIMENSION = "screen-dimension";          //$NON-NLS-1$

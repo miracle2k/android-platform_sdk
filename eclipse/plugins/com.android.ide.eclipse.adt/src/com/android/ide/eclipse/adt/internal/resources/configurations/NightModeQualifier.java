@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,28 +18,28 @@ package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.sdklib.IAndroidTarget;
-import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.NightMode;
 
 import org.eclipse.swt.graphics.Image;
 
 /**
  * Resource Qualifier for Navigation Method.
  */
-public final class NavigationMethodQualifier extends ResourceQualifier {
+public final class NightModeQualifier extends ResourceQualifier {
 
-    public static final String NAME = "Navigation Method";
+    public static final String NAME = "Night Mode";
 
-    private Navigation mValue;
+    private NightMode mValue;
 
-    public NavigationMethodQualifier() {
+    public NightModeQualifier() {
         // pass
     }
 
-    public NavigationMethodQualifier(Navigation value) {
+    public NightModeQualifier(NightMode value) {
         mValue = value;
     }
 
-    public Navigation getValue() {
+    public NightMode getValue() {
         return mValue;
     }
 
@@ -50,13 +50,12 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     @Override
     public String getShortName() {
-        return NAME;
+        return "Night Mode";
     }
-
 
     @Override
     public Image getIcon() {
-        return IconFactory.getInstance().getIcon("navpad"); //$NON-NLS-1$
+        return IconFactory.getInstance().getIcon("nightmode"); //$NON-NLS-1$
     }
 
     @Override
@@ -66,10 +65,10 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
-        Navigation method = Navigation.getEnum(value);
-        if (method != null) {
-            NavigationMethodQualifier qualifier = new NavigationMethodQualifier(method);
-            config.setNavigationMethodQualifier(qualifier);
+        NightMode mode = NightMode.getEnum(value);
+        if (mode != null) {
+            NightModeQualifier qualifier = new NightModeQualifier(mode);
+            config.setNightModeQualifier(qualifier);
             return true;
         }
 
@@ -78,8 +77,8 @@ public final class NavigationMethodQualifier extends ResourceQualifier {
 
     @Override
     public boolean equals(Object qualifier) {
-        if (qualifier instanceof NavigationMethodQualifier) {
-            return mValue == ((NavigationMethodQualifier)qualifier).mValue;
+        if (qualifier instanceof NightModeQualifier) {
+            return mValue == ((NightModeQualifier)qualifier).mValue;
         }
 
         return false;
