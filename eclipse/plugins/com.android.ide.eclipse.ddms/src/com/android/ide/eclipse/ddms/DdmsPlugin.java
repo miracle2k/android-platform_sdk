@@ -80,9 +80,6 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
     /** Console for DDMS log message */
     private MessageConsole mDdmsConsole;
 
-    /** Image loader object */
-    private ImageLoader mLoader;
-
     private IDevice mCurrentDevice;
     private Client mCurrentClient;
     private boolean mListeningToUiSelection = false;
@@ -195,9 +192,6 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
 
         });
 
-        // create the loader that's able to load the images
-        mLoader = new ImageLoader(this);
-
         // set the listener for the preference change
         Preferences prefs = getPluginPreferences();
         prefs.addPropertyChangeListener(new IPropertyChangeListener() {
@@ -275,14 +269,6 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
      */
     public static DdmsPlugin getDefault() {
         return sPlugin;
-    }
-
-    /** Return the image loader for the plugin */
-    public static ImageLoader getImageLoader() {
-        if (sPlugin != null) {
-            return sPlugin.mLoader;
-        }
-        return null;
     }
 
     public static String getAdb() {

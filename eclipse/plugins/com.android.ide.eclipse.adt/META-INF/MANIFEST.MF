@@ -4,16 +4,16 @@ Bundle-Name: Android Development Toolkit
 Bundle-SymbolicName: com.android.ide.eclipse.adt;singleton:=true
 Bundle-Version: 0.9.8.qualifier
 Bundle-ClassPath: .,
- androidprefs.jar,
- sdkstats.jar,
- kxml2-2.3.0.jar,
- layoutlib_api.jar,
- ninepatch.jar,
- layoutlib_utils.jar,
- sdklib.jar,
- sdkuilib.jar,
- commons-compress-1.0.jar,
- groovy-all-1.7.0.jar
+ libs/androidprefs.jar,
+ libs/sdklib.jar,
+ libs/sdkuilib.jar,
+ libs/ninepatch.jar,
+ libs/sdkstats.jar,
+ libs/commons-compress-1.0.jar,
+ libs/groovy-all-1.7.0.jar,
+ libs/kxml2-2.3.0.jar,
+ libs/layoutlib_api.jar,
+ libs/layoutlib_utils.jar
 Bundle-Activator: com.android.ide.eclipse.adt.AdtPlugin
 Bundle-Vendor: The Android Open Source Project
 Require-Bundle: com.android.ide.eclipse.ddms,
@@ -54,6 +54,7 @@ Export-Package: com.android.ide.eclipse.adt;x-friends:="com.android.ide.eclipse.
  com.android.ide.eclipse.adt.internal.build;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors.descriptors;x-friends:="com.android.ide.eclipse.tests",
+ com.android.ide.eclipse.adt.internal.editors.export;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors.layout;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors.layout.configuration;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.editors.layout.descriptors;x-friends:="com.android.ide.eclipse.tests",
@@ -98,6 +99,7 @@ Export-Package: com.android.ide.eclipse.adt;x-friends:="com.android.ide.eclipse.
  com.android.ninepatch;x-friends:="com.android.ide.eclipse.tests",
  com.android.prefs;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib;x-friends:="com.android.ide.eclipse.tests",
+ com.android.sdklib.build;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib.internal.avd;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib.internal.build;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib.internal.export;x-friends:="com.android.ide.eclipse.tests",

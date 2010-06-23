@@ -26,7 +26,6 @@ import com.android.ddmlib.log.LogReceiver;
 import com.android.ddmlib.log.LogReceiver.ILogListener;
 import com.android.ddmlib.log.LogReceiver.LogEntry;
 import com.android.ddmuilib.DdmUiPreferences;
-import com.android.ddmuilib.IImageLoader;
 import com.android.ddmuilib.TablePanel;
 import com.android.ddmuilib.actions.ICommonAction;
 import com.android.ddmuilib.annotation.UiThread;
@@ -78,8 +77,6 @@ public class EventLogPanel extends TablePanel implements ILogListener,
     private final static int DEFAULT_DISPLAY_WIDTH = 500;
     private final static int DEFAULT_DISPLAY_HEIGHT = 400;
 
-    private IImageLoader mImageLoader;
-
     private IDevice mCurrentLoggedDevice;
     private String mCurrentLogFile;
     private LogReceiver mCurrentLogReceiver;
@@ -111,9 +108,8 @@ public class EventLogPanel extends TablePanel implements ILogListener,
     /** file containing the current log raw data. */
     private File mTempFile = null;
 
-    public EventLogPanel(IImageLoader imageLoader) {
+    public EventLogPanel() {
         super();
-        mImageLoader = imageLoader;
         mFormatter.setGroupingUsed(true);
     }
 
@@ -203,7 +199,7 @@ public class EventLogPanel extends TablePanel implements ILogListener,
     @UiThread
     public void openOptionPanel() {
         try {
-            EventDisplayOptions dialog = new EventDisplayOptions(mImageLoader, mParent.getShell());
+            EventDisplayOptions dialog = new EventDisplayOptions(mParent.getShell());
             if (dialog.open(mCurrentEventLogParser, mEventDisplays, mEvents)) {
                 synchronized (mLock) {
                     // get the new EventDisplay list

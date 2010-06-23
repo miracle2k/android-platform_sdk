@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.ddms.views;
 
 import com.android.ddmuilib.EmulatorControlPanel;
-import com.android.ide.eclipse.ddms.DdmsPlugin;
 
 import org.eclipse.swt.widgets.Composite;
 
@@ -30,7 +29,7 @@ public class EmulatorControlView extends SelectionDependentViewPart {
 
     @Override
     public void createPartControl(Composite parent) {
-        mPanel = new EmulatorControlPanel(DdmsPlugin.getImageLoader());
+        mPanel = new EmulatorControlPanel();
         mPanel.createPanel(parent);
         setSelectionDependentPanel(mPanel);
     }

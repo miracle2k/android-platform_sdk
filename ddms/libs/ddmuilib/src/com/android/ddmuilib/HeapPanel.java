@@ -380,7 +380,7 @@ public final class HeapPanel extends BaseHeapPanel {
         {
             mLinearHeapImage = new Label(mLinearBase, SWT.NONE);
             mLinearHeapImage.setLayoutData(new GridData());
-            mLinearHeapImage.setImage(ImageHelper.createPlaceHolderArt(mDisplay,
+            mLinearHeapImage.setImage(ImageLoader.createPlaceHolderArt(mDisplay,
                     PLACEHOLDER_LINEAR_H_SIZE, PLACEHOLDER_LINEAR_V_SIZE,
                     mDisplay.getSystemColor(SWT.COLOR_BLUE)));
 
@@ -412,7 +412,7 @@ public final class HeapPanel extends BaseHeapPanel {
         if (DISPLAY_HILBERT_BITMAP) {
             mHilbertHeapImage = new Label(mHilbertBase, SWT.NONE);
             mHilbertHeapImage.setLayoutData(new GridData());
-            mHilbertHeapImage.setImage(ImageHelper.createPlaceHolderArt(mDisplay,
+            mHilbertHeapImage.setImage(ImageLoader.createPlaceHolderArt(mDisplay,
                     PLACEHOLDER_HILBERT_SIZE, PLACEHOLDER_HILBERT_SIZE,
                     mDisplay.getSystemColor(SWT.COLOR_BLUE)));
 

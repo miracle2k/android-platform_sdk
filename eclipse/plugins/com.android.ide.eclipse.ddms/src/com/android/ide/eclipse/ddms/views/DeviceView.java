@@ -29,6 +29,7 @@ import com.android.ddmlib.SyncService.SyncResult;
 import com.android.ddmuilib.handler.BaseFileHandler;
 import com.android.ddmuilib.handler.MethodProfilingHandler;
 import com.android.ddmuilib.DevicePanel;
+import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.ScreenShotDialog;
 import com.android.ddmuilib.DevicePanel.IUiSelectionListener;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
@@ -247,7 +248,9 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
     public void createPartControl(Composite parent) {
         mParentShell = parent.getShell();
 
-        mDeviceList = new DevicePanel(DdmsPlugin.getImageLoader(), USE_SELECTED_DEBUG_PORT);
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
+
+        mDeviceList = new DevicePanel(USE_SELECTED_DEBUG_PORT);
         mDeviceList.createPanel(parent);
         mDeviceList.addSelectionListener(this);
 
@@ -264,8 +267,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
             }
         };
         mCaptureAction.setToolTipText("Screen Capture");
-        mCaptureAction.setImageDescriptor(
-                DdmsPlugin.getImageLoader().loadDescriptor("capture.png")); //$NON-NLS-1$
+        mCaptureAction.setImageDescriptor(loader.loadDescriptor("capture.png")); //$NON-NLS-1$
 
         mResetAdbAction = new Action("Reset adb") {
             @Override
@@ -302,8 +304,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
 
         mKillAppAction.setText("Stop Process");
         mKillAppAction.setToolTipText("Stop Process");
-        mKillAppAction.setImageDescriptor(DdmsPlugin.getImageLoader()
-                .loadDescriptor(DevicePanel.ICON_HALT));
+        mKillAppAction.setImageDescriptor(loader.loadDescriptor(DevicePanel.ICON_HALT));
 
         mGcAction = new Action() {
             @Override
@@ -314,8 +315,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
 
         mGcAction.setText("Cause GC");
         mGcAction.setToolTipText("Cause GC");
-        mGcAction.setImageDescriptor(DdmsPlugin.getImageLoader()
-                .loadDescriptor(DevicePanel.ICON_GC));
+        mGcAction.setImageDescriptor(loader.loadDescriptor(DevicePanel.ICON_GC));
 
         mHprofAction = new Action() {
             @Override
@@ -326,8 +326,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
         };
         mHprofAction.setText("Dump HPROF file");
         mHprofAction.setToolTipText("Dump HPROF file");
-        mHprofAction.setImageDescriptor(DdmsPlugin.getImageLoader()
-                .loadDescriptor(DevicePanel.ICON_HPROF));
+        mHprofAction.setImageDescriptor(loader.loadDescriptor(DevicePanel.ICON_HPROF));
 
         mUpdateHeapAction = new Action("Update Heap", IAction.AS_CHECK_BOX) {
             @Override
@@ -337,8 +336,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
             }
         };
         mUpdateHeapAction.setToolTipText("Update Heap");
-        mUpdateHeapAction.setImageDescriptor(DdmsPlugin.getImageLoader()
-                .loadDescriptor(DevicePanel.ICON_HEAP));
+        mUpdateHeapAction.setImageDescriptor(loader.loadDescriptor(DevicePanel.ICON_HEAP));
 
         mUpdateThreadAction = new Action("Update Threads", IAction.AS_CHECK_BOX) {
             @Override
@@ -348,8 +346,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
             }
         };
         mUpdateThreadAction.setToolTipText("Update Threads");
-        mUpdateThreadAction.setImageDescriptor(DdmsPlugin.getImageLoader()
-                .loadDescriptor(DevicePanel.ICON_THREAD));
+        mUpdateThreadAction.setImageDescriptor(loader.loadDescriptor(DevicePanel.ICON_THREAD));
 
         mTracingAction = new Action() {
             @Override
@@ -359,10 +356,8 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
         };
         mTracingAction.setText("Start Method Profiling");
         mTracingAction.setToolTipText("Start Method Profiling");
-        mTracingStartImage = DdmsPlugin.getImageLoader().loadDescriptor(
-                DevicePanel.ICON_TRACING_START);
-        mTracingStopImage = DdmsPlugin.getImageLoader().loadDescriptor(
-                DevicePanel.ICON_TRACING_STOP);
+        mTracingStartImage = loader.loadDescriptor(DevicePanel.ICON_TRACING_START);
+        mTracingStopImage = loader.loadDescriptor(DevicePanel.ICON_TRACING_STOP);
         mTracingAction.setImageDescriptor(mTracingStartImage);
 
         // check if there's already a debug launcher set up in the plugin class
@@ -415,8 +410,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
             }
         };
         mDebugAction.setToolTipText("Debug the selected process, provided its source project is present and opened in the workspace.");
-        mDebugAction.setImageDescriptor(DdmsPlugin.getImageLoader()
-                .loadDescriptor("debug-attach.png")); //$NON-NLS-1$
+        mDebugAction.setImageDescriptor(loader.loadDescriptor("debug-attach.png")); //$NON-NLS-1$
         if (mDebugLauncher == null) {
             mDebugAction.setEnabled(false);
         }

@@ -89,8 +89,8 @@
       <perspectiveExtension targetID="org.eclipse.debug.ui.DebugPerspective">
          <perspectiveShortcut id="com.android.ide.eclipse.ddms.Perspective"/>
          <view id="com.android.ide.eclipse.ddms.views.LogCatView"
-	         relative="org.eclipse.ui.views.ProblemView"
-	         relationship="stack" />
+           relative="org.eclipse.ui.views.ProblemView"
+           relationship="stack" />
       </perspectiveExtension>
    </extension>
    <extension

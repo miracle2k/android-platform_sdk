@@ -18,6 +18,7 @@ package com.android.ide.eclipse.ddms.views;
 
 import com.android.ddmlib.Client;
 import com.android.ddmlib.IDevice;
+import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.explorer.DeviceExplorer;
 import com.android.ide.eclipse.ddms.CommonAction;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
@@ -58,6 +59,8 @@ public class FileExplorerView extends ViewPart implements ISelectionListener {
 
     @Override
     public void createPartControl(Composite parent) {
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
+
         DeviceExplorer.COLUMN_NAME = COLUMN_NAME;
         DeviceExplorer.COLUMN_SIZE = COLUMN_SIZE;
         DeviceExplorer.COLUMN_DATE = COLUMN_DATE;
@@ -69,14 +72,12 @@ public class FileExplorerView extends ViewPart implements ISelectionListener {
         mExplorer = new DeviceExplorer();
 
 
-        mExplorer.setImages(PlatformUI.getWorkbench()
-                .getSharedImages().getImage(ISharedImages.IMG_OBJ_FILE),
-                PlatformUI.getWorkbench() .getSharedImages().getImage(
-                        ISharedImages.IMG_OBJ_FOLDER),
-                DdmsPlugin.getImageLoader().loadDescriptor("android.png") //$NON-NLS-1$
-                        .createImage(),
-                PlatformUI.getWorkbench() .getSharedImages().getImage(
-                        ISharedImages.IMG_OBJ_ELEMENT));
+        mExplorer.setCustomImages(
+                PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FILE),
+                PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FOLDER),
+                null /*apk image*/,
+                PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_ELEMENT)
+        );
 
         // creates the actions
         CommonAction pushAction = new CommonAction("Push File...") {
@@ -86,8 +87,7 @@ public class FileExplorerView extends ViewPart implements ISelectionListener {
             }
         };
         pushAction.setToolTipText("Push a file onto the device");
-        pushAction.setImageDescriptor(DdmsPlugin.getImageLoader()
-                .loadDescriptor("push.png")); //$NON-NLS-1$
+        pushAction.setImageDescriptor(loader.loadDescriptor("push.png")); //$NON-NLS-1$
         pushAction.setEnabled(false);
 
         CommonAction pullAction = new CommonAction("Pull File...") {
@@ -97,8 +97,7 @@ public class FileExplorerView extends ViewPart implements ISelectionListener {
             }
         };
         pullAction.setToolTipText("Pull a file from the device");
-        pullAction.setImageDescriptor(DdmsPlugin.getImageLoader()
-                .loadDescriptor("pull.png")); //$NON-NLS-1$
+        pullAction.setImageDescriptor(loader.loadDescriptor("pull.png")); //$NON-NLS-1$
         pullAction.setEnabled(false);
 
         CommonAction deleteAction = new CommonAction("Delete") {
@@ -108,8 +107,7 @@ public class FileExplorerView extends ViewPart implements ISelectionListener {
             }
         };
         deleteAction.setToolTipText("Delete the selection");
-        deleteAction.setImageDescriptor(DdmsPlugin.getImageLoader()
-                .loadDescriptor("delete.png")); //$NON-NLS-1$
+        deleteAction.setImageDescriptor(loader.loadDescriptor("delete.png")); //$NON-NLS-1$
         deleteAction.setEnabled(false);
 
         // set up the actions in the explorer

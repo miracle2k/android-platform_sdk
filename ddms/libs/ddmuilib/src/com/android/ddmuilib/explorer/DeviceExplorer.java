@@ -16,14 +16,15 @@
 
 package com.android.ddmuilib.explorer;
 
-import com.android.ddmlib.IDevice;
 import com.android.ddmlib.FileListingService;
+import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.SyncService;
 import com.android.ddmlib.FileListingService.FileEntry;
 import com.android.ddmlib.SyncService.ISyncProgressMonitor;
 import com.android.ddmlib.SyncService.SyncResult;
 import com.android.ddmuilib.DdmUiPreferences;
+import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.Panel;
 import com.android.ddmuilib.SyncProgressMonitor;
 import com.android.ddmuilib.TableHelper;
@@ -105,16 +106,20 @@ public class DeviceExplorer extends Panel {
     private String mDefaultSave;
 
     public DeviceExplorer() {
-
     }
 
     /**
-     * Sets the images for the listview
-     * @param fileImage
-     * @param folderImage
-     * @param otherImage
+     * Sets custom images for the device explorer. If none are set then defaults are used.
+     * This can be useful to set platform-specific explorer icons.
+     *
+     * This should be called before {@link #createControl(Composite)}.
+     *
+     * @param fileImage the icon to represent a file.
+     * @param folderImage the icon to represent a folder.
+     * @param packageImage the icon to represent an apk.
+     * @param otherImage the icon to represent other types of files.
      */
-    public void setImages(Image fileImage, Image folderImage, Image packageImage,
+    public void setCustomImages(Image fileImage, Image folderImage, Image packageImage,
             Image otherImage) {
         mFileImage = fileImage;
         mFolderImage = folderImage;
@@ -144,6 +149,20 @@ public class DeviceExplorer extends Panel {
     protected Control createControl(Composite parent) {
         mParent = parent;
         parent.setLayout(new FillLayout());
+
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
+        if (mFileImage == null) {
+            mFileImage = loader.loadImage("file.png", mParent.getDisplay());
+        }
+        if (mFolderImage == null) {
+            mFolderImage = loader.loadImage("folder.png", mParent.getDisplay());
+        }
+        if (mPackageImage == null) {
+            mPackageImage = loader.loadImage("android.png", mParent.getDisplay());
+        }
+        if (mOtherImage == null) {
+            // TODO: find a default image for other.
+        }
 
         mTree = new Tree(parent, SWT.MULTI | SWT.FULL_SELECTION | SWT.VIRTUAL);
         mTree.setHeaderVisible(true);
