@@ -32,6 +32,7 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.ILayoutResult;
 
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.dnd.Clipboard;
@@ -64,6 +65,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.ScrollBar;
+import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
@@ -189,6 +191,9 @@ import java.util.ListIterator;
 
     private DragSource mSource;
 
+    /** The current Outline Page, to synchronize the selection both ways. */
+    private OutlinePage2 mOutlinePage;
+
     public LayoutCanvas(LayoutEditor layoutEditor, RulesEngine rulesEngine, Composite parent, int style) {
         super(parent, style | SWT.DOUBLE_BUFFERED | SWT.V_SCROLL | SWT.H_SCROLL);
         mLayoutEditor = layoutEditor;
@@ -256,6 +261,12 @@ import java.util.ListIterator;
                 SimpleXmlTransfer.getInstance()
             } );
         mSource.addDragListener(new CanvasDragSourceListener());
+
+        // Get the outline associated with this editor, if any and of the right type.
+        Object outline = layoutEditor.getAdapter(IContentOutlinePage.class);
+        if (outline instanceof OutlinePage2) {
+            mOutlinePage = (OutlinePage2) outline;
+        }
     }
 
     @Override
@@ -341,6 +352,7 @@ import java.util.ListIterator;
             setImage(result.getImage());
 
             updateNodeProxies(mLastValidViewInfoRoot);
+            mOutlinePage.setModel(mLastValidViewInfoRoot);
 
             // Check if the selection is still the same (based on the object keys)
             // and eventually recompute their bounds.
@@ -359,6 +371,7 @@ import java.util.ListIterator;
                     it.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
                 }
             }
+            updateOulineSelection();
 
             // remove the current alternate selection views
             mAltSelection = null;
@@ -432,6 +445,8 @@ import java.util.ListIterator;
             selectAllViewInfos(mLastValidViewInfoRoot);
             redraw();
         }
+
+        updateOulineSelection();
     }
 
     /**
@@ -735,7 +750,7 @@ import java.util.ListIterator;
                 }
             }
 
-            if (mShowOutline) {
+            if (mShowOutline && mLastValidViewInfoRoot != null) {
                 gc.setForeground(mOutlineColor);
                 gc.setLineStyle(SWT.LINE_DOT);
                 drawOutline(gc, mLastValidViewInfoRoot);
@@ -866,6 +881,7 @@ import java.util.ListIterator;
 
                     // otherwise add it.
                     mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
+                    updateOulineSelection();
                     redraw();
                 }
 
@@ -890,6 +906,7 @@ import java.util.ListIterator;
                     CanvasViewInfo vi2 = mAltSelection.getCurrent();
                     if (vi2 != null) {
                         mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
+                        updateOulineSelection();
                     }
                 } else {
                     // We're trying to cycle through the current alternate selection.
@@ -901,6 +918,7 @@ import java.util.ListIterator;
                     vi2 = mAltSelection.getNext();
                     if (vi2 != null) {
                         mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
+                        updateOulineSelection();
                     }
                 }
                 redraw();
@@ -935,10 +953,15 @@ import java.util.ListIterator;
         if (vi != null) {
             mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
         }
+        updateOulineSelection();
         redraw();
     }
 
-    /** Deselects a view info. Returns true if the object was actually selected. */
+    /**
+     * Deselects a view info.
+     * Returns true if the object was actually selected.
+     * Callers are responsible for calling redraw() and updateOulineSelection() after.
+     */
     private boolean deselect(CanvasViewInfo canvasViewInfo) {
         if (canvasViewInfo == null) {
             return false;
@@ -955,7 +978,10 @@ import java.util.ListIterator;
         return false;
     }
 
-    /** Deselects multiple view infos, */
+    /**
+     * Deselects multiple view infos.
+     * Callers are responsible for calling redraw() and updateOulineSelection() after.
+     */
     private void deselectAll(List<CanvasViewInfo> canvasViewInfos) {
         for (ListIterator<CanvasSelection> it = mSelections.listIterator(); it.hasNext(); ) {
             CanvasSelection s = it.next();
@@ -1077,6 +1103,33 @@ import java.util.ListIterator;
             selectAllViewInfos(vi);
         }
     }
+
+    /**
+     * Update the selection in the outline page to match the current one from {@link #mSelections}
+     */
+    private void updateOulineSelection() {
+        if (mOutlinePage == null) {
+            return;
+        }
+
+        if (mSelections.size() == 0) {
+            mOutlinePage.selectAndReveal(null);
+            return;
+        }
+
+        ArrayList<CanvasViewInfo> selectedVis = new ArrayList<CanvasViewInfo>();
+        for (CanvasSelection cs : mSelections) {
+            CanvasViewInfo vi = cs.getViewInfo();
+            if (vi != null) {
+                selectedVis.add(vi);
+            }
+        }
+
+        mOutlinePage.selectAndReveal(selectedVis.toArray(new CanvasViewInfo[selectedVis.size()]));
+    }
+
+
+    //---------------
 
     private class CanvasDragSourceListener implements DragSourceListener {
 

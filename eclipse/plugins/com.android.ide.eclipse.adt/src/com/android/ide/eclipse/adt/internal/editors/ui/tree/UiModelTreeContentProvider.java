@@ -28,8 +28,8 @@ import java.util.ArrayList;
  * UiModelTreeContentProvider is a trivial implementation of {@link ITreeContentProvider}
  * where elements are expected to be instances of {@link UiElementNode}.
  */
-class UiModelTreeContentProvider implements ITreeContentProvider {
-    
+public class UiModelTreeContentProvider implements ITreeContentProvider {
+
     /** The descriptor of the elements to be displayed as root in this tree view. All elements
      *  of the same type in the root will be displayed. */
     private ElementDescriptor[] mDescriptorFilters;
@@ -41,7 +41,7 @@ class UiModelTreeContentProvider implements ITreeContentProvider {
         mUiRootNode = uiRootNode;
         mDescriptorFilters = descriptorFilters;
     }
-    
+
     /* (non-java doc)
      * Returns all the UI node children of the given element or null if not the right kind
      * of object. */
@@ -99,7 +99,7 @@ class UiModelTreeContentProvider implements ITreeContentProvider {
                 }
             }
         }
-        
+
         return roots.toArray();
     }
 
