@@ -185,6 +185,9 @@ public class DisplaySyncPerf extends SyncCommon {
                 mTooltips[HTTP_NETWORK].add(tip);
                 mTooltips[HTTP_PROCESSING].add(tip);
             }
+        } catch (NumberFormatException e) {
+            // This can happen when parsing events from froyo+ where the event with id 52000
+            // as a completely different format. For now, skip this event if this happens.
         } catch (InvalidTypeException e) {
         }
     }
