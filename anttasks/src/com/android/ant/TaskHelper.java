@@ -84,7 +84,8 @@ final class TaskHelper {
     static String checkSinglePath(String attribute, Path path) {
         String[] paths = path.list();
         if (paths.length != 1) {
-            throw new BuildException(String.format("Path value for '%1$s' is not valid.", attribute));
+            throw new BuildException(String.format(
+                    "Value for '%1$s' is not valid. It must resolve to a single path", attribute));
         }
 
         return paths[0];

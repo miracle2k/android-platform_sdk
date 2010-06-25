@@ -26,9 +26,12 @@ import java.io.File;
 import java.util.ArrayList;
 
 /**
- * Task able to run an Exec task on aapt several times.
+ * Task to execute aapt.
+ *
  * <p>It does not follow the exec task format, instead it has its own parameters, which maps
  * directly to aapt.</p>
+ * <p>It is able to run aapt several times if library setup requires generating several
+ * R.java files.
  * <p>The following map shows how to use the task for each supported aapt command line
  * parameter.</p>
  *

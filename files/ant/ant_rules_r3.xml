@@ -14,8 +14,12 @@
     -->
 
     <!-- Custom tasks -->
-    <taskdef name="aaptexec"
+    <taskdef name="aapt"
         classname="com.android.ant.AaptExecLoopTask"
+        classpathref="android.antlibs" />
+
+    <taskdef name="aidl"
+        classname="com.android.ant.AidlExecTask"
         classpathref="android.antlibs" />
 
     <taskdef name="apkbuilder"
@@ -270,14 +274,14 @@
         <if condition="${manifest.hasCode}">
             <then>
                 <echo>Generating R.java / Manifest.java from the resources...</echo>
-                <aaptexec executable="${aapt}"
+                <aapt executable="${aapt}"
                         command="package"
                         verbose="${verbose}"
                         manifest="AndroidManifest.xml"
                         androidjar="${android.jar}"
                         rfolder="${gen.absolute.dir}">
                     <res path="${resource.absolute.dir}" />
-                </aaptexec>
+                </aapt>
             </then>
             <else>
                 <echo>hasCode = false. Skipping...</echo>
@@ -290,14 +294,11 @@
         <if condition="${manifest.hasCode}">
             <then>
                 <echo>Compiling aidl files into Java classes...</echo>
-                <apply executable="${aidl}" failonerror="true">
-                    <arg value="-p${android.aidl}" />
-                    <arg value="-I${source.absolute.dir}" />
-                    <arg value="-o${gen.absolute.dir}" />
-                    <fileset dir="${source.absolute.dir}">
-                        <include name="**/*.aidl" />
-                    </fileset>
-                </apply>
+                <aidl executable="${aidl}" framework="${android.aidl}"
+                        genFolder="${gen.absolute.dir}">
+                    <source path="${source.absolute.dir}"/>
+                    <source refid="android.libraries.src"/>
+                </aidl>
             </then>
             <else>
                 <echo>hasCode = false. Skipping...</echo>
@@ -371,7 +372,7 @@
          -->
     <target name="-package-resources">
         <echo>Packaging resources</echo>
-        <aaptexec executable="${aapt}"
+        <aapt executable="${aapt}"
                 command="package"
                 versioncode="${version.code}"
                 manifest="AndroidManifest.xml"
@@ -383,7 +384,7 @@
             <res path="${resource.absolute.dir}" />
             <!-- <nocompress /> forces no compression on any files in assets or res/raw -->
             <!-- <nocompress extension="xml" /> forces no compression on specific file extensions in assets and res/raw -->
-        </aaptexec>
+        </aapt>
     </target>
 
     <!-- Packages the application and sign it with a debug key. -->

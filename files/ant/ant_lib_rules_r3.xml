@@ -14,12 +14,20 @@
     -->
 
     <!-- Custom tasks -->
-    <taskdef name="aaptexec"
+    <taskdef name="aapt"
         classname="com.android.ant.AaptExecLoopTask"
+        classpathref="android.antlibs" />
+
+    <taskdef name="aidl"
+        classname="com.android.ant.AidlExecTask"
         classpathref="android.antlibs" />
 
     <taskdef name="xpath"
         classname="com.android.ant.XPathTask"
+        classpathref="android.antlibs" />
+
+    <taskdef name="if"
+        classname="com.android.ant.IfElseTask"
         classpathref="android.antlibs" />
 
     <!-- Properties -->
@@ -33,6 +41,8 @@
     <!-- Name of the application package extracted from manifest file -->
     <xpath input="AndroidManifest.xml" expression="/manifest/@package"
                 output="manifest.package" />
+    <xpath input="AndroidManifest.xml" expression="/manifest/application/@android:hasCode"
+                output="manifest.hasCode" default="true"/>
 
     <!-- Input directories -->
     <property name="source.dir" value="src" />
@@ -91,21 +101,46 @@
         <mkdir dir="${out.classes.absolute.dir}" />
     </target>
 
+    <!-- empty default pre-build target. Create a similar target in
+         your build.xml and it'll be called instead of this one. -->
+    <target name="-pre-build"/>
+
     <!-- Generates the R.java file for this project's resources. -->
-    <target name="-resource-src" depends="-dirs">
+    <target name="-resource-src" depends="-dirs, -pre-build">
         <echo>Generating R.java / Manifest.java from the resources...</echo>
-        <aaptexec executable="${aapt}"
+        <aapt executable="${aapt}"
                 command="package"
                 verbose="${verbose}"
                 manifest="AndroidManifest.xml"
                 androidjar="${android.jar}"
                 rfolder="${gen.absolute.dir}">
             <res path="${resource.absolute.dir}" />
-        </aaptexec>
+        </aapt>
     </target>
 
+    <!-- Generates java classes from .aidl files. -->
+    <target name="-aidl" depends="-dirs">
+        <if condition="${manifest.hasCode}">
+            <then>
+                <echo>Compiling aidl files into Java classes...</echo>
+                <aidl executable="${aidl}" framework="${android.aidl}"
+                        genFolder="${gen.absolute.dir}">
+                    <source path="${source.absolute.dir}"/>
+                    <source refid="android.libraries.src"/>
+                </aidl>
+            </then>
+            <else>
+                <echo>hasCode = false. Skipping...</echo>
+            </else>
+        </if>
+    </target>
+
+    <!-- empty default pre-compile target. Create a similar target in
+         your build.xml and it'll be called instead of this one. -->
+    <target name="-pre-compile"/>
+
     <!-- Compiles this project's .java files into .class files. -->
-    <target name="compile" depends="-resource-src"
+    <target name="compile" depends="-resource-src, -aidl, -pre-compile"
                 description="Compiles project's .java files into .class files">
         <!-- If android rules are used for a test project, its classpath should include
              tested project's location -->
