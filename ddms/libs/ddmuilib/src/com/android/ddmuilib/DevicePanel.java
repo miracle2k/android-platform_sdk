@@ -99,8 +99,6 @@ public final class DevicePanel extends Panel implements IDebugBridgeChangeListen
 
     private final ArrayList<IDevice> mDevicesToExpand = new ArrayList<IDevice>();
 
-    private IImageLoader mLoader;
-
     private boolean mAdvancedPortSupport;
 
     /**
@@ -300,8 +298,7 @@ public final class DevicePanel extends Panel implements IDebugBridgeChangeListen
      * @param advancedPortSupport if true the device panel will add support for selected client port
      * and display the ports in the ui.
      */
-    public DevicePanel(IImageLoader loader, boolean advancedPortSupport) {
-        mLoader = loader;
+    public DevicePanel(boolean advancedPortSupport) {
         mAdvancedPortSupport = advancedPortSupport;
     }
 
@@ -315,7 +312,7 @@ public final class DevicePanel extends Panel implements IDebugBridgeChangeListen
 
     @Override
     protected Control createControl(Composite parent) {
-        loadImages(parent.getDisplay(), mLoader);
+        loadImages(parent.getDisplay());
 
         parent.setLayout(new FillLayout());
 
@@ -650,39 +647,41 @@ public final class DevicePanel extends Panel implements IDebugBridgeChangeListen
         });
     }
 
-    private void loadImages(Display display, IImageLoader loader) {
+    private void loadImages(Display display) {
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
+
         if (mDeviceImage == null) {
-            mDeviceImage = ImageHelper.loadImage(loader, display, "device.png", //$NON-NLS-1$
+            mDeviceImage = loader.loadImage(display, "device.png", //$NON-NLS-1$
                     ICON_WIDTH, ICON_WIDTH,
                     display.getSystemColor(SWT.COLOR_RED));
         }
         if (mEmulatorImage == null) {
-            mEmulatorImage = ImageHelper.loadImage(loader, display,
+            mEmulatorImage = loader.loadImage(display,
                     "emulator.png", ICON_WIDTH, ICON_WIDTH, //$NON-NLS-1$
                     display.getSystemColor(SWT.COLOR_BLUE));
         }
         if (mThreadImage == null) {
-            mThreadImage = ImageHelper.loadImage(loader, display, ICON_THREAD,
+            mThreadImage = loader.loadImage(display, ICON_THREAD,
                     ICON_WIDTH, ICON_WIDTH,
                     display.getSystemColor(SWT.COLOR_YELLOW));
         }
         if (mHeapImage == null) {
-            mHeapImage = ImageHelper.loadImage(loader, display, ICON_HEAP,
+            mHeapImage = loader.loadImage(display, ICON_HEAP,
                     ICON_WIDTH, ICON_WIDTH,
                     display.getSystemColor(SWT.COLOR_BLUE));
         }
         if (mWaitingImage == null) {
-            mWaitingImage = ImageHelper.loadImage(loader, display,
+            mWaitingImage = loader.loadImage(display,
                     "debug-wait.png", ICON_WIDTH, ICON_WIDTH, //$NON-NLS-1$
                     display.getSystemColor(SWT.COLOR_RED));
         }
         if (mDebuggerImage == null) {
-            mDebuggerImage = ImageHelper.loadImage(loader, display,
+            mDebuggerImage = loader.loadImage(display,
                     "debug-attach.png", ICON_WIDTH, ICON_WIDTH, //$NON-NLS-1$
                     display.getSystemColor(SWT.COLOR_GREEN));
         }
         if (mDebugErrorImage == null) {
-            mDebugErrorImage = ImageHelper.loadImage(loader, display,
+            mDebugErrorImage = loader.loadImage(display,
                     "debug-error.png", ICON_WIDTH, ICON_WIDTH, //$NON-NLS-1$
                     display.getSystemColor(SWT.COLOR_RED));
         }

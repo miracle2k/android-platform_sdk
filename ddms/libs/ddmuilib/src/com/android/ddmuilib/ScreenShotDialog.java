@@ -29,7 +29,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -188,7 +187,7 @@ public class ScreenShotDialog extends Dialog {
         data.horizontalSpan = colCount;
         mImageLabel.setLayoutData(data);
         Display display = shell.getDisplay();
-        mImageLabel.setImage(ImageHelper.createPlaceHolderArt(
+        mImageLabel.setImage(ImageLoader.createPlaceHolderArt(
                 display, 50, 50, display.getSystemColor(SWT.COLOR_BLUE)));
 
 
@@ -228,7 +227,7 @@ public class ScreenShotDialog extends Dialog {
         Image image;
         if (mRawImage == null) {
             Display display = shell.getDisplay();
-            image = ImageHelper.createPlaceHolderArt(
+            image = ImageLoader.createPlaceHolderArt(
                     display, 320, 240, display.getSystemColor(SWT.COLOR_BLUE));
 
             mSave.setEnabled(false);
@@ -294,7 +293,9 @@ public class ScreenShotDialog extends Dialog {
             ImageData imageData = mImageLabel.getImage().getImageData();
 
             try {
-                ImageLoader loader = new ImageLoader();
+                org.eclipse.swt.graphics.ImageLoader loader =
+                        new org.eclipse.swt.graphics.ImageLoader();
+
                 loader.data = new ImageData[] { imageData };
                 loader.save(fileName, SWT.IMAGE_PNG);
             }

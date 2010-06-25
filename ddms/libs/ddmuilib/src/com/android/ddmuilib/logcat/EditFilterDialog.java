@@ -16,7 +16,7 @@
 
 package com.android.ddmuilib.logcat;
 
-import com.android.ddmuilib.IImageLoader;
+import com.android.ddmuilib.ImageLoader;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -51,8 +51,6 @@ public class EditFilterDialog extends Dialog {
 
     private boolean mOk = false;
 
-    private IImageLoader mImageLoader;
-
     /**
      * Filter being edited or created
      */
@@ -72,14 +70,12 @@ public class EditFilterDialog extends Dialog {
 
     private Label mPidWarning;
 
-    public EditFilterDialog(IImageLoader imageLoader, Shell parent) {
+    public EditFilterDialog(Shell parent) {
         super(parent, SWT.DIALOG_TRIM | SWT.BORDER | SWT.APPLICATION_MODAL);
-        mImageLoader = imageLoader;
     }
 
-    public EditFilterDialog(IImageLoader imageLoader, Shell shell,
-            LogFilter filter) {
-        this(imageLoader, shell);
+    public EditFilterDialog(Shell shell, LogFilter filter) {
+        this(shell);
         mFilter = filter;
     }
 
@@ -227,7 +223,7 @@ public class EditFilterDialog extends Dialog {
         });
 
         mPidWarning = new Label(main, SWT.NONE);
-        mPidWarning.setImage(mImageLoader.loadImage("empty.png", // $NON-NLS-1$
+        mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage("empty.png", // $NON-NLS-1$
                 mShell.getDisplay()));
 
         l = new Label(main, SWT.NONE);
@@ -332,12 +328,12 @@ public class EditFilterDialog extends Dialog {
         if (mPid != null) {
             if (mPid.matches("[0-9]*") == false) { // $NON-NLS-1$
                 mOkButton.setEnabled(false);
-                mPidWarning.setImage(mImageLoader.loadImage(
+                mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
                         "warning.png", // $NON-NLS-1$
                         mShell.getDisplay()));
                 return;
             } else {
-                mPidWarning.setImage(mImageLoader.loadImage(
+                mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
                         "empty.png", // $NON-NLS-1$
                         mShell.getDisplay()));
             }

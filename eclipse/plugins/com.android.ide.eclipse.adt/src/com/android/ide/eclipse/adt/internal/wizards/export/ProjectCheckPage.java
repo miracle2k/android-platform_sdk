@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.wizards.export;
 
-import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
@@ -227,7 +227,7 @@ final class ProjectCheckPage extends ExportWizardPage {
      */
     private void addError(Composite parent, String message) {
         if (mError == null) {
-            mError = AdtPlugin.getImageLoader().loadImage(IMG_ERROR, mDisplay);
+            mError = IconFactory.getInstance().getIcon(IMG_ERROR);
         }
 
         new Label(parent, SWT.NONE).setImage(mError);
@@ -247,7 +247,7 @@ final class ProjectCheckPage extends ExportWizardPage {
      */
     private void addWarning(Composite parent, String message) {
         if (mWarning == null) {
-            mWarning = AdtPlugin.getImageLoader().loadImage(IMG_WARNING, mDisplay);
+            mWarning = IconFactory.getInstance().getIcon(IMG_WARNING);
         }
 
         new Label(parent, SWT.NONE).setImage(mWarning);

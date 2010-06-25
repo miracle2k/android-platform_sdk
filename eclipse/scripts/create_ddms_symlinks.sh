@@ -7,7 +7,10 @@
 set -e
 
 HOST=`uname`
+
 if [ "${HOST:0:6}" == "CYGWIN" ]; then
+    PLATFORM="windows-x86"
+
     # We can't use symlinks under Cygwin
 
     function cpfile { # $1=dest $2=source
@@ -19,6 +22,14 @@ if [ "${HOST:0:6}" == "CYGWIN" ]; then
     }
 
 else
+    if [ "$HOST" == "Linux" ]; then
+        PLATFORM="linux-x86"
+    elif [ "$HOST" == "Darwin" ]; then
+        PLATFORM="darwin-x86"
+    else
+        echo "Unsupported platform ($HOST). Nothing done."
+    fi
+
     # For all other systems which support symlinks
 
     # computes the "reverse" path, e.g. "a/b/c" => "../../.."
@@ -39,41 +50,17 @@ fi
 D=`dirname "$0"`
 cd "$D/../../../"
 
-
 BASE="sdk/eclipse/plugins/com.android.ide.eclipse.ddms"
-
 DEST=$BASE/libs
+# computes "../.." from DEST to here (in /android)
+BACK=`echo $DEST | sed 's@[^/]*@..@g'`
+
 mkdir -p $DEST
 for i in prebuilt/common/jfreechart/*.jar; do
   cpfile $DEST $i
 done
 
-DEST=$BASE/src/com/android
-mkdir -p $DEST
-for i in sdk/ddms/libs/ddmlib/src/com/android/ddmlib \
-         sdk/ddms/libs/ddmuilib/src/com/android/ddmuilib ; do
-  cpdir $DEST $i
+LIBS="ddmlib ddmuilib"
+for LIB in $LIBS; do
+    cpfile $DEST $BACK/out/host/$PLATFORM/framework/$LIB.jar
 done
-
-DEST=$BASE/icons
-mkdir -p $DEST
-for i in \
-    add.png \
-    backward.png \
-    clear.png \
-    d.png debug-attach.png debug-error.png debug-wait.png delete.png device.png down.png \
-    e.png edit.png empty.png emulator.png \
-    forward.png \
-    gc.png \
-    heap.png halt.png hprof.png \
-    i.png importBug.png \
-    load.png \
-    pause.png play.png pull.png push.png \
-    save.png \
-    thread.png tracing_start.png tracing_stop.png \
-    up.png \
-    v.png \
-    w.png warning.png ; do
-  cpfile $DEST sdk/ddms/libs/ddmuilib/src/resources/images/$i
-done
-

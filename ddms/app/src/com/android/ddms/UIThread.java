@@ -33,7 +33,6 @@ import com.android.ddmuilib.DevicePanel;
 import com.android.ddmuilib.EmulatorControlPanel;
 import com.android.ddmuilib.HeapPanel;
 import com.android.ddmuilib.ITableFocusListener;
-import com.android.ddmuilib.ImageHelper;
 import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.InfoPanel;
 import com.android.ddmuilib.NativeHeapPanel;
@@ -176,9 +175,6 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
     private ToolItem mTBDumpHprof;
     private ToolItem mTBProfiling;
 
-    private ImageLoader mDdmsImageLoader;
-    private ImageLoader mDdmuiLibImageLoader;
-
     private final class FilterStorage implements ILogFilterStorageManager {
 
         public LogFilter[] getFilterFromStore() {
@@ -255,6 +251,8 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
     private Image mTracingStartImage;
 
     private Image mTracingStopImage;
+
+    private ImageLoader mDdmUiLibLoader;
 
     private class TableFocusListener implements ITableFocusListener {
 
@@ -422,10 +420,9 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         final Shell shell = new Shell(mDisplay);
 
         // create the image loaders for DDMS and DDMUILIB
-        mDdmsImageLoader = new ImageLoader(this.getClass());
-        mDdmuiLibImageLoader = new ImageLoader(DevicePanel.class);
+        mDdmUiLibLoader = ImageLoader.getDdmUiLibLoader();
 
-        shell.setImage(ImageHelper.loadImage(mDdmsImageLoader, mDisplay,
+        shell.setImage(ImageLoader.getLoader(this.getClass()).loadImage(mDisplay,
                 "ddms-icon.png", //$NON-NLS-1$
                 100, 50, null));
 
@@ -492,6 +489,8 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
                 panel.dispose();
             }
         }
+
+        ImageLoader.dispose();
 
         mDisplay.dispose();
         Log.d("ddms", "UI is down");
@@ -1008,7 +1007,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         // add "show heap updates" button
         mTBShowHeapUpdates = new ToolItem(toolBar, SWT.CHECK);
-        mTBShowHeapUpdates.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, display,
+        mTBShowHeapUpdates.setImage(mDdmUiLibLoader.loadImage(display,
                 DevicePanel.ICON_HEAP, DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mTBShowHeapUpdates.setToolTipText("Show heap updates");
         mTBShowHeapUpdates.setEnabled(false);
@@ -1030,7 +1029,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         mTBDumpHprof = new ToolItem(toolBar, SWT.PUSH);
         mTBDumpHprof.setToolTipText("Dump HPROF file");
         mTBDumpHprof.setEnabled(false);
-        mTBDumpHprof.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, display,
+        mTBDumpHprof.setImage(mDdmUiLibLoader.loadImage(display,
                 DevicePanel.ICON_HPROF, DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mTBDumpHprof.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -1047,7 +1046,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         mTBCauseGc = new ToolItem(toolBar, SWT.PUSH);
         mTBCauseGc.setToolTipText("Cause an immediate GC");
         mTBCauseGc.setEnabled(false);
-        mTBCauseGc.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, display,
+        mTBCauseGc.setImage(mDdmUiLibLoader.loadImage(display,
                 DevicePanel.ICON_GC, DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mTBCauseGc.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -1060,7 +1059,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         // add "show thread updates" button
         mTBShowThreadUpdates = new ToolItem(toolBar, SWT.CHECK);
-        mTBShowThreadUpdates.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, display,
+        mTBShowThreadUpdates.setImage(mDdmUiLibLoader.loadImage(display,
                 DevicePanel.ICON_THREAD, DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mTBShowThreadUpdates.setToolTipText("Show thread updates");
         mTBShowThreadUpdates.setEnabled(false);
@@ -1080,10 +1079,10 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         });
 
         // add a start/stop method tracing
-        mTracingStartImage = ImageHelper.loadImage(mDdmuiLibImageLoader, display,
+        mTracingStartImage = mDdmUiLibLoader.loadImage(display,
                 DevicePanel.ICON_TRACING_START,
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null);
-        mTracingStopImage = ImageHelper.loadImage(mDdmuiLibImageLoader, display,
+        mTracingStopImage = mDdmUiLibLoader.loadImage(display,
                 DevicePanel.ICON_TRACING_STOP,
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null);
         mTBProfiling = new ToolItem(toolBar, SWT.PUSH);
@@ -1104,7 +1103,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         mTBHalt = new ToolItem(toolBar, SWT.PUSH);
         mTBHalt.setToolTipText("Halt the target VM");
         mTBHalt.setEnabled(false);
-        mTBHalt.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, display,
+        mTBHalt.setImage(mDdmUiLibLoader.loadImage(display,
                 DevicePanel.ICON_HALT, DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mTBHalt.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -1206,7 +1205,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         mCreateFilterAction = new ToolItemAction(toolBar, SWT.PUSH);
         mCreateFilterAction.item.setToolTipText("Create Filter");
-        mCreateFilterAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, mDisplay,
+        mCreateFilterAction.item.setImage(mDdmUiLibLoader.loadImage(mDisplay,
                 "add.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mCreateFilterAction.item.addSelectionListener(new SelectionAdapter() {
@@ -1218,7 +1217,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         mEditFilterAction = new ToolItemAction(toolBar, SWT.PUSH);
         mEditFilterAction.item.setToolTipText("Edit Filter");
-        mEditFilterAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, mDisplay,
+        mEditFilterAction.item.setImage(mDdmUiLibLoader.loadImage(mDisplay,
                 "edit.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mEditFilterAction.item.addSelectionListener(new SelectionAdapter() {
@@ -1230,7 +1229,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         mDeleteFilterAction = new ToolItemAction(toolBar, SWT.PUSH);
         mDeleteFilterAction.item.setToolTipText("Delete Filter");
-        mDeleteFilterAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, mDisplay,
+        mDeleteFilterAction.item.setImage(mDdmUiLibLoader.loadImage(mDisplay,
                 "delete.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mDeleteFilterAction.item.addSelectionListener(new SelectionAdapter() {
@@ -1269,7 +1268,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
             });
 
             newAction.item.setToolTipText(name);
-            newAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, mDisplay,
+            newAction.item.setImage(mDdmUiLibLoader.loadImage(mDisplay,
                     mLogLevelIcons[i],
                     DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         }
@@ -1279,7 +1278,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         mClearAction = new ToolItemAction(toolBar, SWT.PUSH);
         mClearAction.item.setToolTipText("Clear Log");
 
-        mClearAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, mDisplay,
+        mClearAction.item.setImage(mDdmUiLibLoader.loadImage(mDisplay,
                 "clear.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mClearAction.item.addSelectionListener(new SelectionAdapter() {
@@ -1293,7 +1292,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         mExportAction = new ToolItemAction(toolBar, SWT.PUSH);
         mExportAction.item.setToolTipText("Export Selection As Text...");
-        mExportAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, mDisplay,
+        mExportAction.item.setImage(mDdmUiLibLoader.loadImage(mDisplay,
                 "save.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
         mExportAction.item.addSelectionListener(new SelectionAdapter() {
@@ -1307,8 +1306,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         toolBar.pack();
 
         // now create the log view
-        mLogPanel = new LogPanel(new ImageLoader(LogPanel.class), colors, new FilterStorage(),
-                LogPanel.FILTER_MANUAL);
+        mLogPanel = new LogPanel(colors, new FilterStorage(), LogPanel.FILTER_MANUAL);
 
         mLogPanel.setActions(mDeleteFilterAction, mEditFilterAction, mLogLevelActions);
 
@@ -1349,7 +1347,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         Composite c = new Composite(comp, SWT.NONE);
         c.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        mDevicePanel = new DevicePanel(new ImageLoader(DevicePanel.class), true /* showPorts */);
+        mDevicePanel = new DevicePanel(true /* showPorts */);
         mDevicePanel.createPanel(c);
 
         // add ourselves to the device panel selection listener
@@ -1380,7 +1378,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         item = new TabItem(tabFolder, SWT.NONE);
         item.setText("Emulator Control");
         item.setToolTipText("Emulator Control Panel");
-        mEmulatorPanel = new EmulatorControlPanel(mDdmuiLibImageLoader);
+        mEmulatorPanel = new EmulatorControlPanel();
         item.setControl(mEmulatorPanel.createPanel(tabFolder));
 
         // add the event log panel to the folders.
@@ -1399,13 +1397,13 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         ToolItemAction optionsAction = new ToolItemAction(toolbar, SWT.PUSH);
         optionsAction.item.setToolTipText("Opens the options panel");
-        optionsAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, comp.getDisplay(),
+        optionsAction.item.setImage(mDdmUiLibLoader.loadImage(comp.getDisplay(),
                 "edit.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
 
         ToolItemAction clearAction = new ToolItemAction(toolbar, SWT.PUSH);
         clearAction.item.setToolTipText("Clears the event log");
-        clearAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, comp.getDisplay(),
+        clearAction.item.setImage(mDdmUiLibLoader.loadImage(comp.getDisplay(),
                 "clear.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
 
@@ -1413,24 +1411,24 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         ToolItemAction saveAction = new ToolItemAction(toolbar, SWT.PUSH);
         saveAction.item.setToolTipText("Saves the event log");
-        saveAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, comp.getDisplay(),
+        saveAction.item.setImage(mDdmUiLibLoader.loadImage(comp.getDisplay(),
                 "save.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
 
         ToolItemAction loadAction = new ToolItemAction(toolbar, SWT.PUSH);
         loadAction.item.setToolTipText("Loads an event log");
-        loadAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, comp.getDisplay(),
+        loadAction.item.setImage(mDdmUiLibLoader.loadImage(comp.getDisplay(),
                 "load.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
 
         ToolItemAction importBugAction = new ToolItemAction(toolbar, SWT.PUSH);
         importBugAction.item.setToolTipText("Imports a bug report");
-        importBugAction.item.setImage(ImageHelper.loadImage(mDdmuiLibImageLoader, comp.getDisplay(),
+        importBugAction.item.setImage(mDdmUiLibLoader.loadImage(comp.getDisplay(),
                 "importBug.png", //$NON-NLS-1$
                 DevicePanel.ICON_WIDTH, DevicePanel.ICON_WIDTH, null));
 
         // create the event log panel
-        mEventLogPanel = new EventLogPanel(mDdmuiLibImageLoader);
+        mEventLogPanel = new EventLogPanel();
 
         // set the external actions
         mEventLogPanel.setActions(optionsAction, clearAction, saveAction, loadAction,
@@ -1453,7 +1451,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
             ToolItemAction pullAction = new ToolItemAction(toolBar, SWT.PUSH);
             pullAction.item.setToolTipText("Pull File from Device");
-            Image image = mDdmuiLibImageLoader.loadImage("pull.png", mDisplay); //$NON-NLS-1$
+            Image image = mDdmUiLibLoader.loadImage("pull.png", mDisplay); //$NON-NLS-1$
             if (image != null) {
                 pullAction.item.setImage(image);
             } else {
@@ -1463,7 +1461,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
             ToolItemAction pushAction = new ToolItemAction(toolBar, SWT.PUSH);
             pushAction.item.setToolTipText("Push file onto Device");
-            image = mDdmuiLibImageLoader.loadImage("push.png", mDisplay); //$NON-NLS-1$
+            image = mDdmUiLibLoader.loadImage("push.png", mDisplay); //$NON-NLS-1$
             if (image != null) {
                 pushAction.item.setImage(image);
             } else {
@@ -1473,7 +1471,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
             ToolItemAction deleteAction = new ToolItemAction(toolBar, SWT.PUSH);
             deleteAction.item.setToolTipText("Delete");
-            image = mDdmuiLibImageLoader.loadImage("delete.png", mDisplay); //$NON-NLS-1$
+            image = mDdmUiLibLoader.loadImage("delete.png", mDisplay); //$NON-NLS-1$
             if (image != null) {
                 deleteAction.item.setImage(image);
             } else {
@@ -1483,11 +1481,6 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
             // device explorer
             mExplorer = new DeviceExplorer();
-
-            mExplorer.setImages(mDdmuiLibImageLoader.loadImage("file.png", mDisplay), //$NON-NLS-1$
-                    mDdmuiLibImageLoader.loadImage("folder.png", mDisplay), //$NON-NLS-1$
-                    mDdmuiLibImageLoader.loadImage("android.png", mDisplay), //$NON-NLS-1$
-                    null);
             mExplorer.setActions(pushAction, pullAction, deleteAction);
 
             pullAction.item.addSelectionListener(new SelectionAdapter() {

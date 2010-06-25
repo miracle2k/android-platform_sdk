@@ -21,10 +21,9 @@ import com.android.ddmlib.Client;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.AndroidDebugBridge.IDeviceChangeListener;
 import com.android.ddmlib.IDevice.DeviceState;
-import com.android.ddmuilib.IImageLoader;
-import com.android.ddmuilib.ImageHelper;
+import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.TableHelper;
-import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.sdk.AdtConsoleSdkLog;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
@@ -254,12 +253,6 @@ public class DeviceChooserDialog extends Dialog implements IDeviceChangeListener
     private void cleanup() {
         // done listening.
         AndroidDebugBridge.removeDeviceChangeListener(this);
-
-        mEmulatorImage.dispose();
-        mDeviceImage.dispose();
-        mMatchImage.dispose();
-        mNoMatchImage.dispose();
-        mWarningImage.dispose();
     }
 
     @Override
@@ -440,41 +433,38 @@ public class DeviceChooserDialog extends Dialog implements IDeviceChangeListener
     }
 
     private void loadImages() {
-        IImageLoader ddmsLoader = DdmsPlugin.getImageLoader();
+        ImageLoader ddmUiLibLoader = ImageLoader.getDdmUiLibLoader();
         Display display = DdmsPlugin.getDisplay();
-        IImageLoader adtLoader = AdtPlugin.getImageLoader();
+        IconFactory factory = IconFactory.getInstance();
 
         if (mDeviceImage == null) {
-            mDeviceImage = ImageHelper.loadImage(ddmsLoader, display,
+            mDeviceImage = ddmUiLibLoader.loadImage(display,
                     "device.png", //$NON-NLS-1$
                     ICON_WIDTH, ICON_WIDTH,
                     display.getSystemColor(SWT.COLOR_RED));
         }
         if (mEmulatorImage == null) {
-            mEmulatorImage = ImageHelper.loadImage(ddmsLoader, display,
+            mEmulatorImage = ddmUiLibLoader.loadImage(display,
                     "emulator.png", ICON_WIDTH, ICON_WIDTH, //$NON-NLS-1$
                     display.getSystemColor(SWT.COLOR_BLUE));
         }
 
         if (mMatchImage == null) {
-            mMatchImage = ImageHelper.loadImage(adtLoader, display,
-                    "match.png", //$NON-NLS-1$
-                    ICON_WIDTH, ICON_WIDTH,
-                    display.getSystemColor(SWT.COLOR_GREEN));
+            mMatchImage = factory.getIcon("match", //$NON-NLS-1$
+                    IconFactory.COLOR_GREEN,
+                    IconFactory.SHAPE_DEFAULT);
         }
 
         if (mNoMatchImage == null) {
-            mNoMatchImage = ImageHelper.loadImage(adtLoader, display,
-                    "error.png", //$NON-NLS-1$
-                    ICON_WIDTH, ICON_WIDTH,
-                    display.getSystemColor(SWT.COLOR_RED));
+            mNoMatchImage = factory.getIcon("error", //$NON-NLS-1$
+                    IconFactory.COLOR_RED,
+                    IconFactory.SHAPE_DEFAULT);
         }
 
         if (mWarningImage == null) {
-            mWarningImage = ImageHelper.loadImage(adtLoader, display,
-                    "warning.png", //$NON-NLS-1$
-                    ICON_WIDTH, ICON_WIDTH,
-                    display.getSystemColor(SWT.COLOR_YELLOW));
+            mNoMatchImage = factory.getIcon("warning", //$NON-NLS-1$
+                    SWT.COLOR_YELLOW,
+                    IconFactory.SHAPE_DEFAULT);
         }
 
     }

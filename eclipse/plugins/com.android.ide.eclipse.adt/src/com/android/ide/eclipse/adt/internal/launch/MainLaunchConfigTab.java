@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.launch;
 
-import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper.NonLibraryProjectOnlyFilter;
@@ -62,7 +62,7 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
     /**
      *
      */
-    public static final String LAUNCH_TAB_IMAGE = "mainLaunchTab.png"; //$NON-NLS-1$
+    public static final String LAUNCH_TAB_IMAGE = "mainLaunchTab"; //$NON-NLS-1$
 
     protected static final String EMPTY_STRING = ""; //$NON-NLS-1$
 
@@ -204,9 +204,8 @@ public class MainLaunchConfigTab extends AbstractLaunchConfigurationTab {
 
     @Override
     public Image getImage() {
-        return AdtPlugin.getImageLoader().loadImage(LAUNCH_TAB_IMAGE, null);
+        return IconFactory.getInstance().getIcon(LAUNCH_TAB_IMAGE);
     }
-
 
     public void performApply(ILaunchConfigurationWorkingCopy configuration) {
         configuration.setAttribute(

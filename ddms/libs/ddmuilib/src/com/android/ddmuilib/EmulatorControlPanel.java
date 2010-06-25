@@ -121,8 +121,6 @@ public class EmulatorControlPanel extends SelectionDependentPanel {
     private final static String PREFS_TRACK_COL_LAST = "emulatorControl.track.last"; //$NON-NLS-1$
     private final static String PREFS_TRACK_COL_COMMENT = "emulatorControl.track.comment"; //$NON-NLS-1$
 
-    private IImageLoader mImageLoader;
-
     private EmulatorConsole mEmulatorConsole;
 
     private Composite mParent;
@@ -227,8 +225,7 @@ public class EmulatorControlPanel extends SelectionDependentPanel {
     private Composite mGpxPlayControls;
 
 
-    public EmulatorControlPanel(IImageLoader imageLoader) {
-        mImageLoader = imageLoader;
+    public EmulatorControlPanel() {
     }
 
     /**
@@ -537,8 +534,9 @@ public class EmulatorControlPanel extends SelectionDependentPanel {
 
         createManualLocationControl(manualLocationComp);
 
-        mPlayImage = mImageLoader.loadImage("play.png", mParent.getDisplay()); // $NON-NLS-1$
-        mPauseImage = mImageLoader.loadImage("pause.png", mParent.getDisplay()); // $NON-NLS-1$
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
+        mPlayImage = loader.loadImage("play.png", mParent.getDisplay()); // $NON-NLS-1$
+        mPauseImage = loader.loadImage("pause.png", mParent.getDisplay()); // $NON-NLS-1$
 
         Composite gpxLocationComp = new Composite(mLocationFolders, SWT.NONE);
         item = new TabItem(mLocationFolders, SWT.NONE);
@@ -836,12 +834,13 @@ public class EmulatorControlPanel extends SelectionDependentPanel {
                 GridData.VERTICAL_ALIGN_FILL | GridData.GRAB_VERTICAL));
         gd.heightHint = 0;
 
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
         mGpxBackwardButton = new Button(mGpxPlayControls, SWT.TOGGLE | SWT.FLAT);
-        mGpxBackwardButton.setImage(mImageLoader.loadImage("backward.png", mParent.getDisplay())); // $NON-NLS-1$
+        mGpxBackwardButton.setImage(loader.loadImage("backward.png", mParent.getDisplay())); // $NON-NLS-1$
         mGpxBackwardButton.setSelection(false);
         mGpxBackwardButton.addSelectionListener(mDirectionButtonAdapter);
         mGpxForwardButton = new Button(mGpxPlayControls, SWT.TOGGLE | SWT.FLAT);
-        mGpxForwardButton.setImage(mImageLoader.loadImage("forward.png", mParent.getDisplay())); // $NON-NLS-1$
+        mGpxForwardButton.setImage(loader.loadImage("forward.png", mParent.getDisplay())); // $NON-NLS-1$
         mGpxForwardButton.setSelection(true);
         mGpxForwardButton.addSelectionListener(mDirectionButtonAdapter);
 
@@ -973,12 +972,13 @@ public class EmulatorControlPanel extends SelectionDependentPanel {
                 GridData.VERTICAL_ALIGN_FILL | GridData.GRAB_VERTICAL));
         gd.heightHint = 0;
 
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
         mKmlBackwardButton = new Button(mKmlPlayControls, SWT.TOGGLE | SWT.FLAT);
-        mKmlBackwardButton.setImage(mImageLoader.loadImage("backward.png", mParent.getDisplay())); // $NON-NLS-1$
+        mKmlBackwardButton.setImage(loader.loadImage("backward.png", mParent.getDisplay())); // $NON-NLS-1$
         mKmlBackwardButton.setSelection(false);
         mKmlBackwardButton.addSelectionListener(mDirectionButtonAdapter);
         mKmlForwardButton = new Button(mKmlPlayControls, SWT.TOGGLE | SWT.FLAT);
-        mKmlForwardButton.setImage(mImageLoader.loadImage("forward.png", mParent.getDisplay())); // $NON-NLS-1$
+        mKmlForwardButton.setImage(loader.loadImage("forward.png", mParent.getDisplay())); // $NON-NLS-1$
         mKmlForwardButton.setSelection(true);
         mKmlForwardButton.addSelectionListener(mDirectionButtonAdapter);
 

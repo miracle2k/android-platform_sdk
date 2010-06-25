@@ -46,7 +46,6 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
 import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
-import com.android.ide.eclipse.ddms.ImageLoader;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdkstats.SdkStatsService;
@@ -135,9 +134,6 @@ public class AdtPlugin extends AbstractUIPlugin {
 
     /** Stream to write error messages to the android console */
     private MessageConsoleStream mAndroidConsoleErrorStream;
-
-    /** Image loader object */
-    private ImageLoader mLoader;
 
     /** Color used in the error console */
     private Color mRed;
@@ -297,9 +293,6 @@ public class AdtPlugin extends AbstractUIPlugin {
         // check the location of SDK
         final boolean isSdkLocationValid = checkSdkLocationAndId();
 
-        // create the loader that's able to load the images
-        mLoader = new ImageLoader(this);
-
         // start the DdmsPlugin by setting the adb location, only if it is set already.
         String osSdkLocation = AdtPrefs.getPrefs().getOsSdkFolder();
         if (osSdkLocation.length() > 0) {
@@ -383,14 +376,6 @@ public class AdtPlugin extends AbstractUIPlugin {
         synchronized (AdtPlugin.class) {
             sPlugin = null;
         }
-    }
-
-    /** Return the image loader for the plugin */
-    public static synchronized ImageLoader getImageLoader() {
-        if (sPlugin != null) {
-            return sPlugin.mLoader;
-        }
-        return null;
     }
 
     /**

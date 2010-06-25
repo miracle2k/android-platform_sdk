@@ -17,6 +17,7 @@ package com.android.ide.eclipse.adt.internal.launch.junit;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.launch.LaunchMessages;
 import com.android.ide.eclipse.adt.internal.launch.MainLaunchConfigTab;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
@@ -491,8 +492,7 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
     public Image getImage() {
         // reuse icon from the Android App Launch config tab
         if (mTabIcon == null) {
-            mTabIcon = AdtPlugin.getImageLoader().loadImage(MainLaunchConfigTab.LAUNCH_TAB_IMAGE,
-                    null);
+            mTabIcon = IconFactory.getInstance().getIcon(MainLaunchConfigTab.LAUNCH_TAB_IMAGE);
         }
         return mTabIcon;
     }

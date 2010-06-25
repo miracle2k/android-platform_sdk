@@ -30,7 +30,9 @@ Export-Package: com.android.ddmlib,
  com.android.ide.eclipse.ddms,
  com.android.ide.eclipse.ddms.preferences,
  com.android.ide.eclipse.ddms.views
-Bundle-ClassPath: libs/jcommon-1.0.12.jar,
+Bundle-ClassPath: .,
+ libs/ddmlib.jar,
+ libs/ddmuilib.jar,
+ libs/jcommon-1.0.12.jar,
  libs/jfreechart-1.0.9.jar,
- libs/jfreechart-1.0.9-swt.jar,
- .
+ libs/jfreechart-1.0.9-swt.jar

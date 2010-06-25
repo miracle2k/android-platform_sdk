@@ -18,7 +18,7 @@
 package com.android.ddms;
 
 import com.android.ddmlib.Log;
-import com.android.ddmuilib.ImageHelper;
+import com.android.ddmuilib.ImageLoader;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -93,7 +93,7 @@ public class AboutDialog extends Dialog {
             //throw new NullPointerException("couldn't find " + pathName);
             Log.w("ddms", "Couldn't load " + pathName);
             Display display = shell.getDisplay();
-            return ImageHelper.createPlaceHolderArt(display, 100, 50,
+            return ImageLoader.createPlaceHolderArt(display, 100, 50,
                     display.getSystemColor(SWT.COLOR_BLUE));
         }
 

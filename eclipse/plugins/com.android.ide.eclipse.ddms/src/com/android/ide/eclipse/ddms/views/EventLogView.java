@@ -16,10 +16,9 @@
 
 package com.android.ide.eclipse.ddms.views;
 
+import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.log.event.EventLogPanel;
 import com.android.ide.eclipse.ddms.CommonAction;
-import com.android.ide.eclipse.ddms.DdmsPlugin;
-import com.android.ide.eclipse.ddms.ImageLoader;
 
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuManager;
@@ -29,42 +28,37 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.IActionBars;
 
 public class EventLogView extends SelectionDependentViewPart {
-    
+
     private EventLogPanel mLogPanel;
 
     @Override
     public void createPartControl(Composite parent) {
-        ImageLoader loader = DdmsPlugin.getImageLoader();
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
 
         // create the external actions
         CommonAction optionsAction = new CommonAction("Options...");
         optionsAction.setToolTipText("Opens the options panel");
-        optionsAction.setImageDescriptor(loader
-                .loadDescriptor("edit.png")); // $NON-NLS-1$
+        optionsAction.setImageDescriptor(loader.loadDescriptor("edit.png")); // $NON-NLS-1$
 
         CommonAction clearLogAction = new CommonAction("Clear Log");
         clearLogAction.setToolTipText("Clears the event log");
-        clearLogAction.setImageDescriptor(loader
-                .loadDescriptor("clear.png")); // $NON-NLS-1$
+        clearLogAction.setImageDescriptor(loader.loadDescriptor("clear.png")); // $NON-NLS-1$
 
         CommonAction saveAction = new CommonAction("Save Log");
         saveAction.setToolTipText("Saves the event log");
-        saveAction.setImageDescriptor(loader
-                .loadDescriptor("save.png")); // $NON-NLS-1$
+        saveAction.setImageDescriptor(loader.loadDescriptor("save.png")); // $NON-NLS-1$
 
         CommonAction loadAction = new CommonAction("Load Log");
         loadAction.setToolTipText("Loads an event log");
-        loadAction.setImageDescriptor(loader
-                .loadDescriptor("load.png")); // $NON-NLS-1$
+        loadAction.setImageDescriptor(loader.loadDescriptor("load.png")); // $NON-NLS-1$
 
         CommonAction importBugAction = new CommonAction("Import Bug Report Log");
         importBugAction.setToolTipText("Imports a bug report.");
-        importBugAction.setImageDescriptor(loader
-                .loadDescriptor("importBug.png")); // $NON-NLS-1$
+        importBugAction.setImageDescriptor(loader.loadDescriptor("importBug.png")); // $NON-NLS-1$
 
         placeActions(optionsAction, clearLogAction, saveAction, loadAction, importBugAction);
 
-        mLogPanel = new EventLogPanel(DdmsPlugin.getImageLoader());
+        mLogPanel = new EventLogPanel();
         mLogPanel.setActions(optionsAction, clearLogAction, saveAction, loadAction, importBugAction);
         mLogPanel.createPanel(parent);
         setSelectionDependentPanel(mLogPanel);
@@ -74,17 +68,17 @@ public class EventLogView extends SelectionDependentViewPart {
     public void setFocus() {
         mLogPanel.setFocus();
     }
-    
+
     @Override
     public void dispose() {
         if (mLogPanel != null) {
             mLogPanel.stopEventLog(true);
         }
     }
-    
+
     /**
      * Places the actions in the toolbar and in the menu.
-     * @param importBugAction 
+     * @param importBugAction
      */
     private void placeActions(IAction optionAction, IAction clearAction, IAction saveAction,
             IAction loadAction, CommonAction importBugAction) {

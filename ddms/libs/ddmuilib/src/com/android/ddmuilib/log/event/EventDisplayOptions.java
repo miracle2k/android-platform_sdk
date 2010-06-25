@@ -20,7 +20,7 @@ import com.android.ddmlib.log.EventContainer;
 import com.android.ddmlib.log.EventLogParser;
 import com.android.ddmlib.log.EventValueDescription;
 import com.android.ddmuilib.DdmUiPreferences;
-import com.android.ddmuilib.IImageLoader;
+import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.log.event.EventDisplay.OccurrenceDisplayDescriptor;
 import com.android.ddmuilib.log.event.EventDisplay.ValueDisplayDescriptor;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -52,12 +52,10 @@ import java.util.Map;
 class EventDisplayOptions  extends Dialog {
     private static final int DLG_WIDTH = 700;
     private static final int DLG_HEIGHT = 700;
-    
-    private IImageLoader mImageLoader;
 
     private Shell mParent;
     private Shell mShell;
-    
+
     private boolean mEditStatus = false;
     private final ArrayList<EventDisplay> mDisplayList = new ArrayList<EventDisplay>();
 
@@ -96,7 +94,7 @@ class EventDisplayOptions  extends Dialog {
         private Button mNewButton;
         private Button mEditButton;
         private Button mDeleteButton;
-        
+
         private void setEnabled(boolean enable) {
             mList.setEnabled(enable);
             mNewButton.setEnabled(enable);
@@ -104,19 +102,18 @@ class EventDisplayOptions  extends Dialog {
             mDeleteButton.setEnabled(enable);
         }
     }
-    
+
     private SelectionWidgets mValueSelection;
     private SelectionWidgets mOccurrenceSelection;
-    
-    /** flag to temporarly disable processing of {@link Text} changes, so that 
+
+    /** flag to temporarly disable processing of {@link Text} changes, so that
      * {@link Text#setText(String)} can be called safely. */
     private boolean mProcessTextChanges = true;
     private Text mTimeLimitText;
     private Text mHistWidthText;
 
-    EventDisplayOptions(IImageLoader imageLoader, Shell parent) {
+    EventDisplayOptions(Shell parent) {
         super(parent, SWT.DIALOG_TRIM | SWT.BORDER | SWT.APPLICATION_MODAL);
-        mImageLoader = imageLoader;
     }
 
     /**
@@ -135,14 +132,14 @@ class EventDisplayOptions  extends Dialog {
             // we need 2 things from the parser.
             // the event tag / event name map
             mEventTagMap = logParser.getTagMap();
-            
+
             // the event info map
             mEventDescriptionMap = logParser.getEventInfoMap();
         }
 
         // make a copy of the EventDisplay list since we'll use working copies.
         duplicateEventDisplay(displayList);
-        
+
         // build a list of pid from the list of events.
         buildPidList(eventList);
 
@@ -173,14 +170,14 @@ class EventDisplayOptions  extends Dialog {
             if (!display.readAndDispatch())
                 display.sleep();
         }
-        
+
         return mEditStatus;
     }
-    
+
     ArrayList<EventDisplay> getEventDisplays() {
         return mDisplayList;
     }
-    
+
     private void createUI() {
         mParent = getParent();
         mShell = new Shell(mParent, getStyle());
@@ -191,7 +188,7 @@ class EventDisplayOptions  extends Dialog {
         final Composite topPanel = new Composite(mShell, SWT.NONE);
         topPanel.setLayoutData(new GridData(GridData.FILL_BOTH));
         topPanel.setLayout(new GridLayout(2, false));
-        
+
         // create the tree on the left and the controls on the right.
         Composite leftPanel = new Composite(topPanel, SWT.NONE);
         Composite rightPanel = new Composite(topPanel, SWT.NONE);
@@ -204,16 +201,16 @@ class EventDisplayOptions  extends Dialog {
                 event.doit = true;
             }
         });
-        
+
         Label separator = new Label(mShell, SWT.SEPARATOR | SWT.HORIZONTAL);
         separator.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        
+
         Composite bottomButtons = new Composite(mShell, SWT.NONE);
         bottomButtons.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         GridLayout gl;
         bottomButtons.setLayout(gl = new GridLayout(2, true));
         gl.marginHeight = gl.marginWidth = 0;
-        
+
         Button okButton = new Button(bottomButtons, SWT.PUSH);
         okButton.setText("OK");
         okButton.addSelectionListener(new SelectionAdapter() {
@@ -236,14 +233,14 @@ class EventDisplayOptions  extends Dialog {
             public void widgetSelected(SelectionEvent e) {
                 // cancel the modification flag.
                 mEditStatus = false;
-                
+
                 // and close
                 mShell.close();
             }
         });
 
         enable(false);
-        
+
         // fill the list with the current display
         fillEventDisplayList();
     }
@@ -274,8 +271,9 @@ class EventDisplayOptions  extends Dialog {
         gl.verticalSpacing = 0;
         gl.horizontalSpacing = 0;
 
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
         mEventDisplayNewButton = new Button(bottomControls, SWT.PUSH | SWT.FLAT);
-        mEventDisplayNewButton.setImage(mImageLoader.loadImage("add.png", // $NON-NLS-1$
+        mEventDisplayNewButton.setImage(loader.loadImage("add.png", // $NON-NLS-1$
                 leftPanel.getDisplay()));
         mEventDisplayNewButton.setToolTipText("Adds a new event display");
         mEventDisplayNewButton.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
@@ -285,9 +283,9 @@ class EventDisplayOptions  extends Dialog {
                 createNewEventDisplay();
             }
         });
-        
+
         mEventDisplayDeleteButton = new Button(bottomControls, SWT.PUSH | SWT.FLAT);
-        mEventDisplayDeleteButton.setImage(mImageLoader.loadImage("delete.png", // $NON-NLS-1$
+        mEventDisplayDeleteButton.setImage(loader.loadImage("delete.png", // $NON-NLS-1$
                 leftPanel.getDisplay()));
         mEventDisplayDeleteButton.setToolTipText("Deletes the selected event display");
         mEventDisplayDeleteButton.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
@@ -299,7 +297,7 @@ class EventDisplayOptions  extends Dialog {
         });
 
         mEventDisplayUpButton = new Button(bottomControls, SWT.PUSH | SWT.FLAT);
-        mEventDisplayUpButton.setImage(mImageLoader.loadImage("up.png", // $NON-NLS-1$
+        mEventDisplayUpButton.setImage(loader.loadImage("up.png", // $NON-NLS-1$
                 leftPanel.getDisplay()));
         mEventDisplayUpButton.setToolTipText("Moves the selected event display up");
         mEventDisplayUpButton.addSelectionListener(new SelectionAdapter() {
@@ -311,11 +309,11 @@ class EventDisplayOptions  extends Dialog {
                     // update the list of EventDisplay.
                     EventDisplay display = mDisplayList.remove(selection);
                     mDisplayList.add(selection - 1, display);
-                    
+
                     // update the list widget
                     mEventDisplayList.remove(selection);
                     mEventDisplayList.add(display.getName(), selection - 1);
-                    
+
                     // update the selection and reset the ui.
                     mEventDisplayList.select(selection - 1);
                     handleEventDisplaySelection();
@@ -327,7 +325,7 @@ class EventDisplayOptions  extends Dialog {
         });
 
         mEventDisplayDownButton = new Button(bottomControls, SWT.PUSH | SWT.FLAT);
-        mEventDisplayDownButton.setImage(mImageLoader.loadImage("down.png", // $NON-NLS-1$
+        mEventDisplayDownButton.setImage(loader.loadImage("down.png", // $NON-NLS-1$
                 leftPanel.getDisplay()));
         mEventDisplayDownButton.setToolTipText("Moves the selected event display down");
         mEventDisplayDownButton.addSelectionListener(new SelectionAdapter() {
@@ -339,11 +337,11 @@ class EventDisplayOptions  extends Dialog {
                     // update the list of EventDisplay.
                     EventDisplay display = mDisplayList.remove(selection);
                     mDisplayList.add(selection + 1, display);
-                    
+
                     // update the list widget
                     mEventDisplayList.remove(selection);
                     mEventDisplayList.add(display.getName(), selection + 1);
-                    
+
                     // update the selection and reset the ui.
                     mEventDisplayList.select(selection + 1);
                     handleEventDisplaySelection();
@@ -353,7 +351,7 @@ class EventDisplayOptions  extends Dialog {
                 }
             }
         });
-        
+
         Group sizeGroup = new Group(leftPanel, SWT.NONE);
         sizeGroup.setText("Display Size:");
         sizeGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -361,7 +359,7 @@ class EventDisplayOptions  extends Dialog {
 
         Label l = new Label(sizeGroup, SWT.NONE);
         l.setText("Width:");
-        
+
         mDisplayWidthText = new Text(sizeGroup, SWT.LEFT | SWT.SINGLE | SWT.BORDER);
         mDisplayWidthText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mDisplayWidthText.setText(Integer.toString(
@@ -405,7 +403,7 @@ class EventDisplayOptions  extends Dialog {
         mInfoGroup = new Group(rightPanel, SWT.NONE);
         mInfoGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mInfoGroup.setLayout(new GridLayout(2, false));
-        
+
         Label nameLabel = new Label(mInfoGroup, SWT.LEFT);
         nameLabel.setText("Name:");
 
@@ -430,7 +428,7 @@ class EventDisplayOptions  extends Dialog {
 
         Label displayLabel = new Label(mInfoGroup, SWT.LEFT);
         displayLabel.setText("Type:");
-        
+
         mDisplayTypeCombo = new Combo(mInfoGroup, SWT.READ_ONLY | SWT.DROP_DOWN);
         mDisplayTypeCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         // add the combo values. This must match the values EventDisplay.DISPLAY_TYPE_*
@@ -454,17 +452,17 @@ class EventDisplayOptions  extends Dialog {
                 }
             }
         });
-        
+
         mChartOptions = new Group(mInfoGroup, SWT.NONE);
         mChartOptions.setText("Chart Options");
         GridData gd;
         mChartOptions.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
         gd.horizontalSpan = 2;
         mChartOptions.setLayout(new GridLayout(2, false));
-        
+
         Label l = new Label(mChartOptions, SWT.NONE);
         l.setText("Time Limit (seconds):");
-        
+
         mTimeLimitText = new Text(mChartOptions, SWT.BORDER);
         mTimeLimitText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mTimeLimitText.addModifyListener(new ModifyListener() {
@@ -493,10 +491,10 @@ class EventDisplayOptions  extends Dialog {
         mHistOptions.setLayoutData(gdh = new GridData(GridData.FILL_HORIZONTAL));
         gdh.horizontalSpan = 2;
         mHistOptions.setLayout(new GridLayout(2, false));
-        
+
         Label lh = new Label(mHistOptions, SWT.NONE);
         lh.setText("Histogram width (hours):");
-        
+
         mHistWidthText = new Text(mHistOptions, SWT.BORDER);
         mHistWidthText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mHistWidthText.addModifyListener(new ModifyListener() {
@@ -538,7 +536,7 @@ class EventDisplayOptions  extends Dialog {
         Label pidLabel = new Label(mInfoGroup, SWT.NONE);
         pidLabel.setText("Pid Filter:");
         pidLabel.setToolTipText("Enter all pids, separated by commas");
-        
+
         mPidText = new Text(mInfoGroup, SWT.BORDER);
         mPidText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mPidText.addModifyListener(new ModifyListener() {
@@ -548,7 +546,7 @@ class EventDisplayOptions  extends Dialog {
                     if (eventDisplay != null && eventDisplay.getPidFiltering()) {
                         String pidText = mPidText.getText().trim();
                         String[] pids = pidText.split("\\s*,\\s*"); //$NON-NLS-1$
-    
+
                         ArrayList<Integer> list = new ArrayList<Integer>();
                         for (String pid : pids) {
                             try {
@@ -557,14 +555,14 @@ class EventDisplayOptions  extends Dialog {
                                 // just ignore non valid pid
                             }
                         }
-                        
+
                         eventDisplay.setPidFilterList(list);
                         setModified();
                     }
                 }
             }
         });
-        
+
         /* ------------------
          * EVENT VALUE/OCCURRENCE SELECTION
          * ------------------ */
@@ -584,9 +582,9 @@ class EventDisplayOptions  extends Dialog {
         eventSelectionPanel.setLayout(gl = new GridLayout(2, false));
         gl.marginHeight = gl.marginWidth = 0;
         eventSelectionPanel.setText(groupMessage);
-        
+
         final SelectionWidgets widgets = new SelectionWidgets();
-        
+
         widgets.mList = new List(eventSelectionPanel, SWT.BORDER | SWT.SINGLE | SWT.V_SCROLL);
         widgets.mList.setLayoutData(new GridData(GridData.FILL_BOTH));
         widgets.mList.addSelectionListener(new SelectionAdapter() {
@@ -650,7 +648,7 @@ class EventDisplayOptions  extends Dialog {
                         // get the descriptor itself
                         OccurrenceDisplayDescriptor descriptor = eventDisplay.getDescriptor(
                                 descriptorClass, index);
-    
+
                         // open the edit dialog.
                         EventValueSelector dialog = new EventValueSelector(mShell);
                         if (dialog.open(descriptor, mLogParser)) {
@@ -661,7 +659,7 @@ class EventDisplayOptions  extends Dialog {
                             // reselect the item since fillUiWith remove the selection.
                             widgets.mList.select(index);
                             widgets.mList.notifyListeners(SWT.Selection, null);
-                            
+
                             setModified();
                         }
                     }
@@ -692,14 +690,14 @@ class EventDisplayOptions  extends Dialog {
 
         return widgets;
     }
-   
-    
+
+
     private void duplicateEventDisplay(ArrayList<EventDisplay> displayList) {
         for (EventDisplay eventDisplay : displayList) {
             mDisplayList.add(EventDisplay.clone(eventDisplay));
         }
     }
-    
+
     private void buildPidList(ArrayList<EventContainer> eventList) {
         mPidList = new ArrayList<Integer>();
         for (EventContainer event : eventList) {
@@ -713,7 +711,7 @@ class EventDisplayOptions  extends Dialog {
         mEditStatus = true;
     }
 
-    
+
     private void enable(boolean status) {
         mEventDisplayDeleteButton.setEnabled(status);
 
@@ -735,30 +733,30 @@ class EventDisplayOptions  extends Dialog {
             mPidText.setEnabled(false);
         }
     }
-    
+
     private void fillEventDisplayList() {
         for (EventDisplay eventDisplay : mDisplayList) {
             mEventDisplayList.add(eventDisplay.getName());
         }
     }
-    
+
     private void createNewEventDisplay() {
         int count = mDisplayList.size();
-        
+
         String name = String.format("display %1$d", count + 1);
-        
+
         EventDisplay eventDisplay = EventDisplay.eventDisplayFactory(0 /* type*/, name);
-        
+
         mDisplayList.add(eventDisplay);
         mEventDisplayList.add(name);
-        
+
         mEventDisplayList.select(count);
         handleEventDisplaySelection();
         mEventDisplayList.showSelection();
-        
+
         setModified();
     }
-    
+
     private void deleteEventDisplay() {
         int selection = mEventDisplayList.getSelectionIndex();
         if (selection != -1) {
@@ -779,7 +777,7 @@ class EventDisplayOptions  extends Dialog {
         if (selection != -1) {
             return mDisplayList.get(selection);
         }
-        
+
         return null;
     }
 
@@ -789,7 +787,7 @@ class EventDisplayOptions  extends Dialog {
             mDisplayList.set(selection, eventDisplay);
         }
     }
-    
+
     private void handleEventDisplaySelection() {
         EventDisplay eventDisplay = getCurrentEventDisplay();
         if (eventDisplay != null) {
@@ -856,7 +854,7 @@ class EventDisplayOptions  extends Dialog {
         mInfoGroup.layout(true);
         mShell.layout(true);
         mShell.pack();
-        
+
         if (eventDisplay.getPidFiltering()) {
             mPidFilterCheckBox.setSelection(true);
             mPidText.setEnabled(true);
@@ -886,14 +884,14 @@ class EventDisplayOptions  extends Dialog {
 
         mValueSelection.mList.removeAll();
         mOccurrenceSelection.mList.removeAll();
-        
+
         if (eventDisplay.getDisplayType() == EventDisplay.DISPLAY_TYPE_FILTERED_LOG ||
                 eventDisplay.getDisplayType() == EventDisplay.DISPLAY_TYPE_GRAPH) {
             mOccurrenceSelection.setEnabled(true);
             mValueSelection.setEnabled(true);
 
             Iterator<ValueDisplayDescriptor> valueIterator = eventDisplay.getValueDescriptors();
-    
+
             while (valueIterator.hasNext()) {
                 ValueDisplayDescriptor descriptor = valueIterator.next();
                 mValueSelection.mList.add(String.format("%1$s: %2$s [%3$s]%4$s",
@@ -903,10 +901,10 @@ class EventDisplayOptions  extends Dialog {
 
             Iterator<OccurrenceDisplayDescriptor> occurrenceIterator =
                 eventDisplay.getOccurrenceDescriptors();
-    
+
             while (occurrenceIterator.hasNext()) {
                 OccurrenceDisplayDescriptor descriptor = occurrenceIterator.next();
-    
+
                 mOccurrenceSelection.mList.add(String.format("%1$s [%2$s]%3$s",
                         mEventTagMap.get(descriptor.eventTag),
                         getSeriesLabelDescription(descriptor),
@@ -919,9 +917,9 @@ class EventDisplayOptions  extends Dialog {
             mOccurrenceSelection.setEnabled(false);
             mValueSelection.setEnabled(false);
         }
-        
+
     }
-    
+
     /**
      * Returns a String describing what is used as the series label
      * @param descriptor the descriptor of the display.
@@ -939,7 +937,7 @@ class EventDisplayOptions  extends Dialog {
         }
         return "pid";
     }
-    
+
     private String getFilterDescription(OccurrenceDisplayDescriptor descriptor) {
         if (descriptor.filterValueIndex != -1) {
             return String.format(" [%1$s %2$s %3$s]",

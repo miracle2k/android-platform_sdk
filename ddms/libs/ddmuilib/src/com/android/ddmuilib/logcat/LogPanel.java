@@ -21,7 +21,6 @@ import com.android.ddmlib.Log;
 import com.android.ddmlib.MultiLineReceiver;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.ddmuilib.DdmUiPreferences;
-import com.android.ddmuilib.IImageLoader;
 import com.android.ddmuilib.ITableFocusListener;
 import com.android.ddmuilib.SelectionDependentPanel;
 import com.android.ddmuilib.TableHelper;
@@ -186,10 +185,6 @@ public class LogPanel extends SelectionDependentPanel {
 
     private boolean mPendingAsyncRefresh = false;
 
-    /** loader for the images. the implementation will varie between standalone
-     * app and eclipse plugin app and eclipse plugin. */
-    private IImageLoader mImageLoader;
-
     private String mDefaultLogSave;
 
     private int mColumnMode = COLUMN_MODE_MANUAL;
@@ -318,14 +313,12 @@ public class LogPanel extends SelectionDependentPanel {
 
     /**
      * Create the log view with some default parameters
-     * @param imageLoader the image loader.
      * @param colors The display color object
      * @param filterStorage the storage for user defined filters.
      * @param mode The filtering mode
      */
-    public LogPanel(IImageLoader imageLoader, LogColors colors,
+    public LogPanel(LogColors colors,
             ILogFilterStorageManager filterStorage, int mode) {
-        mImageLoader = imageLoader;
         mColors = colors;
         mFilterMode = mode;
         mFilterStorage = filterStorage;
@@ -565,8 +558,7 @@ public class LogPanel extends SelectionDependentPanel {
      *
      */
     public void addFilter() {
-        EditFilterDialog dlg = new EditFilterDialog(mImageLoader,
-                mFolders.getShell());
+        EditFilterDialog dlg = new EditFilterDialog(mFolders.getShell());
         if (dlg.open()) {
             synchronized (mBuffer) {
                 // get the new filter in the array
@@ -637,9 +629,8 @@ public class LogPanel extends SelectionDependentPanel {
      */
     public void editFilter() {
         if (mCurrentFilter != null && mCurrentFilter != mDefaultFilter) {
-            EditFilterDialog dlg = new EditFilterDialog(mImageLoader,
-                    mFolders.getShell(),
-                    mCurrentFilter);
+            EditFilterDialog dlg = new EditFilterDialog(
+                    mFolders.getShell(), mCurrentFilter);
             if (dlg.open()) {
                 synchronized (mBuffer) {
                     // at this point the filter has been updated.

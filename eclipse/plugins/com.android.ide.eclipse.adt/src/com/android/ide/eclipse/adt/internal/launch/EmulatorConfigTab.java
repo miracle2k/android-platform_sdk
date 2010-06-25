@@ -16,13 +16,13 @@
 
 package com.android.ide.eclipse.adt.internal.launch;
 
+import com.android.ddmuilib.ImageLoader;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchConfiguration.TargetMode;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.sdk.AdtConsoleSdkLog;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.NullSdkLog;
@@ -306,9 +306,8 @@ public class EmulatorConfigTab extends AbstractLaunchConfigurationTab {
 
     @Override
     public Image getImage() {
-        return DdmsPlugin.getImageLoader().loadImage("emulator.png", null); //$NON-NLS-1$
+        return ImageLoader.getDdmUiLibLoader().loadImage("emulator.png", null); //$NON-NLS-1$
     }
-
 
     private void updateAvdList(AvdManager avdManager) {
         if (avdManager == null) {

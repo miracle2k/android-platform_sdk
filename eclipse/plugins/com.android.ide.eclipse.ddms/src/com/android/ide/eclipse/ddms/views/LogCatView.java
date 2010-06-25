@@ -17,13 +17,13 @@
 package com.android.ide.eclipse.ddms.views;
 
 import com.android.ddmlib.Log.LogLevel;
+import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.logcat.LogColors;
 import com.android.ddmuilib.logcat.LogFilter;
 import com.android.ddmuilib.logcat.LogPanel;
 import com.android.ddmuilib.logcat.LogPanel.ILogFilterStorageManager;
 import com.android.ide.eclipse.ddms.CommonAction;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
-import com.android.ide.eclipse.ddms.ImageLoader;
 import com.android.ide.eclipse.ddms.preferences.PreferenceInitializer;
 
 import org.eclipse.core.resources.IFile;
@@ -182,7 +182,7 @@ public final class LogCatView extends SelectionDependentViewPart {
         Display d = parent.getDisplay();
         LogColors colors = new LogColors();
 
-        ImageLoader loader = DdmsPlugin.getImageLoader();
+        ImageLoader loader = ImageLoader.getDdmUiLibLoader();
 
         colors.infoColor = new Color(d, 0, 127, 0);
         colors.debugColor = new Color(d, 0, 0, 127);
@@ -197,8 +197,7 @@ public final class LogCatView extends SelectionDependentViewPart {
             }
         };
         mCreateFilterAction.setToolTipText("Create Filter");
-        mCreateFilterAction.setImageDescriptor(loader
-                .loadDescriptor("add.png")); // $NON-NLS-1$
+        mCreateFilterAction.setImageDescriptor(loader.loadDescriptor("add.png"));
 
         mEditFilterAction = new CommonAction("Edit Filter") {
             @Override
@@ -207,8 +206,7 @@ public final class LogCatView extends SelectionDependentViewPart {
             }
         };
         mEditFilterAction.setToolTipText("Edit Filter");
-        mEditFilterAction.setImageDescriptor(loader
-                .loadDescriptor("edit.png")); // $NON-NLS-1$
+        mEditFilterAction.setImageDescriptor(loader.loadDescriptor("edit.png")); // $NON-NLS-1$
 
         mDeleteFilterAction = new CommonAction("Delete Filter") {
             @Override
@@ -217,8 +215,7 @@ public final class LogCatView extends SelectionDependentViewPart {
             }
         };
         mDeleteFilterAction.setToolTipText("Delete Filter");
-        mDeleteFilterAction.setImageDescriptor(loader
-                .loadDescriptor("delete.png")); // $NON-NLS-1$
+        mDeleteFilterAction.setImageDescriptor(loader.loadDescriptor("delete.png")); // $NON-NLS-1$
 
         mExportAction = new CommonAction("Export Selection As Text...") {
             @Override
@@ -268,12 +265,11 @@ public final class LogCatView extends SelectionDependentViewPart {
                 mLogPanel.clear();
             }
         };
-        mClearAction.setImageDescriptor(loader
-                .loadDescriptor("clear.png")); // $NON-NLS-1$
+        mClearAction.setImageDescriptor(loader.loadDescriptor("clear.png")); // $NON-NLS-1$
 
 
         // now create the log view
-        mLogPanel = new LogPanel(loader, colors, new FilterStorage(), LogPanel.FILTER_MANUAL);
+        mLogPanel = new LogPanel(colors, new FilterStorage(), LogPanel.FILTER_MANUAL);
         mLogPanel.setActions(mDeleteFilterAction, mEditFilterAction, mLogLevelActions);
 
         // get the font

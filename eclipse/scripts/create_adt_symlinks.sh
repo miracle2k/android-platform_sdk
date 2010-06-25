@@ -10,9 +10,11 @@ set -e # fail early
 D=`dirname "$0"`
 cd "$D/../../../"
 
-DEST="sdk/eclipse/plugins/com.android.ide.eclipse.adt"
+DEST="sdk/eclipse/plugins/com.android.ide.eclipse.adt/libs"
 # computes "../.." from DEST to here (in /android)
 BACK=`echo $DEST | sed 's@[^/]*@..@g'`
+
+mkdir -p $DEST
 
 LIBS="sdkstats androidprefs layoutlib_api layoutlib_utils ninepatch sdklib sdkuilib"
 
@@ -20,6 +22,7 @@ echo "make java libs ..."
 make -j3 showcommands $LIBS || die "ADT: Fail to build one of $LIBS."
 
 echo "Copying java libs to $DEST"
+
 
 HOST=`uname`
 if [ "$HOST" == "Linux" ]; then
