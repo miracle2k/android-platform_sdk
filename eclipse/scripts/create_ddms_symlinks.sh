@@ -52,8 +52,6 @@ cd "$D/../../../"
 
 BASE="sdk/eclipse/plugins/com.android.ide.eclipse.ddms"
 DEST=$BASE/libs
-# computes "../.." from DEST to here (in /android)
-BACK=`echo $DEST | sed 's@[^/]*@..@g'`
 
 mkdir -p $DEST
 for i in prebuilt/common/jfreechart/*.jar; do
@@ -61,6 +59,9 @@ for i in prebuilt/common/jfreechart/*.jar; do
 done
 
 LIBS="ddmlib ddmuilib"
+echo "make java libs ..."
+make -j3 showcommands $LIBS || die "DDMS: Fail to build one of $LIBS."
+
 for LIB in $LIBS; do
-    cpfile $DEST $BACK/out/host/$PLATFORM/framework/$LIB.jar
+    cpfile $DEST out/host/$PLATFORM/framework/$LIB.jar
 done
