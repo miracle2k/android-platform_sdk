@@ -33,6 +33,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaModel;
@@ -549,7 +550,7 @@ public final class ProjectHelper {
     /**
      * Saves a String property into the persistent storage of a resource.
      * @param resource The resource into which the string value is saved.
-     * @param propertyName the name of the property. The id of the plugin is added to this string.
+     * @param propertyName the name of the property. The id of the plug-in is added to this string.
      * @param value the value to save
      * @return true if the save succeeded.
      */
@@ -569,7 +570,7 @@ public final class ProjectHelper {
     /**
      * Loads a String property from the persistent storage of a resource.
      * @param resource The resource from which the string value is loaded.
-     * @param propertyName the name of the property. The id of the plugin is added to this string.
+     * @param propertyName the name of the property. The id of the plug-in is added to this string.
      * @return the property value or null if it was not found.
      */
     public static String loadStringProperty(IResource resource, String propertyName) {
@@ -586,7 +587,7 @@ public final class ProjectHelper {
     /**
      * Saves a property into the persistent storage of a resource.
      * @param resource The resource into which the boolean value is saved.
-     * @param propertyName the name of the property. The id of the plugin is added to this string.
+     * @param propertyName the name of the property. The id of the plug-in is added to this string.
      * @param value the value to save
      * @return true if the save succeeded.
      */
@@ -596,9 +597,9 @@ public final class ProjectHelper {
     }
 
     /**
-     * Loads a boolean property from the persistent storage of the project.
+     * Loads a boolean property from the persistent storage of a resource.
      * @param resource The resource from which the boolean value is loaded.
-     * @param propertyName the name of the property. The id of the plugin is added to this string.
+     * @param propertyName the name of the property. The id of the plug-in is added to this string.
      * @param defaultValue The default value to return if the property was not found.
      * @return the property value or the default value if the property was not found.
      */
@@ -613,9 +614,9 @@ public final class ProjectHelper {
     }
 
     /**
-     * Saves the path of a resource into the persistent storate of the project.
+     * Saves the path of a resource into the persistent storage of a resource.
      * @param resource The resource into which the resource path is saved.
-     * @param propertyName the name of the property. The id of the plugin is added to this string.
+     * @param propertyName the name of the property. The id of the plug-in is added to this string.
      * @param value The resource to save. It's its path that is actually stored. If null, an
      *      empty string is stored.
      * @return true if the save succeeded
@@ -623,7 +624,7 @@ public final class ProjectHelper {
     public static boolean saveResourceProperty(IResource resource, String propertyName,
             IResource value) {
         if (value != null) {
-            IPath iPath = value.getProjectRelativePath();
+            IPath iPath = value.getFullPath();
             return saveStringProperty(resource, propertyName, iPath.toString());
         }
 
@@ -631,17 +632,17 @@ public final class ProjectHelper {
     }
 
     /**
-     * Loads the path of a resource from the persistent storage of the project, and returns the
-     * corresponding IResource object, if it exists in the same project as <code>resource</code>.
+     * Loads the path of a resource from the persistent storage of a resource, and returns the
+     * corresponding IResource object.
      * @param resource The resource from which the resource path is loaded.
-     * @param propertyName the name of the property. The id of the plugin is added to this string.
+     * @param propertyName the name of the property. The id of the plug-in is added to this string.
      * @return The corresponding IResource object (or children interface) or null
      */
     public static IResource loadResourceProperty(IResource resource, String propertyName) {
         String value = loadStringProperty(resource, propertyName);
 
         if (value != null && value.length() > 0) {
-            return resource.getProject().findMember(value);
+            return ResourcesPlugin.getWorkspace().getRoot().findMember(new Path(value));
         }
 
         return null;

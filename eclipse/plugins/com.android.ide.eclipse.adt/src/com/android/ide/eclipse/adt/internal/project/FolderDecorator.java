@@ -18,7 +18,6 @@ package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.SdkConstants;
 
@@ -62,14 +61,11 @@ public class FolderDecorator implements ILightweightLabelDecorator {
                             doDecoration(decoration, null);
                         } else if (name.equals(SdkConstants.FD_GEN_SOURCES)) {
                             doDecoration(decoration, " [Generated Java Files]");
-                      } else if (name.equals(SdkConstants.FD_NATIVE_LIBS)) {
-                          doDecoration(decoration, null);
-                      } else if (folder.isLinked()) {
-                          ProjectState state = Sdk.getProjectState(project);
-                          LibraryState lib = state.getLibrary(folder.getName());
-                          if (lib != null) {
-                              doDecoration(decoration, " [Android Library]");
-                          }
+                        } else if (name.equals(SdkConstants.FD_NATIVE_LIBS)) {
+                            doDecoration(decoration, null);
+                        } else if (folder.isLinked() && Sdk.CREATOR_ADT.equals(
+                                ProjectHelper.loadStringProperty(folder, Sdk.PROP_CREATOR))) {
+                            doDecoration(decoration, " [Android Library]");
                         }
                     }
                 }

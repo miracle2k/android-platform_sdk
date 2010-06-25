@@ -20,6 +20,7 @@ import com.android.ddmlib.IDevice;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryDifference;
 import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryState;
@@ -46,6 +47,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -83,6 +85,9 @@ import java.util.Map.Entry;
  * To get the list of platforms or add-ons present in the SDK, call {@link #getTargets()}.
  */
 public final class Sdk  {
+    private static final String PROP_LIBRARY = "_library"; //$NON-NLS-1$
+    public static final String CREATOR_ADT = "ADT";        //$NON-NLS-1$
+    public static final String PROP_CREATOR = "_creator";  //$NON-NLS-1$
     private final static Object sLock = new Object();
 
     private static Sdk sCurrentSdk = null;
@@ -1008,7 +1013,7 @@ public final class Sdk  {
             final IPath previousLibraryPath,
             boolean doInJob) {
         final IJobRunnable jobRunnable = new IJobRunnable() {
-            public IStatus run(IProgressMonitor monitor) {
+            public IStatus run(final IProgressMonitor monitor) {
                 try {
                     IProject project = projectState.getProject();
                     IProject library = libraryState.getProjectState().getProject();
@@ -1049,54 +1054,97 @@ public final class Sdk  {
                     final String libName = library.getName();
                     final String varName = getLibraryVariableName(libName);
 
-                    // create a linked resource for the library using the path var.
-                    IFolder libSrc = project.getFolder(libName);
-                    // FIXME: make sure src has not been overriden?
-                    String libSrcFolder = "src"; //$NON-NLS-1$
-                    libSrc.createLink(new Path(varName + "/" + libSrcFolder), //$NON-NLS-1$
-                            IResource.REPLACE, monitor);
-
-                    // use the folder as a source folder. get the current list first.
+                    // get the current classpath entries for the project to add the new source
+                    // folders.
                     IJavaProject javaProject = JavaCore.create(project);
                     IClasspathEntry[] entries = javaProject.getRawClasspath();
-                    ArrayList<IClasspathEntry> list = new ArrayList<IClasspathEntry>(
+                    ArrayList<IClasspathEntry> classpathEntries = new ArrayList<IClasspathEntry>(
                             Arrays.asList(entries));
 
-                    // add the source folder to the classpath entries
-                    IPath path = libSrc.getFullPath();
-                    int count = list.size();
-                    boolean foundMatch = false;
-                    for (int i = 0 ; i < count ; i++) {
-                        if (list.get(i).getPath().equals(path)) {
-                            foundMatch = true;
-                            break;
-                        }
-                    }
-                    if (foundMatch == false) {
-                        list.add(JavaCore.newSourceEntry(path));
-                    }
+                    IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
 
-                    // remove a previous one if needed (in case of a rename)
-                    if (previousLibraryPath != null) {
-                        String oldLibName = previousLibraryPath.lastSegment();
-                        IPath oldEntryPath = new Path("/").append(project.getName()).append(oldLibName);
-                        // first remove the class path entry.
-                        count = list.size();
-                        for (int i = 0 ; i < count ; i++) {
-                            if (list.get(i).getPath().equals(oldEntryPath)) {
-                                list.remove(i);
-                                break;
+                    // list to hold the source folder to delete, as they can't be delete before
+                    // they have been removed from the classpath entries
+                    final ArrayList<IResource> toDelete = new ArrayList<IResource>();
+
+                    // loop on the classpath entries and look for CPE_SOURCE entries that
+                    // are linked folders. If they are created by us for the given library, then
+                    // we remove them as they'll be created again later (it's easier than trying
+                    // to keep old one--if they link to the same resource)
+                    for (int i = 0 ; i < classpathEntries.size();) {
+                        IClasspathEntry classpathEntry = classpathEntries.get(i);
+                        if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE) {
+                            IPath path = classpathEntry.getPath();
+                            IResource linkedRes = wsRoot.findMember(path);
+                            if (linkedRes != null && linkedRes.isLinked() && CREATOR_ADT.equals(
+                                    ProjectHelper.loadStringProperty(linkedRes, PROP_CREATOR))) {
+                                IResource originalLibrary = ProjectHelper.loadResourceProperty(
+                                        linkedRes, PROP_LIBRARY);
+
+                                // if the library is missing, or if the library is the one being
+                                // added or the same path as the one being removed:
+                                // remove the classpath entry and delete the linked folder.
+                                if (originalLibrary == null || originalLibrary.equals(library) ||
+                                        originalLibrary.getFullPath().equals(previousLibraryPath)) {
+                                    classpathEntries.remove(i);
+                                    toDelete.add(linkedRes);
+                                    continue; // don't increment i
+                                }
                             }
                         }
 
-                        // then remove the folder itself.
-                        IFolder oldLinkedFolder = project.getFolder(oldLibName);
-                        oldLinkedFolder.delete(true, monitor);
+                        i++;
+                    }
+
+                    // get the list of source folders for the library.
+                    ArrayList<IPath> sourceFolderPaths = BaseProjectHelper.getSourceClasspaths(
+                            library);
+
+                    // loop on all the source folder, ignoring FD_GEN and add them as linked folder
+                    for (IPath sourceFolderPath : sourceFolderPaths) {
+                        IResource sourceFolder = wsRoot.findMember(sourceFolderPath);
+                        if (sourceFolder == null) {
+                            continue;
+                        }
+
+                        IPath relativePath = sourceFolder.getProjectRelativePath();
+                        if (SdkConstants.FD_GEN_SOURCES.equals(relativePath.toString())) {
+                            continue;
+                        }
+
+                        // get a string version, to make up the linked folder name
+                        String srcFolderName = relativePath.toString().replace("/", //$NON-NLS-1$
+                                "_"); //$NON-NLS-1$
+
+                        // create a linked resource for the library using the path var.
+                        IFolder libSrc = project.getFolder(libName + "_" + srcFolderName);  //$NON-NLS-1$
+
+                        libSrc.createLink(new Path(varName).append(relativePath),
+                                IResource.REPLACE, monitor);
+
+                        // if we were deleting something called exactly the same (which could
+                        // have linked to a different folder), we remove it from the list
+                        // of items to delete
+                        if (toDelete.contains(libSrc)) {
+                            toDelete.remove(libSrc);
+                        }
+
+                        // set some persistent properties on it to know that it was created by ADT.
+                        ProjectHelper.saveStringProperty(libSrc, PROP_CREATOR, CREATOR_ADT);
+                        ProjectHelper.saveResourceProperty(libSrc, PROP_LIBRARY, library);
+
+                        // add the source folder to the classpath entries
+                        classpathEntries.add(JavaCore.newSourceEntry(libSrc.getFullPath()));
                     }
 
                     // set the new list
-                    javaProject.setRawClasspath(list.toArray(new IClasspathEntry[list.size()]),
+                    javaProject.setRawClasspath(
+                            classpathEntries.toArray(new IClasspathEntry[classpathEntries.size()]),
                             monitor);
+
+                    for (IResource res : toDelete) {
+                        res.delete(true, monitor);
+                    }
 
                     return Status.OK_STATUS;
                 } catch (CoreException e) {
@@ -1173,32 +1221,54 @@ public final class Sdk  {
                     // edit the list of source folders.
                     IJavaProject javaProject = JavaCore.create(project);
                     IClasspathEntry[] entries = javaProject.getRawClasspath();
-                    ArrayList<IClasspathEntry> list = new ArrayList<IClasspathEntry>(
+                    ArrayList<IClasspathEntry> classpathEntries = new ArrayList<IClasspathEntry>(
                             Arrays.asList(entries));
 
-                    String libName = libraryProject.getName();
-                    IPath oldEntryPath = new Path("/").append(project.getName()).append(libName);
-                    // first remove the class path entry.
-                    final int count = list.size();
-                    for (int i = 0 ; i < count ; i++) {
-                        if (list.get(i).getPath().equals(oldEntryPath)) {
-                            list.remove(i);
-                            break;
+                    IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
+
+                    // list to hold the source folder to delete, as they can't be delete before
+                    // they have been removed from the classpath entries
+                    ArrayList<IResource> toDelete = new ArrayList<IResource>();
+
+                    for (int i = 0 ; i < classpathEntries.size();) {
+                        IClasspathEntry classpathEntry = classpathEntries.get(i);
+                        if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE) {
+                            IPath path = classpathEntry.getPath();
+                            IResource linkedRes = wsRoot.findMember(path);
+                            if (linkedRes != null && linkedRes.isLinked() && CREATOR_ADT.equals(
+                                    ProjectHelper.loadStringProperty(linkedRes, PROP_CREATOR))) {
+                                IResource originalLibrary = ProjectHelper.loadResourceProperty(
+                                        linkedRes, PROP_LIBRARY);
+
+                                // if the library is missing, or if the library is the one being
+                                // unlinked:
+                                // remove the classpath entry and delete the linked folder.
+                                if (originalLibrary == null ||
+                                        originalLibrary.equals(libraryProject)) {
+                                    classpathEntries.remove(i);
+                                    toDelete.add(linkedRes);
+                                    continue; // don't increment i
+                                }
+                            }
                         }
+
+                        i++;
                     }
 
-                    // then remove the folder itself.
-                    IFolder oldLinkedFolder = project.getFolder(libName);
-                    oldLinkedFolder.delete(true, monitor);
-
                     // set the new list
-                    javaProject.setRawClasspath(list.toArray(new IClasspathEntry[list.size()]),
+                    javaProject.setRawClasspath(
+                            classpathEntries.toArray(new IClasspathEntry[classpathEntries.size()]),
                             monitor);
+
+                    // delete the resources that need deleting
+                    for (IResource res : toDelete) {
+                        res.delete(true, monitor);
+                    }
 
                     return Status.OK_STATUS;
                 } catch (CoreException e) {
-                    AdtPlugin.log(e,"Failure when unlinking %1$s from %2$s",
-                            libraryProject.getName(), projectState.getProject().getName());
+                    AdtPlugin.log(e, "Failure to unlink %1$s from %2$s", libraryProject.getName(),
+                            projectState.getProject().getName());
                     return e.getStatus();
                 }
             }

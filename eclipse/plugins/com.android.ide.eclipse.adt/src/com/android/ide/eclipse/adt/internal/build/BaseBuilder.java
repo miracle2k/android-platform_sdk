@@ -365,28 +365,6 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
     }
 
     /**
-     * Saves the path of a resource into the persistent storate of the project.
-     * @param propertyName the name of the property. The id of the plugin is added to this string.
-     * @param resource the resource which path is saved.
-     * @return true if the save succeeded
-     */
-    protected boolean saveProjectResourceProperty(String propertyName, IResource resource) {
-        return ProjectHelper.saveResourceProperty(getProject(), propertyName, resource);
-    }
-
-    /**
-     * Loads the path of a resource from the persistent storage of the project, and returns the
-     * corresponding IResource object.
-     * @param propertyName the name of the property. The id of the plugin is added to this string.
-     * @return The corresponding IResource object (or children interface) or null
-     */
-    protected IResource loadProjectResourceProperty(String propertyName) {
-        IProject project = getProject();
-        return ProjectHelper.loadResourceProperty(project, propertyName);
-    }
-
-
-    /**
      * Aborts the build if the SDK/project setups are broken. This does not
      * display any errors.
      *

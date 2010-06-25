@@ -87,6 +87,16 @@ public final class BaseProjectHelper {
     }
 
     /**
+     * returns a list of source classpath for a specified project
+     * @param project
+     * @return a list of path relative to the workspace root.
+     */
+    public static ArrayList<IPath> getSourceClasspaths(IProject project) {
+        IJavaProject javaProject = JavaCore.create(project);
+        return getSourceClasspaths(javaProject);
+    }
+
+    /**
      * Adds a marker to a file on a specific line. This methods catches thrown
      * {@link CoreException}, and returns null instead.
      * @param resource the resource to be marked

@@ -373,6 +373,11 @@ public final class ProjectProperties {
             BufferedReader reader = new BufferedReader(new InputStreamReader(toSave.getContents(),
                     SdkConstants.INI_CHARSET));
 
+            // since we're reading the existing file and replacing values with new ones, or skipping
+            // removed values, we need to record what properties have been visited, so that
+            // we can figure later what new properties need to be added at the end of the file.
+            HashSet<String> visitedProps = new HashSet<String>();
+
             String line = null;
             while ((line = reader.readLine()) != null) {
                 // check if this is a line containing a property.
@@ -382,6 +387,10 @@ public final class ProjectProperties {
                     if (m.matches()) {
                         String key = m.group(1);
                         String value = m.group(2);
+
+                        // record the prop
+                        visitedProps.add(key);
+
                         // check if the property still exists.
                         if (mProperties.containsKey(key)) {
                             // put the new value.
@@ -396,8 +405,7 @@ public final class ProjectProperties {
 
                         // if the value is still valid, write it down.
                         if (value != null) {
-                            value = value.replaceAll("\\\\", "\\\\\\\\");
-                            writer.write(String.format("%s=%s\n", key, value));
+                            writeValue(writer, key, value, false /*addComment*/);
                         }
                     } else  {
                         // the line was wrong, let's just ignore it so that it's removed from the
@@ -408,6 +416,17 @@ public final class ProjectProperties {
                     writer.append(line).append('\n');
                 }
             }
+
+            // now add the new properties.
+            for (Entry<String, String> entry : mProperties.entrySet()) {
+                if (visitedProps.contains(entry.getKey()) == false) {
+                    String value = entry.getValue();
+                    if (value != null) {
+                        writeValue(writer, entry.getKey(), value, true /*addComment*/);
+                    }
+                }
+            }
+
         } else {
             // new file, just write it all
             // write the header
@@ -415,14 +434,9 @@ public final class ProjectProperties {
 
             // write the properties.
             for (Entry<String, String> entry : mProperties.entrySet()) {
-                String comment = COMMENT_MAP.get(entry.getKey());
-                if (comment != null) {
-                    writer.write(comment);
-                }
                 String value = entry.getValue();
                 if (value != null) {
-                    value = value.replaceAll("\\\\", "\\\\\\\\");
-                    writer.write(String.format("%s=%s\n", entry.getKey(), value));
+                    writeValue(writer, entry.getKey(), value, true /*addComment*/);
                 }
             }
         }
@@ -433,6 +447,19 @@ public final class ProjectProperties {
         OutputStream filestream = toSave.getOutputStream();
         filestream.write(baos.toByteArray());
         filestream.flush();
+    }
+
+    private void writeValue(OutputStreamWriter writer, String key, String value,
+            boolean addComment) throws IOException {
+        if (addComment) {
+            String comment = COMMENT_MAP.get(key);
+            if (comment != null) {
+                writer.write(comment);
+            }
+        }
+
+        value = value.replaceAll("\\\\", "\\\\\\\\");
+        writer.write(String.format("%s=%s\n", key, value));
     }
 
     /**
