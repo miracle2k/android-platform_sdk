@@ -28,7 +28,7 @@ import java.util.ArrayList;
  * UiModelTreeContentProvider is a trivial implementation of {@link ITreeContentProvider}
  * where elements are expected to be instances of {@link UiElementNode}.
  */
-public class UiModelTreeContentProvider implements ITreeContentProvider {
+class UiModelTreeContentProvider implements ITreeContentProvider {
 
     /** The descriptor of the elements to be displayed as root in this tree view. All elements
      *  of the same type in the root will be displayed. */

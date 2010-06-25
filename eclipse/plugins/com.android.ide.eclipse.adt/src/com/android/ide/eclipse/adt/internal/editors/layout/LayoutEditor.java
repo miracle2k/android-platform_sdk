@@ -70,8 +70,12 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
 
     private IGraphicalLayoutEditor mGraphicalEditor;
     private int mGraphicalEditorIndex;
+    /**
+     * Implementation of the {@link IContentOutlinePage} for this editor.
+     * @deprecated Used for backward compatibility with GLE1.
+     */
+    private UiContentOutlinePage mOutlineForGle1;
     /** Implementation of the {@link IContentOutlinePage} for this editor */
-    private UiContentOutlinePage mOutline1;
     private IContentOutlinePage mOutline;
     /** Custom implementation of {@link IPropertySheetPage} for this editor */
     private UiPropertySheetPage mPropertyPage;
@@ -268,9 +272,9 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         createAndroidPages();
         selectDefaultPage(Integer.toString(currentPage));
 
-        // update the outline
-        if (mOutline1 != null && mGraphicalEditor != null) {
-            mOutline1.reloadModel();
+        // update the GLE1 outline. The GLE2 outline doesn't need this call anymore.
+        if (mOutlineForGle1 != null) {
+            mOutlineForGle1.reloadModel();
         }
     }
 
@@ -293,8 +297,9 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
             mGraphicalEditor.onXmlModelChanged();
         }
 
-        if (mOutline1 != null) {
-            mOutline1.reloadModel();
+        // update the GLE1 outline. The GLE2 outline doesn't need this call anymore.
+        if (mOutlineForGle1 != null) {
+            mOutlineForGle1.reloadModel();
         }
     }
 
@@ -310,10 +315,13 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         if (IContentOutlinePage.class == adapter && mGraphicalEditor != null) {
 
             if (mOutline == null && mGraphicalEditor instanceof GraphicalLayoutEditor) {
-                mOutline1 = new UiContentOutlinePage(
+                // Create the GLE1 outline. We need to keep a specific reference to it in order
+                // to call its reloadModel() method. The GLE2 outline no longer relies on this
+                // and can be casted to the base interface.
+                mOutlineForGle1 = new UiContentOutlinePage(
                         (GraphicalLayoutEditor) mGraphicalEditor,
                         new TreeViewer());
-                mOutline = mOutline1;
+                mOutline = mOutlineForGle1;
 
             } else if (mOutline == null && mGraphicalEditor instanceof GraphicalEditorPart) {
                 mOutline = new OutlinePage2();
@@ -537,8 +545,8 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
             mUiRootNode.reloadFromXmlNode(mUiRootNode.getXmlDocument());
         }
 
-        if (mOutline1 != null) {
-            mOutline1.reloadModel();
+        if (mOutlineForGle1 != null) {
+            mOutlineForGle1.reloadModel();
         }
 
         if (mGraphicalEditor != null) {
