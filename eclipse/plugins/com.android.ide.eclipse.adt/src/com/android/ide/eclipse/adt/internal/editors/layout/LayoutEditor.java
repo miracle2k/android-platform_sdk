@@ -27,6 +27,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewEleme
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.GraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiContentOutlinePage;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiPropertySheetPage;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.OutlinePage2;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiActions;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
@@ -70,7 +71,8 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     private IGraphicalLayoutEditor mGraphicalEditor;
     private int mGraphicalEditorIndex;
     /** Implementation of the {@link IContentOutlinePage} for this editor */
-    private UiContentOutlinePage mOutline;
+    private UiContentOutlinePage mOutline1;
+    private IContentOutlinePage mOutline;
     /** Custom implementation of {@link IPropertySheetPage} for this editor */
     private UiPropertySheetPage mPropertyPage;
 
@@ -267,8 +269,8 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         selectDefaultPage(Integer.toString(currentPage));
 
         // update the outline
-        if (mOutline != null && mGraphicalEditor != null) {
-            mOutline.reloadModel();
+        if (mOutline1 != null && mGraphicalEditor != null) {
+            mOutline1.reloadModel();
         }
     }
 
@@ -291,8 +293,8 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
             mGraphicalEditor.onXmlModelChanged();
         }
 
-        if (mOutline != null) {
-            mOutline.reloadModel();
+        if (mOutline1 != null) {
+            mOutline1.reloadModel();
         }
     }
 
@@ -308,10 +310,13 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         if (IContentOutlinePage.class == adapter && mGraphicalEditor != null) {
 
             if (mOutline == null && mGraphicalEditor instanceof GraphicalLayoutEditor) {
-                // TODO add support for GLE2
-                mOutline = new UiContentOutlinePage(
+                mOutline1 = new UiContentOutlinePage(
                         (GraphicalLayoutEditor) mGraphicalEditor,
                         new TreeViewer());
+                mOutline = mOutline1;
+
+            } else if (mOutline == null && mGraphicalEditor instanceof GraphicalEditorPart) {
+                mOutline = new OutlinePage2();
             }
 
             return mOutline;
@@ -532,8 +537,8 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
             mUiRootNode.reloadFromXmlNode(mUiRootNode.getXmlDocument());
         }
 
-        if (mOutline != null) {
-            mOutline.reloadModel();
+        if (mOutline1 != null) {
+            mOutline1.reloadModel();
         }
 
         if (mGraphicalEditor != null) {
