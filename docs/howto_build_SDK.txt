@@ -68,7 +68,7 @@ Basically it's not trivial yet when done right it's not that complicated.
 First, setup your development environment and get the Android source code from
 git as explained here:
 
-  http://source.android.com/download
+  http://source.android.com/source/download.html
 
 For example for the cupcake branch:
 

@@ -365,7 +365,7 @@ Example:
 
 This completes the howto guide on how to use the new Cupcake SDK.
 Feedback is welcome on the public Android Open Source forums:
-  http://source.android.com/discuss
+  http://source.android.com/community
 
 -end-
 
