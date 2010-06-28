@@ -25,6 +25,7 @@ import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.io.FileWrapper;
+import com.android.sdklib.io.FolderWrapper;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.AndroidXPathFactory;
 
@@ -39,6 +40,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -238,9 +240,6 @@ public final class SetupTask extends ImportTask {
             isLibrary = Boolean.valueOf(libraryProp).booleanValue();
         }
 
-        // look for referenced libraries.
-        processReferencedLibraries(antProject, androidTarget);
-
         if (isLibrary) {
             System.out.println("Project Type: Android Library");
         }
@@ -252,6 +251,9 @@ public final class SetupTask extends ImportTask {
                     "Project target '%1$s' does not support building libraries.",
                     androidTarget.getFullName()));
         }
+
+        // look for referenced libraries.
+        processReferencedLibraries(antProject, androidTarget);
 
         // always check the manifest minSdkVersion.
         checkManifest(antProject, androidTarget.getVersion());
@@ -347,7 +349,7 @@ public final class SetupTask extends ImportTask {
                     rulesLocation = rulesLocation.substring(1);
                 }
             }
-            System.out.println("Importing rules file: " + rulesLocation);
+            System.out.println("\nImporting rules file: " + rulesLocation);
 
             // set the file location to import
             setFile(rules.getAbsolutePath());
@@ -475,30 +477,29 @@ public final class SetupTask extends ImportTask {
             }
         };
 
-        // get the build version for the current target. It'll be tested if there's at least
-        // one library.
-        boolean supportLibrary = androidTarget.getProperty(SdkConstants.PROP_SDK_SUPPORT_LIBRARY,
-                false);
+        System.out.println("\n------------------\nResolving library dependencies:");
 
-        int index = 1;
-        while (true) {
-            String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index++);
-            String rootPath = antProject.getProperty(propName);
+        ArrayList<File> libraries = getProjectLibraries(antProject);
 
-            if (rootPath == null) {
-                break;
-            }
+        final int libCount = libraries.size();
+        if (libCount > 0 && androidTarget.getProperty(SdkConstants.PROP_SDK_SUPPORT_LIBRARY,
+                false) == false) {
+            throw new BuildException(String.format(
+                    "The build system for this project target (%1$s) does not support libraries",
+                    androidTarget.getFullName()));
+        }
 
-            if (supportLibrary == false) {
-                throw new BuildException(String.format(
-                        "The build system for this project target (%1$s) does not support libraries",
-                        androidTarget.getFullName()));
-            }
+        System.out.println("------------------\nOrdered libraries:");
+
+        for (File library : libraries) {
+            System.out.println(library.getAbsolutePath());
 
             // get the source path. default is src but can be overriden by the property
             // "source.dir" in build.properties.
             PathElement element = sourcePath.createPathElement();
-            ProjectProperties prop = ProjectProperties.load(rootPath, PropertyType.BUILD);
+            ProjectProperties prop = ProjectProperties.load(new FolderWrapper(library),
+                    PropertyType.BUILD);
+
             String sourceDir = SdkConstants.FD_SOURCES;
             if (prop != null) {
                 String value = prop.getProperty(ProjectProperties.PROPERTY_BUILD_SOURCE_DIR);
@@ -507,18 +508,20 @@ public final class SetupTask extends ImportTask {
                 }
             }
 
-            element.setPath(rootPath + "/" + sourceDir);
+            String path = library.getAbsolutePath();
+
+            element.setPath(path + "/" + sourceDir);
 
             // get the res path. Always $PROJECT/res
             element = resPath.createPathElement();
-            element.setPath(rootPath + "/" + SdkConstants.FD_RESOURCES);
+            element.setPath(path + "/" + SdkConstants.FD_RESOURCES);
 
             // get the libs path. Always $PROJECT/libs
             element = libsPath.createPathElement();
-            element.setPath(rootPath + "/" + SdkConstants.FD_NATIVE_LIBS);
+            element.setPath(path + "/" + SdkConstants.FD_NATIVE_LIBS);
 
             // get the jars from it too
-            File libsFolder = new File(rootPath, SdkConstants.FD_NATIVE_LIBS);
+            File libsFolder = new File(library, SdkConstants.FD_NATIVE_LIBS);
             File[] jarFiles = libsFolder.listFiles(filter);
             if (jarFiles != null) {
                 for (File jarFile : jarFiles) {
@@ -528,7 +531,7 @@ public final class SetupTask extends ImportTask {
             }
 
             // get the package from the manifest.
-            FileWrapper manifest = new FileWrapper(rootPath, SdkConstants.FN_ANDROID_MANIFEST_XML);
+            FileWrapper manifest = new FileWrapper(library, SdkConstants.FN_ANDROID_MANIFEST_XML);
             try {
                 String value = AndroidManifest.getPackage(manifest);
                 if (value != null) { // aapt will complain if it's missing.
@@ -539,6 +542,8 @@ public final class SetupTask extends ImportTask {
                 throw new BuildException(e);
             }
         }
+
+        System.out.println("------------------\n");
 
         // even with no libraries, always setup these so that various tasks in Ant don't complain
         // (the task themselves can handle a ref to an empty Path)
@@ -551,5 +556,112 @@ public final class SetupTask extends ImportTask {
             antProject.addReference("android.libraries.res", resPath);
             antProject.setProperty("android.libraries.package", sb.toString());
         }
+    }
+
+    /**
+     * Returns all the library dependencies of a given Ant project.
+     * @param antProject the Ant project
+     * @return a list of properties, sorted from highest priority to lowest.
+     */
+    private ArrayList<File> getProjectLibraries(final Project antProject) {
+        ArrayList<File> libraries = new ArrayList<File>();
+        File baseDir = antProject.getBaseDir();
+
+        // get the top level list of library dependencies.
+        ArrayList<File> topLevelLibraries = getDirectDependencies(baseDir, new IPropertySource() {
+            public String getProperty(String name) {
+                return antProject.getProperty(name);
+            }
+        });
+
+        // process the libraries in case they depend on other libraries.
+        resolveFullLibraryDependencies(topLevelLibraries, libraries);
+
+        return libraries;
+    }
+
+    /**
+     * Resolves a given list of libraries, finds out if they depend on other libraries, and
+     * returns a full list of all the direct and indirect dependencies in the proper order (first
+     * is higher priority when calling aapt).
+     * @param inLibraries the libraries to resolve
+     * @param outLibraries where to store all the libraries.
+     */
+    private void resolveFullLibraryDependencies(ArrayList<File> inLibraries,
+            ArrayList<File> outLibraries) {
+        // loop in the inverse order to resolve dependencies on the libraries, so that if a library
+        // is required by two higher level libraries it can be inserted in the correct place
+        for (int i = inLibraries.size() - 1  ; i >= 0 ; i--) {
+            File library = inLibraries.get(i);
+
+            // get the default.property file for it
+            final ProjectProperties defaultProp = ProjectProperties.load(
+                    new FolderWrapper(library), PropertyType.DEFAULT);
+
+            // get its libraries
+            ArrayList<File> dependencies = getDirectDependencies(library, new IPropertySource() {
+                public String getProperty(String name) {
+                    return defaultProp.getProperty(name);
+                }
+            });
+
+            // resolve the dependencies for those libraries
+            resolveFullLibraryDependencies(dependencies, outLibraries);
+
+            // and add the current one (if needed) in front (higher priority)
+            if (outLibraries.contains(library) == false) {
+                outLibraries.add(0, library);
+            }
+        }
+    }
+
+    public interface IPropertySource {
+        String getProperty(String name);
+    }
+
+    /**
+     * Returns the top level library dependencies of a given <var>source</var> representing a
+     * project properties.
+     * @param baseFolder the base folder of the project (to resolve relative paths)
+     * @param source a source of project properties.
+     * @return
+     */
+    private ArrayList<File> getDirectDependencies(File baseFolder, IPropertySource source) {
+        ArrayList<File> libraries = new ArrayList<File>();
+
+        // first build the list. they are ordered highest priority first.
+        int index = 1;
+        while (true) {
+            String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index++);
+            String rootPath = source.getProperty(propName);
+
+            if (rootPath == null) {
+                break;
+            }
+
+            try {
+                File library = new File(baseFolder, rootPath).getCanonicalFile();
+
+                // check for validity
+                File defaultProp = new File(library, PropertyType.DEFAULT.getFilename());
+                if (defaultProp.isFile() == false) {
+                    // error!
+                    throw new BuildException(String.format(
+                            "%1$s resolve to a path with no %2$s file for project %3$s", rootPath,
+                            PropertyType.DEFAULT.getFilename(), baseFolder.getAbsolutePath()));
+                }
+
+                if (libraries.contains(library) == false) {
+                    System.out.println(String.format("%1$s: %2$s => %3$s",
+                            baseFolder.getAbsolutePath(), rootPath, library.getAbsolutePath()));
+
+                    libraries.add(library);
+                }
+            } catch (IOException e) {
+                throw new BuildException("Failed to resolve library path: " + rootPath, e);
+            }
+        }
+
+        return libraries;
     }
 }
