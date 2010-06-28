@@ -66,6 +66,12 @@ import java.util.ArrayList;
  */
 public class OutlinePage2 implements IContentOutlinePage {
 
+    /**
+     * The current TreeViewer. This is created in {@link #createControl(Composite)}.
+     * It is entirely possible for callbacks to be invoked *before* the tree viewer
+     * is created, for example if a non-yet shown canvas is modified and it refreshes
+     * the model of a non-yet shown outline.
+     */
     private TreeViewer mTreeViewer;
 
     /**
@@ -131,9 +137,11 @@ public class OutlinePage2 implements IContentOutlinePage {
     public void setModel(CanvasViewInfo rootViewInfo) {
         mRootWrapper.setRoot(rootViewInfo);
 
-        Object[] expanded = mTreeViewer.getExpandedElements();
-        mTreeViewer.refresh();
-        mTreeViewer.setExpandedElements(expanded);
+        if (mTreeViewer != null) {
+            Object[] expanded = mTreeViewer.getExpandedElements();
+            mTreeViewer.refresh();
+            mTreeViewer.setExpandedElements(expanded);
+        }
     }
 
     public Control getControl() {
