@@ -45,7 +45,6 @@ import java.util.ArrayList;
 
 /*
  * TODO -- missing features:
- * - synchronize selection tree=>canvas
  * - right-click context menu *shared* with the one from canvas (simply delegate action)
  * - drag'n'drop initiated from Palette to Outline
  * - drag'n'drop from Outline to Outline
