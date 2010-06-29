@@ -6,6 +6,11 @@
 
 set -e
 
+function die() {
+    echo "Error: $*"
+    exit 1
+}
+
 HOST=`uname`
 
 if [ "${HOST:0:6}" == "CYGWIN" ]; then
@@ -65,3 +70,15 @@ make -j3 showcommands $LIBS || die "DDMS: Fail to build one of $LIBS."
 for LIB in $LIBS; do
     cpfile $DEST out/host/$PLATFORM/framework/$LIB.jar
 done
+
+if [ "${HOST:0:6}" == "CYGWIN" ]; then
+    # On Windows we used to make a hard copy of the ddmlib/ddmuilib
+    # under the plugin source tree. Now that we're using external JARs
+    # we need to actually remove these obsolete sources.
+    for i in ddmlib ddmuilib ; do
+        DIR=$BASE/src/com/android/$i
+        if [ -d $DIR ]; then
+            rm -rfv $BASE/src/com/android/$i
+        fi
+    done
+fi
