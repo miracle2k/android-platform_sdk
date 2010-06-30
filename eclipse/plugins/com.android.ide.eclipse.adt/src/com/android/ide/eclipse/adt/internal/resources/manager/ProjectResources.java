@@ -384,7 +384,7 @@ public class ProjectResources implements IResourceRepository {
         if (mProject != null) {
             ProjectState state = Sdk.getProjectState(mProject);
             if (state != null) {
-                IProject[] libraries = state.getLibraryProjects();
+                IProject[] libraries = state.getFullLibraryProjects();
 
                 ResourceManager resMgr = ResourceManager.getInstance();
 
@@ -392,8 +392,7 @@ public class ProjectResources implements IResourceRepository {
                 // one will have priority over the 2nd one. So it's better to loop in the inverse
                 // order and fill the map with resources that will be overwritten by higher
                 // priority resources
-                final int libCount = libraries != null ? libraries.length : 0;
-                for (int i = libCount - 1 ; i >= 0 ; i--) {
+                for (int i = libraries.length - 1 ; i >= 0 ; i--) {
                     IProject library = libraries[i];
 
                     ProjectResources libRes = resMgr.getProjectResources(library);

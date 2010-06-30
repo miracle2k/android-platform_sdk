@@ -234,7 +234,7 @@ public class PreCompilerBuilder extends BaseBuilder {
             IAndroidTarget projectTarget = projectState.getTarget();
 
             // get the libraries
-            libProjects = projectState.getLibraryProjects();
+            libProjects = projectState.getFullLibraryProjects();
 
             IJavaProject javaProject = JavaCore.create(project);
 
@@ -287,8 +287,7 @@ public class PreCompilerBuilder extends BaseBuilder {
 
                     // if the main resources didn't change, then we check for the library
                     // ones (will trigger resource recompilation too)
-                    if (mMustCompileResources == false && libProjects != null &&
-                            libProjects.length > 0) {
+                    if (mMustCompileResources == false && libProjects.length > 0) {
                         for (IProject libProject : libProjects) {
                             delta = getDelta(libProject);
                             if (delta != null) {

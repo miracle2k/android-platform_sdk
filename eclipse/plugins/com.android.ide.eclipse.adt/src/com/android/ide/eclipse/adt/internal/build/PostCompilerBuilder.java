@@ -206,7 +206,7 @@ public class PostCompilerBuilder extends BaseBuilder {
             }
 
             // get the libraries
-            libProjects = projectState.getLibraryProjects();
+            libProjects = projectState.getFullLibraryProjects();
 
             IJavaProject javaProject = JavaCore.create(project);
 
@@ -218,7 +218,7 @@ public class PostCompilerBuilder extends BaseBuilder {
             IJavaProject[] referencedJavaProjects = PostCompilerHelper.getJavaProjects(javaProjects);
 
             // mix the java project and the library projects
-            final int libCount = libProjects != null ? libProjects.length : 0;
+            final int libCount = libProjects.length;
             final int javaCount = javaProjects != null ? javaProjects.length : 0;
             allRefProjects = new IProject[libCount + javaCount];
             if (libCount > 0) {
@@ -268,7 +268,7 @@ public class PostCompilerBuilder extends BaseBuilder {
                 // if the main resources didn't change, then we check for the library
                 // ones (will trigger resource repackaging too)
                 if ((mPackageResources == false || mBuildFinalPackage == false) &&
-                        libProjects != null && libProjects.length > 0) {
+                        libProjects.length > 0) {
                     for (IProject libProject : libProjects) {
                         delta = getDelta(libProject);
                         if (delta != null) {

@@ -244,7 +244,7 @@ public class MultiApkExportAction implements IObjectActionDelegate {
             int versionCode, ApkData apk, Entry<String, String> softVariant, IFolder binFolder)
             throws CoreException {
         // get the libraries for this project
-        IProject[] libProjects = projectState.getLibraryProjects();
+        IProject[] libProjects = projectState.getFullLibraryProjects();
 
         IProject project = projectState.getProject();
         IJavaProject javaProject = JavaCore.create(project);
