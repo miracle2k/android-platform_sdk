@@ -21,21 +21,29 @@ import com.android.layoutlib.api.ILayoutResult;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.ui.views.properties.IPropertyDescriptor;
+import org.eclipse.ui.views.properties.IPropertySheetPage;
+import org.eclipse.ui.views.properties.IPropertySource;
 
 import java.util.ArrayList;
 
 /**
  * Maps a {@link ILayoutViewInfo} in a structure more adapted to our needs.
  * The only large difference is that we keep both the original bounds of the view info
- * and we pre-compute the selection bounds which are absolute to the rendered image (where
- * as the original bounds are relative to the parent view.)
+ * and we pre-compute the selection bounds which are absolute to the rendered image
+ * (whereas the original bounds are relative to the parent view.)
  * <p/>
- * Each view also know its parent, which should be handy later.
+ * Each view also knows its parent and children.
  * <p/>
  * We can't alter {@link ILayoutViewInfo} as it is part of the LayoutBridge and needs to
  * have a fixed API.
+ * <p/>
+ * The view info also implements {@link IPropertySource}, which enables a linked
+ * {@link IPropertySheetPage} to display the attributes of the selected element.
+ * This class actually delegates handling of {@link IPropertySource} to the underlying
+ * {@link UiViewElementNode}, if any.
  */
-public class CanvasViewInfo {
+public class CanvasViewInfo implements IPropertySource {
 
     /**
      * Minimal size of the selection, in case an empty view or layout is selected.
@@ -180,9 +188,58 @@ public class CanvasViewInfo {
      * Returns the name of the {@link CanvasViewInfo}.
      * Could be null, although unlikely.
      * Experience shows this is the full qualified Java name of the View.
+     *
      * @see ILayoutViewInfo#getName()
      */
     public String getName() {
         return mName;
+    }
+
+    // ---- Implementation of IPropertySource
+
+    public Object getEditableValue() {
+        UiViewElementNode uiView = getUiViewKey();
+        if (uiView != null) {
+            return ((IPropertySource) uiView).getEditableValue();
+        }
+        return null;
+    }
+
+    public IPropertyDescriptor[] getPropertyDescriptors() {
+        UiViewElementNode uiView = getUiViewKey();
+        if (uiView != null) {
+            return ((IPropertySource) uiView).getPropertyDescriptors();
+        }
+        return null;
+    }
+
+    public Object getPropertyValue(Object id) {
+        UiViewElementNode uiView = getUiViewKey();
+        if (uiView != null) {
+            return ((IPropertySource) uiView).getPropertyValue(id);
+        }
+        return null;
+    }
+
+    public boolean isPropertySet(Object id) {
+        UiViewElementNode uiView = getUiViewKey();
+        if (uiView != null) {
+            return ((IPropertySource) uiView).isPropertySet(id);
+        }
+        return false;
+    }
+
+    public void resetPropertyValue(Object id) {
+        UiViewElementNode uiView = getUiViewKey();
+        if (uiView != null) {
+            ((IPropertySource) uiView).resetPropertyValue(id);
+        }
+    }
+
+    public void setPropertyValue(Object id, Object value) {
+        UiViewElementNode uiView = getUiViewKey();
+        if (uiView != null) {
+            ((IPropertySource) uiView).setPropertyValue(id, value);
+        }
     }
 }

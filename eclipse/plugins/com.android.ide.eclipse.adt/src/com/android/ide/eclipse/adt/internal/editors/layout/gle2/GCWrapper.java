@@ -21,7 +21,6 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
-import com.android.ide.eclipse.adt.internal.editors.layout.gle2.LayoutCanvas.ScaleTransform;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -68,11 +67,11 @@ public class GCWrapper implements IGraphics {
     private int mFontHeight = 0;
 
     /** The scaling of the canvas in X. */
-    private final ScaleTransform mHScale;
+    private final ICanvasTransform mHScale;
     /** The scaling of the canvas in Y. */
-    private final ScaleTransform mVScale;
+    private final ICanvasTransform mVScale;
 
-    public GCWrapper(ScaleTransform hScale, ScaleTransform vScale) {
+    public GCWrapper(ICanvasTransform hScale, ICanvasTransform vScale) {
         mHScale = hScale;
         mVScale = vScale;
         mGc = null;
