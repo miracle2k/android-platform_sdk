@@ -130,6 +130,14 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
         }
 
         /**
+         * Stores the provided command for later retrieval from getLastShellCommand.
+         */
+        public void executeShellCommand(String command,
+                IShellOutputReceiver receiver, int timeout) throws IOException {
+            mLastShellCommand = command;
+        }
+
+        /**
          * Get the last command provided to executeShellCommand.
          */
         public String getLastShellCommand() {

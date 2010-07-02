@@ -246,7 +246,7 @@ final class Device implements IDevice {
      * (non-Javadoc)
      * @see com.android.ddmlib.IDevice#getSyncService()
      */
-    public SyncService getSyncService() throws IOException {
+    public SyncService getSyncService() throws TimeoutException, IOException {
         SyncService syncService = new SyncService(AndroidDebugBridge.getSocketAddress(), this);
         if (syncService.openSync()) {
             return syncService;
@@ -267,34 +267,28 @@ final class Device implements IDevice {
      * (non-Javadoc)
      * @see com.android.ddmlib.IDevice#getScreenshot()
      */
-    public RawImage getScreenshot() throws IOException {
+    public RawImage getScreenshot() throws TimeoutException, IOException {
         return AdbHelper.getFrameBuffer(AndroidDebugBridge.getSocketAddress(), this);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.android.ddmlib.IDevice#executeShellCommand(java.lang.String, com.android.ddmlib.IShellOutputReceiver)
-     */
     public void executeShellCommand(String command, IShellOutputReceiver receiver)
-            throws IOException {
+            throws TimeoutException, IOException {
         AdbHelper.executeRemoteCommand(AndroidDebugBridge.getSocketAddress(), command, this,
-                receiver);
+                receiver, DdmPreferences.getTimeOut());
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.android.ddmlib.IDevice#runEventLogService(com.android.ddmlib.log.LogReceiver)
-     */
-    public void runEventLogService(LogReceiver receiver) throws IOException {
+    public void executeShellCommand(String command, IShellOutputReceiver receiver, int timeout)
+            throws TimeoutException, IOException {
+        AdbHelper.executeRemoteCommand(AndroidDebugBridge.getSocketAddress(), command, this,
+                receiver, timeout);
+    }
+
+    public void runEventLogService(LogReceiver receiver) throws TimeoutException, IOException {
         AdbHelper.runEventLogService(AndroidDebugBridge.getSocketAddress(), this, receiver);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.android.ddmlib.IDevice#runLogService(com.android.ddmlib.log.LogReceiver)
-     */
-    public void runLogService(String logname,
-            LogReceiver receiver) throws IOException {
+    public void runLogService(String logname, LogReceiver receiver)
+            throws TimeoutException, IOException {
         AdbHelper.runLogService(AndroidDebugBridge.getSocketAddress(), this, logname, receiver);
     }
 
@@ -306,6 +300,9 @@ final class Device implements IDevice {
         try {
             return AdbHelper.createForward(AndroidDebugBridge.getSocketAddress(), this,
                     localPort, remotePort);
+        } catch (TimeoutException e) {
+            Log.e("adb-forward", "timeout");
+            return false;
         } catch (IOException e) {
             Log.e("adb-forward", e); //$NON-NLS-1$
             return false;
@@ -320,6 +317,9 @@ final class Device implements IDevice {
         try {
             return AdbHelper.removeForward(AndroidDebugBridge.getSocketAddress(), this,
                     localPort, remotePort);
+        } catch (TimeoutException e) {
+            Log.e("adb-remove-forward", "timeout");
+            return false;
         } catch (IOException e) {
             Log.e("adb-remove-forward", e); //$NON-NLS-1$
             return false;
@@ -431,7 +431,7 @@ final class Device implements IDevice {
      * {@inheritDoc}
      */
     public String installPackage(String packageFilePath, boolean reinstall)
-           throws IOException {
+           throws TimeoutException, IOException {
        String remoteFilePath = syncPackageToDevice(packageFilePath);
        String result = installRemotePackage(remoteFilePath, reinstall);
        removeRemotePackage(remoteFilePath);
@@ -442,7 +442,7 @@ final class Device implements IDevice {
      * {@inheritDoc}
      */
     public String syncPackageToDevice(String localFilePath)
-            throws IOException {
+            throws IOException, TimeoutException {
         try {
             String packageFileName = getFileName(localFilePath);
             String remoteFilePath = String.format("/data/local/tmp/%1$s", packageFileName); //$NON-NLS-1$
@@ -466,6 +466,9 @@ final class Device implements IDevice {
                 throw new IOException("Unable to open sync connection!");
             }
             return remoteFilePath;
+        } catch (TimeoutException e) {
+            Log.e(LOG_TAG, "Unable to open sync connection! Timeout.");
+            throw e;
         } catch (IOException e) {
             Log.e(LOG_TAG, String.format("Unable to open sync connection! reason: %1$s",
                     e.getMessage()));
@@ -486,7 +489,7 @@ final class Device implements IDevice {
      * {@inheritDoc}
      */
     public String installRemotePackage(String remoteFilePath, boolean reinstall)
-            throws IOException {
+            throws TimeoutException, IOException {
         InstallReceiver receiver = new InstallReceiver();
         String cmd = String.format(reinstall ? "pm install -r \"%1$s\"" : "pm install \"%1$s\"",
                             remoteFilePath);
@@ -497,7 +500,7 @@ final class Device implements IDevice {
     /**
      * {@inheritDoc}
      */
-    public void removeRemotePackage(String remoteFilePath) throws IOException {
+    public void removeRemotePackage(String remoteFilePath) throws TimeoutException, IOException {
         // now we delete the app we sync'ed
         try {
             executeShellCommand("rm " + remoteFilePath, new NullOutputReceiver());
@@ -511,7 +514,7 @@ final class Device implements IDevice {
     /**
      * {@inheritDoc}
      */
-    public String uninstallPackage(String packageName) throws IOException {
+    public String uninstallPackage(String packageName) throws TimeoutException, IOException {
         InstallReceiver receiver = new InstallReceiver();
         executeShellCommand("pm uninstall " + packageName, receiver);
         return receiver.getErrorMessage();
@@ -521,7 +524,7 @@ final class Device implements IDevice {
      * (non-Javadoc)
      * @see com.android.ddmlib.IDevice#reboot()
      */
-    public void reboot(String into) throws IOException {
+    public void reboot(String into) throws TimeoutException, IOException {
         AdbHelper.reboot(into, AndroidDebugBridge.getSocketAddress(), this);
     }
 }

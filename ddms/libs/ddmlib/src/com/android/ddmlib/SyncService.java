@@ -108,6 +108,8 @@ public final class SyncService {
     public static final int RESULT_REMOTE_IS_FILE = 13;
     /** Result code for receiving too much data from the remove device at once */
     public static final int RESULT_BUFFER_OVERRUN = 14;
+    /** Result code for network connection timeout */
+    public static final int RESULT_CONNECTION_TIMEOUT = 15;
 
     /**
      * A file transfer result.
@@ -211,9 +213,10 @@ public final class SyncService {
      * Opens the sync connection. This must be called before any calls to push[File] / pull[File].
      * @return true if the connection opened, false if adb refuse the connection. This can happen
      * if the {@link Device} is invalid.
+     * @throws TimeoutException in case of timeout on the connection.
      * @throws IOException If the connection to adb failed.
      */
-    boolean openSync() throws IOException {
+    boolean openSync() throws TimeoutException, IOException {
         try {
             mChannel = SocketChannel.open(mAddress);
             mChannel.configureBlocking(false);
@@ -226,14 +229,23 @@ public final class SyncService {
 
             AdbResponse resp = AdbHelper.readAdbResponse(mChannel, false /* readDiagString */);
 
-            if (!resp.ioSuccess || !resp.okay) {
-                Log.w("ddms",
-                        "Got timeout or unhappy response from ADB sync req: "
-                        + resp.message);
+            if (resp.okay == false) {
+                Log.w("ddms", "Got unhappy response from ADB sync req: " + resp.message);
                 mChannel.close();
                 mChannel = null;
                 return false;
             }
+        } catch (TimeoutException e) {
+            if (mChannel != null) {
+                try {
+                    mChannel.close();
+                } catch (IOException e2) {
+                    // we want to throw the original exception, so we ignore this one.
+                }
+                mChannel = null;
+            }
+
+            throw e;
         } catch (IOException e) {
             if (mChannel != null) {
                 try {
@@ -309,6 +321,8 @@ public final class SyncService {
                 return "Remote path is a file.";
             case RESULT_BUFFER_OVERRUN:
                 return "Receiving too much data.";
+            case RESULT_CONNECTION_TIMEOUT:
+                return "timeout";
         }
 
         throw new RuntimeException();
@@ -586,6 +600,8 @@ public final class SyncService {
             }
         } catch (UnsupportedEncodingException e) {
             return new SyncResult(RESULT_REMOTE_PATH_ENCODING, e);
+        } catch (TimeoutException e) {
+            return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
         } catch (IOException e) {
             return new SyncResult(RESULT_CONNECTION_ERROR, e);
         }
@@ -633,6 +649,8 @@ public final class SyncService {
 
                 // get the header for the next packet.
                 AdbHelper.read(mChannel, pullResult, -1, timeOut);
+            } catch (TimeoutException e) {
+                return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
             } catch (IOException e) {
                 return new SyncResult(RESULT_CONNECTION_ERROR, e);
             }
@@ -739,6 +757,8 @@ public final class SyncService {
         // file and network IO exceptions.
         try {
             AdbHelper.write(mChannel, msg, -1, timeOut);
+        } catch (TimeoutException e) {
+            return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
         } catch (IOException e) {
             return new SyncResult(RESULT_CONNECTION_ERROR, e);
         }
@@ -777,6 +797,8 @@ public final class SyncService {
             // now write it
             try {
                 AdbHelper.write(mChannel, mBuffer, readCount+8, timeOut);
+            } catch (TimeoutException e) {
+                return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
             } catch (IOException e) {
                 return new SyncResult(RESULT_CONNECTION_ERROR, e);
             }
@@ -819,6 +841,8 @@ public final class SyncService {
 
                 return new SyncResult(RESULT_UNKNOWN_ERROR);
             }
+        } catch (TimeoutException e) {
+            return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
         } catch (IOException e) {
             return new SyncResult(RESULT_CONNECTION_ERROR, e);
         }
@@ -831,29 +855,27 @@ public final class SyncService {
      * @param path the remote file
      * @return and Integer containing the mode if all went well or null
      *      otherwise
+     * @throws IOException
+     * @throws TimeoutException
      */
-    private Integer readMode(String path) {
-        try {
-            // create the stat request message.
-            byte[] msg = createFileReq(ID_STAT, path);
+    private Integer readMode(String path) throws TimeoutException, IOException {
+        // create the stat request message.
+        byte[] msg = createFileReq(ID_STAT, path);
 
-            AdbHelper.write(mChannel, msg, -1 /* full length */, DdmPreferences.getTimeOut());
+        AdbHelper.write(mChannel, msg, -1 /* full length */, DdmPreferences.getTimeOut());
 
-            // read the result, in a byte array containing 4 ints
-            // (id, mode, size, time)
-            byte[] statResult = new byte[16];
-            AdbHelper.read(mChannel, statResult, -1 /* full length */, DdmPreferences.getTimeOut());
+        // read the result, in a byte array containing 4 ints
+        // (id, mode, size, time)
+        byte[] statResult = new byte[16];
+        AdbHelper.read(mChannel, statResult, -1 /* full length */, DdmPreferences.getTimeOut());
 
-            // check we have the proper data back
-            if (checkResult(statResult, ID_STAT) == false) {
-                return null;
-            }
-
-            // we return the mode (2nd int in the array)
-            return ArrayHelper.swap32bitFromArray(statResult, 4);
-        } catch (IOException e) {
+        // check we have the proper data back
+        if (checkResult(statResult, ID_STAT) == false) {
             return null;
         }
+
+        // we return the mode (2nd int in the array)
+        return ArrayHelper.swap32bitFromArray(statResult, 4);
     }
 
     /**

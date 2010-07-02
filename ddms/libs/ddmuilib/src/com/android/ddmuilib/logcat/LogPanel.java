@@ -513,7 +513,7 @@ public class LogPanel extends SelectionDependentPanel {
 
                     try {
                         mCurrentLoggedDevice = device;
-                        device.executeShellCommand("logcat -v long", mCurrentLogCat); //$NON-NLS-1$
+                        device.executeShellCommand("logcat -v long", mCurrentLogCat, 0 /*timeout*/); //$NON-NLS-1$
                     } catch (Exception e) {
                         Log.e("Logcat", e);
                     } finally {

@@ -168,9 +168,10 @@ public interface IDevice {
      * Returns a {@link SyncService} object to push / pull files to and from the device.
      * @return <code>null</code> if the SyncService couldn't be created. This can happen if adb
      * refuse to open the connection because the {@link IDevice} is invalid (or got disconnected).
+     * @throws TimeoutException in case of timeout on the connection.
      * @throws IOException if the connection with adb failed.
      */
-    public SyncService getSyncService() throws IOException;
+    public SyncService getSyncService() throws TimeoutException, IOException;
 
     /**
      * Returns a {@link FileListingService} for this device.
@@ -181,33 +182,74 @@ public interface IDevice {
      * Takes a screen shot of the device and returns it as a {@link RawImage}.
      * @return the screenshot as a <code>RawImage</code> or <code>null</code> if
      * something went wrong.
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
-    public RawImage getScreenshot() throws IOException;
+    public RawImage getScreenshot() throws TimeoutException, IOException;
 
     /**
-     * Executes a shell command on the device, and sends the result to a receiver.
-     * @param command The command to execute
-     * @param receiver The receiver object getting the result from the command.
-     * @throws IOException
+     * Executes a shell command on the device, and sends the result to a <var>receiver</var>
+     * <p/>This use the default timeout value returned by {@link DdmPreferences#getTimeOut()}.
+     * @param command the shell command to execute
+     * @param receiver the {@link IShellOutputReceiver} that will receives the output of the shell
+     * command
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
+     *
+     * @see #executeShellCommand(String, IShellOutputReceiver, int)
      */
     public void executeShellCommand(String command,
-            IShellOutputReceiver receiver) throws IOException;
+            IShellOutputReceiver receiver) throws TimeoutException, IOException;
+
+    /**
+     * Executes a shell command on the device, and sends the result to a <var>receiver</var>.
+     * <p/>The timeout value is used as a maximum waiting time when expecting data from the device.
+     * If the shell command takes a long time to run before outputting anything, this may be
+     * impacted by the timeout. For instance, if the command outputs one line every 10sec but the
+     * timeout is set to 5sec (default value) then the method will timeout.
+     * <p/>For commands like log output, a timeout value of 0 (no timeout, always blocking till the
+     * receiver's {@link IShellOutputReceiver#isCancelled()} return <code>true</code> should be
+     * used.
+     * <p/>Finally note that the timeout value is used both when interacting with the device
+     * to setup the command to run and when receiving the output of the command.
+     *
+     * @param command the shell command to execute
+     * @param receiver the {@link IShellOutputReceiver} that will receives the output of the shell
+     * command
+     * @param timeout timeout value in ms for the connection.
+     * @param timeout the timeout. timeout value in ms for the connection.If 0, there is no timeout.
+     * @throws TimeoutException in case of timeout on the connection. Even with a timeout parameter
+     * of 0, timeout can happen during the setup of the shell command. Once command has launched,
+     * no timeout will occur as it's not possible to detect a difference between no output and
+     * no timeout.
+     * @throws IOException in case of I/O error on the connection.
+     */
+    public void executeShellCommand(String command,
+            IShellOutputReceiver receiver, int timeout) throws TimeoutException, IOException;
 
     /**
      * Runs the event log service and outputs the event log to the {@link LogReceiver}.
+     * <p/>This call is blocking until {@link LogReceiver#isCancelled()} returns true.
      * @param receiver the receiver to receive the event log entries.
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection. This can only be thrown if the
+     * timeout happens during setup. Once logs start being received, no timeout will occur as it's
+     * not possible to detect a difference between no log and timeout.
+     * @throws IOException in case of I/O error on the connection.
      */
-    public void runEventLogService(LogReceiver receiver) throws IOException;
+    public void runEventLogService(LogReceiver receiver) throws TimeoutException, IOException;
 
     /**
      * Runs the log service for the given log and outputs the log to the {@link LogReceiver}.
+     * <p/>This call is blocking until {@link LogReceiver#isCancelled()} returns true.
      * @param logname the logname of the log to read from.
      * @param receiver the receiver to receive the event log entries.
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection. This can only be thrown if the
+     * timeout happens during setup. Once logs start being received, no timeout will occur as it's
+     * not possible to detect a difference between no log and timeout.
+     * @throws IOException in case of I/O error on the connection.
      */
-    public void runLogService(String logname, LogReceiver receiver) throws IOException;
+    public void runLogService(String logname, LogReceiver receiver)
+            throws TimeoutException, IOException;
 
     /**
      * Creates a port forwarding between a local and a remote port.
@@ -238,42 +280,48 @@ public interface IDevice {
      * @param packageFilePath the absolute file system path to file on local host to install
      * @param reinstall set to <code>true</code> if re-install of app should be performed
      * @return a {@link String} with an error code, or <code>null</code> if success.
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
-    public String installPackage(String packageFilePath, boolean reinstall)  throws IOException;
+    public String installPackage(String packageFilePath, boolean reinstall)
+            throws TimeoutException, IOException;
 
     /**
      * Pushes a file to device
      * @param localFilePath the absolute path to file on local host
      * @return {@link String} destination path on device for file
-     * @throws IOException if fatal error occurred when pushing file
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
     public String syncPackageToDevice(String localFilePath)
-            throws IOException;
+            throws TimeoutException, IOException;
 
     /**
      * Installs the application package that was pushed to a temporary location on the device.
      * @param remoteFilePath absolute file path to package file on device
      * @param reinstall set to <code>true</code> if re-install of app should be performed
-     * @throws InstallException if installation failed
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException if installation failed
      */
     public String installRemotePackage(String remoteFilePath, boolean reinstall)
-            throws IOException;
+            throws TimeoutException, IOException;
 
     /**
      * Remove a file from device
      * @param remoteFilePath path on device of file to remove
+     * @throws TimeoutException in case of timeout on the connection.
      * @throws IOException if file removal failed
      */
-    public void removeRemotePackage(String remoteFilePath) throws IOException;
+    public void removeRemotePackage(String remoteFilePath) throws TimeoutException, IOException;
 
     /**
      * Uninstall an package from the device.
      * @param packageName the Android application package name to uninstall
      * @return a {@link String} with an error code, or <code>null</code> if success.
+     * @throws TimeoutException in case of timeout on the connection.
      * @throws IOException
      */
-    public String uninstallPackage(String packageName) throws IOException;
+    public String uninstallPackage(String packageName) throws TimeoutException, IOException;
 
     /**
      * Reboot the device.
@@ -281,5 +329,5 @@ public interface IDevice {
      * @param into the bootloader name to reboot into, or null to just reboot the device.
      * @throws IOException
      */
-    public void reboot(String into) throws IOException;
+    public void reboot(String into) throws TimeoutException, IOException;
 }

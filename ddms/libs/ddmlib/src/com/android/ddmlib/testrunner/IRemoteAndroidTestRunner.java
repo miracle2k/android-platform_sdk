@@ -16,6 +16,8 @@
 
 package com.android.ddmlib.testrunner;
 
+import com.android.ddmlib.TimeoutException;
+
 import java.io.IOException;
 import java.util.Collection;
 
@@ -173,17 +175,19 @@ public interface IRemoteAndroidTestRunner {
      * Convenience method for {@link #run(Collection)}.
      *
      * @param listeners listens for test results
+     * @throws TimeoutException in case of a timeout on the connection.
      * @throws IOException if connection to device was lost.
      */
-    public void run(ITestRunListener... listeners) throws IOException;
+    public void run(ITestRunListener... listeners) throws TimeoutException, IOException;
 
     /**
      * Execute this test run.
      *
      * @param listeners collection of listeners for test results
+     * @throws TimeoutException in case of a timeout on the connection.
      * @throws IOException if connection to device was lost.
      */
-    public void run(Collection<ITestRunListener> listeners) throws IOException;
+    public void run(Collection<ITestRunListener> listeners) throws TimeoutException, IOException;
 
     /**
      * Requests cancellation of this test run.
