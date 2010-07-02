@@ -524,7 +524,7 @@ public class PostCompilerBuilder extends BaseBuilder {
             }
 
             msg = String.format("Unknown error: %1$s", msg);
-            AdtPlugin.printErrorToConsole(project, msg);
+            AdtPlugin.logAndPrintError(exception, project.getName(), msg);
             markProject(AndroidConstants.MARKER_PACKAGING, msg, IMarker.SEVERITY_ERROR);
         }
 

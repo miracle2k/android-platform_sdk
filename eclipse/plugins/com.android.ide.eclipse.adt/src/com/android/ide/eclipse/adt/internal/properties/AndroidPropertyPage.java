@@ -85,12 +85,6 @@ public class AndroidPropertyPage extends PropertyPage implements IWorkbenchPrope
 
         mIsLibrary = new Button(libraryGroup, SWT.CHECK);
         mIsLibrary.setText("Is Library");
-        mIsLibrary.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                mLibraryDependencies.setEnabled(!mIsLibrary.getSelection());
-            }
-        });
 
         mLibraryDependencies = new LibraryProperties(libraryGroup);
 
@@ -149,7 +143,7 @@ public class AndroidPropertyPage extends PropertyPage implements IWorkbenchPrope
                 mustSaveProp = true;
             }
 
-            if (mLibraryDependencies.save(mIsLibrary.getSelection())) {
+            if (mLibraryDependencies.save()) {
                 mustSaveProp = true;
             }
 
@@ -184,9 +178,7 @@ public class AndroidPropertyPage extends PropertyPage implements IWorkbenchPrope
             }
 
             mIsLibrary.setSelection(state.isLibrary());
-
             mLibraryDependencies.setContent(state);
-            mLibraryDependencies.setEnabled(!state.isLibrary());
 
             /*
              * APK-SPLIT: This is not yet supported, so we hide the UI
