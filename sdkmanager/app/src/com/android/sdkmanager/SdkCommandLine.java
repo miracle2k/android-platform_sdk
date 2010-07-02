@@ -125,12 +125,13 @@ class SdkCommandLine extends CommandLineProcessor {
                 "Creates a new Android Library Project." },
             { VERB_UPDATE, OBJECT_LIB_PROJECT,
                 "Updates an Android Library Project (must have an AndroidManifest.xml)." },
-
+/*
+ * disabled until the feature is officially supported.
             { VERB_CREATE, OBJECT_EXPORT_PROJECT,
                 "Creates a new Android Export Project." },
             { VERB_UPDATE, OBJECT_EXPORT_PROJECT,
                 "Updates an Android Export Project (must have an export.properties)." },
-
+*/
             { VERB_UPDATE, OBJECT_ADB,
                 "Updates adb to support the USB devices declared in the SDK add-ons." },
 
@@ -274,6 +275,8 @@ class SdkCommandLine extends CommandLineProcessor {
                 "Package name", null);
 
         // --- create export-project ---
+/*
+ * disabled until the feature is officially supported.
 
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_EXPORT_PROJECT,
@@ -285,7 +288,7 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_EXPORT_PROJECT, "k", KEY_PACKAGE,
                 "Package name", null);
-
+*/
         // --- update project ---
 
         define(Mode.STRING, true,
@@ -332,7 +335,8 @@ class SdkCommandLine extends CommandLineProcessor {
                 "Target id to set for the project", null);
 
         // --- update export project ---
-
+/*
+ * disabled until the feature is officially supported.
         define(Mode.STRING, true,
                 VERB_UPDATE, OBJECT_EXPORT_PROJECT,
                 "p", KEY_PATH,
@@ -344,6 +348,7 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.BOOLEAN, false,
                 VERB_UPDATE, OBJECT_EXPORT_PROJECT, "f", KEY_FORCE,
                 "Force replacing the build.xml file", false);
+*/
     }
 
     @Override
