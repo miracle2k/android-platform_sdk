@@ -42,6 +42,18 @@ import java.util.regex.Matcher;
  * <p>This gives raw access to the properties (from <code>default.properties</code>), as well
  * as direct access to target, apksettings and library information.
  *
+ * This also gives access to library information.
+ *
+ * {@link #isLibrary()} indicates if the project is a library.
+ * {@link #hasLibraries()} and {@link #getLibraries()} give access to the libraries through
+ * instances of {@link LibraryState}. A {@link LibraryState} instance is a link between a main
+ * project and its library. Theses instances are owned by the {@link ProjectState}.
+ *
+ * {@link #isMissingLibraries()} will indicate if the project has libraries that are not resolved.
+ * Unresolved libraries are libraries that do not have any matching opened Eclipse project.
+ * When there are missing libraries, the {@link LibraryState} instance for them will return null
+ * for {@link LibraryState#getProjectState()}.
+ *
  */
 public final class ProjectState {
 
@@ -74,13 +86,14 @@ public final class ProjectState {
          * Closes the library. This resets the IProject from this object ({@link #getProjectState()} will
          * return <code>null</code>), and updates the main project data so that the library
          * {@link IProject} object does not show up in the return value of
-         * {@link ProjectState#getLibraryProjects()}.
+         * {@link ProjectState#getFullLibraryProjects()}.
          */
         public void close() {
+            mProjectState.removeParentProject(getMainProjectState());
             mProjectState = null;
             mPath = null;
 
-            updateLibraries();
+            getMainProjectState().updateFullLibraryList();
         }
 
         private void setRelativePath(String relativePath) {
@@ -90,8 +103,9 @@ public final class ProjectState {
         private void setProject(ProjectState project) {
             mProjectState = project;
             mPath = project.getProject().getLocation().toOSString();
+            mProjectState.addParentProject(getMainProjectState());
 
-            updateLibraries();
+            getMainProjectState().updateFullLibraryList();
         }
 
         /**
@@ -145,15 +159,22 @@ public final class ProjectState {
 
     private final IProject mProject;
     private final ProjectProperties mProperties;
+    private IAndroidTarget mTarget;
+    private ApkSettings mApkSettings;
     /**
      * list of libraries. Access to this list must be protected by
      * <code>synchronized(mLibraries)</code>, but it is important that such code do not call
      * out to other classes (especially those protected by {@link Sdk#getLock()}.)
      */
     private final ArrayList<LibraryState> mLibraries = new ArrayList<LibraryState>();
-    private IAndroidTarget mTarget;
-    private ApkSettings mApkSettings;
-    private IProject[] mLibraryProjects;
+    /** Cached list of all IProject instances representing the resolved libraries, including
+     * indirect dependencies. This must never be null. */
+    private IProject[] mLibraryProjects = new IProject[0];
+    /**
+     * List of parent projects. When this instance is a library ({@link #isLibrary()} returns
+     * <code>true</code>) then this is filled with projects that depends on this project.
+     */
+    private final ArrayList<ProjectState> mParentProjects = new ArrayList<ProjectState>();
 
     public ProjectState(IProject project, ProjectProperties properties) {
         mProject = project;
@@ -281,7 +302,7 @@ public final class ProjectState {
             diff.removed.addAll(oldLibraries);
 
             // update the library with what IProjet are known at the time.
-            updateLibraries();
+            updateFullLibraryList();
         }
 
         return diff;
@@ -305,13 +326,14 @@ public final class ProjectState {
     }
 
     /**
-     * Convenience method returning all the IProject objects for the resolved libraries.
+     * Returns all the <strong>resolved</strong> library projects, including indirect dependencies.
+     * The array is ordered to match the library priority order for resource processing with
+     * <code>aapt</code>.
      * <p/>If some dependencies are not resolved (or their projects is not opened in Eclipse),
      * they will not show up in this list.
-     * @return the resolved projects or null if there are no project (either no resolved or no
-     * dependencies)
+     * @return the resolved projects. May be an empty list.
      */
-    public IProject[] getLibraryProjects() {
+    public IProject[] getFullLibraryProjects() {
         return mLibraryProjects;
     }
 
@@ -369,6 +391,15 @@ public final class ProjectState {
         return null;
     }
 
+    /**
+     * Returns the {@link LibraryState} object for a given <var>name</var>.
+     * </p>This can only return a non-null object if the link between the main project's
+     * {@link IProject} and the library's {@link IProject} was done.
+     *
+     * @return the matching LibraryState or <code>null</code>
+     *
+     * @see #needs(IProject)
+     */
     public LibraryState getLibrary(String name) {
         synchronized (mLibraries) {
             for (LibraryState state : mLibraries) {
@@ -422,6 +453,26 @@ public final class ProjectState {
 
         return null;
     }
+
+    /**
+     * Returns whether the project depends on a given <var>library</var>
+     * @param library the library to check.
+     * @return true if the project depends on the library. This is not affected by whether the link
+     * was done through {@link #needs(ProjectState)}.
+     */
+    public boolean dependsOn(ProjectState library) {
+        synchronized (mLibraries) {
+            for (LibraryState state : mLibraries) {
+                if (state != null && state.getProjectState() != null &&
+                        library.getProject().equals(state.getProjectState().getProject())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
 
     /**
      * Updates a library with a new path.
@@ -491,6 +542,15 @@ public final class ProjectState {
         return null;
     }
 
+
+    private void addParentProject(ProjectState parentState) {
+        mParentProjects.add(parentState);
+    }
+
+    private void removeParentProject(ProjectState parentState) {
+        mParentProjects.remove(parentState);
+    }
+
     /**
      * Saves the default.properties file and refreshes it to make sure that it gets reloaded
      * by Eclipse
@@ -543,18 +603,49 @@ public final class ProjectState {
         return null;
     }
 
-    private void updateLibraries() {
+    /**
+     * Update the full library list, including indirect dependencies. The result is returned by
+     * {@link #getFullLibraryProjects()}.
+     */
+    private void updateFullLibraryList() {
         ArrayList<IProject> list = new ArrayList<IProject>();
         synchronized (mLibraries) {
-            for (LibraryState state : mLibraries) {
-                if (state.getProjectState() != null) {
-                    list.add(state.getProjectState().getProject());
-                }
-            }
+            buildFullLibraryDependencies(mLibraries, list);
         }
 
         mLibraryProjects = list.toArray(new IProject[list.size()]);
     }
+
+    /**
+     * Resolves a given list of libraries, finds out if they depend on other libraries, and
+     * returns a full list of all the direct and indirect dependencies in the proper order (first
+     * is higher priority when calling aapt).
+     * @param inLibraries the libraries to resolve
+     * @param outLibraries where to store all the libraries.
+     */
+    private void buildFullLibraryDependencies(List<LibraryState> inLibraries,
+            ArrayList<IProject> outLibraries) {
+        // loop in the inverse order to resolve dependencies on the libraries, so that if a library
+        // is required by two higher level libraries it can be inserted in the correct place
+        for (int i = inLibraries.size() - 1  ; i >= 0 ; i--) {
+            LibraryState library = inLibraries.get(i);
+
+            // get its libraries if possible
+            ProjectState libProjectState = library.getProjectState();
+            if (libProjectState != null) {
+                List<LibraryState> dependencies = libProjectState.getLibraries();
+
+                // build the dependencies for those libraries
+                buildFullLibraryDependencies(dependencies, outLibraries);
+
+                // and add the current library (if needed) in front (higher priority)
+                if (outLibraries.contains(libProjectState.getProject()) == false) {
+                    outLibraries.add(0, libProjectState.getProject());
+                }
+            }
+        }
+    }
+
 
     /**
      * Converts a path containing only / by the proper platform separator.
@@ -588,5 +679,10 @@ public final class ProjectState {
     @Override
     public int hashCode() {
         return mProject.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return mProject.getName();
     }
 }
