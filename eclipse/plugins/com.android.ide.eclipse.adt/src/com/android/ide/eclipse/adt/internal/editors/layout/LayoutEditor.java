@@ -29,6 +29,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiContentOutline
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiPropertySheetPage;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.OutlinePage2;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.PropertySheetPage2;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiActions;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -78,7 +79,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     /** Implementation of the {@link IContentOutlinePage} for this editor */
     private IContentOutlinePage mOutline;
     /** Custom implementation of {@link IPropertySheetPage} for this editor */
-    private UiPropertySheetPage mPropertyPage;
+    private IPropertySheetPage mPropertyPage;
 
     private UiEditorActions mUiEditorActions;
 
@@ -303,8 +304,8 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         }
     }
 
-    /* (non-java doc)
-     * Returns the IContentOutlinePage when asked for it.
+    /**
+     * Returns the custom IContentOutlinePage or IPropertySheetPage when asked for it.
      */
     @SuppressWarnings("unchecked")
     @Override
@@ -331,8 +332,11 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         }
 
         if (IPropertySheetPage.class == adapter && mGraphicalEditor != null) {
-            if (mPropertyPage == null) {
+            if (mPropertyPage == null && mGraphicalEditor instanceof GraphicalLayoutEditor) {
                 mPropertyPage = new UiPropertySheetPage();
+
+            } else if (mPropertyPage == null && mGraphicalEditor instanceof GraphicalEditorPart) {
+                mPropertyPage = new PropertySheetPage2();
             }
 
             return mPropertyPage;

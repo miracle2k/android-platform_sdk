@@ -27,19 +27,18 @@ import org.eclipse.jface.viewers.IElementComparer;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.ITreeSelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Tree;
-import org.eclipse.ui.IActionBars;
-import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
+import org.eclipse.ui.INullSelectionListener;
+import org.eclipse.ui.ISelectionListener;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.views.contentoutline.ContentOutlinePage;
 
 import java.util.ArrayList;
 
@@ -60,18 +59,17 @@ import java.util.ArrayList;
 /**
  * An outline page for the GLE2 canvas view.
  * <p/>
- * The page is created by {@link LayoutEditor}.
- * Selection is synchronized by {@link LayoutCanvas}.
+ * The page is created by {@link LayoutEditor#getAdapter(Class)}.
+ * It sets itself as a listener on the site's selection service in order to be
+ * notified of the canvas' selection changes.
+ * The underlying page is also a selection provider (via IContentOutlinePage)
+ * and as such it will broadcast selection changes to the site's selection service
+ * (on which both the layout editor part and the property sheet page listen.)
+ *
+ * @since GLE2
  */
-public class OutlinePage2 implements IContentOutlinePage {
-
-    /**
-     * The current TreeViewer. This is created in {@link #createControl(Composite)}.
-     * It is entirely possible for callbacks to be invoked *before* the tree viewer
-     * is created, for example if a non-yet shown canvas is modified and it refreshes
-     * the model of a non-yet shown outline.
-     */
-    private TreeViewer mTreeViewer;
+public class OutlinePage2 extends ContentOutlinePage
+    implements ISelectionListener, INullSelectionListener {
 
     /**
      * RootWrapper is a workaround: we can't set the input of the treeview to its root
@@ -80,21 +78,23 @@ public class OutlinePage2 implements IContentOutlinePage {
     private final RootWrapper mRootWrapper = new RootWrapper();
 
     public OutlinePage2() {
+        super();
     }
 
+    @Override
     public void createControl(Composite parent) {
-        Tree tree = new Tree(parent, SWT.MULTI /*style*/);
-        mTreeViewer = new TreeViewer(tree);
+        super.createControl(parent);
 
-        mTreeViewer.setAutoExpandLevel(2);
-        mTreeViewer.setContentProvider(new ContentProvider());
-        mTreeViewer.setLabelProvider(new LabelProvider());
-        mTreeViewer.setInput(mRootWrapper);
+        TreeViewer tv = getTreeViewer();
+        tv.setAutoExpandLevel(2);
+        tv.setContentProvider(new ContentProvider());
+        tv.setLabelProvider(new LabelProvider());
+        tv.setInput(mRootWrapper);
 
         // The tree viewer will hold CanvasViewInfo instances, however these
         // change each time the canvas is reloaded. OTOH liblayout gives us
         // constant UiView keys which we can use to perform tree item comparisons.
-        mTreeViewer.setComparer(new IElementComparer() {
+        tv.setComparer(new IElementComparer() {
             public int hashCode(Object element) {
                 if (element instanceof CanvasViewInfo) {
                     UiViewElementNode key = ((CanvasViewInfo) element).getUiViewKey();
@@ -122,94 +122,79 @@ public class OutlinePage2 implements IContentOutlinePage {
                 return false;
             }
         });
+
+        // Listen to selection changes from the layout editor
+        getSite().getPage().addSelectionListener(this);
     }
 
+    @Override
     public void dispose() {
-        Control c = getControl();
-        if (c != null && !c.isDisposed()) {
-            mTreeViewer = null;
-            c.dispose();
-        }
         mRootWrapper.setRoot(null);
-    }
-
-    public void setModel(CanvasViewInfo rootViewInfo) {
-        mRootWrapper.setRoot(rootViewInfo);
-
-        if (mTreeViewer != null) {
-            Object[] expanded = mTreeViewer.getExpandedElements();
-            mTreeViewer.refresh();
-            mTreeViewer.setExpandedElements(expanded);
-        }
-    }
-
-    public Control getControl() {
-        return mTreeViewer == null ? null : mTreeViewer.getControl();
-    }
-
-    public ISelection getSelection() {
-        return mTreeViewer == null ? null : mTreeViewer.getSelection();
+        getSite().getPage().removeSelectionListener(this);
+        super.dispose();
     }
 
     /**
-     * Selects the given {@link CanvasViewInfo} elements and reveals them.
+     * Invoked by {@link LayoutCanvas} to set the model (aka the root view info).
      *
-     * @param selectedInfos The {@link CanvasViewInfo} elements to selected.
-     *   This can be null or empty to remove any selection.
+     * @param rootViewInfo The root of the view info hierarchy. Can be null.
      */
-    public void selectAndReveal(CanvasViewInfo[] selectedInfos) {
-        if (mTreeViewer == null) {
-            return;
-        }
+    public void setModel(CanvasViewInfo rootViewInfo) {
+        mRootWrapper.setRoot(rootViewInfo);
 
-        if (selectedInfos == null || selectedInfos.length == 0) {
-            mTreeViewer.setSelection(TreeSelection.EMPTY);
-            return;
+        TreeViewer tv = getTreeViewer();
+        if (tv != null) {
+            Object[] expanded = tv.getExpandedElements();
+            tv.refresh();
+            tv.setExpandedElements(expanded);
         }
-
-        int n = selectedInfos.length;
-        TreePath[] paths = new TreePath[n];
-        for (int i = 0; i < n; i++) {
-            ArrayList<Object> segments = new ArrayList<Object>();
-            CanvasViewInfo vi = selectedInfos[i];
-            while (vi != null) {
-                segments.add(0, vi);
-                vi = vi.getParent();
-            }
-            paths[i] = new TreePath(segments.toArray());
-            mTreeViewer.expandToLevel(paths[i], 1);
-        }
-
-        mTreeViewer.setSelection(new TreeSelection(paths), true /*reveal*/);
     }
 
+    /**
+     * Returns the current tree viewer selection. Shouldn't be null,
+     * although it can be {@link TreeSelection#EMPTY}.
+     */
+    @Override
+    public ISelection getSelection() {
+        return super.getSelection();
+    }
+
+    /**
+     * Sets the outline selection.
+     *
+     * @param selection Only {@link ITreeSelection} will be used, otherwise the
+     *   selection will be cleared (including a null selection).
+     */
+    @Override
     public void setSelection(ISelection selection) {
-        if (mTreeViewer != null) {
-            mTreeViewer.setSelection(selection);
+        // TreeViewer should be able to deal with a null selection, but let's make it safe
+        if (selection == null) {
+            selection = TreeSelection.EMPTY;
+        }
+
+        super.setSelection(selection);
+
+        TreeViewer tv = getTreeViewer();
+        if (tv == null || !(selection instanceof ITreeSelection) || selection.isEmpty()) {
+            return;
+        }
+
+        // auto-reveal the selection
+        ITreeSelection treeSel = (ITreeSelection) selection;
+        for (TreePath p : treeSel.getPaths()) {
+            tv.expandToLevel(p, 1);
         }
     }
 
-    public void setFocus() {
-        Control c = getControl();
-        if (c != null) {
-            c.setFocus();
+    /**
+     * Listens to a workbench selection.
+     * Only listen on selection coming from {@link LayoutEditor}, which avoid
+     * picking up our own selections.
+     */
+    public void selectionChanged(IWorkbenchPart part, ISelection selection) {
+        if (part instanceof LayoutEditor) {
+            setSelection(selection);
         }
-    }
-
-    public void addSelectionChangedListener(ISelectionChangedListener listener) {
-        if (mTreeViewer != null) {
-            mTreeViewer.addSelectionChangedListener(listener);
-        }
-    }
-
-    public void removeSelectionChangedListener(ISelectionChangedListener listener) {
-        if (mTreeViewer != null) {
-            mTreeViewer.removeSelectionChangedListener(listener);
-        }
-    }
-
-    public void setActionBars(IActionBars barts) {
-        // TODO Auto-generated method stub
     }
 
     // ----
@@ -361,5 +346,4 @@ public class OutlinePage2 implements IContentOutlinePage {
             // pass
         }
     }
-
 }

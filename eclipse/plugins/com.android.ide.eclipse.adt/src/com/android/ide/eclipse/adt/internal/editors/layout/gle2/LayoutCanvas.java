@@ -31,12 +31,16 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.ILayoutResult;
 
+import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.ITreeSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TreePath;
+import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.dnd.Clipboard;
@@ -91,6 +95,16 @@ import java.util.Set;
  * Displays the image rendered by the {@link GraphicalEditorPart} and handles
  * the interaction with the widgets.
  * <p/>
+ * {@link LayoutCanvas} implements the "Canvas" control. The editor part
+ * actually uses the {@link LayoutCanvasViewer}, which is a JFace viewer wrapper
+ * around this control.
+ * <p/>
+ * This class implements {@link ISelectionProvider} so that it can delegate
+ * the selection provider from the {@link LayoutCanvasViewer}.
+ * <p/>
+ * Note that {@link LayoutCanvasViewer} sets a selection change listener on this
+ * control so that it can invoke its own fireSelectionChanged when the control's
+ * selection changes.
  *
  * @since GLE2
  *
@@ -101,9 +115,8 @@ import java.util.Set;
  * - context menu handling of layout + local props (via IViewRules)
  * - outline should include same context menu + delete/copy/paste ops.
  * - outline should include drop support (from canvas or from palette)
- * - synchronize with property view
  */
-/* package */  class LayoutCanvas extends Canvas {
+class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     /** The layout editor that uses this layout canvas. */
     private final LayoutEditor mLayoutEditor;
@@ -194,17 +207,19 @@ import java.util.Set;
     /** Horizontal scaling & scrollbar information. */
     private ScaleInfo mHScale;
 
+    /** Drag source associated with this canvas. */
     private DragSource mSource;
 
-    /** The current Outline Page, to synchronize the selection both ways. */
+    /** List of clients listening to selection changes. */
+    private final ListenerList mSelectionListeners = new ListenerList();
+
+    /** The current Outline Page, to set its model. */
     private OutlinePage2 mOutlinePage;
 
-    /** Listens to selections on the Outline Page and updates the canvas selection. */
-    private OutlineSelectionListener mOutlineSelectionListener;
+    /** Barrier set when updating the selection to prevent from recursively
+     * invoking ourselves. */
+    private boolean mInsideUpdateSelection;
 
-    /** Barrier set when updating the outline page to match the canvas selection,
-     * to prevent it from triggering the outline selection listener. */
-    private boolean mInsideUpdateOutlineSelection;
 
     public LayoutCanvas(LayoutEditor layoutEditor,
             RulesEngine rulesEngine,
@@ -281,9 +296,6 @@ import java.util.Set;
         Object outline = layoutEditor.getAdapter(IContentOutlinePage.class);
         if (outline instanceof OutlinePage2) {
             mOutlinePage = (OutlinePage2) outline;
-            // Note: we can't set the OutlinePage's SelectionChangeListener now
-            // because the TreeViewer backing the Outline Page hasn't been created
-            // yet. Instead we will create it "lazily" in updateOulineSelection().
         }
     }
 
@@ -293,9 +305,9 @@ import java.util.Set;
     public void dispose() {
         super.dispose();
 
-        if (mOutlineSelectionListener != null && mOutlinePage != null) {
-            mOutlinePage.removeSelectionChangedListener(mOutlineSelectionListener);
-            mOutlineSelectionListener = null;
+        if (mOutlinePage != null) {
+            mOutlinePage.setModel(null);
+            mOutlinePage = null;
         }
 
         if (mHoverFgColor != null) {
@@ -396,7 +408,7 @@ import java.util.Set;
                     it.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
                 }
             }
-            updateOulineSelection();
+            fireSelectionChanged();
 
             // remove the current alternate selection views
             mAltSelection = null;
@@ -471,7 +483,7 @@ import java.util.Set;
             redraw();
         }
 
-        updateOulineSelection();
+        fireSelectionChanged();
     }
 
     /**
@@ -499,52 +511,123 @@ import java.util.Set;
         return new Point(x, y);
     }
 
-    //---
 
-    public interface ScaleTransform {
-        /**
-         * Computes the transformation from a X/Y canvas image coordinate
-         * to client pixel coordinate.
-         * <p/>
-         * This takes into account the {@link ScaleInfo#IMAGE_MARGIN},
-         * the current scaling and the current translation.
-         *
-         * @param canvasX A canvas image coordinate (X or Y).
-         * @return The transformed coordinate in client pixel space.
-         */
-        public int translate(int canvasX);
+    //----
+    // Implementation of ISelectionProvider
 
-        /**
-         * Computes the transformation from a canvas image size (width or height) to
-         * client pixel coordinates.
-         *
-         * @param canwasW A canvas image size (W or H).
-         * @return The transformed coordinate in client pixel space.
-         */
-        public int scale(int canwasW);
+    /**
+     * Returns a {@link TreeSelection} compatible with a TreeViewer
+     * where each {@link TreePath} item is actually a {@link CanvasViewInfo}.
+     */
+    public ISelection getSelection() {
+        if (mSelections.size() == 0) {
+            return TreeSelection.EMPTY;
+        }
 
-        /**
-         * Computes the transformation from a X/Y client pixel coordinate
-         * to canvas image coordinate.
-         * <p/>
-         * This takes into account the {@link ScaleInfo#IMAGE_MARGIN},
-         * the current scaling and the current translation.
-         * <p/>
-         * This is the inverse of {@link #translate(int)}.
-         *
-         * @param screenX A client pixel space coordinate (X or Y).
-         * @return The transformed coordinate in canvas image space.
-         */
-        public int inverseTranslate(int screenX);
+        ArrayList<TreePath> paths = new ArrayList<TreePath>();
+
+        for (CanvasSelection cs : mSelections) {
+            CanvasViewInfo vi = cs.getViewInfo();
+            if (vi != null) {
+                ArrayList<Object> segments = new ArrayList<Object>();
+                while (vi != null) {
+                    segments.add(0, vi);
+                    vi = vi.getParent();
+                }
+                paths.add(new TreePath(segments.toArray()));
+            }
+        }
+
+        return new TreeSelection(paths.toArray(new TreePath[paths.size()]));
     }
 
-    private class ScaleInfo implements ScaleTransform {
-        /**
-         * Margin around the rendered image.
-         * Should be enough space to display the layout width and height pseudo widgets.
-         */
-        private static final int IMAGE_MARGIN = 25;
+    /**
+     * Sets the selection. It must be an {@link ITreeSelection} where each segment
+     * of the tree path is a {@link CanvasViewInfo}. A null selection is considered
+     * as an empty selection.
+     */
+    public void setSelection(ISelection selection) {
+        if (mInsideUpdateSelection) {
+            return;
+        }
 
+        try {
+            mInsideUpdateSelection = true;
+
+            if (selection == null) {
+                selection = TreeSelection.EMPTY;
+            }
+
+            if (selection instanceof ITreeSelection) {
+                ITreeSelection treeSel = (ITreeSelection) selection;
+
+                if (treeSel.isEmpty()) {
+                    // Clear existing selection, if any
+                    if (mSelections.size() > 0) {
+                        mSelections.clear();
+                        mAltSelection = null;
+                        redraw();
+                    }
+                    return;
+                }
+
+                boolean changed = false;
+
+                // Create a list of all currently selected view infos
+                Set<CanvasViewInfo> oldSelected = new HashSet<CanvasViewInfo>();
+                for (CanvasSelection cs : mSelections) {
+                    oldSelected.add(cs.getViewInfo());
+                }
+
+                // Go thru new selection and take care of selecting new items
+                // or marking those which are the same as in the current selection
+                for (TreePath path : treeSel.getPaths()) {
+                    Object seg = path.getLastSegment();
+                    if (seg instanceof CanvasViewInfo) {
+                        CanvasViewInfo newVi = (CanvasViewInfo) seg;
+                        if (oldSelected.contains(newVi)) {
+                            // This view info is already selected. Remove it from the
+                            // oldSelected list so that we don't de-select it later.
+                            oldSelected.remove(newVi);
+                        } else {
+                            // This view info is not already selected. Select it now.
+
+                            // reset alternate selection if any
+                            mAltSelection = null;
+                            // otherwise add it.
+                            mSelections.add(
+                                    new CanvasSelection(newVi, mRulesEngine, mNodeFactory));
+                            changed = true;
+                        }
+                    }
+                }
+
+                // De-select old selected items that are not in the new one
+                for (CanvasViewInfo vi : oldSelected) {
+                    deselect(vi);
+                    changed = true;
+                }
+
+                if (changed) {
+                    redraw();
+                }
+            }
+        } finally {
+            mInsideUpdateSelection = false;
+        }
+    }
+
+    public void addSelectionChangedListener(ISelectionChangedListener listener) {
+        mSelectionListeners.add(listener);
+    }
+
+    public void removeSelectionChangedListener(ISelectionChangedListener listener) {
+        mSelectionListeners.remove(listener);
+    }
+
+    //---
+
+    private class ScaleInfo implements ICanvasTransform {
         /** Canvas image size (original, before zoom), in pixels */
         private int mImgSize;
 
@@ -906,7 +989,7 @@ import java.util.Set;
 
                     // otherwise add it.
                     mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
-                    updateOulineSelection();
+                    fireSelectionChanged();
                     redraw();
                 }
 
@@ -931,7 +1014,7 @@ import java.util.Set;
                     CanvasViewInfo vi2 = mAltSelection.getCurrent();
                     if (vi2 != null) {
                         mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
-                        updateOulineSelection();
+                        fireSelectionChanged();
                     }
                 } else {
                     // We're trying to cycle through the current alternate selection.
@@ -943,7 +1026,7 @@ import java.util.Set;
                     vi2 = mAltSelection.getNext();
                     if (vi2 != null) {
                         mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
-                        updateOulineSelection();
+                        fireSelectionChanged();
                     }
                 }
                 redraw();
@@ -978,7 +1061,7 @@ import java.util.Set;
         if (vi != null) {
             mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
         }
-        updateOulineSelection();
+        fireSelectionChanged();
         redraw();
     }
 
@@ -1130,119 +1213,31 @@ import java.util.Set;
     }
 
     /**
-     * Update the selection in the outline page to match the current one from {@link #mSelections}
+     * Notifies listeners that the selection has changed.
      */
-    private void updateOulineSelection() {
-        boolean old = mInsideUpdateOutlineSelection;
+    private void fireSelectionChanged() {
+        if (mInsideUpdateSelection) {
+            return;
+        }
         try {
-            mInsideUpdateOutlineSelection = true;
+            mInsideUpdateSelection = true;
 
-            if (mOutlinePage == null) {
-                return;
-            }
+            final SelectionChangedEvent event = new SelectionChangedEvent(this, getSelection());
 
-            // Add the OutlineSelectionListener as soon as the outline page tree view exists.
-            if (mOutlineSelectionListener == null && mOutlinePage.getControl() != null) {
-                mOutlineSelectionListener = new OutlineSelectionListener();
-                mOutlinePage.addSelectionChangedListener(mOutlineSelectionListener);
-            }
-
-
-            if (mSelections.size() == 0) {
-                mOutlinePage.selectAndReveal(null);
-                return;
-            }
-
-            ArrayList<CanvasViewInfo> selectedVis = new ArrayList<CanvasViewInfo>();
-            for (CanvasSelection cs : mSelections) {
-                CanvasViewInfo vi = cs.getViewInfo();
-                if (vi != null) {
-                    selectedVis.add(vi);
+            SafeRunnable.run(new SafeRunnable() {
+                public void run() {
+                    for (Object listener : mSelectionListeners.getListeners()) {
+                        ((ISelectionChangedListener)listener).selectionChanged(event);
+                    }
                 }
-            }
-
-            mOutlinePage.selectAndReveal(
-                    selectedVis.toArray(new CanvasViewInfo[selectedVis.size()]));
+            });
         } finally {
-            mInsideUpdateOutlineSelection = old;
+            mInsideUpdateSelection = false;
         }
     }
 
 
     //---------------
-
-    private class OutlineSelectionListener implements ISelectionChangedListener {
-        public void selectionChanged(SelectionChangedEvent event) {
-            if (mInsideUpdateOutlineSelection) {
-                return;
-            }
-
-            try {
-                mInsideUpdateOutlineSelection = true;
-
-                ISelection sel = event.getSelection();
-
-                // The selection coming from the OutlinePage2 must be a list of
-                // CanvasViewInfo. See the implementation of OutlinePage2#selectAndReveal()
-                // for how it is constructed.
-                if (sel instanceof ITreeSelection) {
-                    ITreeSelection treeSel = (ITreeSelection) sel;
-
-                    if (treeSel.isEmpty() && mSelections.size() > 0) {
-                        // Clear existing selection
-                        mSelections.clear();
-                        mAltSelection = null;
-                        redraw();
-                        return;
-                    }
-
-                    boolean changed = false;
-
-                    // Create a list of all currently selected view infos
-                    Set<CanvasViewInfo> oldSelected = new HashSet<CanvasViewInfo>();
-                    for (CanvasSelection cs : mSelections) {
-                        oldSelected.add(cs.getViewInfo());
-                    }
-
-                    // Go thru new selection and take care of selecting new items
-                    // or marking those which are the same as in the current selection
-                    for (TreePath path : treeSel.getPaths()) {
-                        Object seg = path.getLastSegment();
-                        if (seg instanceof CanvasViewInfo) {
-                            CanvasViewInfo newVi = (CanvasViewInfo) seg;
-                            if (oldSelected.contains(newVi)) {
-                                // This view info is already selected. Remove it from the
-                                // oldSelected list so that we don't de-select it later.
-                                oldSelected.remove(newVi);
-                            } else {
-                                // This view info is not already selected. Select it now.
-
-                                // reset alternate selection if any
-                                mAltSelection = null;
-                                // otherwise add it.
-                                mSelections.add(
-                                        new CanvasSelection(newVi, mRulesEngine, mNodeFactory));
-                                changed = true;
-                            }
-                        }
-                    }
-
-                    // De-select old selected items that are not in the new one
-                    for (CanvasViewInfo vi : oldSelected) {
-                        deselect(vi);
-                        changed = true;
-                    }
-
-                    if (changed) {
-                        redraw();
-                    }
-                }
-
-            } finally {
-                mInsideUpdateOutlineSelection = false;
-            }
-        }
-    }
 
     private class CanvasDragSourceListener implements DragSourceListener {
 

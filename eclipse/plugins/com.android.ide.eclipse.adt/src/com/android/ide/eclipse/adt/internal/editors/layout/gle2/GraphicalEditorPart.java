@@ -65,6 +65,8 @@ import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.gef.ui.parts.SelectionSynchronizer;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyledText;
@@ -76,6 +78,9 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
+import org.eclipse.ui.INullSelectionListener;
+import org.eclipse.ui.ISelectionListener;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.ide.IDE;
@@ -92,29 +97,50 @@ import java.util.Map;
 
 /**
  * Graphical layout editor part, version 2.
+ * <p/>
+ * The main component of the editor part is the {@link LayoutCanvasViewer}, which
+ * actually delegates its work to the {@link LayoutCanvas} control.
+ * <p/>
+ * The {@link LayoutCanvasViewer} is set as the site's {@link ISelectionProvider}:
+ * when the selection changes in the canvas, it is thus broadcasted to anyone listening
+ * on the site's selection service.
+ * <p/>
+ * This part is also an {@link ISelectionListener}. It listens to the site's selection
+ * service and thus receives selection changes from itself as well as the associated
+ * outline and property sheet (these are registered by {@link LayoutEditor#getAdapter(Class)}).
  *
  * @since GLE2
  *
  * TODO List:
  * - display error icon
  * - finish palette (see palette's todo list)
- * - finish canvas (see canva's todo list)
+ * - finish canvas (see canvas' todo list)
  * - completly rethink the property panel
- * - link to the existing outline editor (prolly reuse/adapt for simplier model and will need
- *   to adapt the selection synchronizer.)
  */
-public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutEditor {
+public class GraphicalEditorPart extends EditorPart
+    implements IGraphicalLayoutEditor, ISelectionListener, INullSelectionListener {
 
     /*
      * Useful notes:
      * To understand Drag'n'drop:
      *   http://www.eclipse.org/articles/Article-Workbench-DND/drag_drop.html
+     *
+     * To understand the site's selection listener, selection provider, and the
+     * confusion of different-yet-similarly-named interfaces, consult this:
+     *   http://www.eclipse.org/articles/Article-WorkbenchSelections/article.html
+     *
+     * To summarize the selection mechanism:
+     * - The workbench site selection service can be seen as "centralized"
+     *   service that registers selection providers and selection listeners.
+     * - The editor part and the outline are selection providers.
+     * - The editor part, the outline and the property sheet are listeners
+     *   which all listen to each others indirectly.
      */
 
     /** Reference to the layout editor */
     private final LayoutEditor mLayoutEditor;
 
-    /** reference to the file being edited. Can also be used to access the {@link IProject}. */
+    /** Reference to the file being edited. Can also be used to access the {@link IProject}. */
     private IFile mEditedFile;
 
     /** The current clipboard. Must be disposed later. */
@@ -125,17 +151,21 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
     /** The sash that splits the palette from the canvas. */
     private SashForm mSashPalette;
+
+    /** The sash that splits the palette from the error view.
+     * The error view is shown only when needed. */
     private SashForm mSashError;
 
     /** The palette displayed on the left of the sash. */
     private PaletteComposite mPalette;
 
     /** The layout canvas displayed to the right of the sash. */
-    private LayoutCanvas mLayoutCanvas;
+    private LayoutCanvasViewer mCanvasViewer;
 
     /** The Groovy Rules Engine associated with this editor. It is project-specific. */
     private RulesEngine mRulesEngine;
 
+    /** Styled text displaying the most recent error in the error view. */
     private StyledText mErrorLabel;
 
     private Map<String, Map<String, IResourceValue>> mConfiguredFrameworkRes;
@@ -152,7 +182,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
     private ReloadListener mReloadListener;
 
-    protected boolean mUseExplodeMode;
+    private boolean mUseExplodeMode;
 
 
     public GraphicalEditorPart(LayoutEditor layoutEditor) {
@@ -238,7 +268,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                         ) {
                     @Override
                     public void onSelected(boolean newState) {
-                        mLayoutCanvas.setShowOutline(newState);
+                        mCanvasViewer.getCanvas().setShowOutline(newState);
                     }
                 }
         };
@@ -254,7 +284,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
         mSashError = new SashForm(mSashPalette, SWT.VERTICAL | SWT.BORDER);
         mSashError.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        mLayoutCanvas = new LayoutCanvas(mLayoutEditor, mRulesEngine, mSashError, SWT.NONE);
+        mCanvasViewer = new LayoutCanvasViewer(mLayoutEditor, mRulesEngine, mSashError, SWT.NONE);
 
         mErrorLabel = new StyledText(mSashError, SWT.READ_ONLY);
         mErrorLabel.setEditable(false);
@@ -263,12 +293,28 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
         mSashPalette.setWeights(new int[] { 20, 80 });
         mSashError.setWeights(new int[] { 80, 20 });
-        mSashError.setMaximizedControl(mLayoutCanvas);
+        mSashError.setMaximizedControl(mCanvasViewer.getControl());
 
         setupEditActions();
 
         // Initialize the state
         reloadPalette();
+
+        getSite().setSelectionProvider(mCanvasViewer);
+        getSite().getPage().addSelectionListener(this);
+    }
+
+    /**
+     * Listens to workbench selections that does NOT come from {@link LayoutEditor}
+     * (those are generated by ourselves).
+     * <p/>
+     * Selection can be null, as indicated by this class implementing
+     * {@link INullSelectionListener}.
+     */
+    public void selectionChanged(IWorkbenchPart part, ISelection selection) {
+        if (!(part instanceof LayoutEditor)) {
+            mCanvasViewer.setSelection(selection);
+        }
     }
 
     /**
@@ -276,7 +322,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
      * @param direction +1 for zoom in, -1 for zoom out
      */
     private void rescale(int direction) {
-        double s = mLayoutCanvas.getScale();
+        double s = mCanvasViewer.getCanvas().getScale();
 
         if (direction > 0) {
             s = s * 2;
@@ -284,7 +330,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
             s = s / 2;
         }
 
-        mLayoutCanvas.setScale(s);
+        mCanvasViewer.getCanvas().setScale(s);
 
     }
 
@@ -296,7 +342,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
             @Override
             public void run() {
                 // TODO enable copy only when there's a selection
-                mLayoutCanvas.onCopy(mClipboard);
+                mCanvasViewer.getCanvas().onCopy(mClipboard);
             }
         });
 
@@ -304,14 +350,14 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
             @Override
             public void run() {
                 // TODO enable cut only when there's a selection
-                mLayoutCanvas.onCut(mClipboard);
+                mCanvasViewer.getCanvas().onCut(mClipboard);
             }
         });
 
         actionBars.setGlobalActionHandler(ActionFactory.PASTE.getId(), new Action("Paste") {
             @Override
             public void run() {
-                mLayoutCanvas.onPaste(mClipboard);
+                mCanvasViewer.getCanvas().onPaste(mClipboard);
             }
         });
 
@@ -319,7 +365,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                 new Action("Select All") {
             @Override
             public void run() {
-                mLayoutCanvas.onSelectAll();
+                mCanvasViewer.getCanvas().onSelectAll();
             }
         });
     }
@@ -338,11 +384,15 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
     /** Displays the canvas and hides the error label. */
     private void hideError() {
-        mSashError.setMaximizedControl(mLayoutCanvas);
+        mSashError.setMaximizedControl(mCanvasViewer.getControl());
     }
 
     @Override
     public void dispose() {
+
+        getSite().getPage().removeSelectionListener(this);
+        getSite().setSelectionProvider(null);
+
         if (mTargetListener != null) {
             AdtPlugin.getDefault().removeTargetListener(mTargetListener);
             mTargetListener = null;
@@ -791,8 +841,8 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
 
         if (mRulesEngine == null) {
             mRulesEngine = new RulesEngine(mEditedFile.getProject());
-            if (mLayoutCanvas != null) {
-                mLayoutCanvas.setRulesEngine(mRulesEngine);
+            if (mCanvasViewer != null) {
+                mCanvasViewer.getCanvas().setRulesEngine(mRulesEngine);
             }
         }
     }
@@ -1039,7 +1089,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                                     configuredProjectRes, frameworkResources, mProjectCallback,
                                     mLogger);
 
-                            mLayoutCanvas.setResult(result);
+                            mCanvasViewer.getCanvas().setResult(result);
 
                             // update the UiElementNode with the layout info.
                             if (result.getSuccess() == ILayoutResult.SUCCESS) {
@@ -1186,7 +1236,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
                 // However there's no recompute, as it could not be needed
                 // (for instance a new layout)
                 // If a resource that's not a layout changed this will trigger a recompute anyway.
-                mLayoutCanvas.getDisplay().asyncExec(new Runnable() {
+                mCanvasViewer.getControl().getDisplay().asyncExec(new Runnable() {
                     public void run() {
                         mConfigComposite.updateLocales();
                     }
@@ -1227,7 +1277,7 @@ public class GraphicalEditorPart extends EditorPart implements IGraphicalLayoutE
             }
 
             if (recompute) {
-                mLayoutCanvas.getDisplay().asyncExec(new Runnable() {
+                mCanvasViewer.getControl().getDisplay().asyncExec(new Runnable() {
                     public void run() {
                         if (mLayoutEditor.isGraphicalEditorActive()) {
                             recomputeLayout();
