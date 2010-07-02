@@ -204,22 +204,28 @@ public class UiElementNode implements IPropertySource {
             // just using the UI name below.
             Element elem = (Element) mXmlNode;
 
-            String attr = elem.getAttributeNS(SdkConstants.NS_RESOURCES,
-                                              AndroidManifestDescriptors.ANDROID_NAME_ATTR);
+            String attr = _Element_getAttributeNS(elem,
+                                SdkConstants.NS_RESOURCES,
+                                AndroidManifestDescriptors.ANDROID_NAME_ATTR);
             if (attr == null || attr.length() == 0) {
-                attr = elem.getAttributeNS(SdkConstants.NS_RESOURCES,
-                                           AndroidManifestDescriptors.ANDROID_LABEL_ATTR);
+                attr = _Element_getAttributeNS(elem,
+                                SdkConstants.NS_RESOURCES,
+                                AndroidManifestDescriptors.ANDROID_LABEL_ATTR);
             }
             if (attr == null || attr.length() == 0) {
-                attr = elem.getAttributeNS(SdkConstants.NS_RESOURCES,
-                                           XmlDescriptors.PREF_KEY_ATTR);
+                attr = _Element_getAttributeNS(elem,
+                                SdkConstants.NS_RESOURCES,
+                                XmlDescriptors.PREF_KEY_ATTR);
             }
             if (attr == null || attr.length() == 0) {
-                attr = elem.getAttribute(ResourcesDescriptors.NAME_ATTR);
+                attr = _Element_getAttributeNS(elem,
+                                null, // no namespace
+                                ResourcesDescriptors.NAME_ATTR);
             }
             if (attr == null || attr.length() == 0) {
-                attr = elem.getAttributeNS(SdkConstants.NS_RESOURCES,
-                                           LayoutDescriptors.ID_ATTR);
+                attr = _Element_getAttributeNS(elem,
+                                SdkConstants.NS_RESOURCES,
+                                LayoutDescriptors.ID_ATTR);
 
                 if (attr != null && attr.length() > 0) {
                     for (String prefix : ID_PREFIXES) {
@@ -236,6 +242,31 @@ public class UiElementNode implements IPropertySource {
         }
 
         return String.format("%1$s", mDescriptor.getUiName());
+    }
+
+    /**
+     * Retrieves an attribute value by local name and namespace URI.
+     * <br>Per [<a href='http://www.w3.org/TR/1999/REC-xml-names-19990114/'>XML Namespaces</a>]
+     * , applications must use the value <code>null</code> as the
+     * <code>namespaceURI</code> parameter for methods if they wish to have
+     * no namespace.
+     * <p/>
+     * Note: This is a wrapper around {@link Element#getAttributeNS(String, String)}.
+     * In some versions of webtools, the getAttributeNS implementation crashes with an NPE.
+     * This wrapper will return null instead.
+     *
+     * @see Element#getAttributeNS(String, String)
+     * @see <a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=318108">https://bugs.eclipse.org/bugs/show_bug.cgi?id=318108</a>
+     * @return The result from {@link Element#getAttributeNS(String, String)} or an empty string.
+     */
+    private String _Element_getAttributeNS(Element element,
+            String namespaceURI,
+            String localName) {
+        try {
+            return element.getAttributeNS(namespaceURI, localName);
+        } catch (Exception ignore) {
+            return "";
+        }
     }
 
     /**
