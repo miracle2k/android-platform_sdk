@@ -113,7 +113,6 @@ final class LibraryProperties {
         mMatchIcon = AdtPlugin.getImageDescriptor("/icons/match.png").createImage(); //$NON-NLS-1$
         mErrorIcon = AdtPlugin.getImageDescriptor("/icons/error.png").createImage(); //$NON-NLS-1$
 
-
         // Layout has 2 column
         mTop = new Composite(parent, SWT.NONE);
         mTop.setLayout(new GridLayout(2, false));
@@ -259,13 +258,12 @@ final class LibraryProperties {
      * {@link #setContent(ProjectState)}.
      * <p/>This only saves the data into the {@link ProjectProperties} of the state, but does
      * not update the {@link ProjectState} or the list of {@link LibraryState}.
-     * @param isLibrary the new library flag of the project.
      * @return <code>true</code> if there was actually new data saved in the project state, false
      * otherwise.
      */
-    boolean save(boolean isLibrary) {
-        boolean mustSave = mMustSave || (isLibrary && mState.getLibraries().size() > 0);
-        if (mustSave) {
+    boolean save() {
+        boolean mustSave = mMustSave;
+        if (mMustSave) {
             // remove all previous library dependencies.
             ProjectProperties props = mState.getProperties();
             Set<String> keys = props.keySet();
@@ -276,12 +274,10 @@ final class LibraryProperties {
             }
 
             // now add the new libraries.
-            if (isLibrary == false) {
-                int index = 1;
-                for (ItemData data : mItemDataList) {
-                    props.setProperty(ProjectProperties.PROPERTY_LIB_REF + index++,
-                            data.relativePath);
-                }
+            int index = 1;
+            for (ItemData data : mItemDataList) {
+                props.setProperty(ProjectProperties.PROPERTY_LIB_REF + index++,
+                        data.relativePath);
             }
         }
 
