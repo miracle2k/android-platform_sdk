@@ -20,17 +20,19 @@ package com.android.sdklib.resources;
  * Screen Orientation enum.
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum ScreenOrientation {
-    PORTRAIT("port", "Portrait"), //$NON-NLS-1$
-    LANDSCAPE("land", "Landscape"), //$NON-NLS-1$
-    SQUARE("square", "Square"); //$NON-NLS-1$
+public enum ScreenOrientation implements ResourceEnum {
+    PORTRAIT("port", "Portrait", "Portrait Orientation"), //$NON-NLS-1$
+    LANDSCAPE("land", "Landscape", "Landscape Orientation"), //$NON-NLS-1$
+    SQUARE("square", "Square", "Square Orientation"); //$NON-NLS-1$
 
-    private String mValue;
-    private String mDisplayValue;
+    private final String mValue;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private ScreenOrientation(String value, String displayValue) {
+    private ScreenOrientation(String value, String shortDisplayValue, String longDisplayValue) {
         mValue = value;
-        mDisplayValue = displayValue;
+        mShortDisplayValue = shortDisplayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -48,12 +50,16 @@ public enum ScreenOrientation {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplayValue;
+    public String getShortDisplayValue() {
+        return mShortDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mLongDisplayValue;
     }
 
     public static int getIndex(ScreenOrientation orientation) {
@@ -80,4 +86,13 @@ public enum ScreenOrientation {
 
         return null;
     }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return true;
+    }
+
 }

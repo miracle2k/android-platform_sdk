@@ -28,7 +28,6 @@ import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
 import com.android.ide.eclipse.mock.FileMock;
 import com.android.ide.eclipse.mock.FolderMock;
-import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.resources.Keyboard;
 import com.android.sdklib.resources.KeyboardState;
@@ -111,7 +110,7 @@ public class ConfigMatchTest extends TestCase {
                 null, // screen orientation
                 null, // dpi
                 null, // touch mode
-                KeyboardState.EXPOSED.getValue(), // keyboard state
+                KeyboardState.EXPOSED.getResourceValue(), // keyboard state
                 null, // text input
                 null, // navigation
                 null, // screen dimension
@@ -129,7 +128,7 @@ public class ConfigMatchTest extends TestCase {
                 null, // screen orientation
                 null, // dpi
                 null, // touch mode
-                KeyboardState.HIDDEN.getValue(), // keyboard state
+                KeyboardState.HIDDEN.getResourceValue(), // keyboard state
                 null, // text input
                 null, // navigation
                 null, // screen dimension
@@ -144,7 +143,7 @@ public class ConfigMatchTest extends TestCase {
                 null, // region
                 null, // screen size
                 null, // screen ratio
-                ScreenOrientation.LANDSCAPE.getValue(), // screen orientation
+                ScreenOrientation.LANDSCAPE.getResourceValue(), // screen orientation
                 null, // dpi
                 null, // touch mode
                 null, // keyboard state
@@ -162,12 +161,12 @@ public class ConfigMatchTest extends TestCase {
                 "rUS", // region
                 "normal", // screen size
                 "notlong", // screen ratio
-                ScreenOrientation.LANDSCAPE.getValue(), // screen orientation
+                ScreenOrientation.LANDSCAPE.getResourceValue(), // screen orientation
                 "mdpi", // dpi
-                TouchScreen.FINGER.getValue(), // touch mode
-                KeyboardState.EXPOSED.getValue(), // keyboard state
-                Keyboard.QWERTY.getValue(), // text input
-                Navigation.DPAD.getValue(), // navigation
+                TouchScreen.FINGER.getResourceValue(), // touch mode
+                KeyboardState.EXPOSED.getResourceValue(), // keyboard state
+                Keyboard.QWERTY.getResourceValue(), // text input
+                Navigation.DPAD.getResourceValue(), // navigation
                 "480x320", // screen dimension
                 "v3"); // version
 
@@ -188,12 +187,12 @@ public class ConfigMatchTest extends TestCase {
                 "rUS", // region
                 "normal", // screen size
                 "notlong", // screen ratio
-                ScreenOrientation.LANDSCAPE.getValue(), // screen orientation
+                ScreenOrientation.LANDSCAPE.getResourceValue(), // screen orientation
                 "mdpi", // dpi
-                TouchScreen.FINGER.getValue(), // touch mode
-                KeyboardState.EXPOSED.getValue(), // keyboard state
-                Keyboard.QWERTY.getValue(), // text input
-                Navigation.DPAD.getValue(), // navigation
+                TouchScreen.FINGER.getResourceValue(), // touch mode
+                KeyboardState.EXPOSED.getResourceValue(), // keyboard state
+                Keyboard.QWERTY.getResourceValue(), // text input
+                Navigation.DPAD.getResourceValue(), // navigation
                 "480x320", // screen dimension
                 "v3"); // version
 
@@ -239,7 +238,7 @@ public class ConfigMatchTest extends TestCase {
             FileMock[] memberList) throws Exception {
 
         // figure out the folder name based on the configuration
-        String folderName = config.getFolderName(ResourceFolderType.LAYOUT, (IAndroidTarget)null);
+        String folderName = config.getFolderName(ResourceFolderType.LAYOUT);
 
         // create the folder mock
         FolderMock folder = new FolderMock(folderName, memberList);

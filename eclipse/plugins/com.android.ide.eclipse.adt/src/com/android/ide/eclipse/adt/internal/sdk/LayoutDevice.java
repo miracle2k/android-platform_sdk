@@ -144,55 +144,55 @@ public class LayoutDevice {
         ScreenSizeQualifier ssq = config.getScreenSizeQualifier();
         if (ssq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_SCREEN_SIZE);
-            node.setTextContent(ssq.getFolderSegment(null));
+            node.setTextContent(ssq.getFolderSegment());
         }
 
         ScreenRatioQualifier srq = config.getScreenRatioQualifier();
         if (srq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_SCREEN_RATIO);
-            node.setTextContent(srq.getFolderSegment(null));
+            node.setTextContent(srq.getFolderSegment());
         }
 
         ScreenOrientationQualifier soq = config.getScreenOrientationQualifier();
         if (soq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_SCREEN_ORIENTATION);
-            node.setTextContent(soq.getFolderSegment(null));
+            node.setTextContent(soq.getFolderSegment());
         }
 
         PixelDensityQualifier pdq = config.getPixelDensityQualifier();
         if (pdq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_PIXEL_DENSITY);
-            node.setTextContent(pdq.getFolderSegment(null));
+            node.setTextContent(pdq.getFolderSegment());
         }
 
         TouchScreenQualifier ttq = config.getTouchTypeQualifier();
         if (ttq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_TOUCH_TYPE);
-            node.setTextContent(ttq.getFolderSegment(null));
+            node.setTextContent(ttq.getFolderSegment());
         }
 
         KeyboardStateQualifier ksq = config.getKeyboardStateQualifier();
         if (ksq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_KEYBOARD_STATE);
-            node.setTextContent(ksq.getFolderSegment(null));
+            node.setTextContent(ksq.getFolderSegment());
         }
 
         TextInputMethodQualifier timq = config.getTextInputMethodQualifier();
         if (timq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_TEXT_INPUT_METHOD);
-            node.setTextContent(timq.getFolderSegment(null));
+            node.setTextContent(timq.getFolderSegment());
         }
 
         NavigationStateQualifier nsq = config.getNavigationStateQualifier();
         if (nsq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_NAV_STATE);
-            node.setTextContent(nsq.getFolderSegment(null));
+            node.setTextContent(nsq.getFolderSegment());
         }
 
         NavigationMethodQualifier nmq = config.getNavigationMethodQualifier();
         if (nmq != null) {
             Element node = createNode(doc, configNode, LayoutDevicesXsd.NODE_NAV_METHOD);
-            node.setTextContent(nmq.getFolderSegment(null));
+            node.setTextContent(nmq.getFolderSegment());
         }
 
         ScreenDimensionQualifier sdq = config.getScreenDimensionQualifier();

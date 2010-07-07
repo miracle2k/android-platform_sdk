@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -30,6 +29,7 @@ import java.util.regex.Pattern;
 public final class RegionQualifier extends ResourceQualifier {
     private final static Pattern sRegionPattern = Pattern.compile("^r([A-Z]{2})$"); //$NON-NLS-1$
 
+    public static final String FAKE_REGION_VALUE = "__"; //$NON-NLS-1$
     public static final String NAME = "Region";
 
     private String mValue;
@@ -104,6 +104,11 @@ public final class RegionQualifier extends ResourceQualifier {
     }
 
     @Override
+    public boolean hasFakeValue() {
+        return FAKE_REGION_VALUE.equals(mValue);
+    }
+
+    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         RegionQualifier qualifier = getQualifier(value);
         if (qualifier != null) {
@@ -139,14 +144,23 @@ public final class RegionQualifier extends ResourceQualifier {
      * Returns the string used to represent this qualifier in the folder name.
      */
     @Override
-    public String getFolderSegment(IAndroidTarget target) {
+    public String getFolderSegment() {
         return getFolderSegment(mValue);
     }
 
     @Override
-    public String getStringValue() {
+    public String getShortDisplayValue() {
         if (mValue != null) {
             return mValue;
+        }
+
+        return ""; //$NON-NLS-1$
+    }
+
+    @Override
+    public String getLongDisplayValue() {
+        if (mValue != null) {
+            return String.format("Region %s", mValue);
         }
 
         return ""; //$NON-NLS-1$

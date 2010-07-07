@@ -20,16 +20,18 @@ package com.android.sdklib.resources;
  * Navigation state enum.
  * <p/>This is used in the resource folder names.
  */
-public enum NavigationState {
-    EXPOSED("navexposed", "Exposed"), //$NON-NLS-1$
-    HIDDEN("navhidden", "Hidden");    //$NON-NLS-1$
+public enum NavigationState implements ResourceEnum {
+    EXPOSED("navexposed", "Exposed", "Exposed navigation"), //$NON-NLS-1$
+    HIDDEN("navhidden", "Hidden", "Hidden navigation");    //$NON-NLS-1$
 
-    private String mValue;
-    private String mDisplayValue;
+    private final String mValue;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private NavigationState(String value, String displayValue) {
+    private NavigationState(String value, String shortDisplayValue, String longDisplayValue) {
         mValue = value;
-        mDisplayValue = displayValue;
+        mShortDisplayValue = shortDisplayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -47,12 +49,16 @@ public enum NavigationState {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplayValue;
+    public String getShortDisplayValue() {
+        return mShortDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mLongDisplayValue;
     }
 
     public static int getIndex(NavigationState value) {
@@ -78,4 +84,13 @@ public enum NavigationState {
         }
         return null;
     }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return true;
+    }
+
 }

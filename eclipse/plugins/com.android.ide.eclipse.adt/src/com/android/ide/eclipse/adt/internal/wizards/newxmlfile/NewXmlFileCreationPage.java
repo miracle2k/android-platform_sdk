@@ -1025,7 +1025,7 @@ class NewXmlFileCreationPage extends WizardPage {
             // The configuration is valid. Reformat the folder path using the canonical
             // value from the configuration.
 
-            newPath = RES_FOLDER_ABS + mTempConfig.getFolderName(type.getResFolderType(), mProject);
+            newPath = RES_FOLDER_ABS + mTempConfig.getFolderName(type.getResFolderType());
         } else {
             // The configuration is invalid. We still update the path but this time
             // do it manually on the string.
@@ -1034,8 +1034,7 @@ class NewXmlFileCreationPage extends WizardPage {
                         "^(" + RES_FOLDER_ABS +")[^-]*(.*)",         //$NON-NLS-1$ //$NON-NLS-2$
                         "\\1" + type.getResFolderName() + "\\2");   //$NON-NLS-1$ //$NON-NLS-2$
             } else {
-                newPath = RES_FOLDER_ABS + mTempConfig.getFolderName(type.getResFolderType(),
-                        mProject);
+                newPath = RES_FOLDER_ABS + mTempConfig.getFolderName(type.getResFolderType());
             }
         }
 
@@ -1139,7 +1138,7 @@ class NewXmlFileCreationPage extends WizardPage {
         if (type != null) {
             mConfigSelector.getConfiguration(mTempConfig);
             StringBuffer sb = new StringBuffer(RES_FOLDER_ABS);
-            sb.append(mTempConfig.getFolderName(type.getResFolderType(), mProject));
+            sb.append(mTempConfig.getFolderName(type.getResFolderType()));
 
             mInternalWsFolderPathUpdate = true;
             mWsFolderPathTextField.setText(sb.toString());

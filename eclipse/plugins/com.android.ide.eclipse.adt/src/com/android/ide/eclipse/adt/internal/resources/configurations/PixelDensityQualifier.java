@@ -17,9 +17,8 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.AndroidVersion;
-import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.Density;
+import com.android.sdklib.resources.ResourceEnum;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -29,7 +28,7 @@ import java.util.regex.Pattern;
 /**
  * Resource Qualifier for Screen Pixel Density.
  */
-public final class PixelDensityQualifier extends ResourceQualifier {
+public final class PixelDensityQualifier extends EnumBasedResourceQualifier {
     private final static Pattern sDensityLegacyPattern = Pattern.compile("^(\\d+)dpi$");//$NON-NLS-1$
 
     public static final String NAME = "Pixel Density";
@@ -49,6 +48,11 @@ public final class PixelDensityQualifier extends ResourceQualifier {
     }
 
     @Override
+    ResourceEnum getEnumValue() {
+        return mValue;
+    }
+
+    @Override
     public String getName() {
         return NAME;
     }
@@ -61,11 +65,6 @@ public final class PixelDensityQualifier extends ResourceQualifier {
     @Override
     public Image getIcon() {
         return IconFactory.getInstance().getIcon("dpi"); //$NON-NLS-1$
-    }
-
-    @Override
-    public boolean isValid() {
-        return mValue != null;
     }
 
     @Override
@@ -127,50 +126,5 @@ public final class PixelDensityQualifier extends ResourceQualifier {
             // if reference if low, we'll prefer to scale down high than medium (2:1 over 4:3)
             return mValue.getDpiValue() > compareQ.mValue.getDpiValue();
         }
-    }
-
-    @Override
-    public boolean equals(Object qualifier) {
-        if (qualifier instanceof PixelDensityQualifier) {
-            return mValue == ((PixelDensityQualifier)qualifier).mValue;
-        }
-
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        if (mValue != null) {
-            return mValue.hashCode();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Returns the string used to represent this qualifier in the folder name.
-     */
-    @Override
-    public String getFolderSegment(IAndroidTarget target) {
-        if (mValue != null) {
-            if (target != null) {
-                AndroidVersion version = target.getVersion();
-                if (version.getApiLevel() <= 3 && version.getCodename() == null) {
-                    return mValue.getLegacyValue();
-                }
-            }
-            return mValue.getValue();
-        }
-
-        return ""; //$NON-NLS-1$
-    }
-
-    @Override
-    public String getStringValue() {
-        if (mValue != null) {
-            return mValue.getDisplayValue();
-        }
-
-        return ""; //$NON-NLS-1$
     }
 }

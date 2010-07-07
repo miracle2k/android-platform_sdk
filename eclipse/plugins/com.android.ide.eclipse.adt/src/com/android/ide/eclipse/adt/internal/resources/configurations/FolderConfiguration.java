@@ -17,10 +17,6 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
-import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.sdklib.IAndroidTarget;
-
-import org.eclipse.core.resources.IProject;
 
 
 /**
@@ -60,12 +56,30 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
 
     /**
      * Sets the config from the qualifiers of a given <var>config</var>.
-     * @param config
+     * <p/>This is equivalent to <code>set(config, false)</code>
+     * @param config the configuration to set
+     *
+     * @see #set(FolderConfiguration, boolean)
      */
     public void set(FolderConfiguration config) {
+        set(config, false /*nonFakeValuesOnly*/);
+    }
+
+    /**
+     * Sets the config from the qualifiers of a given <var>config</var>.
+     * @param config the configuration to set
+     * @param nonFakeValuesOnly if set to true this ignore qualifiers for which the
+     * current value is a fake value.
+     *
+     * @see ResourceQualifier#hasFakeValue()
+     */
+    public void set(FolderConfiguration config, boolean nonFakeValuesOnly) {
         if (config != null) {
             for (int i = 0 ; i < INDEX_COUNT ; i++) {
-                mQualifiers[i] = config.mQualifiers[i];
+                ResourceQualifier q = config.mQualifiers[i];
+                if (nonFakeValuesOnly == false || q == null || q.hasFakeValue() == false) {
+                    mQualifiers[i] = q;
+                }
             }
         }
     }
@@ -361,12 +375,12 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
     /**
      * Returns the name of a folder with the configuration.
      */
-    public String getFolderName(ResourceFolderType folder, IAndroidTarget target) {
+    public String getFolderName(ResourceFolderType folder) {
         StringBuilder result = new StringBuilder(folder.getName());
 
         for (ResourceQualifier qualifier : mQualifiers) {
             if (qualifier != null) {
-                String segment = qualifier.getFolderSegment(target);
+                String segment = qualifier.getFolderSegment();
                 if (segment != null && segment.length() > 0) {
                     result.append(QUALIFIER_SEP);
                     result.append(segment);
@@ -375,21 +389,6 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
         }
 
         return result.toString();
-    }
-
-    /**
-     * Returns the name of a folder with the configuration.
-     */
-    public String getFolderName(ResourceFolderType folder, IProject project) {
-        IAndroidTarget target = null;
-        if (project != null) {
-            Sdk currentSdk = Sdk.getCurrent();
-            if (currentSdk != null) {
-                target = currentSdk.getTarget(project);
-            }
-        }
-
-        return getFolderName(folder, target);
     }
 
     /**
@@ -421,22 +420,22 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
                 } else {
                     result.append(", "); //$NON-NLS-1$
                 }
-                result.append(qualifier.getStringValue());
+                result.append(qualifier.getLongDisplayValue());
 
             }
         }
 
         // process the language/region qualifier in a custom way, if there are both non null.
         if (mQualifiers[INDEX_LANGUAGE] != null && mQualifiers[INDEX_REGION] != null) {
-            String language = mQualifiers[INDEX_LANGUAGE].getStringValue();
-            String region = mQualifiers[INDEX_REGION].getStringValue();
+            String language = mQualifiers[INDEX_LANGUAGE].getLongDisplayValue();
+            String region = mQualifiers[INDEX_REGION].getLongDisplayValue();
 
             if (result == null) {
                 result = new StringBuilder();
             } else {
                 result.append(", "); //$NON-NLS-1$
             }
-            result.append(String.format("%s_%s", language, region)); //$NON-NLS-1$
+            result.append(String.format("Locale %s_%s", language, region)); //$NON-NLS-1$
 
             index += 2;
         }
@@ -450,7 +449,7 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
                 } else {
                     result.append(", "); //$NON-NLS-1$
                 }
-                result.append(qualifier.getStringValue());
+                result.append(qualifier.getLongDisplayValue());
 
             }
         }

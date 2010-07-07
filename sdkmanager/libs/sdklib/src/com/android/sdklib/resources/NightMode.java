@@ -20,16 +20,18 @@ package com.android.sdklib.resources;
  * Night enum.
  * <p/>This is used in the resource folder names.
  */
-public enum NightMode {
-    NIGHT("night", "Night time"),
-    NOTNIGHT("notnight", "Day time");
+public enum NightMode implements ResourceEnum {
+    NOTNIGHT("notnight", "Not Night", "Day time"),
+    NIGHT("night", "Night", "Night time");
 
-    private String mValue;
-    private String mDisplay;
+    private final String mValue;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private NightMode(String value, String display) {
+    private NightMode(String value, String shortDisplayValue, String longDisplayValue) {
         mValue = value;
-        mDisplay = display;
+        mShortDisplayValue = shortDisplayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -47,12 +49,16 @@ public enum NightMode {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplay;
+    public String getShortDisplayValue() {
+        return mShortDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mLongDisplayValue;
     }
 
     public static int getIndex(NightMode value) {
@@ -78,4 +84,13 @@ public enum NightMode {
         }
         return null;
     }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return true;
+    }
+
 }

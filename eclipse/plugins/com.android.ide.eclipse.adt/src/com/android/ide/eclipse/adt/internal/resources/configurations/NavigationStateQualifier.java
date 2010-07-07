@@ -17,15 +17,15 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.NavigationState;
+import com.android.sdklib.resources.ResourceEnum;
 
 import org.eclipse.swt.graphics.Image;
 
 /**
  * Resource Qualifier for navigation state.
  */
-public final class NavigationStateQualifier extends ResourceQualifier {
+public final class NavigationStateQualifier extends EnumBasedResourceQualifier {
 
     public static final String NAME = "Navigation State";
 
@@ -40,6 +40,11 @@ public final class NavigationStateQualifier extends ResourceQualifier {
     }
 
     public NavigationState getValue() {
+        return mValue;
+    }
+
+    @Override
+    ResourceEnum getEnumValue() {
         return mValue;
     }
 
@@ -59,11 +64,6 @@ public final class NavigationStateQualifier extends ResourceQualifier {
     }
 
     @Override
-    public boolean isValid() {
-        return mValue != null;
-    }
-
-    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         NavigationState state = NavigationState.getEnum(value);
         if (state != null) {
@@ -74,44 +74,5 @@ public final class NavigationStateQualifier extends ResourceQualifier {
         }
 
         return false;
-    }
-
-    @Override
-    public boolean equals(Object qualifier) {
-        if (qualifier instanceof NavigationStateQualifier) {
-            return mValue == ((NavigationStateQualifier)qualifier).mValue;
-        }
-
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        if (mValue != null) {
-            return mValue.hashCode();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Returns the string used to represent this qualifier in the folder name.
-     */
-    @Override
-    public String getFolderSegment(IAndroidTarget target) {
-        if (mValue != null) {
-            return mValue.getValue();
-        }
-
-        return ""; //$NON-NLS-1$
-    }
-
-    @Override
-    public String getStringValue() {
-        if (mValue != null) {
-            return mValue.getDisplayValue();
-        }
-
-        return ""; //$NON-NLS-1$
     }
 }

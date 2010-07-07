@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.ResourceEnum;
 import com.android.sdklib.resources.TouchScreen;
 
 import org.eclipse.swt.graphics.Image;
@@ -26,7 +26,7 @@ import org.eclipse.swt.graphics.Image;
 /**
  * Resource Qualifier for Touch Screen type.
  */
-public final class TouchScreenQualifier extends ResourceQualifier {
+public final class TouchScreenQualifier extends EnumBasedResourceQualifier {
 
     public static final String NAME = "Touch Screen";
 
@@ -41,6 +41,11 @@ public final class TouchScreenQualifier extends ResourceQualifier {
     }
 
     public TouchScreen getValue() {
+        return mValue;
+    }
+
+    @Override
+    ResourceEnum getEnumValue() {
         return mValue;
     }
 
@@ -60,11 +65,6 @@ public final class TouchScreenQualifier extends ResourceQualifier {
     }
 
     @Override
-    public boolean isValid() {
-        return mValue != null;
-    }
-
-    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         TouchScreen type = TouchScreen.getEnum(value);
         if (type != null) {
@@ -75,43 +75,5 @@ public final class TouchScreenQualifier extends ResourceQualifier {
         }
 
         return false;
-    }
-
-    @Override
-    public boolean equals(Object qualifier) {
-        if (qualifier instanceof TouchScreenQualifier) {
-            return mValue == ((TouchScreenQualifier)qualifier).mValue;
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        if (mValue != null) {
-            return mValue.hashCode();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Returns the string used to represent this qualifier in the folder name.
-     */
-    @Override
-    public String getFolderSegment(IAndroidTarget target) {
-        if (mValue != null) {
-            return mValue.getValue();
-        }
-
-        return ""; //$NON-NLS-1$
-    }
-
-    @Override
-    public String getStringValue() {
-        if (mValue != null) {
-            return mValue.getDisplayValue();
-        }
-
-        return ""; //$NON-NLS-1$
     }
 }

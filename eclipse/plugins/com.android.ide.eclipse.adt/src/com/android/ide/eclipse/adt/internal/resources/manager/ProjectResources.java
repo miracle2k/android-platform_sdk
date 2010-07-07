@@ -547,7 +547,7 @@ public class ProjectResources implements IResourceRepository {
                 FolderConfiguration config = folder.getConfiguration();
                 LanguageQualifier lang = config.getLanguageQualifier();
                 if (lang != null) {
-                    set.add(lang.getStringValue());
+                    set.add(lang.getShortDisplayValue());
                 }
             }
         }
@@ -569,10 +569,10 @@ public class ProjectResources implements IResourceRepository {
 
                 // get the language
                 LanguageQualifier lang = config.getLanguageQualifier();
-                if (lang != null && lang.getStringValue().equals(currentLanguage)) {
+                if (lang != null && lang.getShortDisplayValue().equals(currentLanguage)) {
                     RegionQualifier region = config.getRegionQualifier();
                     if (region != null) {
-                        set.add(region.getStringValue());
+                        set.add(region.getShortDisplayValue());
                     }
                 }
             }

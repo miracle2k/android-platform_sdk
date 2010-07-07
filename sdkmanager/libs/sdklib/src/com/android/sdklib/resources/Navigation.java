@@ -20,18 +20,20 @@ package com.android.sdklib.resources;
  * Navigation enum.
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum Navigation {
-    NONAV("nonav", "No Navigation"), //$NON-NLS-1$
-    DPAD("dpad", "D-pad"), //$NON-NLS-1$
-    TRACKBALL("trackball", "Trackball"), //$NON-NLS-1$
-    WHEEL("wheel", "Wheel"); //$NON-NLS-1$
+public enum Navigation implements ResourceEnum {
+    NONAV("nonav", "None", "No navigation"), //$NON-NLS-1$
+    DPAD("dpad", "D-pad", "D-pad navigation"), //$NON-NLS-1$
+    TRACKBALL("trackball", "Trackball", "Trackball navigation"), //$NON-NLS-1$
+    WHEEL("wheel", "Wheel", "Wheel navigation"); //$NON-NLS-1$
 
-    private String mValue;
-    private String mDisplay;
+    private final String mValue;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private Navigation(String value, String display) {
+    private Navigation(String value, String shortDisplayValue, String longDisplayValue) {
         mValue = value;
-        mDisplay = display;
+        mShortDisplayValue = shortDisplayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -49,12 +51,16 @@ public enum Navigation {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplay;
+    public String getShortDisplayValue() {
+        return mShortDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mLongDisplayValue;
     }
 
     public static int getIndex(Navigation value) {
@@ -80,4 +86,13 @@ public enum Navigation {
         }
         return null;
     }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return true;
+    }
+
 }

@@ -136,11 +136,11 @@ public class NewProjectWizard extends Wizard implements INewWizard {
     private static final String DRAWABLE_DIRECTORY =
         SdkConstants.FD_DRAWABLE + AndroidConstants.WS_SEP;
     private static final String DRAWABLE_HDPI_DIRECTORY =
-        SdkConstants.FD_DRAWABLE + "-" + Density.HIGH.getValue() + AndroidConstants.WS_SEP;   //$NON-NLS-1$
+        SdkConstants.FD_DRAWABLE + "-" + Density.HIGH.getResourceValue() + AndroidConstants.WS_SEP;   //$NON-NLS-1$
     private static final String DRAWABLE_MDPI_DIRECTORY =
-        SdkConstants.FD_DRAWABLE + "-" + Density.MEDIUM.getValue() + AndroidConstants.WS_SEP; //$NON-NLS-1$
+        SdkConstants.FD_DRAWABLE + "-" + Density.MEDIUM.getResourceValue() + AndroidConstants.WS_SEP; //$NON-NLS-1$
     private static final String DRAWABLE_LDPI_DIRECTORY =
-        SdkConstants.FD_DRAWABLE + "-" + Density.LOW.getValue() + AndroidConstants.WS_SEP;    //$NON-NLS-1$
+        SdkConstants.FD_DRAWABLE + "-" + Density.LOW.getResourceValue() + AndroidConstants.WS_SEP;    //$NON-NLS-1$
     private static final String LAYOUT_DIRECTORY =
         SdkConstants.FD_LAYOUT + AndroidConstants.WS_SEP;
     private static final String VALUES_DIRECTORY =

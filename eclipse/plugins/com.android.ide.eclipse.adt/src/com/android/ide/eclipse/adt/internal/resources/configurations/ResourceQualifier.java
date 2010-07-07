@@ -16,8 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
-import com.android.sdklib.IAndroidTarget;
-
 import org.eclipse.swt.graphics.Image;
 
 /**
@@ -48,6 +46,12 @@ public abstract class ResourceQualifier implements Comparable<ResourceQualifier>
     public abstract boolean isValid();
 
     /**
+     * Returns whether the qualifier has a fake value.
+     * <p/>Fake values are used internally and should not be used as real qualifier value.
+     */
+    public abstract boolean hasFakeValue();
+
+    /**
      * Check if the value is valid for this qualifier, and if so sets the value
      * into a Folder Configuration.
      * @param value The value to check and set. Must not be null.
@@ -60,7 +64,7 @@ public abstract class ResourceQualifier implements Comparable<ResourceQualifier>
      * Returns a string formated to be used in a folder name.
      * <p/>This is declared as abstract to force children classes to implement it.
      */
-    public abstract String getFolderSegment(IAndroidTarget target);
+    public abstract String getFolderSegment();
 
     /**
      * Returns whether the given qualifier is a match for the receiver.
@@ -90,13 +94,18 @@ public abstract class ResourceQualifier implements Comparable<ResourceQualifier>
 
     @Override
     public String toString() {
-        return getFolderSegment(null);
+        return getFolderSegment();
     }
 
     /**
      * Returns a string formatted for display purpose.
      */
-    public abstract String getStringValue();
+    public abstract String getShortDisplayValue();
+
+    /**
+     * Returns a string formatted for display purpose.
+     */
+    public abstract String getLongDisplayValue();
 
     /**
      * Returns <code>true</code> if both objects are equal.

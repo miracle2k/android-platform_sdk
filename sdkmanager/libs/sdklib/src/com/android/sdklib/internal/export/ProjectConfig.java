@@ -51,12 +51,13 @@ public final class ProjectConfig {
      * List of densities and their associated aapt filter.
      */
     private static final String[][] DENSITY_LIST = new String[][] {
-        new String[] { Density.HIGH.getValue(),
-                Density.HIGH.getValue() + "," + Density.NODPI.getValue() },
-                new String[] { Density.MEDIUM.getValue(),
-                        Density.MEDIUM.getValue() + "," + Density.NODPI.getValue() },
-                        new String[] { Density.MEDIUM.getValue(),
-                Density.MEDIUM.getValue() + "," + Density.NODPI.getValue() },
+        new String[] { Density.HIGH.getResourceValue(),
+                Density.HIGH.getResourceValue() + "," + Density.NODPI.getResourceValue() },
+                new String[] { Density.MEDIUM.getResourceValue(),
+                        Density.MEDIUM.getResourceValue() + "," +
+                                Density.NODPI.getResourceValue() },
+                        new String[] { Density.MEDIUM.getResourceValue(),
+                Density.MEDIUM.getResourceValue() + "," + Density.NODPI.getResourceValue() },
     };
 
     private final File mProjectFolder;

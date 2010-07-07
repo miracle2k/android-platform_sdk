@@ -20,18 +20,21 @@ package com.android.sdklib.resources;
  * Keyboard enum.
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum Keyboard {
-    NOKEY("nokeys", null, "No Keys"), //$NON-NLS-1$
-    QWERTY("qwerty", null, "Qwerty"), //$NON-NLS-1$
-    TWELVEKEY("12key", "twelvekey", "12 Key"); //$NON-NLS-1$
+public enum Keyboard implements ResourceEnum {
+    NOKEY("nokeys", null, "No Keys", "No keyboard"), //$NON-NLS-1$
+    QWERTY("qwerty", null, "Qwerty", "Qwerty keybard"), //$NON-NLS-1$
+    TWELVEKEY("12key", "twelvekey", "12 Key", "12 key keyboard"); //$NON-NLS-1$ //$NON-NLS-2$
 
-    private String mValue, mValue2;
-    private String mDisplayValue;
+    private final String mValue, mValue2;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private Keyboard(String value, String value2, String displayValue) {
+    private Keyboard(String value, String value2, String shortDisplayValue,
+            String longDisplayValue) {
         mValue = value;
         mValue2 = value2;
-        mDisplayValue = displayValue;
+        mShortDisplayValue = shortDisplayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -50,12 +53,16 @@ public enum Keyboard {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplayValue;
+    public String getShortDisplayValue() {
+        return mShortDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mLongDisplayValue;
     }
 
     public static int getIndex(Keyboard value) {
@@ -80,5 +87,13 @@ public enum Keyboard {
             i++;
         }
         return null;
+    }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return true;
     }
 }

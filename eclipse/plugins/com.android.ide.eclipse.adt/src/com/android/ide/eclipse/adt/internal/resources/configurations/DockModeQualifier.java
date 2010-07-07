@@ -17,15 +17,15 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.DockMode;
+import com.android.sdklib.resources.ResourceEnum;
 
 import org.eclipse.swt.graphics.Image;
 
 /**
  * Resource Qualifier for Navigation Method.
  */
-public final class DockModeQualifier extends ResourceQualifier {
+public final class DockModeQualifier extends EnumBasedResourceQualifier {
 
     public static final String NAME = "Dock Mode";
 
@@ -40,6 +40,11 @@ public final class DockModeQualifier extends ResourceQualifier {
     }
 
     public DockMode getValue() {
+        return mValue;
+    }
+
+    @Override
+    ResourceEnum getEnumValue() {
         return mValue;
     }
 
@@ -60,11 +65,6 @@ public final class DockModeQualifier extends ResourceQualifier {
     }
 
     @Override
-    public boolean isValid() {
-        return mValue != null;
-    }
-
-    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         DockMode mode = DockMode.getEnum(value);
         if (mode != null) {
@@ -77,41 +77,32 @@ public final class DockModeQualifier extends ResourceQualifier {
     }
 
     @Override
-    public boolean equals(Object qualifier) {
-        if (qualifier instanceof DockModeQualifier) {
-            return mValue == ((DockModeQualifier)qualifier).mValue;
+    public boolean isMatchFor(ResourceQualifier qualifier) {
+        // only NONE is a match other DockModes
+        if (mValue == DockMode.NONE) {
+            return true;
+        }
+
+        // others must be an exact match
+        return ((DockModeQualifier)qualifier).mValue == mValue;
+    }
+
+    @Override
+    public boolean isBetterMatchThan(ResourceQualifier compareTo, ResourceQualifier reference) {
+        if (compareTo == null) {
+            return true;
+        }
+
+        DockModeQualifier compareQualifier = (DockModeQualifier)compareTo;
+        DockModeQualifier referenceQualifier = (DockModeQualifier)reference;
+        // if they are a perfect match, the receiver cannot be a better match.
+        if (compareQualifier.getValue() == referenceQualifier.getValue()) {
+            return false;
+        } else if (mValue == DockMode.NONE) {
+            // else "none" can be a match in case there's no exact match
+            return true;
         }
 
         return false;
-    }
-
-    @Override
-    public int hashCode() {
-        if (mValue != null) {
-            return mValue.hashCode();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Returns the string used to represent this qualifier in the folder name.
-     */
-    @Override
-    public String getFolderSegment(IAndroidTarget target) {
-        if (mValue != null) {
-            return mValue.getValue();
-        }
-
-        return ""; //$NON-NLS-1$
-    }
-
-    @Override
-    public String getStringValue() {
-        if (mValue != null) {
-            return mValue.getDisplayValue();
-        }
-
-        return ""; //$NON-NLS-1$
     }
 }

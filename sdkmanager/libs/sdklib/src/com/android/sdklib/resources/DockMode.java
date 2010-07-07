@@ -20,16 +20,17 @@ package com.android.sdklib.resources;
  * Dock enum.
  * <p/>This is used in the resource folder names.
  */
-public enum DockMode {
-    CAR("car", "Car"),
-    DESK("desk", "Desk");
+public enum DockMode implements ResourceEnum {
+    NONE("", "No Dock"),
+    CAR("car", "Car Dock"),
+    DESK("desk", "Desk Dock");
 
-    private String mValue;
-    private String mDisplay;
+    private final String mValue;
+    private final String mDisplayValue;
 
     private DockMode(String value, String display) {
         mValue = value;
-        mDisplay = display;
+        mDisplayValue = display;
     }
 
     /**
@@ -47,12 +48,16 @@ public enum DockMode {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplay;
+    public String getShortDisplayValue() {
+        return mDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mDisplayValue;
     }
 
     public static int getIndex(DockMode value) {
@@ -77,5 +82,13 @@ public enum DockMode {
             i++;
         }
         return null;
+    }
+
+    public boolean isFakeValue() {
+        return this == NONE; // NONE is not a real enum. it's used for internal state only.
+    }
+
+    public boolean isValidValueForDevice() {
+        return this != NONE;
     }
 }
