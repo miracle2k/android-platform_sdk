@@ -721,6 +721,9 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
                             configuredProjectResources, frameworkResources, projectCallback,
                             null /* logger */);
 
+                    // post rendering clean up
+                    bridge.cleanUp();
+
                     // update the UiElementNode with the layout info.
                     if (result.getSuccess() == ILayoutResult.SUCCESS) {
                         BufferedImage largeImage = result.getImage();
@@ -1043,6 +1046,9 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
                                     theme, isProjectTheme,
                                     configuredProjectRes, frameworkResources, mProjectCallback,
                                     mLogger);
+
+                            // post-rendering clean up
+                            bridge.cleanUp();
 
                             // update the UiElementNode with the layout info.
                             if (result.getSuccess() == ILayoutResult.SUCCESS) {

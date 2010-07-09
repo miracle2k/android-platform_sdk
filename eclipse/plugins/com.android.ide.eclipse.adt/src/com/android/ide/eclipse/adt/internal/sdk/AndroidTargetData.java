@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.sdk;
 
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvider;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
@@ -28,6 +29,7 @@ import com.android.layoutlib.api.ILayoutBridge;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Map;
@@ -55,6 +57,27 @@ public class AndroidTargetData {
         public ClassLoader classLoader;
 
         public int apiLevel;
+
+        /**
+         * Post rendering clean-up that must be done here so that it's done even for older
+         * versions of the layoutlib.
+         */
+        public void cleanUp() {
+            try {
+                Class<?> looperClass = classLoader.loadClass("android.os.Looper"); //$NON-NLS-1$
+                Field threadLocalField = looperClass.getField("sThreadLocal"); //$NON-NLS-1$
+                if (threadLocalField != null) {
+                    threadLocalField.setAccessible(true);
+                    // get object. Field is static so no need to pass an object
+                    ThreadLocal<?> threadLocal = (ThreadLocal<?>) threadLocalField.get(null);
+                    if (threadLocal != null) {
+                        threadLocal.remove();
+                    }
+                }
+            } catch (Exception e) {
+                AdtPlugin.log(e, "Failed to clean up bridge for API level %d", apiLevel);
+            }
+        }
     }
 
     private final IAndroidTarget mTarget;

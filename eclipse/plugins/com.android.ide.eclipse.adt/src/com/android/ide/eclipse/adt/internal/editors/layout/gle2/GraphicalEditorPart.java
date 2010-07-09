@@ -1085,6 +1085,9 @@ public class GraphicalEditorPart extends EditorPart
                                     configuredProjectRes, frameworkResources, mProjectCallback,
                                     mLogger);
 
+                            // post rendering clean up
+                            bridge.cleanUp();
+
                             mCanvasViewer.getCanvas().setResult(result);
 
                             // update the UiElementNode with the layout info.
