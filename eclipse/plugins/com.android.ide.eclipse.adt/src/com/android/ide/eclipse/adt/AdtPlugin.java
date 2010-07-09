@@ -874,21 +874,17 @@ public class AdtPlugin extends AbstractUIPlugin {
     private boolean checkSdkLocationAndId() {
         String sdkLocation = AdtPrefs.getPrefs().getOsSdkFolder();
         if (sdkLocation == null || sdkLocation.length() == 0) {
-            displayError(Messages.Dialog_Title_SDK_Location, Messages.SDK_Not_Setup);
             return false;
         }
 
         return checkSdkLocationAndId(sdkLocation, new CheckSdkErrorHandler() {
             @Override
             public boolean handleError(String message) {
-                AdtPlugin.displayError(Messages.Dialog_Title_SDK_Location,
-                        String.format(Messages.Error_Check_Prefs, message));
                 return false;
             }
 
             @Override
             public boolean handleWarning(String message) {
-                AdtPlugin.displayWarning(Messages.Dialog_Title_SDK_Location, message);
                 return true;
             }
         });

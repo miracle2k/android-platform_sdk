@@ -61,6 +61,9 @@ public class AvdManagerAction implements IWorkbenchWindowActionDelegate, IObject
                 }
             });
             window.open();
+        } else {
+            AdtPlugin.displayError("Android SDK",
+                    "Location of the Android SDK has not been setup in the preferences.");
         }
     }
 

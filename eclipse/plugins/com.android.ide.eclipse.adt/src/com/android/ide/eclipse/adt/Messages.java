@@ -24,12 +24,6 @@ public class Messages extends NLS {
 
     public static String Could_Not_Find_Folder_In_SDK;
 
-    public static String Dialog_Title_SDK_Location;
-
-    public static String Error_Check_Prefs;
-
-    public static String SDK_Not_Setup;
-
     public static String VersionCheck_Plugin_Too_Old;
 
     public static String VersionCheck_Plugin_Version_Failed;
