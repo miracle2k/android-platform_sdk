@@ -1245,6 +1245,9 @@ public final class Sdk  {
      * @return an {@link IStatus} with the status of the action.
      */
     private IStatus linkProjectAndLibrary(LinkLibraryBundle bundle, IProgressMonitor monitor) {
+        if (bundle.mProject.isOpen() == false) {
+            return Status.OK_STATUS;
+        }
         try {
             // add the library to the list of dynamic references. This is necessary to receive
             // notifications that the library content changed in the builders.
@@ -1308,6 +1311,9 @@ public final class Sdk  {
 
             // loop on the projects to add.
             for (IProject library : bundle.mLibraryProjects) {
+                if (library.isOpen() == false) {
+                    continue;
+                }
                 final String libName = library.getName();
                 final String varName = getLibraryVariableName(libName);
 
