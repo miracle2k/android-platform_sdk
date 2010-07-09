@@ -4,6 +4,7 @@
 - Added support for libraries with library dependencies.
 - Library source folders linked into the main project are now properly set as derived to be ignored by Team plug-ins.
 - added support for new resource qualifiers: car/desk, night/notnight and navexposed/navhidden
+- added more device screen types for the layout editor. All screen resolution/density combinations from http://developer.android.com/guide/practices/screens_support.html#range is now available.
 
 0.9.7:
 - Support for library projects

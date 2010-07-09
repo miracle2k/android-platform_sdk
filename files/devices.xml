@@ -3,7 +3,66 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:d="http://schemas.android.com/sdk/android/layout-devices/1">
 
-    <d:device name="ADP1">
+    <d:device name="2.7in QVGA">
+        <d:default>
+            <d:screen-size>small</d:screen-size>
+            <d:screen-ratio>notlong</d:screen-ratio>
+            <d:screen-orientation>port</d:screen-orientation>
+            <d:pixel-density>ldpi</d:pixel-density>
+            <d:touch-type>finger</d:touch-type>
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:text-input-method>nokeys</d:text-input-method>
+            <d:nav-state>navexposed</d:nav-state>
+            <d:nav-method>nonav</d:nav-method>
+            <d:screen-dimension>
+                <d:size>240</d:size>
+                <d:size>320</d:size>
+            </d:screen-dimension>
+            <d:xdpi>145</d:xdpi>
+            <d:ydpi>145</d:ydpi>
+        </d:default>
+
+        <d:config name="Portrait">
+            <d:screen-orientation>port</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape">
+            <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+    </d:device>
+
+    <d:device name="2.7in QVGA slider">
+        <d:default>
+            <d:screen-size>small</d:screen-size>
+            <d:screen-ratio>notlong</d:screen-ratio>
+            <d:screen-orientation>port</d:screen-orientation>
+            <d:pixel-density>ldpi</d:pixel-density>
+            <d:touch-type>finger</d:touch-type>
+            <d:text-input-method>qwerty</d:text-input-method>
+            <d:nav-state>navexposed</d:nav-state>
+            <d:nav-method>nonav</d:nav-method>
+            <d:screen-dimension>
+                <d:size>240</d:size>
+                <d:size>320</d:size>
+            </d:screen-dimension>
+            <d:xdpi>145</d:xdpi>
+            <d:ydpi>145</d:ydpi>
+        </d:default>
+
+        <d:config name="Portrait">
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:screen-orientation>port</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape, closed">
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape, open">
+            <d:keyboard-state>keysexposed</d:keyboard-state>
+            <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+    </d:device>
+
+    <d:device name="3.2in HVGA slider (ADP1)">
         <d:default>
             <d:screen-size>normal</d:screen-size>
             <d:screen-ratio>notlong</d:screen-ratio>
@@ -35,7 +94,7 @@
         </d:config>
     </d:device>
 
-    <d:device name="ADP2">
+    <d:device name="3.2in HVGA (ADP2)">
         <d:default>
             <d:screen-size>normal</d:screen-size>
             <d:screen-ratio>notlong</d:screen-ratio>
@@ -61,7 +120,61 @@
             <d:screen-orientation>land</d:screen-orientation>
         </d:config>
     </d:device>
-    <d:device name="Nexus One">
+
+    <d:device name="3.3in WQVGA">
+        <d:default>
+            <d:screen-size>normal</d:screen-size>
+            <d:screen-ratio>long</d:screen-ratio>
+            <d:screen-orientation>port</d:screen-orientation>
+            <d:pixel-density>ldpi</d:pixel-density>
+            <d:touch-type>finger</d:touch-type>
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:text-input-method>nokeys</d:text-input-method>
+            <d:nav-state>navexposed</d:nav-state>
+            <d:nav-method>nonav</d:nav-method>
+            <d:screen-dimension>
+                <d:size>240</d:size>
+                <d:size>400</d:size>
+            </d:screen-dimension>
+            <d:xdpi>141</d:xdpi>
+            <d:ydpi>141</d:ydpi>
+        </d:default>
+
+        <d:config name="Portrait">
+            <d:screen-orientation>port</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape">
+            <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+    </d:device>
+    <d:device name="3.4in FWQVGA">
+        <d:default>
+            <d:screen-size>normal</d:screen-size>
+            <d:screen-ratio>long</d:screen-ratio>
+            <d:screen-orientation>port</d:screen-orientation>
+            <d:pixel-density>ldpi</d:pixel-density>
+            <d:touch-type>finger</d:touch-type>
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:text-input-method>nokeys</d:text-input-method>
+            <d:nav-state>navexposed</d:nav-state>
+            <d:nav-method>nonav</d:nav-method>
+            <d:screen-dimension>
+                <d:size>240</d:size>
+                <d:size>432</d:size>
+            </d:screen-dimension>
+            <d:xdpi>145</d:xdpi>
+            <d:ydpi>145</d:ydpi>
+        </d:default>
+
+        <d:config name="Portrait">
+            <d:screen-orientation>port</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape">
+            <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+    </d:device>
+
+    <d:device name="3.7in WVGA (Nexus One)">
         <d:default>
             <d:screen-size>normal</d:screen-size>
             <d:screen-ratio>long</d:screen-ratio>
@@ -78,6 +191,93 @@
             </d:screen-dimension>
             <d:xdpi>254</d:xdpi>
             <d:ydpi>254</d:ydpi>
+        </d:default>
+
+        <d:config name="Portrait">
+            <d:screen-orientation>port</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape">
+            <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+    </d:device>
+
+    <d:device name="3.7in FWVGA slider">
+        <d:default>
+            <d:screen-size>normal</d:screen-size>
+            <d:screen-ratio>long</d:screen-ratio>
+            <d:screen-orientation>port</d:screen-orientation>
+            <d:pixel-density>hdpi</d:pixel-density>
+            <d:touch-type>finger</d:touch-type>
+            <d:text-input-method>qwerty</d:text-input-method>
+            <d:nav-state>navhidden</d:nav-state>
+            <d:nav-method>dpad</d:nav-method>
+            <d:screen-dimension>
+                <d:size>480</d:size>
+                <d:size>854</d:size>
+            </d:screen-dimension>
+            <d:xdpi>265</d:xdpi>
+            <d:ydpi>265</d:ydpi>
+        </d:default>
+
+        <d:config name="Portrait">
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:screen-orientation>port</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape, closed">
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape, open">
+            <d:keyboard-state>keysexposed</d:keyboard-state>
+            <d:screen-orientation>land</d:screen-orientation>
+            <d:nav-state>navexposed</d:nav-state>
+        </d:config>
+    </d:device>
+
+    <d:device name="5.1in WVGA">
+        <d:default>
+            <d:screen-size>large</d:screen-size>
+            <d:screen-ratio>long</d:screen-ratio>
+            <d:screen-orientation>port</d:screen-orientation>
+            <d:pixel-density>mdpi</d:pixel-density>
+            <d:touch-type>finger</d:touch-type>
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:text-input-method>nokeys</d:text-input-method>
+            <d:nav-state>navexposed</d:nav-state>
+            <d:nav-method>nonav</d:nav-method>
+            <d:screen-dimension>
+                <d:size>480</d:size>
+                <d:size>800</d:size>
+            </d:screen-dimension>
+            <d:xdpi>183</d:xdpi>
+            <d:ydpi>183</d:ydpi>
+        </d:default>
+
+        <d:config name="Portrait">
+            <d:screen-orientation>port</d:screen-orientation>
+        </d:config>
+        <d:config name="Landscape">
+            <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+    </d:device>
+
+    <d:device name="5.4in FWVGA">
+        <d:default>
+            <d:screen-size>large</d:screen-size>
+            <d:screen-ratio>long</d:screen-ratio>
+            <d:screen-orientation>port</d:screen-orientation>
+            <d:pixel-density>mdpi</d:pixel-density>
+            <d:touch-type>finger</d:touch-type>
+            <d:keyboard-state>keyssoft</d:keyboard-state>
+            <d:text-input-method>nokeys</d:text-input-method>
+            <d:nav-state>navexposed</d:nav-state>
+            <d:nav-method>nonav</d:nav-method>
+            <d:screen-dimension>
+                <d:size>480</d:size>
+                <d:size>854</d:size>
+            </d:screen-dimension>
+            <d:xdpi>181</d:xdpi>
+            <d:ydpi>181</d:ydpi>
         </d:default>
 
         <d:config name="Portrait">
