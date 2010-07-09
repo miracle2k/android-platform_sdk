@@ -19,8 +19,10 @@ package com.android.ide.eclipse.adt.internal.editors.layout.configuration;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.ide.eclipse.adt.internal.resources.configurations.DockModeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.LanguageQualifier;
+import com.android.ide.eclipse.adt.internal.resources.configurations.NightModeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.RegionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
@@ -37,11 +39,12 @@ import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
-import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.LanguageRegionVerifier;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IStyleResourceValue;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.Density;
+import com.android.sdklib.resources.DockMode;
+import com.android.sdklib.resources.NightMode;
 import com.android.sdklib.resources.ScreenOrientation;
 
 import org.eclipse.core.resources.IFile;
@@ -100,7 +103,6 @@ public class ConfigurationComposite extends Composite {
 
     private final static String CONFIG_STATE = "state";  //$NON-NLS-1$
     private final static String THEME_SEPARATOR = "----------"; //$NON-NLS-1$
-    private final static String FAKE_LOCALE_VALUE = "__"; //$NON-NLS-1$
 
     private final static int LOCALE_LANG = 0;
     private final static int LOCALE_REGION = 1;
@@ -111,6 +113,8 @@ public class ConfigurationComposite extends Composite {
     private Combo mDeviceCombo;
     private Combo mDeviceConfigCombo;
     private Combo mLocaleCombo;
+    private Combo mDockCombo;
+    private Combo mNightCombo;
     private Combo mThemeCombo;
     private Button mCreateButton;
 
@@ -180,6 +184,10 @@ public class ConfigurationComposite extends Composite {
         String configName;
         ResourceQualifier[] locale;
         String theme;
+        /** dock mode. Guaranteed to be non null */
+        DockMode dock = DockMode.NONE;
+        /** night mode. Guaranteed to be non null */
+        NightMode night = NightMode.NOTNIGHT;
 
         String getData() {
             StringBuilder sb = new StringBuilder();
@@ -199,6 +207,10 @@ public class ConfigurationComposite extends Composite {
                 sb.append(SEP);
                 sb.append(theme);
                 sb.append(SEP);
+                sb.append(dock.getResourceValue());
+                sb.append(SEP);
+                sb.append(night.getResourceValue());
+                sb.append(SEP);
             }
 
             return sb.toString();
@@ -206,7 +218,7 @@ public class ConfigurationComposite extends Composite {
 
         boolean setData(String data) {
             String[] values = data.split(SEP);
-            if (values.length == 4) {
+            if (values.length == 6) {
                 for (LayoutDevice d : mDeviceList) {
                     if (d.getName().equals(values[0])) {
                         device = d;
@@ -226,6 +238,14 @@ public class ConfigurationComposite extends Composite {
                             }
 
                             theme = values[3];
+                            dock = DockMode.getEnum(values[4]);
+                            if (dock == null) {
+                                dock = DockMode.NONE;
+                            }
+                            night = NightMode.getEnum(values[5]);
+                            if (night == null) {
+                                night = NightMode.NOTNIGHT;
+                            }
 
                             return true;
                         }
@@ -254,6 +274,10 @@ public class ConfigurationComposite extends Composite {
             }
             sb.append(SEP);
             sb.append(theme);
+            sb.append(SEP);
+            sb.append(dock.getResourceValue());
+            sb.append(SEP);
+            sb.append(night.getResourceValue());
             sb.append(SEP);
 
             return sb.toString();
@@ -340,7 +364,7 @@ public class ConfigurationComposite extends Composite {
 
         GridLayout gl;
         GridData gd;
-        int cols = 10;  // device*2+config*2+locale*2+separator*2+theme+createBtn
+        int cols = 9;  // device+config+locale+dock+day/night+separator*2+theme+createBtn
 
         // ---- First line: custom buttons, clipping button, editing config display.
         Composite labelParent = new Composite(this, SWT.NONE);
@@ -376,7 +400,6 @@ public class ConfigurationComposite extends Composite {
         gl.marginHeight = 0;
         gl.horizontalSpacing = 0;
 
-        new Label(this, SWT.NONE).setText("Devices");
         mDeviceCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
         mDeviceCombo.setLayoutData(new GridData(
                 GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
@@ -387,7 +410,6 @@ public class ConfigurationComposite extends Composite {
             }
         });
 
-        new Label(this, SWT.NONE).setText("Config");
         mDeviceConfigCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
         mDeviceConfigCombo.setLayoutData(new GridData(
                 GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
@@ -398,17 +420,45 @@ public class ConfigurationComposite extends Composite {
             }
         });
 
-        new Label(this, SWT.NONE).setText("Locale");
         mLocaleCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
         mLocaleCombo.setLayoutData(new GridData(
                 GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
-        mLocaleCombo.addVerifyListener(new LanguageRegionVerifier());
         mLocaleCombo.addSelectionListener(new SelectionListener() {
             public void widgetDefaultSelected(SelectionEvent e) {
                 onLocaleChange();
             }
             public void widgetSelected(SelectionEvent e) {
                 onLocaleChange();
+            }
+        });
+
+        mDockCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+        mDockCombo.setLayoutData(new GridData(
+                GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
+        for (DockMode mode : DockMode.values()) {
+            mDockCombo.add(mode.getLongDisplayValue());
+        }
+        mDockCombo.addSelectionListener(new SelectionListener() {
+            public void widgetDefaultSelected(SelectionEvent e) {
+                onDockChange();
+            }
+            public void widgetSelected(SelectionEvent e) {
+                onDockChange();
+            }
+        });
+
+        mNightCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+        mNightCombo.setLayoutData(new GridData(
+                GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
+        for (NightMode mode : NightMode.values()) {
+            mNightCombo.add(mode.getLongDisplayValue());
+        }
+        mNightCombo.addSelectionListener(new SelectionListener() {
+            public void widgetDefaultSelected(SelectionEvent e) {
+                onDayChange();
+            }
+            public void widgetSelected(SelectionEvent e) {
+                onDayChange();
             }
         });
 
@@ -640,8 +690,14 @@ public class ConfigurationComposite extends Composite {
                     fillConfigCombo(mState.configName);
 
                     adaptConfigSelection(false /*needBestMatch*/);
+
+                    mDockCombo.select(DockMode.getIndex(mState.dock));
+                    mNightCombo.select(NightMode.getIndex(mState.night));
                 } else {
                     findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
+
+                    mDockCombo.select(0);
+                    mNightCombo.select(0);
                 }
 
                 // update the string showing the config value
@@ -835,7 +891,7 @@ public class ConfigurationComposite extends Composite {
             if (locale[LOCALE_LANG].equals(language)) {
                 // region comparison is more complex, as the region could be null.
                 if (region == null) {
-                    if (FAKE_LOCALE_VALUE.equals(
+                    if (RegionQualifier.FAKE_REGION_VALUE.equals(
                             ((RegionQualifier)locale[LOCALE_REGION]).getValue())) {
                         // match!
                         mLocaleCombo.select(i);
@@ -875,6 +931,16 @@ public class ConfigurationComposite extends Composite {
             index = mThemeCombo.getSelectionIndex();
             if (index != -1) {
                 mState.theme = mThemeCombo.getItem(index);
+            }
+
+            index = mDockCombo.getSelectionIndex();
+            if (index != -1) {
+                mState.dock = DockMode.getByIndex(index);
+            }
+
+            index = mNightCombo.getSelectionIndex();
+            if (index != -1) {
+                mState.night = NightMode.getByIndex(index);
             }
         }
     }
@@ -939,7 +1005,7 @@ public class ConfigurationComposite extends Composite {
                 // create a region qualifier that will never be matched by qualified resources.
                 mLocaleList.add(new ResourceQualifier[] {
                         langQual,
-                        new RegionQualifier(FAKE_LOCALE_VALUE)
+                        new RegionQualifier(RegionQualifier.FAKE_REGION_VALUE)
                 });
             }
         }
@@ -949,13 +1015,13 @@ public class ConfigurationComposite extends Composite {
         if (hasLocale) {
             mLocaleCombo.add("Other");
         } else {
-            mLocaleCombo.add("Any");
+            mLocaleCombo.add("Any locale");
         }
 
         // create language/region qualifier that will never be matched by qualified resources.
         mLocaleList.add(new ResourceQualifier[] {
-                new LanguageQualifier(FAKE_LOCALE_VALUE),
-                new RegionQualifier(FAKE_LOCALE_VALUE)
+                new LanguageQualifier(LanguageQualifier.FAKE_LANG_VALUE),
+                new RegionQualifier(RegionQualifier.FAKE_REGION_VALUE)
         });
 
         if (mState.locale != null) {
@@ -1486,12 +1552,24 @@ public class ConfigurationComposite extends Composite {
      * Call back for language combo selection
      */
     private void onLocaleChange() {
-        // because mLanguage triggers onLanguageChange at each modification, the filling
+        // because mLocaleList triggers onLanguageChange at each modification, the filling
         // of the combo with data will trigger notifications, and we don't want that.
         if (mDisableUpdates > 0) {
             return;
         }
 
+        if (computeCurrentConfig(false /*force*/) &&  mListener != null) {
+            mListener.onConfigurationChange();
+        }
+    }
+
+    private void onDockChange() {
+        if (computeCurrentConfig(false /*force*/) &&  mListener != null) {
+            mListener.onConfigurationChange();
+        }
+    }
+
+    private void onDayChange() {
         if (computeCurrentConfig(false /*force*/) &&  mListener != null) {
             mListener.onConfigurationChange();
         }
@@ -1525,6 +1603,19 @@ public class ConfigurationComposite extends Composite {
                 mCurrentConfig.setRegionQualifier(
                         (RegionQualifier)localeQualifiers[LOCALE_REGION]);
             }
+
+            int index = mDockCombo.getSelectionIndex();
+            if (index == -1) {
+                index = 0; // no selection = 0
+            }
+            mCurrentConfig.setDockModeQualifier(new DockModeQualifier(DockMode.getByIndex(index)));
+
+            index = mNightCombo.getSelectionIndex();
+            if (index == -1) {
+                index = 0; // no selection = 0
+            }
+            mCurrentConfig.setNightModeQualifier(
+                    new NightModeQualifier(NightMode.getByIndex(index)));
 
             // update the create button.
             checkCreateEnable();

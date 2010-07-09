@@ -487,8 +487,7 @@ public class GraphicalEditorPart extends EditorPart
                     displayError(
                             "No resources match the configuration\n \n\t%1$s\n \nChange the configuration or create:\n \n\tres/%2$s/%3$s\n \nYou can also click the 'Create' button above.",
                             currentConfig.toDisplayString(),
-                            currentConfig.getFolderName(ResourceFolderType.LAYOUT,
-                                    Sdk.getCurrent().getTarget(mEditedFile.getProject())),
+                            currentConfig.getFolderName(ResourceFolderType.LAYOUT),
                             mEditedFile.getName());
                 }
             }
@@ -507,9 +506,7 @@ public class GraphicalEditorPart extends EditorPart
 
         public void onCreate() {
             LayoutCreatorDialog dialog = new LayoutCreatorDialog(mConfigComposite.getShell(),
-                    mEditedFile.getName(),
-                    Sdk.getCurrent().getTarget(mEditedFile.getProject()),
-                    mConfigComposite.getCurrentConfig());
+                    mEditedFile.getName(), mConfigComposite.getCurrentConfig());
             if (dialog.open() == Dialog.OK) {
                 final FolderConfiguration config = new FolderConfiguration();
                 dialog.getConfiguration(config);
@@ -589,8 +586,7 @@ public class GraphicalEditorPart extends EditorPart
                 @Override
                 protected IStatus run(IProgressMonitor monitor) {
                     // get the folder name
-                    String folderName = config.getFolderName(ResourceFolderType.LAYOUT,
-                            Sdk.getCurrent().getTarget(mEditedFile.getProject()));
+                    String folderName = config.getFolderName(ResourceFolderType.LAYOUT);
                     try {
 
                         // look to see if it exists.

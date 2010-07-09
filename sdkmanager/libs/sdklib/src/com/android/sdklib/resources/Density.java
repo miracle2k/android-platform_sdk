@@ -22,7 +22,7 @@ package com.android.sdklib.resources;
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names
  * as well as other places needing to know the density values.
  */
-public enum Density {
+public enum Density implements ResourceEnum {
     HIGH("hdpi", "High Density", 240), //$NON-NLS-1$
     MEDIUM("mdpi", "Medium Density", 160), //$NON-NLS-1$
     LOW("ldpi", "Low Density", 120), //$NON-NLS-1$
@@ -70,7 +70,7 @@ public enum Density {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
@@ -86,7 +86,11 @@ public enum Density {
         return "";
     }
 
-    public String getDisplayValue() {
+    public String getShortDisplayValue() {
+        return mDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
         return mDisplayValue;
     }
 
@@ -112,5 +116,13 @@ public enum Density {
             i++;
         }
         return null;
+    }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return this != NODPI; // nodpi is not a valid config for devices.
     }
 }

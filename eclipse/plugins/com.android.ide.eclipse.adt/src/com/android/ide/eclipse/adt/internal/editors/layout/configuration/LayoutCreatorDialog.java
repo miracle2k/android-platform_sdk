@@ -22,7 +22,6 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQua
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.ConfigurationState;
-import com.android.sdklib.IAndroidTarget;
 import com.android.sdkuilib.ui.GridDialog;
 
 import org.eclipse.jface.dialogs.Dialog;
@@ -46,19 +45,16 @@ public final class LayoutCreatorDialog extends GridDialog {
 
     private final FolderConfiguration mConfig = new FolderConfiguration();
     private final String mFileName;
-    private final IAndroidTarget mTarget;
 
     /**
      * Creates a dialog, and init the UI from a {@link FolderConfiguration}.
      * @param parentShell the parent {@link Shell}.
      * @param config The starting configuration.
      */
-    public LayoutCreatorDialog(Shell parentShell, String fileName, IAndroidTarget target,
-            FolderConfiguration config) {
+    public LayoutCreatorDialog(Shell parentShell, String fileName, FolderConfiguration config) {
         super(parentShell, 1, false);
 
         mFileName = fileName;
-        mTarget = target;
 
         // FIXME: add some data to know what configurations already exist.
         mConfig.set(config);
@@ -134,7 +130,7 @@ public final class LayoutCreatorDialog extends GridDialog {
      */
     private void resetStatus() {
         String displayString = Dialog.shortenText(String.format("New File: res/%1$s/%2$s",
-                mConfig.getFolderName(ResourceFolderType.LAYOUT, mTarget), mFileName),
+                mConfig.getFolderName(ResourceFolderType.LAYOUT), mFileName),
                 mStatusLabel);
         mStatusLabel.setText(displayString);
     }

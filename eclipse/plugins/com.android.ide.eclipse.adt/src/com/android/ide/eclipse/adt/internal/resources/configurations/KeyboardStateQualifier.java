@@ -17,15 +17,15 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.KeyboardState;
+import com.android.sdklib.resources.ResourceEnum;
 
 import org.eclipse.swt.graphics.Image;
 
 /**
  * Resource Qualifier for keyboard state.
  */
-public final class KeyboardStateQualifier extends ResourceQualifier {
+public final class KeyboardStateQualifier extends EnumBasedResourceQualifier {
 
     public static final String NAME = "Keyboard State";
 
@@ -44,6 +44,11 @@ public final class KeyboardStateQualifier extends ResourceQualifier {
     }
 
     @Override
+    ResourceEnum getEnumValue() {
+        return mValue;
+    }
+
+    @Override
     public String getName() {
         return NAME;
     }
@@ -56,11 +61,6 @@ public final class KeyboardStateQualifier extends ResourceQualifier {
     @Override
     public Image getIcon() {
         return IconFactory.getInstance().getIcon("keyboard"); //$NON-NLS-1$
-    }
-
-    @Override
-    public boolean isValid() {
-        return mValue != null;
     }
 
     @Override
@@ -110,44 +110,5 @@ public final class KeyboardStateQualifier extends ResourceQualifier {
         }
 
         return false;
-    }
-
-    @Override
-    public boolean equals(Object qualifier) {
-        if (qualifier instanceof KeyboardStateQualifier) {
-            return mValue == ((KeyboardStateQualifier)qualifier).mValue;
-        }
-
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        if (mValue != null) {
-            return mValue.hashCode();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Returns the string used to represent this qualifier in the folder name.
-     */
-    @Override
-    public String getFolderSegment(IAndroidTarget target) {
-        if (mValue != null) {
-            return mValue.getValue();
-        }
-
-        return ""; //$NON-NLS-1$
-    }
-
-    @Override
-    public String getStringValue() {
-        if (mValue != null) {
-            return mValue.getDisplayValue();
-        }
-
-        return ""; //$NON-NLS-1$
     }
 }

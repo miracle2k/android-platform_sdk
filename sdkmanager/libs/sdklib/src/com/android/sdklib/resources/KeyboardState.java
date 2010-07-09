@@ -20,17 +20,19 @@ package com.android.sdklib.resources;
  * Keyboard state enum.
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum KeyboardState {
-    EXPOSED("keysexposed", "Exposed"), //$NON-NLS-1$
-    HIDDEN("keyshidden", "Hidden"),    //$NON-NLS-1$
-    SOFT("keyssoft", "Soft");          //$NON-NLS-1$
+public enum KeyboardState implements ResourceEnum {
+    EXPOSED("keysexposed", "Exposed", "Exposed keyboard"), //$NON-NLS-1$
+    HIDDEN("keyshidden", "Hidden", "Hidden keyboard"),    //$NON-NLS-1$
+    SOFT("keyssoft", "Soft", "Soft keyboard");          //$NON-NLS-1$
 
-    private String mValue;
-    private String mDisplayValue;
+    private final String mValue;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private KeyboardState(String value, String displayValue) {
+    private KeyboardState(String value, String shortDisplayValue, String longDisplayValue) {
         mValue = value;
-        mDisplayValue = displayValue;
+        mShortDisplayValue = shortDisplayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -48,12 +50,16 @@ public enum KeyboardState {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplayValue;
+    public String getShortDisplayValue() {
+        return mShortDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mLongDisplayValue;
     }
 
     public static int getIndex(KeyboardState value) {
@@ -79,4 +85,13 @@ public enum KeyboardState {
         }
         return null;
     }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return true;
+    }
+
 }

@@ -43,6 +43,7 @@ import com.android.sdklib.resources.KeyboardState;
 import com.android.sdklib.resources.Navigation;
 import com.android.sdklib.resources.NavigationState;
 import com.android.sdklib.resources.NightMode;
+import com.android.sdklib.resources.ResourceEnum;
 import com.android.sdklib.resources.ScreenOrientation;
 import com.android.sdklib.resources.ScreenRatio;
 import com.android.sdklib.resources.ScreenSize;
@@ -433,7 +434,7 @@ public class ConfigurationSelector extends Composite {
      * @param config The configuration.
      */
     public void setConfiguration(FolderConfiguration config) {
-        mSelectedConfiguration.set(config);
+        mSelectedConfiguration.set(config, true /*nonFakeValuesOnly*/);
         mSelectionTableViewer.refresh();
 
         // create the base config, which is the default config minus the qualifiers
@@ -533,6 +534,19 @@ public class ConfigurationSelector extends Composite {
         }
     }
 
+    private void fillCombo(Combo combo, ResourceEnum[] resEnums) {
+        for (ResourceEnum resEnum : resEnums) {
+            // only add the enum if:
+            // - it's not a fake value. Those are never added as they are used for internal purpose
+            //   only.
+            // - if it's a valid value for device only if mDeviceMode is true.
+            if ((mDeviceMode == false || resEnum.isValidValueForDevice() == false) &&
+                    resEnum.isFakeValue() == false) {
+                combo.add(resEnum.getShortDisplayValue());
+            }
+        }
+    }
+
     /**
      * Content provider around a {@link FolderConfiguration}.
      */
@@ -587,7 +601,7 @@ public class ConfigurationSelector extends Composite {
             // only one column, so we can ignore columnIndex
             if (element instanceof ResourceQualifier) {
                 if (mShowQualifierValue) {
-                    String value = ((ResourceQualifier)element).getStringValue();
+                    String value = ((ResourceQualifier)element).getShortDisplayValue();
                     if (value.length() == 0) {
                         return String.format("%1$s (?)",
                                 ((ResourceQualifier)element).getShortName());
@@ -924,10 +938,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, ScreenSizeQualifier.NAME);
 
             mSize = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            ScreenSize[] ssValues = ScreenSize.values();
-            for (ScreenSize value : ssValues) {
-                mSize.add(value.getDisplayValue());
-            }
+            fillCombo(mSize, ScreenSize.values());
 
             mSize.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mSize.addSelectionListener(new SelectionListener() {
@@ -977,19 +988,16 @@ public class ConfigurationSelector extends Composite {
      */
     private class ScreenRatioEdit extends QualifierEditBase {
 
-        private Combo mSize;
+        private Combo mRatio;
 
         public ScreenRatioEdit(Composite parent) {
             super(parent, ScreenRatioQualifier.NAME);
 
-            mSize = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            ScreenRatio[] srValues = ScreenRatio.values();
-            for (ScreenRatio value : srValues) {
-                mSize.add(value.getDisplayValue());
-            }
+            mRatio = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+            fillCombo(mRatio, ScreenRatio.values());
 
-            mSize.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-            mSize.addSelectionListener(new SelectionListener() {
+            mRatio.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+            mRatio.addSelectionListener(new SelectionListener() {
                 public void widgetDefaultSelected(SelectionEvent e) {
                     onScreenRatioChange();
                 }
@@ -1001,7 +1009,7 @@ public class ConfigurationSelector extends Composite {
 
         protected void onScreenRatioChange() {
             // update the current config
-            int index = mSize.getSelectionIndex();
+            int index = mRatio.getSelectionIndex();
 
             if (index != -1) {
                 mSelectedConfiguration.setScreenRatioQualifier(new ScreenRatioQualifier(
@@ -1024,9 +1032,9 @@ public class ConfigurationSelector extends Composite {
 
             ScreenRatio value = q.getValue();
             if (value == null) {
-                mSize.clearSelection();
+                mRatio.clearSelection();
             } else {
-                mSize.select(ScreenRatio.getIndex(value));
+                mRatio.select(ScreenRatio.getIndex(value));
             }
         }
     }
@@ -1042,10 +1050,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, ScreenOrientationQualifier.NAME);
 
             mOrientation = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            ScreenOrientation[] soValues = ScreenOrientation.values();
-            for (ScreenOrientation value : soValues) {
-                mOrientation.add(value.getDisplayValue());
-            }
+            fillCombo(mOrientation, ScreenOrientation.values());
 
             mOrientation.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mOrientation.addSelectionListener(new SelectionListener() {
@@ -1101,10 +1106,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, DockModeQualifier.NAME);
 
             mDockMode = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            DockMode[] values = DockMode.values();
-            for (DockMode value : values) {
-                mDockMode.add(value.getDisplayValue());
-            }
+            fillCombo(mDockMode, DockMode.values());
 
             mDockMode.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mDockMode.addSelectionListener(new SelectionListener() {
@@ -1159,10 +1161,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, NightModeQualifier.NAME);
 
             mNightMode = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            NightMode[] values = NightMode.values();
-            for (NightMode value : values) {
-                mNightMode.add(value.getDisplayValue());
-            }
+            fillCombo(mNightMode, NightMode.values());
 
             mNightMode.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mNightMode.addSelectionListener(new SelectionListener() {
@@ -1217,12 +1216,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, PixelDensityQualifier.NAME);
 
             mDensity = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            Density[] soValues = Density.values();
-            for (Density value : soValues) {
-                if (mDeviceMode == false || value != Density.NODPI) {
-                    mDensity.add(value.getDisplayValue());
-                }
-            }
+            fillCombo(mDensity, Density.values());
 
             mDensity.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mDensity.addSelectionListener(new SelectionListener() {
@@ -1278,10 +1272,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, TouchScreenQualifier.NAME);
 
             mTouchScreen = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            TouchScreen[] tstValues = TouchScreen.values();
-            for (TouchScreen value : tstValues) {
-                mTouchScreen.add(value.getDisplayValue());
-            }
+            fillCombo(mTouchScreen, TouchScreen.values());
 
             mTouchScreen.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mTouchScreen.addSelectionListener(new SelectionListener() {
@@ -1330,19 +1321,16 @@ public class ConfigurationSelector extends Composite {
      */
     private class KeyboardEdit extends QualifierEditBase {
 
-        private Combo mKeyboard;
+        private Combo mKeyboardState;
 
         public KeyboardEdit(Composite parent) {
             super(parent, KeyboardStateQualifier.NAME);
 
-            mKeyboard = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            KeyboardState[] ksValues = KeyboardState.values();
-            for (KeyboardState value : ksValues) {
-                mKeyboard.add(value.getDisplayValue());
-            }
+            mKeyboardState = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+            fillCombo(mKeyboardState, KeyboardState.values());
 
-            mKeyboard.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-            mKeyboard.addSelectionListener(new SelectionListener() {
+            mKeyboardState.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+            mKeyboardState.addSelectionListener(new SelectionListener() {
                 public void widgetDefaultSelected(SelectionEvent e) {
                     onKeyboardChange();
                 }
@@ -1354,7 +1342,7 @@ public class ConfigurationSelector extends Composite {
 
         protected void onKeyboardChange() {
             // update the current config
-            int index = mKeyboard.getSelectionIndex();
+            int index = mKeyboardState.getSelectionIndex();
 
             if (index != -1) {
                 mSelectedConfiguration.setKeyboardStateQualifier(new KeyboardStateQualifier(
@@ -1377,9 +1365,9 @@ public class ConfigurationSelector extends Composite {
 
             KeyboardState value = q.getValue();
             if (value == null) {
-                mKeyboard.clearSelection();
+                mKeyboardState.clearSelection();
             } else {
-                mKeyboard.select(KeyboardState.getIndex(value));
+                mKeyboardState.select(KeyboardState.getIndex(value));
             }
         }
     }
@@ -1395,10 +1383,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, TextInputMethodQualifier.NAME);
 
             mTextInput = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            Keyboard[] timValues = Keyboard.values();
-            for (Keyboard value : timValues) {
-                mTextInput.add(value.getDisplayValue());
-            }
+            fillCombo(mTextInput, Keyboard.values());
 
             mTextInput.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mTextInput.addSelectionListener(new SelectionListener() {
@@ -1448,19 +1433,16 @@ public class ConfigurationSelector extends Composite {
      */
     private class NavigationStateEdit extends QualifierEditBase {
 
-        private Combo mNavigation;
+        private Combo mNavigationState;
 
         public NavigationStateEdit(Composite parent) {
             super(parent, NavigationStateQualifier.NAME);
 
-            mNavigation = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            NavigationState[] values = NavigationState.values();
-            for (NavigationState value : values) {
-                mNavigation.add(value.getDisplayValue());
-            }
+            mNavigationState = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+            fillCombo(mNavigationState, NavigationState.values());
 
-            mNavigation.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-            mNavigation.addSelectionListener(new SelectionListener() {
+            mNavigationState.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+            mNavigationState.addSelectionListener(new SelectionListener() {
                 public void widgetDefaultSelected(SelectionEvent e) {
                     onNavigationChange();
                 }
@@ -1472,7 +1454,7 @@ public class ConfigurationSelector extends Composite {
 
         protected void onNavigationChange() {
             // update the current config
-            int index = mNavigation.getSelectionIndex();
+            int index = mNavigationState.getSelectionIndex();
 
             if (index != -1) {
                 mSelectedConfiguration.setNavigationStateQualifier(
@@ -1494,9 +1476,9 @@ public class ConfigurationSelector extends Composite {
 
             NavigationState value = q.getValue();
             if (value == null) {
-                mNavigation.clearSelection();
+                mNavigationState.clearSelection();
             } else {
-                mNavigation.select(NavigationState.getIndex(value));
+                mNavigationState.select(NavigationState.getIndex(value));
             }
         }
     }
@@ -1513,10 +1495,7 @@ public class ConfigurationSelector extends Composite {
             super(parent, NavigationMethodQualifier.NAME);
 
             mNavigation = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-            Navigation[] nmValues = Navigation.values();
-            for (Navigation value : nmValues) {
-                mNavigation.add(value.getDisplayValue());
-            }
+            fillCombo(mNavigation, Navigation.values());
 
             mNavigation.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
             mNavigation.addSelectionListener(new SelectionListener() {

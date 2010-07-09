@@ -20,17 +20,19 @@ package com.android.sdklib.resources;
  * Screen size enum.
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum ScreenSize {
-    SMALL("small", "Small"), //$NON-NLS-1$
-    NORMAL("normal", "Normal"), //$NON-NLS-1$
-    LARGE("large", "Large"); //$NON-NLS-1$
+public enum ScreenSize implements ResourceEnum {
+    SMALL("small", "Small", "Small Screen"), //$NON-NLS-1$
+    NORMAL("normal", "Normal", "Normal Screen"), //$NON-NLS-1$
+    LARGE("large", "Large", "Large Screen"); //$NON-NLS-1$
 
-    private String mValue;
-    private String mDisplayValue;
+    private final String mValue;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private ScreenSize(String value, String displayValue) {
+    private ScreenSize(String value, String shortDisplayValue, String longDisplayValue) {
         mValue = value;
-        mDisplayValue = displayValue;
+        mShortDisplayValue = shortDisplayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -48,12 +50,16 @@ public enum ScreenSize {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplayValue;
+    public String getShortDisplayValue() {
+        return mShortDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mLongDisplayValue;
     }
 
     public static int getIndex(ScreenSize orientation) {
@@ -80,4 +86,13 @@ public enum ScreenSize {
 
         return null;
     }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return true;
+    }
+
 }

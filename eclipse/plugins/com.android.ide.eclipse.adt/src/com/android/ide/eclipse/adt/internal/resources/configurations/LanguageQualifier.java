@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -29,6 +28,7 @@ import java.util.regex.Pattern;
 public final class LanguageQualifier extends ResourceQualifier {
     private final static Pattern sLanguagePattern = Pattern.compile("^[a-z]{2}$"); //$NON-NLS-1$
 
+    public static final String FAKE_LANG_VALUE = "__"; //$NON-NLS-1$
     public static final String NAME = "Language";
 
     private String mValue;
@@ -100,6 +100,11 @@ public final class LanguageQualifier extends ResourceQualifier {
     }
 
     @Override
+    public boolean hasFakeValue() {
+        return FAKE_LANG_VALUE.equals(mValue);
+    }
+
+    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         LanguageQualifier qualifier = getQualifier(value);
         if (qualifier != null) {
@@ -135,7 +140,7 @@ public final class LanguageQualifier extends ResourceQualifier {
      * Returns the string used to represent this qualifier in the folder name.
      */
     @Override
-    public String getFolderSegment(IAndroidTarget target) {
+    public String getFolderSegment() {
         if (mValue != null) {
             return getFolderSegment(mValue);
         }
@@ -144,9 +149,18 @@ public final class LanguageQualifier extends ResourceQualifier {
     }
 
     @Override
-    public String getStringValue() {
+    public String getShortDisplayValue() {
         if (mValue != null) {
             return mValue;
+        }
+
+        return ""; //$NON-NLS-1$
+    }
+
+    @Override
+    public String getLongDisplayValue() {
+        if (mValue != null) {
+            return String.format("Language %s", mValue);
         }
 
         return ""; //$NON-NLS-1$

@@ -20,17 +20,19 @@ package com.android.sdklib.resources;
  * Touch screen enum.
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum TouchScreen {
-    NOTOUCH("notouch", "No Touch"), //$NON-NLS-1$
-    STYLUS("stylus", "Stylus"), //$NON-NLS-1$
-    FINGER("finger", "Finger"); //$NON-NLS-1$
+public enum TouchScreen implements ResourceEnum {
+    NOTOUCH("notouch", "No Touch", "No-touch screen"), //$NON-NLS-1$
+    STYLUS("stylus", "Stylus", "Stylus-based touchscreen"), //$NON-NLS-1$
+    FINGER("finger", "Finger", "Finger-based touchscreen"); //$NON-NLS-1$
 
-    private String mValue;
-    private String mDisplayValue;
+    private final String mValue;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private TouchScreen(String value, String displayValue) {
+    private TouchScreen(String value, String displayValue, String longDisplayValue) {
         mValue = value;
-        mDisplayValue = displayValue;
+        mShortDisplayValue = displayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -48,12 +50,16 @@ public enum TouchScreen {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplayValue;
+    public String getShortDisplayValue() {
+        return mShortDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mLongDisplayValue;
     }
 
     public static int getIndex(TouchScreen touch) {
@@ -80,4 +86,13 @@ public enum TouchScreen {
 
         return null;
     }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return true;
+    }
+
 }

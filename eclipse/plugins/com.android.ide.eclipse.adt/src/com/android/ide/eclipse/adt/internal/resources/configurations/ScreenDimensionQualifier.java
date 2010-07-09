@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -86,6 +85,11 @@ public final class ScreenDimensionQualifier extends ResourceQualifier {
     }
 
     @Override
+    public boolean hasFakeValue() {
+        return false;
+    }
+
+    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         Matcher m = sDimensionPattern.matcher(value);
         if (m.matches()) {
@@ -143,14 +147,23 @@ public final class ScreenDimensionQualifier extends ResourceQualifier {
      * Returns the string used to represent this qualifier in the folder name.
      */
     @Override
-    public String getFolderSegment(IAndroidTarget target) {
+    public String getFolderSegment() {
         return String.format("%1$dx%2$d", mValue1, mValue2); //$NON-NLS-1$
     }
 
     @Override
-    public String getStringValue() {
+    public String getShortDisplayValue() {
         if (mValue1 != -1 && mValue2 != -1) {
             return String.format("%1$dx%2$d", mValue1, mValue2);
+        }
+
+        return ""; //$NON-NLS-1$
+    }
+
+    @Override
+    public String getLongDisplayValue() {
+        if (mValue1 != -1 && mValue2 != -1) {
+            return String.format("Screen resolution %1$dx%2$d", mValue1, mValue2);
         }
 
         return ""; //$NON-NLS-1$

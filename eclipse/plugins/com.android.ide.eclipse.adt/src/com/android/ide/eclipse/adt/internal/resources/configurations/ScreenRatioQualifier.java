@@ -17,13 +17,12 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.AndroidVersion;
-import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.resources.ResourceEnum;
 import com.android.sdklib.resources.ScreenRatio;
 
 import org.eclipse.swt.graphics.Image;
 
-public class ScreenRatioQualifier extends ResourceQualifier {
+public class ScreenRatioQualifier extends EnumBasedResourceQualifier {
 
     public static final String NAME = "Screen Ratio";
 
@@ -37,6 +36,11 @@ public class ScreenRatioQualifier extends ResourceQualifier {
     }
 
     public ScreenRatio getValue() {
+        return mValue;
+    }
+
+    @Override
+    ResourceEnum getEnumValue() {
         return mValue;
     }
 
@@ -56,11 +60,6 @@ public class ScreenRatioQualifier extends ResourceQualifier {
     }
 
     @Override
-    public boolean isValid() {
-        return mValue != null;
-    }
-
-    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         ScreenRatio size = ScreenRatio.getEnum(value);
         if (size != null) {
@@ -70,53 +69,5 @@ public class ScreenRatioQualifier extends ResourceQualifier {
         }
 
         return false;
-    }
-
-    @Override
-    public boolean equals(Object qualifier) {
-        if (qualifier instanceof ScreenRatioQualifier) {
-            return mValue == ((ScreenRatioQualifier)qualifier).mValue;
-        }
-
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        if (mValue != null) {
-            return mValue.hashCode();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Returns the string used to represent this qualifier in the folder name.
-     */
-    @Override
-    public String getFolderSegment(IAndroidTarget target) {
-        if (mValue != null) {
-            if (target == null) {
-                // Default behavior (when target==null) is qualifier is supported
-                return mValue.getValue();
-            }
-
-            AndroidVersion version = target.getVersion();
-            if (version.getApiLevel() >= 4 ||
-                    (version.getApiLevel() == 3 && "Donut".equals(version.getCodename()))) {
-                return mValue.getValue();
-            }
-        }
-
-        return ""; //$NON-NLS-1$
-    }
-
-    @Override
-    public String getStringValue() {
-        if (mValue != null) {
-            return mValue.getDisplayValue();
-        }
-
-        return ""; //$NON-NLS-1$
     }
 }

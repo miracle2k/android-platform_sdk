@@ -20,16 +20,18 @@ package com.android.sdklib.resources;
  * Screen Ratio enum.
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum ScreenRatio {
-    NOTLONG("notlong", "Not Long"), //$NON-NLS-1$
-    LONG("long", "Long"); //$NON-NLS-1$
+public enum ScreenRatio implements ResourceEnum {
+    NOTLONG("notlong", "Not Long", "Short screen aspect ratio"), //$NON-NLS-1$
+    LONG("long", "Long", "Long screen aspect ratio"); //$NON-NLS-1$
 
-    private String mValue;
-    private String mDisplayValue;
+    private final String mValue;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private ScreenRatio(String value, String displayValue) {
+    private ScreenRatio(String value, String displayValue, String longDisplayValue) {
         mValue = value;
-        mDisplayValue = displayValue;
+        mShortDisplayValue = displayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -47,12 +49,16 @@ public enum ScreenRatio {
         return null;
     }
 
-    public String getValue() {
+    public String getResourceValue() {
         return mValue;
     }
 
-    public String getDisplayValue() {
-        return mDisplayValue;
+    public String getShortDisplayValue() {
+        return mShortDisplayValue;
+    }
+
+    public String getLongDisplayValue() {
+        return mLongDisplayValue;
     }
 
     public static int getIndex(ScreenRatio orientation) {
@@ -79,4 +85,14 @@ public enum ScreenRatio {
 
         return null;
     }
+
+    public boolean isFakeValue() {
+        return false;
+    }
+
+    public boolean isValidValueForDevice() {
+        return true;
+    }
+
 }
+

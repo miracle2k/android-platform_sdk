@@ -17,15 +17,15 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.Keyboard;
+import com.android.sdklib.resources.ResourceEnum;
 
 import org.eclipse.swt.graphics.Image;
 
 /**
  * Resource Qualifier for Text Input Method.
  */
-public final class TextInputMethodQualifier extends ResourceQualifier {
+public final class TextInputMethodQualifier extends EnumBasedResourceQualifier {
 
     public static final String NAME = "Text Input Method";
 
@@ -45,6 +45,11 @@ public final class TextInputMethodQualifier extends ResourceQualifier {
     }
 
     @Override
+    ResourceEnum getEnumValue() {
+        return mValue;
+    }
+
+    @Override
     public String getName() {
         return NAME;
     }
@@ -60,11 +65,6 @@ public final class TextInputMethodQualifier extends ResourceQualifier {
     }
 
     @Override
-    public boolean isValid() {
-        return mValue != null;
-    }
-
-    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         Keyboard method = Keyboard.getEnum(value);
         if (method != null) {
@@ -75,44 +75,5 @@ public final class TextInputMethodQualifier extends ResourceQualifier {
         }
 
         return false;
-    }
-
-    @Override
-    public boolean equals(Object qualifier) {
-        if (qualifier instanceof TextInputMethodQualifier) {
-            return mValue == ((TextInputMethodQualifier)qualifier).mValue;
-        }
-
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        if (mValue != null) {
-            return mValue.hashCode();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Returns the string used to represent this qualifier in the folder name.
-     */
-    @Override
-    public String getFolderSegment(IAndroidTarget target) {
-        if (mValue != null) {
-            return mValue.getValue();
-        }
-
-        return ""; //$NON-NLS-1$
-    }
-
-    @Override
-    public String getStringValue() {
-        if (mValue != null) {
-            return mValue.getDisplayValue();
-        }
-
-        return ""; //$NON-NLS-1$
     }
 }

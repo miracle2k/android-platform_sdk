@@ -17,8 +17,6 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.AndroidVersion;
-import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -103,6 +101,11 @@ public final class VersionQualifier extends ResourceQualifier {
     }
 
     @Override
+    public boolean hasFakeValue() {
+        return false;
+    }
+
+    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         VersionQualifier qualifier = getQualifier(value);
         if (qualifier != null) {
@@ -131,24 +134,23 @@ public final class VersionQualifier extends ResourceQualifier {
      * Returns the string used to represent this qualifier in the folder name.
      */
     @Override
-    public String getFolderSegment(IAndroidTarget target) {
-        if (target == null) {
-            // Default behavior (when target==null) is qualifier is supported
-            return getFolderSegment(mVersion);
-        }
+    public String getFolderSegment() {
+        return getFolderSegment(mVersion);
+    }
 
-        AndroidVersion version = target.getVersion();
-        if (version.getApiLevel() >= 3) {
-            return getFolderSegment(mVersion);
+    @Override
+    public String getShortDisplayValue() {
+        if (mVersion != DEFAULT_VERSION) {
+            return String.format("API %1$d", mVersion);
         }
 
         return ""; //$NON-NLS-1$
     }
 
     @Override
-    public String getStringValue() {
+    public String getLongDisplayValue() {
         if (mVersion != DEFAULT_VERSION) {
-            return String.format("API %1$d", mVersion);
+            return String.format("API Level %1$d", mVersion);
         }
 
         return ""; //$NON-NLS-1$

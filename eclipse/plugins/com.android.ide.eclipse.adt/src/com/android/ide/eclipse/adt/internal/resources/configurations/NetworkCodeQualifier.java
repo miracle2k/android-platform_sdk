@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.swt.graphics.Image;
 
@@ -109,6 +108,11 @@ public final class NetworkCodeQualifier extends ResourceQualifier {
     }
 
     @Override
+    public boolean hasFakeValue() {
+        return false;
+    }
+
+    @Override
     public boolean checkAndSet(String value, FolderConfiguration config) {
         Matcher m = sNetworkCodePattern.matcher(value);
         if (m.matches()) {
@@ -148,16 +152,22 @@ public final class NetworkCodeQualifier extends ResourceQualifier {
      * Returns the string used to represent this qualifier in the folder name.
      */
     @Override
-    public String getFolderSegment(IAndroidTarget target) {
+    public String getFolderSegment() {
         return getFolderSegment(mCode);
     }
 
     @Override
-    public String getStringValue() {
+    public String getShortDisplayValue() {
         if (mCode != DEFAULT_CODE) {
             return String.format("MNC %1$d", mCode);
         }
 
         return ""; //$NON-NLS-1$
     }
+
+    @Override
+    public String getLongDisplayValue() {
+        return getShortDisplayValue();
+    }
+
 }
