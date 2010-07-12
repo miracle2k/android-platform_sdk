@@ -18,6 +18,8 @@ package com.android.ddmlib;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Log class that mirrors the API in main Android sources.
@@ -347,13 +349,10 @@ public final class Log {
      * @param message
      */
     public static String getLogFormatString(LogLevel logLevel, String tag, String message) {
-        long msec;
-        
-        msec = System.currentTimeMillis();
-        return String.format("%02d:%02d %c/%s: %s\n", (msec / 60000) % 60, (msec / 1000) % 60,
+        SimpleDateFormat formatter = new SimpleDateFormat("hh:mm:ss");
+        return String.format("%s %c/%s: %s\n", formatter.format(new Date()),
                 logLevel.getPriorityLetter(), tag, message);
     }
-
 }
 
 
