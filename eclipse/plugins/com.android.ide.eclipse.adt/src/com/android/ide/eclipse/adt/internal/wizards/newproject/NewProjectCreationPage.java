@@ -31,6 +31,7 @@ import com.android.ide.eclipse.adt.internal.wizards.newproject.NewTestProjectCre
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.project.ProjectProperties;
+import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.ManifestData;
@@ -1096,7 +1097,7 @@ public class NewProjectCreationPage extends WizardPage {
         // is tied to the current target, so changing it would invalidate the project we're
         // trying to load in the first place.
         if (currentTarget == null || !mInfo.isCreateFromSample()) {
-            ProjectProperties p = ProjectProperties.create(projectLocation, null);
+            ProjectPropertiesWorkingCopy p = ProjectProperties.create(projectLocation, null);
             if (p != null) {
                 // Check the {build|default}.properties files if present
                 p.merge(PropertyType.BUILD).merge(PropertyType.DEFAULT);

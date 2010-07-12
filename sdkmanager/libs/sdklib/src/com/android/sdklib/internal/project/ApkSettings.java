@@ -64,18 +64,18 @@ public class ApkSettings {
     }
 
     public boolean isSplitByAbi() {
-    	return mSplitByAbi;
+        return mSplitByAbi;
     }
 
     public void setSplitByAbi(boolean split) {
-    	mSplitByAbi = split;
+        mSplitByAbi = split;
     }
 
     /**
-     * Writes the receiver into a {@link ProjectProperties}.
-     * @param properties the {@link ProjectProperties} in which to store the settings.
+     * Writes the receiver into a {@link ProjectPropertiesWorkingCopy}.
+     * @param properties the {@link ProjectPropertiesWorkingCopy} in which to store the settings.
      */
-    public void write(ProjectProperties properties) {
+    public void write(ProjectPropertiesWorkingCopy properties) {
         properties.setProperty(ProjectProperties.PROPERTY_SPLIT_BY_DENSITY,
                 Boolean.toString(mSplitByDensity));
         properties.setProperty(ProjectProperties.PROPERTY_SPLIT_BY_ABI,

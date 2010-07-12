@@ -25,29 +25,34 @@ import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.io.StreamException;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Class to load and save project properties for both ADT and Ant-based build.
+ * Class representing project properties for both ADT and Ant-based build.
+ * <p/>The class is associated to a {@link PropertyType} that indicate which of the project
+ * property file is represented.
+ * <p/>To load an existing file, use {@link #load(IAbstractFolder, PropertyType)}.
+ * <p/>The class is meant to be always in sync (or at least not newer) than the file it represents.
+ * Once created, it can only be updated through {@link #reload()}
+ *
+ * <p/>The make modification or make new file, use a {@link ProjectPropertiesWorkingCopy} instance,
+ * either through {@link #create(IAbstractFolder, PropertyType)} or through
+ * {@link #makeWorkingCopy()}.
  *
  */
-public final class ProjectProperties {
-    private final static Pattern PATTERN_PROP = Pattern.compile(
+public class ProjectProperties {
+    protected final static Pattern PATTERN_PROP = Pattern.compile(
     "^([a-zA-Z0-9._-]+)\\s*=\\s*(.*)\\s*$");
 
     /** The property name for the project target */
@@ -55,6 +60,7 @@ public final class ProjectProperties {
 
     public final static String PROPERTY_LIBRARY = "android.library";
     public final static String PROPERTY_LIB_REF = "android.library.reference.";
+    private final static String PROPERTY_LIB_REF_REGEX = "android.library.reference.\\d+";
 
     public final static String PROPERTY_SDK = "sdk.dir";
     // LEGACY - compatibility with 1.6 and before
@@ -83,7 +89,7 @@ public final class ProjectProperties {
                 PROPERTY_BUILD_SOURCE_DIR, PROPERTY_BUILD_OUT_DIR
             }),
         DEFAULT(SdkConstants.FN_DEFAULT_PROPERTIES, DEFAULT_HEADER, new String[] {
-                PROPERTY_TARGET, PROPERTY_LIBRARY, PROPERTY_LIB_REF,
+                PROPERTY_TARGET, PROPERTY_LIBRARY, PROPERTY_LIB_REF_REGEX,
                 PROPERTY_KEY_STORE, PROPERTY_KEY_ALIAS
             }),
         LOCAL(SdkConstants.FN_LOCAL_PROPERTIES, LOCAL_HEADER, new String[] {
@@ -96,26 +102,35 @@ public final class ProjectProperties {
 
         private final String mFilename;
         private final String mHeader;
-        private final Set<String> mValidProps;
+        private final Set<String> mKnownProps;
 
         PropertyType(String filename, String header, String[] validProps) {
             mFilename = filename;
             mHeader = header;
             HashSet<String> s = new HashSet<String>();
             s.addAll(Arrays.asList(validProps));
-            mValidProps = Collections.unmodifiableSet(s);
+            mKnownProps = Collections.unmodifiableSet(s);
         }
 
         public String getFilename() {
             return mFilename;
         }
 
+        public String getHeader() {
+            return mHeader;
+        }
+
         /**
-         * Returns an unmodifyable {@link Set} of the known properties for that type of
-         * property file.
+         * Returns whether a given property is known for the property type.
          */
-        public Set<String> getValidProps() {
-            return mValidProps;
+        public boolean isKnownProperty(String name) {
+            for (String propRegex : mKnownProps) {
+                if (propRegex.equals(name) || Pattern.matches(propRegex, name)) {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 
@@ -178,33 +193,9 @@ public final class ProjectProperties {
            "# The password will be asked during the build when you use the 'release' target.\n" +
            "\n";
 
-    private final static Map<String, String> COMMENT_MAP = new HashMap<String, String>();
-    static {
-//               1-------10--------20--------30--------40--------50--------60--------70--------80
-        COMMENT_MAP.put(PROPERTY_TARGET,
-                "# Project target.\n");
-        COMMENT_MAP.put(PROPERTY_SPLIT_BY_DENSITY,
-                "# Indicates whether an apk should be generated for each density.\n");
-        COMMENT_MAP.put(PROPERTY_SDK,
-                "# location of the SDK. This is only used by Ant\n" +
-                "# For customization when using a Version Control System, please read the\n" +
-                "# header note.\n");
-        COMMENT_MAP.put(PROPERTY_APP_PACKAGE,
-                "# The name of your application package as defined in the manifest.\n" +
-                "# Used by the 'uninstall' rule.\n");
-        COMMENT_MAP.put(PROPERTY_PACKAGE,
-                "# Package of the application being exported\n");
-        COMMENT_MAP.put(PROPERTY_VERSIONCODE,
-                "# Major version code\n");
-        COMMENT_MAP.put(PROPERTY_PROJECTS,
-                "# List of the Android projects being used for the export.\n" +
-                "# The list is made of paths that are relative to this project,\n" +
-                "# using forward-slash (/) as separator, and are separated by colons (:).\n");
-    }
-
-    private final IAbstractFolder mProjectFolder;
-    private final Map<String, String> mProperties;
-    private final PropertyType mType;
+    protected final IAbstractFolder mProjectFolder;
+    protected final Map<String, String> mProperties;
+    protected final PropertyType mType;
 
     /**
      * Loads a project properties file and return a {@link ProjectProperties} object
@@ -239,48 +230,13 @@ public final class ProjectProperties {
     }
 
     /**
-     * Merges all properties from the given file into the current properties.
-     * <p/>
-     * This emulates the Ant behavior: existing properties are <em>not</em> overriden.
-     * Only new undefined properties become defined.
-     * <p/>
-     * Typical usage:
-     * <ul>
-     * <li>Create a ProjectProperties with {@link PropertyType#BUILD}
-     * <li>Merge in values using {@link PropertyType#DEFAULT}
-     * <li>The result is that this contains all the properties from default plus those
-     *     overridden by the build.properties file.
-     * </ul>
-     *
-     * @param type One the possible {@link PropertyType}s.
-     * @return this object, for chaining.
-     */
-    public synchronized ProjectProperties merge(PropertyType type) {
-        if (mProjectFolder.exists()) {
-            IAbstractFile propFile = mProjectFolder.getFile(type.mFilename);
-            if (propFile.exists()) {
-                Map<String, String> map = parsePropertyFile(propFile, null /* log */);
-                if (map != null) {
-                    for(Entry<String, String> entry : map.entrySet()) {
-                        String key = entry.getKey();
-                        String value = entry.getValue();
-                        if (!mProperties.containsKey(key) && value != null) {
-                            mProperties.put(key, value);
-                        }
-                    }
-                }
-            }
-        }
-        return this;
-    }
-
-    /**
      * Creates a new project properties object, with no properties.
-     * <p/>The file is not created until {@link #save()} is called.
+     * <p/>The file is not created until {@link ProjectPropertiesWorkingCopy#save()} is called.
      * @param projectFolderOsPath the project folder.
      * @param type the type of property file to create
      */
-    public static ProjectProperties create(String projectFolderOsPath, PropertyType type) {
+    public static ProjectPropertiesWorkingCopy create(String projectFolderOsPath,
+            PropertyType type) {
         // create and return a ProjectProperties with an empty map.
         IAbstractFolder folder = new FolderWrapper(projectFolderOsPath);
         return create(folder, type);
@@ -288,13 +244,27 @@ public final class ProjectProperties {
 
     /**
      * Creates a new project properties object, with no properties.
-     * <p/>The file is not created until {@link #save()} is called.
+     * <p/>The file is not created until {@link ProjectPropertiesWorkingCopy#save()} is called.
      * @param projectFolder the project folder.
      * @param type the type of property file to create
      */
-    public static ProjectProperties create(IAbstractFolder projectFolder, PropertyType type) {
+    public static ProjectPropertiesWorkingCopy create(IAbstractFolder projectFolder,
+            PropertyType type) {
         // create and return a ProjectProperties with an empty map.
-        return new ProjectProperties(projectFolder, new HashMap<String, String>(), type);
+        return new ProjectPropertiesWorkingCopy(projectFolder, new HashMap<String, String>(), type);
+    }
+
+    /**
+     * Creates and returns a copy of the current properties as a
+     * {@link ProjectPropertiesWorkingCopy} that can be modified and saved.
+     * @return a new instance of {@link ProjectPropertiesWorkingCopy}
+     */
+    public ProjectPropertiesWorkingCopy makeWorkingCopy() {
+        // copy the current properties in a new map
+        HashMap<String, String> propList = new HashMap<String, String>();
+        propList.putAll(mProperties);
+
+        return new ProjectPropertiesWorkingCopy(mProjectFolder, propList, mType);
     }
 
     /**
@@ -307,29 +277,12 @@ public final class ProjectProperties {
     }
 
     /**
-     * Sets a new properties. If a property with the same name already exists, it is replaced.
-     * @param name the name of the property.
-     * @param value the value of the property.
-     */
-    public synchronized void setProperty(String name, String value) {
-        mProperties.put(name, value);
-    }
-
-    /**
      * Returns the value of a property.
      * @param name the name of the property.
      * @return the property value or null if the property is not set.
      */
     public synchronized String getProperty(String name) {
         return mProperties.get(name);
-    }
-
-    /**
-     * Removes a property and returns its previous value (or null if the property did not exist).
-     * @param name the name of the property to remove.
-     */
-    public synchronized String removeProperty(String name) {
-        return mProperties.remove(name);
     }
 
     /**
@@ -354,112 +307,6 @@ public final class ProjectProperties {
                 }
             }
         }
-    }
-
-    /**
-     * Saves the property file, using UTF-8 encoding.
-     * @throws IOException
-     * @throws StreamException
-     */
-    public synchronized void save() throws IOException, StreamException {
-        IAbstractFile toSave = mProjectFolder.getFile(mType.mFilename);
-
-        // write the whole file in a byte array before dumping it in the file. This
-        // This is so that if the file already existing
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        OutputStreamWriter writer = new OutputStreamWriter(baos, SdkConstants.INI_CHARSET);
-
-        if (toSave.exists()) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(toSave.getContents(),
-                    SdkConstants.INI_CHARSET));
-
-            // since we're reading the existing file and replacing values with new ones, or skipping
-            // removed values, we need to record what properties have been visited, so that
-            // we can figure later what new properties need to be added at the end of the file.
-            HashSet<String> visitedProps = new HashSet<String>();
-
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                // check if this is a line containing a property.
-                if (line.length() > 0 && line.charAt(0) != '#') {
-
-                    Matcher m = PATTERN_PROP.matcher(line);
-                    if (m.matches()) {
-                        String key = m.group(1);
-                        String value = m.group(2);
-
-                        // record the prop
-                        visitedProps.add(key);
-
-                        // check if the property still exists.
-                        if (mProperties.containsKey(key)) {
-                            // put the new value.
-                            value = mProperties.get(key);
-                        } else {
-                            // property doesn't exist. Check if it's a known property.
-                            // if it's a known one, we'll remove it, otherwise, leave it untouched.
-                            if (mType.getValidProps().contains(key)) {
-                                value = null;
-                            }
-                        }
-
-                        // if the value is still valid, write it down.
-                        if (value != null) {
-                            writeValue(writer, key, value, false /*addComment*/);
-                        }
-                    } else  {
-                        // the line was wrong, let's just ignore it so that it's removed from the
-                        // file.
-                    }
-                } else {
-                    // non-property line: just write the line in the output as-is.
-                    writer.append(line).append('\n');
-                }
-            }
-
-            // now add the new properties.
-            for (Entry<String, String> entry : mProperties.entrySet()) {
-                if (visitedProps.contains(entry.getKey()) == false) {
-                    String value = entry.getValue();
-                    if (value != null) {
-                        writeValue(writer, entry.getKey(), value, true /*addComment*/);
-                    }
-                }
-            }
-
-        } else {
-            // new file, just write it all
-            // write the header
-            writer.write(mType.mHeader);
-
-            // write the properties.
-            for (Entry<String, String> entry : mProperties.entrySet()) {
-                String value = entry.getValue();
-                if (value != null) {
-                    writeValue(writer, entry.getKey(), value, true /*addComment*/);
-                }
-            }
-        }
-
-        writer.flush();
-
-        // now put the content in the file.
-        OutputStream filestream = toSave.getOutputStream();
-        filestream.write(baos.toByteArray());
-        filestream.flush();
-    }
-
-    private void writeValue(OutputStreamWriter writer, String key, String value,
-            boolean addComment) throws IOException {
-        if (addComment) {
-            String comment = COMMENT_MAP.get(key);
-            if (comment != null) {
-                writer.write(comment);
-            }
-        }
-
-        value = value.replaceAll("\\\\", "\\\\\\\\");
-        writer.write(String.format("%s=%s\n", key, value));
     }
 
     /**
@@ -540,7 +387,7 @@ public final class ProjectProperties {
      * Use {@link #load(String, PropertyType)} or {@link #create(String, PropertyType)}
      * to instantiate.
      */
-    private ProjectProperties(IAbstractFolder projectFolder, Map<String, String> map,
+    protected ProjectProperties(IAbstractFolder projectFolder, Map<String, String> map,
             PropertyType type) {
         mProjectFolder = projectFolder;
         mProperties = map;

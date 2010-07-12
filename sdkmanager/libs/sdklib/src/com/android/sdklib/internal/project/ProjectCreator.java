@@ -21,7 +21,6 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
-import com.android.sdklib.io.StreamException;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.AndroidXPathFactory;
 
@@ -187,13 +186,13 @@ public class ProjectCreator {
             // first create the project properties.
 
             // location of the SDK goes in localProperty
-            ProjectProperties localProperties = ProjectProperties.create(folderPath,
+            ProjectPropertiesWorkingCopy localProperties = ProjectProperties.create(folderPath,
                     PropertyType.LOCAL);
             localProperties.setProperty(ProjectProperties.PROPERTY_SDK, mSdkFolder);
             localProperties.save();
 
             // target goes in default properties
-            ProjectProperties defaultProperties = ProjectProperties.create(folderPath,
+            ProjectPropertiesWorkingCopy defaultProperties = ProjectProperties.create(folderPath,
                     PropertyType.DEFAULT);
             defaultProperties.setProperty(ProjectProperties.PROPERTY_TARGET, target.hashString());
             if (library) {
@@ -202,7 +201,7 @@ public class ProjectCreator {
             defaultProperties.save();
 
             // create a build.properties file with just the application package
-            ProjectProperties buildProperties = ProjectProperties.create(folderPath,
+            ProjectPropertiesWorkingCopy buildProperties = ProjectProperties.create(folderPath,
                     PropertyType.BUILD);
 
             // only put application.package for older target where the rules file didn't.
@@ -375,13 +374,13 @@ public class ProjectCreator {
 
         try {
             // location of the SDK goes in localProperty
-            ProjectProperties localProperties = ProjectProperties.create(folderPath,
+            ProjectPropertiesWorkingCopy localProperties = ProjectProperties.create(folderPath,
                     PropertyType.LOCAL);
             localProperties.setProperty(ProjectProperties.PROPERTY_SDK, mSdkFolder);
             localProperties.save();
 
             // package name goes in export properties
-            ProjectProperties exportProperties = ProjectProperties.create(folderPath,
+            ProjectPropertiesWorkingCopy exportProperties = ProjectProperties.create(folderPath,
                     PropertyType.EXPORT);
             exportProperties.setProperty(ProjectProperties.PROPERTY_PACKAGE, packageName);
             exportProperties.setProperty(ProjectProperties.PROPERTY_VERSIONCODE, "1");
@@ -506,21 +505,28 @@ public class ProjectCreator {
 
         boolean saveDefaultProps = false;
 
+        ProjectPropertiesWorkingCopy propsWC = null;
+
         // Update default.prop if --target was specified
         if (target != null) {
             // we already attempted to load the file earlier, if that failed, create it.
             if (props == null) {
-                props = ProjectProperties.create(folderPath, PropertyType.DEFAULT);
+                propsWC = ProjectProperties.create(folderPath, PropertyType.DEFAULT);
+            } else {
+                propsWC = props.makeWorkingCopy();
             }
 
             // set or replace the target
-            props.setProperty(ProjectProperties.PROPERTY_TARGET, target.hashString());
+            propsWC.setProperty(ProjectProperties.PROPERTY_TARGET, target.hashString());
             saveDefaultProps = true;
         }
 
         if (libraryPath != null) {
             // at this point, the default properties already exists, either because they were
             // already there or because they were created with a new target
+            if (propsWC == null) {
+                propsWC = props.makeWorkingCopy();
+            }
 
             // check the reference is valid
             File libProject = new File(libraryPath);
@@ -558,14 +564,14 @@ public class ProjectCreator {
             }
 
             String propName = ProjectProperties.PROPERTY_LIB_REF + Integer.toString(index);
-            props.setProperty(propName, libraryPath);
+            propsWC.setProperty(propName, libraryPath);
             saveDefaultProps = true;
         }
 
         // save the default props if needed.
         if (saveDefaultProps) {
             try {
-                props.save();
+                propsWC.save();
                 println("Updated %1$s", PropertyType.DEFAULT.getFilename());
             } catch (Exception e) {
                 mLog.error(e, "Failed to write %1$s file in '%2$s'",
@@ -580,13 +586,15 @@ public class ProjectCreator {
         // we first try to load it.
         props = ProjectProperties.load(folderPath, PropertyType.LOCAL);
         if (props == null) {
-            props = ProjectProperties.create(folderPath, PropertyType.LOCAL);
+            propsWC = ProjectProperties.create(folderPath, PropertyType.LOCAL);
+        } else {
+            propsWC = props.makeWorkingCopy();
         }
 
         // set or replace the sdk location.
-        props.setProperty(ProjectProperties.PROPERTY_SDK, mSdkFolder);
+        propsWC.setProperty(ProjectProperties.PROPERTY_SDK, mSdkFolder);
         try {
-            props.save();
+            propsWC.save();
             println("Updated %1$s", PropertyType.LOCAL.getFilename());
         } catch (Exception e) {
             mLog.error(e, "Failed to write %1$s file in '%2$s'",
@@ -759,14 +767,17 @@ public class ProjectCreator {
 
         // add the test project specific properties.
         ProjectProperties buildProps = ProjectProperties.load(folderPath, PropertyType.BUILD);
+        ProjectPropertiesWorkingCopy buildWorkingCopy;
         if (buildProps == null) {
-            buildProps = ProjectProperties.create(folderPath, PropertyType.BUILD);
+            buildWorkingCopy = ProjectProperties.create(folderPath, PropertyType.BUILD);
+        } else {
+            buildWorkingCopy = buildProps.makeWorkingCopy();
         }
 
         // set or replace the path to the main project
-        buildProps.setProperty(ProjectProperties.PROPERTY_TESTED_PROJECT, pathToMainProject);
+        buildWorkingCopy.setProperty(ProjectProperties.PROPERTY_TESTED_PROJECT, pathToMainProject);
         try {
-            buildProps.save();
+            buildWorkingCopy.save();
             println("Updated %1$s", PropertyType.BUILD.getFilename());
         } catch (Exception e) {
             mLog.error(e, "Failed to write %1$s file in '%2$s'",
@@ -806,14 +817,17 @@ public class ProjectCreator {
         // because the file may already exist and contain other values (like apk config),
         // we first try to load it.
         ProjectProperties props = ProjectProperties.load(folderPath, PropertyType.LOCAL);
+        ProjectPropertiesWorkingCopy localPropsWorkingCopy;
         if (props == null) {
-            props = ProjectProperties.create(folderPath, PropertyType.LOCAL);
+            localPropsWorkingCopy = ProjectProperties.create(folderPath, PropertyType.LOCAL);
+        } else {
+            localPropsWorkingCopy = props.makeWorkingCopy();
         }
 
         // set or replace the sdk location.
-        props.setProperty(ProjectProperties.PROPERTY_SDK, mSdkFolder);
+        localPropsWorkingCopy.setProperty(ProjectProperties.PROPERTY_SDK, mSdkFolder);
         try {
-            props.save();
+            localPropsWorkingCopy.save();
             println("Updated %1$s", PropertyType.LOCAL.getFilename());
         } catch (Exception e) {
             mLog.error(e, "Failed to write %1$s file in '%2$s'",

@@ -37,6 +37,7 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.project.ProjectProperties;
+import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.io.StreamException;
 
@@ -306,10 +307,10 @@ public final class Sdk  {
             // check if there's already a state?
             ProjectState state = getProjectState(project);
 
-            ProjectProperties properties = null;
+            ProjectPropertiesWorkingCopy properties = null;
 
             if (state != null) {
-                properties = state.getProperties();
+                properties = state.getProperties().makeWorkingCopy();
             }
 
             if (properties == null) {
@@ -890,82 +891,88 @@ public final class Sdk  {
         public void fileChanged(final IFile file, IMarkerDelta[] markerDeltas, int kind) {
             if (SdkConstants.FN_DEFAULT_PROPERTIES.equals(file.getName()) &&
                     file.getParent() == file.getProject()) {
-                // we can't do the change from the Workspace resource change notification
-                // so we create build-type job for it.
-                Job job = new Job("Project Update") {
-                    @Override
-                    protected IStatus run(IProgressMonitor monitor) {
-                        try {
-                            // reload the content of the default.properties file and update
-                            // the target.
-                            IProject iProject = file.getProject();
-                            ProjectState state = Sdk.getProjectState(iProject);
+                try {
+                    // reload the content of the default.properties file and update
+                    // the target.
+                    IProject iProject = file.getProject();
+                    ProjectState state = Sdk.getProjectState(iProject);
 
-                            // get the current target
-                            IAndroidTarget oldTarget = state.getTarget();
+                    // get the current target
+                    IAndroidTarget oldTarget = state.getTarget();
 
-                            LibraryDifference diff = state.reloadProperties();
+                    // get the current library flag
+                    boolean wasLibrary = state.isLibrary();
 
-                            // load the (possibly new) target.
-                            IAndroidTarget newTarget = loadTarget(state);
+                    LibraryDifference diff = state.reloadProperties();
 
-                            // reload the libraries if needed
-                            if (diff.hasDiff()) {
-                                for (LibraryState removedState : diff.removed) {
-                                    ProjectState removedPState = removedState.getProjectState();
-                                    if (removedPState != null) {
-                                        startActionBundle(
-                                                new UnlinkLibraryBundle(
-                                                        state, removedPState.getProject()));
-                                    }
-                                }
+                    // load the (possibly new) target.
+                    IAndroidTarget newTarget = loadTarget(state);
 
-                                if (diff.added) {
-                                    synchronized (sLock) {
-                                        for (ProjectState projectState : sProjectStateMap.values()) {
-                                            if (projectState != state) {
-                                                LibraryState libState = state.needs(projectState);
+                    // check if this is a new library
+                    if (state.isLibrary() && wasLibrary == false) {
+                        setupLibraryProject(iProject);
+                    }
 
-                                                if (libState != null) {
-                                                    IProject[] libArray = new IProject[] {
-                                                            libState.getProjectState().getProject()
-                                                    };
-                                                    LinkLibraryBundle bundle =
-                                                            new LinkLibraryBundle();
-                                                    bundle.mProject = iProject;
-                                                    bundle.mLibraryProjects = libArray;
-                                                    bundle.mPreviousLibraryPath = null;
-                                                    bundle.mCleanupCPE = false;
-                                                    startActionBundle(bundle);
-                                                }
+                    // reload the libraries if needed
+                    if (diff.hasDiff()) {
+                        for (LibraryState removedState : diff.removed) {
+                            ProjectState removedPState = removedState.getProjectState();
+                            if (removedPState != null) {
+                                startActionBundle(
+                                        new UnlinkLibraryBundle(
+                                                state, removedPState.getProject()));
+                            }
+                        }
+
+                        if (diff.added) {
+                            ArrayList<IProject> libsToLink = new ArrayList<IProject>();
+                            synchronized (sLock) {
+                                for (ProjectState projectState : sProjectStateMap.values()) {
+                                    if (projectState != state) {
+                                        LibraryState libState = state.needs(projectState);
+
+                                        if (libState != null) {
+                                            IProject p = libState.getProjectState().getProject();
+                                            if (libsToLink.contains(p) == false) {
+                                                libsToLink.add(p);
                                             }
+
+                                            // now find the dependencies of the library itself.
+                                            fillProjectDependenciesList(
+                                                    libState.getMainProjectState(), libsToLink);
                                         }
                                     }
                                 }
                             }
 
-                            // apply the new target if needed.
-                            if (newTarget != oldTarget) {
-                                IJavaProject javaProject = BaseProjectHelper.getJavaProject(
-                                        file.getProject());
-                                if (javaProject != null) {
-                                    AndroidClasspathContainerInitializer.updateProjects(
-                                            new IJavaProject[] { javaProject });
-                                }
-
-                                // update the editors to reload with the new target
-                                AdtPlugin.getDefault().updateTargetListeners(iProject);
+                            if (libsToLink.size() > 0) {
+                                LinkLibraryBundle bundle = new LinkLibraryBundle();
+                                bundle.mProject = iProject;
+                                bundle.mLibraryProjects =
+                                        libsToLink.toArray(new IProject[libsToLink.size()]);
+                                bundle.mPreviousLibraryPath = null;
+                                bundle.mCleanupCPE = false;
+                                startActionBundle(bundle);
                             }
-                        } catch (CoreException e) {
-                            // This can't happen as it's only for closed project (or non existing)
-                            // but in that case we can't get a fileChanged on this file.
+                        }
+                    }
+
+                    // apply the new target if needed.
+                    if (newTarget != oldTarget) {
+                        IJavaProject javaProject = BaseProjectHelper.getJavaProject(
+                                file.getProject());
+                        if (javaProject != null) {
+                            AndroidClasspathContainerInitializer.updateProjects(
+                                    new IJavaProject[] { javaProject });
                         }
 
-                        return Status.OK_STATUS;
+                        // update the editors to reload with the new target
+                        AdtPlugin.getDefault().updateTargetListeners(iProject);
                     }
-                };
-                job.setPriority(Job.BUILD); // build jobs are run after other interactive jobs
-                job.schedule();
+                } catch (CoreException e) {
+                    // This can't happen as it's only for closed project (or non existing)
+                    // but in that case we can't get a fileChanged on this file.
+                }
             }
         }
     };

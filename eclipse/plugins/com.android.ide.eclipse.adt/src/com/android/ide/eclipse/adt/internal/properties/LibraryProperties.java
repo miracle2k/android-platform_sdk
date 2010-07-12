@@ -23,6 +23,7 @@ import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper.IProjec
 import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.internal.project.ProjectProperties;
+import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
@@ -65,7 +66,16 @@ final class LibraryProperties {
     private Button mDownButton;
     private ProjectChooserHelper mProjectChooser;
 
+    /**
+     * Original ProjectState being edited. This is read-only.
+     * @see #mPropertiesWorkingCopy
+     */
     private ProjectState mState;
+    /**
+     * read-write copy of the properties being edited.
+     */
+    private ProjectPropertiesWorkingCopy mPropertiesWorkingCopy;
+
     private final List<ItemData> mItemDataList = new ArrayList<ItemData>();
     private boolean mMustSave = false;
 
@@ -231,10 +241,12 @@ final class LibraryProperties {
 
     /**
      * Sets or reset the content.
-     * @param state the {@link ProjectState} to display
+     * @param state the {@link ProjectState} to display. This is read-only.
+     * @param propertiesWorkingCopy the working copy of {@link ProjectProperties} to modify.
      */
-    void setContent(ProjectState state) {
+    void setContent(ProjectState state, ProjectPropertiesWorkingCopy propertiesWorkingCopy) {
         mState = state;
+        mPropertiesWorkingCopy = propertiesWorkingCopy;
 
         // reset content
         mTable.removeAll();
@@ -254,10 +266,12 @@ final class LibraryProperties {
     }
 
     /**
-     * Saves the state of the UI into the {@link ProjectState} object that was given to
+     * Saves the state of the UI into the {@link ProjectProperties} object that was returned by
      * {@link #setContent(ProjectState)}.
-     * <p/>This only saves the data into the {@link ProjectProperties} of the state, but does
-     * not update the {@link ProjectState} or the list of {@link LibraryState}.
+     * <p/>This does not update the {@link ProjectState} object that was provided, nor does it save
+     * the new properties on disk. Saving the properties on disk, via
+     * {@link ProjectProperties#save()}, and updating the {@link ProjectState} instance, via
+     * {@link ProjectState#reloadProperties()} must be done by the caller.
      * @return <code>true</code> if there was actually new data saved in the project state, false
      * otherwise.
      */
@@ -265,18 +279,17 @@ final class LibraryProperties {
         boolean mustSave = mMustSave;
         if (mMustSave) {
             // remove all previous library dependencies.
-            ProjectProperties props = mState.getProperties();
-            Set<String> keys = props.keySet();
+            Set<String> keys = mPropertiesWorkingCopy.keySet();
             for (String key : keys) {
                 if (key.startsWith(ProjectProperties.PROPERTY_LIB_REF)) {
-                    props.removeProperty(key);
+                    mPropertiesWorkingCopy.removeProperty(key);
                 }
             }
 
             // now add the new libraries.
             int index = 1;
             for (ItemData data : mItemDataList) {
-                props.setProperty(ProjectProperties.PROPERTY_LIB_REF + index++,
+                mPropertiesWorkingCopy.setProperty(ProjectProperties.PROPERTY_LIB_REF + index++,
                         data.relativePath);
             }
         }

@@ -16,14 +16,18 @@
 
 package com.android.ide.eclipse.adt.internal.properties;
 
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.project.ProjectProperties;
+import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
 import com.android.sdkuilib.internal.widgets.SdkTargetSelector;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -50,6 +54,7 @@ public class AndroidPropertyPage extends PropertyPage implements IWorkbenchPrope
     // APK-SPLIT: This is not yet supported, so we hide the UI
 //    private Button mSplitByDensity;
     private LibraryProperties mLibraryDependencies;
+    private ProjectPropertiesWorkingCopy mPropertiesWorkingCopy;
 
     public AndroidPropertyPage() {
         // pass
@@ -123,22 +128,20 @@ public class AndroidPropertyPage extends PropertyPage implements IWorkbenchPrope
         if (currentSdk != null && mProject.isOpen()) {
             ProjectState state = Sdk.getProjectState(mProject);
 
-            // simply update the project properties. Eclipse will be notified of the file change
+            // simply update the properties copy. Eclipse will be notified of the file change
             // and will reload it smartly (detecting differences) and updating the ProjectState.
             // See Sdk.mFileListener
-            ProjectProperties properties = null;
             boolean mustSaveProp = false;
 
             IAndroidTarget newTarget = mSelector.getSelected();
             if (newTarget != state.getTarget()) {
-                properties = state.getProperties();
-                properties.setProperty(ProjectProperties.PROPERTY_TARGET, newTarget.hashString());
+                mPropertiesWorkingCopy.setProperty(ProjectProperties.PROPERTY_TARGET,
+                        newTarget.hashString());
                 mustSaveProp = true;
             }
 
             if (mIsLibrary.getSelection() != state.isLibrary()) {
-                properties = state.getProperties();
-                properties.setProperty(ProjectProperties.PROPERTY_LIBRARY,
+                mPropertiesWorkingCopy.setProperty(ProjectProperties.PROPERTY_LIBRARY,
                         Boolean.toString(mIsLibrary.getSelection()));
                 mustSaveProp = true;
             }
@@ -151,9 +154,15 @@ public class AndroidPropertyPage extends PropertyPage implements IWorkbenchPrope
 
             if (mustSaveProp) {
                 try {
-                    state.saveProperties();
-                } catch (CoreException e) {
-                    // pass
+                    mPropertiesWorkingCopy.save();
+
+                    IResource defaultProp = mProject.findMember(SdkConstants.FN_DEFAULT_PROPERTIES);
+                    defaultProp.refreshLocal(IResource.DEPTH_ZERO, new NullProgressMonitor());
+                } catch (Exception e) {
+                    String msg = String.format(
+                            "Failed to save %1$s for project %2$s",
+                            SdkConstants.FN_DEFAULT_PROPERTIES, mProject.getName());
+                    AdtPlugin.log(e, msg);
                 }
             }
         }
@@ -171,6 +180,9 @@ public class AndroidPropertyPage extends PropertyPage implements IWorkbenchPrope
         if (Sdk.getCurrent() != null && mProject.isOpen()) {
             ProjectState state = Sdk.getProjectState(mProject);
 
+            // make a working copy of the properties
+            mPropertiesWorkingCopy = state.getProperties().makeWorkingCopy();
+
             // get the target
             IAndroidTarget target = state.getTarget();;
             if (target != null) {
@@ -178,7 +190,7 @@ public class AndroidPropertyPage extends PropertyPage implements IWorkbenchPrope
             }
 
             mIsLibrary.setSelection(state.isLibrary());
-            mLibraryDependencies.setContent(state);
+            mLibraryDependencies.setContent(state, mPropertiesWorkingCopy);
 
             /*
              * APK-SPLIT: This is not yet supported, so we hide the UI
