@@ -19,6 +19,7 @@ package com.android.ddmlib.testrunner;
 
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.TimeoutException;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -201,14 +202,14 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     /**
      * {@inheritDoc}
      */
-    public void run(ITestRunListener... listeners)  throws IOException {
+    public void run(ITestRunListener... listeners)  throws IOException, TimeoutException {
         run(Arrays.asList(listeners));
     }
 
     /**
      * {@inheritDoc}
      */
-    public void run(Collection<ITestRunListener> listeners)  throws IOException {
+    public void run(Collection<ITestRunListener> listeners)  throws TimeoutException, IOException {
         final String runCaseCommandStr = String.format("am instrument -w -r %s %s",
             getArgsCommand(), getRunnerPath());
         Log.i(LOG_TAG, String.format("Running %s on %s", runCaseCommandStr,

@@ -16,7 +16,6 @@
 
 package com.android.ddmlib;
 
-import com.android.ddmlib.Log.LogLevel;
 import com.android.ddmlib.log.LogReceiver;
 
 import java.io.IOException;
@@ -51,17 +50,12 @@ final class AdbHelper {
      */
     static class AdbResponse {
         public AdbResponse() {
-            // ioSuccess = okay = timeout = false;
             message = "";
         }
 
-        public boolean ioSuccess; // read all expected data, no timeoutes
-
         public boolean okay; // first 4 bytes in response were "OKAY"?
 
-        public boolean timeout; // TODO: implement
-
-        public String message; // diagnostic string
+        public String message; // diagnostic string if #okay is false
     }
 
     /**
@@ -72,9 +66,11 @@ final class AdbHelper {
      * @param device the device to connect to. Can be null in which case the connection will be
      * to the first available device.
      * @param devicePort the port we're opening
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
     public static SocketChannel open(InetSocketAddress adbSockAddr,
-            Device device, int devicePort) throws IOException {
+            Device device, int devicePort) throws IOException, TimeoutException {
 
         SocketChannel adbChan = SocketChannel.open(adbSockAddr);
         try {
@@ -88,17 +84,20 @@ final class AdbHelper {
             byte[] req = createAdbForwardRequest(null, devicePort);
             // Log.hexDump(req);
 
-            if (write(adbChan, req) == false)
-                throw new IOException("failed submitting request to ADB"); //$NON-NLS-1$
+            write(adbChan, req);
 
             AdbResponse resp = readAdbResponse(adbChan, false);
-            if (!resp.okay)
+            if (!resp.okay) {
                 throw new IOException("connection request rejected"); //$NON-NLS-1$
+            }
 
             adbChan.configureBlocking(true);
-        } catch (IOException ioe) {
+        } catch (TimeoutException e) {
             adbChan.close();
-            throw ioe;
+            throw e;
+        } catch (IOException e) {
+            adbChan.close();
+            throw e;
         }
 
         return adbChan;
@@ -112,9 +111,11 @@ final class AdbHelper {
      * @param device the device to connect to. Can be null in which case the connection will be
      * to the first available device.
      * @param pid the process pid to connect to.
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
     public static SocketChannel createPassThroughConnection(InetSocketAddress adbSockAddr,
-            Device device, int pid) throws IOException {
+            Device device, int pid) throws TimeoutException, IOException {
 
         SocketChannel adbChan = SocketChannel.open(adbSockAddr);
         try {
@@ -128,17 +129,20 @@ final class AdbHelper {
             byte[] req = createJdwpForwardRequest(pid);
             // Log.hexDump(req);
 
-            if (write(adbChan, req) == false)
-                throw new IOException("failed submitting request to ADB"); //$NON-NLS-1$
+            write(adbChan, req);
 
             AdbResponse resp = readAdbResponse(adbChan, false /* readDiagString */);
-            if (!resp.okay)
+            if (!resp.okay) {
                 throw new IOException("connection request rejected: " + resp.message); //$NON-NLS-1$
+            }
 
             adbChan.configureBlocking(true);
-        } catch (IOException ioe) {
+        } catch (TimeoutException e) {
             adbChan.close();
-            throw ioe;
+            throw e;
+        } catch (IOException e) {
+            adbChan.close();
+            throw e;
         }
 
         return adbChan;
@@ -196,17 +200,16 @@ final class AdbHelper {
      * @param readDiagString If true, we're expecting an OKAY response to be
      *      followed by a diagnostic string. Otherwise, we only expect the
      *      diagnostic string to follow a FAIL.
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
     static AdbResponse readAdbResponse(SocketChannel chan, boolean readDiagString)
-            throws IOException {
+            throws TimeoutException, IOException {
 
         AdbResponse resp = new AdbResponse();
 
         byte[] reply = new byte[4];
-        if (read(chan, reply) == false) {
-            return resp;
-        }
-        resp.ioSuccess = true;
+        read(chan, reply);
 
         if (isOkay(reply)) {
             resp.okay = true;
@@ -216,38 +219,37 @@ final class AdbHelper {
         }
 
         // not a loop -- use "while" so we can use "break"
-        while (readDiagString) {
-            // length string is in next 4 bytes
-            byte[] lenBuf = new byte[4];
-            if (read(chan, lenBuf) == false) {
-                Log.w("ddms", "Expected diagnostic string not found");
+        try {
+            while (readDiagString) {
+                // length string is in next 4 bytes
+                byte[] lenBuf = new byte[4];
+                read(chan, lenBuf);
+
+                String lenStr = replyToString(lenBuf);
+
+                int len;
+                try {
+                    len = Integer.parseInt(lenStr, 16);
+                } catch (NumberFormatException nfe) {
+                    Log.w("ddms", "Expected digits, got '" + lenStr + "': "
+                            + lenBuf[0] + " " + lenBuf[1] + " " + lenBuf[2] + " "
+                            + lenBuf[3]);
+                    Log.w("ddms", "reply was " + replyToString(reply));
+                    break;
+                }
+
+                byte[] msg = new byte[len];
+                read(chan, msg);
+
+                resp.message = replyToString(msg);
+                Log.v("ddms", "Got reply '" + replyToString(reply) + "', diag='"
+                        + resp.message + "'");
+
                 break;
             }
-
-            String lenStr = replyToString(lenBuf);
-
-            int len;
-            try {
-                len = Integer.parseInt(lenStr, 16);
-            } catch (NumberFormatException nfe) {
-                Log.w("ddms", "Expected digits, got '" + lenStr + "': "
-                        + lenBuf[0] + " " + lenBuf[1] + " " + lenBuf[2] + " "
-                        + lenBuf[3]);
-                Log.w("ddms", "reply was " + replyToString(reply));
-                break;
-            }
-
-            byte[] msg = new byte[len];
-            if (read(chan, msg) == false) {
-                Log.w("ddms", "Failed reading diagnostic string, len=" + len);
-                break;
-            }
-
-            resp.message = replyToString(msg);
-            Log.v("ddms", "Got reply '" + replyToString(reply) + "', diag='"
-                    + resp.message + "'");
-
-            break;
+        } catch (Exception e) {
+            // ignore those, since it's just reading the diagnose string, the response will
+            // contain okay==false anyway.
         }
 
         return resp;
@@ -255,9 +257,11 @@ final class AdbHelper {
 
     /**
      * Retrieve the frame buffer from the device.
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
-    public static RawImage getFrameBuffer(InetSocketAddress adbSockAddr, Device device)
-            throws IOException {
+    static RawImage getFrameBuffer(InetSocketAddress adbSockAddr, Device device)
+            throws TimeoutException, IOException {
 
         RawImage imageParams = new RawImage();
         byte[] request = formAdbRequest("framebuffer:"); //$NON-NLS-1$
@@ -275,25 +279,17 @@ final class AdbHelper {
             // to a specific device
             setDevice(adbChan, device);
 
-            if (write(adbChan, request) == false)
-                throw new IOException("failed asking for frame buffer");
+            write(adbChan, request);
 
             AdbResponse resp = readAdbResponse(adbChan, false /* readDiagString */);
-            if (!resp.ioSuccess || !resp.okay) {
-                Log.w("ddms", "Got timeout or unhappy response from ADB fb req: "
-                        + resp.message);
-                adbChan.close();
-                return null;
+            if (resp.okay == false) {
+                throw new IOException(resp.message);
             }
 
             // first the protocol version.
             reply = new byte[4];
-            if (read(adbChan, reply) == false) {
-                Log.w("ddms", "got partial reply from ADB fb:");
-                Log.hexDump("ddms", LogLevel.WARN, reply, 0, reply.length);
-                adbChan.close();
-                return null;
-            }
+            read(adbChan, reply);
+
             ByteBuffer buf = ByteBuffer.wrap(reply);
             buf.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -304,12 +300,8 @@ final class AdbHelper {
 
             // read the header
             reply = new byte[headerSize * 4];
-            if (read(adbChan, reply) == false) {
-                Log.w("ddms", "got partial reply from ADB fb:");
-                Log.hexDump("ddms", LogLevel.WARN, reply, 0, reply.length);
-                adbChan.close();
-                return null;
-            }
+            read(adbChan, reply);
+
             buf = ByteBuffer.wrap(reply);
             buf.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -323,15 +315,10 @@ final class AdbHelper {
                     + imageParams.size + ", width=" + imageParams.width
                     + ", height=" + imageParams.height);
 
-            if (write(adbChan, nudge) == false)
-                throw new IOException("failed nudging");
+            write(adbChan, nudge);
 
             reply = new byte[imageParams.size];
-            if (read(adbChan, reply) == false) {
-                Log.w("ddms", "got truncated reply from ADB fb data");
-                adbChan.close();
-                return null;
-            }
+            read(adbChan, reply);
 
             imageParams.data = reply;
         } finally {
@@ -344,12 +331,20 @@ final class AdbHelper {
     }
 
     /**
-     * Execute a command on the device and retrieve the output. The output is
-     * handed to "rcvr" as it arrives.
+     * Executes a shell command on the device and retrieve the output. The output is
+     * handed to <var>rcvr</var> as it arrives.
+     * @param adbSockAddr the {@link InetSocketAddress} to adb.
+     * @param command the shell command to execute
+     * @param device the {@link IDevice} on which to execute the command.
+     * @param rcvr the {@link IShellOutputReceiver} that will receives the output of the shell
+     * command
+     * @param timeout timeout value in ms for the connection. 0 means no timeout.
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
-    public static void executeRemoteCommand(InetSocketAddress adbSockAddr,
-            String command, Device device, IShellOutputReceiver rcvr)
-            throws IOException {
+    static void executeRemoteCommand(InetSocketAddress adbSockAddr,
+            String command, IDevice device, IShellOutputReceiver rcvr, int timeout)
+            throws TimeoutException, IOException {
         Log.v("ddms", "execute: running " + command);
 
         SocketChannel adbChan = null;
@@ -363,17 +358,17 @@ final class AdbHelper {
             setDevice(adbChan, device);
 
             byte[] request = formAdbRequest("shell:" + command); //$NON-NLS-1$
-            if (write(adbChan, request) == false)
-                throw new IOException("failed submitting shell command");
+            write(adbChan, request);
 
             AdbResponse resp = readAdbResponse(adbChan, false /* readDiagString */);
-            if (!resp.ioSuccess || !resp.okay) {
+            if (resp.okay == false) {
                 Log.e("ddms", "ADB rejected shell command (" + command + "): " + resp.message);
                 throw new IOException("sad result from adb: " + resp.message);
             }
 
             byte[] data = new byte[16384];
             ByteBuffer buf = ByteBuffer.wrap(data);
+            int timeoutCount = 0;
             while (true) {
                 int count;
 
@@ -391,10 +386,19 @@ final class AdbHelper {
                     break;
                 } else if (count == 0) {
                     try {
-                        Thread.sleep(WAIT_TIME * 5);
+                        int wait = WAIT_TIME * 5;
+                        timeoutCount += wait;
+                        if (timeout > 0 && timeoutCount > timeout) {
+                            throw new TimeoutException();
+                        }
+                        Thread.sleep(wait);
                     } catch (InterruptedException ie) {
                     }
                 } else {
+                    // reset timeout
+                    timeoutCount = 0;
+
+                    // send data to receiver if present
                     if (rcvr != null) {
                         rcvr.addOutput(buf.array(), buf.arrayOffset(), buf.position());
                     }
@@ -412,26 +416,30 @@ final class AdbHelper {
     /**
      * Runs the Event log service on the {@link Device}, and provides its output to the
      * {@link LogReceiver}.
+     * <p/>This call is blocking until {@link LogReceiver#isCancelled()} returns true.
      * @param adbSockAddr the socket address to connect to adb
      * @param device the Device on which to run the service
      * @param rcvr the {@link LogReceiver} to receive the log output
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
     public static void runEventLogService(InetSocketAddress adbSockAddr, Device device,
-            LogReceiver rcvr) throws IOException {
+            LogReceiver rcvr) throws TimeoutException, IOException {
         runLogService(adbSockAddr, device, "events", rcvr); //$NON-NLS-1$
     }
 
     /**
      * Runs a log service on the {@link Device}, and provides its output to the {@link LogReceiver}.
+     * <p/>This call is blocking until {@link LogReceiver#isCancelled()} returns true.
      * @param adbSockAddr the socket address to connect to adb
      * @param device the Device on which to run the service
      * @param logName the name of the log file to output
      * @param rcvr the {@link LogReceiver} to receive the log output
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
     public static void runLogService(InetSocketAddress adbSockAddr, Device device, String logName,
-            LogReceiver rcvr) throws IOException {
+            LogReceiver rcvr) throws TimeoutException, IOException {
         SocketChannel adbChan = null;
 
         try {
@@ -443,12 +451,10 @@ final class AdbHelper {
             setDevice(adbChan, device);
 
             byte[] request = formAdbRequest("log:" + logName);
-            if (write(adbChan, request) == false) {
-                throw new IOException("failed to submit the log command");
-            }
+            write(adbChan, request);
 
             AdbResponse resp = readAdbResponse(adbChan, false /* readDiagString */);
-            if (!resp.ioSuccess || !resp.okay) {
+            if (resp.okay == false) {
                 throw new IOException("Device rejected log command: " + resp.message);
             }
 
@@ -490,10 +496,11 @@ final class AdbHelper {
      * @param localPort the local port to forward
      * @param remotePort the remote port.
      * @return <code>true</code> if success.
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
     public static boolean createForward(InetSocketAddress adbSockAddr, Device device, int localPort,
-            int remotePort) throws IOException {
+            int remotePort) throws TimeoutException, IOException {
 
         SocketChannel adbChan = null;
         try {
@@ -504,21 +511,18 @@ final class AdbHelper {
                     "host-serial:%1$s:forward:tcp:%2$d;tcp:%3$d", //$NON-NLS-1$
                     device.getSerialNumber(), localPort, remotePort));
 
-            if (write(adbChan, request) == false) {
-                throw new IOException("failed to submit the forward command.");
-            }
+            write(adbChan, request);
 
             AdbResponse resp = readAdbResponse(adbChan, false /* readDiagString */);
-            if (!resp.ioSuccess || !resp.okay) {
-                throw new IOException("Device rejected command: " + resp.message);
+            if (resp.okay == false) {
+                Log.w("create-forward", "Error creating forward: " + resp.message);
             }
+            return resp.okay;
         } finally {
             if (adbChan != null) {
                 adbChan.close();
             }
         }
-
-        return true;
     }
 
     /**
@@ -528,10 +532,11 @@ final class AdbHelper {
      * @param localPort the local port of the forward
      * @param remotePort the remote port.
      * @return <code>true</code> if success.
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
     public static boolean removeForward(InetSocketAddress adbSockAddr, Device device, int localPort,
-            int remotePort) throws IOException {
+            int remotePort) throws TimeoutException, IOException {
 
         SocketChannel adbChan = null;
         try {
@@ -542,21 +547,18 @@ final class AdbHelper {
                     "host-serial:%1$s:killforward:tcp:%2$d;tcp:%3$d", //$NON-NLS-1$
                     device.getSerialNumber(), localPort, remotePort));
 
-            if (!write(adbChan, request)) {
-                throw new IOException("failed to submit the remove forward command.");
-            }
+            write(adbChan, request);
 
             AdbResponse resp = readAdbResponse(adbChan, false /* readDiagString */);
-            if (!resp.ioSuccess || !resp.okay) {
-                throw new IOException("Device rejected command: " + resp.message);
+            if (resp.okay == false) {
+                Log.w("remove-forward", "Error creating forward: " + resp.message);
             }
+            return resp.okay;
         } finally {
             if (adbChan != null) {
                 adbChan.close();
             }
         }
-
-        return true;
     }
 
     /**
@@ -584,22 +586,16 @@ final class AdbHelper {
     /**
      * Reads from the socket until the array is filled, or no more data is coming (because
      * the socket closed or the timeout expired).
+     * <p/>This uses the default time out value.
      *
      * @param chan the opened socket to read from. It must be in non-blocking
      *      mode for timeouts to work
      * @param data the buffer to store the read data into.
-     * @return "true" if all data was read.
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
-    static boolean read(SocketChannel chan, byte[] data) {
-       try {
-           read(chan, data, -1, DdmPreferences.getTimeOut());
-       } catch (IOException e) {
-           Log.d("ddms", "readAll: IOException: " + e.getMessage());
-           return false;
-       }
-
-       return true;
+    static void read(SocketChannel chan, byte[] data) throws TimeoutException, IOException {
+        read(chan, data, -1, DdmPreferences.getTimeOut());
     }
 
     /**
@@ -614,9 +610,9 @@ final class AdbHelper {
      * @param data the buffer to store the read data into.
      * @param length the length to read or -1 to fill the data buffer completely
      * @param timeout The timeout value. A timeout of zero means "wait forever".
-     * @throws IOException
      */
-    static void read(SocketChannel chan, byte[] data, int length, int timeout) throws IOException {
+    static void read(SocketChannel chan, byte[] data, int length, int timeout)
+            throws TimeoutException, IOException {
         ByteBuffer buf = ByteBuffer.wrap(data, 0, length != -1 ? length : data.length);
         int numWaits = 0;
 
@@ -631,7 +627,7 @@ final class AdbHelper {
                 // TODO: need more accurate timeout?
                 if (timeout != 0 && numWaits * WAIT_TIME > timeout) {
                     Log.d("ddms", "read: timeout");
-                    throw new IOException("timeout");
+                    throw new TimeoutException();
                 }
                 // non-blocking spin
                 try {
@@ -646,20 +642,15 @@ final class AdbHelper {
     }
 
     /**
-     * Write until all data in "data" is written or the connection fails.
+     * Write until all data in "data" is written or the connection fails or times out.
+     * <p/>This uses the default time out value.
      * @param chan the opened socket to write to.
      * @param data the buffer to send.
-     * @return "true" if all data was written.
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
-    static boolean write(SocketChannel chan, byte[] data) {
-        try {
-            write(chan, data, -1, DdmPreferences.getTimeOut());
-        } catch (IOException e) {
-            Log.e("ddms", e);
-            return false;
-        }
-
-        return true;
+    static void write(SocketChannel chan, byte[] data) throws TimeoutException, IOException {
+        write(chan, data, -1, DdmPreferences.getTimeOut());
     }
 
     /**
@@ -670,10 +661,11 @@ final class AdbHelper {
      * @param data the buffer to send.
      * @param length the length to write or -1 to send the whole buffer.
      * @param timeout The timeout value. A timeout of zero means "wait forever".
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
     static void write(SocketChannel chan, byte[] data, int length, int timeout)
-            throws IOException {
+            throws TimeoutException, IOException {
         ByteBuffer buf = ByteBuffer.wrap(data, 0, length != -1 ? length : data.length);
         int numWaits = 0;
 
@@ -688,7 +680,7 @@ final class AdbHelper {
                 // TODO: need more accurate timeout?
                 if (timeout != 0 && numWaits * WAIT_TIME > timeout) {
                     Log.d("ddms", "write: timeout");
-                    throw new IOException("timeout");
+                    throw new TimeoutException();
                 }
                 // non-blocking spin
                 try {
@@ -707,19 +699,18 @@ final class AdbHelper {
      *
      * @param adbChan the socket connection to adb
      * @param device The device to talk to.
-     * @throws IOException
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws IOException in case of I/O error on the connection.
      */
-    static void setDevice(SocketChannel adbChan, Device device)
-            throws IOException {
+    static void setDevice(SocketChannel adbChan, IDevice device)
+            throws TimeoutException, IOException {
         // if the device is not -1, then we first tell adb we're looking to talk
         // to a specific device
         if (device != null) {
             String msg = "host:transport:" + device.getSerialNumber(); //$NON-NLS-1$
             byte[] device_query = formAdbRequest(msg);
 
-            if (write(adbChan, device_query) == false)
-                throw new IOException("failed submitting device (" + device +
-                        ") request to ADB");
+            write(adbChan, device_query);
 
             AdbResponse resp = readAdbResponse(adbChan, false /* readDiagString */);
             if (!resp.okay)
@@ -735,7 +726,7 @@ final class AdbHelper {
      * @param into what to reboot into (recovery, bootloader).  Or null to just reboot.
      */
     public static void reboot(String into, InetSocketAddress adbSockAddr,
-            Device device) throws IOException {
+            Device device) throws TimeoutException, IOException {
         byte[] request;
         if (into == null) {
             request = formAdbRequest("reboot:"); //$NON-NLS-1$
@@ -752,8 +743,7 @@ final class AdbHelper {
             // to a specific device
             setDevice(adbChan, device);
 
-            if (write(adbChan, request) == false)
-                throw new IOException("failed asking for reboot");
+            write(adbChan, request);
         } finally {
             if (adbChan != null) {
                 adbChan.close();

@@ -196,21 +196,31 @@ final class DeviceMonitor {
                 }
             } catch (AsynchronousCloseException ace) {
                 // this happens because of a call to Quit. We do nothing, and the loop will break.
+            } catch (TimeoutException ioe) {
+                handleExpectioninMonitorLoop(ioe);
             } catch (IOException ioe) {
-                if (mQuit == false) {
-                    Log.e("DeviceMonitor", "Adb connection Error:" + ioe.getMessage());
-                    mMonitoring = false;
-                    if (mMainAdbConnection != null) {
-                        try {
-                            mMainAdbConnection.close();
-                        } catch (IOException ioe2) {
-                            // we can safely ignore that one.
-                        }
-                        mMainAdbConnection = null;
-                    }
-                }
+                handleExpectioninMonitorLoop(ioe);
             }
         } while (mQuit == false);
+    }
+
+    private void handleExpectioninMonitorLoop(Exception e) {
+        if (mQuit == false) {
+            if (e instanceof TimeoutException) {
+                Log.e("DeviceMonitor", "Adb connection Error: timeout");
+            } else {
+                Log.e("DeviceMonitor", "Adb connection Error:" + e.getMessage());
+            }
+            mMonitoring = false;
+            if (mMainAdbConnection != null) {
+                try {
+                    mMainAdbConnection.close();
+                } catch (IOException ioe) {
+                    // we can safely ignore that one.
+                }
+                mMainAdbConnection = null;
+            }
+        }
     }
 
     /**
@@ -245,30 +255,26 @@ final class DeviceMonitor {
      * @return
      * @throws IOException
      */
-    private boolean sendDeviceListMonitoringRequest() throws IOException {
+    private boolean sendDeviceListMonitoringRequest() throws TimeoutException, IOException {
         byte[] request = AdbHelper.formAdbRequest("host:track-devices"); //$NON-NLS-1$
 
-        if (AdbHelper.write(mMainAdbConnection, request) == false) {
+        try {
+            AdbHelper.write(mMainAdbConnection, request);
+
+            AdbResponse resp = AdbHelper.readAdbResponse(mMainAdbConnection,
+                    false /* readDiagString */);
+
+            if (resp.okay == false) {
+                // request was refused by adb!
+                Log.e("DeviceMonitor", "adb refused request: " + resp.message);
+            }
+
+            return resp.okay;
+        } catch (IOException e) {
             Log.e("DeviceMonitor", "Sending Tracking request failed!");
             mMainAdbConnection.close();
-            throw new IOException("Sending Tracking request failed!");
+            throw e;
         }
-
-        AdbResponse resp = AdbHelper.readAdbResponse(mMainAdbConnection,
-                false /* readDiagString */);
-
-        if (resp.ioSuccess == false) {
-            Log.e("DeviceMonitor", "Failed to read the adb response!");
-            mMainAdbConnection.close();
-            throw new IOException("Failed to read the adb response!");
-        }
-
-        if (resp.okay == false) {
-            // request was refused by adb!
-            Log.e("DeviceMonitor", "adb refused request: " + resp.message);
-        }
-
-        return resp.okay;
     }
 
     /**
@@ -310,6 +316,10 @@ final class DeviceMonitor {
         // because we are going to call mServer.deviceDisconnected which will acquire this lock
         // we lock it first, so that the AndroidDebugBridge lock is always locked first.
         synchronized (AndroidDebugBridge.getLock()) {
+            // array to store the devices that must be queried for information.
+            // it's important to not do it inside the synchronized loop as this could block
+            // the whole workspace (this lock is acquired during build too).
+            ArrayList<Device> devicesToQuery = new ArrayList<Device>();
             synchronized (mDevices) {
                 // For each device in the current list, we look for a matching the new list.
                 // * if we find it, we update the current object with whatever new information
@@ -349,7 +359,7 @@ final class DeviceMonitor {
                                     }
 
                                     if (device.getPropertyCount() == 0) {
-                                        queryNewDeviceForInfo(device);
+                                        devicesToQuery.add(device);
                                     }
                                 }
                             }
@@ -387,9 +397,14 @@ final class DeviceMonitor {
 
                     // look for their build info.
                     if (newDevice.isOnline()) {
-                        queryNewDeviceForInfo(newDevice);
+                        devicesToQuery.add(newDevice);
                     }
                 }
+            }
+
+            // query the new devices for info.
+            for (Device d : devicesToQuery) {
+                queryNewDeviceForInfo(d);
             }
         }
         newList.clear();
@@ -431,13 +446,16 @@ final class DeviceMonitor {
                     device.setAvdName(console.getAvdName());
                 }
             }
+        } catch (TimeoutException e) {
+            Log.w("DeviceMonitor", String.format("Timeout getting device %s info",
+                    device.getSerialNumber()));
         } catch (IOException e) {
             // if we can't get the build info, it doesn't matter too much
         }
     }
 
     private void queryNewDeviceForMountingPoint(final Device device, final String name)
-            throws IOException {
+            throws TimeoutException, IOException {
         device.executeShellCommand("echo $" + name, new MultiLineReceiver() { //$NON-NLS-1$
             public boolean isCancelled() {
                 return false;
@@ -486,6 +504,16 @@ final class DeviceMonitor {
 
                     return true;
                 }
+            } catch (TimeoutException e) {
+                try {
+                    // attempt to close the socket if needed.
+                    socketChannel.close();
+                } catch (IOException e1) {
+                    // we can ignore that one. It may already have been closed.
+                }
+                Log.d("DeviceMonitor",
+                        "Connection Failure when starting to monitor device '"
+                        + device + "' : timeout");
             } catch (IOException e) {
                 try {
                     // attempt to close the socket if needed.
@@ -608,32 +636,30 @@ final class DeviceMonitor {
     }
 
     private boolean sendDeviceMonitoringRequest(SocketChannel socket, Device device)
-            throws IOException {
+            throws TimeoutException, IOException {
 
-        AdbHelper.setDevice(socket, device);
+        try {
+            AdbHelper.setDevice(socket, device);
 
-        byte[] request = AdbHelper.formAdbRequest("track-jdwp"); //$NON-NLS-1$
+            byte[] request = AdbHelper.formAdbRequest("track-jdwp"); //$NON-NLS-1$
 
-        if (AdbHelper.write(socket, request) == false) {
+            AdbHelper.write(socket, request);
+
+            AdbResponse resp = AdbHelper.readAdbResponse(socket, false /* readDiagString */);
+
+            if (resp.okay == false) {
+                // request was refused by adb!
+                Log.e("DeviceMonitor", "adb refused request: " + resp.message);
+            }
+
+            return resp.okay;
+        } catch (TimeoutException e) {
+            Log.e("DeviceMonitor", "Sending jdwp tracking request timed out!");
+            throw e;
+        } catch (IOException e) {
             Log.e("DeviceMonitor", "Sending jdwp tracking request failed!");
-            socket.close();
-            throw new IOException();
+            throw e;
         }
-
-        AdbResponse resp = AdbHelper.readAdbResponse(socket, false /* readDiagString */);
-
-        if (resp.ioSuccess == false) {
-            Log.e("DeviceMonitor", "Failed to read the adb response!");
-            socket.close();
-            throw new IOException();
-        }
-
-        if (resp.okay == false) {
-            // request was refused by adb!
-            Log.e("DeviceMonitor", "adb refused request: " + resp.message);
-        }
-
-        return resp.okay;
     }
 
     private void processIncomingJdwpData(Device device, SocketChannel monitorSocket, int length)
@@ -738,6 +764,10 @@ final class DeviceMonitor {
             clientSocket.configureBlocking(false);
         } catch (UnknownHostException uhe) {
             Log.d("DeviceMonitor", "Unknown Jdwp pid: " + pid);
+            return;
+        } catch (TimeoutException e) {
+            Log.w("DeviceMonitor",
+                    "Failed to connect to client '" + pid + "': timeout");
             return;
         } catch (IOException ioe) {
             Log.w("DeviceMonitor",

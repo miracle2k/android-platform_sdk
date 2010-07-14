@@ -97,7 +97,8 @@ public final class EventLogParser {
                     return false;
                 }
             });
-        } catch (IOException e) {
+        } catch (Exception e) {
+            // catch all possible exceptions and return false.
             return false;
         }
 

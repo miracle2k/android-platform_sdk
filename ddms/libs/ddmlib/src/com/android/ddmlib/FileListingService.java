@@ -16,7 +16,6 @@
 
 package com.android.ddmlib;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -700,7 +699,7 @@ public final class FileListingService {
                                 return false;
                             }
                         });
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         // adb failed somehow, we do nothing.
                     }
                 }
@@ -756,7 +755,8 @@ public final class FileListingService {
 
             // finish the process of the receiver to handle links
             receiver.finishLinks();
-        } catch (IOException e) {
+        } catch (Exception e) {
+            // catch all and do nothing.
         }
 
 
