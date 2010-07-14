@@ -18,10 +18,10 @@ package com.android.ide.eclipse.adt.internal.properties;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper;
-import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.project.ProjectChooserHelper.IProjectChooserFilter;
-import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryState;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState.LibraryState;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
 

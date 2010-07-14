@@ -21,14 +21,13 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.adt.internal.project.ProjectState;
-import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryDifference;
-import com.android.ide.eclipse.adt.internal.project.ProjectState.LibraryState;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IResourceEventListener;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState.LibraryDifference;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState.LibraryState;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
@@ -50,6 +49,7 @@ import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -1004,6 +1004,7 @@ public final class Sdk  {
     private interface ActionBundle {
         enum BundleType { LINK_LIBRARY, UNLINK_LIBRARY };
         BundleType getType();
+        IProject getProject();
     };
 
     /**
@@ -1026,6 +1027,10 @@ public final class Sdk  {
 
         public BundleType getType() {
             return BundleType.LINK_LIBRARY;
+        }
+
+        public IProject getProject() {
+            return mProject;
         }
 
         @Override
@@ -1055,6 +1060,10 @@ public final class Sdk  {
 
         public BundleType getType() {
             return BundleType.UNLINK_LIBRARY;
+        }
+
+        public IProject getProject() {
+            return mProject.getProject();
         }
     }
 
@@ -1107,6 +1116,11 @@ public final class Sdk  {
                                     unlinkLibrary((UnlinkLibraryBundle) bundle, monitor);
                                     break;
                             }
+
+                            // force a recompile
+                            bundle.getProject().build(
+                                    IncrementalProjectBuilder.FULL_BUILD, monitor);
+
                         } catch (Exception e) {
                             AdtPlugin.log(e, "Failed to process bundle: %1$s", //$NON-NLS-1$
                                     bundle.toString());

@@ -198,7 +198,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
                 javaProject.setRawClasspath(entries, new SubProgressMonitor(monitor, 10));
             }
 
-            // refresh sepcifcally the gen folder first, as it may break the build
+            // refresh specifically the gen folder first, as it may break the build
             // if it doesn't arrive in time then refresh the whole project as usual.
             genFolder.refreshLocal(IResource.DEPTH_ZERO, new SubProgressMonitor(monitor, 10));
             project.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 10));

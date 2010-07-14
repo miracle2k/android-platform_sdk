@@ -19,7 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.manifest.pages;
 import com.android.ide.eclipse.adt.internal.editors.manifest.ManifestEditor;
 import com.android.ide.eclipse.adt.internal.editors.ui.SectionHelper.ManifestSectionPart;
 import com.android.ide.eclipse.adt.internal.project.ExportHelper;
-import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 
 import org.eclipse.core.resources.IFile;

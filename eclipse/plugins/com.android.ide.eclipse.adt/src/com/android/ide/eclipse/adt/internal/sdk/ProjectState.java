@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.project;
+package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
@@ -173,7 +172,7 @@ public final class ProjectState {
      */
     private final ArrayList<ProjectState> mParentProjects = new ArrayList<ProjectState>();
 
-    public ProjectState(IProject project, ProjectProperties properties) {
+    ProjectState(IProject project, ProjectProperties properties) {
         if (project == null || properties == null) {
             throw new NullPointerException();
         }

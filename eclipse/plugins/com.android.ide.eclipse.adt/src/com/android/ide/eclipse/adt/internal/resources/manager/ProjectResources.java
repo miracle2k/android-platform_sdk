@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
-import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -24,6 +23,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfi
 import com.android.ide.eclipse.adt.internal.resources.configurations.LanguageQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.RegionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
 import com.android.layoutlib.api.IResourceValue;
