@@ -19,15 +19,12 @@ package com.android.ide.eclipse.adt.internal.project;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
-import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
+import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 
 import java.io.File;
@@ -177,6 +174,10 @@ public final class ProjectState {
     private final ArrayList<ProjectState> mParentProjects = new ArrayList<ProjectState>();
 
     public ProjectState(IProject project, ProjectProperties properties) {
+        if (project == null || properties == null) {
+            throw new NullPointerException();
+        }
+
         mProject = project;
         mProperties = properties;
 
@@ -224,11 +225,7 @@ public final class ProjectState {
             return mTarget.hashString();
         }
 
-        if (mProperties != null) {
-            return mProperties.getProperty(ProjectProperties.PROPERTY_TARGET);
-        }
-
-        return null;
+        return mProperties.getProperty(ProjectProperties.PROPERTY_TARGET);
     }
 
     public IAndroidTarget getTarget() {
@@ -552,29 +549,15 @@ public final class ProjectState {
     }
 
     /**
-     * Saves the default.properties file and refreshes it to make sure that it gets reloaded
-     * by Eclipse
-     * @throws Exception
+     * Update the value of a library dependency.
+     * <p/>This loops on all current dependency looking for the value to replace and then replaces
+     * it.
+     * <p/>This both updates the in-memory {@link #mProperties} values and on-disk
+     * default.properties file.
+     * @param oldValue the old value to replace
+     * @param newValue the new value to set.
+     * @return the status of the replacement. If null, no replacement was done (value not found).
      */
-    public void saveProperties() throws CoreException {
-        try {
-            mProperties.save();
-
-            IResource defaultProp = mProject.findMember(SdkConstants.FN_DEFAULT_PROPERTIES);
-            defaultProp.refreshLocal(IResource.DEPTH_ZERO, new NullProgressMonitor());
-        } catch (Exception e) {
-            String msg = String.format(
-                    "Failed to save %1$s for project %2$s",
-                    SdkConstants.FN_DEFAULT_PROPERTIES, mProject.getName());
-            AdtPlugin.log(e, msg);
-            if (e instanceof CoreException) {
-                throw (CoreException)e;
-            } else {
-                throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID, msg, e));
-            }
-        }
-    }
-
     private IStatus replaceLibraryProperty(String oldValue, String newValue) {
         int index = 1;
         while (true) {
@@ -586,9 +569,15 @@ public final class ProjectState {
             }
 
             if (rootPath.equals(oldValue)) {
-                mProperties.setProperty(propName, newValue);
+                // need to update the properties. Get a working copy to change it and save it on
+                // disk since ProjectProperties is read-only.
+                ProjectPropertiesWorkingCopy workingCopy = mProperties.makeWorkingCopy();
+                workingCopy.setProperty(propName, newValue);
                 try {
-                    mProperties.save();
+                    workingCopy.save();
+
+                    // reload the properties with the new values from the disk.
+                    mProperties.reload();
                 } catch (Exception e) {
                     return new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID, String.format(
                             "Failed to save %1$s for project %2$s",
