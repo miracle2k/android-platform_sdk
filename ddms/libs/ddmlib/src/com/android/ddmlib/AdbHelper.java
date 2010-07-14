@@ -338,9 +338,12 @@ final class AdbHelper {
      * @param device the {@link IDevice} on which to execute the command.
      * @param rcvr the {@link IShellOutputReceiver} that will receives the output of the shell
      * command
-     * @param timeout timeout value in ms for the connection. 0 means no timeout.
+     * @param timeout timeout value in ms for the connection. 0 means no timeout. This only affects
+     * the timeout for reading the command output. Execution setup uses the normal timeout.
      * @throws TimeoutException in case of timeout on the connection.
      * @throws IOException in case of I/O error on the connection.
+     *
+     * @see DdmPreferences#getTimeOut()
      */
     static void executeRemoteCommand(InetSocketAddress adbSockAddr,
             String command, IDevice device, IShellOutputReceiver rcvr, int timeout)
