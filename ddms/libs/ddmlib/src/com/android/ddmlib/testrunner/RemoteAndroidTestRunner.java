@@ -36,6 +36,9 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     private final String mPackageName;
     private final  String mRunnerName;
     private IDevice mRemoteDevice;
+    // default to no timeout
+    private int mAdbTimeout = 0;
+
     /** map of name-value instrumentation argument pairs */
     private Map<String, String> mArgMap;
     private InstrumentationResultParser mParser;
@@ -202,6 +205,13 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     /**
      * {@inheritDoc}
      */
+    public void setTimeout(int timeout) {
+        mAdbTimeout = timeout;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void run(ITestRunListener... listeners)  throws IOException, TimeoutException {
         run(Arrays.asList(listeners));
     }
@@ -216,7 +226,7 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
                 mRemoteDevice.getSerialNumber()));
         mParser = new InstrumentationResultParser(listeners);
 
-        mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser);
+        mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser, mAdbTimeout);
     }
 
     /**

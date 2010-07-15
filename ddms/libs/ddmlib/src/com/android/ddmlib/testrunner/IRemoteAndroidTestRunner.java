@@ -16,6 +16,7 @@
 
 package com.android.ddmlib.testrunner;
 
+import com.android.ddmlib.IDevice;
 import com.android.ddmlib.TimeoutException;
 
 import java.io.IOException;
@@ -168,6 +169,15 @@ public interface IRemoteAndroidTestRunner {
      * Sets this code coverage mode of this test run.
      */
     public void setCoverage(boolean coverage);
+
+    /**
+     * Sets the timeout to use for the adb shell command issued.
+     * <p/>
+     * By default no timeout will be specified.
+     *
+     * @see {@link IDevice#executeShellCommand(String, com.android.ddmlib.IShellOutputReceiver, int)}
+     */
+    public void setTimeout(int timeout);
 
     /**
      * Execute this test run.

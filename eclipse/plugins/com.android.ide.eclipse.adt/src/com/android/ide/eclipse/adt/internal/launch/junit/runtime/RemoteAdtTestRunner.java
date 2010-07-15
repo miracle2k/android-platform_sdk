@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.launch.junit.runtime;
 
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.testrunner.ITestRunListener;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.ddmlib.testrunner.TestIdentifier;
@@ -125,6 +126,8 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
             }
             AdtPlugin.printToConsole(mLaunchInfo.getProject(), "Running tests...");
             runner.run(new TestRunListener());
+        } catch (TimeoutException e) {
+            reportError(LaunchMessages.RemoteAdtTestRunner_RunTimeoutException);
         } catch (IOException e) {
             reportError(String.format(LaunchMessages.RemoteAdtTestRunner_RunIOException_s,
                     e.getMessage()));

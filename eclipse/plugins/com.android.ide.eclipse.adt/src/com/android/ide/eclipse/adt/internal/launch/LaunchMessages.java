@@ -44,6 +44,7 @@ public class LaunchMessages extends NLS {
     public static String RemoteAdtTestRunner_RunFailedMsg_s;
 
     public static String RemoteAdtTestRunner_RunIOException_s;
+    public static String RemoteAdtTestRunner_RunTimeoutException;
     public static String RemoteAdtTestRunner_RunStoppedMsg;
 
     static {
