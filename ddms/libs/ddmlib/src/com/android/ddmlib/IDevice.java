@@ -21,7 +21,6 @@ import com.android.ddmlib.log.LogReceiver;
 import java.io.IOException;
 import java.util.Map;
 
-
 /**
  *  A Device. It can be a physical device or an emulator.
  */
@@ -65,6 +64,7 @@ public interface IDevice {
 
         /**
          * Returns a {@link DeviceState} from the string returned by <code>adb devices</code>.
+         *
          * @param state the device state.
          * @return a {@link DeviceState} object or <code>null</code> if the state is unknown.
          */
@@ -88,6 +88,7 @@ public interface IDevice {
      * <p/>This is only valid if {@link #isEmulator()} returns true.
      * <p/>If the emulator is not running any AVD (for instance it's running from an Android source
      * tree build), this method will return "<code>&lt;build&gt;</code>".
+     *
      * @return the name of the AVD or <code>null</code> if there isn't any.
      */
     public String getAvdName();
@@ -109,6 +110,7 @@ public interface IDevice {
 
     /**
      * Returns a property value.
+     *
      * @param name the name of the value to return.
      * @return the value or <code>null</code> if the property does not exist.
      */
@@ -116,6 +118,7 @@ public interface IDevice {
 
     /**
      * Returns a mount point.
+     *
      * @param name the name of the mount point to return
      *
      * @see #MNT_EXTERNAL_STORAGE
@@ -126,6 +129,7 @@ public interface IDevice {
 
     /**
      * Returns if the device is ready.
+     *
      * @return <code>true</code> if {@link #getState()} returns {@link DeviceState#ONLINE}.
      */
     public boolean isOnline();
@@ -137,12 +141,14 @@ public interface IDevice {
 
     /**
      * Returns if the device is offline.
+     *
      * @return <code>true</code> if {@link #getState()} returns {@link DeviceState#OFFLINE}.
      */
     public boolean isOffline();
 
     /**
      * Returns if the device is in bootloader mode.
+     *
      * @return <code>true</code> if {@link #getState()} returns {@link DeviceState#BOOTLOADER}.
      */
     public boolean isBootLoader();
@@ -159,6 +165,7 @@ public interface IDevice {
 
     /**
      * Returns a {@link Client} by its application name.
+     *
      * @param applicationName the name of the application
      * @return the <code>Client</code> object or <code>null</code> if no match was found.
      */
@@ -166,12 +173,16 @@ public interface IDevice {
 
     /**
      * Returns a {@link SyncService} object to push / pull files to and from the device.
+     *
      * @return <code>null</code> if the SyncService couldn't be created. This can happen if adb
-     * refuse to open the connection because the {@link IDevice} is invalid (or got disconnected).
+     *            refuse to open the connection because the {@link IDevice} is invalid
+     *            (or got disconnected).
      * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
      * @throws IOException if the connection with adb failed.
      */
-    public SyncService getSyncService() throws TimeoutException, IOException;
+    public SyncService getSyncService()
+            throws TimeoutException, AdbCommandRejectedException, IOException;
 
     /**
      * Returns a {@link FileListingService} for this device.
@@ -180,55 +191,68 @@ public interface IDevice {
 
     /**
      * Takes a screen shot of the device and returns it as a {@link RawImage}.
-     * @return the screenshot as a <code>RawImage</code> or <code>null</code> if
-     * something went wrong.
+     *
+     * @return the screenshot as a <code>RawImage</code> or <code>null</code> if something
+     *            went wrong.
      * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
      * @throws IOException in case of I/O error on the connection.
      */
-    public RawImage getScreenshot() throws TimeoutException, IOException;
+    public RawImage getScreenshot() throws TimeoutException, AdbCommandRejectedException,
+            IOException;
 
     /**
      * Executes a shell command on the device, and sends the result to a <var>receiver</var>
-     * <p/>This use the default timeout value returned by {@link DdmPreferences#getTimeOut()}.
+     * <p/>This is similar to calling
+     * <code>executeShellCommand(command, receiver, DdmPreferences.getTimeOut())</code>.
+     *
      * @param command the shell command to execute
      * @param receiver the {@link IShellOutputReceiver} that will receives the output of the shell
-     * command
+     *            command
      * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
+     * @throws ShellCommandUnresponsiveException in case the shell command doesn't send output
+     *            for a given time.
      * @throws IOException in case of I/O error on the connection.
      *
      * @see #executeShellCommand(String, IShellOutputReceiver, int)
+     * @see DdmPreferences#getTimeOut()
      */
-    public void executeShellCommand(String command,
-            IShellOutputReceiver receiver) throws TimeoutException, IOException;
+    public void executeShellCommand(String command, IShellOutputReceiver receiver)
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException;
 
     /**
      * Executes a shell command on the device, and sends the result to a <var>receiver</var>.
-     * <p/>The timeout value is used as a maximum waiting time when expecting the command
-     * output from the device.<br>
-     * If the shell command takes a long time to run before outputting anything, this may be
-     * impacted by the timeout. For instance, if the command outputs one line every 10sec but the
-     * timeout is set to 5sec (default value) then the method will timeout.
-     * <p/>For commands like log output, a timeout value of 0 (no timeout, always blocking till the
-     * receiver's {@link IShellOutputReceiver#isCancelled()} return <code>true</code> should be
+     * <p/><var>maxTimeToOutputResponse</var> is used as a maximum waiting time when expecting the
+     * command output from the device.<br>
+     * At any time, if the shell command does not output anything for a period longer than
+     * <var>maxTimeToOutputResponse</var>, then the method will throw
+     * {@link ShellCommandUnresponsiveException}.
+     * <p/>For commands like log output, a <var>maxTimeToOutputResponse</var> value of 0, meaning
+     * that the method will never throw and will block until the receiver's
+     * {@link IShellOutputReceiver#isCancelled()} returns <code>true</code>, should be
      * used.
-     * <p/>When setting up the shell command to run, the normal timeout value is used while
-     * communicating with adb.
      *
      * @param command the shell command to execute
      * @param receiver the {@link IShellOutputReceiver} that will receives the output of the shell
-     * command
-     * @param timeout timeout value in ms for the connection.
-     * @param timeout the timeout. timeout value in ms for the connection.If 0, there is no timeout.
-     * @throws TimeoutException in case of timeout on the connection. Even with a timeout parameter
-     * of 0, timeout can happen during the setup of the shell command. Once command has launched,
-     * no timeout will occur as it's not possible to detect a difference between no output and
-     * no timeout.
+     *            command
+     * @param maxTimeToOutputResponse the maximum amount of time during which the command is allowed
+     *            to not output any response. A value of 0 means the method will wait forever
+     *            (until the <var>receiver</var> cancels the execution) for command output and
+     *            never throw.
+     * @throws TimeoutException in case of timeout on the connection when sending the command.
+     * @throws AdbCommandRejectedException if adb rejects the command.
+     * @throws ShellCommandUnresponsiveException in case the shell command doesn't send any output
+     *            for a period longer than <var>maxTimeToOutputResponse</var>.
      * @throws IOException in case of I/O error on the connection.
      *
      * @see DdmPreferences#getTimeOut()
      */
-    public void executeShellCommand(String command,
-            IShellOutputReceiver receiver, int timeout) throws TimeoutException, IOException;
+    public void executeShellCommand(String command, IShellOutputReceiver receiver,
+            int maxTimeToOutputResponse)
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException;
 
     /**
      * Runs the event log service and outputs the event log to the {@link LogReceiver}.
@@ -237,38 +261,52 @@ public interface IDevice {
      * @throws TimeoutException in case of timeout on the connection. This can only be thrown if the
      * timeout happens during setup. Once logs start being received, no timeout will occur as it's
      * not possible to detect a difference between no log and timeout.
+     * @throws AdbCommandRejectedException if adb rejects the command
      * @throws IOException in case of I/O error on the connection.
      */
-    public void runEventLogService(LogReceiver receiver) throws TimeoutException, IOException;
+    public void runEventLogService(LogReceiver receiver)
+            throws TimeoutException, AdbCommandRejectedException, IOException;
 
     /**
      * Runs the log service for the given log and outputs the log to the {@link LogReceiver}.
      * <p/>This call is blocking until {@link LogReceiver#isCancelled()} returns true.
+     *
      * @param logname the logname of the log to read from.
      * @param receiver the receiver to receive the event log entries.
      * @throws TimeoutException in case of timeout on the connection. This can only be thrown if the
-     * timeout happens during setup. Once logs start being received, no timeout will occur as it's
-     * not possible to detect a difference between no log and timeout.
+     *            timeout happens during setup. Once logs start being received, no timeout will
+     *            occur as it's not possible to detect a difference between no log and timeout.
+     * @throws AdbCommandRejectedException if adb rejects the command
      * @throws IOException in case of I/O error on the connection.
      */
     public void runLogService(String logname, LogReceiver receiver)
-            throws TimeoutException, IOException;
+            throws TimeoutException, AdbCommandRejectedException, IOException;
 
     /**
      * Creates a port forwarding between a local and a remote port.
+     *
      * @param localPort the local port to forward
      * @param remotePort the remote port.
      * @return <code>true</code> if success.
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
+     * @throws IOException in case of I/O error on the connection.
      */
-    public boolean createForward(int localPort, int remotePort);
+    public void createForward(int localPort, int remotePort)
+            throws TimeoutException, AdbCommandRejectedException, IOException;
 
     /**
      * Removes a port forwarding between a local and a remote port.
+     *
      * @param localPort the local port to forward
      * @param remotePort the remote port.
      * @return <code>true</code> if success.
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
+     * @throws IOException in case of I/O error on the connection.
      */
-    public boolean removeForward(int localPort, int remotePort);
+    public void removeForward(int localPort, int remotePort)
+            throws TimeoutException, AdbCommandRejectedException, IOException;
 
     /**
      * Returns the name of the client by pid or <code>null</code> if pid is unknown
@@ -280,57 +318,84 @@ public interface IDevice {
      * Installs an Android application on device.
      * This is a helper method that combines the syncPackageToDevice, installRemotePackage,
      * and removePackage steps
+     *
      * @param packageFilePath the absolute file system path to file on local host to install
      * @param reinstall set to <code>true</code> if re-install of app should be performed
      * @return a {@link String} with an error code, or <code>null</code> if success.
      * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
+     * @throws ShellCommandUnresponsiveException if the device didn't respond for long time when
+     *            performing the action.
      * @throws IOException in case of I/O error on the connection.
      */
     public String installPackage(String packageFilePath, boolean reinstall)
-            throws TimeoutException, IOException;
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException;
 
     /**
      * Pushes a file to device
+     *
      * @param localFilePath the absolute path to file on local host
      * @return {@link String} destination path on device for file
      * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
      * @throws IOException in case of I/O error on the connection.
      */
     public String syncPackageToDevice(String localFilePath)
-            throws TimeoutException, IOException;
+            throws TimeoutException, AdbCommandRejectedException, IOException;
 
     /**
      * Installs the application package that was pushed to a temporary location on the device.
+     *
      * @param remoteFilePath absolute file path to package file on device
      * @param reinstall set to <code>true</code> if re-install of app should be performed
      * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
+     * @throws ShellCommandUnresponsiveException if the device didn't respond for long time when
+     *            performing the action.
      * @throws IOException if installation failed
      */
     public String installRemotePackage(String remoteFilePath, boolean reinstall)
-            throws TimeoutException, IOException;
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException;
 
     /**
-     * Remove a file from device
+     * Removes a file from device.
+     *
      * @param remoteFilePath path on device of file to remove
      * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
+     * @throws ShellCommandUnresponsiveException if the device didn't respond for long time when
+     *            performing the action.
      * @throws IOException if file removal failed
      */
-    public void removeRemotePackage(String remoteFilePath) throws TimeoutException, IOException;
+    public void removeRemotePackage(String remoteFilePath)
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException;
 
     /**
-     * Uninstall an package from the device.
+     * Uninstalls an package from the device.
+     *
      * @param packageName the Android application package name to uninstall
      * @return a {@link String} with an error code, or <code>null</code> if success.
      * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
+     * @throws ShellCommandUnresponsiveException if the device didn't respond for long time when
+     *            performing the action.
      * @throws IOException
      */
-    public String uninstallPackage(String packageName) throws TimeoutException, IOException;
+    public String uninstallPackage(String packageName)
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException;
 
     /**
      * Reboot the device.
      *
      * @param into the bootloader name to reboot into, or null to just reboot the device.
+     * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
      * @throws IOException
      */
-    public void reboot(String into) throws TimeoutException, IOException;
+    public void reboot(String into)
+            throws TimeoutException, AdbCommandRejectedException, IOException;
 }

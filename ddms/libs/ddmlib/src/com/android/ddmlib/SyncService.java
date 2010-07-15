@@ -214,9 +214,10 @@ public final class SyncService {
      * @return true if the connection opened, false if adb refuse the connection. This can happen
      * if the {@link Device} is invalid.
      * @throws TimeoutException in case of timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
      * @throws IOException If the connection to adb failed.
      */
-    boolean openSync() throws TimeoutException, IOException {
+    boolean openSync() throws TimeoutException, AdbCommandRejectedException, IOException {
         try {
             mChannel = SocketChannel.open(mAddress);
             mChannel.configureBlocking(false);

@@ -19,6 +19,8 @@ package com.android.ddmlib.testrunner;
 
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.AdbCommandRejectedException;
+import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
 
 import java.io.IOException;
@@ -37,7 +39,7 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     private final  String mRunnerName;
     private IDevice mRemoteDevice;
     // default to no timeout
-    private int mAdbTimeout = 0;
+    private int mMaxTimeToOutputResponse = 0;
 
     /** map of name-value instrumentation argument pairs */
     private Map<String, String> mArgMap;
@@ -205,28 +207,32 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
     /**
      * {@inheritDoc}
      */
-    public void setTimeout(int timeout) {
-        mAdbTimeout = timeout;
+    public void setMaxtimeToOutputResponse(int maxTimeToOutputResponse) {
+        mMaxTimeToOutputResponse = maxTimeToOutputResponse;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void run(ITestRunListener... listeners)  throws IOException, TimeoutException {
+    public void run(ITestRunListener... listeners)
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException {
         run(Arrays.asList(listeners));
     }
 
     /**
      * {@inheritDoc}
      */
-    public void run(Collection<ITestRunListener> listeners)  throws TimeoutException, IOException {
+    public void run(Collection<ITestRunListener> listeners)
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException {
         final String runCaseCommandStr = String.format("am instrument -w -r %s %s",
             getArgsCommand(), getRunnerPath());
         Log.i(LOG_TAG, String.format("Running %s on %s", runCaseCommandStr,
                 mRemoteDevice.getSerialNumber()));
         mParser = new InstrumentationResultParser(listeners);
 
-        mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser, mAdbTimeout);
+        mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser, mMaxTimeToOutputResponse);
     }
 
     /**

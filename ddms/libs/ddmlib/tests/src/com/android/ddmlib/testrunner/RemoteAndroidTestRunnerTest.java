@@ -144,7 +144,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
             return mLastShellCommand;
         }
 
-        public boolean createForward(int localPort, int remotePort) {
+        public void createForward(int localPort, int remotePort) {
             throw new UnsupportedOperationException();
         }
 
@@ -216,7 +216,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
             throw new UnsupportedOperationException();
         }
 
-        public boolean removeForward(int localPort, int remotePort) {
+        public void removeForward(int localPort, int remotePort) {
             throw new UnsupportedOperationException();
         }
 
