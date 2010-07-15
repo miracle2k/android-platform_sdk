@@ -39,7 +39,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.IJavaProject;
 import org.xml.sax.SAXException;
 
@@ -423,19 +422,34 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
     }
 
     /**
-     * Recursively delete all the derived resources.
+     * Recursively delete all the derived resources from a root resource. The root resource is not
+     * deleted.
+     * @param rootResource the root resource
+     * @param monitor a progress monitor.
+     * @throws CoreException
+     *
      */
-    protected void removeDerivedResources(IResource resource, IProgressMonitor monitor)
+    protected void removeDerivedResources(IResource rootResource, IProgressMonitor monitor)
             throws CoreException {
-        if (resource.exists()) {
-            if (resource.isDerived()) {
-                resource.delete(true, new SubProgressMonitor(monitor, 10));
-            } else if (resource.getType() == IResource.FOLDER) {
-                IFolder folder = (IFolder)resource;
+        removeDerivedResources(rootResource, false, monitor);
+    }
+
+    private void removeDerivedResources(IResource rootResource, boolean deleteRoot,
+            IProgressMonitor monitor)
+            throws CoreException {
+        if (rootResource.exists()) {
+            if (rootResource.getType() == IResource.FOLDER) {
+                IFolder folder = (IFolder)rootResource;
                 IResource[] members = folder.members();
                 for (IResource member : members) {
-                    removeDerivedResources(member, monitor);
+                    removeDerivedResources(member, true /*deleteRoot*/, monitor);
                 }
+            } else if (rootResource.isDerived()) {
+                rootResource.getLocation().toFile().delete();
+            }
+
+            if (deleteRoot) {
+                rootResource.getLocation().toFile().delete();
             }
         }
     }

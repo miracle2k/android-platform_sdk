@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.wizards.export;
 
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard.ExportWizardPage;
 import com.android.sdklib.internal.project.ApkSettings;

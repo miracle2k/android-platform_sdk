@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.properties;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;

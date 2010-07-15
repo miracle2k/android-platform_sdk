@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper.IProjectFilter;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 
 import org.eclipse.core.resources.IProject;

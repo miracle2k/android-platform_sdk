@@ -22,7 +22,7 @@ import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.ApkInstallManager;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.adt.internal.project.ProjectState;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;

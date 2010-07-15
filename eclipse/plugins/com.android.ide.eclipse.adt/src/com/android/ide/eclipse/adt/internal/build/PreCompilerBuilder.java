@@ -24,8 +24,8 @@ import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.FixLaunchConfig;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.adt.internal.project.ProjectState;
 import com.android.ide.eclipse.adt.internal.project.XmlErrorHandler.BasicXmlErrorListener;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
@@ -47,7 +47,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.IJavaProject;
@@ -252,6 +251,10 @@ public class PreCompilerBuilder extends BaseBuilder {
             if (kind == FULL_BUILD) {
                 AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                         Messages.Start_Full_Pre_Compiler);
+
+                // do some clean up.
+                doClean(project, monitor);
+
                 mMustCompileResources = true;
                 buildAidlCompilationList(project, sourceFolderPathList);
             } else {
@@ -478,15 +481,16 @@ public class PreCompilerBuilder extends BaseBuilder {
                     flc.start();
                 }
 
-                // now we delete the generated classes from their previous location
-                deleteObsoleteGeneratedClass(AndroidConstants.FN_RESOURCE_CLASS,
-                        mManifestPackage);
-                deleteObsoleteGeneratedClass(AndroidConstants.FN_MANIFEST_CLASS,
-                        mManifestPackage);
-
                 // record the new manifest package, and save it.
                 mManifestPackage = javaPackage;
                 saveProjectStringProperty(PROPERTY_PACKAGE, mManifestPackage);
+
+                // force a clean
+                doClean(project, monitor);
+                mMustCompileResources = true;
+                buildAidlCompilationList(project, sourceFolderPathList);
+
+                saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES , mMustCompileResources);
             }
 
             if (mMustCompileResources) {
@@ -513,19 +517,26 @@ public class PreCompilerBuilder extends BaseBuilder {
     protected void clean(IProgressMonitor monitor) throws CoreException {
         super.clean(monitor);
 
-        // Get the project.
-        IProject project = getProject();
+        doClean(getProject(), monitor);
+        if (mGenFolder != null) {
+            mGenFolder.refreshLocal(IResource.DEPTH_INFINITE, monitor);
+        }
+    }
 
+    private void doClean(IProject project, IProgressMonitor monitor) throws CoreException {
         AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                 Messages.Removing_Generated_Classes);
 
         // remove all the derived resources from the 'gen' source folder.
-        removeDerivedResources(mGenFolder, monitor);
+        if (mGenFolder != null) {
+            removeDerivedResources(mGenFolder, monitor);
+        }
 
         // Clear the project of the generic markers
         removeMarkersFromProject(project, AndroidConstants.MARKER_AAPT_COMPILE);
         removeMarkersFromProject(project, AndroidConstants.MARKER_XML);
         removeMarkersFromProject(project, AndroidConstants.MARKER_AIDL);
+
     }
 
     @Override
@@ -662,7 +673,7 @@ public class PreCompilerBuilder extends BaseBuilder {
         // we actually need to delete the manifest.java as it may become empty and
         // in this case aapt doesn't generate an empty one, but instead doesn't
         // touch it.
-        manifestJavaFile.delete(true, null);
+        manifestJavaFile.getLocation().toFile().delete();
 
         // launch aapt: create the command line
         ArrayList<String> array = new ArrayList<String>();
@@ -780,40 +791,6 @@ public class PreCompilerBuilder extends BaseBuilder {
             // and store it
             saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES,
                     mMustCompileResources);
-        }
-    }
-
-    /**
-     * Delete the a generated java class associated with the specified java package.
-     * @param filename Name of the generated file to remove.
-     * @param javaPackage the old java package
-     */
-    private void deleteObsoleteGeneratedClass(String filename, String javaPackage) {
-        if (javaPackage == null) {
-            return;
-        }
-
-        IPath packagePath = getJavaPackagePath(javaPackage);
-        IPath iPath = packagePath.append(filename);
-
-        // Find a matching resource object.
-        IResource javaFile = mGenFolder.findMember(iPath);
-        if (javaFile != null && javaFile.exists() && javaFile.getType() == IResource.FILE) {
-            try {
-                // delete
-                javaFile.delete(true, null);
-
-                // refresh parent
-                javaFile.getParent().refreshLocal(IResource.DEPTH_ONE, new NullProgressMonitor());
-
-            } catch (CoreException e) {
-                // failed to delete it, the user will have to delete it manually.
-                String message = String.format(Messages.Delete_Obsolete_Error,
-                        javaFile.getFullPath());
-                IProject project = getProject();
-                AdtPlugin.printErrorToConsole(project, message);
-                AdtPlugin.printErrorToConsole(project, e.getMessage());
-            }
         }
     }
 
@@ -951,10 +928,7 @@ public class PreCompilerBuilder extends BaseBuilder {
             if (javaFile.exists()) {
                 // This confirms the java file was generated by the builder,
                 // we can delete the aidlFile.
-                javaFile.delete(true, null);
-
-                // Refresh parent.
-                javaFile.getParent().refreshLocal(IResource.DEPTH_ONE, monitor);
+                javaFile.getLocation().toFile().delete();
             }
         }
 
