@@ -86,6 +86,7 @@ import java.util.Map.Entry;
  */
 public final class Sdk  {
     private static final String PROP_LIBRARY = "_library"; //$NON-NLS-1$
+    private static final String PROP_LIBRARY_NAME = "_library_name"; //$NON-NLS-1$
     public static final String CREATOR_ADT = "ADT";        //$NON-NLS-1$
     public static final String PROP_CREATOR = "_creator";  //$NON-NLS-1$
     private final static Object sLock = new Object();
@@ -744,6 +745,9 @@ public final class Sdk  {
                     for (ProjectState projectState : sProjectStateMap.values()) {
                         LibraryState libState = projectState.getLibrary(project);
                         if (libState != null) {
+                            // get the current libraries.
+                            IProject[] oldLibraries = projectState.getFullLibraryProjects();
+
                             // the unlink below will work in the job, but we need to close
                             // the library right away.
                             // This is because in case of a rename of a project, projectClosed and
@@ -752,9 +756,13 @@ public final class Sdk  {
                             // state up to date.
                             libState.close();
 
+
                             // edit the project to remove the linked source folder.
                             // this also calls LibraryState.close();
-                            startActionBundle(new UnlinkLibraryBundle(projectState, project));
+                            LinkUpdateBundle bundle = getLinkBundle(projectState, oldLibraries);
+                            if (bundle != null) {
+                                queueLinkUpdateBundle(bundle);
+                            }
 
                             if (projectState.isLibrary()) {
                                 updatedLibraries.add(projectState);
@@ -821,17 +829,14 @@ public final class Sdk  {
                         }
                     }
 
-                    if (libsToLink.size() > 0) {
-                        // link the libraries to the opened project through the job by adding an
-                        // action bundle to the queue.
-                        LinkLibraryBundle bundle = new LinkLibraryBundle();
-                        bundle.mProject = openedProject;
-                        bundle.mLibraryProjects = libsToLink.toArray(
-                                new IProject[libsToLink.size()]);
-                        bundle.mPreviousLibraryPath = null;
-                        bundle.mCleanupCPE = true;
-                        startActionBundle(bundle);
-                    }
+                    // create a link bundle always, because even if there's no libraries to add
+                    // to the CPE, the cleaning of invalid CPE must happen.
+                    LinkUpdateBundle bundle = new LinkUpdateBundle();
+                    bundle.mProject = openedProject;
+                    bundle.mNewLibraryProjects = libsToLink.toArray(
+                            new IProject[libsToLink.size()]);
+                    bundle.mCleanupCPE = true;
+                    queueLinkUpdateBundle(bundle);
                 }
 
                 // if the project is a library, then add it to the list of projects being opened.
@@ -847,6 +852,7 @@ public final class Sdk  {
         }
 
         public void projectRenamed(IProject project, IPath from) {
+            System.out.println("RENAMED: " + project);
             // a project was renamed.
             // if the project is a library, look for any project that depended on it
             // and update it. (default.properties and linked source folder)
@@ -865,17 +871,27 @@ public final class Sdk  {
                             IPath newRelativePath = makeRelativeTo(project.getFullPath(),
                                     projectState.getProject().getFullPath());
 
+                            // get the current libraries
+                            IProject[] oldLibraries = projectState.getFullLibraryProjects();
+
                             // update the library for the main project.
                             LibraryState libState = projectState.updateLibrary(
                                     oldRelativePath.toString(), newRelativePath.toString(),
                                     renamedState);
                             if (libState != null) {
-                                LinkLibraryBundle bundle = new LinkLibraryBundle();
-                                bundle.mProject = projectState.getProject();
-                                bundle.mLibraryProjects = new IProject[] {
-                                        libState.getProjectState().getProject() };
-                                bundle.mCleanupCPE = false;
-                                startActionBundle(bundle);
+                                // this project depended on the renamed library, create a bundle
+                                // with the whole library difference (in case the renamed library
+                                // also depends on libraries).
+
+                                LinkUpdateBundle bundle = getLinkBundle(projectState,
+                                        oldLibraries);
+                                queueLinkUpdateBundle(bundle);
+
+                                // add it to the opened projects to update whatever depends
+                                // on it
+                                if (projectState.isLibrary()) {
+                                    mOpenedLibraryProjects.add(projectState);
+                                }
                             }
                         }
                     }
@@ -903,6 +919,9 @@ public final class Sdk  {
                     // get the current library flag
                     boolean wasLibrary = state.isLibrary();
 
+                    // get the current list of project dependencies
+                    IProject[] oldLibraries = state.getFullLibraryProjects();
+
                     LibraryDifference diff = state.reloadProperties();
 
                     // load the (possibly new) target.
@@ -915,45 +934,29 @@ public final class Sdk  {
 
                     // reload the libraries if needed
                     if (diff.hasDiff()) {
-                        for (LibraryState removedState : diff.removed) {
-                            ProjectState removedPState = removedState.getProjectState();
-                            if (removedPState != null) {
-                                startActionBundle(
-                                        new UnlinkLibraryBundle(
-                                                state, removedPState.getProject()));
-                            }
-                        }
-
                         if (diff.added) {
-                            ArrayList<IProject> libsToLink = new ArrayList<IProject>();
                             synchronized (sLock) {
                                 for (ProjectState projectState : sProjectStateMap.values()) {
                                     if (projectState != state) {
-                                        LibraryState libState = state.needs(projectState);
-
-                                        if (libState != null) {
-                                            IProject p = libState.getProjectState().getProject();
-                                            if (libsToLink.contains(p) == false) {
-                                                libsToLink.add(p);
-                                            }
-
-                                            // now find the dependencies of the library itself.
-                                            fillProjectDependenciesList(
-                                                    libState.getMainProjectState(), libsToLink);
-                                        }
+                                        // need to call needs to do the libraryState link,
+                                        // but no need to look at the result, as we'll compare
+                                        // the result of getFullLibraryProjects()
+                                        // this is easier to due to indirect dependencies.
+                                        state.needs(projectState);
                                     }
                                 }
                             }
+                        }
 
-                            if (libsToLink.size() > 0) {
-                                LinkLibraryBundle bundle = new LinkLibraryBundle();
-                                bundle.mProject = iProject;
-                                bundle.mLibraryProjects =
-                                        libsToLink.toArray(new IProject[libsToLink.size()]);
-                                bundle.mPreviousLibraryPath = null;
-                                bundle.mCleanupCPE = false;
-                                startActionBundle(bundle);
-                            }
+                        // and build the real difference. A list of new projects and a list of
+                        // removed project.
+                        // This is not the same as the added/removed libraries because libraries
+                        // could be indirect dependencies through several different direct
+                        // dependencies so it's easier to compare the full lists before and after
+                        // the reload.
+                        LinkUpdateBundle bundle = getLinkBundle(state, oldLibraries);
+                        if (bundle != null) {
+                            queueLinkUpdateBundle(bundle);
                         }
                     }
 
@@ -999,78 +1002,43 @@ public final class Sdk  {
     };
 
     /**
-     * Action Bundle to be used with {@link Sdk#startActionBundle(ActionBundle)}.
-     */
-    private interface ActionBundle {
-        enum BundleType { LINK_LIBRARY, UNLINK_LIBRARY };
-        BundleType getType();
-        IProject getProject();
-    };
-
-    /**
-     * Action bundle to link libraries to a project.
+     * Action bundle to update library links on a project.
      *
-     * @see Sdk#linkProjectAndLibrary(LinkLibraryBundle, IProgressMonitor)
+     * @see Sdk#queueLinkUpdateBundle(LinkUpdateBundle)
+     * @see Sdk#updateLibraryLinks(LinkUpdateBundle, IProgressMonitor)
      */
-    private static class LinkLibraryBundle implements ActionBundle {
+    private static class LinkUpdateBundle {
 
         /** The main project receiving the library links. */
-        IProject mProject;
-        /** The libraries to add to the main project. */
-        IProject[] mLibraryProjects;
+        IProject mProject = null;
+        /** A list (possibly null/empty) of projects that should be linked. */
+        IProject[] mNewLibraryProjects = null;
         /** an optional old library path that needs to be removed at the same time as the new
          * libraries are added. Can be <code>null</code> in which case no libraries are removed. */
-        IPath mPreviousLibraryPath;
+        IPath mDeletedLibraryPath = null;
+        /** A list (possibly null/empty) of projects that should be unlinked */
+        IProject[] mRemovedLibraryProjects = null;
         /** Whether unknown IClasspathEntry (that were flagged as being added by ADT) are to be
          * removed. This is typically only set to <code>true</code> when the project is opened. */
-        boolean mCleanupCPE;
-
-        public BundleType getType() {
-            return BundleType.LINK_LIBRARY;
-        }
-
-        public IProject getProject() {
-            return mProject;
-        }
+        boolean mCleanupCPE = false;
 
         @Override
         public String toString() {
-            return String.format("LinkLibraryBundle: %1$s (%2$s) > %3$s", //$NON-NLS-1$
+            return String.format(
+                    "LinkUpdateBundle: %1$s (clean: %2$s) > added: %3$s, removed: %4$s, deleted: %5$s", //$NON-NLS-1$
                     mProject.getName(),
                     mCleanupCPE,
-                    Arrays.toString(mLibraryProjects));
+                    Arrays.toString(mNewLibraryProjects),
+                    Arrays.toString(mRemovedLibraryProjects),
+                    mDeletedLibraryPath);
         }
     }
 
-    /**
-     * Action bundle to unlink a library from a project.
-     *
-     * @see Sdk#unlinkLibrary(UnlinkLibraryBundle, IProgressMonitor)
-     */
-    private static class UnlinkLibraryBundle implements ActionBundle {
-        /** the main project */
-        final ProjectState mProject;
-        /** the library to remove */
-        final IProject mLibrary;
-
-        UnlinkLibraryBundle(ProjectState project, IProject library) {
-            mProject = project;
-            mLibrary = library;
-        }
-
-        public BundleType getType() {
-            return BundleType.UNLINK_LIBRARY;
-        }
-
-        public IProject getProject() {
-            return mProject.getProject();
-        }
-    }
-
-    private final ArrayList<ActionBundle> mActionBundleQueue = new ArrayList<ActionBundle>();
+    private final ArrayList<LinkUpdateBundle> mLinkActionBundleQueue =
+            new ArrayList<LinkUpdateBundle>();
 
     /**
-     * Runs the given action bundle through a job queue.
+     * Queues a {@link LinkUpdateBundle} bundle to be run by a job.
      *
      * All action bundles are executed in a job in the exact order they are added.
      * This is convenient when several actions must be executed in a job consecutively (instead
@@ -1083,55 +1051,50 @@ public final class Sdk  {
      *
      * @param bundle the action bundle to execute
      */
-    private void startActionBundle(ActionBundle bundle) {
+    private void queueLinkUpdateBundle(LinkUpdateBundle bundle) {
         boolean startJob = false;
-        synchronized (mActionBundleQueue) {
-            startJob = mActionBundleQueue.size() == 0;
-            mActionBundleQueue.add(bundle);
+        synchronized (mLinkActionBundleQueue) {
+            startJob = mLinkActionBundleQueue.size() == 0;
+            mLinkActionBundleQueue.add(bundle);
         }
 
         if (startJob) {
-            Job job = new Job("Android Library Job") { //$NON-NLS-1$
+            Job job = new Job("Android Library Update") { //$NON-NLS-1$
                 @Override
                 protected IStatus run(IProgressMonitor monitor) {
                     // loop until there's no bundle to process
                     while (true) {
                         // get the bundle, but don't remove until we're done, or a new job could be
                         // started.
-                        ActionBundle bundle = null;
-                        synchronized (mActionBundleQueue) {
+                        LinkUpdateBundle bundle = null;
+                        synchronized (mLinkActionBundleQueue) {
                             // there is always a bundle at this point, as they are only removed
                             // at the end of this method, and the job is only started after adding
                             // one
-                            bundle = mActionBundleQueue.get(0);
+                            bundle = mLinkActionBundleQueue.get(0);
                         }
 
                         // process the bundle.
                         try {
-                            switch (bundle.getType()) {
-                                case LINK_LIBRARY:
-                                    linkProjectAndLibrary((LinkLibraryBundle)bundle, monitor);
-                                    break;
-                                case UNLINK_LIBRARY:
-                                    unlinkLibrary((UnlinkLibraryBundle) bundle, monitor);
-                                    break;
-                            }
-
-                            // force a recompile
-                            bundle.getProject().build(
-                                    IncrementalProjectBuilder.FULL_BUILD, monitor);
-
+                            updateLibraryLinks(bundle, monitor);
                         } catch (Exception e) {
                             AdtPlugin.log(e, "Failed to process bundle: %1$s", //$NON-NLS-1$
                                     bundle.toString());
                         }
 
+                        try {
+                            // force a recompile
+                            bundle.mProject.build(IncrementalProjectBuilder.FULL_BUILD, monitor);
+                        } catch (Exception e) {
+                            // no need to log those.
+                        }
+
                         // remove it from the list.
-                        synchronized (mActionBundleQueue) {
-                            mActionBundleQueue.remove(0);
+                        synchronized (mLinkActionBundleQueue) {
+                            mLinkActionBundleQueue.remove(0);
 
                             // no more bundle to process? done.
-                            if (mActionBundleQueue.size() == 0) {
+                            if (mLinkActionBundleQueue.size() == 0) {
                                 return Status.OK_STATUS;
                             }
                         }
@@ -1249,23 +1212,28 @@ public final class Sdk  {
     }
 
     /**
-     * Links a project and a set of libraries so that the project can use the library code.
+     * Update the library links for a project
      *
      * This does the follow:
-     * - add the library projects to the main projects dynamic reference list. This is used by
-     *   the builders to receive resource change deltas for library projects and figure out what
+     * - add/remove the library projects to the main projects dynamic reference list. This is used
+     *   by the builders to receive resource change deltas for library projects and figure out what
      *   needs to be recompiled/recreated.
      * - create new {@link IClasspathEntry} of type {@link IClasspathEntry#CPE_SOURCE} for each
-     *   source folder for each library project. If there was a previous
-     * - If {@link LinkLibraryBundle#mCleanupCPE} is set to true, all CPE created by ADT that cannot
+     *   source folder for each new library project.
+     * - remove the {@link IClasspathEntry} of type {@link IClasspathEntry#CPE_SOURCE} for each
+     *   source folder for each removed library project.
+     * - If {@link LinkUpdateBundle#mCleanupCPE} is set to true, all CPE created by ADT that cannot
      *   be resolved are removed. This should only be used when the project is opened.
      *
-     * @param bundle The {@link LinkLibraryBundle} action bundle that contains all the parameters
+     * <strong>This must not be called directly. Instead the {@link LinkUpdateBundle} must
+     * be run through a job with {@link #queueLinkUpdateBundle(LinkUpdateBundle)}.</strong>
+     *
+     * @param bundle The {@link LinkUpdateBundle} action bundle that contains all the parameters
      *               necessary to execute the action.
      * @param monitor an {@link IProgressMonitor}.
      * @return an {@link IStatus} with the status of the action.
      */
-    private IStatus linkProjectAndLibrary(LinkLibraryBundle bundle, IProgressMonitor monitor) {
+    private IStatus updateLibraryLinks(LinkUpdateBundle bundle, IProgressMonitor monitor) {
         if (bundle.mProject.isOpen() == false) {
             return Status.OK_STATUS;
         }
@@ -1279,28 +1247,34 @@ public final class Sdk  {
                 ArrayList<IProject> list = new ArrayList<IProject>(Arrays.asList(refs));
 
                 // remove a previous library if needed (in case of a rename)
-                if (bundle.mPreviousLibraryPath != null) {
-                    final int count = list.size();
-                    for (int i = 0 ; i < count ; i++) {
-                        // since project basically have only one segment that matter,
-                        // just check the names
-                        if (list.get(i).getName().equals(
-                                bundle.mPreviousLibraryPath.lastSegment())) {
-                            list.remove(i);
-                            break;
-                        }
-                    }
-
+                if (bundle.mDeletedLibraryPath != null) {
+                    // since project basically have only one segment that matter,
+                    // just check the names
+                    removeFromList(list, bundle.mDeletedLibraryPath.lastSegment());
                 }
 
-                // add the new ones.
-                list.addAll(Arrays.asList(bundle.mLibraryProjects));
+                if (bundle.mRemovedLibraryProjects != null) {
+                    for (IProject removedProject : bundle.mRemovedLibraryProjects) {
+                        removeFromList(list, removedProject.getName());
+                    }
+                }
+
+                // add the new ones if they don't exist
+                if (bundle.mNewLibraryProjects != null) {
+                    for (IProject newProject : bundle.mNewLibraryProjects) {
+                        if (list.contains(newProject) == false) {
+                            list.add(newProject);
+                        }
+                    }
+                }
 
                 // set the changed list
                 projectDescription.setDynamicReferences(
                         list.toArray(new IProject[list.size()]));
             } else {
-                projectDescription.setDynamicReferences(bundle.mLibraryProjects);
+                if (bundle.mNewLibraryProjects != null) {
+                    projectDescription.setDynamicReferences(bundle.mNewLibraryProjects);
+                }
             }
 
             // get the current classpath entries for the project to add the new source
@@ -1313,116 +1287,125 @@ public final class Sdk  {
             IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
 
             // loop on the classpath entries and look for CPE_SOURCE entries that
-            // are linked folders, then record them for comparison layer as we add the new
+            // are linked folders, then record them for comparison later as we add the new
             // ones.
-            ArrayList<IClasspathEntry> libCpeList = new ArrayList<IClasspathEntry>();
-            if (bundle.mCleanupCPE) {
-                for (IClasspathEntry classpathEntry : classpathEntries) {
-                    if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE) {
-                        IPath path = classpathEntry.getPath();
-                        IResource linkedRes = wsRoot.findMember(path);
-                        if (linkedRes != null && linkedRes.isLinked() &&
-                                CREATOR_ADT.equals(ProjectHelper.loadStringProperty(
-                                        linkedRes, PROP_CREATOR))) {
-                            libCpeList.add(classpathEntry);
+            ArrayList<IClasspathEntry> cpeToRemove = new ArrayList<IClasspathEntry>();
+            for (IClasspathEntry classpathEntry : classpathEntries) {
+                if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE) {
+                    IPath path = classpathEntry.getPath();
+                    IResource linkedRes = wsRoot.findMember(path);
+                    if (linkedRes != null && linkedRes.isLinked() &&
+                            CREATOR_ADT.equals(ProjectHelper.loadStringProperty(
+                                    linkedRes, PROP_CREATOR))) {
+
+                        // add always to list if we're doing clean-up
+                        if (bundle.mCleanupCPE) {
+                            cpeToRemove.add(classpathEntry);
+                        } else {
+                            String libName = ProjectHelper.loadStringProperty(linkedRes,
+                                    PROP_LIBRARY_NAME);
+                            if (libName != null && isRemovedLibrary(bundle, libName)) {
+                                cpeToRemove.add(classpathEntry);
+                            }
                         }
                     }
                 }
             }
 
             // loop on the projects to add.
-            for (IProject library : bundle.mLibraryProjects) {
-                if (library.isOpen() == false) {
-                    continue;
-                }
-                final String libName = library.getName();
-                final String varName = getLibraryVariableName(libName);
-
-                // get the list of source folders for the library.
-                ArrayList<IPath> sourceFolderPaths = BaseProjectHelper.getSourceClasspaths(
-                        library);
-
-                // loop on all the source folder, ignoring FD_GEN and add them
-                // as linked folder
-                for (IPath sourceFolderPath : sourceFolderPaths) {
-                    IResource sourceFolder = wsRoot.findMember(sourceFolderPath);
-                    if (sourceFolder == null || sourceFolder.isLinked()) {
+            if (bundle.mNewLibraryProjects != null) {
+                for (IProject library : bundle.mNewLibraryProjects) {
+                    if (library.isOpen() == false) {
                         continue;
                     }
+                    final String libName = library.getName();
+                    final String varName = getLibraryVariableName(libName);
 
-                    IPath relativePath = sourceFolder.getProjectRelativePath();
-                    if (SdkConstants.FD_GEN_SOURCES.equals(relativePath.toString())) {
-                        continue;
-                    }
+                    // get the list of source folders for the library.
+                    ArrayList<IPath> sourceFolderPaths = BaseProjectHelper.getSourceClasspaths(
+                            library);
 
-                    // create the linked path
-                    IPath linkedPath = new Path(varName).append(relativePath);
-
-                    // look for an existing linked path
-                    IClasspathEntry match = findClasspathEntryMatch(libCpeList, linkedPath, null);
-
-                    if (match == null) {
-
-                        // no match, create one
-                        // get a string version, to make up the linked folder name
-                        String srcFolderName = relativePath.toString().replace("/", //$NON-NLS-1$
-                                "_"); //$NON-NLS-1$
-
-                        // folder name
-                        String folderName = libName + "_" + srcFolderName; //$NON-NLS-1$
-
-                        // create a linked resource for the library using the path var.
-                        IFolder libSrc = bundle.mProject.getFolder(folderName);
-                        IPath libSrcPath = libSrc.getFullPath();
-
-                        // check if there's a CPE that would conflict, in which case it needs to
-                        // be removed (this can happen for existing CPE that don't match an open
-                        // project)
-                        match = findClasspathEntryMatch(classpathEntries, null/*rawPath*/,
-                                libSrcPath);
-                        if (match != null) {
-                            classpathEntries.remove(match);
+                    // loop on all the source folder, ignoring FD_GEN and add them
+                    // as linked folder
+                    for (IPath sourceFolderPath : sourceFolderPaths) {
+                        IResource sourceFolder = wsRoot.findMember(sourceFolderPath);
+                        if (sourceFolder == null || sourceFolder.isLinked()) {
+                            continue;
                         }
 
-                        // the path of the linked resource is based on the path variable
-                        // representing the library project, followed by the source folder name.
-                        libSrc.createLink(linkedPath,
-                                IResource.REPLACE, monitor);
+                        IPath relativePath = sourceFolder.getProjectRelativePath();
+                        if (SdkConstants.FD_GEN_SOURCES.equals(relativePath.toString())) {
+                            continue;
+                        }
 
-                        // mark it as derived so that Team plug-in ignore this
-                        libSrc.setDerived(true);
+                        // create the linked path
+                        IPath linkedPath = new Path(varName).append(relativePath);
 
-                        // set some persistent properties on it to know that it was
-                        // created by ADT.
-                        ProjectHelper.saveStringProperty(libSrc, PROP_CREATOR, CREATOR_ADT);
-                        ProjectHelper.saveResourceProperty(libSrc, PROP_LIBRARY, library);
+                        // look for an existing CPE that has the same linked path and that was
+                        // going to be removed.
+                        IClasspathEntry match = findClasspathEntryMatch(cpeToRemove, linkedPath,
+                                null);
 
-                        // add the source folder to the classpath entries
-                        classpathEntries.add(JavaCore.newSourceEntry(libSrcPath));
-                    } else {
-                        // there's a valid match, do nothing, but remove the match from
-                        // the list of previously existing CPE.
-                        libCpeList.remove(match);
+                        if (match == null) {
+                            // no match, create one
+                            // get a string version, to make up the linked folder name
+                            String srcFolderName = relativePath.toString().replace(
+                                    "/",  //$NON-NLS-1$
+                                    "_"); //$NON-NLS-1$
+
+                            // folder name
+                            String folderName = libName + "_" + srcFolderName; //$NON-NLS-1$
+
+                            // create a linked resource for the library using the path var.
+                            IFolder libSrc = bundle.mProject.getFolder(folderName);
+                            IPath libSrcPath = libSrc.getFullPath();
+
+                            // check if there's a CPE that would conflict, in which case it needs to
+                            // be removed (this can happen for existing CPE that don't match an open
+                            // project)
+                            match = findClasspathEntryMatch(classpathEntries, null/*rawPath*/,
+                                    libSrcPath);
+                            if (match != null) {
+                                classpathEntries.remove(match);
+                            }
+
+                            // the path of the linked resource is based on the path variable
+                            // representing the library project, followed by the source folder name.
+                            libSrc.createLink(linkedPath, IResource.REPLACE, monitor);
+
+                            // mark it as derived so that Team plug-in ignore this
+                            libSrc.setDerived(true);
+
+                            // set some persistent properties on it to know that it was
+                            // created by ADT.
+                            ProjectHelper.saveStringProperty(libSrc, PROP_CREATOR, CREATOR_ADT);
+                            ProjectHelper.saveResourceProperty(libSrc, PROP_LIBRARY, library);
+                            ProjectHelper.saveStringProperty(libSrc, PROP_LIBRARY_NAME,
+                                    library.getName());
+
+                            // add the source folder to the classpath entries
+                            classpathEntries.add(JavaCore.newSourceEntry(libSrcPath));
+                        } else {
+                            // there's a valid match, do nothing, but remove the match from
+                            // the list of previously existing CPE.
+                            cpeToRemove.remove(match);
+                        }
                     }
                 }
             }
 
-            if (bundle.mCleanupCPE) {
-                // remove the remaining CPE as they could not be resolved.
-                classpathEntries.removeAll(libCpeList);
-            }
+            // remove the CPE that should be removed.
+            classpathEntries.removeAll(cpeToRemove);
 
             // set the new list
             javaProject.setRawClasspath(
                     classpathEntries.toArray(new IClasspathEntry[classpathEntries.size()]),
                     monitor);
 
-            if (bundle.mCleanupCPE) {
-                // and delete the folders of the CPE that were removed (must be done after)
-                for (IClasspathEntry cpe : libCpeList) {
-                    IResource res = wsRoot.findMember(cpe.getPath());
-                    res.delete(true, monitor);
-                }
+            // and delete the folders of the CPE that were removed (must be done after)
+            for (IClasspathEntry cpe : cpeToRemove) {
+                IResource res = wsRoot.findMember(cpe.getPath());
+                res.delete(true, monitor);
             }
 
             return Status.OK_STATUS;
@@ -1431,6 +1414,107 @@ public final class Sdk  {
                     "Failed to create library links: %1$s", //$NON-NLS-1$
                     e.getMessage());
             return e.getStatus();
+        }
+    }
+
+    private boolean isRemovedLibrary(LinkUpdateBundle bundle, String libName) {
+        if (bundle.mDeletedLibraryPath != null &&
+                libName.equals(bundle.mDeletedLibraryPath.lastSegment())) {
+            return true;
+        }
+
+        if (bundle.mRemovedLibraryProjects != null) {
+            for (IProject removedProject : bundle.mRemovedLibraryProjects) {
+                if (libName.equals(removedProject.getName())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Computes the library difference based on a previous list and a current state, and creates
+     * a {@link LinkUpdateBundle} action to update the given project.
+     * @param project The current project state
+     * @param oldLibraries the list of old libraries. Typically the result of
+     *            {@link ProjectState#getFullLibraryProjects()} before the ProjectState is updated.
+     * @return null if there no action to take, or a {@link LinkUpdateBundle} object to run.
+     */
+    private LinkUpdateBundle getLinkBundle(ProjectState project, IProject[] oldLibraries) {
+        // get the new full list of projects
+        IProject[] newLibraries = project.getFullLibraryProjects();
+
+        // and build the real difference. A list of new projects and a list of
+        // removed project.
+        // This is not the same as the added/removed libraries because libraries
+        // could be indirect dependencies through several different direct
+        // dependencies so it's easier to compare the full lists before and after
+        // the reload.
+
+        List<IProject> addedLibs = new ArrayList<IProject>();
+        List<IProject> removedLibs = new ArrayList<IProject>();
+
+        // first get the list of new projects.
+        for (IProject newLibrary : newLibraries) {
+            boolean found = false;
+            for (IProject oldLibrary : oldLibraries) {
+                if (newLibrary.equals(oldLibrary)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            // if it was not found in the old libraries, it's really new
+            if (found == false) {
+                addedLibs.add(newLibrary);
+            }
+        }
+
+        // now the list of removed projects.
+        for (IProject oldLibrary : oldLibraries) {
+            boolean found = false;
+            for (IProject newLibrary : newLibraries) {
+                if (newLibrary.equals(oldLibrary)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            // if it was not found in the new libraries, it's really been removed
+            if (found == false) {
+                removedLibs.add(oldLibrary);
+            }
+        }
+
+        if (addedLibs.size() > 0 || removedLibs.size() > 0) {
+            LinkUpdateBundle bundle = new LinkUpdateBundle();
+            bundle.mProject = project.getProject();
+            bundle.mNewLibraryProjects =
+                addedLibs.toArray(new IProject[addedLibs.size()]);
+            bundle.mRemovedLibraryProjects =
+                removedLibs.toArray(new IProject[removedLibs.size()]);
+            return bundle;
+        }
+
+        return null;
+    }
+
+    /**
+     * Removes a project from a list based on its name.
+     * @param projects the list of projects.
+     * @param name the name of the project to remove.
+     */
+    private void removeFromList(List<IProject> projects, String name) {
+        final int count = projects.size();
+        for (int i = 0 ; i < count ; i++) {
+            // since project basically have only one segment that matter,
+            // just check the names
+            if (projects.get(i).getName().equals(name)) {
+                projects.remove(i);
+                return;
+            }
         }
     }
 
@@ -1464,107 +1548,6 @@ public final class Sdk  {
     }
 
     /**
-     * Unlinks a project and a library. This removes the linked folder from the main project, and
-     * removes it from the build path. Finally, this calls {@link LibraryState#close()}.
-     * <p/>This can be done in a job in case the workspace is not locked for resource
-     * modification. See <var>doInJob</var>.
-     *
-     * @param bundle The {@link UnlinkLibraryBundle} action bundle that contains all the parameters
-     *               necessary to execute the action.
-     * @param monitor an {@link IProgressMonitor}.
-     * @return an {@link IStatus} with the status of the action.
-     */
-    private IStatus unlinkLibrary(UnlinkLibraryBundle bundle, IProgressMonitor monitor) {
-        try {
-            IProject project = bundle.mProject.getProject();
-
-            // if the library and the main project are closed at the same time, this
-            // is likely to return false since this is run in a new job.
-            if (project.isOpen() == false) {
-                // cannot change the description of closed projects.
-                return Status.OK_STATUS;
-            }
-
-            // remove the library to the list of dynamic references
-            IProjectDescription projectDescription = project.getDescription();
-            IProject[] refs = projectDescription.getDynamicReferences();
-
-            if (refs.length > 0) {
-                ArrayList<IProject> list = new ArrayList<IProject>(Arrays.asList(refs));
-
-                // remove a previous library if needed (in case of a rename)
-                final int count = list.size();
-                for (int i = 0 ; i < count ; i++) {
-                    // since project basically have only one segment that matter,
-                    // just check the names
-                    if (list.get(i).equals(bundle.mLibrary)) {
-                        list.remove(i);
-                        break;
-                    }
-                }
-
-                // set the changed list
-                projectDescription.setDynamicReferences(
-                        list.toArray(new IProject[list.size()]));
-            }
-
-            // edit the list of source folders.
-            IJavaProject javaProject = JavaCore.create(project);
-            IClasspathEntry[] entries = javaProject.getRawClasspath();
-            ArrayList<IClasspathEntry> classpathEntries = new ArrayList<IClasspathEntry>(
-                    Arrays.asList(entries));
-
-            IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
-
-            // list to hold the source folder to delete, as they can't be delete before
-            // they have been removed from the classpath entries
-            ArrayList<IResource> toDelete = new ArrayList<IResource>();
-
-            for (int i = 0 ; i < classpathEntries.size();) {
-                IClasspathEntry classpathEntry = classpathEntries.get(i);
-                if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE) {
-                    IPath path = classpathEntry.getPath();
-                    IResource linkedRes = wsRoot.findMember(path);
-                    if (linkedRes != null && linkedRes.isLinked() && CREATOR_ADT.equals(
-                            ProjectHelper.loadStringProperty(linkedRes, PROP_CREATOR))) {
-                        IResource originalLibrary = ProjectHelper.loadResourceProperty(
-                                linkedRes, PROP_LIBRARY);
-
-                        // if the library is missing, or if the library is the one being
-                        // unlinked:
-                        // remove the classpath entry and delete the linked folder.
-                        if (originalLibrary == null ||
-                                originalLibrary.equals(bundle.mLibrary)) {
-                            classpathEntries.remove(i);
-                            toDelete.add(linkedRes);
-                            continue; // don't increment i
-                        }
-                    }
-                }
-
-                i++;
-            }
-
-            // set the new list
-            javaProject.setRawClasspath(
-                    classpathEntries.toArray(new IClasspathEntry[classpathEntries.size()]),
-                    monitor);
-
-            // delete the resources that need deleting
-            for (IResource res : toDelete) {
-                res.delete(true, monitor);
-            }
-
-            return Status.OK_STATUS;
-        } catch (CoreException e) {
-            AdtPlugin.log(e, "Failure to unlink %1$s from %2$s", //$NON-NLS-1$
-                    bundle.mLibrary.getName(),
-                    bundle.mProject.getProject().getName());
-            return e.getStatus();
-        }
-    }
-
-    /**
      * Updates all existing projects with a given list of new/updated libraries.
      * This loops through all opened projects and check if they depend on any of the given
      * library project, and if they do, they are linked together.
@@ -1581,9 +1564,10 @@ public final class Sdk  {
             // Once they are updated (meaning ProjectState#needs() has been called on them),
             // we add them to the list so that can be updated as well.
             for (ProjectState projectState : sProjectStateMap.values()) {
-                // list for all the new library dependencies we find.
-                ArrayList<IProject> libsToLink = new ArrayList<IProject>();
+                // record the current library dependencies
+                IProject[] oldLibraries = projectState.getFullLibraryProjects();
 
+                boolean needLibraryDependenciesUpdated = false;
                 for (ProjectState library : libraries) {
                     // Normally we would only need to test if ProjectState#needs returns non null,
                     // meaning the link between the project and the library has not been
@@ -1595,36 +1579,25 @@ public final class Sdk  {
                     // We still need to call ProjectState#needs to make the link in case it's not
                     // been done yet (which can happen if the library project was just opened).
                     if (projectState != library) {
+                        // call needs in case this new library was just opened, and the link needs
+                        // to be done
                         LibraryState libState = projectState.needs(library);
-                        if (libState != null || projectState.dependsOn(library)) {
-                            // we have a match. Add it.
-                            IProject libProject = library.getProject();
-
-                            // library could already be here if it was an indirect dependencies
-                            // from a previously processed updated library.
-                            if (libsToLink.contains(libProject) == false) {
-                                libsToLink.add(libProject);
-                            }
-
-                            // now find what this depends on, and add it too.
-                            // The order here doesn't matter
-                            // as it's just to add the linked source folder, so there's no
-                            // need to use ProjectState#getFullLibraryProjects() which
-                            // could return project that have already been added anyway.
-                            fillProjectDependenciesList(library, libsToLink);
+                        if (libState == null && projectState.dependsOn(library)) {
+                            // ProjectState.needs only returns true if the library was needed.
+                            // but we also need to check the case where the project depends on
+                            // the library but the link was already done.
+                            needLibraryDependenciesUpdated = true;
                         }
                     }
                 }
 
-                if (libsToLink.size() > 0) {
-                    // create an action bundle for this link
-                    LinkLibraryBundle bundle = new LinkLibraryBundle();
-                    bundle.mProject = projectState.getProject();
-                    bundle.mLibraryProjects = libsToLink.toArray(
-                            new IProject[libsToLink.size()]);
-                    bundle.mPreviousLibraryPath = null;
-                    bundle.mCleanupCPE = false;
-                    startActionBundle(bundle);
+                if (needLibraryDependenciesUpdated) {
+                    projectState.updateFullLibraryList();
+                }
+
+                LinkUpdateBundle bundle = getLinkBundle(projectState, oldLibraries);
+                if (bundle != null) {
+                    queueLinkUpdateBundle(bundle);
 
                     // if this updated project is a library, add it to the list, so that
                     // projects depending on it get updated too.

@@ -232,18 +232,25 @@ public final class ProjectState {
     }
 
     public static class LibraryDifference {
-        public List<LibraryState> removed = new ArrayList<LibraryState>();
+        public boolean removed = false;
         public boolean added = false;
 
         public boolean hasDiff() {
-            return removed.size() > 0 || added;
+            return removed || added;
         }
     }
 
     /**
      * Reloads the content of the properties.
-     * <p/>This also reset the reference to the target as it may have changed.
-     * <p/>This should be followed by a call to {@link Sdk#loadTarget(ProjectState)}.
+     * <p/>This also reset the reference to the target as it may have changed, therefore this
+     * should be followed by a call to {@link Sdk#loadTarget(ProjectState)}.
+     *
+     * <p/>If the project libraries changes, they are updated to a certain extent.<br>
+     * Removed libraries are removed from the state list, and added to the {@link LibraryDifference}
+     * object that is returned so that they can be processed.<br>
+     * Added libraries are added to the state (as new {@link LibraryState} objects), but their
+     * IProject is not resolved. {@link ProjectState#needs(ProjectState)} should be called
+     * afterwards to properly initialize the libraries.
      *
      * @return an instance of {@link LibraryDifference} describing the change in libraries.
      */
@@ -295,7 +302,7 @@ public final class ProjectState {
             }
 
             // whatever's left in oldLibraries is removed.
-            diff.removed.addAll(oldLibraries);
+            diff.removed = oldLibraries.size() > 0;
 
             // update the library with what IProjet are known at the time.
             updateFullLibraryList();
@@ -595,7 +602,7 @@ public final class ProjectState {
      * Update the full library list, including indirect dependencies. The result is returned by
      * {@link #getFullLibraryProjects()}.
      */
-    private void updateFullLibraryList() {
+    void updateFullLibraryList() {
         ArrayList<IProject> list = new ArrayList<IProject>();
         synchronized (mLibraries) {
             buildFullLibraryDependencies(mLibraries, list);
