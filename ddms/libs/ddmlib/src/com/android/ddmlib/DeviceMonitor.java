@@ -447,15 +447,30 @@ final class DeviceMonitor {
                 }
             }
         } catch (TimeoutException e) {
-            Log.w("DeviceMonitor", String.format("Timeout getting device %s info",
+            Log.w("DeviceMonitor", String.format("Connection timeout getting info for device %s",
                     device.getSerialNumber()));
+
+        } catch (AdbCommandRejectedException e) {
+            // This should never happen as we only do this once the device is online.
+            Log.w("DeviceMonitor", String.format(
+                    "Adb rejected command to get  device %1$s info: %2$s",
+                    device.getSerialNumber(), e.getMessage()));
+
+        } catch (ShellCommandUnresponsiveException e) {
+            Log.w("DeviceMonitor", String.format(
+                    "Adb shell command took too long returning info for device %s",
+                    device.getSerialNumber()));
+
         } catch (IOException e) {
-            // if we can't get the build info, it doesn't matter too much
+            Log.w("DeviceMonitor", String.format(
+                    "IO Error getting info for device %s",
+                    device.getSerialNumber()));
         }
     }
 
     private void queryNewDeviceForMountingPoint(final Device device, final String name)
-            throws TimeoutException, IOException {
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException {
         device.executeShellCommand("echo $" + name, new MultiLineReceiver() { //$NON-NLS-1$
             public boolean isCancelled() {
                 return false;
@@ -514,6 +529,16 @@ final class DeviceMonitor {
                 Log.d("DeviceMonitor",
                         "Connection Failure when starting to monitor device '"
                         + device + "' : timeout");
+            } catch (AdbCommandRejectedException e) {
+                try {
+                    // attempt to close the socket if needed.
+                    socketChannel.close();
+                } catch (IOException e1) {
+                    // we can ignore that one. It may already have been closed.
+                }
+                Log.d("DeviceMonitor",
+                        "Adb refused to start monitoring device '"
+                        + device + "' : " + e.getMessage());
             } catch (IOException e) {
                 try {
                     // attempt to close the socket if needed.
@@ -636,7 +661,7 @@ final class DeviceMonitor {
     }
 
     private boolean sendDeviceMonitoringRequest(SocketChannel socket, Device device)
-            throws TimeoutException, IOException {
+            throws TimeoutException, AdbCommandRejectedException, IOException {
 
         try {
             AdbHelper.setDevice(socket, device);
@@ -769,6 +794,11 @@ final class DeviceMonitor {
             Log.w("DeviceMonitor",
                     "Failed to connect to client '" + pid + "': timeout");
             return;
+        } catch (AdbCommandRejectedException e) {
+            Log.w("DeviceMonitor",
+                    "Adb rejected connection to client '" + pid + "': " + e.getMessage());
+            return;
+
         } catch (IOException ioe) {
             Log.w("DeviceMonitor",
                     "Failed to connect to client '" + pid + "': " + ioe.getMessage());

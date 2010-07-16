@@ -16,7 +16,10 @@
 
 package com.android.ide.eclipse.adt.internal.launch;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.IDevice;
+import com.android.ddmlib.ShellCommandUnresponsiveException;
+import com.android.ddmlib.TimeoutException;
 import com.android.ide.eclipse.adt.AdtPlugin;
 
 import java.io.IOException;
@@ -49,8 +52,16 @@ public class ActivityLaunchAction implements IAndroidLaunchAction {
      * @see IAndroidLaunchAction#doLaunchAction(DelayedLaunchInfo, IDevice)
      */
     public boolean doLaunchAction(DelayedLaunchInfo info, IDevice device) {
+        String command = "am start" //$NON-NLS-1$
+            + (info.isDebugMode() ? " -D" //$NON-NLS-1$
+                    : "") //$NON-NLS-1$
+            + " -n " //$NON-NLS-1$
+            + info.getPackageName() + "/" //$NON-NLS-1$
+            + mActivity.replaceAll("\\$", "\\\\\\$") //$NON-NLS-1$ //$NON-NLS-2$
+            + " -a android.intent.action.MAIN"  //$NON-NLS-1$
+            + " -c android.intent.category.LAUNCHER";
         try {
-            String msg = String.format("Starting activity %1$s on device ", mActivity,
+            String msg = String.format("Starting activity %1$s on device %2$s", mActivity,
                     device);
             AdtPlugin.printToConsole(info.getProject(), msg);
 
@@ -60,15 +71,7 @@ public class ActivityLaunchAction implements IAndroidLaunchAction {
             info.incrementAttemptCount();
 
             // now we actually launch the app.
-            device.executeShellCommand("am start" //$NON-NLS-1$
-                    + (info.isDebugMode() ? " -D" //$NON-NLS-1$
-                            : "") //$NON-NLS-1$
-                    + " -n " //$NON-NLS-1$
-                    + info.getPackageName() + "/" //$NON-NLS-1$
-                    + mActivity.replaceAll("\\$", "\\\\\\$") //$NON-NLS-1$ //$NON-NLS-2$
-                    + " -a android.intent.action.MAIN"  //$NON-NLS-1$
-                    + " -c android.intent.category.LAUNCHER",  //$NON-NLS-1$
-                    new AMReceiver(info, device, mLaunchController));
+            device.executeShellCommand(command, new AMReceiver(info, device, mLaunchController));
 
             // if the app is not a debug app, we need to do some clean up, as
             // the process is done!
@@ -77,6 +80,17 @@ public class ActivityLaunchAction implements IAndroidLaunchAction {
                 // provide any control over the app
                 return false;
             }
+        } catch (TimeoutException e) {
+            AdtPlugin.printErrorToConsole(info.getProject(), "Launch error: timeout");
+            return false;
+        } catch (AdbCommandRejectedException e) {
+            AdtPlugin.printErrorToConsole(info.getProject(), String.format(
+                    "Launch error: adb rejected command: %1$s", e.getMessage()));
+            return false;
+        } catch (ShellCommandUnresponsiveException e) {
+            // we didn't get the output but that's ok, just log it
+            AdtPlugin.log(e, "No command output when running: '%1$s' on device %2$s", command,
+                    device);
         } catch (IOException e) {
             // something went wrong trying to launch the app.
             // lets stop the Launch

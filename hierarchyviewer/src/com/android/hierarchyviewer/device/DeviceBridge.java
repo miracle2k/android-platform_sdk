@@ -16,10 +16,12 @@
 
 package com.android.hierarchyviewer.device;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
 import com.android.ddmlib.MultiLineReceiver;
+import com.android.ddmlib.TimeoutException;
 
 import java.io.IOException;
 import java.io.File;
@@ -120,8 +122,20 @@ public class DeviceBridge {
         synchronized (devicePortMap) {
             if (device.getState() == IDevice.DeviceState.ONLINE) {
                 int localPort = nextLocalPort++;
-                device.createForward(localPort, Configuration.DEFAULT_SERVER_PORT);
-                devicePortMap.put(device, localPort);
+                try {
+                    device.createForward(localPort, Configuration.DEFAULT_SERVER_PORT);
+                    devicePortMap.put(device, localPort);
+                } catch (TimeoutException e) {
+                    Log.e("hierarchy", "Timeout setting up port forwarding for " + device);
+                } catch (AdbCommandRejectedException e) {
+                    Log.e("hierarchy", String.format(
+                            "Adb rejected forward command for device %1$s: %2$s",
+                            device, e.getMessage()));
+                } catch (IOException e) {
+                    Log.e("hierarchy", String.format(
+                            "Failed to create forward for device %1$s: %2$s",
+                            device, e.getMessage()));
+                }
             }
         }
     }
@@ -130,8 +144,20 @@ public class DeviceBridge {
         synchronized (devicePortMap) {
             final Integer localPort = devicePortMap.get(device);
             if (localPort != null) {
-                device.removeForward(localPort, Configuration.DEFAULT_SERVER_PORT);
-                devicePortMap.remove(device);
+                try {
+                    device.removeForward(localPort, Configuration.DEFAULT_SERVER_PORT);
+                    devicePortMap.remove(device);
+                } catch (TimeoutException e) {
+                    Log.e("hierarchy", "Timeout removing port forwarding for " + device);
+                } catch (AdbCommandRejectedException e) {
+                    Log.e("hierarchy", String.format(
+                            "Adb rejected remove-forward command for device %1$s: %2$s",
+                            device, e.getMessage()));
+                } catch (IOException e) {
+                    Log.e("hierarchy", String.format(
+                            "Failed to remove forward for device %1$s: %2$s",
+                            device, e.getMessage()));
+                }
             }
         }
     }

@@ -17,6 +17,8 @@
 package com.android.ddmlib.testrunner;
 
 import com.android.ddmlib.IDevice;
+import com.android.ddmlib.AdbCommandRejectedException;
+import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
 
 import java.io.IOException;
@@ -171,13 +173,17 @@ public interface IRemoteAndroidTestRunner {
     public void setCoverage(boolean coverage);
 
     /**
-     * Sets the timeout to use for the adb shell command issued.
+     * Sets the maximum time allowed between output of the shell command running the tests on
+     * the devices.
+     * <p/>
+     * This allows setting a timeout in case the tests can become stuck and never finish. This is
+     * different from the normal timeout on the connection.
      * <p/>
      * By default no timeout will be specified.
      *
      * @see {@link IDevice#executeShellCommand(String, com.android.ddmlib.IShellOutputReceiver, int)}
      */
-    public void setTimeout(int timeout);
+    public void setMaxtimeToOutputResponse(int maxTimeToOutputResponse);
 
     /**
      * Execute this test run.
@@ -186,18 +192,32 @@ public interface IRemoteAndroidTestRunner {
      *
      * @param listeners listens for test results
      * @throws TimeoutException in case of a timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
+     * @throws ShellCommandUnresponsiveException if the device did not output any test result for
+     * a period longer than the max time to output.
      * @throws IOException if connection to device was lost.
+     *
+     * @see #setMaxtimeToOutputResponse(int)
      */
-    public void run(ITestRunListener... listeners) throws TimeoutException, IOException;
+    public void run(ITestRunListener... listeners)
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException;
 
     /**
      * Execute this test run.
      *
      * @param listeners collection of listeners for test results
      * @throws TimeoutException in case of a timeout on the connection.
+     * @throws AdbCommandRejectedException if adb rejects the command
+     * @throws ShellCommandUnresponsiveException if the device did not output any test result for
+     * a period longer than the max time to output.
      * @throws IOException if connection to device was lost.
+     *
+     * @see #setMaxtimeToOutputResponse(int)
      */
-    public void run(Collection<ITestRunListener> listeners) throws TimeoutException, IOException;
+    public void run(Collection<ITestRunListener> listeners)
+            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
+            IOException;
 
     /**
      * Requests cancellation of this test run.
