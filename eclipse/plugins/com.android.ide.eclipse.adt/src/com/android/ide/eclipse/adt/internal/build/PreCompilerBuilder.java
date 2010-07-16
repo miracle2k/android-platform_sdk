@@ -346,9 +346,9 @@ public class PreCompilerBuilder extends BaseBuilder {
                         errorListener);
 
                 if (errorListener.mHasXmlError == true) {
-                    // there was an error in the manifest, its file has been marked,
-                    // by the XmlErrorHandler.
-                    // We return;
+                    // There was an error in the manifest, its file has been marked
+                    // by the XmlErrorHandler. The stopBuild() call below will abort
+                    // this with an exception.
                     String msg = String.format(Messages.s_Contains_Xml_Error,
                             SdkConstants.FN_ANDROID_MANIFEST_XML);
                     AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project, msg);
@@ -357,9 +357,13 @@ public class PreCompilerBuilder extends BaseBuilder {
                     stopBuild(msg);
                 }
 
-                // get the java package from the parser
-                javaPackage = parser.getPackage();
-                minSdkVersion = parser.getMinSdkVersionString();
+                // Get the java package from the parser.
+                // This can be null if the parsing failed because the resource is out of sync,
+                // in which case the error will already have been logged anyway.
+                if (parser != null) {
+                    javaPackage = parser.getPackage();
+                    minSdkVersion = parser.getMinSdkVersionString();
+                }
             }
 
             if (minSdkVersion != null) {

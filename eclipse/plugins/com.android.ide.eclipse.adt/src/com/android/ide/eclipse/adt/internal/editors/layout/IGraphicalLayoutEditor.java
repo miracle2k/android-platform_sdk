@@ -22,7 +22,6 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.gef.ui.parts.SelectionSynchronizer;
-import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.ui.IEditorPart;
 
 /**
@@ -97,6 +96,4 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
     abstract UiDocumentNode getModel();
 
     abstract LayoutEditor getLayoutEditor();
-
-    abstract Clipboard getClipboard();
 }

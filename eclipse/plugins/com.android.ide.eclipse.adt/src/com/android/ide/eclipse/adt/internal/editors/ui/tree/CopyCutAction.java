@@ -55,7 +55,7 @@ public class CopyCutAction extends Action {
 
     /**
      * Creates a new Copy or Cut action.
-     * 
+     *
      * @param selected The UI node to cut or copy. It *must* have a non-null XML node.
      * @param performCut True if the operation is cut, false if it is copy.
      */
@@ -66,7 +66,7 @@ public class CopyCutAction extends Action {
 
     /**
      * Creates a new Copy or Cut action.
-     * 
+     *
      * @param selected The UI nodes to cut or copy. They *must* have a non-null XML node.
      *                 The list becomes owned by the {@link CopyCutAction}.
      * @param performCut True if the operation is cut, false if it is copy.
@@ -77,16 +77,16 @@ public class CopyCutAction extends Action {
         mEditor = editor;
         mClipboard = clipboard;
         mXmlCommit = xmlCommit;
-        
+
         ISharedImages images = PlatformUI.getWorkbench().getSharedImages();
         if (performCut) {
             setImageDescriptor(images.getImageDescriptor(ISharedImages.IMG_TOOL_CUT));
-            setHoverImageDescriptor(images.getImageDescriptor(ISharedImages.IMG_TOOL_CUT));
+            setHoverImageDescriptor(images.getImageDescriptor(ISharedImages.IMG_TOOL_CUT_HOVER));
             setDisabledImageDescriptor(
                     images.getImageDescriptor(ISharedImages.IMG_TOOL_CUT_DISABLED));
         } else {
             setImageDescriptor(images.getImageDescriptor(ISharedImages.IMG_TOOL_COPY));
-            setHoverImageDescriptor(images.getImageDescriptor(ISharedImages.IMG_TOOL_COPY));
+            setHoverImageDescriptor(images.getImageDescriptor(ISharedImages.IMG_TOOL_COPY_HOVER));
             setDisabledImageDescriptor(
                     images.getImageDescriptor(ISharedImages.IMG_TOOL_COPY_DISABLED));
         }
@@ -117,21 +117,21 @@ public class CopyCutAction extends Action {
         ArrayList<UiElementNode> nodesToCut = mPerformCut ? new ArrayList<UiElementNode>() : null;
 
         for (UiElementNode uiNode : mUiNodes) {
-            try {            
+            try {
                 Node xml_node = uiNode.getXmlNode();
                 if (xml_node == null) {
                     return;
                 }
-                
+
                 String data = getXmlTextFromEditor(xml_node);
- 
+
                 // In the unlikely event that IStructuredDocument failed to extract the text
                 // directly from the editor, try to fall back on a direct XML serialization
                 // of the XML node. This uses the generic Node interface with no SSE tricks.
                 if (data == null) {
                     data = getXmlTextFromSerialization(xml_node);
                 }
-                
+
                 if (data != null) {
                     allText.append(data);
                     if (mPerformCut) {
@@ -139,7 +139,7 @@ public class CopyCutAction extends Action {
                         nodesToCut.add(uiNode);
                     }
                 }
-    
+
             } catch (Exception e) {
                 AdtPlugin.log(e, "CopyCutAction failed for UI node %1$s", //$NON-NLS-1$
                         uiNode.getBreadcrumbTrailDescription(true));
@@ -172,7 +172,7 @@ public class CopyCutAction extends Action {
                 IndexedRegion region = (IndexedRegion) xml_node;
                 int start = region.getStartOffset();
                 int end = region.getEndOffset();
-   
+
                 if (end > start) {
                     data = sse_doc.get(start, end - start);
                 }
@@ -184,7 +184,7 @@ public class CopyCutAction extends Action {
         }
         return data;
     }
-    
+
     /**
      * Direct XML serialization of the XML node.
      * <p/>

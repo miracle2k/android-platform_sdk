@@ -26,12 +26,15 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
-import com.android.ide.eclipse.adt.internal.editors.ui.tree.CopyCutAction;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.ILayoutResult;
 
 import org.eclipse.core.runtime.ListenerList;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IMenuManager;
+import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.jface.viewers.ISelection;
@@ -51,6 +54,7 @@ import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.DropTarget;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.dnd.TransferData;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.MouseEvent;
@@ -73,6 +77,10 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.ScrollBar;
+import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.actions.ActionFactory;
+import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
+import org.eclipse.ui.actions.TextActionHandler;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
@@ -110,11 +118,12 @@ import java.util.Set;
  *
  * TODO list:
  * - gray on error, keep select but disable d'n'd.
- * - handle context menu (depending on selection).
- * - delete, copy/paste linked with menus and in context menu
  * - context menu handling of layout + local props (via IViewRules)
  * - outline should include same context menu + delete/copy/paste ops.
  * - outline should include drop support (from canvas or from palette)
+ * - handle empty root:
+ *    - Must also be able to copy/paste into an empty document (prolly need to bypass script, and deal with the xmlns)
+      - We must be able to move/copy/cut the top root element (mostly between documents).
  */
 class LayoutCanvas extends Canvas implements ISelectionProvider {
 
@@ -220,6 +229,21 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * invoking ourselves. */
     private boolean mInsideUpdateSelection;
 
+    /** Delete action for the Edit or context menu. */
+    private Action mDeleteAction;
+
+    /** Select-All action for the Edit or context menu. */
+    private Action mSelectAllAction;
+
+    /** Paste action for the Edit or context menu. */
+    private Action mPasteAction;
+
+    /** Cut action for the Edit or context menu. */
+    private Action mCutAction;
+
+    /** Copy action for the Edit or context menu. */
+    private Action mCopyAction;
+
 
     public LayoutCanvas(LayoutEditor layoutEditor,
             RulesEngine rulesEngine,
@@ -278,6 +302,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             }
         });
 
+        // --- setup drag'n'drop ---
         // DND Reference: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
 
         mDropTarget = new DropTarget(this, DND.DROP_COPY | DND.DROP_MOVE | DND.DROP_DEFAULT);
@@ -292,14 +317,17 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             } );
         mSource.addDragListener(new CanvasDragSourceListener());
 
+        // --- setup context menu ---
+        setupGlobalActionHandlers();
+        createContextMenu();
+
+        // --- setup outline ---
         // Get the outline associated with this editor, if any and of the right type.
         Object outline = layoutEditor.getAdapter(IContentOutlinePage.class);
         if (outline instanceof OutlinePage2) {
             mOutlinePage = (OutlinePage2) outline;
         }
     }
-
-
 
     @Override
     public void dispose() {
@@ -441,59 +469,6 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     }
 
     /**
-     * Called by the {@link GraphicalEditorPart} when the Copy action is requested.
-     *
-     * @param clipboard The shared clipboard. Must not be disposed.
-     */
-    public void onCopy(Clipboard clipboard) {
-        // TODO implement copy to clipbard. Also will need to provide feedback to enable
-        // copy only when there's a selection.
-    }
-
-    /**
-     * Called by the {@link GraphicalEditorPart} when the Cut action is requested.
-     *
-     * @param clipboard The shared clipboard. Must not be disposed.
-     */
-    public void onCut(Clipboard clipboard) {
-        // TODO implement copy to clipbard. Also will need to provide feedback to enable
-        // cut only when there's a selection.
-    }
-
-    /**
-     * Called by the {@link GraphicalEditorPart} when the Paste action is requested.
-     *
-     * @param clipboard The shared clipboard. Must not be disposed.
-     */
-    public void onPaste(Clipboard clipboard) {
-
-    }
-
-    /**
-     * Called by the {@link GraphicalEditorPart} when the Select All action is requested.
-     */
-    public void onSelectAll() {
-        // First clear the current selection, if any.
-        mSelections.clear();
-        mAltSelection = null;
-
-        // Now select everything if there's a valid layout
-        if (mIsResultValid && mLastValidResult != null) {
-            selectAllViewInfos(mLastValidViewInfoRoot);
-            redraw();
-        }
-
-        fireSelectionChanged();
-    }
-
-    /**
-     * Delete action
-     */
-    public void onDelete() {
-        // TODO not implemented yet, not even hooked in yet!
-    }
-
-    /**
      * Transforms a point, expressed in SWT display coordinates
      * (e.g. from a Drag'n'Drop {@link Event}, not local {@link Control} coordinates)
      * into the canvas' image coordinates according to the current zoom and scroll.
@@ -520,7 +495,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * where each {@link TreePath} item is actually a {@link CanvasViewInfo}.
      */
     public ISelection getSelection() {
-        if (mSelections.size() == 0) {
+        if (mSelections.isEmpty()) {
             return TreeSelection.EMPTY;
         }
 
@@ -545,6 +520,11 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * Sets the selection. It must be an {@link ITreeSelection} where each segment
      * of the tree path is a {@link CanvasViewInfo}. A null selection is considered
      * as an empty selection.
+     * <p/>
+     * This method is invoked by {@link LayoutCanvasViewer#setSelection(ISelection)}
+     * in response to an <em>outside</em> selection (compatible with ours) that has
+     * changed. Typically it means the outline selection has changed and we're
+     * synchronizing ours to match.
      */
     public void setSelection(ISelection selection) {
         if (mInsideUpdateSelection) {
@@ -563,7 +543,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
                 if (treeSel.isEmpty()) {
                     // Clear existing selection, if any
-                    if (mSelections.size() > 0) {
+                    if (!mSelections.isEmpty()) {
                         mSelections.clear();
                         mAltSelection = null;
                         redraw();
@@ -610,7 +590,9 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
                 if (changed) {
                     redraw();
+                    updateMenuActions();
                 }
+
             }
         } finally {
             mInsideUpdateSelection = false;
@@ -1050,7 +1032,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         mAltSelection = null;
 
         // reset (multi)selection if any
-        if (mSelections.size() > 0) {
+        if (!mSelections.isEmpty()) {
             if (mSelections.size() == 1 && mSelections.getFirst().getViewInfo() == vi) {
                 // CanvasSelection remains the same, don't touch it.
                 return;
@@ -1178,7 +1160,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             }
         }
 
-        if (parent.getChildren().size() > 0) {
+        if (!parent.getChildren().isEmpty()) {
             // then add all children that match the position
             for (CanvasViewInfo child : parent.getChildren()) {
                 r = child.getSelectionRect();
@@ -1231,6 +1213,10 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                     }
                 }
             });
+
+            // Update menu actions that depend on the selection
+            updateMenuActions();
+
         } finally {
             mInsideUpdateSelection = false;
         }
@@ -1267,7 +1253,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
             mDragSelection.clear();
 
-            if (mSelections.size() > 0) {
+            if (!mSelections.isEmpty()) {
                 // Is the cursor on top of a selected element?
                 int x = mHScale.inverseTranslate(e.x);
                 int y = mVScale.inverseTranslate(e.y);
@@ -1290,45 +1276,11 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                 }
             }
 
-            if (mDragSelection.size() > 0) {
-                // Sanitize the list to make sure all elements have a valid XML attached to it.
-                // This avoids us from making repeated checks in dragSetData.
+            sanitizeSelection(mDragSelection);
 
-                // In case of multiple selection, we also need to remove all children when their
-                // parent is already selected since parents will always be added with all their
-                // children.
-
-                for (Iterator<CanvasSelection> it = mDragSelection.iterator(); it.hasNext(); ) {
-                    CanvasSelection cs = it.next();
-                    CanvasViewInfo vi = cs.getViewInfo();
-                    UiViewElementNode key = vi == null ? null : vi.getUiViewKey();
-                    Node node = key == null ? null : key.getXmlNode();
-                    if (node == null) {
-                        // Missing ViewInfo or view key or XML, discard this.
-                        it.remove();
-                        continue;
-                    }
-
-                    if (vi != null) {
-                        for (Iterator<CanvasSelection> it2 = mDragSelection.iterator();
-                             it2.hasNext(); ) {
-                            CanvasSelection cs2 = it2.next();
-                            if (cs != cs2) {
-                                CanvasViewInfo vi2 = cs2.getViewInfo();
-                                if (vi.isParent(vi2)) {
-                                    // vi2 is a parent for vi. Remove vi.
-                                    it.remove();
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            e.doit = mDragSelection.size() > 0;
+            e.doit = !mDragSelection.isEmpty();
             if (e.doit) {
-                mDragElements = getSelectionAsElements();
+                mDragElements = getSelectionAsElements(mDragSelection);
                 GlobalCanvasDragInfo.getInstance().startDrag(
                         mDragElements,
                         mDragSelection.toArray(new CanvasSelection[mDragSelection.size()]),
@@ -1345,7 +1297,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
          */
         public void dragSetData(DragSourceEvent e) {
             if (TextTransfer.getInstance().isSupportedType(e.dataType)) {
-                e.data = getSelectionAsText();
+                e.data = getSelectionAsText(mDragSelection);
                 return;
             }
 
@@ -1357,107 +1309,6 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             // otherwise we failed
             e.detail = DND.DROP_NONE;
             e.doit = false;
-        }
-
-        private SimpleElement[] getSelectionAsElements() {
-            ArrayList<SimpleElement> elements = new ArrayList<SimpleElement>();
-
-            for (CanvasSelection cs : mDragSelection) {
-                CanvasViewInfo vi = cs.getViewInfo();
-
-                SimpleElement e = transformToSimpleElement(vi);
-                elements.add(e);
-            }
-
-            return elements.toArray(new SimpleElement[elements.size()]);
-        }
-
-        private SimpleElement transformToSimpleElement(CanvasViewInfo vi) {
-
-            UiViewElementNode uiNode = vi.getUiViewKey();
-
-            String fqcn = SimpleXmlTransfer.getFqcn(uiNode.getDescriptor());
-            String parentFqcn = null;
-            Rect bounds = new Rect(vi.getAbsRect());
-            Rect parentBounds = null;
-
-            UiElementNode uiParent = uiNode.getUiParent();
-            if (uiParent != null) {
-                parentFqcn = SimpleXmlTransfer.getFqcn(uiParent.getDescriptor());
-            }
-            if (vi.getParent() != null) {
-                parentBounds = new Rect(vi.getParent().getAbsRect());
-            }
-
-            SimpleElement e = new SimpleElement(fqcn, parentFqcn, bounds, parentBounds);
-
-            for (UiAttributeNode attr : uiNode.getUiAttributes()) {
-                String value = attr.getCurrentValue();
-                if (value != null && value.length() > 0) {
-                    AttributeDescriptor attrDesc = attr.getDescriptor();
-                    SimpleAttribute a = new SimpleAttribute(
-                            attrDesc.getNamespaceUri(),
-                            attrDesc.getXmlLocalName(),
-                            value);
-                    e.addAttribute(a);
-                }
-            }
-
-            for (CanvasViewInfo childVi : vi.getChildren()) {
-                SimpleElement e2 = transformToSimpleElement(childVi);
-                if (e2 != null) {
-                    e.addInnerElement(e2);
-                }
-            }
-
-            return e;
-        }
-
-        /** Get the XML text from the current drag selection for a text transfer. */
-        private String getSelectionAsText() {
-            StringBuilder sb = new StringBuilder();
-
-            for (CanvasSelection cs : mDragSelection) {
-                CanvasViewInfo vi = cs.getViewInfo();
-                UiViewElementNode key = vi.getUiViewKey();
-                Node node = key.getXmlNode();
-                String t = getXmlTextFromEditor(mLayoutEditor, node);
-                if (t != null) {
-                    if (sb.length() > 0) {
-                        sb.append('\n');
-                    }
-                    sb.append(t);
-                }
-            }
-
-            return sb.toString();
-        }
-
-        /** Get the XML text directly from the editor. */
-        private String getXmlTextFromEditor(AndroidXmlEditor editor, Node xml_node) {
-            String data = null;
-            IStructuredModel model = editor.getModelForRead();
-            try {
-                IStructuredDocument sse_doc = editor.getStructuredDocument();
-                if (xml_node instanceof NodeContainer) {
-                    // The easy way to get the source of an SSE XML node.
-                    data = ((NodeContainer) xml_node).getSource();
-                } else  if (xml_node instanceof IndexedRegion && sse_doc != null) {
-                    // Try harder.
-                    IndexedRegion region = (IndexedRegion) xml_node;
-                    int start = region.getStartOffset();
-                    int end = region.getEndOffset();
-
-                    if (end > start) {
-                        data = sse_doc.get(start, end - start);
-                    }
-                }
-            } catch (BadLocationException e) {
-                // the region offset was invalid. ignore.
-            } finally {
-                model.releaseFromRead();
-            }
-            return data;
         }
 
         /**
@@ -1478,7 +1329,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                                 // Create an edit-XML wrapper, which takes a runnable
                                 mLayoutEditor.editXmlModel(new Runnable() {
                                     public void run() {
-                                        cutDragSelection();
+                                        deleteSelection("Remove", mDragSelection);
                                     }
                                 });
                             }
@@ -1490,23 +1341,483 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             mDragElements = null;
             GlobalCanvasDragInfo.getInstance().stopDrag();
         }
+    }
 
-        private void cutDragSelection() {
-            List<UiElementNode> selected = new ArrayList<UiElementNode>();
-
-            for (CanvasSelection cs : mDragSelection) {
-                selected.add(cs.getViewInfo().getUiViewKey());
-            }
-
-            CopyCutAction action = new CopyCutAction(
-                    mLayoutEditor,
-                    getClipboard(),
-                    null, /* xml commit callback */
-                    selected,
-                    true /* cut */);
-
-            action.run();
+    /**
+     * Sanitizes the selection for a copy/cut or drag operation.
+     * <p/>
+     * Sanitizes the list to make sure all elements have a valid XML attached to it,
+     * that is remove element that have no XML to avoid having to make repeated such
+     * checks in various places after.
+     * <p/>
+     * In case of multiple selection, we also need to remove all children when their
+     * parent is already selected since parents will always be added with all their
+     * children.
+     * <p/>
+     *
+     * @param selection The selection list to be sanitized <b>in-place</b>.
+     *      The <code>selection</code> argument should not be {@link #mSelections} -- the
+     *      given list is going to be altered and we should never alter the user-made selection.
+     *      Instead the caller should provide its own copy.
+     */
+    private void sanitizeSelection(List<CanvasSelection> selection) {
+        if (selection.isEmpty()) {
+            return;
         }
 
+        for (Iterator<CanvasSelection> it = selection.iterator(); it.hasNext(); ) {
+            CanvasSelection cs = it.next();
+            CanvasViewInfo vi = cs.getViewInfo();
+            UiViewElementNode key = vi == null ? null : vi.getUiViewKey();
+            Node node = key == null ? null : key.getXmlNode();
+            if (node == null) {
+                // Missing ViewInfo or view key or XML, discard this.
+                it.remove();
+                continue;
+            }
+
+            if (vi != null) {
+                for (Iterator<CanvasSelection> it2 = selection.iterator();
+                     it2.hasNext(); ) {
+                    CanvasSelection cs2 = it2.next();
+                    if (cs != cs2) {
+                        CanvasViewInfo vi2 = cs2.getViewInfo();
+                        if (vi.isParent(vi2)) {
+                            // vi2 is a parent for vi. Remove vi.
+                            it.remove();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    /**
+     * Get the XML text from the given selection for a text transfer.
+     * The returned string can be empty but not null.
+     */
+    private String getSelectionAsText(List<CanvasSelection> selection) {
+        StringBuilder sb = new StringBuilder();
+
+        for (CanvasSelection cs : selection) {
+            CanvasViewInfo vi = cs.getViewInfo();
+            UiViewElementNode key = vi.getUiViewKey();
+            Node node = key.getXmlNode();
+            String t = getXmlTextFromEditor(mLayoutEditor, node);
+            if (t != null) {
+                if (sb.length() > 0) {
+                    sb.append('\n');
+                }
+                sb.append(t);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Get the XML text directly from the editor.
+     */
+    private String getXmlTextFromEditor(AndroidXmlEditor editor, Node xml_node) {
+        String data = null;
+        IStructuredModel model = editor.getModelForRead();
+        try {
+            IStructuredDocument sse_doc = editor.getStructuredDocument();
+            if (xml_node instanceof NodeContainer) {
+                // The easy way to get the source of an SSE XML node.
+                data = ((NodeContainer) xml_node).getSource();
+            } else  if (xml_node instanceof IndexedRegion && sse_doc != null) {
+                // Try harder.
+                IndexedRegion region = (IndexedRegion) xml_node;
+                int start = region.getStartOffset();
+                int end = region.getEndOffset();
+
+                if (end > start) {
+                    data = sse_doc.get(start, end - start);
+                }
+            }
+        } catch (BadLocationException e) {
+            // the region offset was invalid. ignore.
+        } finally {
+            model.releaseFromRead();
+        }
+        return data;
+    }
+
+    private SimpleElement[] getSelectionAsElements(List<CanvasSelection> mDragSelection) {
+        ArrayList<SimpleElement> elements = new ArrayList<SimpleElement>();
+
+        for (CanvasSelection cs : mDragSelection) {
+            CanvasViewInfo vi = cs.getViewInfo();
+
+            SimpleElement e = transformToSimpleElement(vi);
+            elements.add(e);
+        }
+
+        return elements.toArray(new SimpleElement[elements.size()]);
+    }
+
+    private SimpleElement transformToSimpleElement(CanvasViewInfo vi) {
+
+        UiViewElementNode uiNode = vi.getUiViewKey();
+
+        String fqcn = SimpleXmlTransfer.getFqcn(uiNode.getDescriptor());
+        String parentFqcn = null;
+        Rect bounds = new Rect(vi.getAbsRect());
+        Rect parentBounds = null;
+
+        UiElementNode uiParent = uiNode.getUiParent();
+        if (uiParent != null) {
+            parentFqcn = SimpleXmlTransfer.getFqcn(uiParent.getDescriptor());
+        }
+        if (vi.getParent() != null) {
+            parentBounds = new Rect(vi.getParent().getAbsRect());
+        }
+
+        SimpleElement e = new SimpleElement(fqcn, parentFqcn, bounds, parentBounds);
+
+        for (UiAttributeNode attr : uiNode.getUiAttributes()) {
+            String value = attr.getCurrentValue();
+            if (value != null && value.length() > 0) {
+                AttributeDescriptor attrDesc = attr.getDescriptor();
+                SimpleAttribute a = new SimpleAttribute(
+                        attrDesc.getNamespaceUri(),
+                        attrDesc.getXmlLocalName(),
+                        value);
+                e.addAttribute(a);
+            }
+        }
+
+        for (CanvasViewInfo childVi : vi.getChildren()) {
+            SimpleElement e2 = transformToSimpleElement(childVi);
+            if (e2 != null) {
+                e.addInnerElement(e2);
+            }
+        }
+
+        return e;
+    }
+
+    //---------------
+
+    private void createContextMenu() {
+
+        MenuManager mm = new MenuManager();
+        createMenuAction(mm);
+        setMenu(mm.createContextMenu(this));
+        /*
+        Menu menu = new Menu(this);
+
+        ISharedImages wbImages = PlatformUI.getWorkbench().getSharedImages();
+
+        final MenuItem cutItem = new MenuItem (menu, SWT.PUSH);
+        cutItem.setText("Cut");
+        cutItem.setImage(wbImages.getImage(ISharedImages.IMG_TOOL_CUT));
+        cutItem.addListener (SWT.Selection, new Listener () {
+            public void handleEvent (Event event) {
+                // TODO
+            }
+        });
+
+        menu.addMenuListener(new MenuAdapter() {
+            @Override
+            public void menuShown(MenuEvent e) {
+                cutItem.setEnabled(!mSelections.isEmpty());
+                super.menuShown(e);
+            }
+        });
+
+        setMenu(menu);
+        */
+
+    }
+
+    /** Update menu actions that depends on the selection. */
+    private void updateMenuActions() {
+
+        boolean hasSelection = !mSelections.isEmpty();
+
+        mCutAction.setEnabled(hasSelection);
+        mCopyAction.setEnabled(hasSelection);
+        mDeleteAction.setEnabled(hasSelection);
+        mSelectAllAction.setEnabled(hasSelection);
+
+        // The paste operation is only available if we can paste our custom type.
+        // We do not currently support pasting random text (e.g. XML). Maybe later.
+        SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
+        boolean hasSxt = false;
+        for (TransferData td : mClipboard.getAvailableTypes()) {
+            if (sxt.isSupportedType(td)) {
+                hasSxt = true;
+                break;
+            }
+        }
+        mPasteAction.setEnabled(hasSxt);
+    }
+
+    /**
+     * Invoked by the constructor to add our cut/copy/paste/delete/select-all
+     * handlers in the global action handlers of this editor's site.
+     * <p/>
+     * This will enable the menu items under the global Edit menu and make them
+     * invoke our actions as needed. As a benefit, the corresponding shortcut
+     * accelerators will do what one would expect.
+     */
+    private void setupGlobalActionHandlers() {
+        // Get the global action bar for this editor (i.e. the menu bar)
+        IActionBars actionBars = mLayoutEditor.getEditorSite().getActionBars();
+
+        TextActionHandler tah = new TextActionHandler(actionBars);
+
+        mCutAction = new Action() {
+            @Override
+            public void run() {
+                cutSelectionToClipboard(new ArrayList<CanvasSelection>(mSelections));
+            }
+        };
+
+        tah.setCutAction(mCutAction);
+        copyActionAttributes(mCutAction, ActionFactory.CUT);
+
+        mCopyAction = new Action() {
+            @Override
+            public void run() {
+                copySelectionToClipboard(new ArrayList<CanvasSelection>(mSelections));
+            }
+        };
+
+        tah.setCopyAction(mCopyAction);
+        copyActionAttributes(mCopyAction, ActionFactory.COPY);
+
+        mPasteAction = new Action() {
+            @Override
+            public void run() {
+                onPaste();
+            }
+        };
+
+        tah.setPasteAction(mPasteAction);
+        copyActionAttributes(mPasteAction, ActionFactory.PASTE);
+
+        mDeleteAction = new Action() {
+            @Override
+            public void run() {
+                deleteSelection(
+                        mDeleteAction.getText(), // verb "Delete" from the DELETE action's title
+                        new ArrayList<CanvasSelection>(mSelections));
+            }
+        };
+
+        tah.setDeleteAction(mDeleteAction);
+        copyActionAttributes(mDeleteAction, ActionFactory.DELETE);
+
+        mSelectAllAction = new Action() {
+            @Override
+            public void run() {
+                onSelectAll();
+            }
+        };
+
+        tah.setSelectAllAction(mSelectAllAction);
+        copyActionAttributes(mSelectAllAction, ActionFactory.SELECT_ALL);
+    }
+
+    /**
+     * Helper for {@link #setupGlobalActionHandlers()}.
+     * Copies the action attributes form the given {@link ActionFactory}'s action to
+     * our action.
+     * <p/>
+     * {@link ActionFactory} provides access to the standard global actions in Ecipse.
+     * <p/>
+     * This allows us to grab the standard labels and icons for the
+     * global actions such as copy, cut, paste, delete and select-all.
+     */
+    private void copyActionAttributes(Action action, ActionFactory factory) {
+        IWorkbenchAction wa = factory.create(mLayoutEditor.getEditorSite().getWorkbenchWindow());
+        action.setEnabled(false);
+        action.setText(wa.getText());
+        action.setDescription(wa.getDescription());
+        action.setImageDescriptor(wa.getImageDescriptor());
+        action.setHoverImageDescriptor(wa.getHoverImageDescriptor());
+        action.setDisabledImageDescriptor(wa.getDisabledImageDescriptor());
+    }
+
+    /**
+     * Invoked by the constructor to create our *static* context menu.
+     * <p/>
+     * The content of the menu itself does not change. However the state of the
+     * various items is controlled by their associated actions.
+     * <p/>
+     * For cut/copy/paste/delete/select-all, we explicitely reuse the actions
+     * created by {@link #setupGlobalActionHandlers()}, so this method must be
+     * invoked after that one.
+     */
+    private void createMenuAction(IMenuManager manager) {
+        manager.removeAll();
+
+        manager.add(mCutAction);
+        manager.add(mCopyAction);
+        manager.add(mPasteAction);
+
+        manager.add(new Separator());
+
+        manager.add(mDeleteAction);
+        manager.add(mSelectAllAction);
+
+        // TODO add view-sensitive menu items.
+    }
+
+    /**
+     * Invoked by {@link #mSelectAllAction}. It clears the selection and then
+     * selects everything (all views and all their children).
+     */
+    private void onSelectAll() {
+        // First clear the current selection, if any.
+        mSelections.clear();
+        mAltSelection = null;
+
+        // Now select everything if there's a valid layout
+        if (mIsResultValid && mLastValidResult != null) {
+            selectAllViewInfos(mLastValidViewInfoRoot);
+            redraw();
+        }
+
+        fireSelectionChanged();
+    }
+
+    /**
+     * Perform the "Copy" action, either from the Edit menu or from the context menu.
+     * Invoked by {@link #mCopyAction}.
+     * <p/>
+     * This sanitizes the selection, so it must be a copy. It then inserts the selection
+     * both as text and as {@link SimpleElement}s in the clipboard.
+     */
+    private void copySelectionToClipboard(List<CanvasSelection> selection) {
+        sanitizeSelection(selection);
+
+        if (selection.isEmpty()) {
+            return;
+        }
+
+        Object[] data = new Object[] {
+                getSelectionAsElements(selection),
+                getSelectionAsText(selection)
+        };
+
+        Transfer[] types = new Transfer[] {
+                SimpleXmlTransfer.getInstance(),
+                TextTransfer.getInstance()
+        };
+
+        mClipboard.setContents(data, types);
+    }
+
+    /**
+     * Perform the "Cut" action, either from the Edit menu or from the context menu.
+     * Invoked by {@link #mCutAction}.
+     * <p/>
+     * This sanitizes the selection, so it must be a copy.
+     * It uses the {@link #copySelectionToClipboard(List)} method to copy the selection
+     * to the clipboard.
+     * Finally it uses {@link #deleteSelection(String, List)} to delete the selection
+     * with a "Cut" verb for the title.
+     */
+    private void cutSelectionToClipboard(List<CanvasSelection> selection) {
+        copySelectionToClipboard(selection);
+        deleteSelection(
+                mCutAction.getText(), // verb "Cut" from the CUT action's title
+                selection);
+    }
+
+    /**
+     * Deletes the given selection.
+     * <p/>
+     * This can either be invoked directly by {@link #mDeleteAction}, or as
+     * an implementation detail as part of {@link #mCutAction} or also when removing
+     * the elements after a successful "MOVE" drag'n'drop.
+     *
+     * @param verb A translated verb for the action. Will be used for the undo/redo title.
+     *   Typically this should be {@link Action#getText()} for either
+     *   {@link #mCutAction} or {@link #mDeleteAction}.
+     * @param selection The selection. Must not be null. Can be empty, in which case nothing
+     *   happens. The selection list will be sanitized so the caller should give a copy of
+     *   {@link #mSelections}, directly or indirectly.
+     */
+    private void deleteSelection(String verb, final List<CanvasSelection> selection) {
+        sanitizeSelection(selection);
+
+        if (selection.isEmpty()) {
+            return;
+        }
+
+        // If all selected items have the same *kind* of parent, display that in the undo title.
+        String title = null;
+        for (CanvasSelection cs : selection) {
+            CanvasViewInfo vi = cs.getViewInfo();
+            if (vi != null && vi.getParent() != null) {
+                if (title == null) {
+                    title = vi.getParent().getName();
+                } else if (!title.equals(vi.getParent().getName())) {
+                    // More than one kind of parent selected.
+                    title = null;
+                    break;
+                }
+            }
+        }
+
+        if (title != null) {
+            // Typically the name is an FQCN. Just get the last segment.
+            int pos = title.lastIndexOf('.');
+            if (pos > 0 && pos < title.length() - 1) {
+                title = title.substring(pos + 1);
+            }
+        }
+        boolean multiple = mSelections.size() > 1;
+        if (title == null) {
+            title = String.format(
+                        multiple ? "%1$s elements" : "%1$s element",
+                        verb);
+        } else {
+            title = String.format(
+                        multiple ? "%1$s elements from %2$s" : "%1$s element from %2$s",
+                        verb, title);
+        }
+
+        // Implementation note: we don't clear the internal selection after removing
+        // the elements. An update XML model event should happen when the model gets released
+        // which will trigger a recompute of the layout, thus reloading the model thus
+        // resetting the selection.
+        mLayoutEditor.wrapUndoRecording(title, new Runnable() {
+            public void run() {
+                mLayoutEditor.editXmlModel(new Runnable() {
+                    public void run() {
+                        for (CanvasSelection cs : selection) {
+                            CanvasViewInfo vi = cs.getViewInfo();
+                            if (vi != null) {
+                                UiViewElementNode ui = vi.getUiViewKey();
+                                if (ui != null) {
+                                    ui.deleteXmlNode();
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Perform the "Paste" action, either from the Edit menu or from the context menu.
+     */
+    private void onPaste() {
+        // TODO need to defer that to GRE.
+        // TODO list:
+        // - Paste as "in first parent, before first select child" (defined by scripts).
+        // - If there's nothing selected, use root element as the parent.
+        // - handle empty root:
+        //   Must also be able to copy/paste into an empty document (prolly need to bypass script, and deal with the xmlns)
+        AdtPlugin.displayWarning("Canvas Paste", "Not implemented yet");
+    }
+
 }

@@ -632,7 +632,10 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * Returns a version of the model that has been shared for edit.
      * <p/>
      * Callers <em>must</em> call model.releaseFromEdit() when done, typically
-     * in a try..finally clause.
+     * in a try..finally clause. Because of this, it is highly recommended
+     * to <b>NOT</b> use this method directly and instead use the wrapper
+     * {@link #editXmlModel(Runnable)} which executes a runnable into a
+     * properly configured model and then performs whatever cleanup is necessary.
      *
      * @return The model for the XML document or null if cannot be obtained from the editor
      */

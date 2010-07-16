@@ -21,14 +21,14 @@ import com.android.ide.eclipse.adt.internal.editors.layout.ExplodedRenderingHelp
 import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor;
-import com.android.ide.eclipse.adt.internal.editors.layout.ProjectCallback;
-import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ChangeFlags;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ILayoutReloadListener;
+import com.android.ide.eclipse.adt.internal.editors.layout.ProjectCallback;
+import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
-import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomToggle;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
+import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.ElementCreateCommand;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
@@ -39,9 +39,9 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
+import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.layoutlib.api.ILayoutBridge;
@@ -63,26 +63,22 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.gef.ui.parts.SelectionSynchronizer;
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.INullSelectionListener;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
@@ -142,9 +138,6 @@ public class GraphicalEditorPart extends EditorPart
 
     /** Reference to the file being edited. Can also be used to access the {@link IProject}. */
     private IFile mEditedFile;
-
-    /** The current clipboard. Must be disposed later. */
-    private Clipboard mClipboard;
 
     /** The configuration composite at the top of the layout editor. */
     private ConfigurationComposite mConfigComposite;
@@ -221,7 +214,6 @@ public class GraphicalEditorPart extends EditorPart
     public void createPartControl(Composite parent) {
 
         Display d = parent.getDisplay();
-        mClipboard = new Clipboard(d);
 
         GridLayout gl = new GridLayout(1, false);
         parent.setLayout(gl);
@@ -295,8 +287,6 @@ public class GraphicalEditorPart extends EditorPart
         mSashError.setWeights(new int[] { 80, 20 });
         mSashError.setMaximizedControl(mCanvasViewer.getControl());
 
-        setupEditActions();
-
         // Initialize the state
         reloadPalette();
 
@@ -334,42 +324,6 @@ public class GraphicalEditorPart extends EditorPart
 
     }
 
-    private void setupEditActions() {
-
-        IActionBars actionBars = getEditorSite().getActionBars();
-
-        actionBars.setGlobalActionHandler(ActionFactory.COPY.getId(), new Action("Copy") {
-            @Override
-            public void run() {
-                // TODO enable copy only when there's a selection
-                mCanvasViewer.getCanvas().onCopy(mClipboard);
-            }
-        });
-
-        actionBars.setGlobalActionHandler(ActionFactory.CUT.getId(), new Action("Cut") {
-            @Override
-            public void run() {
-                // TODO enable cut only when there's a selection
-                mCanvasViewer.getCanvas().onCut(mClipboard);
-            }
-        });
-
-        actionBars.setGlobalActionHandler(ActionFactory.PASTE.getId(), new Action("Paste") {
-            @Override
-            public void run() {
-                mCanvasViewer.getCanvas().onPaste(mClipboard);
-            }
-        });
-
-        actionBars.setGlobalActionHandler(ActionFactory.SELECT_ALL.getId(),
-                new Action("Select All") {
-            @Override
-            public void run() {
-                mCanvasViewer.getCanvas().onSelectAll();
-            }
-        });
-    }
-
     /**
      * Switches the stack to display the error label and hide the canvas.
      * @param errorFormat The new error to display if not null.
@@ -389,7 +343,6 @@ public class GraphicalEditorPart extends EditorPart
 
     @Override
     public void dispose() {
-
         getSite().getPage().removeSelectionListener(this);
         getSite().setSelectionProvider(null);
 
@@ -401,11 +354,6 @@ public class GraphicalEditorPart extends EditorPart
         if (mReloadListener != null) {
             LayoutReloadMonitor.getMonitor().removeListener(mReloadListener);
             mReloadListener = null;
-        }
-
-        if (mClipboard != null) {
-            mClipboard.dispose();
-            mClipboard = null;
         }
 
         super.dispose();
@@ -876,10 +824,6 @@ public class GraphicalEditorPart extends EditorPart
                 mConfigListener.onConfigurationChange();
             }
         }
-    }
-
-    public Clipboard getClipboard() {
-        return mClipboard;
     }
 
     public LayoutEditor getLayoutEditor() {
