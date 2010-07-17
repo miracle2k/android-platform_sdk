@@ -32,6 +32,9 @@ import com.android.layoutlib.api.ILayoutResult;
 
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
@@ -119,13 +122,14 @@ import java.util.Set;
  * TODO list:
  * - gray on error, keep select but disable d'n'd.
  * - context menu handling of layout + local props (via IViewRules)
- * - outline should include same context menu + delete/copy/paste ops.
  * - outline should include drop support (from canvas or from palette)
  * - handle empty root:
  *    - Must also be able to copy/paste into an empty document (prolly need to bypass script, and deal with the xmlns)
       - We must be able to move/copy/cut the top root element (mostly between documents).
  */
 class LayoutCanvas extends Canvas implements ISelectionProvider {
+
+    public static final String PREFIX_CANVAS_ACTION = "canvas_action_";
 
     /** The layout editor that uses this layout canvas. */
     private final LayoutEditor mLayoutEditor;
@@ -243,6 +247,8 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     /** Copy action for the Edit or context menu. */
     private Action mCopyAction;
+
+    private MenuManager mMenuManager;
 
 
     public LayoutCanvas(LayoutEditor layoutEditor,
@@ -605,6 +611,35 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     public void removeSelectionChangedListener(ISelectionChangedListener listener) {
         mSelectionListeners.remove(listener);
+    }
+
+    /**
+     * Returns the action for the context menu corresponding to the given action id.
+     * <p/>
+     * For global actions such as copy or paste, the action id must be composed of
+     * the {@link #PREFIX_CANVAS_ACTION} followed by one of {@link ActionFactory}'s
+     * action ids.
+     * <p/>
+     * Returns null if there's no action for the given id.
+     */
+    public IAction getAction(String actionId) {
+        String prefix = PREFIX_CANVAS_ACTION;
+        if (mMenuManager == null ||
+                actionId == null ||
+                !actionId.startsWith(prefix)) {
+            return null;
+        }
+
+        actionId = actionId.substring(prefix.length());
+
+        for (IContributionItem contrib : mMenuManager.getItems()) {
+            if (contrib instanceof ActionContributionItem &&
+                    actionId.equals(contrib.getId())) {
+                return ((ActionContributionItem) contrib).getAction();
+            }
+        }
+
+        return null;
     }
 
     //---
@@ -1503,10 +1538,12 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     private void createContextMenu() {
 
-        MenuManager mm = new MenuManager();
-        createMenuAction(mm);
-        setMenu(mm.createContextMenu(this));
+        mMenuManager = new MenuManager();
+        createMenuAction(mMenuManager);
+        setMenu(mMenuManager.createContextMenu(this));
         /*
+        TODO insert generated menus/actions here.
+
         Menu menu = new Menu(this);
 
         ISharedImages wbImages = PlatformUI.getWorkbench().getSharedImages();
@@ -1635,9 +1672,13 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      */
     private void copyActionAttributes(Action action, ActionFactory factory) {
         IWorkbenchAction wa = factory.create(mLayoutEditor.getEditorSite().getWorkbenchWindow());
-        action.setEnabled(false);
+        action.setId(wa.getId());
         action.setText(wa.getText());
+        action.setEnabled(wa.isEnabled());
         action.setDescription(wa.getDescription());
+        action.setToolTipText(wa.getToolTipText());
+        action.setAccelerator(wa.getAccelerator());
+        action.setActionDefinitionId(wa.getActionDefinitionId());
         action.setImageDescriptor(wa.getImageDescriptor());
         action.setHoverImageDescriptor(wa.getHoverImageDescriptor());
         action.setDisabledImageDescriptor(wa.getDisabledImageDescriptor());
@@ -1819,5 +1860,4 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         //   Must also be able to copy/paste into an empty document (prolly need to bypass script, and deal with the xmlns)
         AdtPlugin.displayWarning("Canvas Paste", "Not implemented yet");
     }
-
 }

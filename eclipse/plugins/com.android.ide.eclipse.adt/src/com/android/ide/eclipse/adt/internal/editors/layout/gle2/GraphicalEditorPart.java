@@ -63,6 +63,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.gef.ui.parts.SelectionSynchronizer;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
@@ -665,7 +666,7 @@ public class GraphicalEditorPart extends EditorPart
 
         public void onSdkLoaded() {
             Sdk currentSdk = Sdk.getCurrent();
-            if (currentSdk != null) {
+            if (currentSdk != null && mEditedFile != null) {
                 IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
                 if (target != null) {
                     mConfigComposite.onSdkLoaded(target);
@@ -828,6 +829,13 @@ public class GraphicalEditorPart extends EditorPart
 
     public LayoutEditor getLayoutEditor() {
         return mLayoutEditor;
+    }
+
+    public IAction getCanvasAction(String canvasActionId) {
+        if (mCanvasViewer != null) {
+            return mCanvasViewer.getCanvas().getAction(canvasActionId);
+        }
+        return null;
     }
 
     public UiDocumentNode getModel() {

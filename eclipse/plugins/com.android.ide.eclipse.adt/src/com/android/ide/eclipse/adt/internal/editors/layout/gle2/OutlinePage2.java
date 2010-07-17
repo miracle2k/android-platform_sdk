@@ -23,6 +23,12 @@ import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElement
 import com.android.ide.eclipse.adt.internal.editors.ui.ErrorImageComposite;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IContributionItem;
+import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.viewers.IElementComparer;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
@@ -36,8 +42,11 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.INullSelectionListener;
+import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.views.contentoutline.ContentOutlinePage;
 
 import java.util.ArrayList;
@@ -76,6 +85,8 @@ public class OutlinePage2 extends ContentOutlinePage
      * element, so we introduce a fake parent.
      */
     private final RootWrapper mRootWrapper = new RootWrapper();
+	/** Part listener, to update the context menu associated with GraphicalEditorPart. */
+    private PartListener mPartListener;
 
     public OutlinePage2() {
         super();
@@ -125,11 +136,17 @@ public class OutlinePage2 extends ContentOutlinePage
 
         // Listen to selection changes from the layout editor
         getSite().getPage().addSelectionListener(this);
+
+        setupContextMenu();
     }
 
     @Override
     public void dispose() {
         mRootWrapper.setRoot(null);
+
+        IWorkbenchWindow win = getSite().getWorkbenchWindow();
+        win.getPartService().removePartListener(mPartListener);
+
         getSite().getPage().removeSelectionListener(this);
         super.dispose();
     }
@@ -199,7 +216,6 @@ public class OutlinePage2 extends ContentOutlinePage
 
     // ----
 
-
     /**
      * In theory, the root of the model should be the input of the {@link TreeViewer},
      * which would be the root {@link CanvasViewInfo}.
@@ -224,6 +240,8 @@ public class OutlinePage2 extends ContentOutlinePage
             return mRoot;
         }
     }
+
+    // --- Content and Label Providers ---
 
     /**
      * Content provider for the Outline model.
@@ -344,6 +362,187 @@ public class OutlinePage2 extends ContentOutlinePage
 
         public void removeListener(ILabelProviderListener listener) {
             // pass
+        }
+    }
+
+    // --- Context Menu ---
+
+    /**
+     * This viewer uses its own actions that delegate to the ones given
+     * by the {@link LayoutCanvas}. All the processing is actually handled
+     * directly by the canvas and this viewer only gets refreshed as a
+     * consequence of the canvas changing the XML model.
+     * <p/>
+     * To do that, we create actions that currently listen to the active
+     * part and only defer to an active layout canvas.
+     */
+    private void setupContextMenu() {
+
+        MenuManager mm = new MenuManager();
+        mm.removeAll();
+
+        final String prefix = LayoutCanvas.PREFIX_CANVAS_ACTION;
+        mm.add(new DelegateAction(prefix + ActionFactory.CUT.getId()));
+        mm.add(new DelegateAction(prefix + ActionFactory.COPY.getId()));
+        mm.add(new DelegateAction(prefix + ActionFactory.PASTE.getId()));
+
+        mm.add(new Separator());
+
+        mm.add(new DelegateAction(prefix + ActionFactory.DELETE.getId()));
+        mm.add(new DelegateAction(prefix + ActionFactory.SELECT_ALL.getId()));
+
+        getControl().setMenu(mm.createContextMenu(getControl()));
+
+        mPartListener = new PartListener(mm);
+        IWorkbenchWindow win = getSite().getWorkbenchWindow();
+        win.getPartService().addPartListener(mPartListener);
+    }
+
+    /**
+     * Listen to part changes.
+     * <p/>
+     * This listener only cares specifically about GLE2's {@link GraphicalEditorPart} changing.
+     * When the part changes, the delegate menu actions are refreshed to make sure that the
+     * ouline's context menu always points to the current active layout canvas.
+     */
+    private static class PartListener implements IPartListener {
+        private final MenuManager mMenuManager;
+
+        public PartListener(MenuManager menuManager) {
+            mMenuManager = menuManager;
+        }
+
+        public void partOpened(IWorkbenchPart part) {
+            // pass
+        }
+
+        public void partActivated(IWorkbenchPart part) {
+            GraphicalEditorPart gep = getGraphicalEditorPart(part);
+            if (gep != null) {
+                updateMenuActions(gep);
+            }
+        }
+
+        public void partBroughtToTop(IWorkbenchPart part) {
+            GraphicalEditorPart gep = getGraphicalEditorPart(part);
+            if (gep != null) {
+                updateMenuActions(gep);
+            }
+        }
+
+        public void partDeactivated(IWorkbenchPart part) {
+            GraphicalEditorPart gep = getGraphicalEditorPart(part);
+            if (gep != null) {
+                updateMenuActions(gep);
+            }
+        }
+
+        public void partClosed(IWorkbenchPart part) {
+            GraphicalEditorPart gep = getGraphicalEditorPart(part);
+            if (gep != null) {
+                updateMenuActions(gep);
+            }
+        }
+
+        /**
+         * Returns a non-null reference on the {@link GraphicalEditorPart} if this
+         * is the part that changed, or null.
+         */
+        private GraphicalEditorPart getGraphicalEditorPart(IWorkbenchPart part) {
+            if (part instanceof LayoutEditor) {
+                part = ((LayoutEditor) part).getActiveEditor();
+            }
+            if (part instanceof GraphicalEditorPart) {
+                return (GraphicalEditorPart) part;
+            }
+            return null;
+        }
+
+        /**
+         * For every action contributed to our menu manager, ask the action to
+         * update itself. The action will refresh its target action to match the
+         * one from the given {@link GraphicalEditorPart}. If the editor part is
+         * null, the delegate action will unlink from its target.
+         */
+        private void updateMenuActions(GraphicalEditorPart editorPart) {
+            for (IContributionItem contrib : mMenuManager.getItems()) {
+                if (contrib instanceof ActionContributionItem) {
+                    IAction action = ((ActionContributionItem) contrib).getAction();
+                    if (action instanceof DelegateAction) {
+                        ((DelegateAction) action).updateFromEditorPart(editorPart);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * An action that delegates its properties and behavior to a target action.
+     * The target action can be null or it can change overtime, typically as the
+     * layout canvas' editor part is activated or closed.
+     */
+    private static class DelegateAction extends Action {
+        private IAction mTargetAction;
+        private final String mCanvasActionId;
+
+        public DelegateAction(String canvasActionId) {
+            super(canvasActionId);
+            mCanvasActionId = canvasActionId;
+        }
+
+        // --- Methods form IAction ---
+
+        /** Returns the target action's {@link #isEnabled()} if defined, or false. */
+        @Override
+        public boolean isEnabled() {
+            return mTargetAction == null ? false : mTargetAction.isEnabled();
+        }
+
+        /** Returns the target action's {@link #isChecked()} if defined, or false. */
+        @Override
+        public boolean isChecked() {
+            return mTargetAction == null ? false : mTargetAction.isChecked();
+        }
+
+        /** Returns the target action's {@link #isHandled()} if defined, or false. */
+        @Override
+        public boolean isHandled() {
+            return mTargetAction == null ? false : mTargetAction.isHandled();
+        }
+
+        /** Runs the target action if defined. */
+        @Override
+        public void run() {
+            if (mTargetAction != null) {
+                mTargetAction.run();
+            }
+            super.run();
+        }
+
+        /** Updates this action to delegate to its counterpart in the given editor part */
+        public void updateFromEditorPart(GraphicalEditorPart editorPart) {
+            if (editorPart == null) {
+                mTargetAction = null;
+            } else {
+                mTargetAction = editorPart.getCanvasAction(mCanvasActionId);
+            }
+
+            if (mTargetAction != null) {
+                setText(mTargetAction.getText());
+                setId(mTargetAction.getId());
+                setDescription(mTargetAction.getDescription());
+                setImageDescriptor(mTargetAction.getImageDescriptor());
+                setHoverImageDescriptor(mTargetAction.getHoverImageDescriptor());
+                setDisabledImageDescriptor(mTargetAction.getDisabledImageDescriptor());
+                setToolTipText(mTargetAction.getToolTipText());
+                setActionDefinitionId(mTargetAction.getActionDefinitionId());
+                setHelpListener(mTargetAction.getHelpListener());
+                setAccelerator(mTargetAction.getAccelerator());
+                setChecked(mTargetAction.isChecked());
+                setEnabled(mTargetAction.isEnabled());
+            } else {
+                setEnabled(false);
+            }
         }
     }
 }
