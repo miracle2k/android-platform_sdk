@@ -16,7 +16,12 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-public interface ICanvasTransform {
+/**
+ * Interface for a class that can convert between client pixel's coordinates
+ * and canvas coordinates. Each instance of such a transform deals with only
+ * one axis, so clients need to use 2 instances for X and Y.
+ */
+/* package */ interface ICanvasTransform {
     /**
      * Margin around the rendered image.
      * Should be enough space to display the layout width and height pseudo widgets.

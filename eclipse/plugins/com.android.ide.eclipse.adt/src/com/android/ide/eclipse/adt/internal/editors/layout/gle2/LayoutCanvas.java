@@ -129,7 +129,7 @@ import java.util.Set;
  */
 class LayoutCanvas extends Canvas implements ISelectionProvider {
 
-    public static final String PREFIX_CANVAS_ACTION = "canvas_action_";
+    /* package */ static final String PREFIX_CANVAS_ACTION = "canvas_action_";
 
     /** The layout editor that uses this layout canvas. */
     private final LayoutEditor mLayoutEditor;
@@ -221,7 +221,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     private ScaleInfo mHScale;
 
     /** Drag source associated with this canvas. */
-    private DragSource mSource;
+    private DragSource mDragSource;
 
     /** List of clients listening to selection changes. */
     private final ListenerList mSelectionListeners = new ListenerList();
@@ -249,6 +249,8 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     private Action mCopyAction;
 
     private MenuManager mMenuManager;
+
+    private CanvasDragSourceListener mDragSourceListener;
 
 
     public LayoutCanvas(LayoutEditor layoutEditor,
@@ -316,12 +318,8 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         mDropListener = new CanvasDropListener(this);
         mDropTarget.addDropListener(mDropListener);
 
-        mSource = new DragSource(this, DND.DROP_COPY | DND.DROP_MOVE);
-        mSource.setTransfer(new Transfer[] {
-                TextTransfer.getInstance(),
-                SimpleXmlTransfer.getInstance()
-            } );
-        mSource.addDragListener(new CanvasDragSourceListener());
+        mDragSourceListener = new CanvasDragSourceListener();
+        mDragSource = createDragSource(this, mDragSourceListener);
 
         // --- setup context menu ---
         setupGlobalActionHandlers();
@@ -359,6 +357,11 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             mRulesEngine = null;
         }
 
+        if (mDragSource != null) {
+            mDragSource.dispose();
+            mDragSource = null;
+        }
+
         if (mClipboard != null) {
             mClipboard.dispose();
             mClipboard = null;
@@ -392,13 +395,16 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * Returns the factory to use to convert from {@link CanvasViewInfo} or from
      * {@link UiViewElementNode} to {@link INode} proxies.
      */
-    public NodeFactory getNodeFactory() {
+    /* package */ NodeFactory getNodeFactory() {
         return mNodeFactory;
     }
 
-    /** Returns the shared SWT keyboard. */
-    public Clipboard getClipboard() {
-        return mClipboard;
+    /**
+     * Returns our {@link DragSourceListener}.
+     * This is used by {@link OutlinePage2} to delegate drag source events.
+     */
+    /* package */ DragSourceListener getDragSourceListener() {
+        return mDragSourceListener;
     }
 
     /**
@@ -411,7 +417,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      *
      * @param result The new rendering result, either valid or not.
      */
-    public void setResult(ILayoutResult result) {
+    /* package */ void setResult(ILayoutResult result) {
         // disable any hover
         mHoverRect = null;
 
@@ -459,16 +465,16 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         redraw();
     }
 
-    public void setShowOutline(boolean newState) {
+    /* package */ void setShowOutline(boolean newState) {
         mShowOutline = newState;
         redraw();
     }
 
-    public double getScale() {
+    /* package */ double getScale() {
         return mHScale.getScale();
     }
 
-    public void setScale(double scale) {
+    /* package */ void setScale(double scale) {
         mHScale.setScale(scale);
         mVScale.setScale(scale);
         redraw();
@@ -483,7 +489,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * @param displayY Y in SWT display coordinates
      * @return A new {@link Point} in canvas coordinates
      */
-    public Point displayToCanvasPoint(int displayX, int displayY) {
+    /* package */ Point displayToCanvasPoint(int displayX, int displayY) {
         // convert screen coordinates to local SWT control coordinates
         org.eclipse.swt.graphics.Point p = this.toControl(displayX, displayY);
 
@@ -492,6 +498,19 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         return new Point(x, y);
     }
 
+    /**
+     * Transforms a point, expressed in canvas coordinates, into "client" coordinates
+     * relative to the control (and not relative to the display.)
+     *
+     * @param canvasX X in the canvas coordinates
+     * @param canvasY Y in the canvas coordinates
+     * @return A new {@link Point} in control client coordinates (not display coordinates)
+     */
+    /* package */ Point canvasToControlPoint(int canvasX, int canvasY) {
+        int x = mHScale.translate(canvasX);
+        int y = mVScale.translate(canvasY);
+        return new Point(x, y);
+    }
 
     //----
     // Implementation of ISelectionProvider
@@ -622,7 +641,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * <p/>
      * Returns null if there's no action for the given id.
      */
-    public IAction getAction(String actionId) {
+    /* package */ IAction getAction(String actionId) {
         String prefix = PREFIX_CANVAS_ACTION;
         if (mMenuManager == null ||
                 actionId == null ||
@@ -644,6 +663,10 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     //---
 
+    /**
+     * Helper class to convert between control pixel coordinates and canvas coordinates.
+     * Takes care of the zooming and offset of the canvas.
+     */
     private class ScaleInfo implements ICanvasTransform {
         /** Canvas image size (original, before zoom), in pixels */
         private int mImgSize;
@@ -1260,6 +1283,29 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     //---------------
 
+    /**
+     * Helper to create our drag source for the given control.
+     * <p/>
+     * This is static with package-access so that {@link OutlinePage2} can also
+     * create an exact copy of the source, with the same attributes.
+     */
+    /* package */ static DragSource createDragSource(
+            Control control,
+            DragSourceListener dragSourceListener) {
+        DragSource source = new DragSource(control, DND.DROP_COPY | DND.DROP_MOVE);
+        source.setTransfer(new Transfer[] {
+                TextTransfer.getInstance(),
+                SimpleXmlTransfer.getInstance()
+            } );
+        source.addDragListener(dragSourceListener);
+        return source;
+    }
+
+
+    /**
+     * Our canvas {@link DragSourceListener}. Handles drag being started and finished
+     * and generating the drag data.
+     */
     private class CanvasDragSourceListener implements DragSourceListener {
 
         /**

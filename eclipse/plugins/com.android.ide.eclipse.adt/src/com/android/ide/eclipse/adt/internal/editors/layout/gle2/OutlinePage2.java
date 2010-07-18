@@ -27,6 +27,8 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
+import org.eclipse.jface.action.IMenuListener;
+import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.viewers.IElementComparer;
@@ -39,13 +41,17 @@ import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.ViewerCell;
+import org.eclipse.swt.dnd.DragSource;
+import org.eclipse.swt.dnd.DragSourceEvent;
+import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.INullSelectionListener;
-import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.views.contentoutline.ContentOutlinePage;
 
@@ -68,7 +74,9 @@ import java.util.ArrayList;
 /**
  * An outline page for the GLE2 canvas view.
  * <p/>
- * The page is created by {@link LayoutEditor#getAdapter(Class)}.
+ * The page is created by {@link LayoutEditor#getAdapter(Class)}. This means
+ * we have *one* instance of the outline page per open canvas editor.
+ * <p/>
  * It sets itself as a listener on the site's selection service in order to be
  * notified of the canvas' selection changes.
  * The underlying page is also a selection provider (via IContentOutlinePage)
@@ -81,15 +89,31 @@ public class OutlinePage2 extends ContentOutlinePage
     implements ISelectionListener, INullSelectionListener {
 
     /**
+     * The graphical editor that created this outline.
+     */
+    private final GraphicalEditorPart mGraphicalEditorPart;
+
+    /**
      * RootWrapper is a workaround: we can't set the input of the treeview to its root
      * element, so we introduce a fake parent.
      */
     private final RootWrapper mRootWrapper = new RootWrapper();
-	/** Part listener, to update the context menu associated with GraphicalEditorPart. */
-    private PartListener mPartListener;
 
-    public OutlinePage2() {
+    /**
+     * Menu manager for the context menu actions.
+     * The actions delegate to the current GraphicalEditorPart.
+     */
+    private MenuManager mMenuManager;
+
+    /**
+     * Drag source, created with the same attributes as the one from {@link LayoutCanvas}.
+     * The drag source listener delegates to the current GraphicalEditorPart.
+     */
+    private DragSource mSource;
+
+    public OutlinePage2(GraphicalEditorPart graphicalEditorPart) {
         super();
+        mGraphicalEditorPart = graphicalEditorPart;
     }
 
     @Override
@@ -134,18 +158,23 @@ public class OutlinePage2 extends ContentOutlinePage
             }
         });
 
-        // Listen to selection changes from the layout editor
-        getSite().getPage().addSelectionListener(this);
+
+        mSource = LayoutCanvas.createDragSource(getControl(), new DelegateDragSourceListener());
 
         setupContextMenu();
+
+        // Listen to selection changes from the layout editor
+        getSite().getPage().addSelectionListener(this);
     }
 
     @Override
     public void dispose() {
-        mRootWrapper.setRoot(null);
+        if (mSource != null) {
+            mSource.dispose();
+            mSource = null;
+        }
 
-        IWorkbenchWindow win = getSite().getWorkbenchWindow();
-        win.getPartService().removePartListener(mPartListener);
+        mRootWrapper.setRoot(null);
 
         getSite().getPage().removeSelectionListener(this);
         super.dispose();
@@ -372,108 +401,37 @@ public class OutlinePage2 extends ContentOutlinePage
      * by the {@link LayoutCanvas}. All the processing is actually handled
      * directly by the canvas and this viewer only gets refreshed as a
      * consequence of the canvas changing the XML model.
-     * <p/>
-     * To do that, we create actions that currently listen to the active
-     * part and only defer to an active layout canvas.
      */
     private void setupContextMenu() {
 
-        MenuManager mm = new MenuManager();
-        mm.removeAll();
+        mMenuManager = new MenuManager();
+        mMenuManager.removeAll();
 
         final String prefix = LayoutCanvas.PREFIX_CANVAS_ACTION;
-        mm.add(new DelegateAction(prefix + ActionFactory.CUT.getId()));
-        mm.add(new DelegateAction(prefix + ActionFactory.COPY.getId()));
-        mm.add(new DelegateAction(prefix + ActionFactory.PASTE.getId()));
+        mMenuManager.add(new DelegateAction(prefix + ActionFactory.CUT.getId()));
+        mMenuManager.add(new DelegateAction(prefix + ActionFactory.COPY.getId()));
+        mMenuManager.add(new DelegateAction(prefix + ActionFactory.PASTE.getId()));
 
-        mm.add(new Separator());
+        mMenuManager.add(new Separator());
 
-        mm.add(new DelegateAction(prefix + ActionFactory.DELETE.getId()));
-        mm.add(new DelegateAction(prefix + ActionFactory.SELECT_ALL.getId()));
+        mMenuManager.add(new DelegateAction(prefix + ActionFactory.DELETE.getId()));
+        mMenuManager.add(new DelegateAction(prefix + ActionFactory.SELECT_ALL.getId()));
 
-        getControl().setMenu(mm.createContextMenu(getControl()));
+        getControl().setMenu(mMenuManager.createContextMenu(getControl()));
 
-        mPartListener = new PartListener(mm);
-        IWorkbenchWindow win = getSite().getWorkbenchWindow();
-        win.getPartService().addPartListener(mPartListener);
-    }
-
-    /**
-     * Listen to part changes.
-     * <p/>
-     * This listener only cares specifically about GLE2's {@link GraphicalEditorPart} changing.
-     * When the part changes, the delegate menu actions are refreshed to make sure that the
-     * ouline's context menu always points to the current active layout canvas.
-     */
-    private static class PartListener implements IPartListener {
-        private final MenuManager mMenuManager;
-
-        public PartListener(MenuManager menuManager) {
-            mMenuManager = menuManager;
-        }
-
-        public void partOpened(IWorkbenchPart part) {
-            // pass
-        }
-
-        public void partActivated(IWorkbenchPart part) {
-            GraphicalEditorPart gep = getGraphicalEditorPart(part);
-            if (gep != null) {
-                updateMenuActions(gep);
-            }
-        }
-
-        public void partBroughtToTop(IWorkbenchPart part) {
-            GraphicalEditorPart gep = getGraphicalEditorPart(part);
-            if (gep != null) {
-                updateMenuActions(gep);
-            }
-        }
-
-        public void partDeactivated(IWorkbenchPart part) {
-            GraphicalEditorPart gep = getGraphicalEditorPart(part);
-            if (gep != null) {
-                updateMenuActions(gep);
-            }
-        }
-
-        public void partClosed(IWorkbenchPart part) {
-            GraphicalEditorPart gep = getGraphicalEditorPart(part);
-            if (gep != null) {
-                updateMenuActions(gep);
-            }
-        }
-
-        /**
-         * Returns a non-null reference on the {@link GraphicalEditorPart} if this
-         * is the part that changed, or null.
-         */
-        private GraphicalEditorPart getGraphicalEditorPart(IWorkbenchPart part) {
-            if (part instanceof LayoutEditor) {
-                part = ((LayoutEditor) part).getActiveEditor();
-            }
-            if (part instanceof GraphicalEditorPart) {
-                return (GraphicalEditorPart) part;
-            }
-            return null;
-        }
-
-        /**
-         * For every action contributed to our menu manager, ask the action to
-         * update itself. The action will refresh its target action to match the
-         * one from the given {@link GraphicalEditorPart}. If the editor part is
-         * null, the delegate action will unlink from its target.
-         */
-        private void updateMenuActions(GraphicalEditorPart editorPart) {
-            for (IContributionItem contrib : mMenuManager.getItems()) {
-                if (contrib instanceof ActionContributionItem) {
-                    IAction action = ((ActionContributionItem) contrib).getAction();
-                    if (action instanceof DelegateAction) {
-                        ((DelegateAction) action).updateFromEditorPart(editorPart);
+        mMenuManager.addMenuListener(new IMenuListener() {
+            public void menuAboutToShow(IMenuManager manager) {
+                // Update all actions to match their LayoutCanvas counterparts
+                for (IContributionItem contrib : mMenuManager.getItems()) {
+                    if (contrib instanceof ActionContributionItem) {
+                        IAction action = ((ActionContributionItem) contrib).getAction();
+                        if (action instanceof DelegateAction) {
+                            ((DelegateAction) action).updateFromEditorPart(mGraphicalEditorPart);
+                        }
                     }
                 }
             }
-        }
+        });
     }
 
     /**
@@ -521,10 +479,11 @@ public class OutlinePage2 extends ContentOutlinePage
 
         /** Updates this action to delegate to its counterpart in the given editor part */
         public void updateFromEditorPart(GraphicalEditorPart editorPart) {
-            if (editorPart == null) {
+            LayoutCanvas canvas = editorPart == null ? null : editorPart.getCanvasControl();
+            if (canvas == null) {
                 mTargetAction = null;
             } else {
-                mTargetAction = editorPart.getCanvasAction(mCanvasActionId);
+                mTargetAction = canvas.getAction(mCanvasActionId);
             }
 
             if (mTargetAction != null) {
@@ -545,4 +504,76 @@ public class OutlinePage2 extends ContentOutlinePage
             }
         }
     }
+
+
+    // --- Drag Source ---
+
+    private class DelegateDragSourceListener implements DragSourceListener {
+
+        public void dragStart(DragSourceEvent event) {
+            if (!adjustEventCoordinates(event)) {
+                event.doit = false;
+                return;
+            }
+            LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+            if (canvas != null) {
+                canvas.getDragSourceListener().dragStart(event);
+            }
+        }
+
+        public void dragSetData(DragSourceEvent event) {
+            LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+            if (canvas != null) {
+                canvas.getDragSourceListener().dragSetData(event);
+            }
+        }
+
+        public void dragFinished(DragSourceEvent event) {
+            LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+            if (canvas != null) {
+                canvas.getDragSourceListener().dragFinished(event);
+            }
+        }
+
+        /**
+         * Finds the element under which the drag started and adjusts
+         * its event coordinates to match the canvas *control* coordinates.
+         * <p/>
+         * Returns false if no element was found at the given position,
+         * which will cancel the drag start.
+         */
+        private boolean adjustEventCoordinates(DragSourceEvent event) {
+            int x = event.x;
+            int y = event.y;
+            ViewerCell cell = getTreeViewer().getCell(new Point(x, y));
+            if (cell != null) {
+                Rectangle cr = cell.getBounds();
+                Object item = cell.getElement();
+
+                if (cr != null && !cr.isEmpty() && item instanceof CanvasViewInfo) {
+                    CanvasViewInfo vi = (CanvasViewInfo) item;
+                    Rectangle vir = vi.getAbsRect();
+
+                    // interpolate from the "cr" bounding box to the "vir" bounding box
+                    double ratio = (double) vir.width / (double) cr.width;
+                    x = (int) (vir.x + ratio * (x - cr.x));
+                    ratio = (double) vir.height / (double) cr.height;
+                    y = (int) (vir.y + ratio * (y - cr.y));
+
+                    LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+                    if (canvas != null) {
+                        com.android.ide.eclipse.adt.editors.layout.gscripts.Point p =
+                            canvas.canvasToControlPoint(x, y);
+
+                        event.x = p.x;
+                        event.y = p.y;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+    }
+
 }

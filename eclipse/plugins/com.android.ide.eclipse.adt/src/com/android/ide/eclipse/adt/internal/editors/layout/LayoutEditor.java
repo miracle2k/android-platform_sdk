@@ -325,7 +325,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
                 mOutline = mOutlineForGle1;
 
             } else if (mOutline == null && mGraphicalEditor instanceof GraphicalEditorPart) {
-                mOutline = new OutlinePage2();
+                mOutline = new OutlinePage2((GraphicalEditorPart) mGraphicalEditor);
             }
 
             return mOutline;
