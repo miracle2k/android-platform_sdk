@@ -55,6 +55,7 @@ import org.eclipse.swt.dnd.DragSource;
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.DropTarget;
+import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.dnd.TransferData;
@@ -118,14 +119,14 @@ import java.util.Set;
  * selection changes.
  *
  * @since GLE2
- *
+ */
+/*
  * TODO list:
  * - gray on error, keep select but disable d'n'd.
  * - context menu handling of layout + local props (via IViewRules)
- * - outline should include drop support (from canvas or from palette)
  * - handle empty root:
  *    - Must also be able to copy/paste into an empty document (prolly need to bypass script, and deal with the xmlns)
-      - We must be able to move/copy/cut the top root element (mostly between documents).
+ *    - We must be able to move/copy/cut the top root element (mostly between documents).
  */
 class LayoutCanvas extends Canvas implements ISelectionProvider {
 
@@ -313,10 +314,8 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         // --- setup drag'n'drop ---
         // DND Reference: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
 
-        mDropTarget = new DropTarget(this, DND.DROP_COPY | DND.DROP_MOVE | DND.DROP_DEFAULT);
-        mDropTarget.setTransfer(new Transfer[] { SimpleXmlTransfer.getInstance() } );
         mDropListener = new CanvasDropListener(this);
-        mDropTarget.addDropListener(mDropListener);
+        mDropTarget = createDropTarget(this, mDropListener);
 
         mDragSourceListener = new CanvasDragSourceListener();
         mDragSource = createDragSource(this, mDragSourceListener);
@@ -403,8 +402,16 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * Returns our {@link DragSourceListener}.
      * This is used by {@link OutlinePage2} to delegate drag source events.
      */
-    /* package */ DragSourceListener getDragSourceListener() {
+    /* package */ DragSourceListener getDragListener() {
         return mDragSourceListener;
+    }
+
+    /**
+     * Returns our {@link DropTargetListener}.
+     * This is used by {@link OutlinePage2} to delegate drop target events.
+     */
+    /* package */ DropTargetListener getDropListener() {
+        return mDropListener;
     }
 
     /**
@@ -1284,10 +1291,10 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     //---------------
 
     /**
-     * Helper to create our drag source for the given control.
+     * Helper to create the drag source for the given control.
      * <p/>
      * This is static with package-access so that {@link OutlinePage2} can also
-     * create an exact copy of the source, with the same attributes.
+     * create an exact copy of the source with the same attributes.
      */
     /* package */ static DragSource createDragSource(
             Control control,
@@ -1301,6 +1308,21 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         return source;
     }
 
+    /**
+     * Helper to create the drop target for the given control.
+     * <p/>
+     * This is static with package-access so that {@link OutlinePage2} can also
+     * create an exact copy of the drop target with the same attributes.
+     */
+    /* package */ static DropTarget createDropTarget(
+            Control control,
+            DropTargetListener dropListener) {
+        DropTarget dropTarget = new DropTarget(
+                control, DND.DROP_COPY | DND.DROP_MOVE | DND.DROP_DEFAULT);
+        dropTarget.setTransfer(new Transfer[] { SimpleXmlTransfer.getInstance() } );
+        dropTarget.addDropListener(dropListener);
+        return dropTarget;
+    }
 
     /**
      * Our canvas {@link DragSourceListener}. Handles drag being started and finished

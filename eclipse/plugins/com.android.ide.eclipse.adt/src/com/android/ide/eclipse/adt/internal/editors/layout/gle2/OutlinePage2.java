@@ -45,6 +45,9 @@ import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.swt.dnd.DragSource;
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.dnd.DragSourceListener;
+import org.eclipse.swt.dnd.DropTarget;
+import org.eclipse.swt.dnd.DropTargetEvent;
+import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -56,20 +59,6 @@ import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.views.contentoutline.ContentOutlinePage;
 
 import java.util.ArrayList;
-
-/*
- * TODO -- missing features:
- * - right-click context menu *shared* with the one from canvas (simply delegate action)
- * - drag'n'drop initiated from Palette to Outline
- * - drag'n'drop from Outline to Outline
- * - drag'n'drop from Canvas to Outline
- * - drag'n'drop from Outline to Canvas
- * - => Check if we can handle all the d'n'd cases a simply delegating the action to the canvas.
- *      There's a *lot* of logic in the CanvasDropListener we don't want to replicate.
- *      That should be fairly trivial, except that we can't provide X/Y coordinates in the drop
- *      move. We could just fake them by using the topleft/middle point of the tree item's bounds
- *      or something like that.
- */
 
 /**
  * An outline page for the GLE2 canvas view.
@@ -109,7 +98,13 @@ public class OutlinePage2 extends ContentOutlinePage
      * Drag source, created with the same attributes as the one from {@link LayoutCanvas}.
      * The drag source listener delegates to the current GraphicalEditorPart.
      */
-    private DragSource mSource;
+    private DragSource mDragSource;
+
+    /**
+     * Drop target, created with the same attributes as the one from {@link LayoutCanvas}.
+     * The drop target listener delegates to the current GraphicalEditorPart.
+     */
+    private DropTarget mDropTarget;
 
     public OutlinePage2(GraphicalEditorPart graphicalEditorPart) {
         super();
@@ -158,8 +153,8 @@ public class OutlinePage2 extends ContentOutlinePage
             }
         });
 
-
-        mSource = LayoutCanvas.createDragSource(getControl(), new DelegateDragSourceListener());
+        mDragSource = LayoutCanvas.createDragSource(getControl(), new DelegateDragListener());
+        mDropTarget = LayoutCanvas.createDropTarget(getControl(), new DelegateDropListener());
 
         setupContextMenu();
 
@@ -169,9 +164,14 @@ public class OutlinePage2 extends ContentOutlinePage
 
     @Override
     public void dispose() {
-        if (mSource != null) {
-            mSource.dispose();
-            mSource = null;
+        if (mDragSource != null) {
+            mDragSource.dispose();
+            mDragSource = null;
+        }
+
+        if (mDropTarget != null) {
+            mDropTarget.dispose();
+            mDropTarget = null;
         }
 
         mRootWrapper.setRoot(null);
@@ -508,7 +508,15 @@ public class OutlinePage2 extends ContentOutlinePage
 
     // --- Drag Source ---
 
-    private class DelegateDragSourceListener implements DragSourceListener {
+    /**
+     * Delegates the drag events to the {@link LayoutCanvas}.
+     * <p/>
+     * We convert the drag coordinates from the bounding box {@link TreeViewer}'s
+     * cell to the ones of the bounding of the corresponding canvas element.
+     */
+    private class DelegateDragListener implements DragSourceListener {
+
+        private final Point mTempPoint = new Point(0, 0);
 
         public void dragStart(DragSourceEvent event) {
             if (!adjustEventCoordinates(event)) {
@@ -517,21 +525,23 @@ public class OutlinePage2 extends ContentOutlinePage
             }
             LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
             if (canvas != null) {
-                canvas.getDragSourceListener().dragStart(event);
+                canvas.getDragListener().dragStart(event);
             }
         }
 
         public void dragSetData(DragSourceEvent event) {
+            adjustEventCoordinates(event);
             LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
             if (canvas != null) {
-                canvas.getDragSourceListener().dragSetData(event);
+                canvas.getDragListener().dragSetData(event);
             }
         }
 
         public void dragFinished(DragSourceEvent event) {
+            adjustEventCoordinates(event);
             LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
             if (canvas != null) {
-                canvas.getDragSourceListener().dragFinished(event);
+                canvas.getDragListener().dragFinished(event);
             }
         }
 
@@ -540,40 +550,168 @@ public class OutlinePage2 extends ContentOutlinePage
          * its event coordinates to match the canvas *control* coordinates.
          * <p/>
          * Returns false if no element was found at the given position,
-         * which will cancel the drag start.
+         * which is used to cancel the drag start.
          */
         private boolean adjustEventCoordinates(DragSourceEvent event) {
-            int x = event.x;
-            int y = event.y;
-            ViewerCell cell = getTreeViewer().getCell(new Point(x, y));
-            if (cell != null) {
-                Rectangle cr = cell.getBounds();
-                Object item = cell.getElement();
-
-                if (cr != null && !cr.isEmpty() && item instanceof CanvasViewInfo) {
-                    CanvasViewInfo vi = (CanvasViewInfo) item;
-                    Rectangle vir = vi.getAbsRect();
-
-                    // interpolate from the "cr" bounding box to the "vir" bounding box
-                    double ratio = (double) vir.width / (double) cr.width;
-                    x = (int) (vir.x + ratio * (x - cr.x));
-                    ratio = (double) vir.height / (double) cr.height;
-                    y = (int) (vir.y + ratio * (y - cr.y));
-
-                    LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
-                    if (canvas != null) {
-                        com.android.ide.eclipse.adt.editors.layout.gscripts.Point p =
-                            canvas.canvasToControlPoint(x, y);
-
-                        event.x = p.x;
-                        event.y = p.y;
-                        return true;
-                    }
-                }
+            if (event.x == mTempPoint.x && event.y == mTempPoint.y) {
+                // Seems like the event is reusing the coordinates we last
+                // converted. Avoid converting them twice. We only modified
+                // the event struct in case of a successful conversion so
+                // we can return true here.
+                return true;
             }
 
-            return false;
+            mTempPoint.x = event.x;
+            mTempPoint.y = event.y;
+
+            boolean result = viewerToCanvasControlCoordinates(mTempPoint);
+            if (result) {
+                event.x = mTempPoint.x;
+                event.y = mTempPoint.y;
+            }
+
+            return result;
         }
+    }
+
+    // --- Drop Target ---
+
+    /**
+     * Delegates drop events to the {@link LayoutCanvas}.
+     * <p/>
+     * We convert the drag/drop coordinates from the bounding box {@link TreeViewer}'s
+     * cell to the ones of the bounding of the corresponding canvas element.
+     */
+    private class DelegateDropListener implements DropTargetListener {
+
+        private final Point mTempPoint = new Point(0, 0);
+
+        public void dragEnter(DropTargetEvent event) {
+            LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+            if (canvas != null) {
+                adjustEventCoordinates(canvas, event);
+                canvas.getDropListener().dragEnter(event);
+            }
+        }
+
+        public void dragLeave(DropTargetEvent event) {
+            LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+            if (canvas != null) {
+                adjustEventCoordinates(canvas, event);
+                canvas.getDropListener().dragLeave(event);
+            }
+        }
+
+        public void dragOperationChanged(DropTargetEvent event) {
+            LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+            if (canvas != null) {
+                adjustEventCoordinates(canvas, event);
+                canvas.getDropListener().dragOperationChanged(event);
+            }
+        }
+
+        public void dragOver(DropTargetEvent event) {
+            LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+            if (canvas != null) {
+                adjustEventCoordinates(canvas, event);
+                canvas.getDropListener().dragOver(event);
+            }
+        }
+
+        public void dropAccept(DropTargetEvent event) {
+            LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+            if (canvas != null) {
+                adjustEventCoordinates(canvas, event);
+                canvas.getDropListener().dropAccept(event);
+            }
+        }
+
+        public void drop(DropTargetEvent event) {
+            LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+            if (canvas != null) {
+                adjustEventCoordinates(canvas, event);
+                canvas.getDropListener().drop(event);
+            }
+        }
+
+        /**
+         * Finds the element under which the drag started and adjusts
+         * its event coordinates to match the canvas *control* coordinates.
+         * <p/>
+         * Returns false if no element was found at the given position,
+         * which is used to cancel the drag start.
+         */
+        private boolean adjustEventCoordinates(LayoutCanvas canvas, DropTargetEvent event) {
+            if (event.x == mTempPoint.x && event.y == mTempPoint.y) {
+                // Seems like the event is reusing the coordinates we last
+                // converted. Avoid converting them twice. We only modified
+                // the event struct in case of a successful conversion so
+                // we can return true here.
+                return true;
+            }
+
+            // Note that whereas DragSource coordinates are relative to the
+            // control, DropTarget coordinates are relative to the display.
+            // So we need to convert from display to control (treeview) coordinates.
+            Point p = getControl().toControl(event.x, event.y);
+
+            mTempPoint.x = p.x;
+            mTempPoint.y = p.y;
+
+            boolean result = viewerToCanvasControlCoordinates(mTempPoint);
+            if (result) {
+                // We now convert the canvas control coordinates to display coordinates.
+                p = canvas.toDisplay(mTempPoint);
+
+                event.x = p.x;
+                event.y = p.y;
+            }
+
+            return result;
+        }
+    }
+
+    /**
+     * Finds the element under which the drag started and adjusts
+     * its event coordinates to match the canvas *control* coordinates.
+     * <p/>
+     * I need to repeat this to make it extra clear: this returns canvas *control*
+     * coordinates, not just "canvas coordinates".
+     * <p/>
+     * @param inOutXY The event x/y coordinates in input (in control coordinates).
+     *   If the method returns true, it places the canvas *control* coordinates here.
+     * @return false if no element was found at the given position, or true
+     *   if the tree viewer cell was found and the coordinates were correctly converted.
+     */
+    private boolean viewerToCanvasControlCoordinates(Point inOutXY) {
+        ViewerCell cell = getTreeViewer().getCell(inOutXY);
+        if (cell != null) {
+            Rectangle cr = cell.getBounds();
+            Object item = cell.getElement();
+
+            if (cr != null && !cr.isEmpty() && item instanceof CanvasViewInfo) {
+                CanvasViewInfo vi = (CanvasViewInfo) item;
+                Rectangle vir = vi.getAbsRect();
+
+                // interpolate from the "cr" bounding box to the "vir" bounding box
+                double ratio = (double) vir.width / (double) cr.width;
+                int x = (int) (vir.x + ratio * (inOutXY.x - cr.x));
+                ratio = (double) vir.height / (double) cr.height;
+                int y = (int) (vir.y + ratio * (inOutXY.y - cr.y));
+
+                LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+                if (canvas != null) {
+                    com.android.ide.eclipse.adt.editors.layout.gscripts.Point p =
+                        canvas.canvasToControlPoint(x, y);
+
+                    inOutXY.x = p.x;
+                    inOutXY.y = p.y;
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
 }
