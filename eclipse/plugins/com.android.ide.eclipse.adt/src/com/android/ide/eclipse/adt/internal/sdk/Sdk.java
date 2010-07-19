@@ -1373,9 +1373,6 @@ public final class Sdk  {
                             // representing the library project, followed by the source folder name.
                             libSrc.createLink(linkedPath, IResource.REPLACE, monitor);
 
-                            // mark it as derived so that Team plug-in ignore this
-                            libSrc.setDerived(true);
-
                             // set some persistent properties on it to know that it was
                             // created by ADT.
                             ProjectHelper.saveStringProperty(libSrc, PROP_CREATOR, CREATOR_ADT);
