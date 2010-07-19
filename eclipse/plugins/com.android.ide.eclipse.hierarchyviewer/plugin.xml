@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            id="com.android.ide.eclipse.ddms.views.category"
+            name="Android">
+      </category>
+      <view
+            category="com.android.ide.eclipse.ddms.views.category"
+            class="com.android.ide.eclipse.hierarchyviewer.views.SampleView"
+            icon="icons/sample.gif"
+            id="com.android.ide.eclipse.hierarchyviewer.views.SampleView"
+            name="Sample View">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <view
+               id="com.android.ide.eclipse.hierarchyviewer.views.SampleView"
+               ratio="0.5"
+               relationship="right"
+               relative="org.eclipse.ui.views.TaskList">
+         </view>
+      </perspectiveExtension>
+   </extension>
+</plugin>

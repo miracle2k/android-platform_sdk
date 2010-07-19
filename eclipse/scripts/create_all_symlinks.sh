@@ -23,5 +23,7 @@ echo ; echo "### TEST ###" ; echo
 $DEST/create_test_symlinks.sh "$*"
 echo ; echo "### BRIDGE ###" ; echo
 $DEST/create_bridge_symlinks.sh "$*"
+echo ; echo "### HIERARCHYVIEWER ###" ; echo
+$DEST/create_hierarchyviewer_symlinks.sh "$*"
 
 echo "### $0 done"

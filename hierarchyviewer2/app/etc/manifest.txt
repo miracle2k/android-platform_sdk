@@ -1,0 +1,2 @@
+Main-Class: com.android.hierarchyviewer.HierarchyViewerApplication
+Class-Path: ddmlib.jar hierarchyviewerlib.jar hierarchyvieweruilib.jar
