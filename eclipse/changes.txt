@@ -1,8 +1,8 @@
 0.9.8:
+- New Action "Rename Application Package" (under the "Android Tools" contextual menu) will do a full application package refatoring.
 - Fixed issue with library project names containing characters that aren't compatible with Eclipse path variable. The link between the main project and the library would fail to create.
 - Added support for library projects that don't have a source folder called "src". There is now support for any number of source folder, with no name restriction. They can even be in sub folder such as "src/java".
 - Added support for libraries with library dependencies.
-- Library source folders linked into the main project are now properly set as derived to be ignored by Team plug-ins.
 - added support for new resource qualifiers: car/desk, night/notnight and navexposed/navhidden
 - added more device screen types for the layout editor. All screen resolution/density combinations from http://developer.android.com/guide/practices/screens_support.html#range is now available.
 
