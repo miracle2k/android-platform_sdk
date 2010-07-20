@@ -84,7 +84,9 @@ import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
+import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.actions.TextActionHandler;
+import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
@@ -1609,6 +1611,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         mMenuManager = new MenuManager();
         createMenuAction(mMenuManager);
         setMenu(mMenuManager.createContextMenu(this));
+
         /*
         TODO insert generated menus/actions here.
 
@@ -1775,6 +1778,15 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         manager.add(mSelectAllAction);
 
         // TODO add view-sensitive menu items.
+
+        manager.add(new Separator());
+
+        String showInLabel = IDEWorkbenchMessages.Workbench_showIn;
+        MenuManager showInSubMenu= new MenuManager(showInLabel);
+        showInSubMenu.add(
+                ContributionItemFactory.VIEWS_SHOW_IN.create(
+                        mLayoutEditor.getSite().getWorkbenchWindow()));
+        manager.add(showInSubMenu);
     }
 
     /**
