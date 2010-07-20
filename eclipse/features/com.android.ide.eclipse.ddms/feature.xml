@@ -233,6 +233,7 @@
       <import plugin="org.eclipse.core.resources"/>
       <import plugin="org.eclipse.ui.ide"/>
       <import plugin="org.eclipse.core.filesystem"/>
+      <import plugin="org.eclipse.jdt.core"/>
    </requires>
 
    <plugin
