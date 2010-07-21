@@ -83,6 +83,7 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -945,7 +946,33 @@ public class GraphicalEditorPart extends EditorPart
                 UiDocumentNode model = getModel();
 
                 if (model.getUiChildren().size() == 0) {
-                    displayError("No Xml content. Go to the Outline view and add nodes.");
+                    displayError("No XML content. Please add a root view or layout to your document.");
+
+                    // Although we display an error, we still treat an empty document as a
+                    // successful layout result so that we can drop new elements in it.
+                    //
+                    // For that purpose, create a special ILayoutResult that has no image,
+                    // no root view yet indicates success and then update the canvas with it.
+
+                    ILayoutResult result = new ILayoutResult() {
+                        public String getErrorMessage() {
+                            return null;
+                        }
+
+                        public BufferedImage getImage() {
+                            return null;
+                        }
+
+                        public ILayoutViewInfo getRootView() {
+                            return null;
+                        }
+
+                        public int getSuccess() {
+                            return ILayoutResult.SUCCESS;
+                        }
+                    };
+
+                    mCanvasViewer.getCanvas().setResult(result);
                     return;
                 }
 

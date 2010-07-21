@@ -22,13 +22,19 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.ILayoutResult;
+import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.jface.action.Action;
@@ -83,10 +89,11 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.actions.ActionFactory;
-import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.actions.TextActionHandler;
+import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
+import org.eclipse.ui.internal.registry.ViewDescriptor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
@@ -143,28 +150,25 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     /** SWT clipboard instance. */
     private Clipboard mClipboard;
 
-    /*
-     * The last valid ILayoutResult passed to {@link #setResult(ILayoutResult)}.
-     * This can be null.
-     * When non null, {@link #mLastValidViewInfoRoot} is guaranteed to be non-null too.
-    */
-    private ILayoutResult mLastValidResult;
-
     /**
-     * The CanvasViewInfo root created for the last update of {@link #mLastValidResult}.
-     * This is null when {@link #mLastValidResult} is null.
-     * When non null, {@link #mLastValidResult} is guaranteed to be non-null too.
+     * The CanvasViewInfo root created by the last call to {@link #setResult(ILayoutResult)}
+     * with a valid layout.
+     * <p/>
+     * This <em>can</em> be null to indicate we're dealing with an empty document with
+     * no root node. Null here does not mean the result was invalid, merely that the XML
+     * had no content to display -- we need to treat an empty document as valid so that
+     * we can drop new items in it.
      */
     private CanvasViewInfo mLastValidViewInfoRoot;
 
     /**
-     * True when the last {@link #setResult(ILayoutResult)} provided a valid {@link ILayoutResult}
-     * in which case it is also available in {@link #mLastValidResult}.
+     * True when the last {@link #setResult(ILayoutResult)} provided a valid {@link ILayoutResult}.
+     * <p/>
      * When false this means the canvas is displaying an out-dated result image & bounds and some
      * features should be disabled accordingly such a drag'n'drop.
      * <p/>
-     * When this is false, {@link #mLastValidResult} can be non-null and points to an older
-     * layout result.
+     * Note that an empty document (with a null {@link #mLastValidViewInfoRoot}) is considered
+     * valid since it is an acceptable drop target.
      */
     private boolean mIsResultValid;
 
@@ -371,15 +375,23 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     /**
      * Returns true when the last {@link #setResult(ILayoutResult)} provided a valid
-     * {@link ILayoutResult} in which case it is also available in {@link #mLastValidResult}.
+     * {@link ILayoutResult}.
+     * <p/>
      * When false this means the canvas is displaying an out-dated result image & bounds and some
      * features should be disabled accordingly such a drag'n'drop.
      * <p/>
-     * When this is false, {@link #mLastValidResult} can be non-null and points to an older
-     * layout result.
-     */
+     * Note that an empty document (with a null {@link #mLastValidViewInfoRoot}) is considered
+     * valid since it is an acceptable drop target.
+    */
     /* package */ boolean isResultValid() {
         return mIsResultValid;
+    }
+
+    /**
+     * Returns true if the last valid content of the canvas represents an empty document.
+     */
+    /* package */ boolean isEmptyDocument() {
+        return mLastValidViewInfoRoot == null;
     }
 
     /** Returns the Groovy Rules Engine, associated with the current project. */
@@ -433,8 +445,12 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         mIsResultValid = (result != null && result.getSuccess() == ILayoutResult.SUCCESS);
 
         if (mIsResultValid && result != null) {
-            mLastValidResult = result;
-            mLastValidViewInfoRoot = new CanvasViewInfo(result.getRootView());
+            ILayoutViewInfo root = result.getRootView();
+            if (root == null) {
+                mLastValidViewInfoRoot = null;
+            } else {
+                mLastValidViewInfoRoot = new CanvasViewInfo(result.getRootView());
+            }
             setImage(result.getImage());
 
             updateNodeProxies(mLastValidViewInfoRoot);
@@ -462,8 +478,10 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             // remove the current alternate selection views
             mAltSelection = null;
 
-            mHScale.setSize(mImage.getImageData().width, getClientArea().width);
-            mVScale.setSize(mImage.getImageData().height, getClientArea().height);
+            if (mImage != null) {
+                mHScale.setSize(mImage.getImageData().width, getClientArea().width);
+                mVScale.setSize(mImage.getImageData().height, getClientArea().height);
+            }
 
             // Pre-load the android.view.View rule in the Rules Engine. Doing it here means
             // it will be done after the first rendering is finished. Successive calls are
@@ -787,7 +805,6 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * view info.
      */
     private void updateNodeProxies(CanvasViewInfo vi) {
-
         if (vi == null) {
             return;
         }
@@ -806,26 +823,34 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     /**
      * Sets the image of the last *successful* rendering.
      * Converts the AWT image into an SWT image.
+     * <p/>
+     * The image *can* be null, which is the case when we are dealing with an empty document.
      */
     private void setImage(BufferedImage awtImage) {
-        int width = awtImage.getWidth();
-        int height = awtImage.getHeight();
+        if (awtImage == null) {
+            mImage = null;
 
-        Raster raster = awtImage.getData(new java.awt.Rectangle(width, height));
-        int[] imageDataBuffer = ((DataBufferInt)raster.getDataBuffer()).getData();
+        } else {
+            int width = awtImage.getWidth();
+            int height = awtImage.getHeight();
 
-        ImageData imageData = new ImageData(width, height, 32,
-                new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF));
+            Raster raster = awtImage.getData(new java.awt.Rectangle(width, height));
+            int[] imageDataBuffer = ((DataBufferInt)raster.getDataBuffer()).getData();
 
-        imageData.setPixels(0, 0, imageDataBuffer.length, imageDataBuffer, 0);
+            ImageData imageData = new ImageData(width, height, 32,
+                    new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF));
 
-        mImage = new Image(getDisplay(), imageData);
+            imageData.setPixels(0, 0, imageDataBuffer.length, imageDataBuffer, 0);
+
+            mImage = new Image(getDisplay(), imageData);
+        }
     }
 
     /**
      * Sets the alpha for the given GC.
      * <p/>
-     * Alpha may not work on all platforms and may fail with an exception.
+     * Alpha may not work on all platforms and may fail with an exception, which is
+     * hidden here (false is returned in that case).
      *
      * @param gc the GC to change
      * @param alpha the new alpha, 0 for transparent, 255 for opaque.
@@ -845,7 +870,8 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     /**
      * Sets the non-text antialias flag for the given GC.
      * <p/>
-     * Antialias may not work on all platforms and may fail with an exception.
+     * Antialias may not work on all platforms and may fail with an exception, which is
+     * hidden here (-2 is returned in that case).
      *
      * @param gc the GC to change
      * @param alias One of {@link SWT#DEFAULT}, {@link SWT#ON}, {@link SWT#OFF}.
@@ -969,37 +995,35 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * Hover on top of a known child.
      */
     private void onMouseMove(MouseEvent e) {
-        if (mLastValidResult != null) {
-            CanvasViewInfo root = mLastValidViewInfoRoot;
+        CanvasViewInfo root = mLastValidViewInfoRoot;
 
-            int x = mHScale.inverseTranslate(e.x);
-            int y = mVScale.inverseTranslate(e.y);
+        int x = mHScale.inverseTranslate(e.x);
+        int y = mVScale.inverseTranslate(e.y);
 
-            CanvasViewInfo vi = findViewInfoAt(x, y);
+        CanvasViewInfo vi = findViewInfoAt(x, y);
 
-            // We don't hover on the root since it's not a widget per see and it is always there.
-            if (vi == root) {
-                vi = null;
-            }
+        // We don't hover on the root since it's not a widget per see and it is always there.
+        if (vi == root) {
+            vi = null;
+        }
 
-            boolean needsUpdate = vi != mHoverViewInfo;
-            mHoverViewInfo = vi;
+        boolean needsUpdate = vi != mHoverViewInfo;
+        mHoverViewInfo = vi;
 
-            if (vi == null) {
-                mHoverRect = null;
-            } else {
-                Rectangle r = vi.getSelectionRect();
-                mHoverRect = new Rectangle(r.x, r.y, r.width, r.height);
-            }
+        if (vi == null) {
+            mHoverRect = null;
+        } else {
+            Rectangle r = vi.getSelectionRect();
+            mHoverRect = new Rectangle(r.x, r.y, r.width, r.height);
+        }
 
-            if (needsUpdate) {
-                redraw();
-            }
+        if (needsUpdate) {
+            redraw();
         }
     }
 
     private void onMouseDown(MouseEvent e) {
-        // pass, not used yet.
+        // Pass, not used yet. We do everything on mouse up.
     }
 
     /**
@@ -1010,81 +1034,78 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * pointed at (i.e. click on an object then alt-click to cycle).
      */
     private void onMouseUp(MouseEvent e) {
-        if (mLastValidResult != null) {
+        boolean isShift = (e.stateMask & SWT.SHIFT) != 0;
+        boolean isAlt   = (e.stateMask & SWT.ALT)   != 0;
 
-            boolean isShift = (e.stateMask & SWT.SHIFT) != 0;
-            boolean isAlt   = (e.stateMask & SWT.ALT)   != 0;
+        int x = mHScale.inverseTranslate(e.x);
+        int y = mVScale.inverseTranslate(e.y);
 
-            int x = mHScale.inverseTranslate(e.x);
-            int y = mVScale.inverseTranslate(e.y);
+        CanvasViewInfo vi = findViewInfoAt(x, y);
 
-            CanvasViewInfo vi = findViewInfoAt(x, y);
+        if (isShift && !isAlt) {
+            // Case where shift is pressed: pointed object is toggled.
 
-            if (isShift && !isAlt) {
-                // Case where shift is pressed: pointed object is toggled.
+            // reset alternate selection if any
+            mAltSelection = null;
 
-                // reset alternate selection if any
-                mAltSelection = null;
+            // If nothing has been found at the cursor, assume it might be a user error
+            // and avoid clearing the existing selection.
 
-                // If nothing has been found at the cursor, assume it might be a user error
-                // and avoid clearing the existing selection.
-
-                if (vi != null) {
-                    // toggle this selection on-off: remove it if already selected
-                    if (deselect(vi)) {
-                        redraw();
-                        return;
-                    }
-
-                    // otherwise add it.
-                    mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
-                    fireSelectionChanged();
+            if (vi != null) {
+                // toggle this selection on-off: remove it if already selected
+                if (deselect(vi)) {
                     redraw();
+                    return;
                 }
 
-            } else if (isAlt) {
-                // Case where alt is pressed: select or cycle the object pointed at.
-
-                // Note: if shift and alt are pressed, shift is ignored. The alternate selection
-                // mechanism does not reset the current multiple selection unless they intersect.
-
-                // We need to remember the "origin" of the alternate selection, to be
-                // able to continue cycling through it later. If there's no alternate selection,
-                // create one. If there's one but not for the same origin object, create a new
-                // one too.
-                if (mAltSelection == null || mAltSelection.getOriginatingView() != vi) {
-                    mAltSelection = new CanvasAlternateSelection(vi, findAltViewInfoAt(
-                                                    x, y, mLastValidViewInfoRoot, null));
-
-                    // deselect them all, in case they were partially selected
-                    deselectAll(mAltSelection.getAltViews());
-
-                    // select the current one
-                    CanvasViewInfo vi2 = mAltSelection.getCurrent();
-                    if (vi2 != null) {
-                        mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
-                        fireSelectionChanged();
-                    }
-                } else {
-                    // We're trying to cycle through the current alternate selection.
-                    // First remove the current object.
-                    CanvasViewInfo vi2 = mAltSelection.getCurrent();
-                    deselect(vi2);
-
-                    // Now select the next one.
-                    vi2 = mAltSelection.getNext();
-                    if (vi2 != null) {
-                        mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
-                        fireSelectionChanged();
-                    }
-                }
+                // otherwise add it.
+                mSelections.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
+                fireSelectionChanged();
                 redraw();
-
-            } else {
-                // Case where no modifier is pressed: either select or reset the selection.
-
-                selectSingle(vi);
             }
+
+        } else if (isAlt) {
+            // Case where alt is pressed: select or cycle the object pointed at.
+
+            // Note: if shift and alt are pressed, shift is ignored. The alternate selection
+            // mechanism does not reset the current multiple selection unless they intersect.
+
+            // We need to remember the "origin" of the alternate selection, to be
+            // able to continue cycling through it later. If there's no alternate selection,
+            // create one. If there's one but not for the same origin object, create a new
+            // one too.
+            if (mAltSelection == null || mAltSelection.getOriginatingView() != vi) {
+                mAltSelection = new CanvasAlternateSelection(
+                        vi, findAltViewInfoAt(x, y, mLastValidViewInfoRoot));
+
+                // deselect them all, in case they were partially selected
+                deselectAll(mAltSelection.getAltViews());
+
+                // select the current one
+                CanvasViewInfo vi2 = mAltSelection.getCurrent();
+                if (vi2 != null) {
+                    mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
+                    fireSelectionChanged();
+                }
+            } else {
+                // We're trying to cycle through the current alternate selection.
+                // First remove the current object.
+                CanvasViewInfo vi2 = mAltSelection.getCurrent();
+                deselect(vi2);
+
+                // Now select the next one.
+                vi2 = mAltSelection.getNext();
+                if (vi2 != null) {
+                    mSelections.addFirst(new CanvasSelection(vi2, mRulesEngine, mNodeFactory));
+                    fireSelectionChanged();
+                }
+            }
+            redraw();
+
+        } else {
+            // Case where no modifier is pressed: either select or reset the selection.
+
+            selectSingle(vi);
         }
     }
 
@@ -1157,6 +1178,9 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * Returns null if not found.
      */
     private CanvasViewInfo findViewInfoKey(Object viewKey, CanvasViewInfo canvasViewInfo) {
+        if (canvasViewInfo == null) {
+            return null;
+        }
         if (canvasViewInfo.getUiViewKey() == viewKey) {
             return canvasViewInfo;
         }
@@ -1174,33 +1198,38 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
 
     /**
-     * Tries to find the inner most child matching the given x,y coordinates in the view
-     * info sub-tree, starting at the last know view info root.
+     * Tries to find the inner most child matching the given x,y coordinates
+     * in the view info sub-tree, starting at the last know view info root.
      * This uses the potentially-expanded selection bounds.
-     *
-     * Returns null if not found or if there's view info root.
+     * <p/>
+     * Returns null if not found or if there's no view info root.
      */
     /* package */ CanvasViewInfo findViewInfoAt(int x, int y) {
         if (mLastValidViewInfoRoot == null) {
             return null;
         } else {
-            return findViewInfoAt(x, y, mLastValidViewInfoRoot);
+            return findViewInfoAt_Recursive(x, y, mLastValidViewInfoRoot);
         }
     }
 
     /**
+     * Recursive internal version of {@link #findViewInfoAt(int, int)}. Please don't use directly.
+     * <p/>
      * Tries to find the inner most child matching the given x,y coordinates in the view
      * info sub-tree. This uses the potentially-expanded selection bounds.
      *
      * Returns null if not found.
      */
-    private CanvasViewInfo findViewInfoAt(int x, int y, CanvasViewInfo canvasViewInfo) {
+    private CanvasViewInfo findViewInfoAt_Recursive(int x, int y, CanvasViewInfo canvasViewInfo) {
+        if (canvasViewInfo == null) {
+            return null;
+        }
         Rectangle r = canvasViewInfo.getSelectionRect();
         if (r.contains(x, y)) {
 
             // try to find a matching child first
             for (CanvasViewInfo child : canvasViewInfo.getChildren()) {
-                CanvasViewInfo v = findViewInfoAt(x, y, child);
+                CanvasViewInfo v = findViewInfoAt_Recursive(x, y, child);
                 if (v != null) {
                     return v;
                 }
@@ -1213,21 +1242,36 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         return null;
     }
 
-    private ArrayList<CanvasViewInfo> findAltViewInfoAt(
-            int x, int y, CanvasViewInfo parent, ArrayList<CanvasViewInfo> outList) {
+    /**
+     * Returns a list of all the possible alternatives for a given view at the given
+     * position. This is used to build and manage the "alternate" selection that cycles
+     * around the parents or children of the currently selected element.
+     */
+    private List<CanvasViewInfo> findAltViewInfoAt(int x, int y, CanvasViewInfo parent) {
+        return findAltViewInfoAt_Recursive(x, y, parent, null);
+    }
+
+    /**
+     * Internal recursive version of {@link #findAltViewInfoAt(int, int, CanvasViewInfo)}.
+     * Please don't use directly.
+     */
+    private List<CanvasViewInfo> findAltViewInfoAt_Recursive(
+            int x, int y, CanvasViewInfo parent, List<CanvasViewInfo> outList) {
         Rectangle r;
 
         if (outList == null) {
             outList = new ArrayList<CanvasViewInfo>();
 
-            // add the parent root only once
-            r = parent.getSelectionRect();
-            if (r.contains(x, y)) {
-                outList.add(parent);
+            if (parent != null) {
+                // add the parent root only once
+                r = parent.getSelectionRect();
+                if (r.contains(x, y)) {
+                    outList.add(parent);
+                }
             }
         }
 
-        if (!parent.getChildren().isEmpty()) {
+        if (parent != null && !parent.getChildren().isEmpty()) {
             // then add all children that match the position
             for (CanvasViewInfo child : parent.getChildren()) {
                 r = child.getSelectionRect();
@@ -1240,7 +1284,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             for (CanvasViewInfo child : parent.getChildren()) {
                 r = child.getSelectionRect();
                 if (r.contains(x, y)) {
-                    findAltViewInfoAt(x, y, child, outList);
+                    findAltViewInfoAt_Recursive(x, y, child, outList);
                 }
             }
         }
@@ -1255,9 +1299,11 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      *                 selection list.
      */
     private void selectAllViewInfos(CanvasViewInfo canvasViewInfo) {
-        mSelections.add(new CanvasSelection(canvasViewInfo, mRulesEngine, mNodeFactory));
-        for (CanvasViewInfo vi : canvasViewInfo.getChildren()) {
-            selectAllViewInfos(vi);
+        if (canvasViewInfo != null) {
+            mSelections.add(new CanvasSelection(canvasViewInfo, mRulesEngine, mNodeFactory));
+            for (CanvasViewInfo vi : canvasViewInfo.getChildren()) {
+                selectAllViewInfos(vi);
+            }
         }
     }
 
@@ -1799,7 +1845,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         mAltSelection = null;
 
         // Now select everything if there's a valid layout
-        if (mIsResultValid && mLastValidResult != null) {
+        if (mIsResultValid && mLastValidViewInfoRoot != null) {
             selectAllViewInfos(mLastValidViewInfoRoot);
             redraw();
         }
@@ -1939,5 +1985,63 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         // - handle empty root:
         //   Must also be able to copy/paste into an empty document (prolly need to bypass script, and deal with the xmlns)
         AdtPlugin.displayWarning("Canvas Paste", "Not implemented yet");
+    }
+
+    /**
+     * Add new root in an existing empty XML layout.
+     * <p/>
+     * In case of error (unknown FQCN, document not empty), silently do nothing.
+     * In case of success, the new element will have some default attributes set (xmlns:android,
+     * layout_width and height). The edit is wrapped in a proper undo.
+     * <p/>
+     * This is invoked by {@link #onPaste()} or
+     * by {@link CanvasDropListener#drop(org.eclipse.swt.dnd.DropTargetEvent)}.
+     *
+     * @param rootFqcn A non-null non-empty FQCN that must match an existing {@link ViewDescriptor}
+     *   to add as root to the current empty XML document.
+     */
+    /* package */ void createDocumentRoot(String rootFqcn) {
+
+        // Need a valid empty document to create the new root
+        final UiDocumentNode uiDoc = mLayoutEditor.getUiRootNode();
+        if (uiDoc == null || uiDoc.getUiChildren().size() > 0) {
+            return;
+        }
+
+        // Find the view descriptor matching our FQCN
+        final ViewElementDescriptor viewDesc = mLayoutEditor.getFqcnViewDescritor(rootFqcn);
+        if (viewDesc == null) {
+            return;
+        }
+
+        // Get the last segment of the FQCN for the undo title
+        String title = rootFqcn;
+        int pos = title.lastIndexOf('.');
+        if (pos > 0 && pos < title.length() - 1) {
+            title = title.substring(pos + 1);
+        }
+        title = String.format("Create root %1$s in document", title);
+
+        mLayoutEditor.wrapUndoRecording(title, new Runnable() {
+            public void run() {
+                mLayoutEditor.editXmlModel(new Runnable() {
+                    public void run() {
+                        UiElementNode uiNew = uiDoc.appendNewUiChild(viewDesc);
+
+                        // A root node requires the Android XMLNS
+                        uiNew.setAttributeValue(
+                                "android",
+                                XmlnsAttributeDescriptor.XMLNS_URI,
+                                SdkConstants.NS_RESOURCES,
+                                true /*override*/);
+
+                        // Adjust the attributes
+                        DescriptorsUtils.setDefaultLayoutAttributes(uiNew, false /*updateLayout*/);
+
+                        uiNew.createXmlNode();
+                    }
+                });
+            }
+        });
     }
 }

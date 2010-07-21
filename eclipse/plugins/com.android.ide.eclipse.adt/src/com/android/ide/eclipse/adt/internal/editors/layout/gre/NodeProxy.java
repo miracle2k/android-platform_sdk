@@ -23,17 +23,13 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
-import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleAttribute;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.w3c.dom.NamedNodeMap;
@@ -42,9 +38,7 @@ import org.w3c.dom.Node;
 import groovy.lang.Closure;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  *
@@ -349,58 +343,8 @@ public class NodeProxy implements INode {
      */
     private ViewElementDescriptor getFqcnViewDescritor(String fqcn) {
         AndroidXmlEditor editor = mNode.getEditor();
-        if (editor != null) {
-            AndroidTargetData data = editor.getTargetData();
-            if (data != null) {
-                LayoutDescriptors layoutDesc = data.getLayoutDescriptors();
-                if (layoutDesc != null) {
-                    DocumentDescriptor docDesc = layoutDesc.getDescriptor();
-                    if (docDesc != null) {
-                        return internalFindFqcnViewDescritor(fqcn, docDesc.getChildren(), null);
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Internal helper to recursively search for a {@link ViewElementDescriptor} that matches
-     * the requested FQCN.
-     *
-     * @param fqcn The target View FQCN to find.
-     * @param descriptors A list of cildren descriptors to iterate through.
-     * @param visited A set we use to remember which descriptors have already been visited,
-     *  necessary since the view descriptor hierarchy is cyclic.
-     * @return Either a matching {@link ViewElementDescriptor} or null.
-     */
-    private ViewElementDescriptor internalFindFqcnViewDescritor(String fqcn,
-            ElementDescriptor[] descriptors,
-            Set<ElementDescriptor> visited) {
-        if (visited == null) {
-            visited = new HashSet<ElementDescriptor>();
-        }
-
-        if (descriptors != null) {
-            for (ElementDescriptor desc : descriptors) {
-                if (visited.add(desc)) {
-                    // Set.add() returns true if this a new element that was added to the set.
-                    // That means we haven't visited this descriptor yet.
-                    // We want a ViewElementDescriptor with a matching FQCN.
-                    if (desc instanceof ViewElementDescriptor &&
-                            fqcn.equals(((ViewElementDescriptor) desc).getFullClassName())) {
-                        return (ViewElementDescriptor) desc;
-                    }
-
-                    // Visit its children
-                    ViewElementDescriptor vd =
-                        internalFindFqcnViewDescritor(fqcn, desc.getChildren(), visited);
-                    if (vd != null) {
-                        return vd;
-                    }
-                }
-            }
+        if (editor instanceof LayoutEditor) {
+            return ((LayoutEditor) editor).getFqcnViewDescritor(fqcn);
         }
 
         return null;

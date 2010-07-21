@@ -1190,6 +1190,7 @@ public class UiElementNode implements IPropertySource {
                 new AttributeInfo(xmlAttrLocalName, new Format[] { Format.STRING } )
                 );
         UiAttributeNode uiAttr = desc.createUiNode(this);
+        uiAttr.setDirty(true);
         mUnknownUiAttributes.add(uiAttr);
         return uiAttr;
     }

@@ -23,6 +23,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescript
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IUnknownDescriptorProvider;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.CustomViewDescriptorService;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.GraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiContentOutlinePage;
@@ -58,6 +59,8 @@ import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.w3c.dom.Document;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Multi-page form editor for /res/layout XML files.
@@ -106,6 +109,10 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     @Override
     public UiDocumentNode getUiRootNode() {
         return mUiRootNode;
+    }
+
+    public void setNewFileOnConfigChange(boolean state) {
+        mNewFileOnConfigChange = state;
     }
 
     // ---- Base Class Overrides ----
@@ -307,7 +314,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     /**
      * Returns the custom IContentOutlinePage or IPropertySheetPage when asked for it.
      */
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public Object getAdapter(Class adapter) {
         // for the outline, force it to come from the Graphical Editor.
@@ -572,7 +579,63 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         }
     }
 
-    public void setNewFileOnConfigChange(boolean state) {
-        mNewFileOnConfigChange = state;
+    /**
+     * Helper method that returns a {@link ViewElementDescriptor} for the requested FQCN.
+     * Will return null if we can't find that FQCN or we lack the editor/data/descriptors info.
+     */
+    public ViewElementDescriptor getFqcnViewDescritor(String fqcn) {
+        AndroidTargetData data = getTargetData();
+        if (data != null) {
+            LayoutDescriptors layoutDesc = data.getLayoutDescriptors();
+            if (layoutDesc != null) {
+                DocumentDescriptor docDesc = layoutDesc.getDescriptor();
+                if (docDesc != null) {
+                    return internalFindFqcnViewDescritor(fqcn, docDesc.getChildren(), null);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Internal helper to recursively search for a {@link ViewElementDescriptor} that matches
+     * the requested FQCN.
+     *
+     * @param fqcn The target View FQCN to find.
+     * @param descriptors A list of cildren descriptors to iterate through.
+     * @param visited A set we use to remember which descriptors have already been visited,
+     *  necessary since the view descriptor hierarchy is cyclic.
+     * @return Either a matching {@link ViewElementDescriptor} or null.
+     */
+    private ViewElementDescriptor internalFindFqcnViewDescritor(String fqcn,
+            ElementDescriptor[] descriptors,
+            Set<ElementDescriptor> visited) {
+        if (visited == null) {
+            visited = new HashSet<ElementDescriptor>();
+        }
+
+        if (descriptors != null) {
+            for (ElementDescriptor desc : descriptors) {
+                if (visited.add(desc)) {
+                    // Set.add() returns true if this a new element that was added to the set.
+                    // That means we haven't visited this descriptor yet.
+                    // We want a ViewElementDescriptor with a matching FQCN.
+                    if (desc instanceof ViewElementDescriptor &&
+                            fqcn.equals(((ViewElementDescriptor) desc).getFullClassName())) {
+                        return (ViewElementDescriptor) desc;
+                    }
+
+                    // Visit its children
+                    ViewElementDescriptor vd =
+                        internalFindFqcnViewDescritor(fqcn, desc.getChildren(), visited);
+                    if (vd != null) {
+                        return vd;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }

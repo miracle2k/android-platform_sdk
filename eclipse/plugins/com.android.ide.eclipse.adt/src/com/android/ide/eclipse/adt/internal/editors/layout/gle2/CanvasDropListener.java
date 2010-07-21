@@ -235,12 +235,6 @@ import java.util.Arrays;
     public void drop(DropTargetEvent event) {
         AdtPlugin.printErrorToConsole("DEBUG", "dropped");
 
-        if (mTargetNode == null) {
-            // DEBUG
-            AdtPlugin.printErrorToConsole("DEBUG", "dropped on null targetNode");
-            return;
-        }
-
         SimpleElement[] elements = null;
 
         SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
@@ -258,6 +252,17 @@ import java.util.Arrays;
 
         if (mCurrentDragElements != null && Arrays.equals(elements, mCurrentDragElements)) {
             elements = mCurrentDragElements;
+        }
+
+        if (mTargetNode == null) {
+            if (mCanvas.isResultValid() && mCanvas.isEmptyDocument()) {
+                // There is no target node because the drop happens on an empty document.
+                // Attempt to create a root node accordingly.
+                createDocumentRoot(elements);
+            } else {
+                AdtPlugin.printErrorToConsole("DEBUG", "dropped on null targetNode");
+            }
+            return;
         }
 
         Point where = mCanvas.displayToCanvasPoint(event.x, event.y);
@@ -490,4 +495,19 @@ import java.util.Arrays;
         mCanvas.redraw();
     }
 
+    /**
+     * Creates a root element in an empty document.
+     * Only the first element's FQCN of the dragged elements is used.
+     * <p/>
+     * Actual XML handling is done by {@link LayoutCanvas#createDocumentRoot(String)}.
+     */
+    private void createDocumentRoot(SimpleElement[] elements) {
+        if (elements == null || elements.length < 1 || elements[0] == null) {
+            return;
+        }
+
+        String rootFqcn = elements[0].getFqcn();
+
+        mCanvas.createDocumentRoot(rootFqcn);
+    }
 }
