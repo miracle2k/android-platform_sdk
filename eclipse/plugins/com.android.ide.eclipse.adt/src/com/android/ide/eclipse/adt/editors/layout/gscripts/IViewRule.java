@@ -34,8 +34,18 @@ import java.util.Map;
  * Rule instances are stateless. They are created once per View class to handle and are shared
  * across platforms or editor instances. As such, rules methods should never cache editor-specific
  * arguments that they might receive.
+ * <p/>
+ * When rules are instantiated, a property "_rules_engine" is dynamically added which references
+ * the {@link IClientRulesEngine} created for this rule.
  */
 public interface IViewRule {
+
+    /**
+     * The name of the property that returns a {@link IClientRulesEngine} created for this
+     * rules. The instance lets rules use some methods from the rules engine, for example
+     * for accessing other rules.
+     */
+    final static String RULES_ENGINE = "_rules_engine";
 
     /**
      * This method is called by the rule engine when the script is first loaded.

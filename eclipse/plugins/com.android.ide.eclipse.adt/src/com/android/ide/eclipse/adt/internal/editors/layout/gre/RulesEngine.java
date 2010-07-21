@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IClientRulesEngine;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
@@ -42,8 +43,10 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 
+import groovy.lang.ExpandoMetaClass;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyCodeSource;
+import groovy.lang.GroovyObject;
 import groovy.lang.GroovyResourceLoader;
 
 import java.io.InputStream;
@@ -506,6 +509,10 @@ public class RulesEngine {
     private IViewRule initializeRule(IViewRule rule, String targetFqcn) {
 
         try {
+            if (rule instanceof GroovyObject) {
+                initializeMetaClass((GroovyObject) rule, targetFqcn);
+            }
+
             if (rule.onInitialize(targetFqcn)) {
                 // Add it to the cache and return it
                 mRulesCache.put(targetFqcn, rule);
@@ -520,6 +527,31 @@ public class RulesEngine {
         }
 
         return null;
+    }
+
+    /**
+     * Initializes a custom meta class for the given {@link GroovyObject}.
+     * This is used to add a meta "_rules_engine" property to the {@link IViewRule} instances.
+     *
+     * @param instance The {@link IViewRule} groovy object to modify.
+     * @param targetFqcn The FQCN for the new {@link IClientRulesEngine}.
+     */
+    private void initializeMetaClass(GroovyObject instance, final String targetFqcn) {
+
+        final ClientRulesEngineImpl mClient = new ClientRulesEngineImpl(targetFqcn);
+
+        ExpandoMetaClass mc = new ExpandoMetaClass(instance.getClass(), false) {
+            @Override
+            public Object getProperty(Object object, String name) {
+                if (IViewRule.RULES_ENGINE.equals(name)) {
+                    return mClient;
+                }
+                return super.getProperty(object, name);
+            }
+        };
+        mc.initialize();
+
+        instance.setMetaClass(mc);
     }
 
     /**
@@ -643,6 +675,34 @@ public class RulesEngine {
             };
 
             addPhaseOperation(op, Phases.CONVERSION);
+        }
+    }
+
+    /**
+     * Implementation of {@link IClientRulesEngine}. This provide {@link IViewRule} clients
+     * with a few methods they can use to use functionality from this {@link RulesEngine}.
+     */
+    private class ClientRulesEngineImpl implements IClientRulesEngine {
+
+        private final String mFqcn;
+
+        public ClientRulesEngineImpl(String fqcn) {
+            mFqcn = fqcn;
+        }
+
+        public String getFqcn() {
+            return mFqcn;
+        }
+
+        public void debugPrintf(String msg, Object... params) {
+            AdtPlugin.printToConsole(
+                    mFqcn == null ? "Groovy" : mFqcn,
+                    String.format(msg, params)
+                    );
+        }
+
+        public IViewRule loadRule(String fqcn) {
+            return RulesEngine.this.loadRule(fqcn, fqcn);
         }
     }
 

@@ -185,13 +185,6 @@ public interface INode {
 
     // -----------
 
-    /** TODO: this is a hack. Shouldn't be here but instead part of some kind of helper
-     *  given to IViewRule implementations.
-     */
-    void debugPrintf(String msg, Object...params);
-
-    // -----------
-
     /**
      * An XML attribute in an {@link INode}.
      * <p/>

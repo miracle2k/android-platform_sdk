@@ -42,6 +42,10 @@ public class BaseView implements IViewRule {
     public boolean onInitialize(String fqcn) {
         // This base rule can handle any class.
         mFqcn = fqcn
+
+        // For debugging and as an example of how to use the injected _rules_engine property.
+        _rules_engine.debugPrintf("Initialize() of %s", _rules_engine.getFqcn());
+
         return true;
     }
 

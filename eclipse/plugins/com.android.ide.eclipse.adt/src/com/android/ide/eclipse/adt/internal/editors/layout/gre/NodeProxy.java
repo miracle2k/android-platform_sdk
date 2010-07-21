@@ -80,13 +80,6 @@ public class NodeProxy implements INode {
         }
     }
 
-    public void debugPrintf(String msg, Object...params) {
-        AdtPlugin.printToConsole(
-                mNode == null ? "Groovy" : mNode.getDescriptor().getXmlLocalName() + ".groovy",
-                String.format(msg, params)
-                );
-    }
-
     public Rect getBounds() {
         return mBounds;
     }
@@ -411,6 +404,13 @@ public class NodeProxy implements INode {
         }
 
         return null;
+    }
+
+    private void debugPrintf(String msg, Object...params) {
+        AdtPlugin.printToConsole(
+                mNode == null ? "Groovy" : mNode.getDescriptor().getXmlLocalName() + ".groovy",
+                String.format(msg, params)
+                );
     }
 
 }
