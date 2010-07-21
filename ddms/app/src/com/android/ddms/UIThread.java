@@ -21,13 +21,13 @@ import com.android.ddmlib.Client;
 import com.android.ddmlib.ClientData;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.SyncException;
 import com.android.ddmlib.SyncService;
 import com.android.ddmlib.AndroidDebugBridge.IClientChangeListener;
 import com.android.ddmlib.ClientData.IHprofDumpHandler;
 import com.android.ddmlib.ClientData.MethodProfilingStatus;
 import com.android.ddmlib.Log.ILogOutput;
 import com.android.ddmlib.Log.LogLevel;
-import com.android.ddmlib.SyncService.SyncResult;
 import com.android.ddmuilib.AllocationPanel;
 import com.android.ddmuilib.DevicePanel;
 import com.android.ddmuilib.EmulatorControlPanel;
@@ -328,17 +328,19 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
                         // get the sync service to pull the HPROF file
                         final SyncService sync = client.getDevice().getSyncService();
                         if (sync != null) {
-                            SyncResult result = promptAndPull(sync,
+                            promptAndPull(sync,
                                     client.getClientData().getClientDescription() + ".hprof",
                                     remoteFilePath, "Save HPROF file");
-                            if (result != null && result.getCode() != SyncService.RESULT_OK) {
-                                displayErrorFromUiThread(
-                                        "Unable to download HPROF file from device '%1$s'.\n\n%2$s",
-                                        device.getSerialNumber(), result.getMessage());
-                            }
                         } else {
-                            displayErrorFromUiThread("Unable to download HPROF file from device '%1$s'.",
+                            displayErrorFromUiThread(
+                                    "Unable to download HPROF file from device '%1$s'.",
                                     device.getSerialNumber());
+                        }
+                    } catch (SyncException e) {
+                        if (e.wasCanceled() == false) {
+                            displayErrorFromUiThread(
+                                    "Unable to download HPROF file from device '%1$s'.\n\n%2$s",
+                                    device.getSerialNumber(), e.getMessage());
                         }
                     } catch (Exception e) {
                         displayErrorFromUiThread("Unable to download HPROF file from device '%1$s'.",

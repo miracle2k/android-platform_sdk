@@ -322,15 +322,10 @@ public interface IDevice {
      * @param packageFilePath the absolute file system path to file on local host to install
      * @param reinstall set to <code>true</code> if re-install of app should be performed
      * @return a {@link String} with an error code, or <code>null</code> if success.
-     * @throws TimeoutException in case of timeout on the connection.
-     * @throws AdbCommandRejectedException if adb rejects the command
-     * @throws ShellCommandUnresponsiveException if the device didn't respond for long time when
-     *            performing the action.
-     * @throws IOException in case of I/O error on the connection.
+     * @throws InstallException if the installation fails.
      */
     public String installPackage(String packageFilePath, boolean reinstall)
-            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
-            IOException;
+            throws InstallException;
 
     /**
      * Pushes a file to device
@@ -340,53 +335,37 @@ public interface IDevice {
      * @throws TimeoutException in case of timeout on the connection.
      * @throws AdbCommandRejectedException if adb rejects the command
      * @throws IOException in case of I/O error on the connection.
+     * @throws SyncException if an error happens during the push of the package on the device.
      */
     public String syncPackageToDevice(String localFilePath)
-            throws TimeoutException, AdbCommandRejectedException, IOException;
+            throws TimeoutException, AdbCommandRejectedException, IOException, SyncException;
 
     /**
      * Installs the application package that was pushed to a temporary location on the device.
      *
      * @param remoteFilePath absolute file path to package file on device
      * @param reinstall set to <code>true</code> if re-install of app should be performed
-     * @throws TimeoutException in case of timeout on the connection.
-     * @throws AdbCommandRejectedException if adb rejects the command
-     * @throws ShellCommandUnresponsiveException if the device didn't respond for long time when
-     *            performing the action.
-     * @throws IOException if installation failed
+     * @throws InstallException if the installation fails.
      */
     public String installRemotePackage(String remoteFilePath, boolean reinstall)
-            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
-            IOException;
+            throws InstallException;
 
     /**
      * Removes a file from device.
      *
      * @param remoteFilePath path on device of file to remove
-     * @throws TimeoutException in case of timeout on the connection.
-     * @throws AdbCommandRejectedException if adb rejects the command
-     * @throws ShellCommandUnresponsiveException if the device didn't respond for long time when
-     *            performing the action.
-     * @throws IOException if file removal failed
+     * @throws InstallException if the installation fails.
      */
-    public void removeRemotePackage(String remoteFilePath)
-            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
-            IOException;
+    public void removeRemotePackage(String remoteFilePath) throws InstallException;
 
     /**
      * Uninstalls an package from the device.
      *
      * @param packageName the Android application package name to uninstall
      * @return a {@link String} with an error code, or <code>null</code> if success.
-     * @throws TimeoutException in case of timeout on the connection.
-     * @throws AdbCommandRejectedException if adb rejects the command
-     * @throws ShellCommandUnresponsiveException if the device didn't respond for long time when
-     *            performing the action.
-     * @throws IOException
+     * @throws InstallException if the uninstallation fails.
      */
-    public String uninstallPackage(String packageName)
-            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
-            IOException;
+    public String uninstallPackage(String packageName) throws InstallException;
 
     /**
      * Reboot the device.

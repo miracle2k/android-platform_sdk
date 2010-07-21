@@ -27,7 +27,6 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -152,7 +151,7 @@ public final class ApkInstallManager {
                     }
 
                     return receiver.foundPackage;
-                } catch (IOException e) {
+                } catch (Exception e) {
                     // failed to query pm? force reinstall.
                     return false;
                 }

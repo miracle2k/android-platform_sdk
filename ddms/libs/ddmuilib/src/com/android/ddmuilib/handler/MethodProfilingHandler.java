@@ -19,10 +19,14 @@ package com.android.ddmuilib.handler;
 import com.android.ddmlib.Client;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.SyncException;
 import com.android.ddmlib.SyncService;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.ClientData.IMethodProfilingHandler;
-import com.android.ddmlib.SyncService.SyncResult;
+import com.android.ddmlib.SyncService.ISyncProgressMonitor;
 import com.android.ddmuilib.DdmUiPreferences;
+import com.android.ddmuilib.SyncProgressHelper;
+import com.android.ddmuilib.SyncProgressHelper.SyncRunnable;
 import com.android.ddmuilib.console.DdmConsole;
 
 import org.eclipse.swt.widgets.Shell;
@@ -82,7 +86,8 @@ public class MethodProfilingHandler extends BaseFileHandler
                     if (sync != null) {
                         pullAndOpen(sync, remoteFilePath);
                     } else {
-                        displayErrorFromUiThread("Unable to download trace file from device '%1$s'.",
+                        displayErrorFromUiThread(
+                                "Unable to download trace file from device '%1$s'.",
                                 device.getSerialNumber());
                     }
                 } catch (Exception e) {
@@ -109,25 +114,34 @@ public class MethodProfilingHandler extends BaseFileHandler
     /**
      * pulls and open a file. This is run from the UI thread.
      */
-    private void pullAndOpen(SyncService sync, String remoteFilePath)
+    private void pullAndOpen(final SyncService sync, final String remoteFilePath)
             throws InvocationTargetException, InterruptedException, IOException {
         // get a temp file
         File temp = File.createTempFile("android", ".trace"); //$NON-NLS-1$ //$NON-NLS-2$
-        String tempPath = temp.getAbsolutePath();
+        final String tempPath = temp.getAbsolutePath();
 
         // pull the file
-        SyncResult result = pull(sync, tempPath, remoteFilePath);
-        if (result != null) {
-            if (result.getCode() == SyncService.RESULT_OK) {
-                // open the temp file in traceview
-                openInTraceview(tempPath);
-            } else {
-                displayErrorFromUiThread("Unable to download trace file:\n\n%1$s",
-                        result.getMessage());
+        try {
+            SyncProgressHelper.run(new SyncRunnable() {
+                    public void run(ISyncProgressMonitor monitor)
+                            throws SyncException, IOException, TimeoutException {
+                        sync.pullFile(tempPath, remoteFilePath, monitor);
+                    }
+
+                    public void close() {
+                        sync.close();
+                    }
+                },
+                String.format("Pulling %1$s from the device", remoteFilePath), mParentShell);
+
+            // open the temp file in traceview
+            openInTraceview(tempPath);
+        } catch (SyncException e) {
+            if (e.wasCanceled() == false) {
+                displayErrorFromUiThread("Unable to download trace file:\n\n%1$s", e.getMessage());
             }
-        } else {
-            // this really shouldn't happen.
-            displayErrorFromUiThread("Unable to download trace file.");
+        } catch (TimeoutException e) {
+            displayErrorFromUiThread("Unable to download trace file:\n\ntimeout");
         }
     }
 

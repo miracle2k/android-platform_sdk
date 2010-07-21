@@ -17,9 +17,12 @@
 
 package com.android.ddms;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.ShellCommandUnresponsiveException;
+import com.android.ddmlib.TimeoutException;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -255,6 +258,15 @@ public class DeviceCommandDialog extends Dialog {
                 }
                 catch (IOException ioe) {
                     Log.w("ddms", "Remote exec failed: " + ioe.getMessage());
+                    mResult = RESULT_FAILURE;
+                } catch (TimeoutException e) {
+                    Log.w("ddms", "Remote exec failed: " + e.getMessage());
+                    mResult = RESULT_FAILURE;
+                } catch (AdbCommandRejectedException e) {
+                    Log.w("ddms", "Remote exec failed: " + e.getMessage());
+                    mResult = RESULT_FAILURE;
+                } catch (ShellCommandUnresponsiveException e) {
+                    Log.w("ddms", "Remote exec failed: " + e.getMessage());
                     mResult = RESULT_FAILURE;
                 }
             }

@@ -16,9 +16,11 @@
 
 package com.android.ddmuilib;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
 import com.android.ddmlib.RawImage;
+import com.android.ddmlib.TimeoutException;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -264,6 +266,12 @@ public class ScreenShotDialog extends Dialog {
         }
         catch (IOException ioe) {
             Log.w("ddms", "Unable to get frame buffer: " + ioe.getMessage());
+            return null;
+        } catch (TimeoutException e) {
+            Log.w("ddms", "Unable to get frame buffer: timeout ");
+            return null;
+        } catch (AdbCommandRejectedException e) {
+            Log.w("ddms", "Unable to get frame buffer: " + e.getMessage());
             return null;
         }
     }

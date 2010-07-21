@@ -16,16 +16,16 @@
 
 package com.android.ddmuilib.handler;
 
+import com.android.ddmlib.SyncException;
 import com.android.ddmlib.SyncService;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.ClientData.IHprofDumpHandler;
 import com.android.ddmlib.ClientData.IMethodProfilingHandler;
-import com.android.ddmlib.SyncService.SyncResult;
-import com.android.ddmuilib.SyncProgressMonitor;
+import com.android.ddmlib.SyncService.ISyncProgressMonitor;
+import com.android.ddmuilib.SyncProgressHelper;
+import com.android.ddmuilib.SyncProgressHelper.SyncRunnable;
 
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.dialogs.ProgressMonitorDialog;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
@@ -63,21 +63,32 @@ public abstract class BaseFileHandler {
      * didn't happen (canceled by the user).
      * @throws InvocationTargetException
      * @throws InterruptedException
+     * @throws SyncException if an error happens during the push of the package on the device.
+     * @throws IOException
      */
-    protected SyncResult promptAndPull(SyncService sync,
-            String localFileName, String remoteFilePath, String title)
-            throws InvocationTargetException, InterruptedException {
+    protected void promptAndPull(final SyncService sync,
+            String localFileName, final String remoteFilePath, String title)
+            throws InvocationTargetException, InterruptedException, SyncException, TimeoutException,
+            IOException {
         FileDialog fileDialog = new FileDialog(mParentShell, SWT.SAVE);
 
         fileDialog.setText(title);
         fileDialog.setFileName(localFileName);
 
-        String localFilePath = fileDialog.open();
+        final String localFilePath = fileDialog.open();
         if (localFilePath != null) {
-            return pull(sync, localFilePath, remoteFilePath);
-        }
+            SyncProgressHelper.run(new SyncRunnable() {
+                public void run(ISyncProgressMonitor monitor) throws SyncException, IOException,
+                        TimeoutException {
+                    sync.pullFile(remoteFilePath, localFilePath, monitor);
+                }
 
-        return null;
+                public void close() {
+                    sync.close();
+                }
+            },
+            String.format("Pulling %1$s from the device", remoteFilePath), mParentShell);
+        }
     }
 
     /**
@@ -109,35 +120,6 @@ public abstract class BaseFileHandler {
         }
 
         return false;
-    }
-
-    /**
-     * Pulls a file off of a device. This displays a {@link ProgressMonitorDialog} and therefore
-     * must be run from the UI Thread.
-     * @param sync the {@link SyncService} to use to pull the file.
-     * @param localFilePath the path of the local file to create
-     * @param remoteFilePath the path of the remote file to pull
-     * @return the result of the sync as an instance of {@link SyncResult}
-     * @throws InvocationTargetException
-     * @throws InterruptedException
-     */
-    protected SyncResult pull(final SyncService sync, final String localFilePath,
-            final String remoteFilePath)
-            throws InvocationTargetException, InterruptedException {
-        final SyncResult[] res = new SyncResult[1];
-        new ProgressMonitorDialog(mParentShell).run(true, true, new IRunnableWithProgress() {
-            public void run(IProgressMonitor monitor) {
-                try {
-                    res[0] = sync.pullFile(remoteFilePath, localFilePath,
-                            new SyncProgressMonitor(monitor, String.format(
-                                    "Pulling %1$s from the device", remoteFilePath)));
-                } finally {
-                    sync.close();
-                }
-            }
-        });
-
-        return res[0];
     }
 
     /**

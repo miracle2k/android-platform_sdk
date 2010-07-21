@@ -16,12 +16,11 @@
 
 package com.android.ddmlib;
 
-import java.io.IOException;
 
 /**
  * Exception thrown when adb refuses a command.
  */
-public class AdbCommandRejectedException extends IOException {
+public class AdbCommandRejectedException extends Exception {
     private static final long serialVersionUID = 1L;
     private final boolean mIsDeviceOffline;
     private final boolean mErrorDuringDeviceSelection;

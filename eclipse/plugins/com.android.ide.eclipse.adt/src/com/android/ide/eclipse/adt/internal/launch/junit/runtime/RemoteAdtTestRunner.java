@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.launch.junit.runtime;
 
+import com.android.ddmlib.AdbCommandRejectedException;
+import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.testrunner.ITestRunListener;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
@@ -132,6 +134,12 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
         } catch (IOException e) {
             reportError(String.format(LaunchMessages.RemoteAdtTestRunner_RunIOException_s,
                     e.getMessage()));
+        } catch (AdbCommandRejectedException e) {
+            reportError(String.format(
+                    LaunchMessages.RemoteAdtTestRunner_RunAdbCommandRejectedException_s,
+                    e.getMessage()));
+        } catch (ShellCommandUnresponsiveException e) {
+            reportError(LaunchMessages.RemoteAdtTestRunner_RunTimeoutException);
         }
     }
 

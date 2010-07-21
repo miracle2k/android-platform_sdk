@@ -18,6 +18,7 @@ package com.android.ddmlib;
 
 import com.android.ddmlib.AdbHelper.AdbResponse;
 import com.android.ddmlib.FileListingService.FileEntry;
+import com.android.ddmlib.SyncException.SyncError;
 import com.android.ddmlib.utils.ArrayHelper;
 
 import java.io.File;
@@ -77,69 +78,6 @@ public final class SyncService {
 
     private final static int SYNC_DATA_MAX = 64*1024;
     private final static int REMOTE_PATH_MAX_LENGTH = 1024;
-
-    /** Result code for transfer success. */
-    public static final int RESULT_OK = 0;
-    /** Result code for canceled transfer */
-    public static final int RESULT_CANCELED = 1;
-    /** Result code for unknown error */
-    public static final int RESULT_UNKNOWN_ERROR = 2;
-    /** Result code for network connection error */
-    public static final int RESULT_CONNECTION_ERROR = 3;
-    /** Result code for unknown remote object during a pull */
-    public static final int RESULT_NO_REMOTE_OBJECT = 4;
-    /** Result code when attempting to pull multiple files into a file */
-    public static final int RESULT_TARGET_IS_FILE = 5;
-    /** Result code when attempting to pull multiple into a directory that does not exist. */
-    public static final int RESULT_NO_DIR_TARGET = 6;
-    /** Result code for wrong encoding on the remote path. */
-    public static final int RESULT_REMOTE_PATH_ENCODING = 7;
-    /** Result code for remote path that is too long. */
-    public static final int RESULT_REMOTE_PATH_LENGTH = 8;
-    /** Result code for error while writing local file. */
-    public static final int RESULT_FILE_WRITE_ERROR = 9;
-    /** Result code for error while reading local file. */
-    public static final int RESULT_FILE_READ_ERROR = 10;
-    /** Result code for attempting to push a file that does not exist. */
-    public static final int RESULT_NO_LOCAL_FILE = 11;
-    /** Result code for attempting to push a directory. */
-    public static final int RESULT_LOCAL_IS_DIRECTORY = 12;
-    /** Result code for when the target path of a multi file push is a file. */
-    public static final int RESULT_REMOTE_IS_FILE = 13;
-    /** Result code for receiving too much data from the remove device at once */
-    public static final int RESULT_BUFFER_OVERRUN = 14;
-    /** Result code for network connection timeout */
-    public static final int RESULT_CONNECTION_TIMEOUT = 15;
-
-    /**
-     * A file transfer result.
-     * <p/>
-     * This contains a code, and an optional string
-     */
-    public static class SyncResult {
-        private int mCode;
-        private String mMessage;
-        SyncResult(int code, String message) {
-            mCode = code;
-            mMessage = message;
-        }
-
-        SyncResult(int code, Exception e) {
-            this(code, e.getMessage());
-        }
-
-        SyncResult(int code) {
-            this(code, errorCodeToString(code));
-        }
-
-        public int getCode() {
-            return mCode;
-        }
-
-        public String getMessage() {
-            return mMessage;
-        }
-    }
 
     /**
      * Classes which implement this interface provide methods that deal
@@ -287,68 +225,30 @@ public final class SyncService {
     }
 
     /**
-     * Converts an error code into a non-localized string
-     * @param code the error code;
-     */
-    private static String errorCodeToString(int code) {
-        switch (code) {
-            case RESULT_OK:
-                return "Success.";
-            case RESULT_CANCELED:
-                return "Tranfert canceled by the user.";
-            case RESULT_UNKNOWN_ERROR:
-                return "Unknown Error.";
-            case RESULT_CONNECTION_ERROR:
-                return "Adb Connection Error.";
-            case RESULT_NO_REMOTE_OBJECT:
-                return "Remote object doesn't exist!";
-            case RESULT_TARGET_IS_FILE:
-                return "Target object is a file.";
-            case RESULT_NO_DIR_TARGET:
-                return "Target directory doesn't exist.";
-            case RESULT_REMOTE_PATH_ENCODING:
-                return "Remote Path encoding is not supported.";
-            case RESULT_REMOTE_PATH_LENGTH:
-                return "Remove path is too long.";
-            case RESULT_FILE_WRITE_ERROR:
-                return "Writing local file failed!";
-            case RESULT_FILE_READ_ERROR:
-                return "Reading local file failed!";
-            case RESULT_NO_LOCAL_FILE:
-                return "Local file doesn't exist.";
-            case RESULT_LOCAL_IS_DIRECTORY:
-                return "Local path is a directory.";
-            case RESULT_REMOTE_IS_FILE:
-                return "Remote path is a file.";
-            case RESULT_BUFFER_OVERRUN:
-                return "Receiving too much data.";
-            case RESULT_CONNECTION_TIMEOUT:
-                return "timeout";
-        }
-
-        throw new RuntimeException();
-    }
-
-    /**
      * Pulls file(s) or folder(s).
      * @param entries the remote item(s) to pull
      * @param localPath The local destination. If the entries count is > 1 or
      *      if the unique entry is a folder, this should be a folder.
      * @param monitor The progress monitor. Cannot be null.
-     * @return a {@link SyncResult} object with a code and an optional message.
+     * @throws SyncException
+     * @throws FileNotFoundException if the file exists but is a directory, does not exist but
+     *            cannot be created, or cannot be opened for any other reason.
+     * @throws IOException
+     * @throws TimeoutException
      *
      * @see FileListingService.FileEntry
      * @see #getNullProgressMonitor()
      */
-    public SyncResult pull(FileEntry[] entries, String localPath, ISyncProgressMonitor monitor) {
+    public void pull(FileEntry[] entries, String localPath, ISyncProgressMonitor monitor)
+            throws SyncException, FileNotFoundException, IOException, TimeoutException {
 
         // first we check the destination is a directory and exists
         File f = new File(localPath);
         if (f.exists() == false) {
-            return new SyncResult(RESULT_NO_DIR_TARGET);
+            throw new SyncException(SyncError.NO_DIR_TARGET);
         }
         if (f.isDirectory() == false) {
-            return new SyncResult(RESULT_TARGET_IS_FILE);
+            throw new SyncException(SyncError.TARGET_IS_FILE);
         }
 
         // get a FileListingService object
@@ -360,11 +260,9 @@ public final class SyncService {
         // start the monitor
         monitor.start(total);
 
-        SyncResult result = doPull(entries, localPath, fls, monitor);
+        doPull(entries, localPath, fls, monitor);
 
         monitor.stop();
-
-        return result;
     }
 
     /**
@@ -372,20 +270,23 @@ public final class SyncService {
      * @param remote the remote file
      * @param localFilename The local destination.
      * @param monitor The progress monitor. Cannot be null.
-     * @return a {@link SyncResult} object with a code and an optional message.
+     *
+     * @throws SyncException
+     * @throws IOException
+     * @throws FileNotFoundException
+     * @throws TimeoutException
      *
      * @see FileListingService.FileEntry
      * @see #getNullProgressMonitor()
      */
-    public SyncResult pullFile(FileEntry remote, String localFilename,
-            ISyncProgressMonitor monitor) {
+    public void pullFile(FileEntry remote, String localFilename, ISyncProgressMonitor monitor)
+            throws FileNotFoundException, IOException, SyncException, TimeoutException {
         int total = remote.getSizeValue();
         monitor.start(total);
 
-        SyncResult result = doPullFile(remote.getFullPath(), localFilename, monitor);
+        doPullFile(remote.getFullPath(), localFilename, monitor);
 
         monitor.stop();
-        return result;
     }
 
     /**
@@ -396,19 +297,28 @@ public final class SyncService {
      * @param remoteFilepath the full path to the remote file
      * @param localFilename The local destination.
      * @param monitor The progress monitor. Cannot be null.
-     * @return a {@link SyncResult} object with a code and an optional message.
+     *
+     * @throws IOException in case of an IO exception.
+     * @throws TimeoutException in case of a timeout reading responses from the device.
+     * @throws SyncException in case of a sync exception.
      *
      * @see #getNullProgressMonitor()
      */
-    public SyncResult pullFile(String remoteFilepath, String localFilename,
-            ISyncProgressMonitor monitor) {
+    public void pullFile(String remoteFilepath, String localFilename,
+            ISyncProgressMonitor monitor) throws TimeoutException, IOException, SyncException {
+        Integer mode = readMode(remoteFilepath);
+        if (mode == null) {
+            // attempts to download anyway
+        } else if (mode == 0) {
+            throw new SyncException(SyncError.NO_REMOTE_OBJECT);
+        }
+
         monitor.start(0);
         //TODO: use the {@link FileListingService} to get the file size.
 
-        SyncResult result = doPullFile(remoteFilepath, localFilename, monitor);
+        doPullFile(remoteFilepath, localFilename, monitor);
 
         monitor.stop();
-        return result;
     }
 
     /**
@@ -416,11 +326,16 @@ public final class SyncService {
      * @param local An array of loca files to push
      * @param remote the remote {@link FileEntry} representing a directory.
      * @param monitor The progress monitor. Cannot be null.
-     * @return a {@link SyncResult} object with a code and an optional message.
+     * @throws SyncException
+     * @throws FileNotFoundException if the file exists but is a directory, does not exist but
+     *            cannot be created, or cannot be opened for any other reason.
+     * @throws IOException
+     * @throws TimeoutException
      */
-    public SyncResult push(String[] local, FileEntry remote, ISyncProgressMonitor monitor) {
+    public void push(String[] local, FileEntry remote, ISyncProgressMonitor monitor)
+            throws SyncException, FileNotFoundException, IOException, TimeoutException {
         if (remote.isDirectory() == false) {
-            return new SyncResult(RESULT_REMOTE_IS_FILE);
+            throw new SyncException(SyncError.REMOTE_IS_FILE);
         }
 
         // make a list of File from the list of String
@@ -435,11 +350,9 @@ public final class SyncService {
 
         monitor.start(total);
 
-        SyncResult result = doPush(fileArray, remote.getFullPath(), monitor);
+        doPush(fileArray, remote.getFullPath(), monitor);
 
         monitor.stop();
-
-        return result;
     }
 
     /**
@@ -447,25 +360,30 @@ public final class SyncService {
      * @param local the local filepath.
      * @param remote The remote filepath.
      * @param monitor The progress monitor. Cannot be null.
-     * @return a {@link SyncResult} object with a code and an optional message.
+     *
+     * @throws SyncException
+     * @throws FileNotFoundException if the file exists but is a directory, does not exist but
+     *            cannot be created, or cannot be opened for any other reason.
+     * @throws IOException
+     * @throws TimeoutException
+     *
      */
-    public SyncResult pushFile(String local, String remote, ISyncProgressMonitor monitor) {
+    public void pushFile(String local, String remote, ISyncProgressMonitor monitor)
+            throws SyncException, FileNotFoundException, IOException, TimeoutException {
         File f = new File(local);
         if (f.exists() == false) {
-            return new SyncResult(RESULT_NO_LOCAL_FILE);
+            throw new FileNotFoundException();
         }
 
         if (f.isDirectory()) {
-            return new SyncResult(RESULT_LOCAL_IS_DIRECTORY);
+            throw new SyncException(SyncError.LOCAL_IS_DIRECTORY);
         }
 
         monitor.start((int)f.length());
 
-        SyncResult result = doPushFile(local, remote, monitor);
+        doPushFile(local, remote, monitor);
 
         monitor.stop();
-
-        return result;
     }
 
     /**
@@ -520,16 +438,22 @@ public final class SyncService {
      * @param localPath the localpath to a directory
      * @param fileListingService a FileListingService object to browse through remote directories.
      * @param monitor the progress monitor. Must be started already.
-     * @return a {@link SyncResult} object with a code and an optional message.
+     *
+     * @throws FileNotFoundException if the file exists but is a directory, does not exist but
+     *            cannot be created, or cannot be opened for any other reason.
+     * @throws IOException
+     * @throws SyncException
+     * @throws TimeoutException
      */
-    private SyncResult doPull(FileEntry[] entries, String localPath,
+    private void doPull(FileEntry[] entries, String localPath,
             FileListingService fileListingService,
-            ISyncProgressMonitor monitor) {
+            ISyncProgressMonitor monitor) throws SyncException, FileNotFoundException, IOException,
+            TimeoutException {
 
         for (FileEntry e : entries) {
             // check if we're cancelled
             if (monitor.isCanceled() == true) {
-                return new SyncResult(RESULT_CANCELED);
+                throw new SyncException(SyncError.CANCELED);
             }
 
             // get type (we only pull directory and files for now)
@@ -545,22 +469,14 @@ public final class SyncService {
                 // then recursively call the content. Since we did a ls command
                 // to get the number of files, we can use the cache
                 FileEntry[] children = fileListingService.getChildren(e, true, null);
-                SyncResult result = doPull(children, dest, fileListingService, monitor);
-                if (result.mCode != RESULT_OK) {
-                    return result;
-                }
+                doPull(children, dest, fileListingService, monitor);
                 monitor.advance(1);
             } else if (type == FileListingService.TYPE_FILE) {
                 monitor.startSubTask(e.getFullPath());
                 String dest = localPath + File.separator + e.getName();
-                SyncResult result = doPullFile(e.getFullPath(), dest, monitor);
-                if (result.mCode != RESULT_OK) {
-                    return result;
-                }
+                doPullFile(e.getFullPath(), dest, monitor);
             }
         }
-
-        return new SyncResult(RESULT_OK);
     }
 
     /**
@@ -568,10 +484,15 @@ public final class SyncService {
      * @param remotePath the remote file (length max is 1024)
      * @param localPath the local destination
      * @param monitor the monitor. The monitor must be started already.
-     * @return a {@link SyncResult} object with a code and an optional message.
+     * @throws FileNotFoundException if the file exists but is a directory, does not exist but
+     *            cannot be created, or cannot be opened for any other reason.
+     * @throws IOException
+     * @throws SyncException
+     * @throws TimeoutException
      */
-    private SyncResult doPullFile(String remotePath, String localPath,
-            ISyncProgressMonitor monitor) {
+    private void doPullFile(String remotePath, String localPath,
+            ISyncProgressMonitor monitor) throws FileNotFoundException, IOException, SyncException,
+            TimeoutException {
         byte[] msg = null;
         byte[] pullResult = new byte[8];
 
@@ -581,7 +502,7 @@ public final class SyncService {
             byte[] remotePathContent = remotePath.getBytes(AdbHelper.DEFAULT_ENCODING);
 
             if (remotePathContent.length > REMOTE_PATH_MAX_LENGTH) {
-                return new SyncResult(RESULT_REMOTE_PATH_LENGTH);
+                throw new SyncException(SyncError.REMOTE_PATH_LENGTH);
             }
 
             // create the full request message
@@ -597,14 +518,11 @@ public final class SyncService {
             // check we have the proper data back
             if (checkResult(pullResult, ID_DATA) == false &&
                     checkResult(pullResult, ID_DONE) == false) {
-                return new SyncResult(RESULT_CONNECTION_ERROR);
+                throw new SyncException(SyncError.TRANSFER_PROTOCOL_ERROR,
+                        readErrorMessage(pullResult, timeOut));
             }
         } catch (UnsupportedEncodingException e) {
-            return new SyncResult(RESULT_REMOTE_PATH_ENCODING, e);
-        } catch (TimeoutException e) {
-            return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
-        } catch (IOException e) {
-            return new SyncResult(RESULT_CONNECTION_ERROR, e);
+            throw new SyncException(SyncError.REMOTE_PATH_ENCODING, e);
         }
 
         // access the destination file
@@ -613,11 +531,7 @@ public final class SyncService {
         // create the stream to write in the file. We use a new try/catch block to differentiate
         // between file and network io exceptions.
         FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(f);
-        } catch (FileNotFoundException e) {
-            return new SyncResult(RESULT_FILE_WRITE_ERROR, e);
-        }
+        fos = new FileOutputStream(f);
 
         // the buffer to read the data
         byte[] data = new byte[SYNC_DATA_MAX];
@@ -626,7 +540,7 @@ public final class SyncService {
         while (true) {
             // check if we're cancelled
             if (monitor.isCanceled() == true) {
-                return new SyncResult(RESULT_CANCELED);
+                throw new SyncException(SyncError.CANCELED);
             }
 
             // if we're done, we stop the loop
@@ -635,43 +549,29 @@ public final class SyncService {
             }
             if (checkResult(pullResult, ID_DATA) == false) {
                 // hmm there's an error
-                return new SyncResult(RESULT_CONNECTION_ERROR);
+                throw new SyncException(SyncError.TRANSFER_PROTOCOL_ERROR,
+                        readErrorMessage(pullResult, timeOut));
             }
             int length = ArrayHelper.swap32bitFromArray(pullResult, 4);
             if (length > SYNC_DATA_MAX) {
                 // buffer overrun!
                 // error and exit
-                return new SyncResult(RESULT_BUFFER_OVERRUN);
+                throw new SyncException(SyncError.BUFFER_OVERRUN);
             }
 
-            try {
-                // now read the length we received
-                AdbHelper.read(mChannel, data, length, timeOut);
+            // now read the length we received
+            AdbHelper.read(mChannel, data, length, timeOut);
 
-                // get the header for the next packet.
-                AdbHelper.read(mChannel, pullResult, -1, timeOut);
-            } catch (TimeoutException e) {
-                return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
-            } catch (IOException e) {
-                return new SyncResult(RESULT_CONNECTION_ERROR, e);
-            }
+            // get the header for the next packet.
+            AdbHelper.read(mChannel, pullResult, -1, timeOut);
 
             // write the content in the file
-            try {
-                fos.write(data, 0, length);
-            } catch (IOException e) {
-                return new SyncResult(RESULT_FILE_WRITE_ERROR, e);
-            }
+            fos.write(data, 0, length);
 
             monitor.advance(length);
         }
 
-        try {
-            fos.flush();
-        } catch (IOException e) {
-            return new SyncResult(RESULT_FILE_WRITE_ERROR, e);
-        }
-        return new SyncResult(RESULT_OK);
+        fos.flush();
     }
 
 
@@ -680,39 +580,36 @@ public final class SyncService {
      * @param fileArray
      * @param remotePath
      * @param monitor
-     * @return a {@link SyncResult} object with a code and an optional message.
+     *
+     * @throws SyncException
+     * @throws FileNotFoundException if the file exists but is a directory, does not exist but
+     *            cannot be created, or cannot be opened for any other reason.
+     * @throws IOException
+     * @throws TimeoutException
      */
-    private SyncResult doPush(File[] fileArray, String remotePath, ISyncProgressMonitor monitor) {
+    private void doPush(File[] fileArray, String remotePath, ISyncProgressMonitor monitor)
+            throws SyncException, FileNotFoundException, IOException, TimeoutException {
         for (File f : fileArray) {
             // check if we're canceled
             if (monitor.isCanceled() == true) {
-                return new SyncResult(RESULT_CANCELED);
+                throw new SyncException(SyncError.CANCELED);
             }
             if (f.exists()) {
                 if (f.isDirectory()) {
                     // append the name of the directory to the remote path
                     String dest = remotePath + "/" + f.getName(); // $NON-NLS-1S
                     monitor.startSubTask(dest);
-                    SyncResult result = doPush(f.listFiles(), dest, monitor);
-
-                    if (result.mCode != RESULT_OK) {
-                        return result;
-                    }
+                    doPush(f.listFiles(), dest, monitor);
 
                     monitor.advance(1);
                 } else if (f.isFile()) {
                     // append the name of the file to the remote path
                     String remoteFile = remotePath + "/" + f.getName(); // $NON-NLS-1S
                     monitor.startSubTask(remoteFile);
-                    SyncResult result = doPushFile(f.getAbsolutePath(), remoteFile, monitor);
-                    if (result.mCode != RESULT_OK) {
-                        return result;
-                    }
+                    doPushFile(f.getAbsolutePath(), remoteFile, monitor);
                 }
             }
         }
-
-        return new SyncResult(RESULT_OK);
     }
 
     /**
@@ -720,10 +617,16 @@ public final class SyncService {
      * @param localPath the local file to push
      * @param remotePath the remote file (length max is 1024)
      * @param monitor the monitor. The monitor must be started already.
-     * @return a {@link SyncResult} object with a code and an optional message.
+     *
+     * @throws SyncException
+     * @throws FileNotFoundException if the file exists but is a directory, does not exist but
+     *            cannot be created, or cannot be opened for any other reason.
+     * @throws IOException
+     * @throws TimeoutException
      */
-    private SyncResult doPushFile(String localPath, String remotePath,
-            ISyncProgressMonitor monitor) {
+    private void doPushFile(String localPath, String remotePath,
+            ISyncProgressMonitor monitor) throws SyncException, FileNotFoundException, IOException,
+            TimeoutException {
         FileInputStream fis = null;
         byte[] msg;
 
@@ -733,15 +636,10 @@ public final class SyncService {
             byte[] remotePathContent = remotePath.getBytes(AdbHelper.DEFAULT_ENCODING);
 
             if (remotePathContent.length > REMOTE_PATH_MAX_LENGTH) {
-                return new SyncResult(RESULT_REMOTE_PATH_LENGTH);
+                throw new SyncException(SyncError.REMOTE_PATH_LENGTH);
             }
 
             File f = new File(localPath);
-
-            // this shouldn't happen but still...
-            if (f.exists() == false) {
-                return new SyncResult(RESULT_NO_LOCAL_FILE);
-            }
 
             // create the stream to read the file
             fis = new FileInputStream(f);
@@ -749,20 +647,12 @@ public final class SyncService {
             // create the header for the action
             msg = createSendFileReq(ID_SEND, remotePathContent, 0644);
         } catch (UnsupportedEncodingException e) {
-            return new SyncResult(RESULT_REMOTE_PATH_ENCODING, e);
-        } catch (FileNotFoundException e) {
-            return new SyncResult(RESULT_FILE_READ_ERROR, e);
+            throw new SyncException(SyncError.REMOTE_PATH_ENCODING, e);
         }
 
         // and send it. We use a custom try/catch block to make the difference between
         // file and network IO exceptions.
-        try {
-            AdbHelper.write(mChannel, msg, -1, timeOut);
-        } catch (TimeoutException e) {
-            return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
-        } catch (IOException e) {
-            return new SyncResult(RESULT_CONNECTION_ERROR, e);
-        }
+        AdbHelper.write(mChannel, msg, -1, timeOut);
 
         // create the buffer used to read.
         // we read max SYNC_DATA_MAX, but we need 2 4 bytes at the beginning.
@@ -775,16 +665,11 @@ public final class SyncService {
         while (true) {
             // check if we're canceled
             if (monitor.isCanceled() == true) {
-                return new SyncResult(RESULT_CANCELED);
+                throw new SyncException(SyncError.CANCELED);
             }
 
             // read up to SYNC_DATA_MAX
-            int readCount = 0;
-            try {
-                readCount = fis.read(mBuffer, 8, SYNC_DATA_MAX);
-            } catch (IOException e) {
-                return new SyncResult(RESULT_FILE_READ_ERROR, e);
-            }
+            int readCount = fis.read(mBuffer, 8, SYNC_DATA_MAX);
 
             if (readCount == -1) {
                 // we reached the end of the file
@@ -796,65 +681,62 @@ public final class SyncService {
             ArrayHelper.swap32bitsToArray(readCount, mBuffer, 4);
 
             // now write it
-            try {
-                AdbHelper.write(mChannel, mBuffer, readCount+8, timeOut);
-            } catch (TimeoutException e) {
-                return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
-            } catch (IOException e) {
-                return new SyncResult(RESULT_CONNECTION_ERROR, e);
-            }
+            AdbHelper.write(mChannel, mBuffer, readCount+8, timeOut);
 
             // and advance the monitor
             monitor.advance(readCount);
         }
         // close the local file
-        try {
-            fis.close();
-        } catch (IOException e) {
-            return new SyncResult(RESULT_FILE_READ_ERROR, e);
+        fis.close();
+
+        // create the DONE message
+        long time = System.currentTimeMillis() / 1000;
+        msg = createReq(ID_DONE, (int)time);
+
+        // and send it.
+        AdbHelper.write(mChannel, msg, -1, timeOut);
+
+        // read the result, in a byte array containing 2 ints
+        // (id, size)
+        byte[] result = new byte[8];
+        AdbHelper.read(mChannel, result, -1 /* full length */, timeOut);
+
+        if (checkResult(result, ID_OKAY) == false) {
+            throw new SyncException(SyncError.TRANSFER_PROTOCOL_ERROR,
+                    readErrorMessage(result, timeOut));
         }
+    }
 
-        try {
-            // create the DONE message
-            long time = System.currentTimeMillis() / 1000;
-            msg = createReq(ID_DONE, (int)time);
+    /**
+     * Reads an error message from the opened {@link #mChannel}.
+     * @param result the current adb result. Must contain both FAIL and the length of the message.
+     * @param timeOut
+     * @return
+     * @throws TimeoutException
+     * @throws IOException
+     */
+    private String readErrorMessage(byte[] result, final int timeOut) throws TimeoutException,
+            IOException {
+        if (checkResult(result, ID_FAIL)) {
+            int len = ArrayHelper.swap32bitFromArray(result, 4);
 
-            // and send it.
-            AdbHelper.write(mChannel, msg, -1, timeOut);
+            if (len > 0) {
+                AdbHelper.read(mChannel, mBuffer, len, timeOut);
 
-            // read the result, in a byte array containing 2 ints
-            // (id, size)
-            byte[] result = new byte[8];
-            AdbHelper.read(mChannel, result, -1 /* full length */, timeOut);
+                String message = new String(mBuffer, 0, len);
+                Log.e("ddms", "transfer error: " + message);
 
-            if (checkResult(result, ID_OKAY) == false) {
-                if (checkResult(result, ID_FAIL)) {
-                    // read some error message...
-                    int len = ArrayHelper.swap32bitFromArray(result, 4);
-
-                    AdbHelper.read(mChannel, mBuffer, len, timeOut);
-
-                    // output the result?
-                    String message = new String(mBuffer, 0, len);
-                    Log.e("ddms", "transfer error: " + message);
-                    return new SyncResult(RESULT_UNKNOWN_ERROR, message);
-                }
-
-                return new SyncResult(RESULT_UNKNOWN_ERROR);
+                return message;
             }
-        } catch (TimeoutException e) {
-            return new SyncResult(RESULT_CONNECTION_TIMEOUT, e);
-        } catch (IOException e) {
-            return new SyncResult(RESULT_CONNECTION_ERROR, e);
         }
 
-        return new SyncResult(RESULT_OK);
+        return null;
     }
 
     /**
      * Returns the mode of the remote file.
      * @param path the remote file
-     * @return and Integer containing the mode if all went well or null
+     * @return an Integer containing the mode if all went well or null
      *      otherwise
      * @throws IOException
      * @throws TimeoutException

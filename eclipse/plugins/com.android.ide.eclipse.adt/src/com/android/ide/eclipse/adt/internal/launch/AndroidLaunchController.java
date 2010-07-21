@@ -16,11 +16,15 @@
 
 package com.android.ide.eclipse.adt.internal.launch;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.AndroidDebugBridge;
+import com.android.ddmlib.CanceledException;
 import com.android.ddmlib.Client;
 import com.android.ddmlib.ClientData;
 import com.android.ddmlib.IDevice;
+import com.android.ddmlib.InstallException;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.AndroidDebugBridge.IClientChangeListener;
 import com.android.ddmlib.AndroidDebugBridge.IDebugBridgeChangeListener;
 import com.android.ddmlib.AndroidDebugBridge.IDeviceChangeListener;
@@ -892,10 +896,29 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
             return installResult;
         }
         catch (IOException e) {
-            String msg = String.format("Failed to upload %1$s on device '%2$s'", fileName,
-                    device.getSerialNumber());
+            String msg = String.format("Failed to install %1$s on device '%2$s': %3$s", fileName,
+                    device.getSerialNumber(), e.getMessage());
             AdtPlugin.printErrorToConsole(launchInfo.getProject(), msg, e);
+        } catch (TimeoutException e) {
+            String msg = String.format("Failed to install %1$s on device '%2$s': timeout", fileName,
+                    device.getSerialNumber());
+            AdtPlugin.printErrorToConsole(launchInfo.getProject(), msg);
+        } catch (AdbCommandRejectedException e) {
+            String msg = String.format(
+                    "Failed to install %1$s on device '%2$s': adb rejected install command with: %3$s",
+                    fileName, device.getSerialNumber(), e.getMessage());
+            AdtPlugin.printErrorToConsole(launchInfo.getProject(), msg, e);
+        } catch (CanceledException e) {
+            if (e.wasCanceled()) {
+                AdtPlugin.printToConsole(launchInfo.getProject(),
+                        String.format("Install of %1$s canceled", fileName));
+            } else {
+                String msg = String.format("Failed to install %1$s on device '%2$s': %3$s",
+                        fileName, device.getSerialNumber(), e.getMessage());
+                AdtPlugin.printErrorToConsole(launchInfo.getProject(), msg, e);
+            }
         }
+
         return false;
     }
 
@@ -987,7 +1010,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
              */
             return checkInstallResult(result, device, launchInfo, remotePath,
                     InstallRetryMode.ALWAYS);
-        } catch (IOException e) {
+        } catch (Exception e) {
             String msg = String.format(
                     "Failed to install %1$s on device '%2$s!",
                     launchInfo.getPackageFile().getName(), device.getSerialNumber());
@@ -1005,10 +1028,10 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
      * @param remotePath the temporary path of the package on the device
      * @param retryMode indicates what to do in case, a package already exists.
      * @return <code>true<code> if success, <code>false</code> otherwise.
-     * @throws IOException
+     * @throws InstallException
      */
     private boolean checkInstallResult(String result, IDevice device, DelayedLaunchInfo launchInfo,
-            String remotePath, InstallRetryMode retryMode) throws IOException {
+            String remotePath, InstallRetryMode retryMode) throws InstallException {
         if (result == null) {
             AdtPlugin.printToConsole(launchInfo.getProject(), "Success!");
             return true;
@@ -1086,13 +1109,14 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
      * @param device the device on which to install the application.
      * @param launchInfo the {@link DelayedLaunchInfo}.
      * @return a {@link String} with an error code, or <code>null</code> if success.
-     * @throws IOException
+     * @throws InstallException if the installation failed.
      */
     @SuppressWarnings("unused")
-    private String doUninstall(IDevice device, DelayedLaunchInfo launchInfo) throws IOException {
+    private String doUninstall(IDevice device, DelayedLaunchInfo launchInfo)
+            throws InstallException {
         try {
             return device.uninstallPackage(launchInfo.getPackageName());
-        } catch (IOException e) {
+        } catch (InstallException e) {
             String msg = String.format(
                     "Failed to uninstall %1$s: %2$s", launchInfo.getPackageName(), e.getMessage());
             AdtPlugin.printErrorToConsole(launchInfo.getProject(), msg);
@@ -1108,10 +1132,10 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
      * @param device the device on which to install the application.
      * @param reinstall
      * @return a {@link String} with an error code, or <code>null</code> if success.
-     * @throws IOException
+     * @throws InstallException if the uninstallation failed.
      */
     private String doInstall(DelayedLaunchInfo launchInfo, final String remotePath,
-            final IDevice device, boolean reinstall) throws IOException {
+            final IDevice device, boolean reinstall) throws InstallException {
         return device.installRemotePackage(remotePath, reinstall);
     }
 

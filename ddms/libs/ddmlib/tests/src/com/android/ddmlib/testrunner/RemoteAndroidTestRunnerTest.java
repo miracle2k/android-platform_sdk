@@ -16,12 +16,16 @@
 
 package com.android.ddmlib.testrunner;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.Client;
 import com.android.ddmlib.FileListingService;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
+import com.android.ddmlib.InstallException;
 import com.android.ddmlib.RawImage;
+import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.SyncService;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.log.LogReceiver;
 
 import java.io.IOException;
@@ -51,8 +55,12 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
 
     /**
      * Test the basic case building of the instrumentation runner command with no arguments.
+     * @throws ShellCommandUnresponsiveException
+     * @throws AdbCommandRejectedException
+     * @throws TimeoutException
      */
-    public void testRun() throws IOException {
+    public void testRun() throws IOException, TimeoutException, AdbCommandRejectedException,
+            ShellCommandUnresponsiveException {
         mRunner.run(new EmptyListener());
         assertStringsEquals(String.format("am instrument -w -r %s/%s", TEST_PACKAGE, TEST_RUNNER),
                 mMockDevice.getLastShellCommand());
@@ -60,8 +68,12 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
 
     /**
      * Test the building of the instrumentation runner command with log set.
+     * @throws ShellCommandUnresponsiveException
+     * @throws AdbCommandRejectedException
+     * @throws TimeoutException
      */
-    public void testRunWithLog() throws IOException {
+    public void testRunWithLog() throws IOException, TimeoutException, AdbCommandRejectedException,
+            ShellCommandUnresponsiveException {
         mRunner.setLogOnly(true);
         mRunner.run(new EmptyListener());
         assertStringsEquals(String.format("am instrument -w -r -e log true %s/%s", TEST_PACKAGE,
@@ -70,8 +82,12 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
 
     /**
      * Test the building of the instrumentation runner command with method set.
+     * @throws ShellCommandUnresponsiveException
+     * @throws AdbCommandRejectedException
+     * @throws TimeoutException
      */
-    public void testRunWithMethod() throws IOException {
+    public void testRunWithMethod() throws IOException, TimeoutException,
+            AdbCommandRejectedException, ShellCommandUnresponsiveException {
         final String className = "FooTest";
         final String testName = "fooTest";
         mRunner.setMethodName(className, testName);
@@ -82,8 +98,12 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
 
     /**
      * Test the building of the instrumentation runner command with test package set.
+     * @throws ShellCommandUnresponsiveException
+     * @throws AdbCommandRejectedException
+     * @throws TimeoutException
      */
-    public void testRunWithPackage() throws IOException {
+    public void testRunWithPackage() throws IOException, TimeoutException,
+            AdbCommandRejectedException, ShellCommandUnresponsiveException {
         final String packageName = "foo.test";
         mRunner.setTestPackageName(packageName);
         mRunner.run(new EmptyListener());
@@ -93,8 +113,12 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
 
     /**
      * Test the building of the instrumentation runner command with extra argument added.
+     * @throws ShellCommandUnresponsiveException
+     * @throws AdbCommandRejectedException
+     * @throws TimeoutException
      */
-    public void testRunWithAddInstrumentationArg() throws IOException {
+    public void testRunWithAddInstrumentationArg() throws IOException, TimeoutException,
+            AdbCommandRejectedException, ShellCommandUnresponsiveException {
         final String extraArgName = "blah";
         final String extraArgValue = "blahValue";
         mRunner.addInstrumentationArg(extraArgName, extraArgValue);
@@ -102,7 +126,6 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
         assertStringsEquals(String.format("am instrument -w -r -e %s %s %s/%s", extraArgName,
                 extraArgValue, TEST_PACKAGE, TEST_RUNNER), mMockDevice.getLastShellCommand());
     }
-
 
     /**
      * Assert two strings are equal ignoring whitespace.
@@ -233,21 +256,21 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
         }
 
         public String installPackage(String packageFilePath, boolean reinstall)
-                throws IOException {
+                throws InstallException {
             throw new UnsupportedOperationException();
         }
 
-        public String uninstallPackage(String packageName) throws IOException {
+        public String uninstallPackage(String packageName) throws InstallException {
             throw new UnsupportedOperationException();
         }
 
-        public String installRemotePackage(String remoteFilePath,
-                boolean reinstall) throws IOException {
+        public String installRemotePackage(String remoteFilePath, boolean reinstall)
+                throws InstallException {
             throw new UnsupportedOperationException();
         }
 
         public void removeRemotePackage(String remoteFilePath)
-                throws IOException {
+                throws InstallException {
             throw new UnsupportedOperationException();
         }
 

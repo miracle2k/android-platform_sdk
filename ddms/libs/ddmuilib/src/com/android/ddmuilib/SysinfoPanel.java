@@ -16,9 +16,12 @@
 
 package com.android.ddmuilib;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.Client;
 import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.ShellCommandUnresponsiveException;
+import com.android.ddmlib.TimeoutException;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -156,6 +159,12 @@ public class SysinfoPanel extends TablePanel implements IShellOutputReceiver {
             getCurrentDevice().executeShellCommand(
                     DUMP_COMMAND[mMode], this);
         } catch (IOException e) {
+            Log.e("DDMS", e);
+        } catch (TimeoutException e) {
+            Log.e("DDMS", e);
+        } catch (AdbCommandRejectedException e) {
+            Log.e("DDMS", e);
+        } catch (ShellCommandUnresponsiveException e) {
             Log.e("DDMS", e);
         }
     }
@@ -481,7 +490,7 @@ public class SysinfoPanel extends TablePanel implements IShellOutputReceiver {
         Pattern valuePattern = Pattern.compile("(\\d+) kB");
         long total = 0;
         long other = 0;
-        mLabel.setText("PSS in kB");        
+        mLabel.setText("PSS in kB");
 
         // Scan meminfo
         while (true) {

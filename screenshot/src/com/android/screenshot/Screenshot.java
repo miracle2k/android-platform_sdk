@@ -20,6 +20,7 @@ import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
 import com.android.ddmlib.RawImage;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.Log.ILogOutput;
 import com.android.ddmlib.Log.LogLevel;
 
@@ -198,8 +199,10 @@ public class Screenshot {
 
         try {
             rawImage = device.getScreenshot();
-        }
-        catch (IOException ioe) {
+        } catch (TimeoutException e) {
+            printAndExit("Unable to get frame buffer: timeout", true /* terminate */);
+            return;
+        } catch (Exception ioe) {
             printAndExit("Unable to get frame buffer: " + ioe.getMessage(), true /* terminate */);
             return;
         }

@@ -21,17 +21,21 @@ import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.Client;
 import com.android.ddmlib.ClientData;
 import com.android.ddmlib.IDevice;
+import com.android.ddmlib.SyncException;
 import com.android.ddmlib.SyncService;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.AndroidDebugBridge.IClientChangeListener;
 import com.android.ddmlib.ClientData.IHprofDumpHandler;
 import com.android.ddmlib.ClientData.MethodProfilingStatus;
-import com.android.ddmlib.SyncService.SyncResult;
-import com.android.ddmuilib.handler.BaseFileHandler;
-import com.android.ddmuilib.handler.MethodProfilingHandler;
+import com.android.ddmlib.SyncService.ISyncProgressMonitor;
 import com.android.ddmuilib.DevicePanel;
 import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.ScreenShotDialog;
+import com.android.ddmuilib.SyncProgressHelper;
 import com.android.ddmuilib.DevicePanel.IUiSelectionListener;
+import com.android.ddmuilib.SyncProgressHelper.SyncRunnable;
+import com.android.ddmuilib.handler.BaseFileHandler;
+import com.android.ddmuilib.handler.MethodProfilingHandler;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.ide.eclipse.ddms.DdmsPlugin.IDebugLauncher;
 import com.android.ide.eclipse.ddms.preferences.PreferenceInitializer;
@@ -132,30 +136,42 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
                             IPreferenceStore store = DdmsPlugin.getDefault().getPreferenceStore();
                             String value = store.getString(PreferenceInitializer.ATTR_HPROF_ACTION);
 
-                            SyncResult result = null;
                             if (ACTION_OPEN.equals(value)) {
                                 File temp = File.createTempFile("android", DOT_HPROF); //$NON-NLS-1$
-                                String tempPath = temp.getAbsolutePath();
-                                result = pull(sync, tempPath, remoteFilePath);
-                                if (result != null && result.getCode() == SyncService.RESULT_OK) {
-                                    open(tempPath);
-                                }
+                                final String tempPath = temp.getAbsolutePath();
+                                SyncProgressHelper.run(new SyncRunnable() {
+
+                                        public void run(ISyncProgressMonitor monitor)
+                                                throws SyncException, IOException,
+                                                TimeoutException {
+                                            sync.pullFile(remoteFilePath, tempPath, monitor);
+                                        }
+
+                                        public void close() {
+                                            sync.close();
+                                        }
+                                    },
+                                    String.format("Pulling %1$s from the device", remoteFilePath),
+                                    mParentShell);
+
+                                open(tempPath);
                             } else {
                                 // default action is ACTION_SAVE
-                                result = promptAndPull(sync,
+                                promptAndPull(sync,
                                         client.getClientData().getClientDescription() + DOT_HPROF,
                                         remoteFilePath, "Save HPROF file");
 
                             }
-
-                            if (result != null && result.getCode() != SyncService.RESULT_OK) {
-                                displayErrorFromUiThread(
-                                        "Unable to download HPROF file from device '%1$s'.\n\n%2$s",
-                                        device.getSerialNumber(), result.getMessage());
-                            }
                         } else {
-                            displayErrorFromUiThread("Unable to download HPROF file from device '%1$s'.",
+                            displayErrorFromUiThread(
+                                    "Unable to download HPROF file from device '%1$s'.",
                                     device.getSerialNumber());
+                        }
+                    } catch (SyncException e) {
+                        if (e.wasCanceled() == false) {
+                            displayErrorFromUiThread(
+                                    "Unable to download HPROF file from device '%1$s'.\n\n%2$s",
+                                    device.getSerialNumber(), e.getMessage());
                         }
                     } catch (Exception e) {
                         displayErrorFromUiThread("Unable to download HPROF file from device '%1$s'.",

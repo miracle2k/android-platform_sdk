@@ -16,7 +16,6 @@
 
 package com.android.ddmlib;
 
-import com.android.ddmlib.SyncService.SyncResult;
 import com.android.ddmlib.log.LogReceiver;
 
 import java.io.File;
@@ -408,16 +407,25 @@ final class Device implements IDevice {
     }
 
     public String installPackage(String packageFilePath, boolean reinstall)
-           throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
-           IOException {
-       String remoteFilePath = syncPackageToDevice(packageFilePath);
-       String result = installRemotePackage(remoteFilePath, reinstall);
-       removeRemotePackage(remoteFilePath);
-       return result;
+            throws InstallException {
+        try {
+            String remoteFilePath = syncPackageToDevice(packageFilePath);
+            String result = installRemotePackage(remoteFilePath, reinstall);
+            removeRemotePackage(remoteFilePath);
+            return result;
+        } catch (IOException e) {
+            throw new InstallException(e);
+        } catch (AdbCommandRejectedException e) {
+            throw new InstallException(e);
+        } catch (TimeoutException e) {
+            throw new InstallException(e);
+        } catch (SyncException e) {
+            throw new InstallException(e);
+        }
     }
 
     public String syncPackageToDevice(String localFilePath)
-            throws IOException, AdbCommandRejectedException, TimeoutException {
+            throws IOException, AdbCommandRejectedException, TimeoutException, SyncException {
         try {
             String packageFileName = getFileName(localFilePath);
             String remoteFilePath = String.format("/data/local/tmp/%1$s", packageFileName); //$NON-NLS-1$
@@ -430,24 +438,23 @@ final class Device implements IDevice {
                 String message = String.format("Uploading file onto device '%1$s'",
                         getSerialNumber());
                 Log.d(LOG_TAG, message);
-                SyncResult result = sync.pushFile(localFilePath, remoteFilePath,
-                        SyncService.getNullProgressMonitor());
-
-                if (result.getCode() != SyncService.RESULT_OK) {
-                    throw new IOException(String.format("Unable to upload file: %1$s",
-                            result.getMessage()));
-                }
+                sync.pushFile(localFilePath, remoteFilePath, SyncService.getNullProgressMonitor());
             } else {
                 throw new IOException("Unable to open sync connection!");
             }
             return remoteFilePath;
         } catch (TimeoutException e) {
-            Log.e(LOG_TAG, "Unable to open sync connection! Timeout.");
+            Log.e(LOG_TAG, "Error during Sync: timeout.");
             throw e;
+
+        } catch (SyncException e) {
+            Log.e(LOG_TAG, String.format("Error during Sync: %1$s", e.getMessage()));
+            throw e;
+
         } catch (IOException e) {
-            Log.e(LOG_TAG, String.format("Unable to open sync connection! reason: %1$s",
-                    e.getMessage()));
+            Log.e(LOG_TAG, String.format("Error during Sync: %1$s", e.getMessage()));
             throw e;
+
         }
     }
 
@@ -461,40 +468,52 @@ final class Device implements IDevice {
     }
 
     public String installRemotePackage(String remoteFilePath, boolean reinstall)
-            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
-            IOException {
-        InstallReceiver receiver = new InstallReceiver();
-        String cmd = String.format(reinstall ? "pm install -r \"%1$s\"" : "pm install \"%1$s\"",
-                            remoteFilePath);
-        executeShellCommand(cmd, receiver, INSTALL_TIMEOUT);
-        return receiver.getErrorMessage();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void removeRemotePackage(String remoteFilePath)
-            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
-            IOException {
-        // now we delete the app we sync'ed
+            throws InstallException {
         try {
-            executeShellCommand("rm " + remoteFilePath, new NullOutputReceiver(), INSTALL_TIMEOUT);
+            InstallReceiver receiver = new InstallReceiver();
+            String cmd = String.format(reinstall ? "pm install -r \"%1$s\"" : "pm install \"%1$s\"",
+                                remoteFilePath);
+            executeShellCommand(cmd, receiver, INSTALL_TIMEOUT);
+            return receiver.getErrorMessage();
+        } catch (TimeoutException e) {
+            throw new InstallException(e);
+        } catch (AdbCommandRejectedException e) {
+            throw new InstallException(e);
+        } catch (ShellCommandUnresponsiveException e) {
+            throw new InstallException(e);
         } catch (IOException e) {
-            Log.e(LOG_TAG, String.format("Failed to delete temporary package: %1$s",
-                    e.getMessage()));
-            throw e;
+            throw new InstallException(e);
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public String uninstallPackage(String packageName)
-            throws TimeoutException, AdbCommandRejectedException, ShellCommandUnresponsiveException,
-            IOException {
-        InstallReceiver receiver = new InstallReceiver();
-        executeShellCommand("pm uninstall " + packageName, receiver, INSTALL_TIMEOUT);
-        return receiver.getErrorMessage();
+    public void removeRemotePackage(String remoteFilePath) throws InstallException {
+        try {
+            executeShellCommand("rm " + remoteFilePath, new NullOutputReceiver(), INSTALL_TIMEOUT);
+        } catch (IOException e) {
+            throw new InstallException(e);
+        } catch (TimeoutException e) {
+            throw new InstallException(e);
+        } catch (AdbCommandRejectedException e) {
+            throw new InstallException(e);
+        } catch (ShellCommandUnresponsiveException e) {
+            throw new InstallException(e);
+        }
+    }
+
+    public String uninstallPackage(String packageName) throws InstallException {
+        try {
+            InstallReceiver receiver = new InstallReceiver();
+            executeShellCommand("pm uninstall " + packageName, receiver, INSTALL_TIMEOUT);
+            return receiver.getErrorMessage();
+        } catch (TimeoutException e) {
+            throw new InstallException(e);
+        } catch (AdbCommandRejectedException e) {
+            throw new InstallException(e);
+        } catch (ShellCommandUnresponsiveException e) {
+            throw new InstallException(e);
+        } catch (IOException e) {
+            throw new InstallException(e);
+        }
     }
 
     /*

@@ -16,24 +16,25 @@
 
 package com.android.ddmuilib.explorer;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.FileListingService;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
+import com.android.ddmlib.ShellCommandUnresponsiveException;
+import com.android.ddmlib.SyncException;
 import com.android.ddmlib.SyncService;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.FileListingService.FileEntry;
 import com.android.ddmlib.SyncService.ISyncProgressMonitor;
-import com.android.ddmlib.SyncService.SyncResult;
 import com.android.ddmuilib.DdmUiPreferences;
 import com.android.ddmuilib.ImageLoader;
 import com.android.ddmuilib.Panel;
-import com.android.ddmuilib.SyncProgressMonitor;
+import com.android.ddmuilib.SyncProgressHelper;
 import com.android.ddmuilib.TableHelper;
+import com.android.ddmuilib.SyncProgressHelper.SyncRunnable;
 import com.android.ddmuilib.actions.ICommonAction;
 import com.android.ddmuilib.console.DdmConsole;
 
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jface.dialogs.ProgressMonitorDialog;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -62,7 +63,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -407,19 +407,8 @@ public class DeviceExplorer extends Panel {
             SyncService sync = mCurrentDevice.getSyncService();
             if (sync != null) {
                 ISyncProgressMonitor monitor = SyncService.getNullProgressMonitor();
-                SyncResult result = sync.pullFile(keyEntry, keyFile.getAbsolutePath(), monitor);
-                if (result.getCode() != SyncService.RESULT_OK) {
-                    DdmConsole.printErrorToConsole(String.format(
-                            "Failed to pull %1$s: %2$s", keyEntry.getName(), result.getMessage()));
-                    return;
-                }
-
-                result = sync.pullFile(dataEntry, dataFile.getAbsolutePath(), monitor);
-                if (result.getCode() != SyncService.RESULT_OK) {
-                    DdmConsole.printErrorToConsole(String.format(
-                            "Failed to pull %1$s: %2$s", dataEntry.getName(), result.getMessage()));
-                    return;
-                }
+                sync.pullFile(keyEntry, keyFile.getAbsolutePath(), monitor);
+                sync.pullFile(dataEntry, dataFile.getAbsolutePath(), monitor);
 
                 // now that we have the file, we need to launch traceview
                 String[] command = new String[2];
@@ -464,6 +453,18 @@ public class DeviceExplorer extends Panel {
             DdmConsole.printErrorToConsole(String.format(
                     "Failed to pull %1$s: %2$s", keyEntry.getName(), e.getMessage()));
             return;
+        } catch (SyncException e) {
+            if (e.wasCanceled() == false) {
+                DdmConsole.printErrorToConsole(String.format(
+                        "Failed to pull %1$s: %2$s", keyEntry.getName(), e.getMessage()));
+                return;
+            }
+        } catch (TimeoutException e) {
+            DdmConsole.printErrorToConsole(String.format(
+                    "Failed to pull %1$s: timeout", keyEntry.getName()));
+        } catch (AdbCommandRejectedException e) {
+            DdmConsole.printErrorToConsole(String.format(
+                    "Failed to pull %1$s: %2$s", keyEntry.getName(), e.getMessage()));
         }
     }
 
@@ -602,6 +603,15 @@ public class DeviceExplorer extends Panel {
         } catch (IOException e) {
             // adb failed somehow, we do nothing. We should be displaying the error from the output
             // of the shell command.
+        } catch (TimeoutException e) {
+            // adb failed somehow, we do nothing. We should be displaying the error from the output
+            // of the shell command.
+        } catch (AdbCommandRejectedException e) {
+            // adb failed somehow, we do nothing. We should be displaying the error from the output
+            // of the shell command.
+        } catch (ShellCommandUnresponsiveException e) {
+            // adb failed somehow, we do nothing. We should be displaying the error from the output
+            // of the shell command.
         }
 
     }
@@ -672,24 +682,21 @@ public class DeviceExplorer extends Panel {
                 final FileEntry[] entryArray = entries.toArray(
                         new FileEntry[entries.size()]);
 
-                // get a progressdialog
-                new ProgressMonitorDialog(mParent.getShell()).run(true, true,
-                        new IRunnableWithProgress() {
-                    public void run(IProgressMonitor monitor)
-                            throws InvocationTargetException,
-                            InterruptedException {
-                        // create a monitor wrapper around the jface monitor
-                        SyncResult result = sync.pull(entryArray, localDirectory,
-                                new SyncProgressMonitor(monitor,
-                                        "Pulling file(s) from the device"));
+                SyncProgressHelper.run(new SyncRunnable() {
+                    public void run(ISyncProgressMonitor monitor)
+                            throws SyncException, IOException, TimeoutException {
+                        sync.pull(entryArray, localDirectory, monitor);
+                    }
 
-                        if (result.getCode() != SyncService.RESULT_OK) {
-                            DdmConsole.printErrorToConsole(String.format(
-                                    "Failed to pull selection: %1$s", result.getMessage()));
-                        }
+                    public void close() {
                         sync.close();
                     }
-                });
+                }, "Pulling file(s) from the device", mParent.getShell());
+            }
+        } catch (SyncException e) {
+            if (e.wasCanceled() == false) {
+                DdmConsole.printErrorToConsole(String.format(
+                        "Failed to pull selection: %1$s", e.getMessage()));
             }
         } catch (Exception e) {
             DdmConsole.printErrorToConsole( "Failed to pull selection");
@@ -706,22 +713,22 @@ public class DeviceExplorer extends Panel {
         try {
             final SyncService sync = mCurrentDevice.getSyncService();
             if (sync != null) {
-                new ProgressMonitorDialog(mParent.getShell()).run(true, true,
-                        new IRunnableWithProgress() {
-                    public void run(IProgressMonitor monitor)
-                            throws InvocationTargetException,
-                            InterruptedException {
-                        SyncResult result = sync.pullFile(remote, local, new SyncProgressMonitor(
-                                monitor, String.format("Pulling %1$s from the device",
-                                        remote.getName())));
-                        if (result.getCode() != SyncService.RESULT_OK) {
-                            DdmConsole.printErrorToConsole(String.format(
-                                    "Failed to pull %1$s: %2$s", remote, result.getMessage()));
+                SyncProgressHelper.run(new SyncRunnable() {
+                        public void run(ISyncProgressMonitor monitor)
+                                throws SyncException, IOException, TimeoutException {
+                            sync.pullFile(remote, local, monitor);
                         }
 
-                        sync.close();
-                    }
-                });
+                        public void close() {
+                            sync.close();
+                        }
+                    }, String.format("Pulling %1$s from the device", remote.getName()),
+                    mParent.getShell());
+            }
+        } catch (SyncException e) {
+            if (e.wasCanceled() == false) {
+                DdmConsole.printErrorToConsole(String.format(
+                        "Failed to pull selection: %1$s", e.getMessage()));
             }
         } catch (Exception e) {
             DdmConsole.printErrorToConsole( "Failed to pull selection");
@@ -738,22 +745,21 @@ public class DeviceExplorer extends Panel {
         try {
             final SyncService sync = mCurrentDevice.getSyncService();
             if (sync != null) {
-                new ProgressMonitorDialog(mParent.getShell()).run(true, true,
-                        new IRunnableWithProgress() {
-                    public void run(IProgressMonitor monitor)
-                            throws InvocationTargetException,
-                            InterruptedException {
-                        SyncResult result = sync.push(localFiles, remoteDirectory,
-                                    new SyncProgressMonitor(monitor,
-                                            "Pushing file(s) to the device"));
-                        if (result.getCode() != SyncService.RESULT_OK) {
-                            DdmConsole.printErrorToConsole(String.format(
-                                    "Failed to push the items: %1$s", result.getMessage()));
+                SyncProgressHelper.run(new SyncRunnable() {
+                        public void run(ISyncProgressMonitor monitor)
+                                throws SyncException, IOException, TimeoutException {
+                            sync.push(localFiles, remoteDirectory, monitor);
                         }
 
-                        sync.close();
-                    }
-                });
+                        public void close() {
+                            sync.close();
+                        }
+                    }, "Pushing file(s) to the device", mParent.getShell());
+            }
+        } catch (SyncException e) {
+            if (e.wasCanceled() == false) {
+                DdmConsole.printErrorToConsole(String.format(
+                        "Failed to push selection: %1$s", e.getMessage()));
             }
         } catch (Exception e) {
             DdmConsole.printErrorToConsole("Failed to push the items");
@@ -770,29 +776,27 @@ public class DeviceExplorer extends Panel {
         try {
             final SyncService sync = mCurrentDevice.getSyncService();
             if (sync != null) {
-                new ProgressMonitorDialog(mParent.getShell()).run(true, true,
-                        new IRunnableWithProgress() {
-                    public void run(IProgressMonitor monitor)
-                            throws InvocationTargetException,
-                            InterruptedException {
-                        // get the file name
-                        String[] segs = local.split(Pattern.quote(File.separator));
-                        String name = segs[segs.length-1];
-                        String remoteFile = remoteDirectory + FileListingService.FILE_SEPARATOR
-                                + name;
+                // get the file name
+                String[] segs = local.split(Pattern.quote(File.separator));
+                String name = segs[segs.length-1];
+                final String remoteFile = remoteDirectory + FileListingService.FILE_SEPARATOR
+                        + name;
 
-                        SyncResult result = sync.pushFile(local, remoteFile,
-                                    new SyncProgressMonitor(monitor,
-                                            String.format("Pushing %1$s to the device.", name)));
-                        if (result.getCode() != SyncService.RESULT_OK) {
-                            DdmConsole.printErrorToConsole(String.format(
-                                    "Failed to push %1$s on %2$s: %3$s",
-                                    name, mCurrentDevice.getSerialNumber(), result.getMessage()));
+                SyncProgressHelper.run(new SyncRunnable() {
+                        public void run(ISyncProgressMonitor monitor)
+                                throws SyncException, IOException, TimeoutException {
+                            sync.pushFile(local, remoteFile, monitor);
                         }
 
-                        sync.close();
-                    }
-                });
+                        public void close() {
+                            sync.close();
+                        }
+                    }, String.format("Pushing %1$s to the device.", name), mParent.getShell());
+            }
+        } catch (SyncException e) {
+            if (e.wasCanceled() == false) {
+                DdmConsole.printErrorToConsole(String.format(
+                        "Failed to push selection: %1$s", e.getMessage()));
             }
         } catch (Exception e) {
             DdmConsole.printErrorToConsole("Failed to push the item(s).");

@@ -16,9 +16,11 @@
 
 package com.android.eventanalyzer;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.Log.ILogOutput;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.ddmlib.log.EventContainer;
@@ -159,7 +161,7 @@ public class EventAnalyzer implements ILogListener {
 
             // analyze the data gathered by the parser methods
             analyzeData();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -227,7 +229,8 @@ public class EventAnalyzer implements ILogListener {
         }
     }
 
-    private void parseLogFromDevice() throws IOException {
+    private void parseLogFromDevice() throws IOException, TimeoutException,
+            AdbCommandRejectedException {
         // init the lib
         AndroidDebugBridge.init(false /* debugger support */);
 
@@ -300,7 +303,8 @@ public class EventAnalyzer implements ILogListener {
         }
     }
 
-    private void grabLogFrom(IDevice device) throws IOException {
+    private void grabLogFrom(IDevice device) throws IOException, TimeoutException,
+            AdbCommandRejectedException {
         mParser = new EventLogParser();
         if (mParser.init(device) == false) {
             printAndExit("Failed to get event-log-tags from " + device.getSerialNumber(),

@@ -16,12 +16,11 @@
 
 package com.android.ddmlib;
 
-import java.io.IOException;
 
 /**
  * Exception thrown when a connection to Adb failed with a timeout.
  *
  */
-public class TimeoutException extends IOException {
+public class TimeoutException extends Exception {
     private static final long serialVersionUID = 1L;
 }

@@ -16,9 +16,11 @@
 
 package com.android.dumpeventlog;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.Log.ILogOutput;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.ddmlib.log.LogReceiver;
@@ -120,7 +122,7 @@ public class DumpEventLog {
                         grabLogFrom(device, args[1]);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                     return;
@@ -133,7 +135,8 @@ public class DumpEventLog {
         }
     }
 
-    private static void grabLogFrom(IDevice device, String filePath) throws IOException {
+    private static void grabLogFrom(IDevice device, String filePath) throws IOException,
+            TimeoutException, AdbCommandRejectedException {
         LogWriter writer = new LogWriter(filePath);
         LogReceiver receiver = new LogReceiver(writer);
         writer.setReceiver(receiver);

@@ -39,6 +39,7 @@ public class Window {
         return Integer.toHexString(hashCode);
     }
 
+    @Override
     public String toString() {
         return title;
     }

@@ -16,9 +16,12 @@
 
 package com.android.ddmuilib.logcat;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
 import com.android.ddmlib.MultiLineReceiver;
+import com.android.ddmlib.ShellCommandUnresponsiveException;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.ddmuilib.DdmUiPreferences;
 import com.android.ddmuilib.ITableFocusListener;
@@ -1310,7 +1313,13 @@ public class LogPanel extends SelectionDependentPanel {
                     try {
                         mCurrentLoggedDevice.executeShellCommand("ps", psor); //$NON-NLS-1$
                     } catch (IOException e) {
-                        // hmm...
+                        // Ignore
+                    } catch (TimeoutException e) {
+                        // Ignore
+                    } catch (AdbCommandRejectedException e) {
+                        // Ignore
+                    } catch (ShellCommandUnresponsiveException e) {
+                        // Ignore
                     }
                 }
             }.start();
