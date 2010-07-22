@@ -27,6 +27,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDe
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
@@ -1747,7 +1748,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         mPasteAction = new Action() {
             @Override
             public void run() {
-                onPaste();
+                pasteSelection(new ArrayList<CanvasSelection>(mSelections));
             }
         };
 
@@ -1977,14 +1978,39 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     /**
      * Perform the "Paste" action, either from the Edit menu or from the context menu.
      */
-    private void onPaste() {
-        // TODO need to defer that to GRE.
-        // TODO list:
-        // - Paste as "in first parent, before first select child" (defined by scripts).
-        // - If there's nothing selected, use root element as the parent.
-        // - handle empty root:
-        //   Must also be able to copy/paste into an empty document (prolly need to bypass script, and deal with the xmlns)
-        AdtPlugin.displayWarning("Canvas Paste", "Not implemented yet");
+    private void pasteSelection(List<CanvasSelection> selection) {
+
+        SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
+        SimpleElement[] pasted = (SimpleElement[]) mClipboard.getContents(sxt);
+
+        if (pasted == null || pasted.length == 0) {
+            return;
+        }
+
+        if (mLastValidViewInfoRoot == null) {
+            // Pasting in an empty document. Only paste the first element.
+            pasteInEmptyDocument(pasted[0]);
+            return;
+        }
+
+        // Otherwise use the current selection, if any, as a guide where to paste
+        // using the first selected element only. If there's no selection use
+        // the root as the insertion point.
+        sanitizeSelection(selection);
+        CanvasViewInfo target = mLastValidViewInfoRoot;
+        if (selection.size() > 0) {
+            CanvasSelection cs = selection.get(0);
+            target = cs.getViewInfo();
+        }
+
+        NodeProxy targetNode = mNodeFactory.create(target);
+
+        getRulesEngine().callOnPaste(targetNode, pasted);
+    }
+
+    private void pasteInEmptyDocument(SimpleElement simpleElement) {
+        // TODO Auto-generated method stub
+
     }
 
     /**
@@ -1994,8 +2020,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * In case of success, the new element will have some default attributes set (xmlns:android,
      * layout_width and height). The edit is wrapped in a proper undo.
      * <p/>
-     * This is invoked by {@link #onPaste()} or
-     * by {@link CanvasDropListener#drop(org.eclipse.swt.dnd.DropTargetEvent)}.
+     * This is invoked by {@link CanvasDropListener#drop(org.eclipse.swt.dnd.DropTargetEvent)}.
      *
      * @param rootFqcn A non-null non-empty FQCN that must match an existing {@link ViewDescriptor}
      *   to add as root to the current empty XML document.

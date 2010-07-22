@@ -18,8 +18,6 @@ package com.android.adt.gscripts;
 
 public class BaseView implements IViewRule {
 
-    private String mFqcn;
-
     // Some common Android layout attribute names used by the view rules.
     // All these belong to the attribute namespace ANDROID_URI.
     public static String ATTR_ID = "id";
@@ -40,12 +38,14 @@ public class BaseView implements IViewRule {
     public static String ANDROID_URI = "http://schemas.android.com/apk/res/android";
 
     public boolean onInitialize(String fqcn) {
-        // This base rule can handle any class.
-        mFqcn = fqcn
+        // This base rule can handle any class so we don't need to filter on FQCN.
+        // Derived classes should do so if they can handle some subclasses.
 
         // For debugging and as an example of how to use the injected _rules_engine property.
         _rules_engine.debugPrintf("Initialize() of %s", _rules_engine.getFqcn());
 
+        // If onInitialize returns false, it means it can't handle the given FQCN and
+        // will be unloaded.
         return true;
     }
 
@@ -63,13 +63,9 @@ public class BaseView implements IViewRule {
         return null;
     }
 
-    public String getFqcn() {
-        return mFqcn;
-    }
-
     // ==== Selection ====
 
-    void onSelected(IGraphics gc, INode selectedNode,
+    public void onSelected(IGraphics gc, INode selectedNode,
                 String displayName, boolean isMultipleSelection) {
         Rect r = selectedNode.getBounds();
 
@@ -93,7 +89,7 @@ public class BaseView implements IViewRule {
         gc.drawString(displayName, xs, ys);
     }
 
-    void onChildSelected(IGraphics gc, INode parentNode, INode childNode) {
+    public void onChildSelected(IGraphics gc, INode parentNode, INode childNode) {
         Rect rp = parentNode.getBounds();
         Rect rc = childNode.getBounds();
 
@@ -118,21 +114,39 @@ public class BaseView implements IViewRule {
     // ==== Drag'n'drop support ====
 
     // By default Views do not accept drag'n'drop.
-    DropFeedback onDropEnter(INode targetNode, IDragElement[] elements) {
+    public DropFeedback onDropEnter(INode targetNode, IDragElement[] elements) {
         return null;
     }
 
-    DropFeedback onDropMove(INode targetNode, IDragElement[] elements,
+    public DropFeedback onDropMove(INode targetNode, IDragElement[] elements,
                             DropFeedback feedback, Point p) {
         return null;
     }
 
-    void onDropLeave(INode targetNode, IDragElement[] elements, DropFeedback feedback) {
+    public void onDropLeave(INode targetNode, IDragElement[] elements, DropFeedback feedback) {
         // ignore
     }
 
-    void onDropped(INode targetNode, IDragElement[] elements, DropFeedback feedback, Point p) {
+    public void onDropped(INode targetNode, IDragElement[] elements, DropFeedback feedback, Point p) {
         // ignore
+    }
+
+    // ==== Paste support ====
+
+    /**
+     * Most views can't accept children so there's nothing to paste on them.
+     * In this case, defer the call to the parent layout and use the target node as
+     * an indication of where to paste.
+     */
+    public void onPaste(INode targetNode, IDragElement[] elements) {
+        //
+        def parent = targetNode.getParent();
+        def parentFqcn = parent?.getFqcn();
+        def parentRule = _rules_engine.loadRule(parentFqcn);
+
+        if (parentRule instanceof BaseLayout) {
+            parentRule.onPasteBeforeChild(parent, targetNode, elements);
+        }
     }
 
 }

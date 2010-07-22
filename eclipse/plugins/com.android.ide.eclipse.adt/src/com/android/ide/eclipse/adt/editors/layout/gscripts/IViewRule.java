@@ -182,4 +182,11 @@ public interface IViewRule {
             DropFeedback feedback,
             Point where);
 
+    /**
+     * Called when pasting elements in an existing document on the selected target.
+     *
+     * @param targetNode The first node selected.
+     * @param pastedElements The elements being pasted.
+     */
+    void onPaste(INode targetNode, IDragElement[] pastedElements);
 }

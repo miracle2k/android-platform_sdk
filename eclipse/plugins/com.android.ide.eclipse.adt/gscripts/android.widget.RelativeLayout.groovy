@@ -325,7 +325,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             return null;
         }
 
-        return [ "rect": r, "attr": [ attr ], "mark": r.center() ];
+        return [ "rect": r, "attr": [ attr ], "mark": r.getCenter() ];
     }
 
 
