@@ -16,8 +16,23 @@
 
 package com.android.hierarchyviewer;
 
+import com.android.hierarchyviewerlib.ComponentRegistry;
+import com.android.hierarchyviewerlib.HierarchyViewerDirector;
+import com.android.hierarchyviewerlib.models.DeviceSelectionModel;
+
 public class HierarchyViewerApplication {
     public static void main(String[] args) {
-    	System.out.println("TEST");
+        HierarchyViewerDirector director = new HierarchyViewerApplicationDirector();
+        ComponentRegistry.setDirector(director);
+        director.initDebugBridge();
+        ComponentRegistry.setDeviceSelectionModel(new DeviceSelectionModel());
+        director.startListenForDevices();
+        director.populateDeviceSelectionModel();
+
+        UIThread.runUI();
+
+        director.stopListenForDevices();
+        director.stopDebugBridge();
+        director.terminate();
     }
 }

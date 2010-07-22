@@ -18,8 +18,11 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
 
 LOCAL_JAVA_LIBRARIES := \
-	hierarchyviewerlib \
-	swt
+    ddmlib \
+    ddmuilib \
+    hierarchyviewerlib \
+    swt \
+    org.eclipse.jface_3.4.2.M20090107-0800
 LOCAL_MODULE := hierarchyvieweruilib
 
 include $(BUILD_HOST_JAVA_LIBRARY)
