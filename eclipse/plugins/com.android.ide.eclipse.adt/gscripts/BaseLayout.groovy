@@ -26,6 +26,58 @@ public class BaseLayout extends BaseView {
         super.onDispose();
     }
 
+
+    // ==== Paste support ====
+
+    /**
+     * The default behavior for pasting in a layout is to simulate
+     * a drop in the top-left corner of the view.
+     * <p/>
+     * Note that we explicitely do not call super() here -- the BasView.onPaste
+     * will call onPasteBeforeChild() instead.
+     * <p/>
+     * Derived layouts should override this behavior if not appropriate.
+     */
+    public void onPaste(INode targetNode, IDragElement[] elements) {
+
+        DropFeedback feedback = onDropEnter(targetNode, elements);
+        if (feedback != null) {
+            Point p = targetNode.getBounds().getTopLeft();
+            feedback = onDropMove(targetNode, elements, feedback, p);
+            if (feedback != null) {
+                onDropLeave(targetNode, elements, feedback);
+                onDropped(targetNode, elements, feedback, p);
+            }
+        }
+    }
+
+    /**
+     * The default behavior for pasting in a layout with a specific child target
+     * is to simulate a drop right above the top left of the given child target.
+     * <p/>
+     * This method is invoked by BaseView.groovy when onPaste() is called -- views
+     * don't generally accept children and instead use the target node as a hint
+     * to paste "before" it.
+     */
+    public void onPasteBeforeChild(INode parentNode, INode targetNode, IDragElement[] elements) {
+
+        DropFeedback feedback = onDropEnter(parentNode, elements);
+        if (feedback != null) {
+            Point parentP = parentNode.getBounds().getTopLeft();
+            Point targetP = targetNode.getBounds().getTopLeft();
+            if (parentP.y < targetP.y) {
+                targetP.y -= 1;
+            }
+
+            feedback = onDropMove(parentNode, elements, feedback, targetP);
+            if (feedback != null) {
+                onDropLeave(parentNode, elements, feedback);
+                onDropped(parentNode, elements, feedback, targetP);
+            }
+        }
+    }
+
+
     // ==== Utility methods used by derived layouts ====
 
     // TODO revisit.

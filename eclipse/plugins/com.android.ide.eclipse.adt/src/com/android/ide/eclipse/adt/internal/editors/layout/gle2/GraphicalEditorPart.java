@@ -110,8 +110,6 @@ import java.util.Map;
  *
  * TODO List:
  * - display error icon
- * - finish palette (see palette's todo list)
- * - finish canvas (see canvas' todo list)
  * - completly rethink the property panel
  */
 public class GraphicalEditorPart extends EditorPart

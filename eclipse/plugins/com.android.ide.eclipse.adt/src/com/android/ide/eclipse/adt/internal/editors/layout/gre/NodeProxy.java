@@ -23,6 +23,7 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleAttribute;
@@ -89,6 +90,14 @@ public class NodeProxy implements INode {
 
     /* package */ UiViewElementNode getNode() {
         return mNode;
+    }
+
+    public String getFqcn() {
+        ElementDescriptor desc = mNode.getDescriptor();
+        if (desc instanceof ViewElementDescriptor) {
+            return ((ViewElementDescriptor) desc).getFullClassName();
+        }
+        return null;
     }
 
 

@@ -27,6 +27,7 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleElement;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFolderListener;
@@ -315,7 +316,6 @@ public class RulesEngine {
 
     /**
      * Called when a paint has been requested via DropFeedback.
-     * @param targetNode
      */
     public void callDropFeedbackPaint(IGraphics gc,
             NodeProxy targetNode,
@@ -325,6 +325,28 @@ public class RulesEngine {
                 feedback.paintClosure.call(new Object[] { gc, targetNode, feedback });
             } catch (Exception e) {
                 logError("DropFeedback.paintClosure failed: %s",
+                        e.toString());
+            }
+        }
+    }
+
+    /**
+     * Called when pasting elements in an existing document on the selected target.
+     *
+     * @param targetNode The first node selected.
+     * @param pastedElements The elements being pasted.
+     */
+    public void callOnPaste(NodeProxy targetNode, SimpleElement[] pastedElements) {
+        // try to find a rule for this element's FQCN
+        IViewRule rule = loadRule(targetNode.getNode());
+
+        if (rule != null) {
+            try {
+                rule.onPaste(targetNode, pastedElements);
+
+            } catch (Exception e) {
+                logError("%s.onPaste() failed: %s",
+                        rule.getClass().getSimpleName(),
                         e.toString());
             }
         }
@@ -705,5 +727,6 @@ public class RulesEngine {
             return RulesEngine.this.loadRule(fqcn, fqcn);
         }
     }
+
 
 }

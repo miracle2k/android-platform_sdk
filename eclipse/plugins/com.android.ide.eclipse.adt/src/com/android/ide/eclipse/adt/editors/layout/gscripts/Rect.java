@@ -111,9 +111,28 @@ public class Rect {
         return this;
     }
 
-    public Point center() {
+    public Point getCenter() {
         return new Point(x + (w > 0 ? w / 2 : 0),
                          y + (h > 0 ? h / 2 : 0));
+    }
+
+    public Point getTopLeft() {
+        return new Point(x, y);
+    }
+
+    public Point getBottomLeft() {
+        return new Point(x,
+                         y + (h > 0 ? h : 0));
+    }
+
+    public Point getTopRight() {
+        return new Point(x + (w > 0 ? w : 0),
+                         y);
+    }
+
+    public Point getBottomRight() {
+        return new Point(x + (w > 0 ? w : 0),
+                         y + (h > 0 ? h : 0));
     }
 
     @Override

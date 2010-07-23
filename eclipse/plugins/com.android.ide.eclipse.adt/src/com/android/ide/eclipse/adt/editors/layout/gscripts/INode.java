@@ -38,6 +38,11 @@ import groovy.lang.Closure;
 public interface INode {
 
     /**
+     * Returns the FQCN of the view class represented by this node.
+     */
+    String getFqcn();
+
+    /**
      * Returns the bounds of this node.
      * <p/>
      * The bounds are valid when this node maps a view that is already rendered.
