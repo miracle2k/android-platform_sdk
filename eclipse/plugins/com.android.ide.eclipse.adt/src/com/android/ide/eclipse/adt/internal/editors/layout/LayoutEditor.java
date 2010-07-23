@@ -28,8 +28,8 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewEleme
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.GraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiContentOutlinePage;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiPropertySheetPage;
-import com.android.ide.eclipse.adt.internal.editors.layout.gle2.OutlinePage2;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.OutlinePage2;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.PropertySheetPage2;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiActions;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
@@ -496,54 +496,66 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     }
 
     /**
-     * Creates a new {@link ElementDescriptor} for an unknown XML local name
+     * Creates a new {@link ViewElementDescriptor} for an unknown XML local name
      * (i.e. one that was not mapped by the current descriptors).
      * <p/>
      * Since we deal with layouts, we returns either a descriptor for a custom view
      * or one for the base View.
      *
      * @param xmlLocalName The XML local name to match.
-     * @return A non-null {@link ElementDescriptor}.
+     * @return A non-null {@link ViewElementDescriptor}.
      */
-    private ElementDescriptor createUnknownDescriptor(String xmlLocalName) {
+    private ViewElementDescriptor createUnknownDescriptor(String xmlLocalName) {
+        ViewElementDescriptor desc = null;
         IEditorInput editorInput = getEditorInput();
         if (editorInput instanceof IFileEditorInput) {
             IFileEditorInput fileInput = (IFileEditorInput)editorInput;
             IProject project = fileInput.getFile().getProject();
 
             // Check if we can find a custom view specific to this project.
-            ElementDescriptor desc = CustomViewDescriptorService.getInstance().getDescriptor(
-                    project, xmlLocalName);
+            // This only works if there's an actual matching custom class in the project.
+            desc = CustomViewDescriptorService.getInstance().getDescriptor(project, xmlLocalName);
 
-            if (desc != null) {
-                return desc;
-            }
+            if (desc == null) {
+                // If we didn't find a custom view, create a synthetic one using the
+                // the base View descriptor as a model.
+                // This is a layout after all, so every XML node should represent
+                // a view.
 
-            // If we didn't find a custom view, reuse the base View descriptor.
-            // This is a layout after all, so every XML node should represent
-            // a view.
+                Sdk currentSdk = Sdk.getCurrent();
+                if (currentSdk != null) {
+                    IAndroidTarget target = currentSdk.getTarget(project);
+                    if (target != null) {
+                        AndroidTargetData data = currentSdk.getTargetData(target);
+                        if (data != null) {
+                            // data can be null when the target is still loading
+                            ViewElementDescriptor viewDesc =
+                                data.getLayoutDescriptors().getBaseViewDescriptor();
 
-            Sdk currentSdk = Sdk.getCurrent();
-            if (currentSdk != null) {
-                IAndroidTarget target = currentSdk.getTarget(project);
-                if (target != null) {
-                    AndroidTargetData data = currentSdk.getTargetData(target);
-                    if (data != null) {
-                        // data can be null when the target is still loading
-                        desc = data.getLayoutDescriptors().getBaseViewDescriptor();
+                            desc = new ViewElementDescriptor(
+                                    xmlLocalName, // xml local name
+                                    xmlLocalName, // ui_name
+                                    xmlLocalName, // canonical class name
+                                    null, // tooltip
+                                    null, // sdk_url
+                                    viewDesc.getAttributes(),
+                                    viewDesc.getLayoutAttributes(),
+                                    null, // children
+                                    false /* mandatory */);
+                            desc.setSuperClass(viewDesc);
+                        }
                     }
                 }
             }
-
-            if (desc != null) {
-                return desc;
-            }
         }
 
-        // We get here if the editor input is not of the right type or if the
-        // SDK hasn't finished loading. In either case, return something just
-        // because we should not return null.
-        return new ViewElementDescriptor(xmlLocalName, xmlLocalName);
+        if (desc == null) {
+            // We can only arrive here if the SDK's android target has not finished
+            // loading. Just create a dummy descriptor with no attributes to be able
+            // to continue.
+            desc = new ViewElementDescriptor(xmlLocalName, xmlLocalName);
+        }
+        return desc;
     }
 
     private void onDescriptorsChanged(Document document) {
@@ -584,18 +596,26 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
      * Will return null if we can't find that FQCN or we lack the editor/data/descriptors info.
      */
     public ViewElementDescriptor getFqcnViewDescritor(String fqcn) {
+        ViewElementDescriptor desc = null;
+
         AndroidTargetData data = getTargetData();
         if (data != null) {
             LayoutDescriptors layoutDesc = data.getLayoutDescriptors();
             if (layoutDesc != null) {
                 DocumentDescriptor docDesc = layoutDesc.getDescriptor();
                 if (docDesc != null) {
-                    return internalFindFqcnViewDescritor(fqcn, docDesc.getChildren(), null);
+                    desc = internalFindFqcnViewDescritor(fqcn, docDesc.getChildren(), null);
                 }
             }
         }
 
-        return null;
+        if (desc == null) {
+            // We failed to find a descriptor for the given FQCN.
+            // Let's consider custom classes and create one as needed.
+            desc = createUnknownDescriptor(fqcn);
+        }
+
+        return desc;
     }
 
     /**
