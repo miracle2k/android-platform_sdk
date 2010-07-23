@@ -329,7 +329,9 @@ public final class SdkConstants {
         "android.preference." + CLASS_NAME_PREFERENCE_SCREEN; //$NON-NLS-1$
     public final static String CLASS_PREFERENCEGROUP = "android.preference.PreferenceGroup"; //$NON-NLS-1$
     public final static String CLASS_PARCELABLE = "android.os.Parcelable"; //$NON-NLS-1$
-
+    /** MockView is part of the layoutlib bridge and used to display classes that have
+     * no rendering in the graphical layout editor. */
+    public final static String CLASS_MOCK_VIEW = "com.android.layoutlib.bridge.MockView"; //$NON-NLS-1$
 
 
     /** Returns the appropriate name for the 'android' command, which is 'android.bat' for

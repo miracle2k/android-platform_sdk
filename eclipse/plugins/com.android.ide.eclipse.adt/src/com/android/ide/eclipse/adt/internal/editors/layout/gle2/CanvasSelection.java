@@ -20,6 +20,7 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.graphics.Rectangle;
 
@@ -129,6 +130,14 @@ import org.eclipse.swt.graphics.Rectangle;
         String fqcn = canvasViewInfo.getName();
         if (fqcn == null) {
             return null;
+        }
+
+        if (fqcn.equals(SdkConstants.CLASS_MOCK_VIEW)) {
+            // The MockView class from the layout bridge is used to display views that
+            // cannot be rendered properly (such as SurfaceView or missing custom views).
+            // This view itself already displays the class name it represents so we don't
+            // need to display anything here.
+            return "";
         }
 
         String name = gre.callGetDisplayName(canvasViewInfo.getUiViewKey());
