@@ -22,6 +22,8 @@ import com.android.ddmlib.MultiLineReceiver;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Parses the 'raw output mode' results of an instrumentation test run from shell and informs a
@@ -156,6 +158,15 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     /** The number of tests expected to run  */
     private int mNumTestsExpected = 0;
 
+    /** True if the parser is parsing a line beginning with "INSTRUMENTATION_RESULT" */
+    private boolean mInInstrumentationResultKey = false;
+
+    /**
+     * Stores key-value pairs under INSTRUMENTATION_RESULT header, these are printed at the
+     * end of a test run, if applicable
+     */
+    private Map<String, String> mInstrumentationResultBundle = new HashMap<String, String>();
+
     private static final String LOG_TAG = "InstrumentationResultParser";
 
     /** Error message supplied when no parseable test results are received from test run. */
@@ -216,19 +227,23 @@ public class InstrumentationResultParser extends MultiLineReceiver {
         if (line.startsWith(Prefixes.STATUS_CODE)) {
             // Previous status key-value has been collected. Store it.
             submitCurrentKeyValue();
+            mInInstrumentationResultKey = false;
             parseStatusCode(line);
         } else if (line.startsWith(Prefixes.STATUS)) {
             // Previous status key-value has been collected. Store it.
             submitCurrentKeyValue();
+            mInInstrumentationResultKey = false;
             parseKey(line, Prefixes.STATUS.length());
         } else if (line.startsWith(Prefixes.RESULT)) {
             // Previous status key-value has been collected. Store it.
             submitCurrentKeyValue();
+            mInInstrumentationResultKey = true;
             parseKey(line, Prefixes.RESULT.length());
         } else if (line.startsWith(Prefixes.STATUS_FAILED) ||
                    line.startsWith(Prefixes.CODE)) {
             // Previous status key-value has been collected. Store it.
             submitCurrentKeyValue();
+            mInInstrumentationResultKey = false;
             // these codes signal the end of the instrumentation run
             mTestRunFinished = true;
             // just ignore the remaining data on this line
@@ -250,25 +265,34 @@ public class InstrumentationResultParser extends MultiLineReceiver {
      */
     private void submitCurrentKeyValue() {
         if (mCurrentKey != null && mCurrentValue != null) {
-            TestResult testInfo = getCurrentTestInfo();
-            String statusValue = mCurrentValue.toString();
-
-            if (mCurrentKey.equals(StatusKeys.CLASS)) {
-                testInfo.mTestClass = statusValue.trim();
-            } else if (mCurrentKey.equals(StatusKeys.TEST)) {
-                testInfo.mTestName = statusValue.trim();
-            } else if (mCurrentKey.equals(StatusKeys.NUMTESTS)) {
-                try {
-                    testInfo.mNumTests = Integer.parseInt(statusValue);
-                } catch (NumberFormatException e) {
-                    Log.e(LOG_TAG, "Unexpected integer number of tests, received " + statusValue);
+            if (mInInstrumentationResultKey) {
+                String statusValue = mCurrentValue.toString();
+                mInstrumentationResultBundle.put(mCurrentKey, statusValue);
+                if (mCurrentKey.equals(StatusKeys.SHORTMSG)) {
+                    // test run must have failed
+                    handleTestRunFailed(statusValue);
                 }
-            } else if (mCurrentKey.equals(StatusKeys.ERROR) ||
-                    mCurrentKey.equals(StatusKeys.SHORTMSG)) {
-                // test run must have failed
-                handleTestRunFailed(statusValue);
-            } else if (mCurrentKey.equals(StatusKeys.STACK)) {
-                testInfo.mStackTrace = statusValue;
+            } else {
+                TestResult testInfo = getCurrentTestInfo();
+                String statusValue = mCurrentValue.toString();
+
+                if (mCurrentKey.equals(StatusKeys.CLASS)) {
+                    testInfo.mTestClass = statusValue.trim();
+                } else if (mCurrentKey.equals(StatusKeys.TEST)) {
+                    testInfo.mTestName = statusValue.trim();
+                } else if (mCurrentKey.equals(StatusKeys.NUMTESTS)) {
+                    try {
+                        testInfo.mNumTests = Integer.parseInt(statusValue);
+                    } catch (NumberFormatException e) {
+                        Log.e(LOG_TAG, "Unexpected integer number of tests, received "
+                                + statusValue);
+                    }
+                } else if (mCurrentKey.equals(StatusKeys.ERROR)) {
+                    // test run must have failed
+                    handleTestRunFailed(statusValue);
+                } else if (mCurrentKey.equals(StatusKeys.STACK)) {
+                    testInfo.mStackTrace = statusValue;
+                }
             }
 
             mCurrentKey = null;
@@ -490,7 +514,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
                     // no tests
                     listener.testRunStarted(0);
                 }
-                listener.testRunEnded(mTestTime);
+                listener.testRunEnded(mTestTime, mInstrumentationResultBundle);
             }
         }
     }

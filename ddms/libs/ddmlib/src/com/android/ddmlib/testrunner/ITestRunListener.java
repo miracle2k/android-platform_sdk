@@ -16,6 +16,8 @@
 
 package com.android.ddmlib.testrunner;
 
+import java.util.Map;
+
 /**
  * Receives event notifications during instrumentation test runs. 
  * Patterned after {@link junit.runner.TestRunListener}.
@@ -43,8 +45,9 @@ public interface ITestRunListener {
      * Reports end of test run.
      * 
      * @param elapsedTime device reported elapsed time, in milliseconds
+     * @param runMetrics key-value pairs reported at the end of a test run
      */
-    public void testRunEnded(long elapsedTime);
+    public void testRunEnded(long elapsedTime, Map<String, String> runMetrics);
 
     /**
      * Reports test run stopped before completion.

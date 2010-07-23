@@ -274,7 +274,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
             // ignore
         }
 
-        public void testRunEnded(long elapsedTime) {
+        public void testRunEnded(long elapsedTime, Map<String, String> resultBundle) {
             // ignore
         }
 
