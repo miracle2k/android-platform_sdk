@@ -31,6 +31,9 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleElement;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFolderListener;
+import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 
 import org.codehaus.groovy.control.CompilationFailedException;
@@ -354,6 +357,22 @@ public class RulesEngine {
 
     // ---- private ---
 
+    /**
+     * Returns the descriptor for the base View class.
+     * This could be null if the SDK or the given platform target hasn't loaded yet.
+     */
+    private ViewElementDescriptor getBaseViewDescriptor() {
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk != null) {
+            IAndroidTarget target = currentSdk.getTarget(mProject);
+            if (target != null) {
+                AndroidTargetData data = currentSdk.getTargetData(target);
+                return data.getLayoutDescriptors().getBaseViewDescriptor();
+            }
+        }
+        return null;
+    }
+
     private class ProjectFolderListener implements IFolderListener {
         public void folderChanged(IFolder folder, int kind) {
             if (folder.getProject() == mProject &&
@@ -396,16 +415,22 @@ public class RulesEngine {
     private IViewRule loadRule(UiViewElementNode element) {
         if (element == null) {
             return null;
-        } else {
-            // sanity check. this can't fail.
-            ElementDescriptor d = element.getDescriptor();
-            if (d == null || !(d instanceof ViewElementDescriptor)) {
-                return null;
-            }
         }
 
         String targetFqcn = null;
-        ViewElementDescriptor targetDesc = (ViewElementDescriptor) element.getDescriptor();
+        ViewElementDescriptor targetDesc = null;
+
+        ElementDescriptor d = element.getDescriptor();
+        if (d instanceof ViewElementDescriptor) {
+            targetDesc = (ViewElementDescriptor) d;
+        }
+        if (d == null || !(d instanceof ViewElementDescriptor)) {
+            // This should not happen. All views should have some kind of *view* element
+            // descriptor. Maybe the project is not complete and doesn't build or something.
+            // In this case, we'll use the descriptor of the base android View class.
+            targetDesc = getBaseViewDescriptor();
+        }
+
 
         // Return the rule if we find it in the cache, even if it was stored as null
         // (which means we didn't find it earlier, so don't look for it again)
@@ -422,6 +447,7 @@ public class RulesEngine {
             // Get the FQCN of this View
             String fqcn = desc.getFullClassName();
             if (fqcn == null) {
+                // Shouldn't be happening.
                 return null;
             }
 

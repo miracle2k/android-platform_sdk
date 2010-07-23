@@ -60,7 +60,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
     private List<ElementDescriptor> mROViewDescriptors;
 
     /** The descriptor matching android.view.View. */
-    private ElementDescriptor mBaseViewDescriptor;
+    private ViewElementDescriptor mBaseViewDescriptor;
 
     /** Returns the document descriptor. Contains all layouts and views linked together. */
     public DocumentDescriptor getDescriptor() {
@@ -82,9 +82,10 @@ public final class LayoutDescriptors implements IDescriptorProvider {
     }
 
     /**
-     * Returns the descriptor matching android.view.View.
+     * Returns the descriptor matching android.view.View, which is guaranteed
+     * to be a {@link ViewElementDescriptor}.
      */
-    public ElementDescriptor getBaseViewDescriptor() {
+    public ViewElementDescriptor getBaseViewDescriptor() {
         if (mBaseViewDescriptor == null) {
             for (ElementDescriptor desc : mViewDescriptors) {
                 if (desc instanceof ViewElementDescriptor) {
