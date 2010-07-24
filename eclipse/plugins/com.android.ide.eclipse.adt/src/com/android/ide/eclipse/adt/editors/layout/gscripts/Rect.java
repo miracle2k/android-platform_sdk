@@ -50,21 +50,24 @@ public class Rect {
     }
 
     /** Initialize rectangle to the given values. They can be invalid. */
-    public void set(int x, int y, int w, int h) {
+    public Rect set(int x, int y, int w, int h) {
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
+        return this;
     }
 
     /** Initialize rectangle to match the given one. */
-    public void set(Rect r) {
+    public Rect set(Rect r) {
         set(r.x, r.y, r.w, r.h);
+        return this;
     }
 
     /** Initialize rectangle to match the given one. */
-    public void set(Rectangle swtRect) {
+    public Rect set(Rectangle swtRect) {
         set(swtRect.x, swtRect.y, swtRect.width, swtRect.height);
+        return this;
     }
 
     /** Returns a new instance of a rectangle with the same values. */
@@ -88,7 +91,7 @@ public class Rect {
 
     /** Returns true if the rectangle contains the x,y coordinates, borders included. */
     public boolean contains(Point p) {
-        return contains(p.x, p.y);
+        return p != null && contains(p.x, p.y);
     }
 
     /**
