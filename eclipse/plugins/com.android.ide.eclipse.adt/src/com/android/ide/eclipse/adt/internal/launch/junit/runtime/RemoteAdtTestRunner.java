@@ -29,6 +29,7 @@ import org.eclipse.jdt.internal.junit.runner.TestExecution;
 import org.eclipse.jdt.internal.junit.runner.TestReferenceFailure;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Supports Eclipse JUnit execution of Android tests.
@@ -205,9 +206,9 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
         }
 
         /* (non-Javadoc)
-         * @see com.android.ddmlib.testrunner.ITestRunListener#testRunEnded(long)
+         * @see com.android.ddmlib.testrunner.ITestRunListener#testRunEnded(long, Map<String, String>)
          */
-        public void testRunEnded(long elapsedTime) {
+        public void testRunEnded(long elapsedTime, Map<String, String> runMetrics) {
             notifyTestRunEnded(elapsedTime);
             AdtPlugin.printToConsole(mLaunchInfo.getProject(),
                     LaunchMessages.RemoteAdtTestRunner_RunCompleteMsg);
