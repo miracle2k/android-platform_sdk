@@ -29,9 +29,12 @@ import com.android.ide.eclipse.adt.io.IFolderWrapper;
 import com.android.ide.eclipse.mock.FileMock;
 import com.android.ide.eclipse.mock.FolderMock;
 import com.android.sdklib.io.IAbstractFolder;
+import com.android.sdklib.resources.DockMode;
 import com.android.sdklib.resources.Keyboard;
 import com.android.sdklib.resources.KeyboardState;
 import com.android.sdklib.resources.Navigation;
+import com.android.sdklib.resources.NavigationState;
+import com.android.sdklib.resources.NightMode;
 import com.android.sdklib.resources.ScreenOrientation;
 import com.android.sdklib.resources.TouchScreen;
 
@@ -90,11 +93,14 @@ public class ConfigMatchTest extends TestCase {
                 null, // screen size
                 null, // screen ratio
                 null, // screen orientation
+                null, // dock mode
+                null, // night mode
                 null, // dpi
                 null, // touch mode
                 null, // keyboard state
                 null, // text input
-                null, // navigation
+                null, // navigation state
+                null, // navigation method
                 null, // screen dimension
                 null);// version
 
@@ -108,11 +114,14 @@ public class ConfigMatchTest extends TestCase {
                 null, // screen size
                 null, // screen ratio
                 null, // screen orientation
+                null, // dock mode
+                null, // night mode
                 null, // dpi
                 null, // touch mode
                 KeyboardState.EXPOSED.getResourceValue(), // keyboard state
                 null, // text input
-                null, // navigation
+                null, // navigation state
+                null, // navigation method
                 null, // screen dimension
                 null);// version
 
@@ -126,11 +135,14 @@ public class ConfigMatchTest extends TestCase {
                 null, // screen size
                 null, // screen ratio
                 null, // screen orientation
+                null, // dock mode
+                null, // night mode
                 null, // dpi
                 null, // touch mode
                 KeyboardState.HIDDEN.getResourceValue(), // keyboard state
                 null, // text input
-                null, // navigation
+                null, // navigation state
+                null, // navigation method
                 null, // screen dimension
                 null);// version
 
@@ -144,11 +156,14 @@ public class ConfigMatchTest extends TestCase {
                 null, // screen size
                 null, // screen ratio
                 ScreenOrientation.LANDSCAPE.getResourceValue(), // screen orientation
+                null, // dock mode
+                null, // night mode
                 null, // dpi
                 null, // touch mode
                 null, // keyboard state
                 null, // text input
-                null, // navigation
+                null, // navigation state
+                null, // navigation method
                 null, // screen dimension
                 null);// version
 
@@ -162,11 +177,14 @@ public class ConfigMatchTest extends TestCase {
                 "normal", // screen size
                 "notlong", // screen ratio
                 ScreenOrientation.LANDSCAPE.getResourceValue(), // screen orientation
+                DockMode.DESK.getResourceValue(), // dock mode
+                NightMode.NIGHT.getResourceValue(), // night mode
                 "mdpi", // dpi
                 TouchScreen.FINGER.getResourceValue(), // touch mode
                 KeyboardState.EXPOSED.getResourceValue(), // keyboard state
                 Keyboard.QWERTY.getResourceValue(), // text input
-                Navigation.DPAD.getResourceValue(), // navigation
+                NavigationState.EXPOSED.getResourceValue(), // navigation state
+                Navigation.DPAD.getResourceValue(), // navigation method
                 "480x320", // screen dimension
                 "v3"); // version
 
@@ -188,11 +206,14 @@ public class ConfigMatchTest extends TestCase {
                 "normal", // screen size
                 "notlong", // screen ratio
                 ScreenOrientation.LANDSCAPE.getResourceValue(), // screen orientation
+                DockMode.DESK.getResourceValue(), // dock mode
+                NightMode.NIGHT.getResourceValue(), // night mode
                 "mdpi", // dpi
                 TouchScreen.FINGER.getResourceValue(), // touch mode
                 KeyboardState.EXPOSED.getResourceValue(), // keyboard state
                 Keyboard.QWERTY.getResourceValue(), // text input
-                Navigation.DPAD.getResourceValue(), // navigation
+                NavigationState.EXPOSED.getResourceValue(), // navigation state
+                Navigation.DPAD.getResourceValue(), // navigation method
                 "480x320", // screen dimension
                 "v3"); // version
 

@@ -41,11 +41,11 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
     private final static int INDEX_TOUCH_TYPE         = 10;
     private final static int INDEX_KEYBOARD_STATE     = 11;
     private final static int INDEX_TEXT_INPUT_METHOD  = 12;
-    private final static int INDEX_NAVIGATION_STATE   = 14;
-    private final static int INDEX_NAVIGATION_METHOD  = 15;
-    private final static int INDEX_SCREEN_DIMENSION   = 16;
-    private final static int INDEX_VERSION            = 17;
-    private final static int INDEX_COUNT              = 18;
+    private final static int INDEX_NAVIGATION_STATE   = 13;
+    private final static int INDEX_NAVIGATION_METHOD  = 14;
+    private final static int INDEX_SCREEN_DIMENSION   = 15;
+    private final static int INDEX_VERSION            = 16;
+    private final static int INDEX_COUNT              = 17;
 
     /**
      * Returns the number of {@link ResourceQualifier} that make up a Folder configuration.
