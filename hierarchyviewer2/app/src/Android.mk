@@ -19,10 +19,12 @@ LOCAL_SRC_FILES := $(call all-subdir-java-files)
 
 LOCAL_JAR_MANIFEST := ../etc/manifest.txt
 LOCAL_JAVA_LIBRARIES := \
-	ddmlib \
-	hierarchyviewerlib \
-	hierarchyvieweruilib \
-	swt
+    ddmlib \
+    ddmuilib \
+    hierarchyviewerlib \
+    hierarchyvieweruilib \
+    swt \
+    sdklib
 
 LOCAL_MODULE := hierarchyviewer2
 

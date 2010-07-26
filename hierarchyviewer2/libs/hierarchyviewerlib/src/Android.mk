@@ -18,6 +18,7 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
 
 LOCAL_JAVA_LIBRARIES := ddmlib
+
 LOCAL_MODULE := hierarchyviewerlib
 
 include $(BUILD_HOST_JAVA_LIBRARY)
