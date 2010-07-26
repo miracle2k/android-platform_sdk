@@ -537,10 +537,9 @@ public class ConfigurationSelector extends Composite {
     private void fillCombo(Combo combo, ResourceEnum[] resEnums) {
         for (ResourceEnum resEnum : resEnums) {
             // only add the enum if:
-            // - it's not a fake value. Those are never added as they are used for internal purpose
-            //   only.
-            // - if it's a valid value for device only if mDeviceMode is true.
-            if ((mDeviceMode == false || resEnum.isValidValueForDevice() == false) &&
+            // device mode is false OR (device mode is true and) it's a valid device value.
+            // Also, always ignore fake values.
+            if ((mDeviceMode == false || resEnum.isValidValueForDevice()) &&
                     resEnum.isFakeValue() == false) {
                 combo.add(resEnum.getShortDisplayValue());
             }
