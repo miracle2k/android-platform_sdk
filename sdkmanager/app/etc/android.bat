@@ -74,6 +74,7 @@ if exist %swt_path% goto SetPath
     echo Please set ANDROID_SWT to point to the folder containing swt.jar for your platform.
     goto :EOF
 
+:SetPath
 rem Finally exec the java program and end here.
 call %java_exe% -Dcom.android.sdkmanager.toolsdir="%tools_dir%" -Dcom.android.sdkmanager.workdir="%work_dir%" -classpath "%jar_path%;%swt_path%\swt.jar" com.android.sdkmanager.Main %*
 
