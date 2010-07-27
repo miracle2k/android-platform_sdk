@@ -21,6 +21,7 @@ import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector;
+import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.SelectorMode;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.resources.IFolder;
@@ -208,7 +209,7 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
         label = new Label(group, SWT.NONE);
         label.setText("&Configuration:");
 
-        mConfigSelector = new ConfigurationSelector(group, false /*deviceMode*/);
+        mConfigSelector = new ConfigurationSelector(group, SelectorMode.DEFAULT);
         GridData gd = new GridData(GridData.GRAB_HORIZONTAL | GridData.GRAB_VERTICAL);
         gd.horizontalSpan = 2;
         gd.widthHint = ConfigurationSelector.WIDTH_HINT;

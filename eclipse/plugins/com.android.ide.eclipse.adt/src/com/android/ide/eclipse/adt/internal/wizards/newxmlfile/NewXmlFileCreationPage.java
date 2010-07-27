@@ -33,6 +33,7 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.TargetChangeListener;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.ConfigurationState;
+import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.SelectorMode;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 
@@ -618,7 +619,7 @@ class NewXmlFileCreationPage extends WizardPage {
 
         // configuration selector
         emptyCell(parent);
-        mConfigSelector = new ConfigurationSelector(parent, false /* deviceMode*/);
+        mConfigSelector = new ConfigurationSelector(parent, SelectorMode.DEFAULT);
         GridData gd = newGridData(2, GridData.GRAB_HORIZONTAL | GridData.GRAB_VERTICAL);
         gd.widthHint = ConfigurationSelector.WIDTH_HINT;
         gd.heightHint = ConfigurationSelector.HEIGHT_HINT;

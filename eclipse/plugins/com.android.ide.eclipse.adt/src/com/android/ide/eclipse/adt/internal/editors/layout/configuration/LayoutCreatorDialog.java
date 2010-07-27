@@ -22,6 +22,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQua
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.ConfigurationState;
+import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.SelectorMode;
 import com.android.sdkuilib.ui.GridDialog;
 
 import org.eclipse.jface.dialogs.Dialog;
@@ -65,8 +66,12 @@ public final class LayoutCreatorDialog extends GridDialog {
         new Label(parent, SWT.NONE).setText(
                 String.format("Configuration for the alternate version of %1$s", mFileName));
 
-        mSelector = new ConfigurationSelector(parent, false /*deviceMode*/);
+        mSelector = new ConfigurationSelector(parent, SelectorMode.CONFIG_ONLY);
         mSelector.setConfiguration(mConfig);
+
+        // because the ConfigSelector is running in CONFIG_ONLY mode, the current config
+        // displayed by it is not mConfig anymore, so get the current config.
+        mSelector.getConfiguration(mConfig);
 
         // parent's layout is a GridLayout as specified in the javadoc.
         GridData gd = new GridData();

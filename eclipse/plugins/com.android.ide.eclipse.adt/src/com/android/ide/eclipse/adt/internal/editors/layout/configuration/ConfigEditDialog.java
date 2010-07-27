@@ -28,6 +28,7 @@ import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.ConfigurationState;
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.IQualifierFilter;
+import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.SelectorMode;
 import com.android.sdkuilib.ui.GridDialog;
 
 import org.eclipse.jface.dialogs.Dialog;
@@ -236,7 +237,7 @@ public class ConfigEditDialog extends GridDialog {
             }
         });
 
-        mConfigSelector = new ConfigurationSelector(configGroup, true /*deviceMode*/);
+        mConfigSelector = new ConfigurationSelector(configGroup, SelectorMode.DEVICE_ONLY);
         // configure the selector to be in "device mode" and not accept language/region/version
         // since those are selected from a different combo
         // FIXME: add version combo.

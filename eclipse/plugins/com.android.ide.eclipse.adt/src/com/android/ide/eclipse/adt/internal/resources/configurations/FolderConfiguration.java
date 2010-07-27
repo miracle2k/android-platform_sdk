@@ -85,6 +85,16 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
     }
 
     /**
+     * Reset the config.
+     * <p/>This makes qualifiers at all indices <code>null</code>.
+     */
+    public void reset() {
+        for (int i = 0 ; i < INDEX_COUNT ; i++) {
+            mQualifiers[i] = null;
+        }
+    }
+
+    /**
      * Removes the qualifiers from the receiver if they are present (and valid)
      * in the given configuration.
      */
@@ -539,6 +549,7 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
 
     /**
      * Create default qualifiers.
+     * <p/>This creates qualifiers with no values for all indices.
      */
     public void createDefault() {
         mQualifiers[INDEX_COUNTRY_CODE] = new CountryCodeQualifier();
