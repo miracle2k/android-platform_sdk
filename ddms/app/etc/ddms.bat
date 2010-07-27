@@ -65,5 +65,5 @@ if exist %swt_path% goto SetPath
 :SetPath
 set javaextdirs=%swt_path%;%frameworkdir%
 
-call %java_exe% %java_debug% -Djava.ext.dirs=%javaextdirs% -Dcom.android.ddms.bindir= -jar %jarpath% %*
+call %java_exe% %java_debug% -Dcom.android.ddms.bindir= -classpath "%jarpath%;%swt_path%\swt.jar" com.android.ddms.Main %*
 

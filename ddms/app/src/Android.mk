@@ -7,6 +7,10 @@ LOCAL_SRC_FILES := $(call all-subdir-java-files)
 LOCAL_JAVA_RESOURCE_DIRS := resources
 
 LOCAL_JAR_MANIFEST := ../etc/manifest.txt
+
+# If the dependency list is changed, etc/manifest.txt
+# MUST be updated as well (Except for swt.jar which is dynamically
+# added based on whether the VM is 32 or 64 bit)
 LOCAL_JAVA_LIBRARIES := \
 	androidprefs \
 	sdkstats \
