@@ -690,11 +690,12 @@ public final class AvdManager {
 
             HashMap<String, String> finalHardwareValues = new HashMap<String, String>();
 
-            File targetHardwareFile = new File(target.getLocation(), AvdManager.HARDWARE_INI);
+            FileWrapper targetHardwareFile = new FileWrapper(target.getLocation(),
+                    AvdManager.HARDWARE_INI);
             if (targetHardwareFile.isFile()) {
                 Map<String, String> targetHardwareConfig = ProjectProperties.parsePropertyFile(
-                        new FileWrapper(targetHardwareFile),
-                        log);
+                        targetHardwareFile, log);
+
                 if (targetHardwareConfig != null) {
                     finalHardwareValues.putAll(targetHardwareConfig);
                     values.putAll(targetHardwareConfig);
@@ -703,11 +704,11 @@ public final class AvdManager {
 
             // get the hardware properties for this skin
             File skinFolder = getSkinPath(skinName, target);
-            File skinHardwareFile = new File(skinFolder, AvdManager.HARDWARE_INI);
+            FileWrapper skinHardwareFile = new FileWrapper(skinFolder, AvdManager.HARDWARE_INI);
             if (skinHardwareFile.isFile()) {
                 Map<String, String> skinHardwareConfig = ProjectProperties.parsePropertyFile(
-                        new FileWrapper(skinHardwareFile),
-                        log);
+                        skinHardwareFile, log);
+
                 if (skinHardwareConfig != null) {
                     finalHardwareValues.putAll(skinHardwareConfig);
                     values.putAll(skinHardwareConfig);
@@ -1152,7 +1153,7 @@ public final class AvdManager {
         String targetHash = map.get(AVD_INFO_TARGET);
 
         IAndroidTarget target = null;
-        File configIniFile = null;
+        FileWrapper configIniFile = null;
         Map<String, String> properties = null;
 
         if (targetHash != null) {
@@ -1161,16 +1162,14 @@ public final class AvdManager {
 
         // load the AVD properties.
         if (avdPath != null) {
-            configIniFile = new File(avdPath, CONFIG_INI);
+            configIniFile = new FileWrapper(avdPath, CONFIG_INI);
         }
 
         if (configIniFile != null) {
             if (!configIniFile.isFile()) {
                 log.warning("Missing file '%1$s'.",  configIniFile.getPath());
             } else {
-                properties = ProjectProperties.parsePropertyFile(
-                        new FileWrapper(configIniFile),
-                        log);
+                properties = ProjectProperties.parsePropertyFile(configIniFile, log);
             }
         }
 

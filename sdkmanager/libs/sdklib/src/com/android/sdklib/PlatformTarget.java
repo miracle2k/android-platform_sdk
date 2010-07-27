@@ -33,7 +33,8 @@ final class PlatformTarget implements IAndroidTarget {
     private final static String PLATFORM_NAME = "Android %s";
     private final static String PLATFORM_NAME_PREVIEW = "Android %s (Preview)";
 
-    private final String mLocation;
+    /** the OS path to the root folder of the platform component. */
+    private final String mRootFolderOsPath;
     private final String mName;
     private final AndroidVersion mVersion;
     private final String mVersionName;
@@ -43,12 +44,22 @@ final class PlatformTarget implements IAndroidTarget {
     private String[] mSkins;
 
 
-    PlatformTarget(String location, Map<String, String> properties,
+    /**
+     * Creates a Platform target.
+     * @param sdkOsPath the root folder of the SDK
+     * @param platformOSPath the root folder of the platform component
+     * @param properties the platform properties
+     * @param apiLevel the API Level
+     * @param codeName the codename. can be null.
+     * @param versionName the version name of the platform.
+     * @param revision the revision of the platform component.
+     */
+    PlatformTarget(String sdkOsPath, String platformOSPath, Map<String, String> properties,
             int apiLevel, String codeName, String versionName, int revision) {
-        if (location.endsWith(File.separator) == false) {
-            location = location + File.separator;
+        if (platformOSPath.endsWith(File.separator) == false) {
+            platformOSPath = platformOSPath + File.separator;
         }
-        mLocation = location;
+        mRootFolderOsPath = platformOSPath;
         mProperties = Collections.unmodifiableMap(properties);
         mVersion = new AndroidVersion(apiLevel, codeName);
         mVersionName = versionName;
@@ -61,40 +72,46 @@ final class PlatformTarget implements IAndroidTarget {
         }
 
         // pre-build the path to the platform components
-        mPaths.put(ANDROID_JAR, mLocation + SdkConstants.FN_FRAMEWORK_LIBRARY);
-        mPaths.put(SOURCES, mLocation + SdkConstants.FD_ANDROID_SOURCES);
-        mPaths.put(ANDROID_AIDL, mLocation + SdkConstants.FN_FRAMEWORK_AIDL);
-        mPaths.put(IMAGES, mLocation + SdkConstants.OS_IMAGES_FOLDER);
-        mPaths.put(SAMPLES, mLocation + SdkConstants.OS_PLATFORM_SAMPLES_FOLDER);
-        mPaths.put(SKINS, mLocation + SdkConstants.OS_SKINS_FOLDER);
-        mPaths.put(TEMPLATES, mLocation + SdkConstants.OS_PLATFORM_TEMPLATES_FOLDER);
-        mPaths.put(DATA, mLocation + SdkConstants.OS_PLATFORM_DATA_FOLDER);
-        mPaths.put(ATTRIBUTES, mLocation + SdkConstants.OS_PLATFORM_ATTRS_XML);
-        mPaths.put(MANIFEST_ATTRIBUTES, mLocation + SdkConstants.OS_PLATFORM_ATTRS_MANIFEST_XML);
-        mPaths.put(RESOURCES, mLocation + SdkConstants.OS_PLATFORM_RESOURCES_FOLDER);
-        mPaths.put(FONTS, mLocation + SdkConstants.OS_PLATFORM_FONTS_FOLDER);
-        mPaths.put(LAYOUT_LIB, mLocation + SdkConstants.OS_PLATFORM_DATA_FOLDER +
+        mPaths.put(ANDROID_JAR, mRootFolderOsPath + SdkConstants.FN_FRAMEWORK_LIBRARY);
+        mPaths.put(SOURCES, mRootFolderOsPath + SdkConstants.FD_ANDROID_SOURCES);
+        mPaths.put(ANDROID_AIDL, mRootFolderOsPath + SdkConstants.FN_FRAMEWORK_AIDL);
+        mPaths.put(IMAGES, mRootFolderOsPath + SdkConstants.OS_IMAGES_FOLDER);
+        mPaths.put(SAMPLES, mRootFolderOsPath + SdkConstants.OS_PLATFORM_SAMPLES_FOLDER);
+        mPaths.put(SKINS, mRootFolderOsPath + SdkConstants.OS_SKINS_FOLDER);
+        mPaths.put(TEMPLATES, mRootFolderOsPath + SdkConstants.OS_PLATFORM_TEMPLATES_FOLDER);
+        mPaths.put(DATA, mRootFolderOsPath + SdkConstants.OS_PLATFORM_DATA_FOLDER);
+        mPaths.put(ATTRIBUTES, mRootFolderOsPath + SdkConstants.OS_PLATFORM_ATTRS_XML);
+        mPaths.put(MANIFEST_ATTRIBUTES,
+                mRootFolderOsPath + SdkConstants.OS_PLATFORM_ATTRS_MANIFEST_XML);
+        mPaths.put(RESOURCES, mRootFolderOsPath + SdkConstants.OS_PLATFORM_RESOURCES_FOLDER);
+        mPaths.put(FONTS, mRootFolderOsPath + SdkConstants.OS_PLATFORM_FONTS_FOLDER);
+        mPaths.put(LAYOUT_LIB, mRootFolderOsPath + SdkConstants.OS_PLATFORM_DATA_FOLDER +
                 SdkConstants.FN_LAYOUTLIB_JAR);
-        mPaths.put(WIDGETS, mLocation + SdkConstants.OS_PLATFORM_DATA_FOLDER +
+        mPaths.put(WIDGETS, mRootFolderOsPath + SdkConstants.OS_PLATFORM_DATA_FOLDER +
                 SdkConstants.FN_WIDGETS);
-        mPaths.put(ACTIONS_ACTIVITY, mLocation + SdkConstants.OS_PLATFORM_DATA_FOLDER +
+        mPaths.put(ACTIONS_ACTIVITY, mRootFolderOsPath + SdkConstants.OS_PLATFORM_DATA_FOLDER +
                 SdkConstants.FN_INTENT_ACTIONS_ACTIVITY);
-        mPaths.put(ACTIONS_BROADCAST, mLocation + SdkConstants.OS_PLATFORM_DATA_FOLDER +
+        mPaths.put(ACTIONS_BROADCAST, mRootFolderOsPath + SdkConstants.OS_PLATFORM_DATA_FOLDER +
                 SdkConstants.FN_INTENT_ACTIONS_BROADCAST);
-        mPaths.put(ACTIONS_SERVICE, mLocation + SdkConstants.OS_PLATFORM_DATA_FOLDER +
+        mPaths.put(ACTIONS_SERVICE, mRootFolderOsPath + SdkConstants.OS_PLATFORM_DATA_FOLDER +
                 SdkConstants.FN_INTENT_ACTIONS_SERVICE);
-        mPaths.put(CATEGORIES, mLocation + SdkConstants.OS_PLATFORM_DATA_FOLDER +
+        mPaths.put(CATEGORIES, mRootFolderOsPath + SdkConstants.OS_PLATFORM_DATA_FOLDER +
                 SdkConstants.FN_INTENT_CATEGORIES);
-        mPaths.put(AAPT, mLocation + SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_AAPT);
-        mPaths.put(AIDL, mLocation + SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_AIDL);
-        mPaths.put(DX, mLocation + SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_DX);
-        mPaths.put(DX_JAR, mLocation + SdkConstants.OS_SDK_TOOLS_LIB_FOLDER +
+        mPaths.put(ANT, mRootFolderOsPath + SdkConstants.OS_PLATFORM_ANT_FOLDER);
+
+        // location for aapt, aidl, dx is now in the platform-tools folder.
+        mPaths.put(AAPT, sdkOsPath + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER +
+                SdkConstants.FN_AAPT);
+        mPaths.put(AIDL, sdkOsPath + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER +
+                SdkConstants.FN_AIDL);
+        mPaths.put(DX, sdkOsPath + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER +
+                SdkConstants.FN_DX);
+        mPaths.put(DX_JAR, sdkOsPath + SdkConstants.OS_SDK_PLATFORM_TOOLS_LIB_FOLDER +
                 SdkConstants.FN_DX_JAR);
-        mPaths.put(ANT, mLocation + SdkConstants.OS_PLATFORM_ANT_FOLDER);
     }
 
     public String getLocation() {
-        return mLocation;
+        return mRootFolderOsPath;
     }
 
     /*

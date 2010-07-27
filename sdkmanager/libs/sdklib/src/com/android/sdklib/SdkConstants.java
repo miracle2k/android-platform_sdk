@@ -233,6 +233,15 @@ public final class SdkConstants {
     public final static String OS_SDK_TOOLS_LIB_FOLDER =
             OS_SDK_TOOLS_FOLDER + FD_LIB + File.separator;
 
+    /** Path of the platform tools directory relative to the sdk folder.
+     *  This is an OS path, ending with a separator. */
+    public final static String OS_SDK_PLATFORM_TOOLS_FOLDER = FD_PLATFORM_TOOLS + File.separator;
+
+    /** Path of the Platform tools Llib directory relative to the sdk folder.
+     *  This is an OS path, ending with a separator. */
+    public final static String OS_SDK_PLATFORM_TOOLS_LIB_FOLDER =
+            OS_SDK_PLATFORM_TOOLS_FOLDER + FD_LIB + File.separator;
+
     /* Folder paths relative to a platform or add-on folder */
 
     /** Path of the images directory relative to a platform or addon folder.

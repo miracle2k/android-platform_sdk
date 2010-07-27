@@ -70,10 +70,6 @@ public final class SdkManager {
     private final static String[] sPlatformContentList = new String[] {
         SdkConstants.FN_FRAMEWORK_LIBRARY,
         SdkConstants.FN_FRAMEWORK_AIDL,
-        SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_AAPT,
-        SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_AIDL,
-        SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_DX,
-        SdkConstants.OS_SDK_TOOLS_LIB_FOLDER + SdkConstants.FN_DX_JAR,
     };
 
     /** Preference file containing the usb ids for adb */
@@ -231,19 +227,19 @@ public final class SdkManager {
 
     /**
      * Loads the Platforms from the SDK.
-     * @param location Location of the SDK
+     * @param sdkOsPath Location of the SDK
      * @param list the list to fill with the platforms.
      * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      */
-    private static void loadPlatforms(String location, ArrayList<IAndroidTarget> list,
+    private static void loadPlatforms(String sdkOsPath, ArrayList<IAndroidTarget> list,
             ISdkLog log) {
-        File platformFolder = new File(location, SdkConstants.FD_PLATFORMS);
+        File platformFolder = new File(sdkOsPath, SdkConstants.FD_PLATFORMS);
         if (platformFolder.isDirectory()) {
             File[] platforms  = platformFolder.listFiles();
 
             for (File platform : platforms) {
                 if (platform.isDirectory()) {
-                    PlatformTarget target = loadPlatform(platform, log);
+                    PlatformTarget target = loadPlatform(sdkOsPath, platform, log);
                     if (target != null) {
                         list.add(target);
                     }
@@ -268,16 +264,16 @@ public final class SdkManager {
 
     /**
      * Loads a specific Platform at a given location.
-     * @param platform the location of the platform.
+     * @param sdkOsPath Location of the SDK
+     * @param platformFolder the root folder of the platform.
      * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      */
-    private static PlatformTarget loadPlatform(File platform, ISdkLog log) {
-        File buildProp = new File(platform, SdkConstants.FN_BUILD_PROP);
+    private static PlatformTarget loadPlatform(String sdkOsPath, File platformFolder,
+            ISdkLog log) {
+        FileWrapper buildProp = new FileWrapper(platformFolder, SdkConstants.FN_BUILD_PROP);
 
         if (buildProp.isFile()) {
-            Map<String, String> map = ProjectProperties.parsePropertyFile(
-                    new FileWrapper(buildProp),
-                    log);
+            Map<String, String> map = ProjectProperties.parsePropertyFile(buildProp, log);
 
             if (map != null) {
                 // look for some specific values in the map.
@@ -285,9 +281,9 @@ public final class SdkManager {
                 // version string
                 String apiName = map.get(PROP_VERSION_RELEASE);
                 if (apiName == null) {
-                    log.warning(null,
+                    log.warning(
                             "Ignoring platform '%1$s': %2$s is missing from '%3$s'",
-                            platform.getName(), PROP_VERSION_RELEASE,
+                            platformFolder.getName(), PROP_VERSION_RELEASE,
                             SdkConstants.FN_BUILD_PROP);
                     return null;
                 }
@@ -296,9 +292,9 @@ public final class SdkManager {
                 int apiNumber;
                 String stringValue = map.get(PROP_VERSION_SDK);
                 if (stringValue == null) {
-                    log.warning(null,
+                    log.warning(
                             "Ignoring platform '%1$s': %2$s is missing from '%3$s'",
-                            platform.getName(), PROP_VERSION_SDK,
+                            platformFolder.getName(), PROP_VERSION_SDK,
                             SdkConstants.FN_BUILD_PROP);
                     return null;
                 } else {
@@ -307,9 +303,9 @@ public final class SdkManager {
                     } catch (NumberFormatException e) {
                         // looks like apiNumber does not parse to a number.
                         // Ignore this platform.
-                        log.warning(null,
+                        log.warning(
                                 "Ignoring platform '%1$s': %2$s is not a valid number in %3$s.",
-                                platform.getName(), PROP_VERSION_SDK,
+                                platformFolder.getName(), PROP_VERSION_SDK,
                                 SdkConstants.FN_BUILD_PROP);
                         return null;
                     }
@@ -324,10 +320,10 @@ public final class SdkManager {
 
                 // platform rev number
                 int revision = 1;
-                File sourcePropFile = new File(platform, SdkConstants.FN_SOURCE_PROP);
+                FileWrapper sourcePropFile = new FileWrapper(platformFolder,
+                        SdkConstants.FN_SOURCE_PROP);
                 Map<String, String> sourceProp = ProjectProperties.parsePropertyFile(
-                        new FileWrapper(sourcePropFile),
-                        log);
+                        sourcePropFile, log);
                 if (sourceProp != null) {
                     try {
                         revision = Integer.parseInt(sourceProp.get("Pkg.Revision"));
@@ -338,21 +334,23 @@ public final class SdkManager {
                 }
 
                 // Ant properties
-                File sdkPropFile = new File(platform, SdkConstants.FN_SDK_PROP);
+                FileWrapper sdkPropFile = new FileWrapper(platformFolder, SdkConstants.FN_SDK_PROP);
                 Map<String, String> antProp = ProjectProperties.parsePropertyFile(
-                        new FileWrapper(sdkPropFile),
-                        log);
+                        sdkPropFile, log);
+
                 if (antProp != null) {
                     map.putAll(antProp);
                 }
 
                 // api number and name look valid, perform a few more checks
-                if (checkPlatformContent(platform, log) == false) {
+                if (checkPlatformContent(platformFolder, log) == false) {
                     return null;
                 }
+
                 // create the target.
                 PlatformTarget target = new PlatformTarget(
-                        platform.getAbsolutePath(),
+                        sdkOsPath,
+                        platformFolder.getAbsolutePath(),
                         map,
                         apiNumber,
                         apiCodename,
@@ -366,7 +364,7 @@ public final class SdkManager {
                 return target;
             }
         } else {
-            log.warning(null, "Ignoring platform '%1$s': %2$s is missing.", platform.getName(),
+            log.warning("Ignoring platform '%1$s': %2$s is missing.", platformFolder.getName(),
                     SdkConstants.FN_BUILD_PROP);
         }
 
@@ -417,12 +415,11 @@ public final class SdkManager {
      */
     private static AddOnTarget loadAddon(File addon, ArrayList<IAndroidTarget> targetList,
             ISdkLog log) {
-        File addOnManifest = new File(addon, SdkConstants.FN_MANIFEST_INI);
+        FileWrapper addOnManifest = new FileWrapper(addon, SdkConstants.FN_MANIFEST_INI);
 
         if (addOnManifest.isFile()) {
             Map<String, String> propertyMap = ProjectProperties.parsePropertyFile(
-                    new FileWrapper(addOnManifest),
-                    log);
+                    addOnManifest, log);
 
             if (propertyMap != null) {
                 // look for some specific values in the map.
@@ -455,7 +452,7 @@ public final class SdkManager {
 
                     if (baseTarget == null) {
                         // Ignore this add-on.
-                        log.warning(null,
+                        log.warning(
                                 "Ignoring add-on '%1$s': Unable to find base platform with API level '%2$s'",
                                 addon.getName(), api);
                         return null;
@@ -477,7 +474,7 @@ public final class SdkManager {
                     } catch (NumberFormatException e) {
                         // looks like apiNumber does not parse to a number.
                         // Ignore this add-on.
-                        log.warning(null,
+                        log.warning(
                                 "Ignoring add-on '%1$s': %2$s is not a valid number in %3$s.",
                                 addon.getName(), ADDON_REVISION, SdkConstants.FN_BUILD_PROP);
                         return null;
@@ -508,12 +505,12 @@ public final class SdkManager {
                                         libMap.put(libName, new String[] {
                                                 m.group(1), m.group(2) });
                                     } else {
-                                        log.warning(null,
+                                        log.warning(
                                                 "Ignoring library '%1$s', property value has wrong format\n\t%2$s",
                                                 libName, libData);
                                     }
                                 } else {
-                                    log.warning(null,
+                                    log.warning(
                                             "Ignoring library '%1$s', missing property value",
                                             libName, libData);
                                 }
@@ -549,7 +546,7 @@ public final class SdkManager {
                 return target;
             }
         } else {
-            log.warning(null, "Ignoring add-on '%1$s': %2$s is missing.", addon.getName(),
+            log.warning("Ignoring add-on '%1$s': %2$s is missing.", addon.getName(),
                     SdkConstants.FN_MANIFEST_INI);
         }
 
@@ -584,8 +581,9 @@ public final class SdkManager {
      * @param addonName The addon name, for display.
      * @param valueName The missing manifest value, for display.
      */
-    private static void displayAddonManifestWarning(ISdkLog log, String addonName, String valueName) {
-        log.warning(null, "Ignoring add-on '%1$s': '%2$s' is missing from %3$s.",
+    private static void displayAddonManifestWarning(ISdkLog log, String addonName,
+            String valueName) {
+        log.warning("Ignoring add-on '%1$s': '%2$s' is missing from %3$s.",
                 addonName, valueName, SdkConstants.FN_MANIFEST_INI);
     }
 
@@ -602,7 +600,7 @@ public final class SdkManager {
         for (String relativePath : sPlatformContentList) {
             File f = new File(platform, relativePath);
             if (!f.exists()) {
-                log.warning(null,
+                log.warning(
                         "Ignoring platform '%1$s': %2$s is missing.",
                         platform.getName(), relativePath);
                 return false;

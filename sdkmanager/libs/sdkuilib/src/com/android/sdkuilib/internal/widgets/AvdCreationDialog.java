@@ -876,11 +876,12 @@ final class AvdCreationDialog extends GridDialog {
         // (if applicable)
         HashMap<String, String> hardwareValues = new HashMap<String, String>();
         if (target.isPlatform() == false) {
-            File targetHardwareFile = new File(target.getLocation(), AvdManager.HARDWARE_INI);
+            FileWrapper targetHardwareFile = new FileWrapper(target.getLocation(),
+                    AvdManager.HARDWARE_INI);
             if (targetHardwareFile.isFile()) {
                 Map<String, String> targetHardwareConfig = ProjectProperties.parsePropertyFile(
-                        new FileWrapper(targetHardwareFile),
-                        null /*log*/);
+                        targetHardwareFile, null /*log*/);
+
                 if (targetHardwareConfig != null) {
                     hardwareValues.putAll(targetHardwareConfig);
                 }
@@ -888,11 +889,11 @@ final class AvdCreationDialog extends GridDialog {
         }
 
         // from the skin
-        File skinHardwareFile = new File(skin, AvdManager.HARDWARE_INI);
+        FileWrapper skinHardwareFile = new FileWrapper(skin, AvdManager.HARDWARE_INI);
         if (skinHardwareFile.isFile()) {
             Map<String, String> skinHardwareConfig = ProjectProperties.parsePropertyFile(
-                    new FileWrapper(skinHardwareFile),
-                    null /*log*/);
+                    skinHardwareFile, null /*log*/);
+
             if (skinHardwareConfig != null) {
                 hardwareValues.putAll(skinHardwareConfig);
             }

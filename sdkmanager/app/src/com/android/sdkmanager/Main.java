@@ -925,11 +925,11 @@ public class Main {
 
                         // get the hardware properties for this skin
                         File skinFolder = avdManager.getSkinPath(skin, target);
-                        File skinHardwareFile = new File(skinFolder, AvdManager.HARDWARE_INI);
+                        FileWrapper skinHardwareFile = new FileWrapper(skinFolder,
+                                AvdManager.HARDWARE_INI);
                         if (skinHardwareFile.isFile()) {
                             skinHardwareConfig = ProjectProperties.parsePropertyFile(
-                                    new FileWrapper(skinHardwareFile),
-                                    mSdkLog);
+                                    skinHardwareFile, mSdkLog);
                         }
                         break;
                     }
