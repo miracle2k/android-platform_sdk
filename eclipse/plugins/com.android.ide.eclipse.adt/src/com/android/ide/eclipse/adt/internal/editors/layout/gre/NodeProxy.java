@@ -199,7 +199,7 @@ public class NodeProxy implements INode {
         // Find the descriptor for this FQCN
         ViewElementDescriptor vd = getFqcnViewDescritor(viewFqcn);
         if (vd == null) {
-            debugPrintf("Can't create a new %s element", viewFqcn);
+            warnPrintf("Can't create a new %s element", viewFqcn);
             return null;
         }
 
@@ -218,7 +218,7 @@ public class NodeProxy implements INode {
             // Panic ensues.
             // The best bet is to abort now. The edit wrapper will release the edit and the
             // XML/UI should get reloaded properly (with a likely invalid XML.)
-            debugPrintf("Failed to create a new %s element", viewFqcn);
+            warnPrintf("Failed to create a new %s element", viewFqcn);
             throw new RuntimeException("XML node creation failed."); //$NON-NLS-1$
         }
 
@@ -231,7 +231,7 @@ public class NodeProxy implements INode {
         // Find the descriptor for this FQCN
         ViewElementDescriptor vd = getFqcnViewDescritor(viewFqcn);
         if (vd == null) {
-            debugPrintf("Can't create a new %s element", viewFqcn);
+            warnPrintf("Can't create a new %s element", viewFqcn);
             return null;
         }
 
@@ -256,7 +256,7 @@ public class NodeProxy implements INode {
             // Panic ensues.
             // The best bet is to abort now. The edit wrapper will release the edit and the
             // XML/UI should get reloaded properly (with a likely invalid XML.)
-            debugPrintf("Failed to create a new %s element", viewFqcn);
+            warnPrintf("Failed to create a new %s element", viewFqcn);
             throw new RuntimeException("XML node creation failed."); //$NON-NLS-1$
         }
 
@@ -359,7 +359,7 @@ public class NodeProxy implements INode {
         return null;
     }
 
-    private void debugPrintf(String msg, Object...params) {
+    private void warnPrintf(String msg, Object...params) {
         AdtPlugin.printToConsole(
                 mNode == null ? "Groovy" : mNode.getDescriptor().getXmlLocalName() + ".groovy",
                 String.format(msg, params)

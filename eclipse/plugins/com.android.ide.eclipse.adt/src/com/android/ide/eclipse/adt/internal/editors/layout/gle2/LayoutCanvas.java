@@ -140,6 +140,8 @@ import java.util.Set;
  */
 class LayoutCanvas extends Canvas implements ISelectionProvider {
 
+    private final static boolean DEBUG = false;
+
     /* package */ static final String PREFIX_CANVAS_ACTION = "canvas_action_";
 
     /** The layout editor that uses this layout canvas. */
@@ -2178,6 +2180,6 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     }
 
     private void debugPrintf(String message, Object... params) {
-        AdtPlugin.printToConsole("Canvas", String.format(message, params));
+        if (DEBUG) AdtPlugin.printToConsole("Canvas", String.format(message, params));
     }
 }

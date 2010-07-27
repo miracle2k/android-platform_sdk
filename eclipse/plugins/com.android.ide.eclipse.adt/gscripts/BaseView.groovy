@@ -42,7 +42,7 @@ public class BaseView implements IViewRule {
         // Derived classes should do so if they can handle some subclasses.
 
         // For debugging and as an example of how to use the injected _rules_engine property.
-        _rules_engine.debugPrintf("Initialize() of %s", _rules_engine.getFqcn());
+        // _rules_engine.debugPrintf("Initialize() of %s", _rules_engine.getFqcn());
 
         // If onInitialize returns false, it means it can't handle the given FQCN and
         // will be unloaded.

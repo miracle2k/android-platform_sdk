@@ -36,6 +36,8 @@ import java.util.Arrays;
  */
 /* package */ class CanvasDropListener implements DropTargetListener {
 
+    private static final boolean DEBUG = false;
+
     private final LayoutCanvas mCanvas;
 
     /**
@@ -101,7 +103,7 @@ import java.util.Arrays;
      * {@inheritDoc}
      */
     public void dragEnter(DropTargetEvent event) {
-        AdtPlugin.printErrorToConsole("DEBUG", "drag enter", event);
+        if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "drag enter", event);
 
         // Make sure we don't have any residual data from an earlier operation.
         clearDropInfo();
@@ -148,7 +150,7 @@ import java.util.Arrays;
      * {@inheritDoc}
      */
     public void dragOperationChanged(DropTargetEvent event) {
-        AdtPlugin.printErrorToConsole("DEBUG", "drag changed", event);
+        if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "drag changed", event);
 
         checkDataType(event);
         recomputeDragType(event);
@@ -179,7 +181,7 @@ import java.util.Arrays;
      * {@inheritDoc}
      */
     public void dragLeave(DropTargetEvent event) {
-        AdtPlugin.printErrorToConsole("DEBUG", "drag leave");
+        if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "drag leave");
 
         // dragLeave is unfortunately called right before data is about to be dropped
         // (between the last dropMove and the next dropAccept). That means we can't just
@@ -207,7 +209,7 @@ import java.util.Arrays;
      * {@inheritDoc}
      */
     public void dropAccept(DropTargetEvent event) {
-        AdtPlugin.printErrorToConsole("DEBUG", "drop accept");
+        if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "drop accept");
 
         checkDataType(event);
 
@@ -233,7 +235,7 @@ import java.util.Arrays;
      * {@inheritDoc}
      */
     public void drop(DropTargetEvent event) {
-        AdtPlugin.printErrorToConsole("DEBUG", "dropped");
+        if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "dropped");
 
         SimpleElement[] elements = null;
 
@@ -246,7 +248,7 @@ import java.util.Arrays;
         }
 
         if (elements == null || elements.length < 1) {
-            AdtPlugin.printErrorToConsole("DEBUG", "drop missing drop data");
+            if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "drop missing drop data");
             return;
         }
 
@@ -260,7 +262,7 @@ import java.util.Arrays;
                 // Attempt to create a root node accordingly.
                 createDocumentRoot(elements);
             } else {
-                AdtPlugin.printErrorToConsole("DEBUG", "dropped on null targetNode");
+                if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "dropped on null targetNode");
             }
             return;
         }
