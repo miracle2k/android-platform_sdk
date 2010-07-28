@@ -116,7 +116,7 @@ public class ConfigurationSelector extends Composite {
 
     private final HashMap<Class<? extends ResourceQualifier>, QualifierEditBase> mUiMap =
         new HashMap<Class<? extends ResourceQualifier>, QualifierEditBase>();
-    private final boolean mDeviceMode;
+    private final SelectorMode mMode;
     private Composite mQualifierEditParent;
     private IQualifierFilter mQualifierFilter;
 
@@ -195,6 +195,25 @@ public class ConfigurationSelector extends Composite {
     }
 
     /**
+     * Behavior mode for the Selector.
+     *
+     * @see #DEFAULT
+     * @see #DEVICE_ONLY
+     * @see #CONFIG_ONLY
+     */
+    public enum SelectorMode {
+        /** the default mode */
+        DEFAULT,
+        /** mode forcing the qualifier values to be valid on a device.
+         * For instance {@link Density#NODPI} is a valid qualifier for a resource configuration but
+         * this is not valid on a device */
+        DEVICE_ONLY,
+        /** mode where only the specific config can be edited. The user can only select
+         * which non-empty qualifier to select. */
+        CONFIG_ONLY;
+    }
+
+    /**
      * A filter for {@link ResourceQualifier}.
      * @see ConfigurationSelector#setQualifierFilter(IQualifierFilter)
      */
@@ -207,19 +226,17 @@ public class ConfigurationSelector extends Composite {
 
     /**
      * Creates the selector.
+     * <p/>
+     * The {@link SelectorMode} changes the behavior of the selector depending on what is being
+     * edited (a device config, a resource config, a given configuration).
      *
-     * If the device mode is <code>true</code> then the configuration selector only
-     * allows to create configuration that are valid on a device (as opposed to resource
-     * configuration).
-     * For instance {@link Density#NODPI} is a valid qualifier for a resource configuration but
-     * this is not valid on a device.
      * @param parent the composite parent.
-     * @param deviceMode the device mode.
+     * @param deviceMode the mode for the selector.
      */
-    public ConfigurationSelector(Composite parent, boolean deviceMode) {
+    public ConfigurationSelector(Composite parent, SelectorMode mode) {
         super(parent, SWT.NONE);
-        mDeviceMode  = deviceMode;
 
+        mMode  = mode;
         mBaseConfiguration.createDefault();
 
         GridLayout gl = new GridLayout(4, false);
@@ -247,8 +264,10 @@ public class ConfigurationSelector extends Composite {
 
         mFullTableViewer = new TableViewer(fullTable);
         mFullTableViewer.setContentProvider(new QualifierContentProvider());
+        // the label provider must return the value of the label only if the mode is
+        // CONFIG_ONLY
         mFullTableViewer.setLabelProvider(new QualifierLabelProvider(
-                false /* showQualifierValue */));
+                mMode == SelectorMode.CONFIG_ONLY));
         mFullTableViewer.setInput(mBaseConfiguration);
         mFullTableViewer.addSelectionChangedListener(new ISelectionChangedListener() {
             public void selectionChanged(SelectionChangedEvent event) {
@@ -344,6 +363,7 @@ public class ConfigurationSelector extends Composite {
         });
         mSelectionTableViewer = new TableViewer(selectionTable);
         mSelectionTableViewer.setContentProvider(new QualifierContentProvider());
+        // always show the qualifier value in this case.
         mSelectionTableViewer.setLabelProvider(new QualifierLabelProvider(
                 true /* showQualifierValue */));
         mSelectionTableViewer.setInput(mSelectedConfiguration);
@@ -364,20 +384,24 @@ public class ConfigurationSelector extends Composite {
                         if (first instanceof ResourceQualifier) {
                             mRemoveButton.setEnabled(true);
 
-                            QualifierEditBase composite = mUiMap.get(first.getClass());
+                            if (mMode != SelectorMode.CONFIG_ONLY) {
+                                QualifierEditBase composite = mUiMap.get(first.getClass());
 
-                            if (composite != null) {
-                                composite.setQualifier((ResourceQualifier)first);
+                                if (composite != null) {
+                                    composite.setQualifier((ResourceQualifier)first);
+                                }
+
+                                mStackLayout.topControl = composite;
+                                mQualifierEditParent.layout();
                             }
-
-                            mStackLayout.topControl = composite;
-                            mQualifierEditParent.layout();
 
                             return;
                         }
                     } else {
-                        mStackLayout.topControl = null;
-                        mQualifierEditParent.layout();
+                        if (mMode != SelectorMode.CONFIG_ONLY) {
+                            mStackLayout.topControl = null;
+                            mQualifierEditParent.layout();
+                        }
                     }
                 }
 
@@ -385,29 +409,34 @@ public class ConfigurationSelector extends Composite {
             }
         });
 
-        // 4th column is the detail of the selected qualifier
-        mQualifierEditParent = new Composite(this, SWT.NONE);
-        mQualifierEditParent.setLayout(mStackLayout = new StackLayout());
-        mQualifierEditParent.setLayoutData(new GridData(GridData.FILL_VERTICAL));
+        if (mMode != SelectorMode.CONFIG_ONLY) {
+            // 4th column is the detail of the selected qualifier
+            mQualifierEditParent = new Composite(this, SWT.NONE);
+            mQualifierEditParent.setLayout(mStackLayout = new StackLayout());
+            mQualifierEditParent.setLayoutData(new GridData(GridData.FILL_VERTICAL));
 
-        // create the UI for all the qualifiers, and associate them to the ResourceQualifer class.
-        mUiMap.put(CountryCodeQualifier.class, new MCCEdit(mQualifierEditParent));
-        mUiMap.put(NetworkCodeQualifier.class, new MNCEdit(mQualifierEditParent));
-        mUiMap.put(LanguageQualifier.class, new LanguageEdit(mQualifierEditParent));
-        mUiMap.put(RegionQualifier.class, new RegionEdit(mQualifierEditParent));
-        mUiMap.put(ScreenSizeQualifier.class, new ScreenSizeEdit(mQualifierEditParent));
-        mUiMap.put(ScreenRatioQualifier.class, new ScreenRatioEdit(mQualifierEditParent));
-        mUiMap.put(ScreenOrientationQualifier.class, new OrientationEdit(mQualifierEditParent));
-        mUiMap.put(DockModeQualifier.class, new DockModeEdit(mQualifierEditParent));
-        mUiMap.put(NightModeQualifier.class, new NightModeEdit(mQualifierEditParent));
-        mUiMap.put(PixelDensityQualifier.class, new PixelDensityEdit(mQualifierEditParent));
-        mUiMap.put(TouchScreenQualifier.class, new TouchEdit(mQualifierEditParent));
-        mUiMap.put(KeyboardStateQualifier.class, new KeyboardEdit(mQualifierEditParent));
-        mUiMap.put(TextInputMethodQualifier.class, new TextInputEdit(mQualifierEditParent));
-        mUiMap.put(NavigationStateQualifier.class, new NavigationStateEdit(mQualifierEditParent));
-        mUiMap.put(NavigationMethodQualifier.class, new NavigationEdit(mQualifierEditParent));
-        mUiMap.put(ScreenDimensionQualifier.class, new ScreenDimensionEdit(mQualifierEditParent));
-        mUiMap.put(VersionQualifier.class, new VersionEdit(mQualifierEditParent));
+            // create the UI for all the qualifiers, and associate them to the
+            // ResourceQualifer class.
+            mUiMap.put(CountryCodeQualifier.class, new MCCEdit(mQualifierEditParent));
+            mUiMap.put(NetworkCodeQualifier.class, new MNCEdit(mQualifierEditParent));
+            mUiMap.put(LanguageQualifier.class, new LanguageEdit(mQualifierEditParent));
+            mUiMap.put(RegionQualifier.class, new RegionEdit(mQualifierEditParent));
+            mUiMap.put(ScreenSizeQualifier.class, new ScreenSizeEdit(mQualifierEditParent));
+            mUiMap.put(ScreenRatioQualifier.class, new ScreenRatioEdit(mQualifierEditParent));
+            mUiMap.put(ScreenOrientationQualifier.class, new OrientationEdit(mQualifierEditParent));
+            mUiMap.put(DockModeQualifier.class, new DockModeEdit(mQualifierEditParent));
+            mUiMap.put(NightModeQualifier.class, new NightModeEdit(mQualifierEditParent));
+            mUiMap.put(PixelDensityQualifier.class, new PixelDensityEdit(mQualifierEditParent));
+            mUiMap.put(TouchScreenQualifier.class, new TouchEdit(mQualifierEditParent));
+            mUiMap.put(KeyboardStateQualifier.class, new KeyboardEdit(mQualifierEditParent));
+            mUiMap.put(TextInputMethodQualifier.class, new TextInputEdit(mQualifierEditParent));
+            mUiMap.put(NavigationStateQualifier.class,
+                    new NavigationStateEdit(mQualifierEditParent));
+            mUiMap.put(NavigationMethodQualifier.class, new NavigationEdit(mQualifierEditParent));
+            mUiMap.put(ScreenDimensionQualifier.class,
+                    new ScreenDimensionEdit(mQualifierEditParent));
+            mUiMap.put(VersionQualifier.class, new VersionEdit(mQualifierEditParent));
+        }
     }
 
     /**
@@ -434,12 +463,21 @@ public class ConfigurationSelector extends Composite {
      * @param config The configuration.
      */
     public void setConfiguration(FolderConfiguration config) {
-        mSelectedConfiguration.set(config, true /*nonFakeValuesOnly*/);
-        mSelectionTableViewer.refresh();
 
-        // create the base config, which is the default config minus the qualifiers
-        // in SelectedConfiguration
-        mBaseConfiguration.substract(mSelectedConfiguration);
+        if (mMode != SelectorMode.CONFIG_ONLY) {
+            mSelectedConfiguration.set(config, true /*nonFakeValuesOnly*/);
+
+            // create the base config, which is the default config minus the qualifiers
+            // in SelectedConfiguration
+            mBaseConfiguration.substract(mSelectedConfiguration);
+        } else {
+            // set the base config to the edited config.
+            // reset the config to be empty
+            mBaseConfiguration.reset();
+            mBaseConfiguration.set(config, true /*nonFakeValuesOnly*/);
+        }
+
+        mSelectionTableViewer.refresh();
         mFullTableViewer.refresh();
     }
 
@@ -537,9 +575,9 @@ public class ConfigurationSelector extends Composite {
     private void fillCombo(Combo combo, ResourceEnum[] resEnums) {
         for (ResourceEnum resEnum : resEnums) {
             // only add the enum if:
-            // device mode is false OR (device mode is true and) it's a valid device value.
+            // not in device mode OR (device mode is true and) it's a valid device value.
             // Also, always ignore fake values.
-            if ((mDeviceMode == false || resEnum.isValidValueForDevice()) &&
+            if ((mMode == SelectorMode.DEFAULT || resEnum.isValidValueForDevice()) &&
                     resEnum.isFakeValue() == false) {
                 combo.add(resEnum.getShortDisplayValue());
             }
