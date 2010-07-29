@@ -240,9 +240,9 @@ public final class ApkBuilder {
     public ApkBuilder(File apkFile, File resFile, File dexFile, String storeOsPath,
             PrintStream verboseStream) throws ApkCreationException {
         checkOutputFile(mApkFile = apkFile);
-        checkInputFile(mResFile = resFile);
+        checkInputFile(mResFile = resFile, true /*throwIfDoesntExist*/);
         if (dexFile != null) {
-            checkInputFile(mDexFile = dexFile);
+            checkInputFile(mDexFile = dexFile, true /*throwIfDoesntExist*/);
         } else {
             mDexFile = null;
         }
@@ -252,7 +252,7 @@ public final class ApkBuilder {
             File storeFile = null;
             if (storeOsPath != null) {
                 storeFile = new File(storeOsPath);
-                checkInputFile(storeFile);
+                checkInputFile(storeFile, false /*throwIfDoesntExist*/);
             }
 
             if (storeFile != null) {
@@ -321,6 +321,10 @@ public final class ApkBuilder {
                         e.getCommandLine());
             }
         } catch (Exception e) {
+            if (e instanceof ApkCreationException) {
+                throw (ApkCreationException)e;
+            }
+
             throw new ApkCreationException(e);
         }
     }
@@ -678,11 +682,14 @@ public final class ApkBuilder {
      * Checks an input {@link File} object.
      * This checks the following:
      * - the file is not an existing directory.
-     * - that the file exists and can be read.
+     * - that the file exists (if <var>throwIfDoesntExist</var> is <code>false</code>) and can
+     *    be read.
      * @param file the File to check
+     * @param indicates whether the method should throw {@link ApkCreationException} if the file
+     *        does not exist at all.
      * @throws ApkCreationException If the check fails
      */
-    private void checkInputFile(File file) throws ApkCreationException {
+    private void checkInputFile(File file, boolean throwIfDoesntExist) throws ApkCreationException {
         if (file.isDirectory()) {
             throw new ApkCreationException("%s is a directory!", file);
         }
@@ -691,7 +698,7 @@ public final class ApkBuilder {
             if (file.canRead() == false) {
                 throw new ApkCreationException("Cannot read %s", file);
             }
-        } else {
+        } else if (throwIfDoesntExist) {
             throw new ApkCreationException("%s does not exist", file);
         }
     }
