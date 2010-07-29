@@ -46,27 +46,35 @@ public class SdkRepository {
     public static final String NS_SDK_REPOSITORY = getSchemaUri(NS_LATEST_VERSION);
 
     /** The root sdk-repository element */
-    public static final String NODE_SDK_REPOSITORY = "sdk-repository";          //$NON-NLS-1$
+    public static final String NODE_SDK_REPOSITORY = "sdk-repository";        //$NON-NLS-1$
 
     /** A platform package. */
-    public static final String NODE_PLATFORM = "platform";                      //$NON-NLS-1$
+    public static final String NODE_PLATFORM        = "platform";             //$NON-NLS-1$
     /** An add-on package. */
-    public static final String NODE_ADD_ON   = "add-on";                        //$NON-NLS-1$
+    public static final String NODE_ADD_ON          = "add-on";               //$NON-NLS-1$
     /** A tool package. */
-    public static final String NODE_TOOL     = "tool";                          //$NON-NLS-1$
+    public static final String NODE_TOOL            = "tool";                 //$NON-NLS-1$
+    /** A platform-tool package. */
+    public static final String NODE_PLATFORM_TOOL   = "platform-tool";        //$NON-NLS-1$
     /** A doc package. */
-    public static final String NODE_DOC      = "doc";                           //$NON-NLS-1$
+    public static final String NODE_DOC             = "doc";                  //$NON-NLS-1$
     /** A sample package. */
-    public static final String NODE_SAMPLE   = "sample";                        //$NON-NLS-1$
+    public static final String NODE_SAMPLE          = "sample";               //$NON-NLS-1$
     /** An extra package. */
-    public static final String NODE_EXTRA    = "extra";                         //$NON-NLS-1$
+    public static final String NODE_EXTRA           = "extra";                //$NON-NLS-1$
 
-    // Warning: if you edit this list, please also update the package-to-class map
-    // com.android.sdkuilib.internal.repository.UpdaterData.updateOrInstallAll_NoGUI().
+    /**
+     * List of possible nodes in a repository XML. Used to populate options automatically
+     * in the no-GUI mode.
+     * <p/>
+     * Warning: if you edit this list, please also update the package-to-class map
+     * com.android.sdkuilib.internal.repository.UpdaterData.updateOrInstallAll_NoGUI().
+     */
     public static final String[] NODES = {
         NODE_PLATFORM,
         NODE_ADD_ON,
         NODE_TOOL,
+        NODE_PLATFORM_TOOL,
         NODE_DOC,
         NODE_SAMPLE,
         NODE_EXTRA
@@ -91,6 +99,8 @@ public class SdkRepository {
 
     /** The optional minimal tools revision required by platform & extra packages. */
     public static final String NODE_MIN_TOOLS_REV = "min-tools-rev";            //$NON-NLS-1$
+    /** The optional minimal platform-tools revision required by tool packages. */
+    public static final String NODE_MIN_PLATFORM_TOOLS_REV = "min-platform-tools-rev"; //$NON-NLS-1$
     /** The optional minimal API level required by extra packages. */
     public static final String NODE_MIN_API_LEVEL = "min-api-level";            //$NON-NLS-1$
 
@@ -163,5 +173,4 @@ public class SdkRepository {
     public static String getSchemaUri(int version) {
         return String.format(NS_SDK_REPOSITORY_BASE + "%d", version);           //$NON-NLS-1$
     }
-
 }

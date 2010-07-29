@@ -146,7 +146,7 @@ public class SdkRepositoryTest extends TestCase {
         handler.verify();
     }
 
-    /** Validate a valid sample using namespace version 1 using an InputStream */
+    /** Validate a valid sample using namespace version 2 using an InputStream */
     public void testValidateLocalRepositoryFile2() throws Exception {
         InputStream xmlStream = this.getClass().getResourceAsStream(
                     "/com/android/sdklib/testdata/repository_sample_2.xml");
@@ -154,6 +154,18 @@ public class SdkRepositoryTest extends TestCase {
 
         CaptureErrorHandler handler = new CaptureErrorHandler();
         Validator validator = getValidator(2, handler);
+        validator.validate(source);
+        handler.verify();
+    }
+
+    /** Validate a valid sample using namespace version 3 using an InputStream */
+    public void testValidateLocalRepositoryFile3() throws Exception {
+        InputStream xmlStream = this.getClass().getResourceAsStream(
+                    "/com/android/sdklib/testdata/repository_sample_3.xml");
+        Source source = new StreamSource(xmlStream);
+
+        CaptureErrorHandler handler = new CaptureErrorHandler();
+        Validator validator = getValidator(3, handler);
         validator.validate(source);
         handler.verify();
     }

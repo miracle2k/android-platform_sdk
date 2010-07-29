@@ -184,6 +184,8 @@ public final class SdkConstants {
     public final static String FD_ADDONS = "add-ons";
     /** Name of the SDK tools folder. */
     public final static String FD_TOOLS = "tools";
+    /** Name of the SDK platform tools folder. */
+    public final static String FD_PLATFORM_TOOLS = "platform-tools";
     /** Name of the SDK tools/lib folder. */
     public final static String FD_LIB = "lib";
     /** Name of the SDK docs folder. */
