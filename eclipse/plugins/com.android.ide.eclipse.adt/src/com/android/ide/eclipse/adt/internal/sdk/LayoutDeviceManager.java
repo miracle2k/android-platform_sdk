@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
+import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.SdkConstants;
@@ -37,7 +38,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -180,7 +180,7 @@ public class LayoutDeviceManager {
         newDevice.setYDpi(newYDpi);
 
         // and get the Folderconfiguration
-        Map<String, FolderConfiguration> configs = device.getConfigs();
+        List<DeviceConfig> configs = device.getConfigs();
         newDevice.addConfigs(configs);
 
         // replace the old device with the new
@@ -190,7 +190,6 @@ public class LayoutDeviceManager {
 
         return newDevice;
     }
-
 
     /**
      * Adds or replaces a configuration in a given {@link LayoutDevice}.
