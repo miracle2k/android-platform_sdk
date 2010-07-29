@@ -18,14 +18,12 @@ package com.android.sdklib.internal.project;
 
 import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.FileWrapper;
 import com.android.sdklib.io.FolderWrapper;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.io.StreamException;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -307,20 +305,6 @@ public class ProjectProperties {
                 }
             }
         }
-    }
-
-    /**
-     * Parses a property file (using UTF-8 encoding) and returns a map of the content.
-     * <p/>If the file is not present, null is returned with no error messages sent to the log.
-     *
-     * @param propFile the property file to parse
-     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
-     * @return the map of (key,value) pairs, or null if the parsing failed.
-     * @deprecated Use {@link #parsePropertyFile(IAbstractFile, ISdkLog)}
-     */
-    public static Map<String, String> parsePropertyFile(File propFile, ISdkLog log) {
-        IAbstractFile wrapper = new FileWrapper(propFile);
-        return parsePropertyFile(wrapper, log);
     }
 
     /**
