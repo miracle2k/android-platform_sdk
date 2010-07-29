@@ -25,6 +25,7 @@ import com.android.sdklib.internal.build.SignedJarBuilder.IZipEntryFilter;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -232,32 +233,34 @@ public final class ApkBuilder {
      * @param apkFile the file to create
      * @param resFile the file representing the packaged resource file.
      * @param dexFile the file representing the dex file. This can be null for apk with no code.
-     * @param storeOsPath the OS path to the debug keystore, if needed or null.
+     * @param debugStoreOsPath the OS path to the debug keystore, if needed or null.
      * @param verboseStream the stream to which verbose output should go. If null, verbose mode
      *                      is not enabled.
      * @throws ApkCreationException
      */
-    public ApkBuilder(File apkFile, File resFile, File dexFile, String storeOsPath,
+    public ApkBuilder(File apkFile, File resFile, File dexFile, String debugStoreOsPath,
             PrintStream verboseStream) throws ApkCreationException {
-        checkOutputFile(mApkFile = apkFile);
-        checkInputFile(mResFile = resFile, true /*throwIfDoesntExist*/);
-        if (dexFile != null) {
-            checkInputFile(mDexFile = dexFile, true /*throwIfDoesntExist*/);
-        } else {
-            mDexFile = null;
-        }
-        mVerboseStream = verboseStream;
 
         try {
-            File storeFile = null;
-            if (storeOsPath != null) {
-                storeFile = new File(storeOsPath);
-                checkInputFile(storeFile, false /*throwIfDoesntExist*/);
+            checkOutputFile(mApkFile = apkFile);
+            checkInputFile(mResFile = resFile);
+            if (dexFile != null) {
+                checkInputFile(mDexFile = dexFile);
+            } else {
+                mDexFile = null;
             }
+            mVerboseStream = verboseStream;
 
-            if (storeFile != null) {
+            if (debugStoreOsPath != null) {
+                File storeFile = new File(debugStoreOsPath);
+                try {
+                    checkInputFile(storeFile);
+                } catch (FileNotFoundException e) {
+                    // ignore these since the debug store can be created on the fly anyway.
+                }
+
                 // get the debug key
-                verbosePrintln("Using keystore: %s", storeOsPath);
+                verbosePrintln("Using keystore: %s", debugStoreOsPath);
 
                 IKeyGenOutput keygenOutput = null;
                 if (mVerboseStream != null) {
@@ -273,7 +276,7 @@ public final class ApkBuilder {
                 }
 
                 DebugKeyProvider keyProvider = new DebugKeyProvider(
-                        storeOsPath, null /*store type*/, keygenOutput);
+                        debugStoreOsPath, null /*store type*/, keygenOutput);
 
                 PrivateKey key = keyProvider.getDebugKey();
                 X509Certificate certificate = (X509Certificate)keyProvider.getCertificate();
@@ -293,6 +296,7 @@ public final class ApkBuilder {
                         new FileOutputStream(mApkFile, false /* append */), key,
                         certificate);
             } else {
+                // no debug keystore? build without signing.
                 mBuilder = new SignedJarBuilder(
                         new FileOutputStream(mApkFile, false /* append */),
                         null /* key */, null /* certificate */);
@@ -320,11 +324,9 @@ public final class ApkBuilder {
                         "\nUpdate it if necessary, or manually execute the following command:\n" +
                         e.getCommandLine());
             }
+        } catch (ApkCreationException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof ApkCreationException) {
-                throw (ApkCreationException)e;
-            }
-
             throw new ApkCreationException(e);
         }
     }
@@ -685,11 +687,10 @@ public final class ApkBuilder {
      * - that the file exists (if <var>throwIfDoesntExist</var> is <code>false</code>) and can
      *    be read.
      * @param file the File to check
-     * @param indicates whether the method should throw {@link ApkCreationException} if the file
-     *        does not exist at all.
-     * @throws ApkCreationException If the check fails
+     * @throws FileNotFoundException if the file is not here.
+     * @throws ApkCreationException If the file is a folder or a file that cannot be read.
      */
-    private void checkInputFile(File file, boolean throwIfDoesntExist) throws ApkCreationException {
+    private void checkInputFile(File file) throws FileNotFoundException, ApkCreationException {
         if (file.isDirectory()) {
             throw new ApkCreationException("%s is a directory!", file);
         }
@@ -698,8 +699,8 @@ public final class ApkBuilder {
             if (file.canRead() == false) {
                 throw new ApkCreationException("Cannot read %s", file);
             }
-        } else if (throwIfDoesntExist) {
-            throw new ApkCreationException("%s does not exist", file);
+        } else {
+            throw new FileNotFoundException(String.format("%s does not exist", file));
         }
     }
 
