@@ -34,13 +34,13 @@ public class SdkRepository {
     private static final String NS_SDK_REPOSITORY_BASE =
         "http://schemas.android.com/sdk/android/repository/";                   //$NON-NLS-1$
 
-    /** The pattern of our XML namespace. */
+    /** The pattern of our XML namespace. Matcher's group(1) is the schema version (integer). */
     public static final String NS_SDK_REPOSITORY_PATTERN =
-        NS_SDK_REPOSITORY_BASE + "[1-9][0-9]*";        //$NON-NLS-1$
+        NS_SDK_REPOSITORY_BASE + "([1-9][0-9]*)";        //$NON-NLS-1$
 
     /** The latest version of the sdk-repository XML Schema.
      *  Valid version numbers are between 1 and this number, included. */
-    public static final int NS_LATEST_VERSION = 2;
+    public static final int NS_LATEST_VERSION = 3;
 
     /** The XML namespace of the latest sdk-repository XML. */
     public static final String NS_SDK_REPOSITORY = getSchemaUri(NS_LATEST_VERSION);

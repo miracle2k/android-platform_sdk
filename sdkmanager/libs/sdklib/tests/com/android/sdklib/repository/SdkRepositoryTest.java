@@ -279,13 +279,14 @@ public class SdkRepositoryTest extends TestCase {
         fail();
     }
 
-    /** A document an unknown license id. */
+    /** A document with an unknown license id. */
     public void testLicenseIdNotFound() throws Exception {
         // we define a license named "lic1" and then reference "lic2" instead
         String document = "<?xml version=\"1.0\"?>" +
             OPEN_TAG +
             "<r:license id=\"lic1\"> some license </r:license> " +
             "<r:tool> <r:uses-license ref=\"lic2\" /> <r:revision>1</r:revision> " +
+            "<r:min-platform-tools-rev>1</r:min-platform-tools-rev> " +
             "<r:archives> <r:archive os=\"any\"> <r:size>1</r:size> <r:checksum>2822ae37115ebf13412bbef91339ee0d9454525e</r:checksum> " +
             "<r:url>url</r:url> </r:archive> </r:archives> </r:tool>" +
             CLOSE_TAG;

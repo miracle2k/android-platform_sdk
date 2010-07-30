@@ -26,6 +26,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
@@ -35,6 +36,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLKeyException;
@@ -166,67 +168,99 @@ public class RepoSource implements IDescription {
         ByteArrayInputStream xml = fetchUrl(url, exception);
         Document validatedDoc = null;
         boolean usingAlternateXml = false;
+        boolean usingAlternateUrl = false;
         String validatedUri = null;
-        if (xml != null) {
-            monitor.setDescription("Validate XML");
-            String uri = validateXml(xml, url, validationError, validatorFound);
-            if (uri != null) {
-                // Validation was successful
-                validatedDoc = getDocument(xml, monitor);
-                validatedUri = uri;
-            } else if (validatorFound[0].equals(Boolean.TRUE)) {
-                // An XML validator was found and the XML failed to validate.
-                // Let's see if we can find an alternate tools upgrade to perform.
-                validatedDoc = findAlternateToolsXml(xml);
-                if (validatedDoc != null) {
-                    validationError[0] = null;  // remove error from XML validation
-                    validatedUri = SdkRepository.NS_SDK_REPOSITORY;
-                    usingAlternateXml = true;
-                }
-            } else {
-                // Validation failed because this JVM lacks a proper XML Validator
-                mFetchError = "No suitable XML Schema Validator could be found in your Java environment. Please update your version of Java.";
-            }
-        }
 
-        // If we failed the first time and the URL doesn't explicitly end with
+        // If the original URL can't be fetched and the URL doesn't explicitly end with
         // our filename, make another tentative after changing the URL.
-        if (validatedDoc == null && !url.endsWith(SdkRepository.URL_DEFAULT_XML_FILE)) {
+        if (xml == null && !url.endsWith(SdkRepository.URL_DEFAULT_XML_FILE)) {
             if (!url.endsWith("/")) {       //$NON-NLS-1$
                 url += "/";                 //$NON-NLS-1$
             }
             url += SdkRepository.URL_DEFAULT_XML_FILE;
 
             xml = fetchUrl(url, exception);
-            if (xml != null) {
-                String uri = validateXml(xml, url, validationError, validatorFound);
-                if (uri != null) {
-                    // Validation was successful
-                    validationError[0] = null;  // remove error from previous XML validation
-                    validatedDoc = getDocument(xml, monitor);
-                    validatedUri = uri;
-                } else if (validatorFound[0].equals(Boolean.TRUE)) {
-                    // An XML validator was found and the XML failed to validate.
-                    // Let's see if we can find an alternate tools upgrade to perform.
+            usingAlternateUrl = true;
+        }
+
+        if (xml != null) {
+            monitor.setDescription("Validate XML");
+
+            for (int tryOtherUrl = 0; tryOtherUrl < 2; tryOtherUrl++) {
+                // Explore the XML to find the potential XML schema version
+                int version = getXmlSchemaVersion(xml);
+
+                if (version >= 1 && version <= SdkRepository.NS_LATEST_VERSION) {
+                    // This should be a version we can handle. Try to validate it
+                    // and report any error as invalid XML syntax,
+
+                    String uri = validateXml(xml, url, version, validationError, validatorFound);
+                    if (uri != null) {
+                        // Validation was successful
+                        validatedDoc = getDocument(xml, monitor);
+                        validatedUri = uri;
+
+                        if (usingAlternateUrl && validatedDoc != null) {
+                            // If the second tentative succeeded, indicate it in the console
+                            // with the URL that worked.
+                            monitor.setResult("Repository found at %1$s", url);
+
+                            // Keep the modified URL
+                            mUrl = url;
+                        }
+                    } else if (validatorFound[0].equals(Boolean.FALSE)) {
+                        // Validation failed because this JVM lacks a proper XML Validator
+                        mFetchError = validationError[0];
+                    } else {
+                        // We got a validator but validation failed. We know there's
+                        // what looks like a suitable root element with a suitable XMLNS
+                        // so it must be a genuine error of an XML not conforming to the schema.
+                    }
+                } else if (version > SdkRepository.NS_LATEST_VERSION) {
+                    // The schema used is more recent than what is supported by this tool.
+                    // Tell the user to upgrade, pointing him to the right version of the tool
+                    // package.
+
                     validatedDoc = findAlternateToolsXml(xml);
                     if (validatedDoc != null) {
                         validationError[0] = null;  // remove error from XML validation
                         validatedUri = SdkRepository.NS_SDK_REPOSITORY;
                         usingAlternateXml = true;
                     }
-                } else {
-                    // Validation failed because this JVM lacks a proper XML Validator
-                    mFetchError = "No suitable XML Schema Validator could be found in your Java environment. Please update your version of Java.";
+
+                } else if (version < 1 && tryOtherUrl == 0 && !usingAlternateUrl) {
+                    // This is obviously not one of our documents.
+                    mFetchError = String.format(
+                            "Failed to find an XML for the repository at URL '%1$s'",
+                            url);
+
+                    // If we haven't already tried the alternate URL, let's do it now.
+                    // We don't capture any fetch exception that happen during the second
+                    // fetch in order to avoid hidding any previous fetch errors.
+                    if (!url.endsWith(SdkRepository.URL_DEFAULT_XML_FILE)) {
+                        if (!url.endsWith("/")) {       //$NON-NLS-1$
+                            url += "/";                 //$NON-NLS-1$
+                        }
+                        url += SdkRepository.URL_DEFAULT_XML_FILE;
+
+                        xml = fetchUrl(url, null /*outException*/);
+
+                        // Loop to try the alternative document
+                        if (xml != null) {
+                            usingAlternateUrl = true;
+                            continue;
+                        }
+                    }
+                } else if (version < 1 && usingAlternateUrl && mFetchError == null) {
+                    // The alternate URL is obviously not a valid XML either.
+                    // We only report the error if we failed to produce one earlier.
+                    mFetchError = String.format(
+                            "Failed to find an XML for the repository at URL '%1$s'",
+                            url);
                 }
-            }
 
-            if (validatedDoc != null) {
-                // If the second tentative succeeded, indicate it in the console
-                // with the URL that worked.
-                monitor.setResult("Repository found at %1$s", url);
-
-                // Keep the modified URL
-                mUrl = url;
+                // If we get here either we succeeded or we ran out of alternatives.
+                break;
             }
         }
 
@@ -253,7 +287,7 @@ public class RepoSource implements IDescription {
             monitor.setResult("Failed to fetch URL %1$s, reason: %2$s", url, reason);
         }
 
-        if(validationError[0] != null) {
+        if (validationError[0] != null) {
             monitor.setResult("%s", validationError[0]);  //$NON-NLS-1$
         }
 
@@ -263,6 +297,9 @@ public class RepoSource implements IDescription {
         }
 
         if (usingAlternateXml) {
+            // We found something using the "alternate" XML schema (that is the one made up
+            // to support schema upgrades). That means the user can only install the tools
+            // and needs to upgrade them before it download more stuff.
 
             // Is the manager running from inside ADT?
             // We check that com.android.ide.eclipse.adt.AdtPlugin exists using reflection.
@@ -319,10 +356,13 @@ public class RepoSource implements IDescription {
      * Fetches the document at the given URL and returns it as a string.
      * Returns null if anything wrong happens and write errors to the monitor.
      *
-     * References:
-     * Java URL Connection: http://java.sun.com/docs/books/tutorial/networking/urls/readingWriting.html
-     * Java URL Reader: http://java.sun.com/docs/books/tutorial/networking/urls/readingURL.html
-     * Java set Proxy: http://java.sun.com/docs/books/tutorial/networking/urls/_setProxy.html
+     * References: <br/>
+     * Java URL Connection: http://java.sun.com/docs/books/tutorial/networking/urls/readingWriting.html <br/>
+     * Java URL Reader: http://java.sun.com/docs/books/tutorial/networking/urls/readingURL.html <br/>
+     * Java set Proxy: http://java.sun.com/docs/books/tutorial/networking/urls/_setProxy.html <br/>
+     *
+     * @param urlString The URL to load, as a string.
+     * @param outException If non null, where to store any exception that happens during the fetch.
      */
     private ByteArrayInputStream fetchUrl(String urlString, Exception[] outException) {
         URL url;
@@ -361,52 +401,163 @@ public class RepoSource implements IDescription {
             }
 
         } catch (Exception e) {
-            outException[0] = e;
+            if (outException != null) {
+                outException[0] = e;
+            }
         }
 
         return null;
     }
 
     /**
-     * Validates this XML against one of the possible SDK Repository schema, starting
-     * by the most recent one.
+     * Validates this XML against one of the requested SDK Repository schemas.
      * If the XML was correctly validated, returns the schema that worked.
-     * If no schema validated the XML, returns null.
+     * If it doesn't validate, returns null and store the error in outError[0].
+     * If we can't find a validator, returns null and set validatorFound[0] to false.
      */
-    private String validateXml(ByteArrayInputStream xml, String url,
+    private String validateXml(InputStream xml, String url, int version,
             String[] outError, Boolean[] validatorFound) {
 
-        String lastError = null;
-        String extraError = null;
-        for (int version = SdkRepository.NS_LATEST_VERSION; version >= 1; version--) {
+        if (xml == null) {
+            return null;
+        }
+
+        try {
+            Validator validator = getValidator(version);
+
+            if (validator == null) {
+                validatorFound[0] = Boolean.FALSE;
+                outError[0] = String.format(
+                        "XML verification failed for %1$s.\nNo suitable XML Schema Validator could be found in your Java environment. Please consider updating your version of Java.",
+                        url);
+                return null;
+            }
+
+            validatorFound[0] = Boolean.TRUE;
+
+            // Reset the stream if it supports that operation.
+            // At runtime we use a ByteArrayInputStream which can be reset; however for unit tests
+            // we use a FileInputStream that doesn't support resetting and is read-once.
             try {
-                Validator validator = getValidator(version);
-
-                if (validator == null) {
-                    lastError = "XML verification failed for %1$s.\nNo suitable XML Schema Validator could be found in your Java environment. Please consider updating your version of Java.";
-                    validatorFound[0] = Boolean.FALSE;
-                    continue;
-                }
-
-                validatorFound[0] = Boolean.TRUE;
                 xml.reset();
-                // Validation throws a bunch of possible Exceptions on failure.
-                validator.validate(new StreamSource(xml));
-                return SdkRepository.getSchemaUri(version);
+            } catch (IOException e1) {
+                // ignore if not supported
+            }
 
-            } catch (Exception e) {
-                lastError = "XML verification failed for %1$s.\nError: %2$s";
-                extraError = e.getMessage();
-                if (extraError == null) {
-                    extraError = e.getClass().getName();
+            // Validation throws a bunch of possible Exceptions on failure.
+            validator.validate(new StreamSource(xml));
+            return SdkRepository.getSchemaUri(version);
+
+        } catch (SAXParseException e) {
+            outError[0] = String.format(
+                    "XML verification failed for %1$s.\nLine %2$d:%3$d, Error: %4$s",
+                    url,
+                    e.getLineNumber(),
+                    e.getColumnNumber(),
+                    e.toString());
+
+        } catch (Exception e) {
+            outError[0] = String.format(
+                    "XML verification failed for %1$s.\nError: %4$s",
+                    url,
+                    e.toString());
+        }
+        return null;
+    }
+
+    /**
+     * Manually parses the root element of the XML to extract the schema version
+     * at the end of the xmlns:sdk="http://schemas.android.com/sdk/android/repository/$N"
+     * declaration.
+     *
+     * @return 1..{@link SdkRepository#NS_LATEST_VERSION} for a valid schema version
+     *         or 0 if no schema could be found.
+     */
+    private int getXmlSchemaVersion(InputStream xml) {
+        if (xml == null) {
+            return 0;
+        }
+
+        // Reset the stream if it supports that operation.
+        // At runtime we use a ByteArrayInputStream which can be reset; however for unit tests
+        // we use a FileInputStream that doesn't support resetting and is read-once.
+        try {
+            xml.reset();
+        } catch (IOException e1) {
+            // ignore if not supported
+        }
+
+        // Get an XML document
+        Document doc = null;
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setIgnoringComments(false);
+            factory.setValidating(false);
+
+            // Parse the old document using a non namespace aware builder
+            factory.setNamespaceAware(false);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            doc = builder.parse(xml);
+
+            // Prepare a new document using a namespace aware builder
+            factory.setNamespaceAware(true);
+            builder = factory.newDocumentBuilder();
+
+        } catch (Exception e) {
+            // Failed to get builder factor
+            // Failed to create XML document builder
+            // Failed to parse XML document
+            // Failed to read XML document
+        }
+
+        if (doc == null) {
+            return 0;
+        }
+
+        // Check the root element is an XML with at least the following properties:
+        // <sdk:sdk-repository
+        //    xmlns:sdk="http://schemas.android.com/sdk/android/repository/$N">
+        //
+        // Note that we don't have namespace support enabled, we just do it manually.
+
+        Pattern nsPattern = Pattern.compile(SdkRepository.NS_SDK_REPOSITORY_PATTERN);
+
+        String prefix = null;
+        for (Node child = doc.getFirstChild(); child != null; child = child.getNextSibling()) {
+            if (child.getNodeType() == Node.ELEMENT_NODE) {
+                prefix = null;
+                String name = child.getNodeName();
+                int pos = name.indexOf(':');
+                if (pos > 0 && pos < name.length() - 1) {
+                    prefix = name.substring(0, pos);
+                    name = name.substring(pos + 1);
+                }
+                if (SdkRepository.NODE_SDK_REPOSITORY.equals(name)) {
+                    NamedNodeMap attrs = child.getAttributes();
+                    String xmlns = "xmlns";                                         //$NON-NLS-1$
+                    if (prefix != null) {
+                        xmlns += ":" + prefix;                                      //$NON-NLS-1$
+                    }
+                    Node attr = attrs.getNamedItem(xmlns);
+                    if (attr != null) {
+                        String uri = attr.getNodeValue();
+                        if (uri != null) {
+                            Matcher m = nsPattern.matcher(uri);
+                            if (m.matches()) {
+                                String version = m.group(1);
+                                try {
+                                    return Integer.parseInt(version);
+                                } catch (NumberFormatException e) {
+                                    return 0;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        if (lastError != null) {
-            outError[0] = String.format(lastError, url, extraError);
-        }
-        return null;
+        return 0;
     }
 
     /**
@@ -476,7 +627,7 @@ public class RepoSource implements IDescription {
         }
 
 
-        // Check the root element is an xsd-schema with at least the following properties:
+        // Check the root element is an XML with at least the following properties:
         // <sdk:sdk-repository
         //    xmlns:sdk="http://schemas.android.com/sdk/android/repository/$N">
         //
