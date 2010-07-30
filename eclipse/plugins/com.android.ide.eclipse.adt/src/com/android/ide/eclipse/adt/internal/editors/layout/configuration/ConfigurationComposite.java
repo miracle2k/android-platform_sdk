@@ -39,6 +39,7 @@ import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
+import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IStyleResourceValue;
 import com.android.sdklib.IAndroidTarget;
@@ -66,13 +67,12 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
-import java.util.Map.Entry;
 
 /**
  * A composite that displays the current configuration displayed in a Graphical Layout Editor.
@@ -222,7 +222,7 @@ public class ConfigurationComposite extends Composite {
                 for (LayoutDevice d : mDeviceList) {
                     if (d.getName().equals(values[0])) {
                         device = d;
-                        FolderConfiguration config = device.getConfigs().get(values[1]);
+                        FolderConfiguration config = device.getFolderConfigByName(values[1]);
                         if (config != null) {
                             configName = values[1];
 
@@ -731,9 +731,8 @@ public class ConfigurationComposite extends Composite {
         FolderConfiguration testConfig = new FolderConfiguration();
 
         mainloop: for (LayoutDevice device : mDeviceList) {
-            for (Entry<String, FolderConfiguration> entry :
-                    device.getConfigs().entrySet()) {
-                testConfig.set(entry.getValue());
+            for (DeviceConfig config : device.getConfigs()) {
+                testConfig.set(config.getConfig());
 
                 // look on the locales.
                 for (int i = 0 ; i < mLocaleList.size() ; i++) {
@@ -748,14 +747,14 @@ public class ConfigurationComposite extends Composite {
                         // where the edited file is a best config.
                         if (anyDeviceMatch == null) {
                             anyDeviceMatch = device;
-                            anyConfigMatchName = entry.getKey();
+                            anyConfigMatchName = config.getName();
                             anyLocaleIndex = i;
                         }
 
                         if (isCurrentFileBestMatchFor(testConfig)) {
                             // this is what we want.
                             bestDeviceMatch = device;
-                            bestConfigMatchName = entry.getKey();
+                            bestConfigMatchName = config.getName();
                             bestLocaleIndex = i;
                             break mainloop;
                         }
@@ -823,7 +822,7 @@ public class ConfigurationComposite extends Composite {
         int configIndex = mDeviceConfigCombo.getSelectionIndex();
         if (configIndex != -1) {
             String configName = mDeviceConfigCombo.getItem(configIndex);
-            FolderConfiguration currentConfig = mState.device.getConfigs().get(configName);
+            FolderConfiguration currentConfig = mState.device.getFolderConfigByName(configName);
             if (mEditedConfig.isMatchFor(currentConfig)) {
                 currentConfigIsCompatible = true; // current config is compatible
                 if (needBestMatch == false || isCurrentFileBestMatchFor(currentConfig)) {
@@ -840,9 +839,8 @@ public class ConfigurationComposite extends Composite {
             // first look in the current device.
             String matchName = null;
             int localeIndex = -1;
-            Map<String, FolderConfiguration> configs = mState.device.getConfigs();
-            mainloop: for (Entry<String, FolderConfiguration> entry : configs.entrySet()) {
-                testConfig.set(entry.getValue());
+            mainloop: for (DeviceConfig config : mState.device.getConfigs()) {
+                testConfig.set(config.getConfig());
 
                 // loop on the locales.
                 for (int i = 0 ; i < mLocaleList.size() ; i++) {
@@ -854,7 +852,7 @@ public class ConfigurationComposite extends Composite {
 
                     if (mEditedConfig.isMatchFor(testConfig) &&
                             isCurrentFileBestMatchFor(testConfig)) {
-                        matchName = entry.getKey();
+                        matchName = config.getName();
                         localeIndex = i;
                         break mainloop;
                     }
@@ -1303,13 +1301,12 @@ public class ConfigurationComposite extends Composite {
             mDeviceCombo.select(0);
 
             if (mDeviceList.size() > 0) {
-                Map<String, FolderConfiguration> configs = mDeviceList.get(0).getConfigs();
-                Set<String> configNames = configs.keySet();
-                for (String name : configNames) {
-                    mDeviceConfigCombo.add(name);
+                List<DeviceConfig> configs = mDeviceList.get(0).getConfigs();
+                for (DeviceConfig config : configs) {
+                    mDeviceConfigCombo.add(config.getName());
                 }
                 mDeviceConfigCombo.select(0);
-                if (configNames.size() == 1) {
+                if (configs.size() == 1) {
                     mDeviceConfigCombo.setEnabled(false);
                 }
             }
@@ -1377,7 +1374,7 @@ public class ConfigurationComposite extends Composite {
             if (mState.device != null) {
                 int index = mDeviceConfigCombo.getSelectionIndex();
                 if (index != -1) {
-                    FolderConfiguration oldConfig = mState.device.getConfigs().get(
+                    FolderConfiguration oldConfig = mState.device.getFolderConfigByName(
                             mDeviceConfigCombo.getItem(index));
 
                     LayoutDevice newDevice = mDeviceList.get(deviceIndex);
@@ -1449,40 +1446,37 @@ public class ConfigurationComposite extends Composite {
      * @return the name of the closest config match, or possibly null if no configs are compatible
      * (this can only happen if the configs don't have a single qualifier that is the same).
      */
-    private String getClosestMatch(FolderConfiguration oldConfig,
-            Map<String, FolderConfiguration> configs) {
+    private String getClosestMatch(FolderConfiguration oldConfig, List<DeviceConfig> configs) {
 
         // create 2 lists as we're going to go through one and put the candidates in the other.
-        ArrayList<Entry<String, FolderConfiguration>> list1 =
-            new ArrayList<Entry<String,FolderConfiguration>>();
-        ArrayList<Entry<String, FolderConfiguration>> list2 =
-            new ArrayList<Entry<String,FolderConfiguration>>();
+        ArrayList<DeviceConfig> list1 = new ArrayList<DeviceConfig>();
+        ArrayList<DeviceConfig> list2 = new ArrayList<DeviceConfig>();
 
-        list1.addAll(configs.entrySet());
+        list1.addAll(configs);
 
         final int count = FolderConfiguration.getQualifierCount();
         for (int i = 0 ; i < count ; i++) {
             // compute the new candidate list by only taking configs that have
             // the same i-th qualifier as the old config
-            for (Entry<String, FolderConfiguration> entry : list1) {
+            for (DeviceConfig c : list1) {
                 ResourceQualifier oldQualifier = oldConfig.getQualifier(i);
 
-                FolderConfiguration config = entry.getValue();
-                ResourceQualifier newQualifier = config.getQualifier(i);
+                FolderConfiguration folderConfig = c.getConfig();
+                ResourceQualifier newQualifier = folderConfig.getQualifier(i);
 
                 if (oldQualifier == null) {
                     if (newQualifier == null) {
-                        list2.add(entry);
+                        list2.add(c);
                     }
                 } else if (oldQualifier.equals(newQualifier)) {
-                    list2.add(entry);
+                    list2.add(c);
                 }
             }
 
             // at any moment if the new candidate list contains only one match, its name
             // is returned.
             if (list2.size() == 1) {
-                return list2.get(0).getKey();
+                return list2.get(0).getName();
             }
 
             // if the list is empty, then all the new configs failed. It is considered ok, and
@@ -1500,7 +1494,7 @@ public class ConfigurationComposite extends Composite {
         // (if there are more than one, then there's a duplicate config and it doesn't matter,
         // we take the first one).
         if (list1.size() > 0) {
-            return list1.get(0).getKey();
+            return list1.get(0).getName();
         }
 
         return null;
@@ -1514,22 +1508,20 @@ public class ConfigurationComposite extends Composite {
         mDeviceConfigCombo.removeAll();
 
         if (mState.device != null) {
-            Set<String> configNames = mState.device.getConfigs().keySet();
-
             int selectionIndex = 0;
             int i = 0;
 
-            for (String name : configNames) {
-                mDeviceConfigCombo.add(name);
+            for (DeviceConfig config : mState.device.getConfigs()) {
+                mDeviceConfigCombo.add(config.getName());
 
-                if (name.equals(refName)) {
+                if (config.getName().equals(refName)) {
                     selectionIndex = i;
                 }
                 i++;
             }
 
             mDeviceConfigCombo.select(selectionIndex);
-            mDeviceConfigCombo.setEnabled(configNames.size() > 1);
+            mDeviceConfigCombo.setEnabled(mState.device.getConfigs().size() > 1);
         }
     }
 
@@ -1588,7 +1580,7 @@ public class ConfigurationComposite extends Composite {
             // get the device config from the device/config combos.
             int configIndex = mDeviceConfigCombo.getSelectionIndex();
             String name = mDeviceConfigCombo.getItem(configIndex);
-            FolderConfiguration config = mState.device.getConfigs().get(name);
+            FolderConfiguration config = mState.device.getFolderConfigByName(name);
 
             // replace the config with the one from the device
             mCurrentConfig.set(config);

@@ -22,6 +22,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfi
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
 import com.android.sdkuilib.ui.GridDialog;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -47,7 +48,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Map.Entry;
 
 /**
@@ -133,7 +134,7 @@ public class ConfigManagerDialog extends GridDialog {
                 }
             } else if (parentElement instanceof LayoutDevice) {
                 LayoutDevice device = (LayoutDevice)parentElement;
-                return device.getConfigs().entrySet().toArray();
+                return device.getConfigs().toArray();
             }
 
             return null;
@@ -182,8 +183,7 @@ public class ConfigManagerDialog extends GridDialog {
 
     /**
      * Label provider for the {@link TreeViewer}.
-     * Supported elements are {@link DeviceType}, {@link LayoutDevice}, and {@link Entry} (where
-     * the key is a {@link String} object, and the value is a {@link FolderConfiguration} object).
+     * Supported elements are {@link DeviceType}, {@link LayoutDevice}, and {@link DeviceConfig}.
      *
      */
     private final static class DeviceLabelProvider implements ITableLabelProvider {
@@ -197,11 +197,11 @@ public class ConfigManagerDialog extends GridDialog {
                 if (columnIndex == 0) {
                     return ((LayoutDevice)element).getName();
                 }
-            } else if (element instanceof Entry<?, ?>) {
+            } else if (element instanceof DeviceConfig) {
                 if (columnIndex == 0) {
-                    return (String)((Entry<?,?>)element).getKey();
+                    return ((DeviceConfig)element).getName();
                 } else {
-                    return ((Entry<?,?>)element).getValue().toString();
+                    return ((DeviceConfig)element).getConfig().toString();
                 }
             }
             return null;
@@ -386,18 +386,18 @@ public class ConfigManagerDialog extends GridDialog {
                 // are we copying the full device?
                 if (selection.entry == null) {
                     // get the config from the origin device
-                    Map<String, FolderConfiguration> configs = selection.device.getConfigs();
+                    List<DeviceConfig> configs = selection.device.getConfigs();
 
                     // and copy them in the target device
-                    for (Entry<String, FolderConfiguration> entry : configs.entrySet()) {
+                    for (DeviceConfig config : configs) {
                         // we need to make a copy of the config object, or it could be modified
                         // in default/addon by editing the version in the new device.
                         FolderConfiguration copy = new FolderConfiguration();
-                        copy.set(entry.getValue());
+                        copy.set(config.getConfig());
 
                         // the name can stay the same since we are copying a full device
                         // and the target device has its own new name.
-                        mManager.addUserConfiguration(targetDevice, entry.getKey(), copy);
+                        mManager.addUserConfiguration(targetDevice, config.getName(), copy);
                     }
                 } else {
                     // only copy the config. target device is not the same as the selection, don't
@@ -533,12 +533,12 @@ public class ConfigManagerDialog extends GridDialog {
             // this is the easy case. no config to select
             path = new Object[] { DeviceType.CUSTOM, device };
         } else {
-            // this is more complex. we have the configName, but the tree contains Entry<?,?>
+            // this is more complex. we have the configName, but the tree contains DeviceConfig
             // Look for the entry.
-            Entry<?, ?> match = null;
-            for (Entry<?, ?> entry : device.getConfigs().entrySet()) {
-                if (entry.getKey().equals(configName)) {
-                    match = entry;
+            DeviceConfig match = null;
+            for (DeviceConfig config : device.getConfigs()) {
+                if (config.getName().equals(configName)) {
+                    match = config;
                     break;
                 }
             }
