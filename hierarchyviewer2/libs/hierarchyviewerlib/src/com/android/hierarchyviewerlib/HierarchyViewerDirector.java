@@ -16,14 +16,20 @@
 
 package com.android.hierarchyviewerlib;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.RawImage;
+import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.AndroidDebugBridge.IDeviceChangeListener;
 import com.android.hierarchyviewerlib.device.DeviceBridge;
+import com.android.hierarchyviewerlib.device.ViewNode;
 import com.android.hierarchyviewerlib.device.Window;
 import com.android.hierarchyviewerlib.device.WindowUpdater;
 import com.android.hierarchyviewerlib.device.DeviceBridge.ViewServerInfo;
 import com.android.hierarchyviewerlib.device.WindowUpdater.IWindowChangeListener;
+
+import java.io.IOException;
 
 /**
  * This is the class where most of the logic resides.
@@ -32,6 +38,8 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
         IWindowChangeListener {
 
     public static final String TAG = "hierarchyviewer";
+
+    private int pixelPerfectRefreshesInProgress = 0;
 
     public void terminate() {
         WindowUpdater.terminate();
@@ -74,17 +82,19 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                     return;
                 }
             }
-            ViewServerInfo viewServerInfo = DeviceBridge.loadViewServerInfo(device);
             executeInBackground(new Runnable() {
                 public void run() {
+                    ViewServerInfo viewServerInfo = DeviceBridge.loadViewServerInfo(device);
                     Window[] windows = DeviceBridge.loadWindows(device);
                     ComponentRegistry.getDeviceSelectionModel().addDevice(device, windows);
+                    if (viewServerInfo.protocolVersion >= 3) {
+                        WindowUpdater.startListenForWindowChanges(HierarchyViewerDirector.this,
+                                device);
+                        focusChanged(device);
+                    }
                 }
             });
-            if (viewServerInfo.protocolVersion >= 3) {
-                WindowUpdater.startListenForWindowChanges(this, device);
-                focusChanged(device);
-            }
+
         }
     }
 
@@ -122,6 +132,63 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                 int focusedWindow = DeviceBridge.getFocusedWindow(device);
                 ComponentRegistry.getDeviceSelectionModel().updateFocusedWindow(device,
                         focusedWindow);
+            }
+        });
+
+        // Some interesting logic here. We don't want to refresh the pixel
+        // perfect view 1000 times in a row if the focus keeps changing. We just
+        // want it to refresh following the last focus change.
+        boolean proceed = false;
+        synchronized (this) {
+            if (pixelPerfectRefreshesInProgress <= 1) {
+                proceed = true;
+                pixelPerfectRefreshesInProgress++;
+            }
+        }
+        if (proceed) {
+            executeInBackground(new Runnable() {
+                public void run() {
+                    if (ComponentRegistry.getDeviceSelectionModel().getFocusedWindow(device) != -1
+                            && device == ComponentRegistry.getPixelPerfectModel().getDevice()) {
+                        try {
+                            ViewNode viewNode =
+                                    DeviceBridge.loadWindowData(Window.getFocusedWindow(device));
+                            RawImage screenshot = device.getScreenshot();
+                            ComponentRegistry.getPixelPerfectModel().setFocusData(screenshot,
+                                    viewNode);
+                        } catch (IOException e) {
+                            Log.e(TAG, "Unable to load screenshot from device " + device);
+                        } catch (TimeoutException e) {
+                            Log.e(TAG, "Timeout loading screenshot from device " + device);
+                        } catch (AdbCommandRejectedException e) {
+                            Log.e(TAG, "Adb rejected command to load screenshot from device "
+                                    + device);
+                        }
+                    }
+                    synchronized (HierarchyViewerDirector.this) {
+                        pixelPerfectRefreshesInProgress--;
+                    }
+                }
+
+            });
+        }
+    }
+
+    public void loadPixelPerfectData(final IDevice device) {
+        executeInBackground(new Runnable() {
+            public void run() {
+                try {
+                    RawImage screenshot = device.getScreenshot();
+                    ViewNode viewNode =
+                            DeviceBridge.loadWindowData(Window.getFocusedWindow(device));
+                    ComponentRegistry.getPixelPerfectModel().setData(device, screenshot, viewNode);
+                } catch (IOException e) {
+                    Log.e(TAG, "Unable to load screenshot from device " + device);
+                } catch (TimeoutException e) {
+                    Log.e(TAG, "Timeout loading screenshot from device " + device);
+                } catch (AdbCommandRejectedException e) {
+                    Log.e(TAG, "Adb rejected command to load screenshot from device " + device);
+                }
             }
         });
     }
