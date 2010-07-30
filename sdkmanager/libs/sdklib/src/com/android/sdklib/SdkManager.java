@@ -20,6 +20,7 @@ import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion.AndroidVersionException;
 import com.android.sdklib.internal.project.ProjectProperties;
+import com.android.sdklib.io.FileWrapper;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -274,7 +275,9 @@ public final class SdkManager {
         File buildProp = new File(platform, SdkConstants.FN_BUILD_PROP);
 
         if (buildProp.isFile()) {
-            Map<String, String> map = ProjectProperties.parsePropertyFile(buildProp, log);
+            Map<String, String> map = ProjectProperties.parsePropertyFile(
+                    new FileWrapper(buildProp),
+                    log);
 
             if (map != null) {
                 // look for some specific values in the map.
@@ -322,7 +325,8 @@ public final class SdkManager {
                 // platform rev number
                 int revision = 1;
                 File sourcePropFile = new File(platform, SdkConstants.FN_SOURCE_PROP);
-                Map<String, String> sourceProp = ProjectProperties.parsePropertyFile(sourcePropFile,
+                Map<String, String> sourceProp = ProjectProperties.parsePropertyFile(
+                        new FileWrapper(sourcePropFile),
                         log);
                 if (sourceProp != null) {
                     try {
@@ -335,7 +339,9 @@ public final class SdkManager {
 
                 // Ant properties
                 File sdkPropFile = new File(platform, SdkConstants.FN_SDK_PROP);
-                Map<String, String> antProp = ProjectProperties.parsePropertyFile(sdkPropFile, log);
+                Map<String, String> antProp = ProjectProperties.parsePropertyFile(
+                        new FileWrapper(sdkPropFile),
+                        log);
                 if (antProp != null) {
                     map.putAll(antProp);
                 }
@@ -414,7 +420,8 @@ public final class SdkManager {
         File addOnManifest = new File(addon, SdkConstants.FN_MANIFEST_INI);
 
         if (addOnManifest.isFile()) {
-            Map<String, String> propertyMap = ProjectProperties.parsePropertyFile(addOnManifest,
+            Map<String, String> propertyMap = ProjectProperties.parsePropertyFile(
+                    new FileWrapper(addOnManifest),
                     log);
 
             if (propertyMap != null) {

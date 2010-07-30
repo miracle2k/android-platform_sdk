@@ -27,6 +27,7 @@ import com.android.sdklib.internal.avd.HardwareProperties;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo;
 import com.android.sdklib.internal.avd.HardwareProperties.HardwareProperty;
 import com.android.sdklib.internal.project.ProjectProperties;
+import com.android.sdklib.io.FileWrapper;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 import com.android.sdkuilib.ui.GridDialog;
 
@@ -878,7 +879,8 @@ final class AvdCreationDialog extends GridDialog {
             File targetHardwareFile = new File(target.getLocation(), AvdManager.HARDWARE_INI);
             if (targetHardwareFile.isFile()) {
                 Map<String, String> targetHardwareConfig = ProjectProperties.parsePropertyFile(
-                        targetHardwareFile, null /*log*/);
+                        new FileWrapper(targetHardwareFile),
+                        null /*log*/);
                 if (targetHardwareConfig != null) {
                     hardwareValues.putAll(targetHardwareConfig);
                 }
@@ -889,7 +891,8 @@ final class AvdCreationDialog extends GridDialog {
         File skinHardwareFile = new File(skin, AvdManager.HARDWARE_INI);
         if (skinHardwareFile.isFile()) {
             Map<String, String> skinHardwareConfig = ProjectProperties.parsePropertyFile(
-                    skinHardwareFile, null /*log*/);
+                    new FileWrapper(skinHardwareFile),
+                    null /*log*/);
             if (skinHardwareConfig != null) {
                 hardwareValues.putAll(skinHardwareConfig);
             }

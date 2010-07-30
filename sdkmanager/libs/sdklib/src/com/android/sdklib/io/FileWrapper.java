@@ -33,6 +33,14 @@ public class FileWrapper extends File implements IAbstractFile {
     private static final long serialVersionUID = 1L;
 
     /**
+     * Creates a new File instance matching a given {@link File} object.
+     * @param file the file to match
+     */
+    public FileWrapper(File file) {
+        super(file.getAbsolutePath());
+    }
+
+    /**
      * Creates a new File instance from a parent abstract pathname and a child pathname string.
      * @param parent the parent pathname
      * @param child the child name
@@ -46,12 +54,12 @@ public class FileWrapper extends File implements IAbstractFile {
     /**
      * Creates a new File instance by converting the given pathname string into an abstract
      * pathname.
-     * @param pathname the pathname
+     * @param osPathname the OS pathname
      *
      * @see File#File(String)
      */
-    public FileWrapper(String pathname) {
-        super(pathname);
+    public FileWrapper(String osPathname) {
+        super(osPathname);
     }
 
     /**
@@ -75,14 +83,6 @@ public class FileWrapper extends File implements IAbstractFile {
      */
     public FileWrapper(URI uri) {
         super(uri);
-    }
-
-    /**
-     * Creates a new File instance matching a give {@link File} object.
-     * @param file the file to match
-     */
-    public FileWrapper(File file) {
-        super(file.getAbsolutePath());
     }
 
     public InputStream getContents() throws StreamException {

@@ -31,12 +31,13 @@ import com.android.sdklib.internal.project.ProjectCreator;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectCreator.OutputLevel;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
+import com.android.sdklib.io.FileWrapper;
 import com.android.sdklib.repository.SdkRepository;
 import com.android.sdklib.xml.AndroidXPathFactory;
 import com.android.sdkmanager.internal.repository.AboutPage;
 import com.android.sdkmanager.internal.repository.SettingsPage;
-import com.android.sdkuilib.internal.repository.UpdateNoWindow;
 import com.android.sdkuilib.internal.repository.LocalPackagesPage;
+import com.android.sdkuilib.internal.repository.UpdateNoWindow;
 import com.android.sdkuilib.internal.widgets.MessageBoxLog;
 import com.android.sdkuilib.repository.UpdaterWindow;
 
@@ -927,7 +928,8 @@ public class Main {
                         File skinHardwareFile = new File(skinFolder, AvdManager.HARDWARE_INI);
                         if (skinHardwareFile.isFile()) {
                             skinHardwareConfig = ProjectProperties.parsePropertyFile(
-                                    skinHardwareFile, mSdkLog);
+                                    new FileWrapper(skinHardwareFile),
+                                    mSdkLog);
                         }
                         break;
                     }
