@@ -28,8 +28,7 @@ import java.util.Properties;
 /**
  * Represents an XML node in an SDK repository that has a min-tools-rev requirement.
  */
-public abstract class MinToolsPackage extends Package
-    implements IMinToolsDependency {
+public abstract class MinToolsPackage extends Package implements IMinToolsDependency {
 
     protected static final String PROP_MIN_TOOLS_REV = "Platform.MinToolsRev";  //$NON-NLS-1$
 
