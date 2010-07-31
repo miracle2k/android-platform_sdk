@@ -219,6 +219,20 @@ final class DeviceMonitor {
                     // we can safely ignore that one.
                 }
                 mMainAdbConnection = null;
+
+                // remove all devices from list
+                // because we are going to call mServer.deviceDisconnected which will acquire this
+                // lock we lock it first, so that the AndroidDebugBridge lock is always locked
+                // first.
+                synchronized (AndroidDebugBridge.getLock()) {
+                    synchronized (mDevices) {
+                        for (int n = mDevices.size() - 1; n >= 0; n--) {
+                            Device device = mDevices.get(0);
+                            removeDevice(device);
+                            mServer.deviceDisconnected(device);
+                        }
+                    }
+                }
             }
         }
     }
