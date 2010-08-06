@@ -57,14 +57,17 @@ public abstract class MonkeyDevice {
      */
     public abstract void dispose();
 
-    @MonkeyRunnerExported(doc = "Fetch the screenbuffer from the device and return it.",
-            returns = "The captured snapshot.")
+    @MonkeyRunnerExported(doc =
+    "Gets the device's screen buffer, yielding a screen capture of the entire display.",
+            returns = "A MonkeyImage object (a bitmap wrapper)")
     public abstract MonkeyImage takeSnapshot();
 
-    @MonkeyRunnerExported(doc = "Get a MonkeyRunner property (like build.fingerprint)",
+    @MonkeyRunnerExported(doc = "Given the name of a variable on the device, " +
+            "returns the variable's value",
             args = {"key"},
-            argDocs = {"The key of the property to return"},
-            returns = "The value of the property")
+            argDocs = {"The name of the variable. The available names are listed in " +
+            "http://developer.android.com/guide/topics/testing/monkeyrunner.html."},
+            returns = "The variable's value")
     public String getProperty(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -72,29 +75,30 @@ public abstract class MonkeyDevice {
         return getProperty(ap.getString(0));
     }
 
-    @MonkeyRunnerExported(doc = "Get a system property (returns the same value as getprop).",
+    @MonkeyRunnerExported(doc = "Synonym for getProperty()",
             args = {"key"},
-            argDocs = {"The key of the property to return"},
-            returns = "The value of the property")
+            argDocs = {"The name of the system variable."},
+            returns = "The variable's value.")
     public String getSystemProperty(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
         return getSystemProperty(ap.getString(0));
     }
 
-    @MonkeyRunnerExported(doc = "Enumeration of possible touch and press event types.  This gets " +
-            "passed into a press or touch call to specify the event type.",
-            argDocs = {"Indicates the down part of a touch/press event",
-            "Indicates the up part of a touch/press event.",
-            "Indicates that the monkey should send a down event immediately " +
-                "followed by an up event"})
+    @MonkeyRunnerExported(doc = "Enumerates the possible touch and key event types.  Use this " +
+            "with touch() or press() to specify the event type.",
+            argDocs = {"Sends a DOWN event",
+            "Sends an UP event",
+            "Sends a DOWN event, immediately followed by an UP event"})
     public enum TouchPressType {
         DOWN, UP, DOWN_AND_UP
     }
 
-    @MonkeyRunnerExported(doc = "Send a touch event at the specified location",
+    @MonkeyRunnerExported(doc = "Sends a touch event at the specified location",
             args = { "x", "y", "type" },
-            argDocs = { "x coordinate", "y coordinate", "the type of touch event to send"})
+            argDocs = { "x coordinate in pixels",
+                        "y coordinate in pixels",
+                        "touch event type as returned by TouchPressType()"})
     public void touch(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -114,11 +118,11 @@ public abstract class MonkeyDevice {
         touch(x, y, type);
     }
 
-    @MonkeyRunnerExported(doc = "Simulate a drag on the screen.",
+    @MonkeyRunnerExported(doc = "Simulates dragging (touch, hold, and move) on the device screen.",
             args = { "start", "end", "duration", "steps"},
-            argDocs = { "The starting point for the drag (a tuple of x,y)",
-            "The end point for the drag (a tuple of x,y)",
-            "How long (in seconds) should the drag take (default is 1.0 seconds)",
+            argDocs = { "The starting point for the drag (a tuple (x,y) in pixels)",
+            "The end point for the drag (a tuple (x,y) in pixels",
+            "Duration of the drag in seconds (default is 1.0 seconds)",
             "The number of steps to take when interpolating points. (default is 10)"})
     public void drag(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
@@ -149,9 +153,11 @@ public abstract class MonkeyDevice {
         drag(startx, starty, endx, endy, steps, ms);
     }
 
-    @MonkeyRunnerExported(doc = "Send a key press event to the specified button",
+    @MonkeyRunnerExported(doc = "Send a key event to the specified key",
             args = { "name", "type" },
-            argDocs = { "the name of the key to press", "the type of touch event to send"})
+            argDocs = { "the keycode of the key to press (see android.view.KeyEvent)",
+            "touch event type as returned by TouchPressType(). To simulate typing a key, " +
+            "send DOWN_AND_UP"})
     public void press(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -170,9 +176,10 @@ public abstract class MonkeyDevice {
         press(name, type);
     }
 
-    @MonkeyRunnerExported(doc = "Type the specified string on the keyboard.",
+    @MonkeyRunnerExported(doc = "Types the specified string on the keyboard. This is " +
+            "equivalent to calling press(keycode,DOWN_AND_UP) for each character in the string.",
             args = { "message" },
-            argDocs = { "the message to type." })
+            argDocs = { "The string to send to the keyboard." })
     public void type(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -181,10 +188,10 @@ public abstract class MonkeyDevice {
         type(message);
     }
 
-    @MonkeyRunnerExported(doc = "Execute the given command on the shell.",
+    @MonkeyRunnerExported(doc = "Executes an adb shell command and returns the result, if any.",
             args = { "cmd"},
-            argDocs = { "The command to execute" },
-            returns = "The output of the command")
+            argDocs = { "The adb shell command to execute." },
+            returns = "The output from the command.")
     public String shell(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -193,9 +200,9 @@ public abstract class MonkeyDevice {
         return shell(cmd);
     }
 
-    @MonkeyRunnerExported(doc = "Reboot the specified device",
+    @MonkeyRunnerExported(doc = "Reboots the specified device into a specified bootloader.",
             args = { "into" },
-            argDocs = { "the bootloader to reboot into (bootloader, recovery, or None)"})
+            argDocs = { "the bootloader to reboot into: bootloader, recovery, or None"})
     public void reboot(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -205,10 +212,11 @@ public abstract class MonkeyDevice {
         reboot(into);
     }
 
-    @MonkeyRunnerExported(doc = "Install the specified apk onto the device.",
+    @MonkeyRunnerExported(doc = "Installs the specified Android package (.apk file) " +
+            "onto the device. If the package already exists on the device, it is replaced.",
             args = { "path" },
-            argDocs = { "The path on the host filesystem to the APK to install." },
-            returns = "True if install succeeded")
+            argDocs = { "The package's path and filename on the host filesystem." },
+            returns = "True if the install succeeded")
     public boolean installPackage(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -217,10 +225,11 @@ public abstract class MonkeyDevice {
         return installPackage(path);
     }
 
-    @MonkeyRunnerExported(doc = "Remove the specified package from the device.",
+    @MonkeyRunnerExported(doc = "Deletes the specified package from the device, including its " +
+            "associated data and cache.",
             args = { "package"},
-            argDocs = { "The name of the package to uninstall"},
-            returns = "'True if remove succeeded")
+            argDocs = { "The name of the package to delete."},
+            returns = "True if remove succeeded")
     public boolean removePackage(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -229,18 +238,22 @@ public abstract class MonkeyDevice {
         return removePackage(packageName);
     }
 
-    @MonkeyRunnerExported(doc = "Start the Activity specified by the intent.",
+    @MonkeyRunnerExported(doc = "Starts an Activity on the device by sending an Intent " +
+            "constructed from the specified parameters.",
             args = { "uri", "action", "data", "mimetype", "categories", "extras",
                      "component", "flags" },
-            argDocs = { "The URI for the intent",
-                        "The action for the intent",
-                        "The data URI for the intent",
-                        "The mime type for the intent",
-                        "The list of category names for the intent",
-                        "A dictionary of extras to add to the intent.  Types of these extras " +
-                            "are inferred from the python types of the values",
-                        "The component of the intent",
-                        "A list of flags for the intent" })
+            argDocs = { "The URI for the Intent.",
+                        "The action for the Intent.",
+                        "The data URI for the Intent",
+                        "The mime type for the Intent.",
+                        "A Python iterable containing the category names for the Intent.",
+                        "A dictionary of extras to add to the Intent. Types of these extras " +
+                        "are inferred from the python types of the values.",
+                        "The component of the Intent.",
+                        "An iterable of flags for the Intent." +
+                        "All arguments are optional. The default value for each argument is null." +
+                        "(see android.content.Intent)"})
+
     public void startActivity(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -258,18 +271,21 @@ public abstract class MonkeyDevice {
         startActivity(uri, action, data, mimetype, categories, extras, component, flags);
     }
 
-    @MonkeyRunnerExported(doc = "Start the specified broadcast intent on the device.",
+    @MonkeyRunnerExported(doc = "Sends a broadcast intent to the device.",
             args = { "uri", "action", "data", "mimetype", "categories", "extras",
                      "component", "flags" },
-            argDocs = { "The URI for the intent",
-                        "The action for the intent",
-                        "The data URI for the intent",
-                        "The mime type for the intent",
-                        "The list of category names for the intent",
-                        "A dictionary of extras to add to the intent.  Types of these extras " +
-                            "are inferred from the python types of the values",
-                        "The component of the intent",
-                        "A list of flags for the intent" })
+                     argDocs = { "The URI for the Intent.",
+                             "The action for the Intent.",
+                             "The data URI for the Intent",
+                             "The mime type for the Intent.",
+                             "An iterable of category names for the Intent.",
+                             "A dictionary of extras to add to the Intent. Types of these extras " +
+                             "are inferred from the python types of the values.",
+                             "The component of the Intent.",
+                             "An iterable of flags for the Intent." +
+                             "All arguments are optional. " + "" +
+                             "The default value for each argument is null." +
+                             "(see android.content.Context.sendBroadcast(Intent))"})
     public void broadcastIntent(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -287,12 +303,21 @@ public abstract class MonkeyDevice {
         broadcastIntent(uri, action, data, mimetype, categories, extras, component, flags);
     }
 
-    @MonkeyRunnerExported(doc = "Instrument the specified package and return the results from it.",
+    @MonkeyRunnerExported(doc = "Run the specified package with instrumentation and return " +
+            "the output it generates. Use this to run a test package using " +
+            "InstrumentationTestRunner.",
             args = { "className", "args" },
-            argDocs = { "The class name to instrument (like com.android.test/.TestInstrument)",
-                        "A Map of String to Objects for the aruments to pass to this " +
-                        "instrumentation (default value is None)" },
-            returns = "A map of string to objects for the results this instrumentation returned")
+            argDocs = { "The class to run with instrumentation. The format is " +
+                        "packagename/classname. Use packagename to specify the Android package " +
+                        "to run, and classname to specify the class to run within that package. " +
+                        "For test packages, this is usually " +
+                        "testpackagename/InstrumentationTestRunner",
+                        "A map of strings to objects containing the arguments to pass to this " +
+                        "instrumentation (default value is None)." },
+            returns = "A map of strings to objects for the output from the package. " +
+                      "For a test package, contains a single key-value pair: the key is 'stream' " +
+                      "and the value is a string containing the test output.")
+
     public PyDictionary instrument(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
