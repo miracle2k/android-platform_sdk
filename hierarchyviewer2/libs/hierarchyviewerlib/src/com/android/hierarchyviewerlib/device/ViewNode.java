@@ -76,6 +76,12 @@ public class ViewNode {
 
     public int index;
 
+    public double measureTime;
+
+    public double layoutTime;
+
+    public double drawTime;
+
     public ViewNode(ViewNode parent, String data) {
         this.parent = parent;
         index = this.parent == null ? 0 : this.parent.children.size();
@@ -88,6 +94,10 @@ public class ViewNode {
         delimIndex = data.indexOf(' ');
         hashCode = data.substring(0, delimIndex);
         loadProperties(data.substring(delimIndex + 1).trim());
+
+        measureTime = -1;
+        layoutTime = -1;
+        drawTime = -1;
     }
 
     private void loadProperties(String data) {

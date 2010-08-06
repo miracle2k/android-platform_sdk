@@ -20,6 +20,7 @@ import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.models.DeviceSelectionModel;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
+import com.android.hierarchyviewerlib.models.TreeViewModel;
 
 public class HierarchyViewerApplication {
     public static void main(String[] args) {
@@ -27,6 +28,7 @@ public class HierarchyViewerApplication {
         ComponentRegistry.setDirector(director);
         ComponentRegistry.setDeviceSelectionModel(new DeviceSelectionModel());
         ComponentRegistry.setPixelPerfectModel(new PixelPerfectModel());
+        ComponentRegistry.setTreeViewModel(new TreeViewModel());
         director.initDebugBridge();
         director.startListenForDevices();
         director.populateDeviceSelectionModel();

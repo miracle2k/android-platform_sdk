@@ -39,12 +39,10 @@ import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 
-public class PixelPerfect implements ImageChangeListener {
+public class PixelPerfect extends ScrolledComposite implements ImageChangeListener {
     private Canvas canvas;
 
     private PixelPerfectModel model;
-
-    private ScrolledComposite scrolledComposite;
 
     private Image image;
 
@@ -65,11 +63,11 @@ public class PixelPerfect implements ImageChangeListener {
     private ViewNode selectedNode;
 
     public PixelPerfect(Composite parent) {
-        scrolledComposite = new ScrolledComposite(parent, SWT.H_SCROLL | SWT.V_SCROLL);
-        canvas = new Canvas(scrolledComposite, SWT.NONE);
-        scrolledComposite.setContent(canvas);
-        scrolledComposite.setExpandHorizontal(true);
-        scrolledComposite.setExpandVertical(true);
+        super(parent, SWT.H_SCROLL | SWT.V_SCROLL);
+        canvas = new Canvas(this, SWT.NONE);
+        setContent(canvas);
+        setExpandHorizontal(true);
+        setExpandVertical(true);
         model = ComponentRegistry.getPixelPerfectModel();
         model.addImageChangeListener(this);
 
@@ -83,7 +81,9 @@ public class PixelPerfect implements ImageChangeListener {
         paddingColor = new Color(Display.getDefault(), new RGB(0, 0, 255));
     }
 
-    public void terminate() {
+    @Override
+    public void dispose() {
+        super.dispose();
         if (image != null) {
             image.dispose();
         }
@@ -92,8 +92,9 @@ public class PixelPerfect implements ImageChangeListener {
         paddingColor.dispose();
     }
 
-    public void setFocus() {
-        canvas.setFocus();
+    @Override
+    public boolean setFocus() {
+        return canvas.setFocus();
     }
 
     private MouseListener mouseListener = new MouseListener() {
@@ -220,7 +221,7 @@ public class PixelPerfect implements ImageChangeListener {
         }
     };
 
-    private void redraw() {
+    private void doRedraw() {
         Display.getDefault().asyncExec(new Runnable() {
             public void run() {
                 canvas.redraw();
@@ -252,7 +253,7 @@ public class PixelPerfect implements ImageChangeListener {
         }
         Display.getDefault().asyncExec(new Runnable() {
             public void run() {
-                scrolledComposite.setMinSize(width, height);
+                setMinSize(width, height);
             }
         });
     }
@@ -263,28 +264,28 @@ public class PixelPerfect implements ImageChangeListener {
             crosshairLocation = model.getCrosshairLocation();
             selectedNode = model.getSelected();
         }
-        redraw();
+        doRedraw();
     }
 
     public void imageChanged() {
         synchronized (this) {
             loadImage();
         }
-        redraw();
+        doRedraw();
     }
 
     public void crosshairMoved() {
         synchronized (this) {
             crosshairLocation = model.getCrosshairLocation();
         }
-        redraw();
+        doRedraw();
     }
 
     public void selectionChanged() {
         synchronized (this) {
             selectedNode = model.getSelected();
         }
-        redraw();
+        doRedraw();
     }
 
     public void focusChanged() {
@@ -292,6 +293,10 @@ public class PixelPerfect implements ImageChangeListener {
             loadImage();
             selectedNode = model.getSelected();
         }
-        redraw();
+        doRedraw();
+    }
+
+    public void zoomChanged() {
+        // pass
     }
 }

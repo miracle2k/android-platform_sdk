@@ -17,15 +17,21 @@
 package com.android.hierarchyviewer;
 
 import com.android.ddmuilib.ImageLoader;
+import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyvieweruilib.DeviceSelector;
 import com.android.hierarchyvieweruilib.PixelPerfect;
 import com.android.hierarchyvieweruilib.PixelPerfectLoupe;
 import com.android.hierarchyvieweruilib.PixelPerfectTree;
+import com.android.hierarchyvieweruilib.TreeView;
+import com.android.hierarchyvieweruilib.TreeViewOverview;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Slider;
@@ -41,23 +47,22 @@ public class UIThread {
         shell.open();
         Shell shell2 = new Shell(display);
         shell2.setLayout(new FillLayout());
-        PixelPerfect pixelPerfect = new PixelPerfect(shell2);
-        shell2.open();
-        Shell shell3 = new Shell(display);
-        shell3.setLayout(new FillLayout());
-        final PixelPerfectLoupe pixelPerfectLoupe = new PixelPerfectLoupe(shell3);
-        shell3.open();
-        Shell shell4 = new Shell(display);
-        shell4.setLayout(new FillLayout());
-        PixelPerfectTree pixelPerfectTree = new PixelPerfectTree(shell4);
-        shell4.open();
-        Shell shell5 = new Shell(display);
-        shell5.setLayout(new FillLayout());
-        final Slider slider = new Slider(shell5, SWT.HORIZONTAL);
+        /*
+
+
+        
+        PixelPerfectTree pixelPerfectTree = new PixelPerfectTree(shell2);
+        Composite overview = new Composite(shell2, SWT.NONE);
+        overview.setLayout(new GridLayout());
+        PixelPerfect pixelPerfect = new PixelPerfect(overview);
+        pixelPerfect.setLayoutData(new GridData(GridData.FILL_BOTH));
+        final Slider slider = new Slider(overview, SWT.HORIZONTAL);
+        slider.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         slider.setMinimum(2);
         slider.setMaximum(25);
         slider.setSelection(8);
         slider.setThumb(1);
+        final PixelPerfectLoupe pixelPerfectLoupe = new PixelPerfectLoupe(shell2);
         slider.addSelectionListener(new SelectionListener() {
             private int oldZoom = 8;
 
@@ -68,15 +73,22 @@ public class UIThread {
             public void widgetSelected(SelectionEvent arg0) {
                 int newZoom = slider.getSelection();
                 if (newZoom != oldZoom) {
-                    pixelPerfectLoupe.setZoom(newZoom);
+                    ComponentRegistry.getPixelPerfectModel().setZoom(newZoom);
                     oldZoom = newZoom;
                 }
             }
 
         });
-        shell5.open();
-        while (!shell.isDisposed() && !shell2.isDisposed() && !shell3.isDisposed()
-                && !shell4.isDisposed()) {
+        shell2.open();
+        */
+        TreeView treeView = new TreeView(shell2);
+        shell2.open();
+        Shell shell3 = new Shell(display);
+        shell3.setLayout(new FillLayout());
+        TreeViewOverview treeViewOverview = new TreeViewOverview(shell3);
+        shell3.open();
+        // ComponentRegistry.getDirector().loadViewTreeData(null);
+        while (!shell.isDisposed() && !shell2.isDisposed()) {
             if (!display.readAndDispatch()) {
                 display.sleep();
             }
@@ -87,19 +99,9 @@ public class UIThread {
         if (!shell2.isDisposed()) {
             shell2.dispose();
         }
-        if (!shell3.isDisposed()) {
-            shell3.dispose();
-        }
-        if (!shell4.isDisposed()) {
-            shell4.dispose();
-        }
 
         // NO LONGER TESTING STUFF.
 
-        deviceSelector.terminate();
-        pixelPerfect.terminate();
-        pixelPerfectLoupe.terminate();
-        pixelPerfectTree.terminate();
         ImageLoader.dispose();
         display.dispose();
     }
