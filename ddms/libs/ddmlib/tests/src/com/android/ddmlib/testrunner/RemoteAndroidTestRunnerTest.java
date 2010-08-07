@@ -289,7 +289,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
      */
     private static class EmptyListener implements ITestRunListener {
 
-        public void testEnded(TestIdentifier test) {
+        public void testEnded(TestIdentifier test, Map<String, String> testMetrics) {
             // ignore
         }
 
