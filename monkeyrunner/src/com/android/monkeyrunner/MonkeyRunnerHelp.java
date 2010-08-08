@@ -161,6 +161,28 @@ public final class MonkeyRunnerHelp {
         return "";
     }
 
+    /**
+     * Parse the value string into paragraphs and put them into the
+     * HDF under this specified prefix.  Each paragraph will appear
+     * numbered under the prefix.  For example:
+     *
+     * paragraphsIntoHDF("a.b.c", ....)
+     *
+     * Will create paragraphs under "a.b.c.0", "a.b.c.1", etc.
+     *
+     * @param prefix The prefix to put the values under.
+     * @param value the value to parse paragraphs from.
+     * @param hdf the HDF to add the entries to.
+     */
+    private static void paragraphsIntoHDF(String prefix, String value, HDF hdf) {
+        String paragraphs[] = value.split("\n");
+        int x = 0;
+        for (String para : paragraphs) {
+            hdf.setValue(prefix + "." + x, para);
+            x++;
+        }
+    }
+
     private static HDF buildHelpHdf() {
         HDF hdf = new HDF();
 
@@ -177,7 +199,7 @@ public final class MonkeyRunnerHelp {
 
             hdf.setValue(prefix + NAME, clz.getCanonicalName());
             MonkeyRunnerExported annotation = clz.getAnnotation(MonkeyRunnerExported.class);
-            hdf.setValue(prefix + DOC, annotation.doc());
+            paragraphsIntoHDF(prefix + DOC, annotation.doc(), hdf);
             hdf.setValue(prefix + TYPE, Type.ENUM.name());
 
             // Now go through the enumeration constants
@@ -188,7 +210,7 @@ public final class MonkeyRunnerHelp {
                     String argPrefix = prefix + ARGUMENT + "." + x + ".";
                     hdf.setValue(argPrefix + NAME, constants[x].toString());
                     if (argDocs.length > x) {
-                        hdf.setValue(argPrefix + DOC, argDocs[x]);
+                        paragraphsIntoHDF(argPrefix + DOC, argDocs[x], hdf);
                     }
                 }
             }
@@ -202,7 +224,7 @@ public final class MonkeyRunnerHelp {
             String className = m.getDeclaringClass().getCanonicalName();
             String methodName = className + "." + m.getName();
             hdf.setValue(prefix + NAME, methodName);
-            hdf.setValue(prefix + DOC, annotation.doc());
+            paragraphsIntoHDF(prefix + DOC, annotation.doc(), hdf);
             if (annotation.args().length > 0) {
                 String[] argDocs = annotation.argDocs();
                 String[] aargs = annotation.args();
@@ -211,12 +233,12 @@ public final class MonkeyRunnerHelp {
 
                     hdf.setValue(argPrefix + NAME, aargs[x]);
                     if (argDocs.length > x) {
-                        hdf.setValue(argPrefix + DOC, argDocs[x]);
+                        paragraphsIntoHDF(argPrefix + DOC, argDocs[x], hdf);
                     }
                 }
             }
             if (!"".equals(annotation.returns())) {
-                hdf.setValue(prefix + RETURNS, annotation.returns());
+                paragraphsIntoHDF(prefix + RETURNS, annotation.returns(), hdf);
             }
             outputItemCount++;
         }

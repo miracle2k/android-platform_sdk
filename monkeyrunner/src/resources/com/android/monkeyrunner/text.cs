@@ -1,9 +1,10 @@
 MonkeyRunner help
 <?cs each:item = help ?>
 <?cs var:item.name ?>
-  <?cs var:item.doc ?>
+  <?cs each:docpara = item.doc ?><?cs var:docpara ?>
+  <?cs /each ?>
 
 <?cs if:subcount(item.argument) ?>  Args:<?cs each:arg = item.argument ?>
-    <?cs var:arg.name ?> - <?cs var:arg.doc ?><?cs /each ?>
-<?cs /if ?>  Returns: <?cs var:item.returns ?>
+    <?cs var:arg.name ?> - <?cs each:argdocpara = arg.doc ?><?cs var:argdocpara ?> <?cs /each ?><?cs /each ?>
+<?cs /if ?>  Returns: <?cs each:retdocpara = item.returns ?><?cs var:retdocpara ?> <?cs /each ?>
 <?cs /each ?>
