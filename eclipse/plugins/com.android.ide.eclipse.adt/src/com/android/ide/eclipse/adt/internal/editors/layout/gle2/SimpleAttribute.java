@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.eclipse.adt.annotations.VisibleForTesting;
+import com.android.ide.eclipse.adt.annotations.VisibleForTesting.Visibility;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement.IDragAttribute;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode.IAttribute;
 
@@ -85,7 +87,8 @@ public class SimpleAttribute implements IDragAttribute, IAttribute {
     private static final Pattern REGEXP =
         Pattern.compile("[^@]*@([^:]+):([^=]*)=([^\n]*)\n*");       //$NON-NLS-1$
 
-    static SimpleAttribute parseString(String value) {
+    @VisibleForTesting(visibility=Visibility.PACKAGE)
+    public static SimpleAttribute parseString(String value) {
         Matcher m = REGEXP.matcher(value);
         if (m.matches()) {
             return new SimpleAttribute(m.group(2), m.group(1), m.group(3));

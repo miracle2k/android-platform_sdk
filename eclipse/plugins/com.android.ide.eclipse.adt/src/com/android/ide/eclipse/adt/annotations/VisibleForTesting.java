@@ -1,0 +1,51 @@
+/*
+ * Copyright (C) 2010 The Android Open Source Project
+ *
+ * Licensed under the Eclipse Public License, Version 1.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.eclipse.org/org/documents/epl-v10.php
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.ide.eclipse.adt.annotations;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+/**
+ * Denotes that the class, method or field has its visibility relaxed so
+ * that unit tests can access it.
+ * <p/>
+ * When running the AdtTest Plugin in a headless Eclipse configuration,
+ * AdtTest <em>cannot</em> access package-private members of the ADT plugin
+ * so we need to relax the visibility of certain classes or methods.
+ * <p/>
+ * The <code>visibility</code> argument can be used to specific what the original
+ * visibility should have been if it had not been made public for testing.
+ * The default is to consider the element private.
+ */
+@Retention(RetentionPolicy.CLASS)
+public @interface VisibleForTesting {
+    /** Intended visibility if the element had not been made public for testing. */
+    enum Visibility {
+        /** The element should be considered protected. */
+        PROTECTED,
+        /** The element should be considered package-private. */
+        PACKAGE,
+        /** The element should be considered private. */
+        PRIVATE
+    }
+
+    /**
+     * Intended visibility if the element had not been made public for testing.
+     * If not specified, one should assume the element originally intented to be private.
+     */
+    Visibility visibility() default Visibility.PRIVATE;
+}
