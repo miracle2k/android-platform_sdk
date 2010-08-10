@@ -77,25 +77,47 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
             DeviceBridge.setupDeviceForward(device);
             if (!DeviceBridge.isViewServerRunning(device)) {
                 if (!DeviceBridge.startViewServer(device)) {
-                    DeviceBridge.removeDeviceForward(device);
-                    Log.e(TAG, "Unable to debug device " + device);
+                    // Let's do something interesting here... Try again in 2
+                    // seconds.
+                    executeInBackground(new Runnable() {
+                        public void run() {
+                            try {
+                                Thread.sleep(2000);
+                            } catch (InterruptedException e) {
+                                Log.e(TAG, "Unable to debug device " + device);
+                                DeviceBridge.removeDeviceForward(device);
+                                return;
+                            }
+                            if (!DeviceBridge.startViewServer(device)) {
+                                Log.e(TAG, "Unable to debug device " + device);
+                                DeviceBridge.removeDeviceForward(device);
+                            } else {
+                                loadViewServerInfoAndWindows(device);
+                            }
+                        }
+                    });
                     return;
                 }
             }
-            executeInBackground(new Runnable() {
-                public void run() {
-                    ViewServerInfo viewServerInfo = DeviceBridge.loadViewServerInfo(device);
-                    Window[] windows = DeviceBridge.loadWindows(device);
-                    ComponentRegistry.getDeviceSelectionModel().addDevice(device, windows);
-                    if (viewServerInfo.protocolVersion >= 3) {
-                        WindowUpdater.startListenForWindowChanges(HierarchyViewerDirector.this,
-                                device);
-                        focusChanged(device);
-                    }
-                }
-            });
-
+            loadViewServerInfoAndWindows(device);
         }
+    }
+
+    private void loadViewServerInfoAndWindows(final IDevice device) {
+        executeInBackground(new Runnable() {
+            public void run() {
+                ViewServerInfo viewServerInfo = DeviceBridge.loadViewServerInfo(device);
+                if (viewServerInfo == null) {
+                    return;
+                }
+                Window[] windows = DeviceBridge.loadWindows(device);
+                ComponentRegistry.getDeviceSelectionModel().addDevice(device, windows);
+                if (viewServerInfo.protocolVersion >= 3) {
+                    WindowUpdater.startListenForWindowChanges(HierarchyViewerDirector.this, device);
+                    focusChanged(device);
+                }
+            }
+        });
     }
 
     public void deviceDisconnected(IDevice device) {

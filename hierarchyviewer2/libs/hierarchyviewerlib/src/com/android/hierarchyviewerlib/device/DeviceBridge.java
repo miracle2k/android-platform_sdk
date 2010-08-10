@@ -257,8 +257,8 @@ public class DeviceBridge {
     }
 
     public static ViewServerInfo loadViewServerInfo(IDevice device) {
-        int server = 2;
-        int protocol = 2;
+        int server = -1;
+        int protocol = -1;
         DeviceConnection connection = null;
         try {
             connection = new DeviceConnection(device);
@@ -288,6 +288,9 @@ public class DeviceBridge {
             if (connection != null) {
                 connection.close();
             }
+        }
+        if (server == -1 || protocol == -1) {
+            return null;
         }
         ViewServerInfo returnValue = new ViewServerInfo(server, protocol);
         synchronized (viewServerInfo) {

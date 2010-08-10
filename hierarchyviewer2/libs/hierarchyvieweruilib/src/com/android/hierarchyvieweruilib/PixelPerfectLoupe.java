@@ -23,6 +23,8 @@ import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListen
 import com.android.hierarchyviewerlib.models.PixelPerfectModel.Point;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseWheelListener;
@@ -71,24 +73,26 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
         addPaintListener(paintListener);
         addMouseListener(mouseListener);
         addMouseWheelListener(mouseWheelListener);
+        addDisposeListener(disposeListener);
 
         crosshairColor = new Color(Display.getDefault(), new RGB(255, 94, 254));
 
         transform = new Transform(Display.getDefault());
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
-        if (image != null) {
-            image.dispose();
+    private DisposeListener disposeListener = new DisposeListener() {
+        public void widgetDisposed(DisposeEvent e) {
+            model.removeImageChangeListener(PixelPerfectLoupe.this);
+            if (image != null) {
+                image.dispose();
+            }
+            crosshairColor.dispose();
+            transform.dispose();
+            if (grid != null) {
+                grid.dispose();
+            }
         }
-        crosshairColor.dispose();
-        transform.dispose();
-        if (grid != null) {
-            grid.dispose();
-        }
-    }
+    };
 
     private MouseListener mouseListener = new MouseListener() {
 

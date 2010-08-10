@@ -31,6 +31,8 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Font;
@@ -158,6 +160,8 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
         tree.setLinesVisible(true);
         tree.addSelectionListener(this);
 
+        addDisposeListener(disposeListener);
+
         loadResources();
 
         model = ComponentRegistry.getDeviceSelectionModel();
@@ -192,12 +196,12 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
                         .getSystemColor(SWT.COLOR_BLUE));
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
-        model.removeWindowChangeListener(this);
-        boldFont.dispose();
-    }
+    private DisposeListener disposeListener = new DisposeListener() {
+        public void widgetDisposed(DisposeEvent e) {
+            model.removeWindowChangeListener(DeviceSelector.this);
+            boldFont.dispose();
+        }
+    };
 
     @Override
     public boolean setFocus() {
