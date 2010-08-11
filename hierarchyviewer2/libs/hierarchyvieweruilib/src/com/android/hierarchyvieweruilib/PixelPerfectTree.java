@@ -136,10 +136,6 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
         treeViewer.setAutoExpandLevel(TreeViewer.ALL_LEVELS);
 
         tree = treeViewer.getTree();
-        TreeColumn col = new TreeColumn(tree, SWT.LEFT);
-        col.setText("Name");
-        col.pack();
-        tree.setHeaderVisible(true);
         tree.addSelectionListener(this);
 
         loadResources();

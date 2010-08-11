@@ -33,6 +33,8 @@ public class TreeViewModel {
 
     private DrawableViewNode tree;
 
+    private DrawableViewNode selectedNode;
+
     private Rectangle viewport;
 
     private double zoom;
@@ -48,8 +50,16 @@ public class TreeViewModel {
             tree.placeRoot();
             viewport = null;
             zoom = 1;
+            selectedNode = null;
         }
         notifyTreeChanged();
+    }
+
+    public void setSelection(DrawableViewNode selectedNode) {
+        synchronized (this) {
+            this.selectedNode = selectedNode;
+        }
+        notifySelectionChanged();
     }
 
     public void setViewport(Rectangle viewport) {
@@ -113,8 +123,16 @@ public class TreeViewModel {
         }
     }
 
+    public DrawableViewNode getSelection() {
+        synchronized (this) {
+            return selectedNode;
+        }
+    }
+
     public static interface TreeChangeListener {
         public void treeChanged();
+
+        public void selectionChanged();
 
         public void viewportChanged();
 
@@ -138,6 +156,15 @@ public class TreeViewModel {
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].treeChanged();
+            }
+        }
+    }
+
+    public void notifySelectionChanged() {
+        TreeChangeListener[] listeners = getTreeChangeListenerList();
+        if (listeners != null) {
+            for (int i = 0; i < listeners.length; i++) {
+                listeners[i].selectionChanged();
             }
         }
     }

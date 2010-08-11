@@ -165,10 +165,10 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
                         int nodeTop = selectedNode.top;
                         int nodeWidth = selectedNode.width;
                         int nodeHeight = selectedNode.height;
-                        int nodeMarginLeft = Math.abs(selectedNode.marginLeft);
-                        int nodeMarginTop = Math.abs(selectedNode.marginTop);
-                        int nodeMarginRight = Math.abs(selectedNode.marginRight);
-                        int nodeMarginBottom = Math.abs(selectedNode.marginBottom);
+                        int nodeMarginLeft = selectedNode.marginLeft;
+                        int nodeMarginTop = selectedNode.marginTop;
+                        int nodeMarginRight = selectedNode.marginRight;
+                        int nodeMarginBottom = selectedNode.marginBottom;
                         int nodePadLeft = selectedNode.paddingLeft;
                         int nodePadTop = selectedNode.paddingTop;
                         int nodePadRight = selectedNode.paddingRight;

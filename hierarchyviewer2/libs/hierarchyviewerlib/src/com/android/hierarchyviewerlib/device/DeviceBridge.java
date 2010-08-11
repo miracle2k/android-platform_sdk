@@ -440,7 +440,15 @@ public class DeviceBridge {
             connection = new DeviceConnection(window.getDevice());
             connection.sendCommand("PROFILE " + window.encode() + " " + viewNode.toString());
             BufferedReader in = connection.getInputStream();
-            return loadProfileDataRecursive(viewNode, in);
+            int protocol;
+            synchronized (viewServerInfo) {
+                protocol = viewServerInfo.get(window.getDevice()).protocolVersion;
+            }
+            if (protocol < 3) {
+                return loadProfileData(viewNode, in);
+            } else {
+                return loadProfileDataRecursive(viewNode, in);
+            }
         } catch (IOException e) {
             Log.e(TAG, "Unable to load profiling data for window " + window.getTitle()
                     + " on device " + window.getDevice());
@@ -452,8 +460,7 @@ public class DeviceBridge {
         return false;
     }
 
-    private static boolean loadProfileDataRecursive(ViewNode node, BufferedReader in)
-            throws IOException {
+    private static boolean loadProfileData(ViewNode node, BufferedReader in) throws IOException {
         String line;
         if ((line = in.readLine()) == null || line.equalsIgnoreCase("-1 -1 -1")
                 || line.equalsIgnoreCase("DONE.")) {
@@ -463,6 +470,14 @@ public class DeviceBridge {
         node.measureTime = (Long.parseLong(data[0]) / 1000.0) / 1000.0;
         node.layoutTime = (Long.parseLong(data[1]) / 1000.0) / 1000.0;
         node.drawTime = (Long.parseLong(data[2]) / 1000.0) / 1000.0;
+        return true;
+    }
+
+    private static boolean loadProfileDataRecursive(ViewNode node, BufferedReader in)
+            throws IOException {
+        if (!loadProfileData(node, in)) {
+            return false;
+        }
         for (int i = 0; i < node.children.size(); i++) {
             if (!loadProfileDataRecursive(node.children.get(i), in)) {
                 return false;

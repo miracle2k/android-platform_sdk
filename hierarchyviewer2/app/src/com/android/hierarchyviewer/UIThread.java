@@ -22,6 +22,8 @@ import com.android.hierarchyvieweruilib.DeviceSelector;
 import com.android.hierarchyvieweruilib.PixelPerfect;
 import com.android.hierarchyvieweruilib.PixelPerfectLoupe;
 import com.android.hierarchyvieweruilib.PixelPerfectTree;
+import com.android.hierarchyvieweruilib.ProfileViewer;
+import com.android.hierarchyvieweruilib.PropertyViewer;
 import com.android.hierarchyvieweruilib.TreeView;
 import com.android.hierarchyvieweruilib.TreeViewOverview;
 
@@ -85,8 +87,12 @@ public class UIThread {
         shell2.open();
         Shell shell3 = new Shell(display);
         shell3.setLayout(new FillLayout());
-        TreeViewOverview treeViewOverview = new TreeViewOverview(shell3);
+        PropertyViewer propertyViewer = new PropertyViewer(shell3);
         shell3.open();
+        Shell shell4 = new Shell(display);
+        shell4.setLayout(new FillLayout());
+        ProfileViewer profileViewer = new ProfileViewer(shell4);
+        shell4.open();
         // ComponentRegistry.getDirector().loadViewTreeData(null);
         while (!shell.isDisposed() && !shell2.isDisposed() && !shell3.isDisposed()) {
             if (!display.readAndDispatch()) {
@@ -99,7 +105,7 @@ public class UIThread {
         if (!shell2.isDisposed()) {
             shell2.dispose();
         }
-        if (!shell3.isDisposed()) {
+        if(!shell3.isDisposed()) {
             shell3.dispose();
         }
 
