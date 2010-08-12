@@ -133,6 +133,7 @@
                         <xsd:enumeration value="small" />
                         <xsd:enumeration value="normal" />
                         <xsd:enumeration value="large" />
+                        <xsd:enumeration value="xlarge" />
                     </xsd:restriction>
                 </xsd:simpleType>
             </xsd:element>

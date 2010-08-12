@@ -23,7 +23,7 @@ import com.android.sdklib.resources.ScreenSize;
 import org.eclipse.swt.graphics.Image;
 
 /**
- * Resource Qualifier for Screen Size. Size can be "small", "normal", and "large"
+ * Resource Qualifier for Screen Size. Size can be "small", "normal", "large" and "x-large"
  */
 public class ScreenSizeQualifier extends EnumBasedResourceQualifier {
 
