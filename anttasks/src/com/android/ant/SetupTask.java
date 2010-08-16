@@ -119,11 +119,16 @@ public final class SetupTask extends ImportTask {
         Project antProject = getProject();
 
         // get the SDK location
-        File sdk = TaskHelper.getSdkLocation(antProject);
-        String sdkLocation = sdk.getPath();
+        File sdkDir = TaskHelper.getSdkLocation(antProject);
+        String sdkOsPath = sdkDir.getPath();
+
+        // Make sure the OS sdk path ends with a directory separator
+        if (sdkOsPath.length() > 0 && !sdkOsPath.endsWith(File.separator)) {
+            sdkOsPath += File.separator;
+        }
 
         // display SDK Tools revision
-        int toolsRevison = TaskHelper.getToolsRevision(sdk);
+        int toolsRevison = TaskHelper.getToolsRevision(sdkDir);
         if (toolsRevison != -1) {
             System.out.println("Android SDK Tools Revision " + toolsRevison);
         }
@@ -143,7 +148,7 @@ public final class SetupTask extends ImportTask {
 
         // load up the sdk targets.
         final ArrayList<String> messages = new ArrayList<String>();
-        SdkManager manager = SdkManager.createManager(sdkLocation, new ISdkLog() {
+        SdkManager manager = SdkManager.createManager(sdkOsPath, new ISdkLog() {
             public void error(Throwable t, String errorFormat, Object... args) {
                 if (errorFormat != null) {
                     messages.add(String.format("Error: " + errorFormat, args));
@@ -310,7 +315,7 @@ public final class SetupTask extends ImportTask {
                 rulesFolder = new File(rulesOSPath);
             } else {
                 // in this case we import the rules from the ant folder in the tools.
-                rulesFolder = new File(new File(sdkLocation, SdkConstants.FD_TOOLS),
+                rulesFolder = new File(new File(sdkOsPath, SdkConstants.FD_TOOLS),
                         SdkConstants.FD_ANT);
                 // the new rev is:
                 antBuildVersion = toolsRulesRev;
@@ -329,7 +334,7 @@ public final class SetupTask extends ImportTask {
             } else {
                 importedRulesFileName = String.format(
                         isLibrary ? RULES_LIBRARY : isTestProject ? RULES_TEST : RULES_MAIN,
-                        antBuildVersion);;
+                        antBuildVersion);
             }
 
             // now check the rules file exists.
@@ -342,14 +347,14 @@ public final class SetupTask extends ImportTask {
 
             // display the file being imported.
             // figure out the path relative to the SDK
-            String rulesLocation = rules.getAbsolutePath();
-            if (rulesLocation.startsWith(sdkLocation)) {
-                rulesLocation = rulesLocation.substring(sdkLocation.length());
-                if (rulesLocation.startsWith(File.separator)) {
-                    rulesLocation = rulesLocation.substring(1);
+            String rulesOsPath = rules.getAbsolutePath();
+            if (rulesOsPath.startsWith(sdkOsPath)) {
+                rulesOsPath = rulesOsPath.substring(sdkOsPath.length());
+                if (rulesOsPath.startsWith(File.separator)) {
+                    rulesOsPath = rulesOsPath.substring(1);
                 }
             }
-            System.out.println("\nImporting rules file: " + rulesLocation);
+            System.out.println("\nImporting rules file: " + rulesOsPath);
 
             // set the file location to import
             setFile(rules.getAbsolutePath());
@@ -624,7 +629,6 @@ public final class SetupTask extends ImportTask {
      * project properties.
      * @param baseFolder the base folder of the project (to resolve relative paths)
      * @param source a source of project properties.
-     * @return
      */
     private ArrayList<File> getDirectDependencies(File baseFolder, IPropertySource source) {
         ArrayList<File> libraries = new ArrayList<File>();
