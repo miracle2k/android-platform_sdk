@@ -9,16 +9,18 @@
 </ul>
 <?cs each:item = help ?>
 <h2><a name="<?cs name:item ?>"><?cs var:item.name ?></a></h2>
-  <p><?cs var:item.doc ?></p>
+  <?cs each:docpara = item.doc ?>
+  <p><?cs var:docpara ?></p>
+  <?cs /each ?>
     <?cs if:subcount(item.argument) ?>
 <h3>Args</h3>
 <ul>
       <?cs each:arg = item.argument ?>
-        <li><?cs var:arg.name ?> - <?cs var:arg.doc ?></li>
+        <li><?cs var:arg.name ?> - <?cs each:argdocpara = arg.doc ?><?cs var:argdocpara ?> <?cs /each ?>
       <?cs /each ?>
 </ul>
 <h3>Returns</h3>
-<p><?cs var:item.returns ?></p>
+<p><?cs each:retdocpara = item.returns ?><?cs var:retdocpara ?> <?cs /each ?></p>
 <?cs /if ?>
 <?cs /each ?>
 </body>
