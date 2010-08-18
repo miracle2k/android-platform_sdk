@@ -458,19 +458,22 @@ class UpdaterData {
                         // Display anything unexpected in the monitor.
                         String msg = t.getMessage();
                         if (msg != null) {
-                            monitor.setResult("Unexpected Error installing '%1$s': %2$s",
-                                    archive.getParentPackage().getShortDescription(), msg);
+                            msg = String.format("Unexpected Error installing '%1$s': %2$s: %3$s",
+                                    archive.getParentPackage().getShortDescription(),
+                                    t.getClass().getCanonicalName(), msg);
                         } else {
                             // no error info? get the stack call to display it
                             // At least that'll give us a better bug report.
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                             t.printStackTrace(new PrintStream(baos));
 
-                            // and display it
-                            monitor.setResult("Unexpected Error installing '%1$s'\n%2$s",
+                            msg = String.format("Unexpected Error installing '%1$s'\n%2$s",
                                     archive.getParentPackage().getShortDescription(),
                                     baos.toString());
                         }
+
+                        monitor.setResult(msg);
+                        mSdkLog.error(t, msg);
                     } finally {
 
                         // Always move the progress bar to the desired position.
