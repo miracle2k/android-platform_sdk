@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyvieweruilib;
+package com.android.hierarchyviewerlib.ui;
 
 import com.android.ddmlib.RawImage;
 import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.device.ViewNode;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
-import com.android.hierarchyviewerlib.models.PixelPerfectModel.Point;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
@@ -36,6 +35,7 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
@@ -63,6 +63,10 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
     private Point crosshairLocation;
 
     private ViewNode selectedNode;
+
+    private Image overlayImage;
+
+    private double overlayTransparency;
 
     public PixelPerfect(Composite parent) {
         super(parent, SWT.H_SCROLL | SWT.V_SCROLL);
@@ -127,7 +131,7 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
     };
 
     private void handleMouseEvent(MouseEvent e) {
-        synchronized (this) {
+        synchronized (PixelPerfect.this) {
             if (image == null) {
                 return;
             }
@@ -145,7 +149,7 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
 
     private PaintListener paintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
-            synchronized (this) {
+            synchronized (PixelPerfect.this) {
                 e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
                 e.gc.fillRectangle(0, 0, canvas.getSize().x, canvas.getSize().y);
                 if (image != null) {
@@ -153,6 +157,15 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
                     int leftOffset = canvas.getSize().x / 2 - width / 2;
                     int topOffset = canvas.getSize().y / 2 - height / 2;
                     e.gc.drawImage(image, leftOffset, topOffset);
+                    if (overlayImage != null) {
+                        e.gc.setAlpha((int) (overlayTransparency * 255));
+                        int overlayTopOffset =
+                                canvas.getSize().y / 2 + height / 2
+                                        - overlayImage.getBounds().height;
+                        e.gc.drawImage(overlayImage, leftOffset, overlayTopOffset);
+                        e.gc.setAlpha(255);
+                    }
+
                     if (selectedNode != null) {
                         // There are a few quirks here. First of all, margins
                         // are sometimes negative or positive numbers... Yet,
@@ -175,8 +188,8 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
                         int nodePadBottom = selectedNode.paddingBottom;
                         ViewNode cur = selectedNode;
                         while (cur.parent != null) {
-                            leftShift += cur.parent.left;
-                            topShift += cur.parent.top;
+                            leftShift += cur.parent.left - cur.parent.scrollX;
+                            topShift += cur.parent.top - cur.parent.scrollY;
                             cur = cur.parent;
                         }
 
@@ -235,47 +248,38 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
     }
 
     private void loadImage() {
-        final RawImage rawImage = model.getImage();
-        if (rawImage != null) {
-            ImageData imageData =
-                    new ImageData(rawImage.width, rawImage.height, rawImage.bpp,
-                            new PaletteData(rawImage.getRedMask(), rawImage.getGreenMask(),
-                                    rawImage.getBlueMask()), 1, rawImage.data);
-            if (image != null) {
-                image.dispose();
-            }
-            image = new Image(Display.getDefault(), imageData);
-            width = rawImage.width;
-            height = rawImage.height;
-
+        image = model.getImage();
+        if (image != null) {
+            width = image.getBounds().width;
+            height = image.getBounds().height;
         } else {
-            if (image != null) {
-                image.dispose();
-                image = null;
-            }
             width = 0;
             height = 0;
         }
-        Display.getDefault().asyncExec(new Runnable() {
-            public void run() {
-                setMinSize(width, height);
-            }
-        });
+        setMinSize(width, height);
     }
 
     public void imageLoaded() {
-        synchronized (this) {
-            loadImage();
-            crosshairLocation = model.getCrosshairLocation();
-            selectedNode = model.getSelected();
-        }
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    loadImage();
+                    crosshairLocation = model.getCrosshairLocation();
+                    selectedNode = model.getSelected();
+                }
+            }
+        });
         doRedraw();
     }
 
     public void imageChanged() {
-        synchronized (this) {
-            loadImage();
-        }
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    loadImage();
+                }
+            }
+        });
         doRedraw();
     }
 
@@ -294,14 +298,33 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
     }
 
     public void focusChanged() {
-        synchronized (this) {
-            loadImage();
-            selectedNode = model.getSelected();
-        }
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    loadImage();
+                    selectedNode = model.getSelected();
+                }
+            }
+        });
         doRedraw();
     }
 
     public void zoomChanged() {
         // pass
+    }
+
+    public void overlayChanged() {
+        synchronized (this) {
+            overlayImage = model.getOverlayImage();
+            overlayTransparency = model.getOverlayTransparency();
+        }
+        doRedraw();
+    }
+
+    public void overlayTransparencyChanged() {
+        synchronized (this) {
+            overlayTransparency = model.getOverlayTransparency();
+        }
+        doRedraw();
     }
 }

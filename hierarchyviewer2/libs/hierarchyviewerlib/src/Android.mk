@@ -16,8 +16,13 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
+LOCAL_JAVA_RESOURCE_DIRS := resources
 
-LOCAL_JAVA_LIBRARIES := ddmlib
+LOCAL_JAVA_LIBRARIES := ddmlib \
+    ddmuilib \
+    hierarchyviewerlib \
+    swt \
+    org.eclipse.jface_3.4.2.M20090107-0800
 
 LOCAL_MODULE := hierarchyviewerlib
 

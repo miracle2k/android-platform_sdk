@@ -24,6 +24,9 @@ import com.android.ddmlib.MultiLineReceiver;
 import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
 
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.widgets.Display;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -413,7 +416,7 @@ public class DeviceBridge {
                     currentNode = currentNode.parent;
                     currentDepth--;
                 }
-                currentNode = new ViewNode(currentNode, line.substring(depth));
+                currentNode = new ViewNode(window, currentNode, line.substring(depth));
                 currentDepth = depth;
             }
             if (currentNode == null) {
@@ -447,7 +450,11 @@ public class DeviceBridge {
             if (protocol < 3) {
                 return loadProfileData(viewNode, in);
             } else {
-                return loadProfileDataRecursive(viewNode, in);
+                boolean ret = loadProfileDataRecursive(viewNode, in);
+                if (ret) {
+                    viewNode.setProfileRatings();
+                }
+                return ret;
             }
         } catch (IOException e) {
             Log.e(TAG, "Unable to load profiling data for window " + window.getTitle()
@@ -485,4 +492,22 @@ public class DeviceBridge {
         }
         return true;
     }
+
+    public static Image loadCapture(Window window, ViewNode viewNode) {
+        DeviceConnection connection = null;
+        try {
+            connection = new DeviceConnection(window.getDevice());
+            connection.sendCommand("CAPTURE " + window.encode() + " " + viewNode.toString());
+            return new Image(Display.getDefault(), connection.getSocket().getInputStream());
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to capture data for node " + viewNode + " in window "
+                    + window.getTitle() + " on device " + window.getDevice());
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+        }
+        return null;
+    }
+
 }

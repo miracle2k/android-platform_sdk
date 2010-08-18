@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewerlib.scene;
+package com.android.hierarchyviewerlib.ui.util;
 
 import com.android.hierarchyviewerlib.device.ViewNode;
 
@@ -25,15 +25,23 @@ public class DrawableViewNode {
 
     public final ArrayList<DrawableViewNode> children = new ArrayList<DrawableViewNode>();
 
-    public final static int NODE_HEIGHT = 70;
+    public final static int NODE_HEIGHT = 110;
 
-    public final static int NODE_WIDTH = 100;
+    public final static int NODE_WIDTH = 170;
 
-    public final static int LEAF_NODE_SPACING = 5;
+    public final static int CONTENT_LEFT_RIGHT_PADDING = 3;
 
-    public final static int NON_LEAF_NODE_SPACING = 10;
+    public final static int CONTENT_TOP_BOTTOM_PADDING = 7;
 
-    public final static int PARENT_CHILD_SPACING = 40;
+    public final static int CONTENT_INTER_PADDING = 3;
+
+    public final static int INDEX_PADDING = 5;
+
+    public final static int LEAF_NODE_SPACING = 9;
+
+    public final static int NON_LEAF_NODE_SPACING = 15;
+
+    public final static int PARENT_CHILD_SPACING = 50;
 
     public final static int PADDING = 30;
 
@@ -52,6 +60,8 @@ public class DrawableViewNode {
     public int topSpacing;
 
     public int bottomSpacing;
+
+    public boolean treeDrawn;
 
     public static class Rectangle {
         public double x, y, width, height;
@@ -91,12 +101,18 @@ public class DrawableViewNode {
             this.x = x;
             this.y = y;
         }
+
+        @Override
+        public String toString() {
+            return "(" + x + ", " + y + ")";
+        }
     }
 
     public Rectangle bounds = new Rectangle();
 
     public DrawableViewNode(ViewNode viewNode) {
         this.viewNode = viewNode;
+        treeDrawn = !viewNode.willNotDraw;
         if (viewNode.children.size() == 0) {
             treeHeight = NODE_HEIGHT;
             treeWidth = NODE_WIDTH;
@@ -124,6 +140,7 @@ public class DrawableViewNode {
                         child.topSpacing = NON_LEAF_NODE_SPACING;
                     }
                 }
+                treeDrawn |= child.treeDrawn;
             }
             treeWidth += NODE_WIDTH + PARENT_CHILD_SPACING;
         }

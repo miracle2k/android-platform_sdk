@@ -18,21 +18,25 @@ package com.android.hierarchyviewer;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.ComponentRegistry;
-import com.android.hierarchyvieweruilib.DeviceSelector;
-import com.android.hierarchyvieweruilib.PixelPerfect;
-import com.android.hierarchyvieweruilib.PixelPerfectLoupe;
-import com.android.hierarchyvieweruilib.PixelPerfectTree;
-import com.android.hierarchyvieweruilib.ProfileViewer;
-import com.android.hierarchyvieweruilib.PropertyViewer;
-import com.android.hierarchyvieweruilib.TreeView;
-import com.android.hierarchyvieweruilib.TreeViewOverview;
+import com.android.hierarchyviewerlib.ui.DeviceSelector;
+import com.android.hierarchyviewerlib.ui.LayoutViewer;
+import com.android.hierarchyviewerlib.ui.PixelPerfect;
+import com.android.hierarchyviewerlib.ui.PixelPerfectLoupe;
+import com.android.hierarchyviewerlib.ui.PixelPerfectTree;
+import com.android.hierarchyviewerlib.ui.ProfileViewer;
+import com.android.hierarchyviewerlib.ui.PropertyViewer;
+import com.android.hierarchyviewerlib.ui.TreeView;
+import com.android.hierarchyviewerlib.ui.TreeViewOverview;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -47,66 +51,11 @@ public class UIThread {
         shell.setLayout(new FillLayout());
         DeviceSelector deviceSelector = new DeviceSelector(shell);
         shell.open();
-        Shell shell2 = new Shell(display);
-        shell2.setLayout(new FillLayout());
-        /*
-
-
         
-        PixelPerfectTree pixelPerfectTree = new PixelPerfectTree(shell2);
-        Composite overview = new Composite(shell2, SWT.NONE);
-        overview.setLayout(new GridLayout());
-        PixelPerfect pixelPerfect = new PixelPerfect(overview);
-        pixelPerfect.setLayoutData(new GridData(GridData.FILL_BOTH));
-        final Slider slider = new Slider(overview, SWT.HORIZONTAL);
-        slider.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        slider.setMinimum(2);
-        slider.setMaximum(25);
-        slider.setSelection(8);
-        slider.setThumb(1);
-        final PixelPerfectLoupe pixelPerfectLoupe = new PixelPerfectLoupe(shell2);
-        slider.addSelectionListener(new SelectionListener() {
-            private int oldZoom = 8;
-
-            public void widgetDefaultSelected(SelectionEvent arg0) {
-                // pass
-            }
-
-            public void widgetSelected(SelectionEvent arg0) {
-                int newZoom = slider.getSelection();
-                if (newZoom != oldZoom) {
-                    ComponentRegistry.getPixelPerfectModel().setZoom(newZoom);
-                    oldZoom = newZoom;
-                }
-            }
-
-        });
-        shell2.open();
-        */
-        TreeView treeView = new TreeView(shell2);
-        shell2.open();
-        Shell shell3 = new Shell(display);
-        shell3.setLayout(new FillLayout());
-        PropertyViewer propertyViewer = new PropertyViewer(shell3);
-        shell3.open();
-        Shell shell4 = new Shell(display);
-        shell4.setLayout(new FillLayout());
-        ProfileViewer profileViewer = new ProfileViewer(shell4);
-        shell4.open();
-        // ComponentRegistry.getDirector().loadViewTreeData(null);
-        while (!shell.isDisposed() && !shell2.isDisposed() && !shell3.isDisposed()) {
+        while (!shell.isDisposed()) {
             if (!display.readAndDispatch()) {
                 display.sleep();
             }
-        }
-        if (!shell.isDisposed()) {
-            shell.dispose();
-        }
-        if (!shell2.isDisposed()) {
-            shell2.dispose();
-        }
-        if(!shell3.isDisposed()) {
-            shell3.dispose();
         }
 
         // NO LONGER TESTING STUFF.

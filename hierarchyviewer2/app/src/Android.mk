@@ -22,7 +22,6 @@ LOCAL_JAVA_LIBRARIES := \
     ddmlib \
     ddmuilib \
     hierarchyviewerlib \
-    hierarchyvieweruilib \
     swt \
     sdklib
 

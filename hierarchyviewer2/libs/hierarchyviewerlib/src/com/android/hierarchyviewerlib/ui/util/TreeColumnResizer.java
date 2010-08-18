@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyvieweruilib.util;
+package com.android.hierarchyviewerlib.ui.util;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
@@ -30,6 +30,11 @@ public class TreeColumnResizer {
     private Composite control;
     private int column1Width;
     private int column2Width;
+
+    private final static int MIN_COLUMN1_WIDTH = 18;
+
+    private final static int MIN_COLUMN2_WIDTH = 3;
+
     public TreeColumnResizer(Composite control, TreeColumn column1, TreeColumn column2) {
         this.control = control;
         this.column1 = column1;
@@ -79,9 +84,21 @@ public class TreeColumnResizer {
             int widthDif = column1Width - column1.getWidth();
             column1Width -= widthDif;
             column2Width += widthDif;
-            if (column2Width < 0) {
-                column1Width += column2Width;
-                column2Width = 0;
+            boolean column1Changed = false;
+
+            // Strange, but these constants make the columns look the same.
+
+            if (column1Width < MIN_COLUMN1_WIDTH) {
+                column2Width -= MIN_COLUMN1_WIDTH - column1Width;
+                column1Width += MIN_COLUMN1_WIDTH - column1Width;
+                column1Changed = true;
+            }
+            if (column2Width < MIN_COLUMN2_WIDTH) {
+                column1Width += column2Width - MIN_COLUMN2_WIDTH;
+                column2Width = MIN_COLUMN2_WIDTH;
+                column1Changed = true;
+            }
+            if (column1Changed) {
                 column1.removeListener(SWT.Resize, this);
                 column1.setWidth(column1Width);
                 column1.addListener(SWT.Resize, this);

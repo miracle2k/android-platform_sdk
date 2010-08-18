@@ -20,6 +20,10 @@ import com.android.ddmlib.IDevice;
 import com.android.ddmlib.RawImage;
 import com.android.hierarchyviewerlib.device.ViewNode;
 
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.widgets.Display;
+
 import java.util.ArrayList;
 
 public class PixelPerfectModel {
@@ -30,20 +34,9 @@ public class PixelPerfectModel {
 
     private static final int DEFAULT_ZOOM = 8;
 
-    public static class Point {
-        public int x;
-
-        public int y;
-
-        Point(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
-
     private IDevice device;
 
-    private RawImage image;
+    private Image image;
 
     private Point crosshairLocation;
 
@@ -56,19 +49,31 @@ public class PixelPerfectModel {
     private final ArrayList<ImageChangeListener> imageChangeListeners =
             new ArrayList<ImageChangeListener>();
 
-    public void setData(IDevice device, RawImage image, ViewNode viewNode) {
-        synchronized (this) {
-            this.device = device;
-            this.image = image;
-            this.viewNode = viewNode;
-            if (image != null) {
-                this.crosshairLocation = new Point(image.width / 2, image.height / 2);
-            } else {
-                this.crosshairLocation = null;
+    private Image overlayImage;
+
+    private double overlayTransparency = 0.5;
+
+    public void setData(final IDevice device, final Image image, final ViewNode viewNode) {
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (PixelPerfectModel.this) {
+                    PixelPerfectModel.this.device = device;
+                    if (PixelPerfectModel.this.image != null) {
+                        PixelPerfectModel.this.image.dispose();
+                    }
+                    PixelPerfectModel.this.image = image;
+                    PixelPerfectModel.this.viewNode = viewNode;
+                    if (image != null) {
+                        PixelPerfectModel.this.crosshairLocation =
+                                new Point(image.getBounds().width / 2, image.getBounds().height / 2);
+                    } else {
+                        PixelPerfectModel.this.crosshairLocation = null;
+                    }
+                    PixelPerfectModel.this.selected = null;
+                    zoom = DEFAULT_ZOOM;
+                }
             }
-            this.selected = null;
-            zoom = DEFAULT_ZOOM;
-        }
+        });
         notifyImageLoaded();
     }
 
@@ -86,12 +91,19 @@ public class PixelPerfectModel {
         notifySelectionChanged();
     }
 
-    public void setFocusData(RawImage image, ViewNode viewNode) {
-        synchronized (this) {
-            this.image = image;
-            this.viewNode = viewNode;
-            this.selected = null;
-        }
+    public void setFocusData(final Image image, final ViewNode viewNode) {
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (PixelPerfectModel.this) {
+                    if (PixelPerfectModel.this.image != null) {
+                        PixelPerfectModel.this.image.dispose();
+                    }
+                    PixelPerfectModel.this.image = image;
+                    PixelPerfectModel.this.viewNode = viewNode;
+                    PixelPerfectModel.this.selected = null;
+                }
+            }
+        });
         notifyFocusChanged();
     }
 
@@ -108,6 +120,29 @@ public class PixelPerfectModel {
         notifyZoomChanged();
     }
 
+    public void setOverlayImage(final Image overlayImage) {
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (PixelPerfectModel.this) {
+                    if (PixelPerfectModel.this.overlayImage != null) {
+                        PixelPerfectModel.this.overlayImage.dispose();
+                    }
+                    PixelPerfectModel.this.overlayImage = overlayImage;
+                }
+            }
+        });
+        notifyOverlayChanged();
+    }
+
+    public void setOverlayTransparency(double value) {
+        synchronized (this) {
+            value = Math.max(value, 0);
+            value = Math.min(value, 1);
+            overlayTransparency = value;
+        }
+        notifyOverlayTransparencyChanged();
+    }
+
     public ViewNode getViewNode() {
         synchronized (this) {
             return viewNode;
@@ -120,7 +155,7 @@ public class PixelPerfectModel {
         }
     }
 
-    public RawImage getImage() {
+    public Image getImage() {
         synchronized (this) {
             return image;
         }
@@ -144,6 +179,18 @@ public class PixelPerfectModel {
         }
     }
 
+    public Image getOverlayImage() {
+        synchronized (this) {
+            return overlayImage;
+        }
+    }
+
+    public double getOverlayTransparency() {
+        synchronized (this) {
+            return overlayTransparency;
+        }
+    }
+
     public static interface ImageChangeListener {
         public void imageLoaded();
 
@@ -156,6 +203,10 @@ public class PixelPerfectModel {
         public void focusChanged();
 
         public void zoomChanged();
+
+        public void overlayChanged();
+
+        public void overlayTransparencyChanged();
     }
 
     private ImageChangeListener[] getImageChangeListenerList() {
@@ -221,6 +272,24 @@ public class PixelPerfectModel {
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].zoomChanged();
+            }
+        }
+    }
+
+    public void notifyOverlayChanged() {
+        ImageChangeListener[] listeners = getImageChangeListenerList();
+        if (listeners != null) {
+            for (int i = 0; i < listeners.length; i++) {
+                listeners[i].overlayChanged();
+            }
+        }
+    }
+
+    public void notifyOverlayTransparencyChanged() {
+        ImageChangeListener[] listeners = getImageChangeListenerList();
+        if (listeners != null) {
+            for (int i = 0; i < listeners.length; i++) {
+                listeners[i].overlayTransparencyChanged();
             }
         }
     }

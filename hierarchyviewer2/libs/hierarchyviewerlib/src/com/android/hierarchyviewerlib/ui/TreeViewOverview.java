@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyvieweruilib;
+package com.android.hierarchyviewerlib.ui;
 
 import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
 import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
-import com.android.hierarchyviewerlib.scene.DrawableViewNode;
-import com.android.hierarchyviewerlib.scene.DrawableViewNode.Point;
-import com.android.hierarchyviewerlib.scene.DrawableViewNode.Rectangle;
+import com.android.hierarchyviewerlib.ui.util.DrawableViewNode;
+import com.android.hierarchyviewerlib.ui.util.DrawableViewNode.Point;
+import com.android.hierarchyviewerlib.ui.util.DrawableViewNode.Rectangle;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
@@ -32,6 +32,7 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Path;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
@@ -89,7 +90,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
 
         public void mouseDown(MouseEvent e) {
             boolean redraw = false;
-            synchronized (this) {
+            synchronized (TreeViewOverview.this) {
                 if (tree != null && viewport != null) {
                     dragging = true;
                     redraw = true;
@@ -106,7 +107,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
 
         public void mouseUp(MouseEvent e) {
             boolean redraw = false;
-            synchronized (this) {
+            synchronized (TreeViewOverview.this) {
                 if (tree != null && viewport != null) {
                     dragging = false;
                     redraw = true;
@@ -128,7 +129,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     private MouseMoveListener mouseMoveListener = new MouseMoveListener() {
         public void mouseMove(MouseEvent e) {
             boolean moved = false;
-            synchronized (this) {
+            synchronized (TreeViewOverview.this) {
                 if (dragging) {
                     moved = true;
                     handleMouseEvent(transformPoint(e.x, e.y));
@@ -170,7 +171,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
 
     private Listener resizeListener = new Listener() {
         public void handleEvent(Event arg0) {
-            synchronized (this) {
+            synchronized (TreeViewOverview.this) {
                 setTransform();
             }
             doRedraw();
@@ -179,41 +180,59 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
 
     private PaintListener paintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
-            if (tree != null && viewport != null) {
-                e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
-                e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
-                e.gc.setTransform(transform);
-                paintRecursive(e.gc, tree);
+            synchronized (TreeViewOverview.this) {
+                if (tree != null && viewport != null) {
+                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
+                    e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
+                    e.gc.setTransform(transform);
+                    Path connectionPath = new Path(Display.getDefault());
+                    paintRecursive(e.gc, tree, connectionPath);
+                    e.gc.drawPath(connectionPath);
+                    connectionPath.dispose();
 
-                e.gc.setAlpha(80);
-                e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY));
-                e.gc.fillRectangle((int) viewport.x, (int) viewport.y, (int) Math
-                        .ceil(viewport.width), (int) Math.ceil(viewport.height));
+                    e.gc.setAlpha(80);
+                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY));
+                    e.gc.fillRectangle((int) viewport.x, (int) viewport.y, (int) Math
+                            .ceil(viewport.width), (int) Math.ceil(viewport.height));
 
-                e.gc.setAlpha(255);
-                e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
-                e.gc.setLineWidth((int) Math.ceil(2 / scale));
-                e.gc.drawRectangle((int) viewport.x, (int) viewport.y, (int) Math
-                        .ceil(viewport.width), (int) Math.ceil(viewport.height));
+                    e.gc.setAlpha(255);
+                    e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
+                    e.gc.setLineWidth((int) Math.ceil(2 / scale));
+                    e.gc.drawRectangle((int) viewport.x, (int) viewport.y, (int) Math
+                            .ceil(viewport.width), (int) Math.ceil(viewport.height));
+                }
             }
         }
     };
 
-    private void paintRecursive(GC gc, DrawableViewNode node) {
+    private void paintRecursive(GC gc, DrawableViewNode node, Path connectionPath) {
         gc.drawRectangle(node.left, (int) Math.round(node.top), DrawableViewNode.NODE_WIDTH,
                 DrawableViewNode.NODE_HEIGHT);
         int N = node.children.size();
+        if (N == 0) {
+            return;
+        }
+        float childSpacing =
+                (1.0f * (DrawableViewNode.NODE_HEIGHT - 2 * TreeView.LINE_PADDING)) / N;
         for (int i = 0; i < N; i++) {
             DrawableViewNode child = node.children.get(i);
-            paintRecursive(gc, child);
-            gc.drawLine(node.left + DrawableViewNode.NODE_WIDTH, (int) Math.round(node.top)
-                    + DrawableViewNode.NODE_HEIGHT / 2, child.left, (int) Math.round(child.top)
-                    + DrawableViewNode.NODE_HEIGHT / 2);
+            paintRecursive(gc, child, connectionPath);
+            float x1 = node.left + DrawableViewNode.NODE_WIDTH;
+            float y1 =
+                    (float) node.top + TreeView.LINE_PADDING + childSpacing * i + childSpacing / 2;
+            float x2 = child.left;
+            float y2 = (float) child.top + DrawableViewNode.NODE_HEIGHT / 2.0f;
+            float cx1 = x1 + TreeView.BEZIER_FRACTION * DrawableViewNode.PARENT_CHILD_SPACING;
+            float cy1 = y1;
+            float cx2 = x2 - TreeView.BEZIER_FRACTION * DrawableViewNode.PARENT_CHILD_SPACING;
+            float cy2 = y2;
+            connectionPath.moveTo(x1, y1);
+            connectionPath.cubicTo(cx1, cy1, cx2, cy2, x2, y2);
         }
     }
 
     private void doRedraw() {
-        Display.getDefault().syncExec(new Runnable() {
+        Display.getDefault().asyncExec(new Runnable() {
             public void run() {
                 redraw();
             }
@@ -221,11 +240,15 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     }
 
     public void treeChanged() {
-        synchronized (this) {
-            tree = model.getTree();
-            setBounds();
-            setTransform();
-        }
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    tree = model.getTree();
+                    setBounds();
+                    setTransform();
+                }
+            }
+        });
         doRedraw();
     }
 
@@ -248,13 +271,13 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
             transform.identity();
             inverse.identity();
             final Point size = new Point();
-            Display.getDefault().syncExec(new Runnable() {
-                public void run() {
-                    size.x = getBounds().width;
-                    size.y = getBounds().height;
-                }
-            });
-            scale = Math.min(size.x / bounds.width, size.y / bounds.height);
+            size.x = getBounds().width;
+            size.y = getBounds().height;
+            if (bounds.width == 0 || bounds.height == 0 || size.x == 0 || size.y == 0) {
+                scale = 1;
+            } else {
+                scale = Math.min(size.x / bounds.width, size.y / bounds.height);
+            }
             transform.scale((float) scale, (float) scale);
             inverse.scale((float) scale, (float) scale);
             transform.translate((float) -bounds.x, (float) -bounds.y);
@@ -271,11 +294,15 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     }
 
     public void viewportChanged() {
-        synchronized (this) {
-            viewport = model.getViewport();
-            setBounds();
-            setTransform();
-        }
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    viewport = model.getViewport();
+                    setBounds();
+                    setTransform();
+                }
+            }
+        });
         doRedraw();
     }
 
