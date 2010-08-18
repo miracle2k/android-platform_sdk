@@ -49,6 +49,9 @@ public class FolderDecorator implements ILightweightLabelDecorator {
 
             // get the project and make sure this is an android project
             IProject project = folder.getProject();
+            if (project == null || !project.exists() || !folder.exists()) {
+                return;
+            }
 
             try {
                 if (project.hasNature(AndroidConstants.NATURE_DEFAULT)) {
