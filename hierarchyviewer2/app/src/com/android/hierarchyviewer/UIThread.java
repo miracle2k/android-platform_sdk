@@ -88,7 +88,7 @@ public class UIThread {
         TreeViewOverview treeViewOverview = new TreeViewOverview(shell3);
         shell3.open();
         // ComponentRegistry.getDirector().loadViewTreeData(null);
-        while (!shell.isDisposed() && !shell2.isDisposed()) {
+        while (!shell.isDisposed() && !shell2.isDisposed() && !shell3.isDisposed()) {
             if (!display.readAndDispatch()) {
                 display.sleep();
             }
@@ -98,6 +98,9 @@ public class UIThread {
         }
         if (!shell2.isDisposed()) {
             shell2.dispose();
+        }
+        if (!shell3.isDisposed()) {
+            shell3.dispose();
         }
 
         // NO LONGER TESTING STUFF.

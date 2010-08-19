@@ -24,6 +24,8 @@ import com.android.hierarchyviewerlib.scene.DrawableViewNode.Point;
 import com.android.hierarchyviewerlib.scene.DrawableViewNode.Rectangle;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -67,17 +69,19 @@ public class TreeView extends Canvas implements TreeChangeListener {
         addMouseMoveListener(mouseMoveListener);
         addMouseWheelListener(mouseWheelListener);
         addListener(SWT.Resize, resizeListener);
+        addDisposeListener(disposeListener);
 
         transform = new Transform(Display.getDefault());
         inverse = new Transform(Display.getDefault());
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
-        transform.dispose();
-        inverse.dispose();
-    }
+    private DisposeListener disposeListener = new DisposeListener() {
+        public void widgetDisposed(DisposeEvent e) {
+            model.removeTreeChangeListener(TreeView.this);
+            transform.dispose();
+            inverse.dispose();
+        }
+    };
 
     private Listener resizeListener = new Listener() {
         public void handleEvent(Event e) {

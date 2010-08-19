@@ -29,6 +29,8 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
@@ -142,6 +144,8 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
 
         loadResources();
 
+        addDisposeListener(disposeListener);
+
         model = ComponentRegistry.getPixelPerfectModel();
         ContentProvider contentProvider = new ContentProvider();
         treeViewer.setContentProvider(contentProvider);
@@ -158,12 +162,13 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
         folderImage = loader.loadImage("folder.png", Display.getDefault());
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
-        fileImage.dispose();
-        folderImage.dispose();
-    }
+    private DisposeListener disposeListener = new DisposeListener() {
+        public void widgetDisposed(DisposeEvent e) {
+            model.removeImageChangeListener(PixelPerfectTree.this);
+            fileImage.dispose();
+            folderImage.dispose();
+        }
+    };
 
     @Override
     public boolean setFocus() {
