@@ -31,6 +31,7 @@ import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
@@ -179,13 +180,12 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     private PaintListener paintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
             if (tree != null && viewport != null) {
-                e.gc.setTransform(transform);
                 e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
-                e.gc.fillRectangle((int) bounds.x, (int) bounds.y, (int) Math.ceil(bounds.width),
-                        (int) Math.ceil(bounds.height));
-                TreeView.paintRecursive(e.gc, tree);
+                e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
+                e.gc.setTransform(transform);
+                paintRecursive(e.gc, tree);
 
-                e.gc.setAlpha(100);
+                e.gc.setAlpha(80);
                 e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY));
                 e.gc.fillRectangle((int) viewport.x, (int) viewport.y, (int) Math
                         .ceil(viewport.width), (int) Math.ceil(viewport.height));
@@ -198,6 +198,19 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
             }
         }
     };
+
+    private void paintRecursive(GC gc, DrawableViewNode node) {
+        gc.drawRectangle(node.left, (int) Math.round(node.top), DrawableViewNode.NODE_WIDTH,
+                DrawableViewNode.NODE_HEIGHT);
+        int N = node.children.size();
+        for (int i = 0; i < N; i++) {
+            DrawableViewNode child = node.children.get(i);
+            paintRecursive(gc, child);
+            gc.drawLine(node.left + DrawableViewNode.NODE_WIDTH, (int) Math.round(node.top)
+                    + DrawableViewNode.NODE_HEIGHT / 2, child.left, (int) Math.round(child.top)
+                    + DrawableViewNode.NODE_HEIGHT / 2);
+        }
+    }
 
     private void doRedraw() {
         Display.getDefault().syncExec(new Runnable() {
@@ -270,4 +283,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         viewportChanged();
     }
 
+    public void selectionChanged() {
+        // pass
+    }
 }

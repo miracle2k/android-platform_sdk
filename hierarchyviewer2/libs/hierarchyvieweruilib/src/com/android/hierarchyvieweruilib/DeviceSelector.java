@@ -42,7 +42,6 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
 public class DeviceSelector extends Composite implements WindowChangeListener, SelectionListener {
@@ -153,10 +152,6 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
         treeViewer.setAutoExpandLevel(TreeViewer.ALL_LEVELS);
 
         tree = treeViewer.getTree();
-        TreeColumn col = new TreeColumn(tree, SWT.LEFT);
-        col.setText("Name");
-        col.pack();
-        tree.setHeaderVisible(true);
         tree.setLinesVisible(true);
         tree.addSelectionListener(this);
 
@@ -170,7 +165,6 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
         treeViewer.setLabelProvider(contentProvider);
         treeViewer.setInput(model);
         model.addWindowChangeListener(this);
-
     }
 
     public void loadResources() {
