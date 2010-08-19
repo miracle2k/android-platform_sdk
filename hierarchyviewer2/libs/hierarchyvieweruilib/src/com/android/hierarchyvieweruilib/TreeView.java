@@ -24,6 +24,8 @@ import com.android.hierarchyviewerlib.scene.DrawableViewNode.Point;
 import com.android.hierarchyviewerlib.scene.DrawableViewNode.Rectangle;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -43,6 +45,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
     private TreeViewModel model;
 
     private DrawableViewNode tree;
+
+    private DrawableViewNode selectedNode;
 
     private Rectangle viewport;
 
@@ -67,17 +71,19 @@ public class TreeView extends Canvas implements TreeChangeListener {
         addMouseMoveListener(mouseMoveListener);
         addMouseWheelListener(mouseWheelListener);
         addListener(SWT.Resize, resizeListener);
+        addDisposeListener(disposeListener);
 
         transform = new Transform(Display.getDefault());
         inverse = new Transform(Display.getDefault());
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
-        transform.dispose();
-        inverse.dispose();
-    }
+    private DisposeListener disposeListener = new DisposeListener() {
+        public void widgetDisposed(DisposeEvent e) {
+            model.removeTreeChangeListener(TreeView.this);
+            transform.dispose();
+            inverse.dispose();
+        }
+    };
 
     private Listener resizeListener = new Listener() {
         public void handleEvent(Event e) {
@@ -108,10 +114,15 @@ public class TreeView extends Canvas implements TreeChangeListener {
         }
 
         public void mouseDown(MouseEvent e) {
+            boolean selectionChanged = false;
             synchronized (this) {
                 if (tree != null && viewport != null) {
                     Point pt = transformPoint(e.x, e.y);
                     draggedNode = tree.getSelected(pt.x, pt.y);
+                    if (draggedNode != null && draggedNode != selectedNode) {
+                        selectedNode = draggedNode;
+                        selectionChanged = true;
+                    }
                     if (draggedNode == tree) {
                         draggedNode = null;
                     }
@@ -121,6 +132,9 @@ public class TreeView extends Canvas implements TreeChangeListener {
                         lastPoint = new Point(e.x, e.y);
                     }
                 }
+            }
+            if (selectionChanged) {
+                model.setSelection(selectedNode);
             }
         }
 
@@ -256,15 +270,21 @@ public class TreeView extends Canvas implements TreeChangeListener {
                 e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
                 if (tree != null && viewport != null) {
                     e.gc.setTransform(transform);
+                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_GRAY));
                     paintRecursive(e.gc, tree);
                 }
             }
         }
     };
 
-    static void paintRecursive(GC gc, DrawableViewNode node) {
-        gc.drawRectangle(node.left, (int) Math.round(node.top), DrawableViewNode.NODE_WIDTH,
-                DrawableViewNode.NODE_HEIGHT);
+    private void paintRecursive(GC gc, DrawableViewNode node) {
+        if (selectedNode == node) {
+            gc.fillRectangle(node.left, (int) Math.round(node.top), DrawableViewNode.NODE_WIDTH,
+                    DrawableViewNode.NODE_HEIGHT);
+        } else {
+            gc.drawRectangle(node.left, (int) Math.round(node.top), DrawableViewNode.NODE_WIDTH,
+                    DrawableViewNode.NODE_HEIGHT);
+        }
         int N = node.children.size();
         for (int i = 0; i < N; i++) {
             DrawableViewNode child = node.children.get(i);
@@ -286,6 +306,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
     public void treeChanged() {
         synchronized (this) {
             tree = model.getTree();
+            selectedNode = model.getSelection();
             if (tree == null) {
                 viewport = null;
             } else {
@@ -329,5 +350,12 @@ public class TreeView extends Canvas implements TreeChangeListener {
 
     public void zoomChanged() {
         viewportChanged();
+    }
+
+    public void selectionChanged() {
+        synchronized (this) {
+            selectedNode = model.getSelection();
+        }
+        doRedraw();
     }
 }

@@ -25,6 +25,8 @@ import com.android.hierarchyviewerlib.models.PixelPerfectModel.Point;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -75,22 +77,25 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
         canvas.addMouseListener(mouseListener);
         canvas.addMouseMoveListener(mouseMoveListener);
 
+        addDisposeListener(disposeListener);
+
         crosshairColor = new Color(Display.getDefault(), new RGB(0, 255, 255));
         borderColor = new Color(Display.getDefault(), new RGB(255, 0, 0));
         marginColor = new Color(Display.getDefault(), new RGB(0, 255, 0));
         paddingColor = new Color(Display.getDefault(), new RGB(0, 0, 255));
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
-        if (image != null) {
-            image.dispose();
+    private DisposeListener disposeListener = new DisposeListener() {
+        public void widgetDisposed(DisposeEvent e) {
+            model.removeImageChangeListener(PixelPerfect.this);
+            if (image != null) {
+                image.dispose();
+            }
+            crosshairColor.dispose();
+            borderColor.dispose();
+            paddingColor.dispose();
         }
-        crosshairColor.dispose();
-        borderColor.dispose();
-        paddingColor.dispose();
-    }
+    };
 
     @Override
     public boolean setFocus() {
@@ -160,10 +165,10 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
                         int nodeTop = selectedNode.top;
                         int nodeWidth = selectedNode.width;
                         int nodeHeight = selectedNode.height;
-                        int nodeMarginLeft = Math.abs(selectedNode.marginLeft);
-                        int nodeMarginTop = Math.abs(selectedNode.marginTop);
-                        int nodeMarginRight = Math.abs(selectedNode.marginRight);
-                        int nodeMarginBottom = Math.abs(selectedNode.marginBottom);
+                        int nodeMarginLeft = selectedNode.marginLeft;
+                        int nodeMarginTop = selectedNode.marginTop;
+                        int nodeMarginRight = selectedNode.marginRight;
+                        int nodeMarginBottom = selectedNode.marginBottom;
                         int nodePadLeft = selectedNode.paddingLeft;
                         int nodePadTop = selectedNode.paddingTop;
                         int nodePadRight = selectedNode.paddingRight;

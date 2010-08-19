@@ -22,8 +22,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class ViewNode {
+    public static final String MISCELLANIOUS = "miscellaneous";
+
     public String id;
 
     public String name;
@@ -82,6 +86,8 @@ public class ViewNode {
 
     public double drawTime;
 
+    public Set<String> categories = new TreeSet<String>();
+
     public ViewNode(ViewNode parent, String data) {
         this.parent = parent;
         index = this.parent == null ? 0 : this.parent.children.size();
@@ -130,28 +136,61 @@ public class ViewNode {
 
         id = namedProperties.get("mID").value;
 
-        left = getInt("mLeft", 0);
-        top = getInt("mTop", 0);
-        width = getInt("getWidth()", 0);
-        height = getInt("getHeight()", 0);
-        scrollX = getInt("mScrollX", 0);
-        scrollY = getInt("mScrollY", 0);
-        paddingLeft = getInt("mPaddingLeft", 0);
-        paddingRight = getInt("mPaddingRight", 0);
-        paddingTop = getInt("mPaddingTop", 0);
-        paddingBottom = getInt("mPaddingBottom", 0);
-        marginLeft = getInt("layout_leftMargin", Integer.MIN_VALUE);
-        marginRight = getInt("layout_rightMargin", Integer.MIN_VALUE);
-        marginTop = getInt("layout_topMargin", Integer.MIN_VALUE);
-        marginBottom = getInt("layout_bottomMargin", Integer.MIN_VALUE);
-        baseline = getInt("getBaseline()", 0);
-        willNotDraw = getBoolean("willNotDraw()", false);
-        hasFocus = getBoolean("hasFocus()", false);
+        left = namedProperties.containsKey("mLeft") ?
+                getInt("mLeft", 0) : getInt("layout:mLeft", 0);
+        top = namedProperties.containsKey("mTop") ?
+                getInt("mTop", 0) : getInt("layout:mTop", 0);
+        width = namedProperties.containsKey("getWidth()") ?
+                getInt("getWidth()", 0) : getInt("measurement:getWidth()", 0);
+        height = namedProperties.containsKey("getHeight()") ?
+                getInt("getHeight()", 0) : getInt("measurement:getHeight()", 0);
+        scrollX = namedProperties.containsKey("mScrollX") ?
+                getInt("mScrollX", 0) : getInt("scrolling:mScrollX", 0);
+        scrollY = namedProperties.containsKey("mScrollY") ?
+                getInt("mScrollY", 0) : getInt("scrolling:mScrollY", 0);
+        paddingLeft = namedProperties.containsKey("mPaddingLeft") ?
+                getInt("mPaddingLeft", 0) : getInt("padding:mPaddingLeft", 0);
+        paddingRight = namedProperties.containsKey("mPaddingRight") ?
+                getInt("mPaddingRight", 0) : getInt("padding:mPaddingRight", 0);
+        paddingTop = namedProperties.containsKey("mPaddingTop") ?
+                getInt("mPaddingTop", 0) : getInt("padding:mPaddingTop", 0);
+        paddingBottom = namedProperties.containsKey("mPaddingBottom") ?
+                getInt("mPaddingBottom", 0) : getInt("padding:mPaddingBottom", 0);
+        marginLeft = namedProperties.containsKey("layout_leftMargin") ?
+                getInt("layout_leftMargin", Integer.MIN_VALUE) :
+                getInt("layout:leftMargin", Integer.MIN_VALUE);
+        marginRight = namedProperties.containsKey("layout_rightMargin") ?
+                getInt("layout_rightMargin", Integer.MIN_VALUE) :
+                getInt("layout:rightMargin", Integer.MIN_VALUE);
+        marginTop = namedProperties.containsKey("layout_topMargin") ?
+                getInt("layout_topMargin", Integer.MIN_VALUE) :
+                getInt("layout:topMargin", Integer.MIN_VALUE);
+        marginBottom = namedProperties.containsKey("layout_bottomMargin") ?
+                getInt("layout_bottomMargin", Integer.MIN_VALUE) :
+                getInt("layout:bottomMargin", Integer.MIN_VALUE);
+        baseline = namedProperties.containsKey("getBaseline()") ?
+                getInt("getBaseline()", 0) :
+                getInt("measurement:getBaseline()", 0);
+        willNotDraw = namedProperties.containsKey("willNotDraw()") ?
+                getBoolean("willNotDraw()", false) :
+                getBoolean("drawing:willNotDraw()", false);
+        hasFocus = namedProperties.containsKey("hasFocus()") ?
+                getBoolean("hasFocus()", false) :
+                getBoolean("focus:hasFocus()", false);
 
         hasMargins =
                 marginLeft != Integer.MIN_VALUE && marginRight != Integer.MIN_VALUE
                         && marginTop != Integer.MIN_VALUE && marginBottom != Integer.MIN_VALUE;
 
+        for(String name : namedProperties.keySet()) {
+            int index = name.indexOf(':');
+            if(index != -1) {
+                categories.add(name.substring(0, index));
+            }
+        }
+        if(categories.size() != 0) {
+            categories.add(MISCELLANIOUS);
+        }
     }
 
     private boolean getBoolean(String name, boolean defaultValue) {
