@@ -243,7 +243,10 @@ public class DeviceSelector implements WindowChangeListener, SelectionListener {
 
     public void widgetDefaultSelected(SelectionEvent e) {
         // TODO: Double click to open view hierarchy
-
+        Object selection = ((TreeItem) e.item).getData();
+        if (selection instanceof IDevice) {
+            ComponentRegistry.getDirector().loadPixelPerfectData((IDevice) selection);
+        }
     }
 
     public void widgetSelected(SelectionEvent e) {
