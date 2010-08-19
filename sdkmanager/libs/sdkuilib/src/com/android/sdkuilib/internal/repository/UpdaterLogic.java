@@ -22,12 +22,14 @@ import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.DocPackage;
 import com.android.sdklib.internal.repository.ExtraPackage;
 import com.android.sdklib.internal.repository.IMinApiLevelDependency;
+import com.android.sdklib.internal.repository.IMinPlatformToolsDependency;
 import com.android.sdklib.internal.repository.IMinToolsDependency;
 import com.android.sdklib.internal.repository.IPackageVersion;
 import com.android.sdklib.internal.repository.IPlatformDependency;
 import com.android.sdklib.internal.repository.MinToolsPackage;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.PlatformPackage;
+import com.android.sdklib.internal.repository.PlatformToolPackage;
 import com.android.sdklib.internal.repository.RepoSource;
 import com.android.sdklib.internal.repository.RepoSources;
 import com.android.sdklib.internal.repository.SamplePackage;
@@ -40,7 +42,7 @@ import java.util.HashMap;
 
 /**
  * The logic to compute which packages to install, based on the choices
- * made by the user. This adds dependent packages as needed.
+ * made by the user. This adds required packages as needed.
  * <p/>
  * When the user doesn't provide a selection, looks at local package to find
  * those that can be updated and compute dependencies too.
@@ -49,7 +51,7 @@ class UpdaterLogic {
 
     /**
      * Compute which packages to install by taking the user selection
-     * and adding dependent packages as needed.
+     * and adding required packages as needed.
      *
      * When the user doesn't provide a selection, looks at local packages to find
      * those that can be updated and compute dependencies too.
@@ -372,6 +374,21 @@ class UpdaterLogic {
             }
         }
 
+        if (pkg instanceof IMinPlatformToolsDependency) {
+
+            ArchiveInfo ai = findPlatformToolsDependency(
+                    (IMinPlatformToolsDependency) pkg,
+                    outArchives,
+                    selectedArchives,
+                    remotePkgs,
+                    remoteSources,
+                    localArchives);
+
+            if (ai != null) {
+                list.add(ai);
+            }
+        }
+
         if (pkg instanceof IMinApiLevelDependency) {
 
             ArchiveInfo ai = findMinApiLevelDependency(
@@ -489,7 +506,106 @@ class UpdaterLogic {
         // We end up here if nothing matches. We don't have a good platform to match.
         // We need to indicate this extra depends on a missing platform archive
         // so that it can be impossible to install later on.
-        return new MissingToolArchiveInfo(rev);
+        return new MissingArchiveInfo(MissingArchiveInfo.TITLE_TOOL, rev);
+    }
+
+    /**
+     * Resolves dependencies on platform-tools.
+     *
+     * A tool package can have a min-platform-tools-rev, in which case it depends on
+     * having a platform-tool package of the requested revision.
+     * Finds the platform-tool dependency. If found, add it to the list of things to install.
+     * Returns the archive info dependency, if any.
+     */
+    protected ArchiveInfo findPlatformToolsDependency(
+            IMinPlatformToolsDependency pkg,
+            ArrayList<ArchiveInfo> outArchives,
+            Collection<Archive> selectedArchives,
+            ArrayList<Package> remotePkgs,
+            RepoSource[] remoteSources,
+            ArchiveInfo[] localArchives) {
+        // This is the requirement to match.
+        int rev = pkg.getMinPlatformToolsRevision();
+
+        if (rev == IMinPlatformToolsDependency.MIN_PLATFORM_TOOLS_REV_INVALID) {
+            // The requirement is invalid, which is not supposed to happen.
+            // We'll never find a matching package so don't even bother.
+            return null;
+        }
+
+        // First look in locally installed packages.
+        for (ArchiveInfo ai : localArchives) {
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformToolPackage) {
+                    if (((PlatformToolPackage) p).getRevision() >= rev) {
+                        // We found one already installed.
+                        return null;
+                    }
+                }
+            }
+        }
+
+        // Look in archives already scheduled for install
+        for (ArchiveInfo ai : outArchives) {
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformToolPackage) {
+                    if (((PlatformToolPackage) p).getRevision() >= rev) {
+                        // The dependency is already scheduled for install, nothing else to do.
+                        return ai;
+                    }
+                }
+            }
+        }
+
+        // Otherwise look in the selected archives.
+        if (selectedArchives != null) {
+            for (Archive a : selectedArchives) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformToolPackage) {
+                    if (((PlatformToolPackage) p).getRevision() >= rev) {
+                        // It's not already in the list of things to install, so add it now
+                        return insertArchive(a,
+                                outArchives,
+                                selectedArchives,
+                                remotePkgs,
+                                remoteSources,
+                                localArchives,
+                                true /*automated*/);
+                    }
+                }
+            }
+        }
+
+        // Finally nothing matched, so let's look at all available remote packages
+        fetchRemotePackages(remotePkgs, remoteSources);
+        for (Package p : remotePkgs) {
+            if (p instanceof PlatformToolPackage) {
+                if (((PlatformToolPackage) p).getRevision() >= rev) {
+                    // It's not already in the list of things to install, so add the
+                    // first compatible archive we can find.
+                    for (Archive a : p.getArchives()) {
+                        if (a.isCompatible()) {
+                            return insertArchive(a,
+                                    outArchives,
+                                    selectedArchives,
+                                    remotePkgs,
+                                    remoteSources,
+                                    localArchives,
+                                    true /*automated*/);
+                        }
+                    }
+                }
+            }
+        }
+
+        // We end up here if nothing matches. We don't have a good platform to match.
+        // We need to indicate this package depends on a missing platform archive
+        // so that it can be impossible to install later on.
+        return new MissingArchiveInfo(MissingArchiveInfo.TITLE_PLATFORM_TOOL, rev);
     }
 
     /**
@@ -803,25 +919,34 @@ class UpdaterLogic {
     }
 
     /**
-     * A {@link MissingToolArchiveInfo} is an {@link ArchiveInfo} that represents a
+     * A {@link MissingArchiveInfo} is an {@link ArchiveInfo} that represents a
      * package/archive that we <em>really</em> need as a dependency but that we don't have.
      * <p/>
-     * This is currently used for extras in case we can't find a matching tool revision.
+     * This is currently used for extras in case we can't find a matching tool revision
+     * or when a platform-tool is missing.
      * <p/>
      * This kind of archive has specific properties: the new archive to install is null,
      * there are no dependencies and no archive is being replaced. The info can never be
      * accepted and is always rejected.
      */
-    private static class MissingToolArchiveInfo extends ArchiveInfo {
+    private static class MissingArchiveInfo extends ArchiveInfo {
 
         private final int mRevision;
+        private final String mTitle;
+
+        public static final String TITLE_TOOL = "Tools";
+        public static final String TITLE_PLATFORM_TOOL = "Platform-tools";
 
         /**
          * Constructs a {@link MissingPlatformArchiveInfo} that will indicate the
          * given platform version is missing.
+         *
+         * @param title Typically "Tools" or "Platform-tools".
+         * @param revision The required revision.
          */
-        public MissingToolArchiveInfo(int revision) {
+        public MissingArchiveInfo(String title, int revision) {
             super(null /*newArchive*/, null /*replaced*/, null /*dependsOn*/);
+            mTitle = title;
             mRevision = revision;
         }
 
@@ -839,7 +964,7 @@ class UpdaterLogic {
 
         @Override
         public String getShortDescription() {
-            return String.format("Missing Android SDK Tools, revision %1$d", mRevision);
+            return String.format("Missing Android SDK %1$s, revision %2$d", mTitle, mRevision);
         }
     }
 }

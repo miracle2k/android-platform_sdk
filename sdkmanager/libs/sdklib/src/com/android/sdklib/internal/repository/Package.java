@@ -484,6 +484,7 @@ public abstract class Package implements IDescription, Comparable<Package> {
     /**
      * Returns an ordering like this:
      * - Tools.
+     * - Platform-Tools.
      * - Docs.
      * - Platform n preview
      * - Platform n
@@ -505,10 +506,12 @@ public abstract class Package implements IDescription, Comparable<Package> {
      */
     private int sortingScore() {
         // up to 31 bits (for signed stuff)
-        int type = 0;             // max type=5 => 3 bits
+        int type = 0;             // max type=7 => 3 bits
         int rev = getRevision();  // 12 bits... 4095
         int offset = 0;           // 16 bits...
         if (this instanceof ToolPackage) {
+            type = 6;
+        } else if (this instanceof PlatformToolPackage) {
             type = 5;
         } else if (this instanceof DocPackage) {
             type = 4;
