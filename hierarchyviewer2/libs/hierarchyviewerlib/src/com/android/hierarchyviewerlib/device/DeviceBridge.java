@@ -263,8 +263,11 @@ public class DeviceBridge {
         try {
             connection = new DeviceConnection(device);
             connection.sendCommand("SERVER");
-            server = Integer.parseInt(connection.getInputStream().readLine());
-        } catch (IOException e) {
+            String line = connection.getInputStream().readLine();
+            if (line != null) {
+                server = Integer.parseInt(line);
+            }
+        } catch (Exception e) {
             Log.e(TAG, "Unable to get view server version from device " + device);
         } finally {
             if (connection != null) {
@@ -275,8 +278,11 @@ public class DeviceBridge {
         try {
             connection = new DeviceConnection(device);
             connection.sendCommand("PROTOCOL");
-            protocol = Integer.parseInt(connection.getInputStream().readLine());
-        } catch (IOException e) {
+            String line = connection.getInputStream().readLine();
+            if (line != null) {
+                protocol = Integer.parseInt(line);
+            }
+        } catch (Exception e) {
             Log.e(TAG, "Unable to get view server protocol version from device " + device);
         } finally {
             if (connection != null) {
@@ -369,7 +375,7 @@ public class DeviceBridge {
             connection = new DeviceConnection(device);
             connection.sendCommand("GET_FOCUS");
             String line = connection.getInputStream().readLine();
-            if (line.length() == 0) {
+            if (line == null || line.length() == 0) {
                 return -1;
             }
             return (int) Long.parseLong(line.substring(0, line.indexOf(' ')), 16);
@@ -381,5 +387,84 @@ public class DeviceBridge {
             }
         }
         return -1;
+    }
+
+    public static ViewNode loadWindowData(Window window) {
+        DeviceConnection connection = null;
+        try {
+            connection = new DeviceConnection(window.getDevice());
+            connection.sendCommand("DUMP " + window.encode());
+            BufferedReader in = connection.getInputStream();
+            ViewNode currentNode = null;
+            int currentDepth = -1;
+            String line;
+            while ((line = in.readLine()) != null) {
+                if ("DONE.".equalsIgnoreCase(line)) {
+                    break;
+                }
+                int depth = 0;
+                while (line.charAt(depth) == ' ') {
+                    depth++;
+                }
+                while (depth <= currentDepth) {
+                    currentNode = currentNode.parent;
+                    currentDepth--;
+                }
+                currentNode = new ViewNode(currentNode, line.substring(depth));
+                currentDepth = depth;
+            }
+            if (currentNode == null) {
+                return null;
+            }
+            while (currentNode.parent != null) {
+                currentNode = currentNode.parent;
+            }
+            return currentNode;
+        } catch (IOException e) {
+            Log.e(TAG, "Unable to load window data for window " + window.getTitle() + " on device "
+                    + window.getDevice());
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+        }
+        return null;
+    }
+
+    public static boolean loadProfileData(Window window, ViewNode viewNode) {
+        DeviceConnection connection = null;
+        try {
+            connection = new DeviceConnection(window.getDevice());
+            connection.sendCommand("PROFILE " + window.encode() + " " + viewNode.toString());
+            BufferedReader in = connection.getInputStream();
+            return loadProfileDataRecursive(viewNode, in);
+        } catch (IOException e) {
+            Log.e(TAG, "Unable to load profiling data for window " + window.getTitle()
+                    + " on device " + window.getDevice());
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+        }
+        return false;
+    }
+
+    private static boolean loadProfileDataRecursive(ViewNode node, BufferedReader in)
+            throws IOException {
+        String line;
+        if ((line = in.readLine()) == null || line.equalsIgnoreCase("-1 -1 -1")
+                || line.equalsIgnoreCase("DONE.")) {
+            return false;
+        }
+        String[] data = line.split(" ");
+        node.measureTime = (Long.parseLong(data[0]) / 1000.0) / 1000.0;
+        node.layoutTime = (Long.parseLong(data[1]) / 1000.0) / 1000.0;
+        node.drawTime = (Long.parseLong(data[2]) / 1000.0) / 1000.0;
+        for (int i = 0; i < node.children.size(); i++) {
+            if (!loadProfileDataRecursive(node.children.get(i), in)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

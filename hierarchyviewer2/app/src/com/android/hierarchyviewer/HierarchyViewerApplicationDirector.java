@@ -43,6 +43,9 @@ public class HierarchyViewerApplicationDirector extends HierarchyViewerDirector 
     @Override
     public String getAdbLocation() {
         String hvParentLocation = System.getProperty("com.android.hierarchyviewer.bindir");
+        // TODO REMOVE THIS.
+        hvParentLocation = "/usr/local/google/android-ext/out/host/linux-x86/bin";
+        System.out.println(hvParentLocation);
         if (hvParentLocation != null && hvParentLocation.length() != 0) {
             return hvParentLocation + File.separator + SdkConstants.FN_ADB;
         }
@@ -58,7 +61,9 @@ public class HierarchyViewerApplicationDirector extends HierarchyViewerDirector 
     public void executeInBackground(final Runnable task) {
         executor.execute(new Runnable() {
             public void run() {
+                System.out.println("STARTING TASK");
                 task.run();
+                System.out.println("ENDING TASK");
             }
         });
     }
