@@ -23,8 +23,7 @@ LOCAL_JAVA_LIBRARIES := \
 	ddmlib \
 	jython \
 	guavalib \
-	clearsilver
-LOCAL_SHARED_LIBRARIES := libclearsilver-jni
+	jsilver
 LOCAL_JAVA_RESOURCE_DIRS := resources
 
 LOCAL_MODULE := monkeyrunner

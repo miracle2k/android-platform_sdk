@@ -15,24 +15,22 @@
  */
 package com.android.monkeyrunner;
 
+import com.google.clearsilver.jsilver.JSilver;
+import com.google.clearsilver.jsilver.data.Data;
+import com.google.clearsilver.jsilver.resourceloader.ClassLoaderResourceLoader;
+import com.google.clearsilver.jsilver.resourceloader.ResourceLoader;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.io.Resources;
 
 import com.android.monkeyrunner.doc.MonkeyRunnerExported;
-
-import org.clearsilver.CS;
-import org.clearsilver.CSFileLoader;
-import org.clearsilver.HDF;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -138,25 +136,21 @@ public final class MonkeyRunnerHelp {
     };
 
     public static String helpString(String format) {
+        ResourceLoader resourceLoader = new ClassLoaderResourceLoader(
+            MonkeyRunner.class.getClassLoader(), "com/android/monkeyrunner");
+        JSilver jsilver = new JSilver(resourceLoader);
+
         // Quick check for support formats
         if ("html".equals(format) || "text".equals(format)) {
-            HDF hdf = buildHelpHdf();
-            CS clearsilver = new CS(hdf);
-            // Set a custom file loader to load requested files from resources relative to this class.
-            clearsilver.setFileLoader(new CSFileLoader() {
-                public String load(HDF hdf, String filename) throws IOException {
-                    return Resources.toString(Resources.getResource(MonkeyRunnerHelp.class, filename),
-                            Charset.defaultCharset());
-                }
-            });
-
-            // Load up the CS template file
-            clearsilver.parseFile(format.toLowerCase() + ".cs");
-            // And render the output
-            return clearsilver.render();
+            try {
+                Data hdf = buildHelpHdf(jsilver);
+                return jsilver.render(format + ".cs", hdf);
+            } catch (IOException e) {
+                return "";
+            }
         } else if ("hdf".equals(format)) {
-            HDF hdf = buildHelpHdf();
-            return hdf.writeString();
+            Data hdf = buildHelpHdf(jsilver);
+            return hdf.toString();
         }
         return "";
     }
@@ -174,7 +168,7 @@ public final class MonkeyRunnerHelp {
      * @param value the value to parse paragraphs from.
      * @param hdf the HDF to add the entries to.
      */
-    private static void paragraphsIntoHDF(String prefix, String value, HDF hdf) {
+    private static void paragraphsIntoHDF(String prefix, String value, Data hdf) {
         String paragraphs[] = value.split("\n");
         int x = 0;
         for (String para : paragraphs) {
@@ -183,9 +177,8 @@ public final class MonkeyRunnerHelp {
         }
     }
 
-    private static HDF buildHelpHdf() {
-        HDF hdf = new HDF();
-
+    private static Data buildHelpHdf(JSilver jsilver) {
+        Data hdf = jsilver.createData();
         int outputItemCount = 0;
 
         Set<Field> fields = Sets.newTreeSet(MEMBER_SORTER);
