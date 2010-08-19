@@ -60,9 +60,11 @@ public interface INode {
     // ---- Hierarchy handling ----
 
     /**
-     * Returns the root element of the view hierarchy. This may be this node if this is
-     * the root element. It can also be null when the current node is not yet or no
-     * longer attached to the hierarchy.
+     * Returns the root element of the view hierarchy.
+     * <p/>
+     * When a node is not attached to a hierarchy, it is its own root node.
+     * This may return null if the {@link INode} was not created using a correct UiNode,
+     * which is unlikely.
      */
     INode getRoot();
 

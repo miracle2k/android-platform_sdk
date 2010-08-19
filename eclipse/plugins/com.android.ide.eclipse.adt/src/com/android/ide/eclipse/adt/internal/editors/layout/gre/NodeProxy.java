@@ -121,6 +121,9 @@ public class NodeProxy implements INode {
                 p = p.getUiNextSibling();
             }
 
+            if (p == mNode) {
+                return this;
+            }
             if (p instanceof UiViewElementNode) {
                 return mFactory.create((UiViewElementNode) p);
             }
