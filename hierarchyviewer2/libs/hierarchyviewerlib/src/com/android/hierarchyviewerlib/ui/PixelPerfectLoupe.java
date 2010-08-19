@@ -16,14 +16,14 @@
 
 package com.android.hierarchyviewerlib.ui;
 
-import com.android.ddmlib.RawImage;
-import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseWheelListener;
@@ -73,13 +73,14 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
 
     public PixelPerfectLoupe(Composite parent) {
         super(parent, SWT.NONE);
-        model = ComponentRegistry.getPixelPerfectModel();
+        model = PixelPerfectModel.getModel();
         model.addImageChangeListener(this);
 
         addPaintListener(paintListener);
         addMouseListener(mouseListener);
         addMouseWheelListener(mouseWheelListener);
         addDisposeListener(disposeListener);
+        addKeyListener(keyListener);
 
         crosshairColor = new Color(Display.getDefault(), new RGB(255, 94, 254));
 
@@ -90,14 +91,12 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
         synchronized (this) {
             showOverlay = value;
         }
+        doRedraw();
     }
 
     private DisposeListener disposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
             model.removeImageChangeListener(PixelPerfectLoupe.this);
-            if (image != null) {
-                image.dispose();
-            }
             crosshairColor.dispose();
             transform.dispose();
             if (grid != null) {
@@ -161,7 +160,53 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
         }
     }
 
+    private KeyListener keyListener = new KeyListener() {
+
+        public void keyPressed(KeyEvent e) {
+            boolean crosshairMoved = false;
+            synchronized (PixelPerfectLoupe.this) {
+                if (image != null) {
+                    switch (e.keyCode) {
+                        case SWT.ARROW_UP:
+                            if (crosshairLocation.y != 0) {
+                                crosshairLocation.y--;
+                                crosshairMoved = true;
+                            }
+                            break;
+                        case SWT.ARROW_DOWN:
+                            if (crosshairLocation.y != height - 1) {
+                                crosshairLocation.y++;
+                                crosshairMoved = true;
+                            }
+                            break;
+                        case SWT.ARROW_LEFT:
+                            if (crosshairLocation.x != 0) {
+                                crosshairLocation.x--;
+                                crosshairMoved = true;
+                            }
+                            break;
+                        case SWT.ARROW_RIGHT:
+                            if (crosshairLocation.x != width - 1) {
+                                crosshairLocation.x++;
+                                crosshairMoved = true;
+                            }
+                            break;
+                    }
+                }
+            }
+            if (crosshairMoved) {
+                model.setCrosshairLocation(crosshairLocation.x, crosshairLocation.y);
+            }
+        }
+
+        public void keyReleased(KeyEvent e) {
+            // pass
+        }
+
+    };
+
     private PaintListener paintListener = new PaintListener() {
+        @SuppressWarnings("deprecation")
         public void paintControl(PaintEvent e) {
             synchronized (PixelPerfectLoupe.this) {
                 e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
@@ -255,6 +300,7 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
                     loadImage();
                     crosshairLocation = model.getCrosshairLocation();
                     zoom = model.getZoom();
+                    overlayImage = model.getOverlayImage();
                 }
             }
         });
@@ -283,8 +329,8 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
         // pass
     }
 
-    public void focusChanged() {
-        imageChanged();
+    public void treeChanged() {
+        // pass
     }
 
     public void zoomChanged() {

@@ -17,7 +17,7 @@
 package com.android.hierarchyviewerlib.ui;
 
 import com.android.ddmuilib.ImageLoader;
-import com.android.hierarchyviewerlib.ComponentRegistry;
+import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.device.ViewNode.ProfileRating;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
 import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
@@ -36,6 +36,7 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Path;
@@ -45,6 +46,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
+
+import java.text.DecimalFormat;
 
 public class TreeView extends Canvas implements TreeChangeListener {
 
@@ -70,16 +73,24 @@ public class TreeView extends Canvas implements TreeChangeListener {
 
     public static final float BEZIER_FRACTION = 0.35f;
 
-    private Image redImage;
+    private static Image redImage;
 
-    private Image yellowImage;
+    private static Image yellowImage;
 
-    private Image greenImage;
+    private static Image greenImage;
+
+    private static Image notSelectedImage;
+
+    private static Image selectedImage;
+
+    private static Image filteredImage;
+
+    private static Image filteredSelectedImage;
 
     public TreeView(Composite parent) {
         super(parent, SWT.NONE);
 
-        model = ComponentRegistry.getTreeViewModel();
+        model = TreeViewModel.getModel();
         model.addTreeChangeListener(this);
 
         addPaintListener(paintListener);
@@ -90,13 +101,22 @@ public class TreeView extends Canvas implements TreeChangeListener {
         addDisposeListener(disposeListener);
         addKeyListener(keyListener);
 
+        loadResources();
+
         transform = new Transform(Display.getDefault());
         inverse = new Transform(Display.getDefault());
 
+    }
+
+    private void loadResources() {
         ImageLoader loader = ImageLoader.getLoader(this.getClass());
         redImage = loader.loadImage("red.png", Display.getDefault());
         yellowImage = loader.loadImage("yellow.png", Display.getDefault());
         greenImage = loader.loadImage("green.png", Display.getDefault());
+        notSelectedImage = loader.loadImage("not-selected.png", Display.getDefault());
+        selectedImage = loader.loadImage("selected.png", Display.getDefault());
+        filteredImage = loader.loadImage("filtered.png", Display.getDefault());
+        filteredSelectedImage = loader.loadImage("selected-filtered.png", Display.getDefault());
     }
 
     private DisposeListener disposeListener = new DisposeListener() {
@@ -138,7 +158,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
                 if (tree != null && viewport != null && selectedNode != null) {
                     switch (e.keyCode) {
                         case SWT.ARROW_LEFT:
-                            if(selectedNode.parent != null) {
+                            if (selectedNode.parent != null) {
                                 selectedNode = selectedNode.parent;
                                 selectionChanged = true;
                             }
@@ -171,7 +191,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
                             currentNode = selectedNode;
                             while (currentNode.parent != null
                                     && currentNode.viewNode.index + 1 == currentNode.parent.children
-                                    .size()) {
+                                            .size()) {
                                 levelsOut++;
                                 currentNode = currentNode.parent;
                             }
@@ -193,7 +213,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
                             DrawableViewNode rightNode = null;
                             double mostOverlap = 0;
                             final int N = selectedNode.children.size();
-                            for(int i = 0; i<N; i++) {
+                            for (int i = 0; i < N; i++) {
                                 DrawableViewNode child = selectedNode.children.get(i);
                                 DrawableViewNode topMostChild = child;
                                 while (topMostChild.children.size() != 0) {
@@ -224,7 +244,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
                 model.setSelection(selectedNode);
             }
             if (clickedNode != null) {
-                ComponentRegistry.getDirector().showCapture(getShell(), clickedNode.viewNode);
+                HierarchyViewerDirector.getDirector().showCapture(getShell(), clickedNode.viewNode);
             }
         }
 
@@ -243,7 +263,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
                 }
             }
             if (clickedNode != null) {
-                ComponentRegistry.getDirector().showCapture(getShell(), clickedNode.viewNode);
+                HierarchyViewerDirector.getDirector().showCapture(getShell(), clickedNode.viewNode);
             }
         }
 
@@ -399,27 +419,115 @@ public class TreeView extends Canvas implements TreeChangeListener {
     private PaintListener paintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
             synchronized (TreeView.this) {
-                e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
+                e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
                 e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
                 if (tree != null && viewport != null) {
                     e.gc.setTransform(transform);
-                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_GRAY));
+                    e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
                     Path connectionPath = new Path(Display.getDefault());
-                    paintRecursive(e.gc, tree, connectionPath);
+                    paintRecursive(e.gc, transform, tree, selectedNode, connectionPath);
                     e.gc.drawPath(connectionPath);
                     connectionPath.dispose();
+
+                    Transform tempTransform = new Transform(Display.getDefault());
+                    e.gc.setTransform(tempTransform);
+
+                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_GRAY));
+                    e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_RED));
+
+                    // Draw the number of views.
+                    String viewsString = Integer.toString(tree.viewNode.viewCount) + " view";
+                    if (tree.viewNode.viewCount != 1) {
+                        viewsString += 's';
+                    }
+                    org.eclipse.swt.graphics.Point stringExtent = e.gc.stringExtent(viewsString);
+
+                    e.gc.fillRectangle(0, getBounds().height - stringExtent.y - 4,
+                            stringExtent.x + 4, stringExtent.y + 4);
+
+                    e.gc.drawText(viewsString, 2, getBounds().height - stringExtent.y - 2);
+
+                    DrawableViewNode profiledNode =
+                            (tree.viewNode.protocolVersion < 3) ? tree : selectedNode;
+
+                    // Draw the profiling stuff
+                    if (profiledNode != null && profiledNode.viewNode.measureTime != -1) {
+                        DecimalFormat formatter = new DecimalFormat("0.000");
+                        String measureString = "Measure:";
+                        String measureTimeString =
+                                formatter.format(profiledNode.viewNode.measureTime) + " ms";
+                        String layoutString = "Layout:";
+                        String layoutTimeString =
+                                formatter.format(profiledNode.viewNode.layoutTime) + " ms";
+                        String drawString = "Draw:";
+                        String drawTimeString =
+                                formatter.format(profiledNode.viewNode.drawTime) + " ms";
+
+                        org.eclipse.swt.graphics.Point measureExtent =
+                                e.gc.stringExtent(measureString);
+                        org.eclipse.swt.graphics.Point measureTimeExtent =
+                                e.gc.stringExtent(measureTimeString);
+                        org.eclipse.swt.graphics.Point layoutExtent =
+                                e.gc.stringExtent(layoutString);
+                        org.eclipse.swt.graphics.Point layoutTimeExtent =
+                                e.gc.stringExtent(layoutTimeString);
+                        org.eclipse.swt.graphics.Point drawExtent = e.gc.stringExtent(drawString);
+                        org.eclipse.swt.graphics.Point drawTimeExtent =
+                                e.gc.stringExtent(drawTimeString);
+
+                        int letterHeight = e.gc.getFontMetrics().getHeight();
+
+                        int width =
+                                Math.max(measureExtent.x, Math.max(layoutExtent.x, drawExtent.x))
+                                        + Math.max(measureTimeExtent.x, Math.max(
+                                                layoutTimeExtent.x, drawTimeExtent.x)) + 8;
+                        int height = 3 * letterHeight + 8;
+
+                        int x = getBounds().width - width;
+                        int y = getBounds().height - height;
+
+                        e.gc.fillRectangle(x, y, width, height);
+
+                        x += 2;
+                        y += 2;
+                        e.gc.drawText(measureString, x, y);
+
+                        y += letterHeight + 2;
+                        e.gc.drawText(layoutString, x, y);
+
+                        y += letterHeight + 2;
+                        e.gc.drawText(drawString, x, y);
+
+                        x = getBounds().width - measureTimeExtent.x - 2;
+                        y = getBounds().height - height + 2;
+                        e.gc.drawText(measureTimeString, x, y);
+
+                        x = getBounds().width - layoutTimeExtent.x - 2;
+                        y += letterHeight + 2;
+                        e.gc.drawText(layoutTimeString, x, y);
+
+                        x = getBounds().width - drawTimeExtent.x - 2;
+                        y += letterHeight + 2;
+                        e.gc.drawText(drawTimeString, x, y);
+
+                    }
+                    tempTransform.dispose();
+
                 }
             }
         }
     };
 
-    private void paintRecursive(GC gc, DrawableViewNode node, Path connectionPath) {
-        if (selectedNode == node) {
-            gc.fillRectangle(node.left, (int) Math.round(node.top), DrawableViewNode.NODE_WIDTH,
-                    DrawableViewNode.NODE_HEIGHT);
+    private static void paintRecursive(GC gc, Transform transform, DrawableViewNode node,
+            DrawableViewNode selectedNode, Path connectionPath) {
+        if (selectedNode == node && node.viewNode.filtered) {
+            gc.drawImage(filteredSelectedImage, node.left, (int) Math.round(node.top));
+        } else if (selectedNode == node) {
+            gc.drawImage(selectedImage, node.left, (int) Math.round(node.top));
+        } else if (node.viewNode.filtered) {
+            gc.drawImage(filteredImage, node.left, (int) Math.round(node.top));
         } else {
-            gc.drawRectangle(node.left, (int) Math.round(node.top), DrawableViewNode.NODE_WIDTH,
-                    DrawableViewNode.NODE_HEIGHT);
+            gc.drawImage(notSelectedImage, node.left, (int) Math.round(node.top));
         }
 
         int fontHeight = gc.getFontMetrics().getHeight();
@@ -434,7 +542,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
         }
         double x = node.left + DrawableViewNode.CONTENT_LEFT_RIGHT_PADDING;
         double y = node.top + DrawableViewNode.CONTENT_TOP_BOTTOM_PADDING;
-        drawTextInArea(gc, name, x, y, contentWidth, fontHeight);
+        drawTextInArea(gc, transform, name, x, y, contentWidth, fontHeight);
 
         y += fontHeight + DrawableViewNode.CONTENT_INTER_PADDING;
 
@@ -442,7 +550,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
 
         y += fontHeight + DrawableViewNode.CONTENT_INTER_PADDING;
         if (!node.viewNode.id.equals("NO_ID")) {
-            drawTextInArea(gc, node.viewNode.id, x, y, contentWidth, fontHeight);
+            drawTextInArea(gc, transform, node.viewNode.id, x, y, contentWidth, fontHeight);
         }
 
         if (node.viewNode.measureRating != ProfileRating.NONE) {
@@ -491,14 +599,15 @@ public class TreeView extends Canvas implements TreeChangeListener {
             }
         }
 
-
         org.eclipse.swt.graphics.Point indexExtent =
                 gc.stringExtent(Integer.toString(node.viewNode.index));
-        x = node.left+DrawableViewNode.NODE_WIDTH-DrawableViewNode.INDEX_PADDING-indexExtent.x;
-        y = node.top+DrawableViewNode.NODE_HEIGHT-DrawableViewNode.INDEX_PADDING-indexExtent.y;
+        x =
+                node.left + DrawableViewNode.NODE_WIDTH - DrawableViewNode.INDEX_PADDING
+                        - indexExtent.x;
+        y =
+                node.top + DrawableViewNode.NODE_HEIGHT - DrawableViewNode.INDEX_PADDING
+                        - indexExtent.y;
         gc.drawText(Integer.toString(node.viewNode.index), (int) x, (int) y, SWT.DRAW_TRANSPARENT);
-
-
 
         int N = node.children.size();
         if (N == 0) {
@@ -507,7 +616,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
         float childSpacing = (1.0f * (DrawableViewNode.NODE_HEIGHT - 2 * LINE_PADDING)) / N;
         for (int i = 0; i < N; i++) {
             DrawableViewNode child = node.children.get(i);
-            paintRecursive(gc, child, connectionPath);
+            paintRecursive(gc, transform, child, selectedNode, connectionPath);
             float x1 = node.left + DrawableViewNode.NODE_WIDTH;
             float y1 = (float) node.top + LINE_PADDING + childSpacing * i + childSpacing / 2;
             float x2 = child.left;
@@ -521,7 +630,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
         }
     }
 
-    private void drawTextInArea(GC gc, String text, double x, double y, double width, double height) {
+    private static void drawTextInArea(GC gc, Transform transform, String text, double x, double y,
+            double width, double height) {
         org.eclipse.swt.graphics.Point extent = gc.stringExtent(text);
 
         if (extent.x > width) {
@@ -532,8 +642,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
             transform.scale((float) scale, (float) scale);
             gc.setTransform(transform);
 
-            x/=scale;
-            y/=scale;
+            x /= scale;
+            y /= scale;
             y += (extent.y / scale - extent.y) / 2;
 
             gc.drawText(text, (int) x, (int) y, SWT.DRAW_TRANSPARENT);
@@ -545,6 +655,31 @@ public class TreeView extends Canvas implements TreeChangeListener {
             gc.drawText(text, (int) x, (int) y, SWT.DRAW_TRANSPARENT);
         }
 
+    }
+
+    public static Image paintToImage(DrawableViewNode tree) {
+        Image image =
+                new Image(Display.getDefault(), (int) Math.ceil(tree.bounds.width), (int) Math
+                        .ceil(tree.bounds.height));
+
+        Transform transform = new Transform(Display.getDefault());
+        transform.identity();
+        transform.translate((float) -tree.bounds.x, (float) -tree.bounds.y);
+        Path connectionPath = new Path(Display.getDefault());
+        GC gc = new GC(image);
+        Color white = new Color(Display.getDefault(), 255, 255, 255);
+        Color black = new Color(Display.getDefault(), 0, 0, 0);
+        gc.setForeground(white);
+        gc.setBackground(black);
+        gc.fillRectangle(0, 0, image.getBounds().width, image.getBounds().height);
+        gc.setTransform(transform);
+        paintRecursive(gc, transform, tree, null, connectionPath);
+        gc.drawPath(connectionPath);
+        gc.dispose();
+        connectionPath.dispose();
+        white.dispose();
+        black.dispose();
+        return image;
     }
 
     private void doRedraw() {
@@ -565,9 +700,9 @@ public class TreeView extends Canvas implements TreeChangeListener {
                         viewport = null;
                     } else {
                         viewport =
-                                new Rectangle((tree.bounds.width - getBounds().width) / 2,
-                                        (tree.bounds.height - getBounds().height) / 2,
-                                        getBounds().width, getBounds().height);
+                                new Rectangle(0, tree.top + DrawableViewNode.NODE_HEIGHT / 2
+                                        - getBounds().height / 2, getBounds().width,
+                                        getBounds().height);
                     }
                 }
             }

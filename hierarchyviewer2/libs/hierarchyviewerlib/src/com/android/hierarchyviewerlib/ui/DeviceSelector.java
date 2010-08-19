@@ -18,7 +18,7 @@ package com.android.hierarchyviewerlib.ui;
 
 import com.android.ddmlib.IDevice;
 import com.android.ddmuilib.ImageLoader;
-import com.android.hierarchyviewerlib.ComponentRegistry;
+import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.device.Window;
 import com.android.hierarchyviewerlib.models.DeviceSelectionModel;
 import com.android.hierarchyviewerlib.models.DeviceSelectionModel.WindowChangeListener;
@@ -31,6 +31,9 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionEvent;
@@ -159,12 +162,14 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
 
         loadResources();
 
-        model = ComponentRegistry.getDeviceSelectionModel();
+        model = DeviceSelectionModel.getModel();
         ContentProvider contentProvider = new ContentProvider();
         treeViewer.setContentProvider(contentProvider);
         treeViewer.setLabelProvider(contentProvider);
         model.addWindowChangeListener(this);
         treeViewer.setInput(model);
+
+        addControlListener(controlListener);
     }
 
     public void loadResources() {
@@ -194,6 +199,23 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
         public void widgetDisposed(DisposeEvent e) {
             model.removeWindowChangeListener(DeviceSelector.this);
             boldFont.dispose();
+        }
+    };
+
+    // HACK TO GET RID OF AN ERROR
+
+    private ControlListener controlListener = new ControlAdapter() {
+        private boolean noInput = false;
+
+        @Override
+        public void controlResized(ControlEvent e) {
+            if (getBounds().height <= 38) {
+                treeViewer.setInput(null);
+                noInput = true;
+            } else if (noInput) {
+                treeViewer.setInput(model);
+                noInput = false;
+            }
         }
     };
 
@@ -245,13 +267,17 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
         });
     }
 
+    public void selectionChanged(IDevice device, Window window) {
+        // pass
+    }
+
     public void widgetDefaultSelected(SelectionEvent e) {
         // TODO: Double click to open view hierarchy
         Object selection = ((TreeItem) e.item).getData();
         if (selection instanceof IDevice) {
-            ComponentRegistry.getDirector().loadPixelPerfectData((IDevice) selection);
+            HierarchyViewerDirector.getDirector().loadPixelPerfectData((IDevice) selection);
         } else if (selection instanceof Window) {
-            ComponentRegistry.getDirector().loadViewTreeData((Window) selection);
+            HierarchyViewerDirector.getDirector().loadViewTreeData((Window) selection);
         }
     }
 
