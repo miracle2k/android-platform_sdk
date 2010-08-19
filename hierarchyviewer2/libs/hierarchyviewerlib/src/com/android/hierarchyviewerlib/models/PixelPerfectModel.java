@@ -24,6 +24,12 @@ import java.util.ArrayList;
 
 public class PixelPerfectModel {
 
+    public static final int MIN_ZOOM = 2;
+
+    public static final int MAX_ZOOM = 24;
+
+    private static final int DEFAULT_ZOOM = 8;
+
     public static class Point {
         public int x;
 
@@ -45,6 +51,8 @@ public class PixelPerfectModel {
 
     private ViewNode selected;
 
+    private int zoom;
+
     private final ArrayList<ImageChangeListener> imageChangeListeners =
             new ArrayList<ImageChangeListener>();
 
@@ -53,8 +61,13 @@ public class PixelPerfectModel {
             this.device = device;
             this.image = image;
             this.viewNode = viewNode;
-            this.crosshairLocation = new Point(image.width / 2, image.height / 2);
+            if (image != null) {
+                this.crosshairLocation = new Point(image.width / 2, image.height / 2);
+            } else {
+                this.crosshairLocation = null;
+            }
             this.selected = null;
+            zoom = DEFAULT_ZOOM;
         }
         notifyImageLoaded();
     }
@@ -80,6 +93,19 @@ public class PixelPerfectModel {
             this.selected = null;
         }
         notifyFocusChanged();
+    }
+
+    public void setZoom(int newZoom) {
+        synchronized (this) {
+            if (newZoom < MIN_ZOOM) {
+                newZoom = MIN_ZOOM;
+            }
+            if (newZoom > MAX_ZOOM) {
+                newZoom = MAX_ZOOM;
+            }
+            zoom = newZoom;
+        }
+        notifyZoomChanged();
     }
 
     public ViewNode getViewNode() {
@@ -112,6 +138,12 @@ public class PixelPerfectModel {
         }
     }
 
+    public int getZoom() {
+        synchronized (this) {
+            return zoom;
+        }
+    }
+
     public static interface ImageChangeListener {
         public void imageLoaded();
 
@@ -122,6 +154,8 @@ public class PixelPerfectModel {
         public void selectionChanged();
 
         public void focusChanged();
+
+        public void zoomChanged();
     }
 
     private ImageChangeListener[] getImageChangeListenerList() {
@@ -178,6 +212,15 @@ public class PixelPerfectModel {
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].focusChanged();
+            }
+        }
+    }
+
+    public void notifyZoomChanged() {
+        ImageChangeListener[] listeners = getImageChangeListenerList();
+        if (listeners != null) {
+            for (int i = 0; i < listeners.length; i++) {
+                listeners[i].zoomChanged();
             }
         }
     }

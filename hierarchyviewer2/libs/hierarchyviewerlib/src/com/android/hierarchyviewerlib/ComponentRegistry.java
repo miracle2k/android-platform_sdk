@@ -18,6 +18,7 @@ package com.android.hierarchyviewerlib;
 
 import com.android.hierarchyviewerlib.models.DeviceSelectionModel;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
+import com.android.hierarchyviewerlib.models.TreeViewModel;
 
 /**
  * This is the central point for getting access to the various parts of the
@@ -31,6 +32,8 @@ public class ComponentRegistry {
     private static DeviceSelectionModel deviceSelectionModel;
 
     private static PixelPerfectModel pixelPerfectModel;
+
+    private static TreeViewModel treeViewModel;
 
     public static HierarchyViewerDirector getDirector() {
         return director;
@@ -54,5 +57,13 @@ public class ComponentRegistry {
 
     public static PixelPerfectModel getPixelPerfectModel() {
         return pixelPerfectModel;
+    }
+
+    public static void setTreeViewModel(TreeViewModel treeViewModel) {
+        ComponentRegistry.treeViewModel = treeViewModel;
+    }
+
+    public static TreeViewModel getTreeViewModel() {
+        return treeViewModel;
     }
 }

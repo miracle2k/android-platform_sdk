@@ -36,13 +36,14 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
-public class DeviceSelector implements WindowChangeListener, SelectionListener {
+public class DeviceSelector extends Composite implements WindowChangeListener, SelectionListener {
     private TreeViewer treeViewer;
 
     private Tree tree;
@@ -144,7 +145,9 @@ public class DeviceSelector implements WindowChangeListener, SelectionListener {
     }
 
     public DeviceSelector(Composite parent) {
-        treeViewer = new TreeViewer(parent, SWT.SINGLE);
+        super(parent, SWT.NONE);
+        setLayout(new FillLayout());
+        treeViewer = new TreeViewer(this, SWT.SINGLE);
         treeViewer.setAutoExpandLevel(TreeViewer.ALL_LEVELS);
 
         tree = treeViewer.getTree();
@@ -189,13 +192,16 @@ public class DeviceSelector implements WindowChangeListener, SelectionListener {
                         .getSystemColor(SWT.COLOR_BLUE));
     }
 
-    public void terminate() {
+    @Override
+    public void dispose() {
+        super.dispose();
         model.removeWindowChangeListener(this);
         boldFont.dispose();
     }
 
-    public void setFocus() {
-        tree.setFocus();
+    @Override
+    public boolean setFocus() {
+        return tree.setFocus();
     }
 
     public void deviceConnected(final IDevice device) {
@@ -246,6 +252,8 @@ public class DeviceSelector implements WindowChangeListener, SelectionListener {
         Object selection = ((TreeItem) e.item).getData();
         if (selection instanceof IDevice) {
             ComponentRegistry.getDirector().loadPixelPerfectData((IDevice) selection);
+        } else if (selection instanceof Window) {
+            ComponentRegistry.getDirector().loadViewTreeData((Window) selection);
         }
     }
 

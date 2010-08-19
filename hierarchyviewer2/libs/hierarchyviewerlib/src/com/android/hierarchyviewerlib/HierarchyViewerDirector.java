@@ -109,6 +109,9 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
         DeviceBridge.removeDeviceForward(device);
         DeviceBridge.removeViewServerInfo(device);
         ComponentRegistry.getDeviceSelectionModel().removeDevice(device);
+        if (ComponentRegistry.getPixelPerfectModel().getDevice() == device) {
+            ComponentRegistry.getPixelPerfectModel().setData(null, null, null);
+        }
     }
 
     public void deviceChanged(IDevice device, int changeMask) {
@@ -188,6 +191,19 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                     Log.e(TAG, "Timeout loading screenshot from device " + device);
                 } catch (AdbCommandRejectedException e) {
                     Log.e(TAG, "Adb rejected command to load screenshot from device " + device);
+                }
+            }
+        });
+    }
+
+    public void loadViewTreeData(final Window window) {
+        executeInBackground(new Runnable() {
+            public void run() {
+
+                ViewNode viewNode = DeviceBridge.loadWindowData(window);
+                if (viewNode != null) {
+                    DeviceBridge.loadProfileData(window, viewNode);
+                    ComponentRegistry.getTreeViewModel().setData(window, viewNode);
                 }
             }
         });
