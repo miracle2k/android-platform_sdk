@@ -29,3 +29,18 @@ LOCAL_JAVA_RESOURCE_DIRS := resources
 LOCAL_MODULE := monkeyrunner
 
 include $(BUILD_HOST_JAVA_LIBRARY)
+
+include $(CLEAR_VARS)
+
+MR_GEN_DOC_DIR := $(OUT_DOCS)/gen/guide/developing/tools
+MONKEYRUNNER_GENERATED_DOC := $(MR_GEN_DOC_DIR)/monkeyrunner-api.jd
+
+HELP_PY_PATH := $(TOP)/sdk/monkeyrunner/scripts/help.py
+
+# Setup documentation generation so we can include the MonkeyRunner
+# docs in the SDK.
+$(MONKEYRUNNER_GENERATED_DOC): monkeyrunner
+	mkdir -p $(MR_GEN_DOC_DIR)
+	$(HOST_OUT)/bin/monkeyrunner $(HELP_PY_PATH) sdk-docs $<
+
+ALL_GENERATED_DOCS += $(MONKEYRUNNER_GENERATED_DOC)
