@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,25 +19,23 @@ package com.android.sdklib.internal.repository;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
 
-import java.util.Properties;
-
 /**
- * A mock {@link ToolPackage} for testing.
+ * A mock {@link PlatformToolPackage} for testing.
  *
  * By design, this package contains one and only one archive.
  */
-public class MockToolPackage extends ToolPackage {
+public class MockPlatformToolPackage extends PlatformToolPackage {
 
     /**
-     * Creates a {@link MockToolPackage} with the given revision and hardcoded defaults
+     * Creates a {@link MockPlatformToolPackage} with the given revision and hardcoded defaults
      * for everything else.
      * <p/>
      * By design, this creates a package with one and only one archive.
      */
-    public MockToolPackage(int revision, int min_platform_tools_rev) {
+    public MockPlatformToolPackage(int revision) {
         super(
             null, // source,
-            createProps(min_platform_tools_rev), // props,
+            null, // props,
             revision,
             null, // license,
             "desc", // description,
@@ -47,11 +45,5 @@ public class MockToolPackage extends ToolPackage {
             "foo" // archiveOsPath
             );
     }
-
-    private static Properties createProps(int min_platform_tools_rev) {
-        Properties props = new Properties();
-        props.setProperty(ToolPackage.PROP_MIN_PLATFORM_TOOLS_REV,
-                          Integer.toString((min_platform_tools_rev)));
-        return props;
-    }
 }
+
