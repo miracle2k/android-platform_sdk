@@ -101,7 +101,7 @@ public final class SdkConstants {
     /** Skin layout file */
     public final static String FN_SKIN_LAYOUT = "layout";//$NON-NLS-1$
 
-    /** dex.jar file */
+    /** dx.jar file */
     public static final String FN_DX_JAR = "dx.jar"; //$NON-NLS-1$
 
     /** dx executable (with extension for the current OS)  */
