@@ -45,7 +45,7 @@ public class NodeFactoryTest extends TestCase {
     }
 
     public final void testCreateCanvasViewInfo() {
-        ViewElementDescriptor ved = new ViewElementDescriptor("xml", "MyJavaClass");
+        ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
         MockLayoutViewInfo lvi = new MockLayoutViewInfo(uiv, "name", 10, 12, 110, 120);
         CanvasViewInfo cvi = new CanvasViewInfo(lvi);
@@ -61,14 +61,14 @@ public class NodeFactoryTest extends TestCase {
         INode inode = proxy;
         assertEquals(new Rect(10, 12, 110-10-1, 120-12-1), inode.getBounds());
         assertTrue(Arrays.equals(new INode[0], inode.getChildren()));
-        assertEquals("MyJavaClass", inode.getFqcn());
+        assertEquals("com.example.MyJavaClass", inode.getFqcn());
         assertNull(inode.getParent());
         assertSame(inode, inode.getRoot());
 
     }
 
     public final void testCreateUiViewElementNode() {
-        ViewElementDescriptor ved = new ViewElementDescriptor("xml", "MyJavaClass");
+        ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
 
         // Create a NodeProxy.
@@ -86,13 +86,13 @@ public class NodeFactoryTest extends TestCase {
         assertFalse(inode.getBounds().isValid());
         // All the other properties should be set correctly.
         assertTrue(Arrays.equals(new INode[0], inode.getChildren()));
-        assertEquals("MyJavaClass", inode.getFqcn());
+        assertEquals("com.example.MyJavaClass", inode.getFqcn());
         assertNull(inode.getParent());
         assertSame(inode, inode.getRoot());
     }
 
     public final void testCreateDup() {
-        ViewElementDescriptor ved = new ViewElementDescriptor("xml", "MyJavaClass");
+        ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
         MockLayoutViewInfo lvi = new MockLayoutViewInfo(uiv, "name", 10, 12, 110, 120);
         CanvasViewInfo cvi = new CanvasViewInfo(lvi);
@@ -104,7 +104,7 @@ public class NodeFactoryTest extends TestCase {
     }
 
     public final void testClear() {
-        ViewElementDescriptor ved = new ViewElementDescriptor("xml", "MyJavaClass");
+        ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
         MockLayoutViewInfo lvi = new MockLayoutViewInfo(uiv, "name", 10, 12, 110, 120);
         CanvasViewInfo cvi = new CanvasViewInfo(lvi);

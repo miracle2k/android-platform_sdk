@@ -18,6 +18,8 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.annotations.VisibleForTesting;
+import com.android.ide.eclipse.adt.annotations.VisibleForTesting.Visibility;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IClientRulesEngine;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
@@ -81,7 +83,8 @@ public class RulesEngine {
      * The project folder where the scripts are located.
      * This is for both our unique ADT project folder and the user projects folders.
      */
-    private static final String FD_GSCRIPTS = "gscripts";                       //$NON-NLS-1$
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    public static final String FD_GSCRIPTS = "gscripts";                       //$NON-NLS-1$
     /**
      * The extension we expect for the groovy scripts.
      */
@@ -98,6 +101,13 @@ public class RulesEngine {
     private ProjectFolderListener mProjectFolderListener;
 
 
+    /**
+     * Creates a new {@link RulesEngine} associated with the selected project.
+     * <p/>
+     * The rules engine will look in the projects "/gscripts" folder for custom view rules.
+     *
+     * @param project A non-null open project.
+     */
     public RulesEngine(IProject project) {
         mProject = project;
         ClassLoader cl = getClass().getClassLoader();
