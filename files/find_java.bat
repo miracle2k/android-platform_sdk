@@ -37,8 +37,18 @@ rem Search for an alternative in %ProgramFiles%\Java\*\bin\java.exe
 
 echo.
 echo WARNING: Java not found in your path.
-echo Checking it it's installed in %ProgramFiles%\Java instead.
-echo.
+
+rem Check if there's a 64-bit version of Java in %ProgramW6432%
+if not defined ProgramW6432 goto :Check32
+echo Checking if it's installed in %ProgramW6432%\Java instead (64-bit).
+
+set java_exe=
+for /D %%a in ( "%ProgramW6432%\Java\*" ) do call :TestJavaDir "%%a"
+if defined java_exe goto :EOF
+
+rem Check for the "default" 32-bit version
+:Check32
+echo Checking if it's installed in %ProgramFiles%\Java instead.
 
 set java_exe=
 for /D %%a in ( "%ProgramFiles%\Java\*" ) do call :TestJavaDir "%%a"
@@ -46,9 +56,9 @@ if defined java_exe goto :EOF
 
 echo.
 echo ERROR: No suitable Java found. In order to properly use the Android Developer
-echo Tools, you need a suitable version of Java installed on your system. We
-echo recommend that you install the JDK version of JavaSE, available here:
-echo   http://java.sun.com/javase/downloads/
+echo Tools, you need a suitable version of Java JDK installed on your system.
+echo We recommend that you install the JDK version of JavaSE, available here:
+echo   http://www.oracle.com/technetwork/java/javase/downloads
 echo.
 echo You can find the complete Android SDK requirements here:
 echo   http://developer.android.com/sdk/requirements.html
@@ -63,7 +73,6 @@ rem However we use the full version without quotes (e.g. %~1) for pretty print.
 if defined java_exe goto :EOF
 set full_path=%~1\bin\java.exe
 set short_path=%~s1\bin\java.exe
-rem [for debugging] echo Testing %full_path%
 
 %short_path% -version 2>nul
 if ERRORLEVEL 1 goto :EOF
@@ -73,8 +82,7 @@ echo.
 echo Java was found at %full_path%.
 echo Please consider adding it to your path:
 echo - Under Windows XP, open Control Panel / System / Advanced / Environment Variables
-echo - Under Windows Vista, open Control Panel / System / Advanced System Settings
-echo                             / Environment Variables
+echo - Under Windows Vista or Windows 7, open Control Panel / System / Advanced System Settings / Environment Variables
 echo At the end of the "Path" entry in "User variables", add the following:
 echo   ;%full_path%
 echo.
