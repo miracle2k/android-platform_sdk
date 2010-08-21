@@ -16,6 +16,8 @@
 package com.android.ide.eclipse.tests;
 
 
+import com.android.ide.eclipse.adt.AdtPlugin;
+
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -37,7 +39,8 @@ public class UnitTests {
         TestSuite suite = new TestSuite();
 
         UnitTestCollector collector = new UnitTestCollector();
-        collector.addTestCases(suite, AndroidTestPlugin.getDefault(), TEST_PACKAGE);
+        // since this plugin is a fragment which runs insde adt, gather tests from AdtPlugin
+        collector.addTestCases(suite, AdtPlugin.getDefault(), TEST_PACKAGE);
 
         return suite;
     }
