@@ -31,12 +31,21 @@
 
          History:
          - v1 is used by the SDK Updater in Tools r3 and r4.
+
          - v2 is used by the SDK Updater in Tools r5:
-            - new <sample> repository type.
-            - new <obsolete> in all repository types.
+            - It introduces a new <sample> repository type. Previously samples
+              were included in the <platform> packages. Instead this package is used
+              and and the samples are installed in $SDK/samples.
+            - All repository types have a new <obsolete> node. It works as a marker
+              to indicate the package is obsolete and should not be selected by default.
+              The UI also hides these out by default.
+
          - v3 is used by the SDK Updater in Tools r8:
-            - new <platform-tool> repository type.
-            - new <min-platform-tools-rev> in <tool>.
+            - It introduces a new <platform-tool> repository type. Previously platform-specific
+              tools were included in the <platform> packages. Instead this package is used
+              and platform-specific tools are installed in $SDK/platform-tools
+            - There's a new element <min-platform-tools-rev> in <tool>. The tool package now
+              requires that at least some minimal version of <platform-tool> be installed.
     -->
 
     <xsd:element name="sdk-repository" type="sr3:repositoryType" />

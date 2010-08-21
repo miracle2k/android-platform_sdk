@@ -20,7 +20,6 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
-import com.android.sdklib.repository.SdkRepository;
 
 import org.w3c.dom.Node;
 
@@ -31,16 +30,7 @@ import java.util.Properties;
 /**
  * Represents a platform-tool XML node in an SDK repository.
  */
-public class PlatformToolPackage extends Package implements IMinPlatformToolsDependency {
-
-    protected static final String PROP_MIN_PLATFORM_TOOLS_REV =
-                                                "Platform.MinPlatformToolsRev";  //$NON-NLS-1$
-
-    /**
-     * The minimal revision of the platform-tools package required by this package
-     * or {@link #MIN_PLATFORM_TOOLS_REV_INVALID} if the value was missing.
-     */
-    private final int mMinPlatformToolsRevision;
+public class PlatformToolPackage extends Package {
 
     /**
      * Creates a new platform-tool package from the attributes and elements of the given XML node.
@@ -49,18 +39,6 @@ public class PlatformToolPackage extends Package implements IMinPlatformToolsDep
      */
     PlatformToolPackage(RepoSource source, Node packageNode, Map<String,String> licenses) {
         super(source, packageNode, licenses);
-
-        mMinPlatformToolsRevision = XmlParserUtils.getXmlInt(
-                packageNode,
-                SdkRepository.NODE_MIN_PLATFORM_TOOLS_REV,
-                MIN_PLATFORM_TOOLS_REV_INVALID);
-        if (mMinPlatformToolsRevision == MIN_PLATFORM_TOOLS_REV_INVALID) {
-            throw new IllegalArgumentException(
-                    String.format("Missing %1$s element in %2$s package",
-                            SdkRepository.NODE_MIN_PLATFORM_TOOLS_REV,
-                            SdkRepository.NODE_PLATFORM_TOOL));
-
-        }
     }
 
     /**
@@ -89,22 +67,6 @@ public class PlatformToolPackage extends Package implements IMinPlatformToolsDep
                 archiveOs,
                 archiveArch,
                 archiveOsPath);
-
-        mMinPlatformToolsRevision = Integer.parseInt(
-                getProperty(
-                        props,
-                        PROP_MIN_PLATFORM_TOOLS_REV,
-                        Integer.toString(MIN_PLATFORM_TOOLS_REV_INVALID)));
-    }
-
-    /**
-    * The minimal revision of the tools package required by this package if > 0,
-    * or {@link #MIN_PLATFORM_TOOLS_REV_INVALID} if the value was missing.
-    * <p/>
-    * This attribute is not mandatory and should not be normally missing.
-     */
-    public int getMinPlatformToolsRevision() {
-        return mMinPlatformToolsRevision;
     }
 
     /** Returns a short description for an {@link IDescription}. */

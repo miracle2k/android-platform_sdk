@@ -31,6 +31,8 @@ public interface IMinPlatformToolsDependency {
     /**
      * The value of {@link #getMinPlatformToolsRevision()} when the
      * {@link SdkRepository#NODE_MIN_PLATFORM_TOOLS_REV} was not specified in the XML source.
+     * Since this is a required attribute in the XML schema, it can only happen when dealing
+     * with an invalid repository XML.
      */
     public static final int MIN_PLATFORM_TOOLS_REV_INVALID = 0;
 
@@ -38,7 +40,8 @@ public interface IMinPlatformToolsDependency {
      * The minimal revision of the tools package required by this package if > 0,
      * or {@link #MIN_PLATFORM_TOOLS_REV_INVALID} if the value was missing.
      * <p/>
-     * This attribute is not mandatory and should not be normally missing.
+     * This attribute is mandatory and should not be normally missing.
+     * It can only happen when dealing with an invalid repository XML.
      */
     public abstract int getMinPlatformToolsRevision();
 
