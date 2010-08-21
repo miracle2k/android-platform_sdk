@@ -65,7 +65,7 @@ if not "%1"=="" goto EndTempCopy
     cd %tmp_dir%
 
 :EndTempCopy
-    
+
 rem The global ANDROID_SWT always override the SWT.Jar path
 if defined ANDROID_SWT set swt_path=%ANDROID_SWT%
 
