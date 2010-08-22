@@ -15,7 +15,7 @@
  */
 
 /*
- * The "SDK Launcher" is for Windows only.
+ * The "SDK Manager" is for Windows only.
  * This simple .exe will sit at the root of the Windows SDK
  * and currently simply executes tools\android.bat.
  * Eventually it should simply replace the batch file.
@@ -65,7 +65,7 @@ void display_error(LPSTR description) {
 
         s2 = (LPSTR) malloc(strlen(description) + strlen(s) + 5);
         sprintf(s2, "%s\r\n%s", description, s);
-        MessageBox(NULL, s2, "Android SDK Setup - Error", MB_OK);
+        MessageBox(NULL, s2, "Android SDK Manager - Error", MB_OK);
         free(s2);
         LocalFree(s);
     }
@@ -168,7 +168,7 @@ void read_temp_file(LPSTR temp_filename) {
                 *s2 = 0;
             }
 
-            MessageBox(NULL, s1, "Android SDK Setup - Output", MB_OK);
+            MessageBox(NULL, s1, "Android SDK Manager - Output", MB_OK);
         }
 
     }

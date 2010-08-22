@@ -30,9 +30,15 @@ rem Change current directory and drive to where the script is, to avoid
 rem issues with directories containing whitespaces.
 cd /d %~dp0
 
-set src=SDK Setup.exe
+set src=SDK Manager.exe
 set dst=..\..\%src%
 
-if not exist "%src%" goto :EOF
+if not exist "%src%" goto Cleanup
   echo Updating %src%
   copy /V /Y "%src%" "%dst%"
+
+:Cleanup
+set old_dst=..\..\SDK Setup.exe
+if not exist "%old_dst%" goto :EOF
+  echo Removing obsolete %old_dst%
+  del /F /Q "%old_dst%"
