@@ -28,20 +28,21 @@ ifneq ($(USE_MINGW),)
 endif
 
 # Link the Windows icon file as well into the executable, based on the technique
-# used in external/qemu/Makefile.android.
+# used in external/qemu/Makefile.android.  The variables need to have different
+# names to not interfere with the ones from qemu/Makefile.android.
 #
 INTERMEDIATE     := $(call intermediates-dir-for,EXECUTABLES,$(LOCAL_MODULE),true)
-ANDROID_ICON_OBJ := android_icon.o
-ANDROID_ICON_PATH := $(LOCAL_PATH)/images
-$(ANDROID_ICON_PATH)/$(ANDROID_ICON_OBJ): $(ANDROID_ICON_PATH)/android_icon.rc
-	$(WINDRES) $< -I $(ANDROID_ICON_PATH) -o $@
+SDKLAUNCHER_ICON_OBJ := sdklauncher_icon.o
+SDKLAUNCHER_ICON_PATH := $(LOCAL_PATH)/images
+$(SDKLAUNCHER_ICON_PATH)/$(SDKLAUNCHER_ICON_OBJ): $(SDKLAUNCHER_ICON_PATH)/android_icon.rc
+	$(WINDRES) $< -I $(SDKLAUNCHER_ICON_PATH) -o $@
 
 # seems to be the only way to add an object file that was not generated from
 # a C/C++/Java source file to our build system. and very unfortunately,
 # $(TOPDIR)/$(LOCALPATH) will always be prepended to this value, which forces
 # us to put the object file in the source directory...
 #
-LOCAL_PREBUILT_OBJ_FILES += images/$(ANDROID_ICON_OBJ)
+LOCAL_PREBUILT_OBJ_FILES += images/$(SDKLAUNCHER_ICON_OBJ)
 
 include $(BUILD_HOST_EXECUTABLE)
 
