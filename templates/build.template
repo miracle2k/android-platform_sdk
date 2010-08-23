@@ -52,6 +52,10 @@
     </target>
     <target name="-pre-compile">
     </target>
+
+    [This is typically used for code obfuscation.
+     Compiled code location: ${out.classes.absolute.dir}
+     If this is not done in place, override ${out.dex.input.absolute.dir}]
     <target name="-post-compile">
     </target>
 -->

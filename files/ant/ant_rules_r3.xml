@@ -75,6 +75,7 @@
     <property name="out.absolute.dir" location="${out.dir}" />
     <property name="out.classes.dir" value="${out.absolute.dir}/classes" />
     <property name="out.classes.absolute.dir" location="${out.classes.dir}" />
+    <property name="out.dex.input.absolute.dir" value="${out.classes.absolute.dir}" />
 
     <!-- Intermediate files -->
     <property name="dex.file.name" value="classes.dex" />
@@ -175,7 +176,7 @@
              <arg value="--output=${intermediate.dex.file}" />
              <extra-parameters />
              <arg line="${verbose.option}" />
-             <arg path="${out.classes.absolute.dir}" />
+             <arg path="${out.dex.input.absolute.dir}" />
              <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
              <path refid="android.libraries.jars" />
              <external-libs />
