@@ -87,8 +87,7 @@ public class SimpleAttribute implements IDragAttribute, IAttribute {
     private static final Pattern REGEXP =
         Pattern.compile("[^@]*@([^:]+):([^=]*)=([^\n]*)\n*");       //$NON-NLS-1$
 
-    @VisibleForTesting(visibility=Visibility.PACKAGE)
-    public static SimpleAttribute parseString(String value) {
+    static SimpleAttribute parseString(String value) {
         Matcher m = REGEXP.matcher(value);
         if (m.matches()) {
             return new SimpleAttribute(m.group(2), m.group(1), m.group(3));
