@@ -23,17 +23,16 @@ import java.lang.annotation.RetentionPolicy;
  * Denotes that the class, method or field has its visibility relaxed so
  * that unit tests can access it.
  * <p/>
- * When running the AdtTest Plugin in a headless Eclipse configuration,
- * AdtTest <em>cannot</em> access package-private members of the ADT plugin
- * so we need to relax the visibility of certain classes or methods.
- * <p/>
  * The <code>visibility</code> argument can be used to specific what the original
- * visibility should have been if it had not been made public for testing.
+ * visibility should have been if it had not been made public or package-private for testing.
  * The default is to consider the element private.
  */
-@Retention(RetentionPolicy.CLASS)
+@Retention(RetentionPolicy.SOURCE)
 public @interface VisibleForTesting {
-    /** Intended visibility if the element had not been made public for testing. */
+    /**
+     * Intended visibility if the element had not been made public or package-private for
+     * testing.
+     */
     enum Visibility {
         /** The element should be considered protected. */
         PROTECTED,
@@ -44,8 +43,8 @@ public @interface VisibleForTesting {
     }
 
     /**
-     * Intended visibility if the element had not been made public for testing.
-     * If not specified, one should assume the element originally intented to be private.
+     * Intended visibility if the element had not been made public or package-private for testing.
+     * If not specified, one should assume the element originally intended to be private.
      */
     Visibility visibility() default Visibility.PRIVATE;
 }
