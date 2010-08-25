@@ -70,7 +70,6 @@ public class CaptureDisplay {
         if (!shellVisible) {
             shell.setSize(0, 0);
         }
-        shell.open();
         Rectangle bounds =
                 shell.computeTrim(0, 0, Math.max(buttonBar.getBounds().width,
                         image.getBounds().width), buttonBar.getBounds().height
@@ -81,11 +80,10 @@ public class CaptureDisplay {
                     + (parentShell.getBounds().width - bounds.width) / 2, parentShell.getBounds().y
                     + (parentShell.getBounds().height - bounds.height) / 2);
         }
+        shell.open();
         if (shellVisible) {
             canvas.redraw();
         }
-        // Odd bug in setting the size... Do it again.
-        shell.setSize(bounds.width, bounds.height);
     }
 
     private static void createShell() {

@@ -29,7 +29,7 @@ public class DrawableViewNode {
 
     public final static int NODE_WIDTH = 180;
 
-    public final static int CONTENT_LEFT_RIGHT_PADDING = 7;
+    public final static int CONTENT_LEFT_RIGHT_PADDING = 9;
 
     public final static int CONTENT_TOP_BOTTOM_PADDING = 8;
 

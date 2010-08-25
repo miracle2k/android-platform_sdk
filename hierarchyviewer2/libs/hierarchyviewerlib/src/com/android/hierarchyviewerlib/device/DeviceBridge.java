@@ -129,7 +129,7 @@ public class DeviceBridge {
                 } catch (AdbCommandRejectedException e) {
                     Log.e(TAG, String.format("Adb rejected forward command for device %1$s: %2$s",
                             device, e.getMessage()));
-                } catch (Exception e) {
+                } catch (IOException e) {
                     Log.e(TAG, String.format("Failed to create forward for device %1$s: %2$s",
                             device, e.getMessage()));
                 }
@@ -148,7 +148,7 @@ public class DeviceBridge {
                     Log.e(TAG, "Timeout removing port forwarding for " + device);
                 } catch (AdbCommandRejectedException e) {
                     // In this case, we want to fail silently.
-                } catch (Exception e) {
+                } catch (IOException e) {
                     Log.e(TAG, String.format("Failed to remove forward for device %1$s: %2$s",
                             device, e.getMessage()));
                 }
