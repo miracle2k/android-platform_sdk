@@ -17,7 +17,7 @@ from com.android.monkeyrunner import MonkeyRunner as mr
 import os
 import sys
 
-supported_formats = ['html', 'text']
+supported_formats = ['html', 'text', 'sdk-docs']
 
 if len(sys.argv) != 3:
   print 'help.py: format output'
