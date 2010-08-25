@@ -134,6 +134,10 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
                     dragging = false;
                     redraw = true;
                     handleMouseEvent(transformPoint(e.x, e.y));
+
+                    // Update bounds and transform only on mouse up. That way,
+                    // you don't get confusing behaviour during mouse drag and
+                    // it snaps neatly at the end
                     setBounds();
                     setTransform();
                 }
@@ -270,6 +274,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         });
     }
 
+    // Note the syncExec and then synchronized... It avoids deadlock
     public void treeChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {

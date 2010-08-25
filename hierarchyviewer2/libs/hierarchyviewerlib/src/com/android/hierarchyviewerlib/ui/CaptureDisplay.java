@@ -94,14 +94,12 @@ public class CaptureDisplay {
         shell.setLayout(gridLayout);
 
         buttonBar = new Composite(shell, SWT.NONE);
-        // buttonBar.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         RowLayout rowLayout = new RowLayout(SWT.HORIZONTAL);
         rowLayout.pack = true;
         rowLayout.center = true;
         buttonBar.setLayout(rowLayout);
         Composite buttons = new Composite(buttonBar, SWT.NONE);
         buttons.setLayout(new FillLayout());
-        // buttons.setLayoutData(new RowData());
 
         onWhite = new Button(buttons, SWT.TOGGLE);
         onWhite.setText("On White");
@@ -112,7 +110,6 @@ public class CaptureDisplay {
         onBlack.addSelectionListener(blackSelectionListener);
 
         showExtras = new Button(buttonBar, SWT.CHECK);
-        // showExtras.setLayoutData(new RowData());
         showExtras.setText("Show Extras");
         showExtras.addSelectionListener(extrasSelectionListener);
 

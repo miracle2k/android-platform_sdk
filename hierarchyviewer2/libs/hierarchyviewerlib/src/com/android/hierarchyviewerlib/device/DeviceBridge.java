@@ -357,7 +357,7 @@ public class DeviceBridge {
                 }
             }
             // Automatic refreshing of windows was added in protocol version 3.
-            // Before, the user needed to specify explicitely that he wants to
+            // Before, the user needed to specify explicitly that he wants to
             // get the focused window, which was done using a special type of
             // window with hash code -1.
             if (serverInfo.protocolVersion < 3) {

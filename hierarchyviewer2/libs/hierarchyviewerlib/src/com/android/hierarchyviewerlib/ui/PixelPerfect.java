@@ -208,10 +208,7 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
                     }
 
                     if (selectedNode != null) {
-                        // There are a few quirks here. First of all, margins
-                        // are sometimes negative or positive numbers... Yet,
-                        // they are always treated as positive.
-                        // Secondly, if the screen is in landscape mode, the
+                        // If the screen is in landscape mode, the
                         // coordinates are backwards.
                         int leftShift = 0;
                         int topShift = 0;
@@ -339,6 +336,7 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
         doRedraw();
     }
 
+    // Note the syncExec and then synchronized... It avoids deadlock
     public void treeChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {

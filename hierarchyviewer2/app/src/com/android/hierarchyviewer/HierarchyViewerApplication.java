@@ -92,6 +92,8 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
     private static HierarchyViewerApplication APP;
 
+    // Images for moving between the 3 main windows.
+
     private Image deviceViewImage;
 
     private Image pixelPerfectImage;
@@ -104,11 +106,14 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
     private Image treeViewSelectedImage;
 
+    // And their buttons
+
     private Button treeViewButton;
 
     private Button pixelPerfectButton;
 
     private Button deviceViewButton;
+
 
     private Label progressLabel;
 
@@ -270,6 +275,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         return control;
     }
 
+
     private void buildStatusBar(Composite parent) {
         statusBar = new Composite(parent, SWT.NONE);
         statusBar.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -305,33 +311,12 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         pixelPerfectButtonFormData.left = new FormAttachment(treeViewButton, 2);
         pixelPerfectButton.setLayoutData(pixelPerfectButtonFormData);
 
-        // Control panel should go here.
+        // Tree View control panel...
         statusBarControlPanel = new Composite(statusBar, SWT.NONE);
         FormData statusBarControlPanelFormData = new FormData();
         statusBarControlPanelFormData.left = new FormAttachment(pixelPerfectButton, 2);
         statusBarControlPanelFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
         statusBarControlPanel.setLayoutData(statusBarControlPanelFormData);
-
-        // Label should go on top
-        progressLabel = new Label(statusBar, SWT.RIGHT);
-
-        progressBar = new ProgressBar(statusBar, SWT.HORIZONTAL | SWT.INDETERMINATE | SWT.SMOOTH);
-        FormData progressBarFormData = new FormData();
-        progressBarFormData.right = new FormAttachment(100, 0);
-        progressBarFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
-        progressBar.setLayoutData(progressBarFormData);
-
-        FormData progressLabelFormData = new FormData();
-        progressLabelFormData.right = new FormAttachment(progressBar, -2);
-        progressLabelFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
-        progressLabel.setLayoutData(progressLabelFormData);
-
-        if (progressString == null) {
-            progressLabel.setVisible(false);
-            progressBar.setVisible(false);
-        } else {
-            progressLabel.setText(progressString);
-        }
 
         statusBarStackLayout = new StackLayout();
         statusBarControlPanel.setLayout(statusBarStackLayout);
@@ -372,6 +357,27 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         largeZoomLabel
                 .setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER, false, true));
         largeZoomLabel.setText("200%");
+
+        // Progress stuff
+        progressLabel = new Label(statusBar, SWT.RIGHT);
+
+        progressBar = new ProgressBar(statusBar, SWT.HORIZONTAL | SWT.INDETERMINATE | SWT.SMOOTH);
+        FormData progressBarFormData = new FormData();
+        progressBarFormData.right = new FormAttachment(100, 0);
+        progressBarFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
+        progressBar.setLayoutData(progressBarFormData);
+
+        FormData progressLabelFormData = new FormData();
+        progressLabelFormData.right = new FormAttachment(progressBar, -2);
+        progressLabelFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
+        progressLabel.setLayoutData(progressLabelFormData);
+
+        if (progressString == null) {
+            progressLabel.setVisible(false);
+            progressBar.setVisible(false);
+        } else {
+            progressLabel.setText(progressString);
+        }
     }
 
     private void buildDeviceSelectorPanel(Composite parent) {
@@ -743,6 +749,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         pixelPerfectLoupe.setShowOverlay(value);
     }
 
+    // Shows the progress notification...
     public void startTask(final String taskName) {
         progressString = taskName;
         Display.getDefault().syncExec(new Runnable() {
@@ -757,6 +764,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         });
     }
 
+    // And hides it!
     public void endTask() {
         progressString = null;
         Display.getDefault().syncExec(new Runnable() {

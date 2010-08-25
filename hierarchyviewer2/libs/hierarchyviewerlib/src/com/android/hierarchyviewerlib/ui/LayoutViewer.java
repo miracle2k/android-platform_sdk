@@ -259,6 +259,9 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
         int y2 =
                 Math.min(parentClipping.y + parentClipping.height, top + node.viewNode.height
                         + (int) Math.ceil(0.3 / scale));
+
+        // Clipping is weird... You set it to -5 and it comes out 17 or
+        // something.
         if (x2 <= x1 || y2 <= y1) {
             return;
         }
@@ -321,6 +324,7 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
         doRedraw();
     }
 
+    // Note the syncExec and then synchronized... It avoids deadlock
     public void treeChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
