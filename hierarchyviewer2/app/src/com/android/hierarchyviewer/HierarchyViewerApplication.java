@@ -1052,6 +1052,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
             int newValue = refreshSlider.getSelection();
             if (oldValue != newValue) {
                 refreshInterval = newValue;
+                refreshTimeLeft = Math.min(refreshTimeLeft, refreshInterval);
                 oldValue = newValue;
             }
         }

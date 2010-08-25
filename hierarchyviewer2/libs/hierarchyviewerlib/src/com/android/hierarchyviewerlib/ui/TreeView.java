@@ -96,6 +96,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
 
     private static Image filteredSelectedImage;
 
+    private static Font systemFont;
+
     private Color boxColor;
 
     private Color textBackgroundColor;
@@ -178,6 +180,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
         if (scaledSelectedImage != null) {
             scaledSelectedImage.dispose();
         }
+        systemFont = Display.getDefault().getSystemFont();
     }
 
     private DisposeListener disposeListener = new DisposeListener() {
@@ -941,7 +944,6 @@ public class TreeView extends Canvas implements TreeChangeListener {
     }
 
     private static Font getFont(int size, boolean bold) {
-        Font systemFont = Display.getDefault().getSystemFont();
         FontData[] fontData = systemFont.getFontData();
         for (int i = 0; i < fontData.length; i++) {
             fontData[i].setHeight(size);
