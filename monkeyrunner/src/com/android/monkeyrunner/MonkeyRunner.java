@@ -47,13 +47,12 @@ public class MonkeyRunner {
         MonkeyRunner.backend = backend;
     }
 
-    @MonkeyRunnerExported(doc = "Wait for the specified device to connect.",
+    @MonkeyRunnerExported(doc = "Waits for the workstation to connect to the device.",
             args = {"timeout", "deviceId"},
-            argDocs = {"The timeout in seconds to wait for the device to connect. (default " +
-                "is to wait forever)",
-            "A regular expression that specifies the device of for valid devices" +
-                " to wait for."},
-    returns = "A MonkeyDevice representing the connected device.")
+            argDocs = {"The timeout in seconds to wait. The default is to wait indefinitely.",
+            "A regular expression that specifies the device name. See the documentation " +
+            "for 'adb' in the Developer Guide to learn more about device names."},
+            returns = "A MonkeyDevice object representing the connected device.")
     public static MonkeyDevice waitForConnection(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -70,10 +69,11 @@ public class MonkeyRunner {
                 ap.getString(1, ".*"));
     }
 
-    @MonkeyRunnerExported(doc = "Pause script processing for the specified number of seconds",
+    @MonkeyRunnerExported(doc = "Pause the currently running program for the specified " +
+            "number of seconds.",
             args = {"seconds"},
-            argDocs = {"The number of seconds to pause processing"})
-            public static void sleep(PyObject[] args, String[] kws) {
+            argDocs = {"The number of seconds to pause."})
+    public static void sleep(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
 
@@ -88,11 +88,11 @@ public class MonkeyRunner {
         }
     }
 
-    @MonkeyRunnerExported(doc = "Simple help command to dump the MonkeyRunner supported " +
-            "commands",
+    @MonkeyRunnerExported(doc = "Format and display the API reference for MonkeyRunner.",
             args = { "format" },
-            argDocs = {"The format to return the help text in. (default is text)"},
-            returns = "The help text")
+            argDocs = {"The desired format for the output, either 'text' for plain text or " +
+            "'html' for HTML markup."},
+            returns = "A string containing the help text in the desired format.")
     public static String help(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -102,14 +102,14 @@ public class MonkeyRunner {
         return MonkeyRunnerHelp.helpString(format);
     }
 
-    @MonkeyRunnerExported(doc = "Put up an alert dialog to inform the user of something that " +
-            "happened.  This is modal dialog and will stop processing of " +
-            "the script until the user acknowledges the alert message",
+    @MonkeyRunnerExported(doc = "Display an alert dialog to the process running the current " +
+            "script.  The dialog is modal, so the script stops until the user dismisses the " +
+            "dialog.",
             args = { "message", "title", "okTitle" },
             argDocs = {
-            "The contents of the message of the dialog box",
-            "The title to display for the dialog box.  (default value is \"Alert\")",
-            "The title to use for the acknowledgement button (default value is \"OK\")"
+            "The message to display in the dialog.",
+            "The dialog's title. The default value is 'Alert'.",
+            "The text to use in the dialog button. The default value is 'OK'."
     })
     public static void alert(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
@@ -122,14 +122,18 @@ public class MonkeyRunner {
         alert(message, title, buttonTitle);
     }
 
-    @MonkeyRunnerExported(doc = "Put up an input dialog that allows the user to input a string." +
-            "  This is a modal dialog that will stop processing of the script until the user " +
-            "inputs the requested information.",
+    @MonkeyRunnerExported(doc = "Display a dialog that accepts input. The dialog is ," +
+            "modal, so the script stops until the user clicks one of the two dialog buttons. To " +
+            "enter a value, the user enters the value and clicks the 'OK' button. To quit the " +
+            "dialog without entering a value, the user clicks the 'Cancel' button. Use the " +
+            "supplied arguments for this method to customize the text for these buttons.",
             args = {"message", "initialValue", "title", "okTitle", "cancelTitle"},
             argDocs = {
-            "The message to display for the input.",
-            "The initial value to supply the user (default is empty string)",
-            "The title of the dialog box to display. (default is \"Input\")"
+            "The prompt message to display in the dialog.",
+            "The initial value to supply to the user. The default is an empty string)",
+            "The dialog's title. The default is 'Input'",
+            "The text to use in the dialog's confirmation button. The default is 'OK'." +
+            "The text to use in the dialog's 'cancel' button. The default is 'Cancel'."
     },
     returns = "The test entered by the user, or None if the user canceled the input;"
     )
@@ -144,14 +148,14 @@ public class MonkeyRunner {
         return input(message, initialValue, title);
     }
 
-    @MonkeyRunnerExported(doc = "Put up a choice dialog that allows the user to select a single " +
-            "item from a list of items that were presented.",
+    @MonkeyRunnerExported(doc = "Display a choice dialog that allows the user to select a single " +
+            "item from a list of items.",
             args = {"message", "choices", "title"},
             argDocs = {
-            "The message to display for the input.",
-            "The list of choices to display.",
-            "The title of the dialog box to display. (default is \"Input\")" },
-            returns = "The numeric offset of the choice selected.")
+            "The prompt message to display in the dialog.",
+            "An iterable Python type containing a list of choices to display",
+            "The dialog's title. The default is 'Input'" },
+            returns = "The 0-based numeric offset of the selected item in the iterable.")
     public static int choice(PyObject[] args, String kws[]) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
