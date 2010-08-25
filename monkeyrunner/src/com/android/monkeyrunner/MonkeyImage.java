@@ -70,10 +70,14 @@ public abstract class MonkeyImage {
         return img;
     }
 
-    @MonkeyRunnerExported(doc = "Encode the image into a format and return the bytes.",
+    @MonkeyRunnerExported(doc = "Converts the MonkeyImage into a particular format and returns " +
+                                "the result as a String. Use this to get access to the raw" +
+                                "pixels in a particular format. String output is for better " +
+                                "performance.",
         args = {"format"},
-        argDocs = { "The (optional) format in which to encode the image (PNG for example)" },
-        returns = "A String containing the bytes.")
+        argDocs = { "The destination format (for example, 'png' for Portable " +
+            "Network Graphics format). The default is png." },
+        returns = "The resulting image as a String.")
     public byte[] convertToBytes(PyObject[] args, String[] kws) {
       ArgParser ap = JythonUtils.createArgParser(args, kws);
       Preconditions.checkNotNull(ap);
@@ -91,13 +95,15 @@ public abstract class MonkeyImage {
       return os.toByteArray();
     }
 
-    @MonkeyRunnerExported(doc = "Write out the file to the specified location.  If no " +
-            "format is specified, this function tries to guess at the output format " +
-            "depending on the file extension given.  If unable to determine, it uses PNG.",
+    @MonkeyRunnerExported(doc = "Write the MonkeyImage to a file.  If no " +
+            "format is specified, this method guesses the output format " +
+            "based on the extension of the provided file extension. If it is unable to guess the " +
+            "format, it uses PNG.",
             args = {"path", "format"},
-            argDocs = {"Where to write out the file",
-                       "The format in which to encode the image (PNG for example)"},
-            returns = "True if writing succeeded.")
+            argDocs = {"The output filename, optionally including its path",
+                       "The destination format (for example, 'png' for " +
+                       " Portable Network Graphics format." },
+            returns = "boolean true if writing succeeded.")
     public boolean writeToFile(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -138,10 +144,13 @@ public abstract class MonkeyImage {
         return true;
     }
 
-    @MonkeyRunnerExported(doc = "Get a single ARGB pixel from the image",
+    @MonkeyRunnerExported(doc = "Get a single ARGB (alpha, red, green, blue) pixel at location " +
+            "x,y. The arguments x and y are 0-based, expressed in pixel dimensions. X increases " +
+            "to the right, and Y increases towards the bottom. This method returns a tuple.",
             args = { "x", "y" },
             argDocs = { "the x offset of the pixel", "the y offset of the pixel" },
-            returns = "A tuple of (A, R, G, B) for the pixel")
+            returns = "A tuple of (A, R, G, B) for the pixel. Each item in the tuple has the " +
+                      "range 0-255.")
     public PyObject getRawPixel(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -156,10 +165,13 @@ public abstract class MonkeyImage {
         return new PyTuple(a, r, g ,b);
     }
 
-    @MonkeyRunnerExported(doc = "Get a single ARGB pixel from the image",
+    @MonkeyRunnerExported(doc = "Get a single ARGB (alpha, red, green, blue) pixel at location " +
+            "x,y. The arguments x and y are 0-based, expressed in pixel dimensions. X increases " +
+            "to the right, and Y increases towards the bottom. This method returns an Integer.",
             args = { "x", "y" },
             argDocs = { "the x offset of the pixel", "the y offset of the pixel" },
-            returns = "An integer for the ARGB pixel")
+            returns = "An unsigned integer pixel for x,y. The 8 high-order bits are A, followed" +
+                    "by 8 bits for R, 8 for G, and 8 for B.")
     public int getRawPixelInt(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -197,12 +209,13 @@ public abstract class MonkeyImage {
         return true;
     }
 
-    @MonkeyRunnerExported(doc = "Compare this image to the other image.",
+    @MonkeyRunnerExported(doc = "Compare this MonkeyImage object to aother MonkeyImage object.",
             args = {"other", "percent"},
-            argDocs = {"The other image.",
-                       "A float from 0.0 to 1.0 indicating the percentage " +
-                           "of pixels that need to be the same.  Defaults to 1.0"},
-            returns = "True if they are the same image.")
+            argDocs = {"The other MonkeyImage object.",
+                       "A float in the range 0.0 to 1.0, indicating the percentage " +
+                       "of pixels that need to be the same for the method to return 'true'. " +
+                       "Defaults to 1.0."},
+            returns = "boolean 'true' if the two objects contain the same image.")
     public boolean sameAs(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
@@ -257,10 +270,12 @@ public abstract class MonkeyImage {
 
     }
 
-    @MonkeyRunnerExported(doc = "Get a sub-image of this image.",
+    @MonkeyRunnerExported(doc = "Copy a rectangular region of the image.",
             args = {"rect"},
-            argDocs = {"A Tuple of (x, y, w, h) representing the area of the image to extract."},
-            returns = "The newly extracted image.")
+            argDocs = {"A tuple (x, y, w, h) describing the region to copy. x and y specify " +
+                       "upper lefthand corner of the region. w is the width of the region in " +
+                       "pixels, and h is its height."},
+            returns = "a MonkeyImage object representing the copied region.")
     public MonkeyImage getSubImage(PyObject[] args, String[] kws) {
         ArgParser ap = JythonUtils.createArgParser(args, kws);
         Preconditions.checkNotNull(ap);
