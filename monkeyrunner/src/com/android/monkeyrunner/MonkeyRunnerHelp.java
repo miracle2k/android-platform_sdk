@@ -141,7 +141,7 @@ public final class MonkeyRunnerHelp {
         JSilver jsilver = new JSilver(resourceLoader);
 
         // Quick check for support formats
-        if ("html".equals(format) || "text".equals(format)) {
+        if ("html".equals(format) || "text".equals(format) || "sdk-docs".equals(format)) {
             try {
                 Data hdf = buildHelpHdf(jsilver);
                 return jsilver.render(format + ".cs", hdf);
