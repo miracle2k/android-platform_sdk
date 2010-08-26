@@ -564,12 +564,14 @@ public class TreeView extends Canvas implements TreeChangeListener {
                     // Draw the profiling box.
                     if (selectedNode != null) {
 
+                        e.gc.setAlpha(200);
+
                         // Draw the little triangle
                         int x = selectedNode.left + DrawableViewNode.NODE_WIDTH / 2;
                         int y = (int) selectedNode.top + 4;
                         e.gc.setBackground(boxColor);
                         e.gc.fillPolygon(new int[] {
-                                x, y, x - 15, y - 15, x + 15, y - 15
+                                x, y, x - 11, y - 11, x + 11, y - 11
                         });
 
                         // Draw the rectangle and update the location.
@@ -578,6 +580,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
                                 30);
                         selectedRectangleLocation =
                                 new Rectangle(x - RECT_WIDTH / 2, y, RECT_WIDTH, RECT_HEIGHT);
+
+                        e.gc.setAlpha(255);
 
                         // Draw the button
                         buttonCenter =
