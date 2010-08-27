@@ -171,6 +171,12 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
     public void windowsChanged(final IDevice device) {
         executeInBackground("Refreshing windows", new Runnable() {
             public void run() {
+                if (!DeviceBridge.isViewServerRunning(device)) {
+                    if (!DeviceBridge.startViewServer(device)) {
+                        Log.e(TAG, "Unable to debug device " + device);
+                        return;
+                    }
+                }
                 Window[] windows = DeviceBridge.loadWindows(device);
                 DeviceSelectionModel.getModel().updateDevice(device, windows);
             }
@@ -320,12 +326,8 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
     public void showCapture(final Shell shell, final ViewNode viewNode) {
         executeInBackground("Capturing node", new Runnable() {
             public void run() {
-                final Image image = DeviceBridge.loadCapture(viewNode.window, viewNode);
+                final Image image = loadCapture(viewNode);
                 if (image != null) {
-                    viewNode.image = image;
-
-                    // Force the layout viewer to redraw.
-                    TreeViewModel.getModel().notifySelectionChanged();
 
                     Display.getDefault().asyncExec(new Runnable() {
                         public void run() {
@@ -333,6 +335,25 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                         }
                     });
                 }
+            }
+        });
+    }
+
+    public Image loadCapture(ViewNode viewNode) {
+        final Image image = DeviceBridge.loadCapture(viewNode.window, viewNode);
+        if (image != null) {
+            viewNode.image = image;
+
+            // Force the layout viewer to redraw.
+            TreeViewModel.getModel().notifySelectionChanged();
+        }
+        return image;
+    }
+
+    public void loadCaptureInBackground(final ViewNode viewNode) {
+        executeInBackground("Capturing node", new Runnable() {
+            public void run() {
+                loadCapture(viewNode);
             }
         });
     }
