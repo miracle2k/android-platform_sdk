@@ -51,6 +51,12 @@ public class DeviceSelectionModel {
         return model;
     }
 
+    public boolean containsDevice(IDevice device) {
+        synchronized (deviceMap) {
+            return deviceMap.containsKey(device);
+        }
+    }
+
     public void addDevice(IDevice device, Window[] windows) {
         synchronized (deviceMap) {
             deviceMap.put(device, windows);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
@@ -25,31 +25,31 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
-public class RefreshWindowsAction extends Action implements ImageAction {
+public class PixelPerfectAutoRefreshAction extends PixelPerfectEnabledAction implements ImageAction {
 
-    private static RefreshWindowsAction action;
+    private static PixelPerfectAutoRefreshAction action;
 
     private Image image;
 
-    private RefreshWindowsAction() {
-        super("&Refresh");
-        setAccelerator(SWT.F5);
+    private PixelPerfectAutoRefreshAction() {
+        super("Auto &Refresh", Action.AS_CHECK_BOX);
+        setAccelerator(SWT.MOD1 + 'R');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("refresh-windows.png", Display.getDefault());
+        image = imageLoader.loadImage("auto-refresh.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Refresh the list of devices");
+        setToolTipText("Automatically refresh the screenshot");
     }
 
-    public static RefreshWindowsAction getAction() {
+    public static PixelPerfectAutoRefreshAction getAction() {
         if (action == null) {
-            action = new RefreshWindowsAction();
+            action = new PixelPerfectAutoRefreshAction();
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().refreshWindows();
+        HierarchyViewerDirector.getDirector().setPixelPerfectAutoRefresh(action.isChecked());
     }
 
     public Image getImage() {

@@ -86,6 +86,8 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
         borderColor = new Color(Display.getDefault(), new RGB(255, 0, 0));
         marginColor = new Color(Display.getDefault(), new RGB(0, 255, 0));
         paddingColor = new Color(Display.getDefault(), new RGB(0, 0, 255));
+
+        imageLoaded();
     }
 
     private DisposeListener disposeListener = new DisposeListener() {
@@ -278,7 +280,7 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
     };
 
     private void doRedraw() {
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 canvas.redraw();
             }
@@ -305,6 +307,7 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
                     crosshairLocation = model.getCrosshairLocation();
                     selectedNode = model.getSelected();
                     overlayImage = model.getOverlayImage();
+                    overlayTransparency = model.getOverlayTransparency();
                 }
             }
         });

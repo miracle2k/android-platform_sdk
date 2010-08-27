@@ -50,6 +50,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * This is the class where most of the logic resides.
@@ -63,8 +65,21 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
 
     private int pixelPerfectRefreshesInProgress = 0;
 
+    private Timer pixelPerfectRefreshTimer = new Timer();
+
+    private boolean autoRefresh = false;
+
+    public static final int DEFAULT_PIXEL_PERFECT_AUTOREFRESH_INTERVAL = 5;
+
+    private int pixelPerfectAutoRefreshInterval = DEFAULT_PIXEL_PERFECT_AUTOREFRESH_INTERVAL;
+
+    private PixelPerfectAutoRefreshTask currentAutoRefreshTask;
+
+    private String filterText = "";
+
     public void terminate() {
         WindowUpdater.terminate();
+        pixelPerfectRefreshTimer.cancel();
     }
 
     public abstract String getAdbLocation();
@@ -101,7 +116,9 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
     public void deviceConnected(final IDevice device) {
         executeInBackground("Connecting device", new Runnable() {
             public void run() {
-                if (device.isOnline()) {
+                if (DeviceSelectionModel.getModel().containsDevice(device)) {
+                    windowsChanged(device);
+                } else if (device.isOnline()) {
                     DeviceBridge.setupDeviceForward(device);
                     if (!DeviceBridge.isViewServerRunning(device)) {
                         if (!DeviceBridge.startViewServer(device)) {
@@ -157,6 +174,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                 Window treeViewWindow = TreeViewModel.getModel().getWindow();
                 if (treeViewWindow != null && treeViewWindow.getDevice() == device) {
                     TreeViewModel.getModel().setData(null, null);
+                    filterText = "";
                 }
             }
         });
@@ -289,6 +307,8 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
         executeInBackground("Loading view hierarchy", new Runnable() {
             public void run() {
 
+                filterText = "";
+
                 ViewNode viewNode = DeviceBridge.loadWindowData(window);
                 if (viewNode != null) {
                     DeviceBridge.loadProfileData(window, viewNode);
@@ -329,7 +349,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                 final Image image = loadCapture(viewNode);
                 if (image != null) {
 
-                    Display.getDefault().asyncExec(new Runnable() {
+                    Display.getDefault().syncExec(new Runnable() {
                         public void run() {
                             CaptureDisplay.show(shell, viewNode, image);
                         }
@@ -576,6 +596,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
     }
 
     public void filterNodes(String filterText) {
+        this.filterText = filterText;
         DrawableViewNode tree = TreeViewModel.getModel().getTree();
         if (tree != null) {
             tree.viewNode.filter(filterText);
@@ -584,4 +605,56 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
         }
     }
 
+    public String getFilterText() {
+        return filterText;
+    }
+
+    private static class PixelPerfectAutoRefreshTask extends TimerTask {
+        @Override
+        public void run() {
+            HierarchyViewerDirector.getDirector().refreshPixelPerfect();
+        }
+    };
+
+    public void setPixelPerfectAutoRefresh(boolean value) {
+        synchronized (pixelPerfectRefreshTimer) {
+            if (value == autoRefresh) {
+                return;
+            }
+            autoRefresh = value;
+            if (autoRefresh) {
+                currentAutoRefreshTask = new PixelPerfectAutoRefreshTask();
+                pixelPerfectRefreshTimer.schedule(currentAutoRefreshTask,
+                        pixelPerfectAutoRefreshInterval * 1000,
+                        pixelPerfectAutoRefreshInterval * 1000);
+            } else {
+                currentAutoRefreshTask.cancel();
+                currentAutoRefreshTask = null;
+            }
+        }
+    }
+    
+    public void setPixelPerfectAutoRefreshInterval(int value) {
+        synchronized (pixelPerfectRefreshTimer) {
+            if (pixelPerfectAutoRefreshInterval == value) {
+                return;
+            }
+            pixelPerfectAutoRefreshInterval = value;
+            if (autoRefresh) {
+                currentAutoRefreshTask.cancel();
+                long timeLeft =
+                        Math.max(0, pixelPerfectAutoRefreshInterval
+                                * 1000
+                                - (System.currentTimeMillis() - currentAutoRefreshTask
+                                        .scheduledExecutionTime()));
+                currentAutoRefreshTask = new PixelPerfectAutoRefreshTask();
+                pixelPerfectRefreshTimer.schedule(currentAutoRefreshTask, timeLeft,
+                        pixelPerfectAutoRefreshInterval * 1000);
+            }
+        }
+    }
+
+    public int getPixelPerfectAutoRefreshInverval() {
+        return pixelPerfectAutoRefreshInterval;
+    }
 }

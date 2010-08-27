@@ -3,6 +3,8 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="libs/hierarchyviewerlib.jar" sourcepath="/ddmlib"/>
+	<classpathentry kind="lib" path="libs/hierarchyviewerlib.jar" sourcepath="/hierarchyviewerlib"/>
+	<classpathentry kind="lib" path="libs/ddmlib.jar" sourcepath="/ddmlib"/>
+	<classpathentry kind="lib" path="libs/ddmuilib.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

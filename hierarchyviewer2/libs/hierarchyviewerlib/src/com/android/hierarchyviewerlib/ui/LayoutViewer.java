@@ -70,6 +70,8 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
 
         transform = new Transform(Display.getDefault());
         inverse = new Transform(Display.getDefault());
+
+        treeChanged();
     }
 
     public void setShowExtras(boolean show) {
@@ -88,8 +90,12 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
 
     private DisposeListener disposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
+            model.removeTreeChangeListener(LayoutViewer.this);
             transform.dispose();
             inverse.dispose();
+            if (selectedNode != null) {
+                selectedNode.viewNode.dereferenceImage();
+            }
         }
     };
 
@@ -279,7 +285,7 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
     }
 
     private void doRedraw() {
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 redraw();
             }

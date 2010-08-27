@@ -14,42 +14,41 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
-public class LoadViewHierarchyAction extends Action implements ImageAction {
+public class InvalidateAction extends SelectedNodeEnabledAction implements ImageAction {
 
-    private static LoadViewHierarchyAction action;
+    private static InvalidateAction action;
 
     private Image image;
 
-    private LoadViewHierarchyAction() {
-        super("Load View &Hierarchy");
-        setAccelerator(SWT.MOD1 + 'H');
+    private InvalidateAction() {
+        super("&Invalidate Layout");
+        setAccelerator(SWT.MOD1 + 'I');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault());
+        image = imageLoader.loadImage("invalidate.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Load the view hierarchy into the tree view");
+        setToolTipText("Invalidate the layout for the current window");
     }
 
-    public static LoadViewHierarchyAction getAction() {
+    public static InvalidateAction getAction() {
         if (action == null) {
-            action = new LoadViewHierarchyAction();
+            action = new InvalidateAction();
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().loadViewHierarchy();
+        HierarchyViewerDirector.getDirector().invalidateCurrentNode();
     }
 
     public Image getImage() {

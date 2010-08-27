@@ -16,8 +16,24 @@
 
 package com.android.ide.eclipse.hierarchyviewer;
 
+import com.android.ddmlib.AndroidDebugBridge;
+import com.android.ddmlib.Log;
+import com.android.ddmlib.Log.ILogOutput;
+import com.android.ddmlib.Log.LogLevel;
+import com.android.hierarchyviewerlib.HierarchyViewerDirector;
+
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.console.ConsolePlugin;
+import org.eclipse.ui.console.IConsole;
+import org.eclipse.ui.console.MessageConsole;
+import org.eclipse.ui.console.MessageConsoleStream;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
+
+import java.util.Calendar;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -26,8 +42,12 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
 
     public static final String PLUGIN_ID = "com.android.ide.eclipse.hierarchyviewer";
 
+    public static final String ADB_LOCATION = PLUGIN_ID + ".adb";
+
     // The shared instance
     private static HierarchyViewerPlugin plugin;
+
+    private Color redColor;
 
     /**
      * The constructor
@@ -35,9 +55,72 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
     public HierarchyViewerPlugin() {
     }
 
+    @Override
     public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
+        
+
+        // set the consoles.
+        final MessageConsole messageConsole = new MessageConsole("Hierarchy Viewer", null); // $NON-NLS-1$
+        ConsolePlugin.getDefault().getConsoleManager().addConsoles(new IConsole[] {
+            messageConsole
+        });
+
+        final MessageConsoleStream consoleStream = messageConsole.newMessageStream();
+        final MessageConsoleStream errorConsoleStream = messageConsole.newMessageStream();
+        redColor = new Color(Display.getDefault(), 0xFF, 0x00, 0x00);
+
+        // because this can be run, in some cases, by a non UI thread, and
+        // because
+        // changing the console properties update the UI, we need to make this
+        // change
+        // in the UI thread.
+        Display.getDefault().asyncExec(new Runnable() {
+            public void run() {
+                errorConsoleStream.setColor(redColor);
+            }
+        });
+
+        // set up the ddms log to use the ddms console.
+        Log.setLogOutput(new ILogOutput() {
+            public void printLog(LogLevel logLevel, String tag, String message) {
+                if (logLevel.getPriority() >= LogLevel.ERROR.getPriority()) {
+                    printToStream(errorConsoleStream, tag, message);
+                    ConsolePlugin.getDefault().getConsoleManager().showConsoleView(messageConsole);
+                } else {
+                    printToStream(consoleStream, tag, message);
+                }
+            }
+
+            public void printAndPromptLog(final LogLevel logLevel, final String tag,
+                    final String message) {
+                printLog(logLevel, tag, message);
+                // dialog box only run in UI thread..
+                Display.getDefault().asyncExec(new Runnable() {
+                    public void run() {
+                        Shell shell = Display.getDefault().getActiveShell();
+                        if (logLevel == LogLevel.ERROR) {
+                            MessageDialog.openError(shell, tag, message);
+                        } else {
+                            MessageDialog.openWarning(shell, tag, message);
+                        }
+                    }
+                });
+            }
+
+        });
+
+        final HierarchyViewerDirector director = HierarchyViewerPluginDirector.createDirector();
+
+        new Thread() {
+            @Override
+            public void run() {
+                director.initDebugBridge();
+                director.startListenForDevices();
+                director.populateDeviceSelectionModel();
+            }
+        }.start();
     }
 
     /*
@@ -46,9 +129,17 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
      * org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext
      * )
      */
+    @Override
     public void stop(BundleContext context) throws Exception {
         plugin = null;
         super.stop(context);
+
+        redColor.dispose();
+
+        HierarchyViewerDirector director = HierarchyViewerDirector.getDirector();
+        director.stopListenForDevices();
+        director.stopDebugBridge();
+        director.terminate();
     }
 
     /**
@@ -56,8 +147,63 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
      * 
      * @return the shared instance
      */
-    public static HierarchyViewerPlugin getDefault() {
+    public static HierarchyViewerPlugin getPlugin() {
         return plugin;
     }
 
+    /**
+     * Set the location of the adb executable and optionally starts adb
+     * 
+     * @param adb location of adb
+     * @param startAdb flag to start adb
+     */
+    public static void setAdb(String adb, boolean startAdb) {
+        if (adb != null) {
+            // store the location for future ddms only start.
+            plugin.getPreferenceStore().setValue(ADB_LOCATION, adb);
+
+            // starts the server in a thread in case this is blocking.
+            if (startAdb) {
+                new Thread() {
+                    @Override
+                    public void run() {
+                        HierarchyViewerDirector.getDirector().initDebugBridge();
+                        HierarchyViewerDirector.getDirector().startListenForDevices();
+                        HierarchyViewerDirector.getDirector().populateDeviceSelectionModel();
+                    }
+                }.start();
+            }
+        }
+    }
+
+    /**
+     * Prints a message, associated with a project to the specified stream
+     * 
+     * @param stream The stream to write to
+     * @param tag The tag associated to the message. Can be null
+     * @param message The message to print.
+     */
+    private static synchronized void printToStream(MessageConsoleStream stream, String tag,
+            String message) {
+        String dateTag = getMessageTag(tag);
+
+        stream.print(dateTag);
+        stream.println(message);
+    }
+
+    /**
+     * Creates a string containing the current date/time, and the tag
+     * 
+     * @param tag The tag associated to the message. Can be null
+     * @return The dateTag
+     */
+    private static String getMessageTag(String tag) {
+        Calendar c = Calendar.getInstance();
+
+        if (tag == null) {
+            return String.format("[%1$tF %1$tT]", c);
+        }
+
+        return String.format("[%1$tF %1$tT - %2$s]", c, tag);
+    }
 }

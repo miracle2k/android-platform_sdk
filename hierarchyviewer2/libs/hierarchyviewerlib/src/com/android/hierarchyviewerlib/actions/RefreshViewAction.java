@@ -14,46 +14,41 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 
-public class SavePixelPerfectAction extends Action implements ImageAction {
+public class RefreshViewAction extends TreeViewEnabledAction implements ImageAction {
 
-    private static SavePixelPerfectAction action;
+    private static RefreshViewAction action;
 
     private Image image;
 
-    private Shell shell;
-
-    private SavePixelPerfectAction(Shell shell) {
-        super("&Save as PNG");
-        this.shell = shell;
-        setAccelerator(SWT.MOD1 + 'S');
+    private RefreshViewAction() {
+        super("Load View &Hierarchy");
+        setAccelerator(SWT.MOD1 + 'H');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("save.png", Display.getDefault());
+        image = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Save the screenshot as a PNG image");
+        setToolTipText("Reload the view hierarchy");
     }
 
-    public static SavePixelPerfectAction getAction(Shell shell) {
+    public static RefreshViewAction getAction() {
         if (action == null) {
-            action = new SavePixelPerfectAction(shell);
+            action = new RefreshViewAction();
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().savePixelPerfect(shell);
+        HierarchyViewerDirector.getDirector().reloadViewHierarchy();
     }
 
     public Image getImage() {

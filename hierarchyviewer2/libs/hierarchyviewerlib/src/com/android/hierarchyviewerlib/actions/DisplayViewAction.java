@@ -14,42 +14,45 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
-public class RefreshPixelPerfectAction extends Action implements ImageAction {
+public class DisplayViewAction extends SelectedNodeEnabledAction implements ImageAction {
 
-    private static RefreshPixelPerfectAction action;
+    private static DisplayViewAction action;
 
     private Image image;
 
-    private RefreshPixelPerfectAction() {
-        super("&Refresh Screenshot");
-        setAccelerator(SWT.F5);
+    private Shell shell;
+
+    private DisplayViewAction(Shell shell) {
+        super("&Display View");
+        this.shell = shell;
+        setAccelerator(SWT.MOD1 + 'D');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("refresh-windows.png", Display.getDefault());
+        image = imageLoader.loadImage("display.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Refresh the screenshot");
+        setToolTipText("Display the selected view image in a separate window");
     }
 
-    public static RefreshPixelPerfectAction getAction() {
+    public static DisplayViewAction getAction(Shell shell) {
         if (action == null) {
-            action = new RefreshPixelPerfectAction();
+            action = new DisplayViewAction(shell);
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().refreshPixelPerfect();
+        HierarchyViewerDirector.getDirector().showCapture(shell);
     }
 
     public Image getImage() {

@@ -14,43 +14,45 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
-import com.android.hierarchyviewer.HierarchyViewerApplication;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
-public class PixelPerfectAutoRefreshAction extends Action implements ImageAction {
+public class SaveTreeViewAction extends TreeViewEnabledAction implements ImageAction {
 
-    private static PixelPerfectAutoRefreshAction action;
+    private static SaveTreeViewAction action;
 
     private Image image;
 
-    private PixelPerfectAutoRefreshAction() {
-        super("Auto &Refresh", Action.AS_CHECK_BOX);
-        setAccelerator(SWT.MOD1 + 'R');
+    private Shell shell;
+
+    private SaveTreeViewAction(Shell shell) {
+        super("&Save as PNG");
+        this.shell = shell;
+        setAccelerator(SWT.MOD1 + 'S');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("auto-refresh.png", Display.getDefault());
+        image = imageLoader.loadImage("save.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Automatically refresh the screenshot");
+        setToolTipText("Save the tree view as a PNG image");
     }
 
-    public static PixelPerfectAutoRefreshAction getAction() {
+    public static SaveTreeViewAction getAction(Shell shell) {
         if (action == null) {
-            action = new PixelPerfectAutoRefreshAction();
+            action = new SaveTreeViewAction(shell);
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerApplication.getApp().setAutoRefresh(action.isChecked());
+        HierarchyViewerDirector.getDirector().saveTreeView(shell);
     }
 
     public Image getImage() {

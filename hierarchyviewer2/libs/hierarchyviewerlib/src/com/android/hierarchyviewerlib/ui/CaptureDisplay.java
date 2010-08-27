@@ -16,6 +16,8 @@
 
 package com.android.hierarchyviewerlib.ui;
 
+import com.android.ddmuilib.ImageLoader;
+import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.device.ViewNode;
 
 import org.eclipse.swt.SWT;
@@ -118,6 +120,10 @@ public class CaptureDisplay {
         canvas.addPaintListener(paintListener);
 
         shell.addShellListener(shellListener);
+
+        ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
+        Image image = imageLoader.loadImage("display.png", Display.getDefault());
+        shell.setImage(image);
     }
 
     private static PaintListener paintListener = new PaintListener() {

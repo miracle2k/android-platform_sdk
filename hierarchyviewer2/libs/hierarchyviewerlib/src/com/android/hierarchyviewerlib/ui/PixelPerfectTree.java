@@ -152,15 +152,12 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
     private void loadResources() {
         ImageLoader loader = ImageLoader.getDdmUiLibLoader();
         fileImage = loader.loadImage("file.png", Display.getDefault());
-
         folderImage = loader.loadImage("folder.png", Display.getDefault());
     }
 
     private DisposeListener disposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
             model.removeImageChangeListener(PixelPerfectTree.this);
-            fileImage.dispose();
-            folderImage.dispose();
         }
     };
 
@@ -170,7 +167,7 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
     }
 
     public void imageLoaded() {
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 treeViewer.refresh();
                 treeViewer.expandAll();

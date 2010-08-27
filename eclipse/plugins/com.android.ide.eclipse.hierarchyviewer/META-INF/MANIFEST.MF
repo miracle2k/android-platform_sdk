@@ -2,13 +2,17 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Hierarchy Viewer
 Bundle-SymbolicName: com.android.ide.eclipse.hierarchyviewer;singleton:=true
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 0.9.8.qualifier
 Bundle-Activator: com.android.ide.eclipse.hierarchyviewer.HierarchyViewerPlugin
 Bundle-Vendor: The Android Open Source Project
 Bundle-Localization: plugin
-Require-Bundle: org.eclipse.ui,
- org.eclipse.core.runtime
 Bundle-ActivationPolicy: lazy
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.ui.console,
+ com.android.ide.eclipse.ddms
 Bundle-ClassPath: .,
  libs/hierarchyviewerlib.jar,
- libs/hierearchyvieweruilib.jar
+ libs/ddmlib.jar,
+ libs/ddmuilib.jar
+Export-Package: com.android.ide.eclipse.hierarchyviewer

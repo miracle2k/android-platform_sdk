@@ -29,6 +29,8 @@ import org.eclipse.ui.IPerspectiveFactory;
 
 public class Perspective implements IPerspectiveFactory {
 
+    public static String ID = "com.android.ide.eclipse.ddms.Perspective";
+
     public void createInitialLayout(IPageLayout layout) {
         // create a default layout that looks like the stand alone DDMS.
 

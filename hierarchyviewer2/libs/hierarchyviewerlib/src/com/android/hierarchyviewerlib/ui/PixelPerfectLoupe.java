@@ -85,6 +85,8 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
         crosshairColor = new Color(Display.getDefault(), new RGB(255, 94, 254));
 
         transform = new Transform(Display.getDefault());
+
+        imageLoaded();
     }
 
     public void setShowOverlay(boolean value) {
@@ -275,7 +277,7 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
     };
 
     private void doRedraw() {
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 redraw();
             }
@@ -302,6 +304,7 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
                     crosshairLocation = model.getCrosshairLocation();
                     zoom = model.getZoom();
                     overlayImage = model.getOverlayImage();
+                    overlayTransparency = model.getOverlayTransparency();
                 }
             }
         });
@@ -344,8 +347,8 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
                         // grid.
                         grid.dispose();
                         grid = null;
-                        zoom = model.getZoom();
                     }
+                    zoom = model.getZoom();
                 }
             }
         });

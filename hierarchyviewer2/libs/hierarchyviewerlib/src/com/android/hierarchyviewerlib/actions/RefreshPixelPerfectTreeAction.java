@@ -14,42 +14,41 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
-public class InspectScreenshotAction extends Action implements ImageAction {
+public class RefreshPixelPerfectTreeAction extends PixelPerfectEnabledAction implements ImageAction {
 
-    private static InspectScreenshotAction action;
+    private static RefreshPixelPerfectTreeAction action;
 
     private Image image;
 
-    private InspectScreenshotAction() {
-        super("Inspect &Screenshot");
-        setAccelerator(SWT.MOD1 + 'S');
+    private RefreshPixelPerfectTreeAction() {
+        super("Refresh &Tree");
+        setAccelerator(SWT.MOD1 + 'T');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("inspect-screenshot.png", Display.getDefault());
+        image = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Inspect a screenshot in the pixel perfect view");
+        setToolTipText("Refresh the tree");
     }
 
-    public static InspectScreenshotAction getAction() {
+    public static RefreshPixelPerfectTreeAction getAction() {
         if (action == null) {
-            action = new InspectScreenshotAction();
+            action = new RefreshPixelPerfectTreeAction();
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().inspectScreenshot();
+        HierarchyViewerDirector.getDirector().refreshPixelPerfectTree();
     }
 
     public Image getImage() {

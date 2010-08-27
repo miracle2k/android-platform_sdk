@@ -18,14 +18,15 @@ package com.android.hierarchyviewer.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
+import com.android.hierarchyviewerlib.actions.ImageAction;
+import com.android.hierarchyviewerlib.actions.TreeViewEnabledAction;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
-public class LoadAllViewsAction extends Action implements ImageAction {
+public class LoadAllViewsAction extends TreeViewEnabledAction implements ImageAction {
 
     private static LoadAllViewsAction action;
 

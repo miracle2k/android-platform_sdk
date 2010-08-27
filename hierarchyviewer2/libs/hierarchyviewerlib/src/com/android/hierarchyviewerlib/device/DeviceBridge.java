@@ -94,6 +94,9 @@ public class DeviceBridge {
     }
 
     public static IDevice[] getDevices() {
+        if (bridge == null) {
+            return new IDevice[0];
+        }
         return bridge.getDevices();
     }
 

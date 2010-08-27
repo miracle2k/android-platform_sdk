@@ -14,42 +14,45 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
-public class InvalidateAction extends Action implements ImageAction {
+public class LoadOverlayAction extends PixelPerfectEnabledAction implements ImageAction {
 
-    private static InvalidateAction action;
+    private static LoadOverlayAction action;
 
     private Image image;
 
-    private InvalidateAction() {
-        super("&Invalidate Layout");
-        setAccelerator(SWT.MOD1 + 'I');
+    private Shell shell;
+
+    private LoadOverlayAction(Shell shell) {
+        super("Load &Overlay");
+        this.shell = shell;
+        setAccelerator(SWT.MOD1 + 'O');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("invalidate.png", Display.getDefault());
+        image = imageLoader.loadImage("load-overlay.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Invalidate the layout for the current window");
+        setToolTipText("Load an image to overlay the screenshot");
     }
 
-    public static InvalidateAction getAction() {
+    public static LoadOverlayAction getAction(Shell shell) {
         if (action == null) {
-            action = new InvalidateAction();
+            action = new LoadOverlayAction(shell);
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().invalidateCurrentNode();
+        HierarchyViewerDirector.getDirector().loadOverlay(shell);
     }
 
     public Image getImage() {
