@@ -23,16 +23,25 @@ import com.android.ddmlib.Log;
 import com.android.ddmlib.MultiLineReceiver;
 import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
+import com.android.hierarchyviewerlib.ui.util.PsdFile;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.imageio.ImageIO;
 
 /**
  * A bridge to the device.
@@ -120,7 +129,7 @@ public class DeviceBridge {
                 } catch (AdbCommandRejectedException e) {
                     Log.e(TAG, String.format("Adb rejected forward command for device %1$s: %2$s",
                             device, e.getMessage()));
-                } catch (IOException e) {
+                } catch (Exception e) {
                     Log.e(TAG, String.format("Failed to create forward for device %1$s: %2$s",
                             device, e.getMessage()));
                 }
@@ -139,7 +148,7 @@ public class DeviceBridge {
                     Log.e(TAG, "Timeout removing port forwarding for " + device);
                 } catch (AdbCommandRejectedException e) {
                     // In this case, we want to fail silently.
-                } catch (IOException e) {
+                } catch (Exception e) {
                     Log.e(TAG, String.format("Failed to remove forward for device %1$s: %2$s",
                             device, e.getMessage()));
                 }
@@ -354,7 +363,7 @@ public class DeviceBridge {
             if (serverInfo.protocolVersion < 3) {
                 windows.add(Window.getFocusedWindow(device));
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             Log.e(TAG, "Unable to load the window list from device " + device);
         } finally {
             if (connection != null) {
@@ -385,7 +394,7 @@ public class DeviceBridge {
                 return -1;
             }
             return (int) Long.parseLong(line.substring(0, line.indexOf(' ')), 16);
-        } catch (IOException e) {
+        } catch (Exception e) {
             Log.e(TAG, "Unable to get the focused window from device " + device);
         } finally {
             if (connection != null) {
@@ -425,8 +434,12 @@ public class DeviceBridge {
             while (currentNode.parent != null) {
                 currentNode = currentNode.parent;
             }
+            ViewServerInfo serverInfo = getViewServerInfo(window.getDevice());
+            if (serverInfo != null) {
+                currentNode.protocolVersion = serverInfo.protocolVersion;
+            }
             return currentNode;
-        } catch (IOException e) {
+        } catch (Exception e) {
             Log.e(TAG, "Unable to load window data for window " + window.getTitle() + " on device "
                     + window.getDevice());
         } finally {
@@ -456,7 +469,7 @@ public class DeviceBridge {
                 }
                 return ret;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             Log.e(TAG, "Unable to load profiling data for window " + window.getTitle()
                     + " on device " + window.getDevice());
         } finally {
@@ -508,6 +521,106 @@ public class DeviceBridge {
             }
         }
         return null;
+    }
+
+    public static PsdFile captureLayers(Window window) {
+        DeviceConnection connection = null;
+        DataInputStream in = null;
+
+        try {
+            connection = new DeviceConnection(window.getDevice());
+
+            connection.sendCommand("CAPTURE_LAYERS " + window.encode());
+
+            in =
+                    new DataInputStream(new BufferedInputStream(connection.getSocket()
+                            .getInputStream()));
+
+            int width = in.readInt();
+            int height = in.readInt();
+
+            PsdFile psd = new PsdFile(width, height);
+
+            while (readLayer(in, psd)) {
+            }
+
+            return psd;
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to capture layers for window " + window.getTitle() + " on device "
+                    + window.getDevice());
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (Exception ex) {
+                }
+            }
+            connection.close();
+        }
+
+        return null;
+    }
+
+    private static boolean readLayer(DataInputStream in, PsdFile psd) {
+        try {
+            if (in.read() == 2) {
+                return false;
+            }
+            String name = in.readUTF();
+            boolean visible = in.read() == 1;
+            int x = in.readInt();
+            int y = in.readInt();
+            int dataSize = in.readInt();
+
+            byte[] data = new byte[dataSize];
+            int read = 0;
+            while (read < dataSize) {
+                read += in.read(data, read, dataSize - read);
+            }
+
+            ByteArrayInputStream arrayIn = new ByteArrayInputStream(data);
+            BufferedImage chunk = ImageIO.read(arrayIn);
+
+            // Ensure the image is in the right format
+            BufferedImage image =
+                    new BufferedImage(chunk.getWidth(), chunk.getHeight(),
+                            BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = image.createGraphics();
+            g.drawImage(chunk, null, 0, 0);
+            g.dispose();
+
+            psd.addLayer(name, image, new Point(x, y), visible);
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static void invalidateView(ViewNode viewNode) {
+        DeviceConnection connection = null;
+        try {
+            connection = new DeviceConnection(viewNode.window.getDevice());
+            connection.sendCommand("INVALIDATE " + viewNode.window.encode() + " " + viewNode);
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to invalidate view " + viewNode + " in window " + viewNode.window
+                    + " on device " + viewNode.window.getDevice());
+        } finally {
+            connection.close();
+        }
+    }
+
+    public static void requestLayout(ViewNode viewNode) {
+        DeviceConnection connection = null;
+        try {
+            connection = new DeviceConnection(viewNode.window.getDevice());
+            connection.sendCommand("REQUEST_LAYOUT " + viewNode.window.encode() + " " + viewNode);
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to request layout for node " + viewNode + " in window "
+                    + viewNode.window + " on device " + viewNode.window.getDevice());
+        } finally {
+            connection.close();
+        }
     }
 
 }

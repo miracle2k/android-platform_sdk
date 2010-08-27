@@ -16,7 +16,7 @@
 
 package com.android.hierarchyviewerlib.ui;
 
-import com.android.hierarchyviewerlib.ComponentRegistry;
+import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
 import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
 import com.android.hierarchyviewerlib.ui.util.DrawableViewNode;
@@ -54,11 +54,13 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
 
     private double scale;
 
-    private boolean showExtras = true;
+    private boolean showExtras = false;
+
+    private boolean onBlack = true;
 
     public LayoutViewer(Composite parent) {
         super(parent, SWT.NONE);
-        model = ComponentRegistry.getTreeViewModel();
+        model = TreeViewModel.getModel();
         model.addTreeChangeListener(this);
 
         addDisposeListener(disposeListener);
@@ -72,6 +74,16 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
 
     public void setShowExtras(boolean show) {
         showExtras = show;
+        doRedraw();
+    }
+
+    public void setOnBlack(boolean value) {
+        onBlack = value;
+        doRedraw();
+    }
+
+    public boolean getOnBlack() {
+        return onBlack;
     }
 
     private DisposeListener disposeListener = new DisposeListener() {
@@ -93,12 +105,12 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
 
         public void mouseDoubleClick(MouseEvent e) {
             if (selectedNode != null) {
-                ComponentRegistry.getDirector().showCapture(getShell(), selectedNode.viewNode);
+                HierarchyViewerDirector.getDirector()
+                        .showCapture(getShell(), selectedNode.viewNode);
             }
         }
 
         public void mouseDown(MouseEvent e) {
-            System.out.println("CLICK");
             boolean selectionChanged = false;
             DrawableViewNode newSelection = null;
             synchronized (LayoutViewer.this) {
@@ -125,8 +137,8 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
         }
     };
 
-    private DrawableViewNode updateSelection(DrawableViewNode node, float x, float y, int left, int top,
-            int clipX, int clipY, int clipWidth, int clipHeight) {
+    private DrawableViewNode updateSelection(DrawableViewNode node, float x, float y, int left,
+            int top, int clipX, int clipY, int clipWidth, int clipHeight) {
         if (!node.treeDrawn) {
             return null;
         }
@@ -145,10 +157,12 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
         final int N = node.children.size();
         for (int i = N - 1; i >= 0; i--) {
             DrawableViewNode child = node.children.get(i);
-            DrawableViewNode ret = updateSelection(child, x, y, left + child.viewNode.left - node.viewNode.scrollX,
-                    top + child.viewNode.top - node.viewNode.scrollY, clipX, clipY, clipWidth,
-                    clipHeight);
-            if(ret != null) {
+            DrawableViewNode ret =
+                    updateSelection(child, x, y,
+                            left + child.viewNode.left - node.viewNode.scrollX, top
+                                    + child.viewNode.top - node.viewNode.scrollY, clipX, clipY,
+                            clipWidth, clipHeight);
+            if (ret != null) {
                 return ret;
             }
         }
@@ -158,14 +172,23 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
     private PaintListener paintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
             synchronized (LayoutViewer.this) {
-                e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
+                if (onBlack) {
+                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
+                } else {
+                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
+                }
                 e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
                 if (tree != null) {
-                    e.gc.setLineWidth((int) Math.ceil(0.2 / scale));
+                    e.gc.setLineWidth((int) Math.ceil(0.3 / scale));
                     e.gc.setTransform(transform);
-                    e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
+                    if (onBlack) {
+                        e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
+                    } else {
+                        e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
+                    }
                     Rectangle parentClipping = e.gc.getClipping();
-                    e.gc.setClipping(0, 0, tree.viewNode.width, tree.viewNode.height);
+                    e.gc.setClipping(0, 0, tree.viewNode.width + (int) Math.ceil(0.3 / scale),
+                            tree.viewNode.height + (int) Math.ceil(0.3 / scale));
                     paintRecursive(e.gc, tree, 0, 0, true);
 
                     if (selectedNode != null) {
@@ -191,25 +214,27 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
                         for (int i = 0; i < N; i++) {
                             e.gc.drawRectangle((int) (left - rightLeftDistances.get(i).x),
                                     (int) (top - rightLeftDistances.get(i).y),
-                                    currentNode.viewNode.width - (int) Math.ceil(0.2 / scale),
-                                    currentNode.viewNode.height - (int) Math.ceil(0.2 / scale));
+                                    currentNode.viewNode.width, currentNode.viewNode.height);
                             currentNode = currentNode.parent;
                         }
 
                         if (showExtras && selectedNode.viewNode.image != null) {
                             e.gc.drawImage(selectedNode.viewNode.image, left, top);
-                            e.gc
-                                    .setForeground(Display.getDefault().getSystemColor(
-                                            SWT.COLOR_WHITE));
+                            if (onBlack) {
+                                e.gc.setForeground(Display.getDefault().getSystemColor(
+                                        SWT.COLOR_WHITE));
+                            } else {
+                                e.gc.setForeground(Display.getDefault().getSystemColor(
+                                        SWT.COLOR_BLACK));
+                            }
                             paintRecursive(e.gc, selectedNode, left, top, true);
 
                         }
 
                         e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_RED));
                         e.gc.setLineWidth((int) Math.ceil(2 / scale));
-                        e.gc.drawRectangle(left, top, selectedNode.viewNode.width
-                                - (int) Math.ceil(2 / scale) + 1, selectedNode.viewNode.height
-                                - (int) Math.ceil(2 / scale) + 1);
+                        e.gc.drawRectangle(left, top, selectedNode.viewNode.width,
+                                selectedNode.viewNode.height);
                     }
                 }
             }
@@ -227,9 +252,16 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
         }
         Rectangle parentClipping = gc.getClipping();
         int x1 = Math.max(parentClipping.x, left);
-        int x2 = Math.min(parentClipping.x + parentClipping.width, left + node.viewNode.width);
+        int x2 =
+                Math.min(parentClipping.x + parentClipping.width, left + node.viewNode.width
+                        + (int) Math.ceil(0.3 / scale));
         int y1 = Math.max(parentClipping.y, top);
-        int y2 = Math.min(parentClipping.y + parentClipping.height, top + node.viewNode.height);
+        int y2 =
+                Math.min(parentClipping.y + parentClipping.height, top + node.viewNode.height
+                        + (int) Math.ceil(0.3 / scale));
+        if (x2 <= x1 || y2 <= y1) {
+            return;
+        }
         gc.setClipping(x1, y1, x2 - x1, y2 - y1);
         final int N = node.children.size();
         for (int i = 0; i < N; i++) {
@@ -238,8 +270,7 @@ public class LayoutViewer extends Canvas implements TreeChangeListener {
         }
         gc.setClipping(parentClipping);
         if (!node.viewNode.willNotDraw) {
-            gc.drawRectangle(left, top, node.viewNode.width - (int) Math.ceil(0.2 / scale),
-                    node.viewNode.height - (int) Math.ceil(0.2 / scale));
+            gc.drawRectangle(left, top, node.viewNode.width, node.viewNode.height);
         }
 
     }

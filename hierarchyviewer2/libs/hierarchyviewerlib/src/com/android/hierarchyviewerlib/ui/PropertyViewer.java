@@ -16,7 +16,6 @@
 
 package com.android.hierarchyviewerlib.ui;
 
-import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.device.ViewNode;
 import com.android.hierarchyviewerlib.device.ViewNode.Property;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
@@ -30,6 +29,13 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.ControlListener;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -47,6 +53,8 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
     private Tree tree;
 
     private DrawableViewNode selectedNode;
+
+    private Font smallFont;
 
     private class ContentProvider implements ITreeContentProvider, ITableLabelProvider {
 
@@ -187,16 +195,66 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
         TreeColumn valueColumn = new TreeColumn(tree, SWT.NONE);
         valueColumn.setText("Value");
 
-        model = ComponentRegistry.getTreeViewModel();
+        model = TreeViewModel.getModel();
         ContentProvider contentProvider = new ContentProvider();
         treeViewer.setContentProvider(contentProvider);
         treeViewer.setLabelProvider(contentProvider);
         treeViewer.setInput(model);
         model.addTreeChangeListener(this);
 
+        loadResources();
+        addDisposeListener(disposeListener);
+
+        tree.setFont(smallFont);
+
         new TreeColumnResizer(this, propertyColumn, valueColumn);
+
+        addControlListener(controlListener);
     }
 
+    public void loadResources() {
+        Display display = Display.getDefault();
+        Font systemFont = display.getSystemFont();
+        FontData[] fontData = systemFont.getFontData();
+        FontData[] newFontData = new FontData[fontData.length];
+        for (int i = 0; i < fontData.length; i++) {
+            newFontData[i] = new FontData(fontData[i].getName(), 8, fontData[i].getStyle());
+        }
+        smallFont = new Font(Display.getDefault(), newFontData);
+    }
+
+    private DisposeListener disposeListener = new DisposeListener() {
+        public void widgetDisposed(DisposeEvent e) {
+            model.removeTreeChangeListener(PropertyViewer.this);
+            smallFont.dispose();
+        }
+    };
+
+    // HACK TO GET RID OF AN ERROR
+
+    private ControlListener controlListener = new ControlAdapter() {
+        private boolean noInput = false;
+
+        private boolean noHeader = false;
+
+        @Override
+        public void controlResized(ControlEvent e) {
+            if (getBounds().height <= 20) {
+                tree.setHeaderVisible(false);
+                noHeader = true;
+            } else if (noHeader) {
+                tree.setHeaderVisible(true);
+                noHeader = false;
+            }
+            if (getBounds().height <= 38) {
+                treeViewer.setInput(null);
+                noInput = true;
+            } else if (noInput) {
+                treeViewer.setInput(model);
+                noInput = false;
+            }
+        }
+    };
 
     public void selectionChanged() {
         synchronized (this) {

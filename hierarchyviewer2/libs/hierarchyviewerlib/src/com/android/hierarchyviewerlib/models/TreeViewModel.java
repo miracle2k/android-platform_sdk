@@ -42,15 +42,28 @@ public class TreeViewModel {
     private final ArrayList<TreeChangeListener> treeChangeListeners =
             new ArrayList<TreeChangeListener>();
 
+    private static TreeViewModel model;
+
+    public static TreeViewModel getModel() {
+        if (model == null) {
+            model = new TreeViewModel();
+        }
+        return model;
+    }
+
     public void setData(Window window, ViewNode viewNode) {
         synchronized (this) {
             if (tree != null) {
                 tree.viewNode.dispose();
             }
             this.window = window;
-            tree = new DrawableViewNode(viewNode);
-            tree.setLeft();
-            tree.placeRoot();
+            if (viewNode == null) {
+                tree = null;
+            } else {
+                tree = new DrawableViewNode(viewNode);
+                tree.setLeft();
+                tree.placeRoot();
+            }
             viewport = null;
             zoom = 1;
             selectedNode = null;

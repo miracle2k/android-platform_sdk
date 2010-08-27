@@ -16,7 +16,7 @@
 
 package com.android.hierarchyviewerlib.ui;
 
-import com.android.hierarchyviewerlib.ComponentRegistry;
+import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
 import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
 import com.android.hierarchyviewerlib.ui.util.DrawableViewNode;
@@ -32,6 +32,7 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Path;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Canvas;
@@ -58,11 +59,23 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
 
     private boolean dragging = false;
 
+    private DrawableViewNode selectedNode;
+
+    private static Image notSelectedImage;
+
+    private static Image selectedImage;
+
+    private static Image filteredImage;
+
+    private static Image filteredSelectedImage;
+
     public TreeViewOverview(Composite parent) {
         super(parent, SWT.NONE);
 
-        model = ComponentRegistry.getTreeViewModel();
+        model = TreeViewModel.getModel();
         model.addTreeChangeListener(this);
+
+        loadResources();
 
         addPaintListener(paintListener);
         addMouseListener(mouseListener);
@@ -72,6 +85,15 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
 
         transform = new Transform(Display.getDefault());
         inverse = new Transform(Display.getDefault());
+    }
+
+    private void loadResources() {
+        ImageLoader loader = ImageLoader.getLoader(this.getClass());
+        notSelectedImage = loader.loadImage("not-selected.png", Display.getDefault());
+        selectedImage = loader.loadImage("selected-small.png", Display.getDefault());
+        filteredImage = loader.loadImage("filtered.png", Display.getDefault());
+        filteredSelectedImage =
+                loader.loadImage("selected-filtered-small.png", Display.getDefault());
     }
 
     private DisposeListener disposeListener = new DisposeListener() {
@@ -182,21 +204,23 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         public void paintControl(PaintEvent e) {
             synchronized (TreeViewOverview.this) {
                 if (tree != null && viewport != null) {
-                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
+                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
+                    e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
                     e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
                     e.gc.setTransform(transform);
+                    e.gc.setLineWidth((int) Math.ceil(0.7 / scale));
                     Path connectionPath = new Path(Display.getDefault());
                     paintRecursive(e.gc, tree, connectionPath);
                     e.gc.drawPath(connectionPath);
                     connectionPath.dispose();
 
-                    e.gc.setAlpha(80);
-                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY));
+                    e.gc.setAlpha(50);
+                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
                     e.gc.fillRectangle((int) viewport.x, (int) viewport.y, (int) Math
                             .ceil(viewport.width), (int) Math.ceil(viewport.height));
 
                     e.gc.setAlpha(255);
-                    e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
+                    e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY));
                     e.gc.setLineWidth((int) Math.ceil(2 / scale));
                     e.gc.drawRectangle((int) viewport.x, (int) viewport.y, (int) Math
                             .ceil(viewport.width), (int) Math.ceil(viewport.height));
@@ -206,8 +230,15 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     };
 
     private void paintRecursive(GC gc, DrawableViewNode node, Path connectionPath) {
-        gc.drawRectangle(node.left, (int) Math.round(node.top), DrawableViewNode.NODE_WIDTH,
-                DrawableViewNode.NODE_HEIGHT);
+        if (selectedNode == node && node.viewNode.filtered) {
+            gc.drawImage(filteredSelectedImage, node.left, (int) Math.round(node.top));
+        } else if (selectedNode == node) {
+            gc.drawImage(selectedImage, node.left, (int) Math.round(node.top));
+        } else if (node.viewNode.filtered) {
+            gc.drawImage(filteredImage, node.left, (int) Math.round(node.top));
+        } else {
+            gc.drawImage(notSelectedImage, node.left, (int) Math.round(node.top));
+        }
         int N = node.children.size();
         if (N == 0) {
             return;
@@ -244,6 +275,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
             public void run() {
                 synchronized (this) {
                     tree = model.getTree();
+                    selectedNode = model.getSelection();
                     setBounds();
                     setTransform();
                 }
@@ -311,6 +343,9 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     }
 
     public void selectionChanged() {
-        // pass
+        synchronized (this) {
+            selectedNode = model.getSelection();
+        }
+        doRedraw();
     }
 }

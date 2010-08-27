@@ -17,7 +17,6 @@
 package com.android.hierarchyviewerlib.ui;
 
 import com.android.ddmuilib.ImageLoader;
-import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.device.ViewNode;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
@@ -141,7 +140,7 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
 
         addDisposeListener(disposeListener);
 
-        model = ComponentRegistry.getPixelPerfectModel();
+        model = PixelPerfectModel.getModel();
         ContentProvider contentProvider = new ContentProvider();
         treeViewer.setContentProvider(contentProvider);
         treeViewer.setLabelProvider(contentProvider);
@@ -150,7 +149,7 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
 
     }
 
-    public void loadResources() {
+    private void loadResources() {
         ImageLoader loader = ImageLoader.getDdmUiLibLoader();
         fileImage = loader.loadImage("file.png", Display.getDefault());
 
@@ -191,7 +190,7 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
         // pass
     }
 
-    public void focusChanged() {
+    public void treeChanged() {
         imageLoaded();
     }
 

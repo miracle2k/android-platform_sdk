@@ -25,10 +25,13 @@ import org.eclipse.swt.widgets.TreeColumn;
 public class TreeColumnResizer {
 
     private TreeColumn column1;
+
     private TreeColumn column2;
 
     private Composite control;
+
     private int column1Width;
+
     private int column2Width;
 
     private final static int MIN_COLUMN1_WIDTH = 18;

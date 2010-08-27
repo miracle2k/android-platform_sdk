@@ -25,17 +25,17 @@ public class DrawableViewNode {
 
     public final ArrayList<DrawableViewNode> children = new ArrayList<DrawableViewNode>();
 
-    public final static int NODE_HEIGHT = 110;
+    public final static int NODE_HEIGHT = 100;
 
-    public final static int NODE_WIDTH = 170;
+    public final static int NODE_WIDTH = 180;
 
-    public final static int CONTENT_LEFT_RIGHT_PADDING = 3;
+    public final static int CONTENT_LEFT_RIGHT_PADDING = 7;
 
-    public final static int CONTENT_TOP_BOTTOM_PADDING = 7;
+    public final static int CONTENT_TOP_BOTTOM_PADDING = 8;
 
     public final static int CONTENT_INTER_PADDING = 3;
 
-    public final static int INDEX_PADDING = 5;
+    public final static int INDEX_PADDING = 7;
 
     public final static int LEAF_NODE_SPACING = 9;
 

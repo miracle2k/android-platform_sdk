@@ -42,8 +42,14 @@ public class DeviceConnection {
 
     public DeviceConnection(IDevice device) throws IOException {
         socketChannel = SocketChannel.open();
-        socketChannel.connect(new InetSocketAddress("127.0.0.1", DeviceBridge
-                .getDeviceLocalPort(device)));
+        int port = DeviceBridge.getDeviceLocalPort(device);
+
+        if (port == -1) {
+            throw new IOException();
+        }
+
+        socketChannel.connect(new InetSocketAddress("127.0.0.1", port));
+        socketChannel.socket().setSoTimeout(120000);
     }
 
     public BufferedReader getInputStream() throws IOException {

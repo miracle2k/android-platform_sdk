@@ -17,7 +17,6 @@
 package com.android.hierarchyviewerlib.models;
 
 import com.android.ddmlib.IDevice;
-import com.android.ddmlib.RawImage;
 import com.android.hierarchyviewerlib.device.ViewNode;
 
 import org.eclipse.swt.graphics.Image;
@@ -32,7 +31,7 @@ public class PixelPerfectModel {
 
     public static final int MAX_ZOOM = 24;
 
-    private static final int DEFAULT_ZOOM = 8;
+    public static final int DEFAULT_ZOOM = 8;
 
     private IDevice device;
 
@@ -53,14 +52,22 @@ public class PixelPerfectModel {
 
     private double overlayTransparency = 0.5;
 
+    private static PixelPerfectModel model;
+
+    public static PixelPerfectModel getModel() {
+        if (model == null) {
+            model = new PixelPerfectModel();
+        }
+        return model;
+    }
+
     public void setData(final IDevice device, final Image image, final ViewNode viewNode) {
+        final Image toDispose = this.image;
+        final Image toDispose2 = this.overlayImage;
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (PixelPerfectModel.this) {
                     PixelPerfectModel.this.device = device;
-                    if (PixelPerfectModel.this.image != null) {
-                        PixelPerfectModel.this.image.dispose();
-                    }
                     PixelPerfectModel.this.image = image;
                     PixelPerfectModel.this.viewNode = viewNode;
                     if (image != null) {
@@ -69,12 +76,28 @@ public class PixelPerfectModel {
                     } else {
                         PixelPerfectModel.this.crosshairLocation = null;
                     }
+                    overlayImage = null;
                     PixelPerfectModel.this.selected = null;
                     zoom = DEFAULT_ZOOM;
                 }
             }
         });
         notifyImageLoaded();
+        if (toDispose != null) {
+            Display.getDefault().syncExec(new Runnable() {
+                public void run() {
+                    toDispose.dispose();
+                }
+            });
+        }
+        if (toDispose2 != null) {
+            Display.getDefault().syncExec(new Runnable() {
+                public void run() {
+                    toDispose2.dispose();
+                }
+            });
+        }
+
     }
 
     public void setCrosshairLocation(int x, int y) {
@@ -91,20 +114,35 @@ public class PixelPerfectModel {
         notifySelectionChanged();
     }
 
-    public void setFocusData(final Image image, final ViewNode viewNode) {
+    public void setTree(final ViewNode viewNode) {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (PixelPerfectModel.this) {
-                    if (PixelPerfectModel.this.image != null) {
-                        PixelPerfectModel.this.image.dispose();
-                    }
-                    PixelPerfectModel.this.image = image;
                     PixelPerfectModel.this.viewNode = viewNode;
                     PixelPerfectModel.this.selected = null;
                 }
             }
         });
-        notifyFocusChanged();
+        notifyTreeChanged();
+    }
+
+    public void setImage(final Image image) {
+        final Image toDispose = this.image;
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (PixelPerfectModel.this) {
+                    PixelPerfectModel.this.image = image;
+                }
+            }
+        });
+        notifyImageChanged();
+        if (toDispose != null) {
+            Display.getDefault().syncExec(new Runnable() {
+                public void run() {
+                    toDispose.dispose();
+                }
+            });
+        }
     }
 
     public void setZoom(int newZoom) {
@@ -121,17 +159,22 @@ public class PixelPerfectModel {
     }
 
     public void setOverlayImage(final Image overlayImage) {
+        final Image toDispose = this.overlayImage;
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (PixelPerfectModel.this) {
-                    if (PixelPerfectModel.this.overlayImage != null) {
-                        PixelPerfectModel.this.overlayImage.dispose();
-                    }
                     PixelPerfectModel.this.overlayImage = overlayImage;
                 }
             }
         });
         notifyOverlayChanged();
+        if (toDispose != null) {
+            Display.getDefault().syncExec(new Runnable() {
+                public void run() {
+                    toDispose.dispose();
+                }
+            });
+        }
     }
 
     public void setOverlayTransparency(double value) {
@@ -200,7 +243,7 @@ public class PixelPerfectModel {
 
         public void selectionChanged();
 
-        public void focusChanged();
+        public void treeChanged();
 
         public void zoomChanged();
 
@@ -258,11 +301,11 @@ public class PixelPerfectModel {
         }
     }
 
-    public void notifyFocusChanged() {
+    public void notifyTreeChanged() {
         ImageChangeListener[] listeners = getImageChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
-                listeners[i].focusChanged();
+                listeners[i].treeChanged();
             }
         }
     }

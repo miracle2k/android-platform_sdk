@@ -16,8 +16,6 @@
 
 package com.android.hierarchyviewerlib.ui;
 
-import com.android.ddmlib.RawImage;
-import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.device.ViewNode;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
@@ -26,6 +24,8 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -33,8 +33,6 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Canvas;
@@ -74,12 +72,13 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
         setContent(canvas);
         setExpandHorizontal(true);
         setExpandVertical(true);
-        model = ComponentRegistry.getPixelPerfectModel();
+        model = PixelPerfectModel.getModel();
         model.addImageChangeListener(this);
 
         canvas.addPaintListener(paintListener);
         canvas.addMouseListener(mouseListener);
         canvas.addMouseMoveListener(mouseMoveListener);
+        canvas.addKeyListener(keyListener);
 
         addDisposeListener(disposeListener);
 
@@ -92,9 +91,6 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
     private DisposeListener disposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
             model.removeImageChangeListener(PixelPerfect.this);
-            if (image != null) {
-                image.dispose();
-            }
             crosshairColor.dispose();
             borderColor.dispose();
             paddingColor.dispose();
@@ -146,6 +142,51 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
         }
         model.setCrosshairLocation(e.x, e.y);
     }
+
+    private KeyListener keyListener = new KeyListener() {
+
+        public void keyPressed(KeyEvent e) {
+            boolean crosshairMoved = false;
+            synchronized (PixelPerfect.this) {
+                if (image != null) {
+                    switch (e.keyCode) {
+                        case SWT.ARROW_UP:
+                            if (crosshairLocation.y != 0) {
+                                crosshairLocation.y--;
+                                crosshairMoved = true;
+                            }
+                            break;
+                        case SWT.ARROW_DOWN:
+                            if (crosshairLocation.y != height - 1) {
+                                crosshairLocation.y++;
+                                crosshairMoved = true;
+                            }
+                            break;
+                        case SWT.ARROW_LEFT:
+                            if (crosshairLocation.x != 0) {
+                                crosshairLocation.x--;
+                                crosshairMoved = true;
+                            }
+                            break;
+                        case SWT.ARROW_RIGHT:
+                            if (crosshairLocation.x != width - 1) {
+                                crosshairLocation.x++;
+                                crosshairMoved = true;
+                            }
+                            break;
+                    }
+                }
+            }
+            if (crosshairMoved) {
+                model.setCrosshairLocation(crosshairLocation.x, crosshairLocation.y);
+            }
+        }
+
+        public void keyReleased(KeyEvent e) {
+            // pass
+        }
+
+    };
 
     private PaintListener paintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
@@ -266,6 +307,7 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
                     loadImage();
                     crosshairLocation = model.getCrosshairLocation();
                     selectedNode = model.getSelected();
+                    overlayImage = model.getOverlayImage();
                 }
             }
         });
@@ -297,11 +339,10 @@ public class PixelPerfect extends ScrolledComposite implements ImageChangeListen
         doRedraw();
     }
 
-    public void focusChanged() {
+    public void treeChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (this) {
-                    loadImage();
                     selectedNode = model.getSelected();
                 }
             }

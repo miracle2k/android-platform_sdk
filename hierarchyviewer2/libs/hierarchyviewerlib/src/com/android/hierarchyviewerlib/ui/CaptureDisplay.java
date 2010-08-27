@@ -35,8 +35,6 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 
 public class CaptureDisplay {
@@ -66,12 +64,7 @@ public class CaptureDisplay {
         CaptureDisplay.image = image;
         CaptureDisplay.viewNode = viewNode;
         viewNode.referenceImage();
-        int dotIndex = viewNode.name.lastIndexOf('.');
-        if (dotIndex != -1) {
-            shell.setText(viewNode.name.substring(dotIndex + 1));
-        } else {
-            shell.setText(viewNode.name);
-        }
+        shell.setText(viewNode.name);
 
         boolean shellVisible = shell.isVisible();
         if (!shellVisible) {
@@ -82,7 +75,6 @@ public class CaptureDisplay {
                 shell.computeTrim(0, 0, Math.max(buttonBar.getBounds().width,
                         image.getBounds().width), buttonBar.getBounds().height
                         + image.getBounds().height + 5);
-        System.out.println(bounds);
         shell.setSize(bounds.width, bounds.height);
         if (!shellVisible) {
             shell.setLocation(parentShell.getBounds().x
@@ -92,6 +84,8 @@ public class CaptureDisplay {
         if (shellVisible) {
             canvas.redraw();
         }
+        // Odd bug in setting the size... Do it again.
+        shell.setSize(bounds.width, bounds.height);
     }
 
     private static void createShell() {
@@ -102,12 +96,14 @@ public class CaptureDisplay {
         shell.setLayout(gridLayout);
 
         buttonBar = new Composite(shell, SWT.NONE);
+        // buttonBar.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         RowLayout rowLayout = new RowLayout(SWT.HORIZONTAL);
         rowLayout.pack = true;
         rowLayout.center = true;
         buttonBar.setLayout(rowLayout);
         Composite buttons = new Composite(buttonBar, SWT.NONE);
         buttons.setLayout(new FillLayout());
+        // buttons.setLayoutData(new RowData());
 
         onWhite = new Button(buttons, SWT.TOGGLE);
         onWhite.setText("On White");
@@ -118,11 +114,12 @@ public class CaptureDisplay {
         onBlack.addSelectionListener(blackSelectionListener);
 
         showExtras = new Button(buttonBar, SWT.CHECK);
+        // showExtras.setLayoutData(new RowData());
         showExtras.setText("Show Extras");
         showExtras.addSelectionListener(extrasSelectionListener);
 
         canvas = new Canvas(shell, SWT.NONE);
-        canvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        canvas.setLayoutData(new GridData(GridData.FILL_BOTH));
         canvas.addPaintListener(paintListener);
 
         shell.addShellListener(shellListener);
