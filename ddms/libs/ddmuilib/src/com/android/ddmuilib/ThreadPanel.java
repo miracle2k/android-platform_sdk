@@ -101,7 +101,8 @@ public class ThreadPanel extends TablePanel {
 
     private static final String[] THREAD_STATUS = {
         "zombie", "running", "timed-wait", "monitor",
-        "wait", "init", "start", "native", "vmwait"
+        "wait", "init", "start", "native", "vmwait",
+        "suspended"
     };
     
     /**
