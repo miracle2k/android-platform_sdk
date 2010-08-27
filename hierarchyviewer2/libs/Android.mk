@@ -14,4 +14,3 @@
 
 HIERARCHYVIEWERLIBS_LOCAL_DIR := $(call my-dir)
 include $(HIERARCHYVIEWERLIBS_LOCAL_DIR)/hierarchyviewerlib/Android.mk
-include $(HIERARCHYVIEWERLIBS_LOCAL_DIR)/hierarchyvieweruilib/Android.mk
