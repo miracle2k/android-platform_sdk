@@ -248,7 +248,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         // all the linked id it is referencing.
         ids = [];
         cachedLinkIds[node] = ids;
-        for (attr in node.getAttributes()) {
+        for (attr in node.getLiveAttributes()) {
             def attrInfo = node.getAttributeInfo(attr.getUri(), attr.getName());
             if (attrInfo == null) {
                 continue;

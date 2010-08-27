@@ -16,7 +16,16 @@
 
 package com.android.adt.gscripts;
 
+/**
+ * Common IViewRule processing to all view and layout classes.
+ */
 public class BaseView implements IViewRule {
+
+    /**
+     * Namespace for the Android resource XML,
+     * i.e. "http://schemas.android.com/apk/res/android"
+     */
+    public static String ANDROID_URI = "http://schemas.android.com/apk/res/android";
 
     // Some common Android layout attribute names used by the view rules.
     // All these belong to the attribute namespace ANDROID_URI.
@@ -27,15 +36,12 @@ public class BaseView implements IViewRule {
 
     // Some common Android layout attribute values used by the view rules.
     public static String VALUE_FILL_PARENT = "fill_parent";
-    public static String VALUE_MATCH_PARENT = "match_parent";
-    public static String VALUE_MATCH_CONTENT = "match_content";
+    public static String VALUE_MATCH_PARENT = "match_parent"; // like fill_parent for API 8
+    public static String VALUE_WRAP_CONTENT = "wrap_content";
 
-
-    /**
-     * Namespace for the Android resource XML,
-     * i.e. "http://schemas.android.com/apk/res/android"
-     */
-    public static String ANDROID_URI = "http://schemas.android.com/apk/res/android";
+    // Cache of attributes. Key is FQCN of a node mixed with its view hierarchy parent.
+    // Values are a custom map as needed by getContextMenu.
+    public Map mAttributesMap = [:];
 
     public boolean onInitialize(String fqcn) {
         // This base rule can handle any class so we don't need to filter on FQCN.
@@ -61,6 +67,188 @@ public class BaseView implements IViewRule {
     public Map<?, ?> getDefaultAttributes() {
         // The base rule does not have any custom default attributes.
         return null;
+    }
+
+    // === Context Menu ===
+
+    /**
+     * Generate custom actions for the context menu: <br/>
+     * - Explicit layout_width and layout_height attributes.
+     * - List of all other simple toggle attributes.
+     */
+    public List<MenuAction> getContextMenu(INode selectedNode) {
+
+        // Compute the key for mAttributesMap. This depends on the type of this node and
+        // its parent in the view hierarchy.
+        def key = selectedNode.getFqcn() + "_";
+        def parent = selectedNode.getParent();
+        if (parent) key = key + parent.getFqcn();
+
+        def custom_w = "Custom...";
+        def curr_w = selectedNode.getStringAttr(ANDROID_URI, ATTR_LAYOUT_WIDTH);
+
+        if (curr_w == VALUE_FILL_PARENT) {
+            curr_w = VALUE_MATCH_PARENT;
+        } else if (curr_w != VALUE_WRAP_CONTENT && curr_w != VALUE_MATCH_PARENT) {
+            curr_w = "zcustom";
+            if (!!curr_w) {
+                custom_w = "Custom: ${curr_w}"
+            }
+        }
+
+        def custom_h = "Custom...";
+        def curr_h = selectedNode.getStringAttr(ANDROID_URI, ATTR_LAYOUT_HEIGHT);
+
+        if (curr_h == VALUE_FILL_PARENT) {
+            curr_h = VALUE_MATCH_PARENT;
+        } else if (curr_h != VALUE_WRAP_CONTENT && curr_h != VALUE_MATCH_PARENT) {
+            curr_h = "zcustom";
+            if (!!curr_h) {
+                custom_h = "Custom: ${curr_h}"
+            }
+        }
+
+        def onChange = { MenuAction.Action action, String valueId, Boolean newValue ->
+            def actionId = action.getId();
+            def node = selectedNode;
+
+            switch (actionId) {
+                case "layout_1width":
+                    if (!valueId.startsWith("z")) {
+                        node.editXml("Change attribute " + ATTR_LAYOUT_WIDTH) {
+                            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, valueId);
+                        }
+                    }
+                    return;
+                case "layout_2height":
+                    if (!valueId.startsWith("z")) {
+                        node.editXml("Change attribute " + ATTR_LAYOUT_HEIGHT) {
+                            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, valueId);
+                        }
+                    }
+                    return;
+            }
+
+            if (actionId.startsWith("@prop@")) {
+                actionId = actionId.substring(6);
+
+                def props = mAttributesMap[key];
+                def prop = props?.get(actionId);
+
+                if (prop) {
+                    node.editXml("Change attribute " + actionId) {
+                        if (prop.isToggle) {
+                            node.setAttribute(ANDROID_URI, actionId, newValue ? "true" : "");
+                        } else if (props.isFlag) {
+                            def values = node.getStringAttr(ANDROID_URI, actionId);
+                            if (!values) values = "";
+                            values = values.split(",");
+                            if (newValue) {
+                                values << valueId;
+                            } else {
+                                values = values - valueId;
+                            }
+                            values = values.join(",")
+                            node.setAttribute(ANDROID_URI, actionId, values);
+                        } else {
+                            // it's an enum
+                            node.setAttribute(ANDROID_URI, actionId, valueId);
+                        }
+                    }
+                }
+            }
+        }
+
+        def list1 = [
+             new MenuAction.Choices("layout_1width", "Layout Width",
+                       [ "wrap_content": "Wrap Content",
+                         "match_parent": "Match Parent",
+                         "zcustom": custom_w ],
+                       curr_w,
+                       onChange ),
+            new MenuAction.Choices("layout_2height", "Layout Height",
+                       [ "wrap_content": "Wrap Content",
+                         "match_parent": "Match Parent",
+                         "zcustom": custom_h ],
+                       curr_h,
+                       onChange ),
+            new MenuAction.Group("properties", "Properties"),
+        ];
+
+        // Prepare a list of all simple properties.
+
+        def props = mAttributesMap[key];
+        if (props == null) {
+            // Prepare the property map
+            props = [:]
+            for (attrInfo in selectedNode.getDeclaredAttributes()) {
+                def formats = attrInfo?.getFormats();
+                if (formats == null) {
+                    continue;
+                }
+                if (IAttributeInfo.Format.BOOLEAN in formats) {
+                    def id = attrInfo.getName();
+                    def title = prettyName(id);
+                    props[id] = [ isToggle: true, title: title ];
+
+                } else if (IAttributeInfo.Format.ENUM in formats) {
+                    def id = attrInfo.getName();
+                    def title = prettyName(id);
+
+                    // Convert each enum into a map id=>title
+                    def values = [:];
+                    attrInfo.getEnumValues().each { e -> values[e] = prettyName(e) }
+
+                    props[id]= [ isToggle: false,
+                                 isFlag: false,
+                                 title: title,
+                                 choices: values ];
+
+                } else if (IAttributeInfo.Format.FLAG in formats) {
+                    def id = attrInfo.getName();
+                    def title = prettyName(id);
+
+                    // Convert each enum into a map id=>title
+                    def values = [:];
+                    attrInfo.getFlagValues().each { e -> values[e] = prettyName(e) };
+
+                    props[id] = [ isToggle: false,
+                                 isFlag: true,
+                                 title: title,
+                                 choices: values ];
+                }
+            }
+            mAttributesMap[key] = props;
+        }
+
+        def list2 = [];
+
+        props.each { id, p ->
+            def a = null;
+            if (p.isToggle) {
+                def value = selectedNode.getStringAttr(ANDROID_URI, id);
+                // is checked if value is defined and is true
+                value = value != null && Boolean.valueOf(value);
+                a = new MenuAction.Toggle("@prop@" + id, p.title, value, "properties", onChange);
+            } else {
+                // enum or flag
+                def current = selectedNode.getStringAttr(ANDROID_URI, id);
+                a = new MenuAction.Choices(
+                            "@prop@" + id, p.title, p.choices, current, "properties", onChange);
+            }
+            if (a) list2.add(a);
+        }
+
+        return list1 + list2;
+    }
+
+    public String prettyName(String name) {
+        if (name) {
+            def c = name[0];
+            name = name.replaceFirst(c, c.toUpperCase());
+            name = name.replace("_", " ");
+        }
+        return name;
     }
 
     // ==== Selection ====

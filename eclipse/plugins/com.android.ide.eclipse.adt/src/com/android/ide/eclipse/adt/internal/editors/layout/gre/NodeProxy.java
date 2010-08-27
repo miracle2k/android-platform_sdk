@@ -31,6 +31,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElement
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.w3c.dom.NamedNodeMap;
@@ -317,7 +318,20 @@ public class NodeProxy implements INode {
         return null;
     }
 
-    public IAttribute[] getAttributes() {
+    public IAttributeInfo[] getDeclaredAttributes() {
+
+        AttributeDescriptor[] descs = mNode.getAttributeDescriptors();
+        int n = descs.length;
+        IAttributeInfo[] infos = new AttributeInfo[n];
+
+        for (int i = 0; i < n; i++) {
+            infos[i] = descs[i].getAttributeInfo();
+        }
+
+        return infos;
+    }
+
+    public IAttribute[] getLiveAttributes() {
         UiElementNode uiNode = mNode;
 
         if (uiNode.getXmlNode() != null) {
