@@ -18,9 +18,9 @@ package com.android.hierarchyviewerlib.models;
 
 import com.android.hierarchyviewerlib.device.ViewNode;
 import com.android.hierarchyviewerlib.device.Window;
-import com.android.hierarchyviewerlib.scene.DrawableViewNode;
-import com.android.hierarchyviewerlib.scene.DrawableViewNode.Point;
-import com.android.hierarchyviewerlib.scene.DrawableViewNode.Rectangle;
+import com.android.hierarchyviewerlib.ui.util.DrawableViewNode;
+import com.android.hierarchyviewerlib.ui.util.DrawableViewNode.Point;
+import com.android.hierarchyviewerlib.ui.util.DrawableViewNode.Rectangle;
 
 import java.util.ArrayList;
 
@@ -44,6 +44,9 @@ public class TreeViewModel {
 
     public void setData(Window window, ViewNode viewNode) {
         synchronized (this) {
+            if (tree != null) {
+                tree.viewNode.dispose();
+            }
             this.window = window;
             tree = new DrawableViewNode(viewNode);
             tree.setLeft();

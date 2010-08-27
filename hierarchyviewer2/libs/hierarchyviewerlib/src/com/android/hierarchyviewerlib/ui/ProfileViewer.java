@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyvieweruilib;
+package com.android.hierarchyviewerlib.ui;
 
 import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
 import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
-import com.android.hierarchyviewerlib.scene.DrawableViewNode;
-import com.android.hierarchyvieweruilib.util.TreeColumnResizer;
+import com.android.hierarchyviewerlib.ui.util.DrawableViewNode;
+import com.android.hierarchyviewerlib.ui.util.TreeColumnResizer;
 
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ITableLabelProvider;
@@ -97,10 +97,19 @@ public class ProfileViewer extends Composite implements TreeChangeListener {
                     } else if (column == 1) {
                         DecimalFormat formatter = new DecimalFormat("0.000");
                         if(((String)element).equals("measure")) {
+                            if (selectedNode.viewNode.measureTime == -1) {
+                                return "unknown";
+                            }
                             return formatter.format(selectedNode.viewNode.measureTime);
                         } else if (((String) element).equals("layout")) {
+                            if (selectedNode.viewNode.layoutTime == -1) {
+                                return "unknown";
+                            }
                             return formatter.format(selectedNode.viewNode.layoutTime);
                         } else {
+                            if (selectedNode.viewNode.drawTime == -1) {
+                                return "unknown";
+                            }
                             return formatter.format(selectedNode.viewNode.drawTime);
                         }
                     }

@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyvieweruilib;
+package com.android.hierarchyviewerlib.ui;
 
 import com.android.ddmlib.RawImage;
 import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
-import com.android.hierarchyviewerlib.models.PixelPerfectModel.Point;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
@@ -35,6 +34,7 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Transform;
@@ -65,6 +65,12 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
 
     private int canvasHeight;
 
+    private Image overlayImage;
+
+    private double overlayTransparency;
+
+    private boolean showOverlay = false;
+
     public PixelPerfectLoupe(Composite parent) {
         super(parent, SWT.NONE);
         model = ComponentRegistry.getPixelPerfectModel();
@@ -78,6 +84,12 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
         crosshairColor = new Color(Display.getDefault(), new RGB(255, 94, 254));
 
         transform = new Transform(Display.getDefault());
+    }
+
+    public void setShowOverlay(boolean value) {
+        synchronized (this) {
+            showOverlay = value;
+        }
     }
 
     private DisposeListener disposeListener = new DisposeListener() {
@@ -113,7 +125,7 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
     private MouseWheelListener mouseWheelListener = new MouseWheelListener() {
         public void mouseScrolled(MouseEvent e) {
             int newZoom = -1;
-            synchronized (this) {
+            synchronized (PixelPerfectLoupe.this) {
                 if (image != null && crosshairLocation != null) {
                     if (e.count > 0) {
                         newZoom = zoom + 1;
@@ -131,7 +143,7 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
     private void handleMouseEvent(MouseEvent e) {
         int newX = -1;
         int newY = -1;
-        synchronized (this) {
+        synchronized (PixelPerfectLoupe.this) {
             if (image == null) {
                 return;
             }
@@ -151,7 +163,7 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
 
     private PaintListener paintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
-            synchronized (this) {
+            synchronized (PixelPerfectLoupe.this) {
                 e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
                 e.gc.fillRectangle(0, 0, getSize().x, getSize().y);
                 if (image != null && crosshairLocation != null) {
@@ -162,6 +174,12 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
                     e.gc.setInterpolation(SWT.NONE);
                     e.gc.setTransform(transform);
                     e.gc.drawImage(image, 0, 0);
+                    if (showOverlay && overlayImage != null) {
+                        e.gc.setAlpha((int) (overlayTransparency * 255));
+                        e.gc.drawImage(overlayImage, 0, height - overlayImage.getBounds().height);
+                        e.gc.setAlpha(255);
+                    }
+
                     transform.identity();
                     e.gc.setTransform(transform);
 
@@ -220,41 +238,37 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
     }
 
     private void loadImage() {
-        final RawImage rawImage = model.getImage();
-        if (rawImage != null) {
-            ImageData imageData =
-                    new ImageData(rawImage.width, rawImage.height, rawImage.bpp,
-                            new PaletteData(rawImage.getRedMask(), rawImage.getGreenMask(),
-                                    rawImage.getBlueMask()), 1, rawImage.data);
-            if (image != null) {
-                image.dispose();
-            }
-            image = new Image(Display.getDefault(), imageData);
-            width = rawImage.width;
-            height = rawImage.height;
+        image = model.getImage();
+        if (image != null) {
+            width = image.getBounds().width;
+            height = image.getBounds().height;
         } else {
-            if (image != null) {
-                image.dispose();
-                image = null;
-            }
             width = 0;
             height = 0;
         }
     }
 
     public void imageLoaded() {
-        synchronized (this) {
-            loadImage();
-            crosshairLocation = model.getCrosshairLocation();
-            zoom = model.getZoom();
-        }
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    loadImage();
+                    crosshairLocation = model.getCrosshairLocation();
+                    zoom = model.getZoom();
+                }
+            }
+        });
         doRedraw();
     }
 
     public void imageChanged() {
-        synchronized (this) {
-            loadImage();
-        }
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    loadImage();
+                }
+            }
+        });
         doRedraw();
     }
 
@@ -274,14 +288,34 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
     }
 
     public void zoomChanged() {
-        synchronized (this) {
-            if (grid != null) {
-                // To notify that the zoom level has changed, we get rid of the
-                // grid.
-                grid.dispose();
-                grid = null;
-                zoom = model.getZoom();
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    if (grid != null) {
+                        // To notify that the zoom level has changed, we get rid
+                        // of the
+                        // grid.
+                        grid.dispose();
+                        grid = null;
+                        zoom = model.getZoom();
+                    }
+                }
             }
+        });
+        doRedraw();
+    }
+
+    public void overlayChanged() {
+        synchronized (this) {
+            overlayImage = model.getOverlayImage();
+            overlayTransparency = model.getOverlayTransparency();
+        }
+        doRedraw();
+    }
+
+    public void overlayTransparencyChanged() {
+        synchronized (this) {
+            overlayTransparency = model.getOverlayTransparency();
         }
         doRedraw();
     }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyvieweruilib;
+package com.android.hierarchyviewerlib.ui;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.ComponentRegistry;
@@ -38,7 +38,6 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeColumn;
 
 import java.util.List;
 
@@ -213,4 +212,11 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
         // pass
     }
 
+    public void overlayChanged() {
+        // pass
+    }
+
+    public void overlayTransparencyChanged() {
+        // pass
+    }
 }

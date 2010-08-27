@@ -16,6 +16,8 @@
 
 package com.android.hierarchyviewerlib.device;
 
+import org.eclipse.swt.graphics.Image;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,6 +28,15 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class ViewNode {
+
+    public static enum ProfileRating {
+        RED, YELLOW, GREEN, NONE
+    };
+
+    private static final double RED_THRESHOLD = 0.8;
+
+    private static final double YELLOW_THRESHOLD = 0.5;
+
     public static final String MISCELLANIOUS = "miscellaneous";
 
     public String id;
@@ -86,9 +97,22 @@ public class ViewNode {
 
     public double drawTime;
 
+    public ProfileRating measureRating = ProfileRating.NONE;
+
+    public ProfileRating layoutRating = ProfileRating.NONE;
+
+    public ProfileRating drawRating = ProfileRating.NONE;
+
     public Set<String> categories = new TreeSet<String>();
 
-    public ViewNode(ViewNode parent, String data) {
+    public Window window;
+
+    public Image image;
+
+    public int imageReferences = 1;
+
+    public ViewNode(Window window, ViewNode parent, String data) {
+        this.window = window;
         this.parent = parent;
         index = this.parent == null ? 0 : this.parent.children.size();
         if (this.parent != null) {
@@ -104,6 +128,25 @@ public class ViewNode {
         measureTime = -1;
         layoutTime = -1;
         drawTime = -1;
+    }
+
+    public void dispose() {
+        final int N = children.size();
+        for(int i = 0; i<N; i++) {
+            children.get(i).dispose();
+        }
+        dereferenceImage();
+    }
+
+    public void referenceImage() {
+        imageReferences++;
+    }
+
+    public void dereferenceImage() {
+        imageReferences--;
+        if (image != null && imageReferences == 0) {
+            image.dispose();
+        }
     }
 
     private void loadProperties(String data) {
@@ -141,9 +184,9 @@ public class ViewNode {
         top = namedProperties.containsKey("mTop") ?
                 getInt("mTop", 0) : getInt("layout:mTop", 0);
         width = namedProperties.containsKey("getWidth()") ?
-                getInt("getWidth()", 0) : getInt("measurement:getWidth()", 0);
+                getInt("getWidth()", 0) : getInt("layout:getWidth()", 0);
         height = namedProperties.containsKey("getHeight()") ?
-                getInt("getHeight()", 0) : getInt("measurement:getHeight()", 0);
+                getInt("getHeight()", 0) : getInt("layout:getHeight()", 0);
         scrollX = namedProperties.containsKey("mScrollX") ?
                 getInt("mScrollX", 0) : getInt("scrolling:mScrollX", 0);
         scrollY = namedProperties.containsKey("mScrollY") ?
@@ -158,19 +201,19 @@ public class ViewNode {
                 getInt("mPaddingBottom", 0) : getInt("padding:mPaddingBottom", 0);
         marginLeft = namedProperties.containsKey("layout_leftMargin") ?
                 getInt("layout_leftMargin", Integer.MIN_VALUE) :
-                getInt("layout:leftMargin", Integer.MIN_VALUE);
+                getInt("layout:layout_leftMargin", Integer.MIN_VALUE);
         marginRight = namedProperties.containsKey("layout_rightMargin") ?
                 getInt("layout_rightMargin", Integer.MIN_VALUE) :
-                getInt("layout:rightMargin", Integer.MIN_VALUE);
+                getInt("layout:layout_rightMargin", Integer.MIN_VALUE);
         marginTop = namedProperties.containsKey("layout_topMargin") ?
                 getInt("layout_topMargin", Integer.MIN_VALUE) :
-                getInt("layout:topMargin", Integer.MIN_VALUE);
+                getInt("layout:layout_topMargin", Integer.MIN_VALUE);
         marginBottom = namedProperties.containsKey("layout_bottomMargin") ?
                 getInt("layout_bottomMargin", Integer.MIN_VALUE) :
-                getInt("layout:bottomMargin", Integer.MIN_VALUE);
+                getInt("layout:layout_bottomMargin", Integer.MIN_VALUE);
         baseline = namedProperties.containsKey("getBaseline()") ?
                 getInt("getBaseline()", 0) :
-                getInt("measurement:getBaseline()", 0);
+                getInt("layout:getBaseline()", 0);
         willNotDraw = namedProperties.containsKey("willNotDraw()") ?
                 getBoolean("willNotDraw()", false) :
                 getBoolean("drawing:willNotDraw()", false);
@@ -190,6 +233,48 @@ public class ViewNode {
         }
         if(categories.size() != 0) {
             categories.add(MISCELLANIOUS);
+        }
+    }
+
+    public void setProfileRatings() {
+        final int N = children.size();
+        if (N > 1) {
+            double totalMeasure = 0;
+            double totalLayout = 0;
+            double totalDraw = 0;
+            for (int i = 0; i < N; i++) {
+                ViewNode child = children.get(i);
+                totalMeasure += child.measureTime;
+                totalLayout += child.layoutTime;
+                totalDraw += child.drawTime;
+            }
+            for (int i = 0; i < N; i++) {
+                ViewNode child = children.get(i);
+                if (child.measureTime / totalMeasure >= RED_THRESHOLD) {
+                    child.measureRating = ProfileRating.RED;
+                } else if (child.measureTime / totalMeasure >= YELLOW_THRESHOLD) {
+                    child.measureRating = ProfileRating.YELLOW;
+                } else {
+                    child.measureRating = ProfileRating.GREEN;
+                }
+                if (child.layoutTime / totalLayout >= RED_THRESHOLD) {
+                    child.layoutRating = ProfileRating.RED;
+                } else if (child.layoutTime / totalLayout >= YELLOW_THRESHOLD) {
+                    child.layoutRating = ProfileRating.YELLOW;
+                } else {
+                    child.layoutRating = ProfileRating.GREEN;
+                }
+                if (child.drawTime / totalDraw >= RED_THRESHOLD) {
+                    child.drawRating = ProfileRating.RED;
+                } else if (child.drawTime / totalDraw >= YELLOW_THRESHOLD) {
+                    child.drawRating = ProfileRating.YELLOW;
+                } else {
+                    child.drawRating = ProfileRating.GREEN;
+                }
+            }
+        }
+        for (int i = 0; i < N; i++) {
+            children.get(i).setProfileRatings();
         }
     }
 

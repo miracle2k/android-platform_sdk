@@ -4,6 +4,5 @@
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="libs/hierarchyviewerlib.jar" sourcepath="/ddmlib"/>
-	<classpathentry kind="lib" path="libs/hierarchyvieweruilib.jar" sourcepath="/ddmuilib"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

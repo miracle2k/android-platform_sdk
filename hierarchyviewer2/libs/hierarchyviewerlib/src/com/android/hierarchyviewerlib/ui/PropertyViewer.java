@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyvieweruilib;
+package com.android.hierarchyviewerlib.ui;
 
 import com.android.hierarchyviewerlib.ComponentRegistry;
 import com.android.hierarchyviewerlib.device.ViewNode;
 import com.android.hierarchyviewerlib.device.ViewNode.Property;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
 import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
-import com.android.hierarchyviewerlib.scene.DrawableViewNode;
-import com.android.hierarchyvieweruilib.util.TreeColumnResizer;
+import com.android.hierarchyviewerlib.ui.util.DrawableViewNode;
+import com.android.hierarchyviewerlib.ui.util.TreeColumnResizer;
 
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ITableLabelProvider;
@@ -34,8 +34,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 

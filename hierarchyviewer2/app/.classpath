@@ -4,7 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/ANDROID_SWT"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hierarchyviewerlib"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/hierarchyvieweruilib"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ddmlib"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ddmuilib"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/SdkLib"/>

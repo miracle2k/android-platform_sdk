@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyvieweruilib;
+package com.android.hierarchyviewerlib.ui;
 
 import com.android.ddmlib.IDevice;
 import com.android.ddmuilib.ImageLoader;
@@ -163,8 +163,8 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
         ContentProvider contentProvider = new ContentProvider();
         treeViewer.setContentProvider(contentProvider);
         treeViewer.setLabelProvider(contentProvider);
-        treeViewer.setInput(model);
         model.addWindowChangeListener(this);
+        treeViewer.setInput(model);
     }
 
     public void loadResources() {

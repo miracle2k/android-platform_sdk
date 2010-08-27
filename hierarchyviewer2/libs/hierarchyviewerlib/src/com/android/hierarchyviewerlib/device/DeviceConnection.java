@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -59,6 +60,10 @@ public class DeviceConnection {
                             .getOutputStream()));
         }
         return out;
+    }
+
+    public Socket getSocket() {
+        return socketChannel.socket();
     }
 
     public void sendCommand(String command) throws IOException {
