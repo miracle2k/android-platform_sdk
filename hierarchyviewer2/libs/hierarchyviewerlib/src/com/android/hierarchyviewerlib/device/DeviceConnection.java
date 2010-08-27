@@ -49,7 +49,7 @@ public class DeviceConnection {
         }
 
         socketChannel.connect(new InetSocketAddress("127.0.0.1", port));
-        socketChannel.socket().setSoTimeout(120000);
+        socketChannel.socket().setSoTimeout(40000);
     }
 
     public BufferedReader getInputStream() throws IOException {
