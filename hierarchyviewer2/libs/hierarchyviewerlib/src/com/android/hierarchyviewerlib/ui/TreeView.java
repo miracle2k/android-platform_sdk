@@ -16,6 +16,7 @@
 
 package com.android.hierarchyviewerlib.ui;
 
+import com.android.ddmlib.Log;
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.device.ViewNode.ProfileRating;
@@ -164,6 +165,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
         transform = new Transform(Display.getDefault());
         inverse = new Transform(Display.getDefault());
 
+        loadAllData();
     }
 
     private void loadResources() {
@@ -190,6 +192,9 @@ public class TreeView extends Canvas implements TreeChangeListener {
             inverse.dispose();
             boxColor.dispose();
             textBackgroundColor.dispose();
+            if (tree != null) {
+                model.setViewport(null);
+            }
         }
     };
 
@@ -959,11 +964,36 @@ public class TreeView extends Canvas implements TreeChangeListener {
     }
 
     private void doRedraw() {
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 redraw();
             }
         });
+    }
+    
+    public void loadAllData() {
+        boolean newViewport = viewport == null;
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    tree = model.getTree();
+                    selectedNode = model.getSelection();
+                    viewport = model.getViewport();
+                    zoom = model.getZoom();
+                    if (tree != null && viewport == null) {
+                        viewport =
+                                new Rectangle(0, tree.top + DrawableViewNode.NODE_HEIGHT / 2
+                                        - getBounds().height / 2, getBounds().width,
+                                        getBounds().height);
+                    } else {
+                        setTransform();
+                    }
+                }
+            }
+        });
+        if (newViewport) {
+            model.setViewport(viewport);
+        }
     }
 
     // Fickle behaviour... When a new tree is loaded, the model doesn't know
@@ -987,6 +1017,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
         });
         if (viewport != null) {
             model.setViewport(viewport);
+        } else {
+            doRedraw();
         }
     }
 

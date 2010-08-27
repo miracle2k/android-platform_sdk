@@ -19,6 +19,7 @@ package com.android.hierarchyviewer.actions;
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewer.AboutDialog;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
+import com.android.hierarchyviewerlib.actions.ImageAction;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;

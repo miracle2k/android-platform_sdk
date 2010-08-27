@@ -85,6 +85,8 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
 
         transform = new Transform(Display.getDefault());
         inverse = new Transform(Display.getDefault());
+
+        loadAllData();
     }
 
     private void loadResources() {
@@ -207,7 +209,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     private PaintListener paintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
             synchronized (TreeViewOverview.this) {
-                if (tree != null && viewport != null) {
+                if (tree != null) {
                     e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
                     e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
                     e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
@@ -218,16 +220,20 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
                     e.gc.drawPath(connectionPath);
                     connectionPath.dispose();
 
-                    e.gc.setAlpha(50);
-                    e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
-                    e.gc.fillRectangle((int) viewport.x, (int) viewport.y, (int) Math
-                            .ceil(viewport.width), (int) Math.ceil(viewport.height));
+                    if (viewport != null) {
+                        e.gc.setAlpha(50);
+                        e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
+                        e.gc.fillRectangle((int) viewport.x, (int) viewport.y, (int) Math
+                                .ceil(viewport.width), (int) Math.ceil(viewport.height));
 
-                    e.gc.setAlpha(255);
-                    e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY));
-                    e.gc.setLineWidth((int) Math.ceil(2 / scale));
-                    e.gc.drawRectangle((int) viewport.x, (int) viewport.y, (int) Math
-                            .ceil(viewport.width), (int) Math.ceil(viewport.height));
+                        e.gc.setAlpha(255);
+                        e.gc
+                                .setForeground(Display.getDefault().getSystemColor(
+                                        SWT.COLOR_DARK_GRAY));
+                        e.gc.setLineWidth((int) Math.ceil(2 / scale));
+                        e.gc.drawRectangle((int) viewport.x, (int) viewport.y, (int) Math
+                                .ceil(viewport.width), (int) Math.ceil(viewport.height));
+                    }
                 }
             }
         }
@@ -267,9 +273,23 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     }
 
     private void doRedraw() {
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 redraw();
+            }
+        });
+    }
+
+    public void loadAllData() {
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                synchronized (this) {
+                    tree = model.getTree();
+                    selectedNode = model.getSelection();
+                    viewport = model.getViewport();
+                    setBounds();
+                    setTransform();
+                }
             }
         });
     }
@@ -281,6 +301,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
                 synchronized (this) {
                     tree = model.getTree();
                     selectedNode = model.getSelection();
+                    viewport = model.getViewport();
                     setBounds();
                     setTransform();
                 }
@@ -299,11 +320,16 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
             bounds.height =
                     Math.max(viewport.y + viewport.height, tree.bounds.y + tree.bounds.height)
                             - bounds.y;
+        } else if (tree != null) {
+            bounds.x = tree.bounds.x;
+            bounds.y = tree.bounds.y;
+            bounds.width = tree.bounds.x + tree.bounds.width - bounds.x;
+            bounds.height = tree.bounds.y + tree.bounds.height - bounds.y;
         }
     }
 
     private void setTransform() {
-        if (viewport != null && tree != null) {
+        if (tree != null) {
 
             transform.identity();
             inverse.identity();

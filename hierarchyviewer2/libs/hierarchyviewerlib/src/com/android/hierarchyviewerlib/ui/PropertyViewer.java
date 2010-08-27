@@ -210,6 +210,8 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
         new TreeColumnResizer(this, propertyColumn, valueColumn);
 
         addControlListener(controlListener);
+
+        treeChanged();
     }
 
     public void loadResources() {
@@ -280,7 +282,7 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
     }
 
     private void doRefresh() {
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 treeViewer.refresh();
             }

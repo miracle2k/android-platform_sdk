@@ -33,6 +33,8 @@ public class PixelPerfectModel {
 
     public static final int DEFAULT_ZOOM = 8;
 
+    public static final int DEFAULT_OVERLAY_TRANSPARENCY_PERCENTAGE = 50;
+
     private IDevice device;
 
     private Image image;
@@ -50,7 +52,7 @@ public class PixelPerfectModel {
 
     private Image overlayImage;
 
-    private double overlayTransparency = 0.5;
+    private double overlayTransparency = DEFAULT_OVERLAY_TRANSPARENCY_PERCENTAGE / 100.0;
 
     private static PixelPerfectModel model;
 

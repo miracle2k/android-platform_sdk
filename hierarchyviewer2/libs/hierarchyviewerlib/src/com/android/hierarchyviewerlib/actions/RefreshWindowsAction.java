@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
@@ -24,36 +24,32 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 
-public class LoadOverlayAction extends Action implements ImageAction {
+public class RefreshWindowsAction extends Action implements ImageAction {
 
-    private static LoadOverlayAction action;
+    private static RefreshWindowsAction action;
 
     private Image image;
 
-    private Shell shell;
-
-    private LoadOverlayAction(Shell shell) {
-        super("Load &Overlay");
-        this.shell = shell;
-        setAccelerator(SWT.MOD1 + 'O');
+    private RefreshWindowsAction() {
+        super("&Refresh");
+        setAccelerator(SWT.F5);
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("load-overlay.png", Display.getDefault());
+        image = imageLoader.loadImage("refresh-windows.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Load an image to overlay the screenshot");
+        setToolTipText("Refresh the list of devices");
     }
 
-    public static LoadOverlayAction getAction(Shell shell) {
+    public static RefreshWindowsAction getAction() {
         if (action == null) {
-            action = new LoadOverlayAction(shell);
+            action = new RefreshWindowsAction();
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().loadOverlay(shell);
+        HierarchyViewerDirector.getDirector().refreshWindows();
     }
 
     public Image getImage() {

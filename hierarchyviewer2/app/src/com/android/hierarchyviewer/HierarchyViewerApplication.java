@@ -16,43 +16,41 @@
 
 package com.android.hierarchyviewer;
 
-import com.android.ddmlib.IDevice;
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewer.actions.AboutAction;
-import com.android.hierarchyviewer.actions.CapturePSDAction;
-import com.android.hierarchyviewer.actions.DisplayViewAction;
-import com.android.hierarchyviewer.actions.InspectScreenshotAction;
-import com.android.hierarchyviewer.actions.InvalidateAction;
 import com.android.hierarchyviewer.actions.LoadAllViewsAction;
-import com.android.hierarchyviewer.actions.LoadOverlayAction;
-import com.android.hierarchyviewer.actions.LoadViewHierarchyAction;
-import com.android.hierarchyviewer.actions.PixelPerfectAutoRefreshAction;
 import com.android.hierarchyviewer.actions.QuitAction;
-import com.android.hierarchyviewer.actions.RefreshPixelPerfectAction;
-import com.android.hierarchyviewer.actions.RefreshPixelPerfectTreeAction;
-import com.android.hierarchyviewer.actions.RefreshViewAction;
-import com.android.hierarchyviewer.actions.RefreshWindowsAction;
-import com.android.hierarchyviewer.actions.RequestLayoutAction;
-import com.android.hierarchyviewer.actions.SavePixelPerfectAction;
-import com.android.hierarchyviewer.actions.SaveTreeViewAction;
 import com.android.hierarchyviewer.actions.ShowOverlayAction;
 import com.android.hierarchyviewer.util.ActionButton;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
-import com.android.hierarchyviewerlib.device.Window;
-import com.android.hierarchyviewerlib.models.DeviceSelectionModel;
+import com.android.hierarchyviewerlib.actions.CapturePSDAction;
+import com.android.hierarchyviewerlib.actions.DisplayViewAction;
+import com.android.hierarchyviewerlib.actions.InspectScreenshotAction;
+import com.android.hierarchyviewerlib.actions.InvalidateAction;
+import com.android.hierarchyviewerlib.actions.LoadOverlayAction;
+import com.android.hierarchyviewerlib.actions.LoadViewHierarchyAction;
+import com.android.hierarchyviewerlib.actions.PixelPerfectAutoRefreshAction;
+import com.android.hierarchyviewerlib.actions.RefreshPixelPerfectAction;
+import com.android.hierarchyviewerlib.actions.RefreshPixelPerfectTreeAction;
+import com.android.hierarchyviewerlib.actions.RefreshViewAction;
+import com.android.hierarchyviewerlib.actions.RefreshWindowsAction;
+import com.android.hierarchyviewerlib.actions.RequestLayoutAction;
+import com.android.hierarchyviewerlib.actions.SavePixelPerfectAction;
+import com.android.hierarchyviewerlib.actions.SaveTreeViewAction;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
-import com.android.hierarchyviewerlib.models.DeviceSelectionModel.WindowChangeListener;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
 import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
 import com.android.hierarchyviewerlib.ui.DeviceSelector;
 import com.android.hierarchyviewerlib.ui.LayoutViewer;
 import com.android.hierarchyviewerlib.ui.PixelPerfect;
+import com.android.hierarchyviewerlib.ui.PixelPerfectControls;
 import com.android.hierarchyviewerlib.ui.PixelPerfectLoupe;
 import com.android.hierarchyviewerlib.ui.PixelPerfectPixelPanel;
 import com.android.hierarchyviewerlib.ui.PixelPerfectTree;
 import com.android.hierarchyviewerlib.ui.PropertyViewer;
 import com.android.hierarchyviewerlib.ui.TreeView;
+import com.android.hierarchyviewerlib.ui.TreeViewControls;
 import com.android.hierarchyviewerlib.ui.TreeViewOverview;
 
 import org.eclipse.jface.action.MenuManager;
@@ -61,8 +59,6 @@ import org.eclipse.jface.window.ApplicationWindow;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StackLayout;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
@@ -81,8 +77,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Slider;
-import org.eclipse.swt.widgets.Text;
 
 public class HierarchyViewerApplication extends ApplicationWindow {
 
@@ -113,7 +107,6 @@ public class HierarchyViewerApplication extends ApplicationWindow {
     private Button pixelPerfectButton;
 
     private Button deviceViewButton;
-
 
     private Label progressLabel;
 
@@ -147,29 +140,9 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
     private LayoutViewer layoutViewer;
 
-    private StackLayout statusBarStackLayout;
-
-    private Composite treeViewControls;
-
-    private Slider zoomSlider;
-
-    private Text filterText;
-
-    private Composite statusBarControlPanel;
-
     private PixelPerfectLoupe pixelPerfectLoupe;
 
-    private boolean autoRefresh = false;
-
-    private int refreshInterval = 5;
-
-    private int refreshTimeLeft = 5;
-
-    private Slider overlaySlider;
-
-    private Slider ppZoomSlider;
-
-    private Slider refreshSlider;
+    private Composite treeViewControls;
 
     public static final HierarchyViewerApplication getApp() {
         return APP;
@@ -202,20 +175,13 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         director.initDebugBridge();
         director.startListenForDevices();
         director.populateDeviceSelectionModel();
-        DeviceSelectionModel.getModel().addWindowChangeListener(windowChangeListener);
         TreeViewModel.getModel().addTreeChangeListener(treeChangeListener);
         PixelPerfectModel.getModel().addImageChangeListener(imageChangeListener);
 
         setBlockOnOpen(true);
 
-        Thread pixelPerfectRefreshingThread = new Thread(autoRefresher);
-        pixelPerfectRefreshingThread.start();
-
         open();
 
-        pixelPerfectRefreshingThread.interrupt();
-
-        DeviceSelectionModel.getModel().removeWindowChangeListener(windowChangeListener);
         TreeViewModel.getModel().removeTreeChangeListener(treeChangeListener);
         PixelPerfectModel.getModel().removeImageChangeListener(imageChangeListener);
 
@@ -312,51 +278,12 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         pixelPerfectButton.setLayoutData(pixelPerfectButtonFormData);
 
         // Tree View control panel...
-        statusBarControlPanel = new Composite(statusBar, SWT.NONE);
-        FormData statusBarControlPanelFormData = new FormData();
-        statusBarControlPanelFormData.left = new FormAttachment(pixelPerfectButton, 2);
-        statusBarControlPanelFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
-        statusBarControlPanel.setLayoutData(statusBarControlPanelFormData);
-
-        statusBarStackLayout = new StackLayout();
-        statusBarControlPanel.setLayout(statusBarStackLayout);
-
-        treeViewControls = new Composite(statusBarControlPanel, SWT.NONE);
-        GridLayout treeViewControlLayout = new GridLayout(5, false);
-        treeViewControlLayout.marginWidth = treeViewControlLayout.marginHeight = 2;
-        treeViewControlLayout.verticalSpacing = treeViewControlLayout.horizontalSpacing = 4;
-        treeViewControls.setLayout(treeViewControlLayout);
-
-        Label filterLabel = new Label(treeViewControls, SWT.NONE);
-        filterLabel.setText("Filter by class or id:");
-        filterLabel.setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER, false, true));
-
-        filterText = new Text(treeViewControls, SWT.LEFT | SWT.SINGLE);
-        GridData filterTextGridData = new GridData(GridData.FILL_HORIZONTAL);
-        filterTextGridData.widthHint = 148;
-        filterText.setLayoutData(filterTextGridData);
-        filterText.addModifyListener(filterTextModifyListener);
-
-        Label smallZoomLabel = new Label(treeViewControls, SWT.NONE);
-        smallZoomLabel.setText(" 20%");
-        smallZoomLabel
-                .setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER, false, true));
-
-        zoomSlider = new Slider(treeViewControls, SWT.HORIZONTAL);
-        GridData zoomSliderGridData = new GridData(GridData.CENTER, GridData.CENTER, false, false);
-        zoomSliderGridData.widthHint = 190;
-        zoomSlider.setLayoutData(zoomSliderGridData);
-        zoomSlider.setMinimum((int) (TreeViewModel.MIN_ZOOM * 10));
-        zoomSlider.setMaximum((int) (TreeViewModel.MAX_ZOOM * 10 + 1));
-        zoomSlider.setThumb(1);
-        zoomSlider.setSelection(10);
-
-        zoomSlider.addSelectionListener(zoomSliderSelectionListener);
-
-        Label largeZoomLabel = new Label(treeViewControls, SWT.NONE);
-        largeZoomLabel
-                .setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER, false, true));
-        largeZoomLabel.setText("200%");
+        treeViewControls = new TreeViewControls(statusBar);
+        FormData treeViewControlsFormData = new FormData();
+        treeViewControlsFormData.left = new FormAttachment(pixelPerfectButton, 2);
+        treeViewControlsFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
+        treeViewControlsFormData.width = 552;
+        treeViewControls.setLayoutData(treeViewControlsFormData);
 
         // Progress stuff
         progressLabel = new Label(statusBar, SWT.RIGHT);
@@ -409,17 +336,15 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         ActionButton loadViewHierarchyButton =
                 new ActionButton(innerButtonPanel, LoadViewHierarchyAction.getAction());
         loadViewHierarchyButton.setLayoutData(new GridData(GridData.FILL_BOTH));
-        LoadViewHierarchyAction.getAction().setEnabled(false);
 
         ActionButton inspectScreenshotButton =
                 new ActionButton(innerButtonPanel, InspectScreenshotAction.getAction());
         inspectScreenshotButton.setLayoutData(new GridData(GridData.FILL_BOTH));
-        InspectScreenshotAction.getAction().setEnabled(false);
 
         Composite deviceSelectorContainer = new Composite(deviceSelectorPanel, SWT.BORDER);
         deviceSelectorContainer.setLayoutData(new GridData(GridData.FILL_BOTH));
         deviceSelectorContainer.setLayout(new FillLayout());
-        deviceSelector = new DeviceSelector(deviceSelectorContainer);
+        deviceSelector = new DeviceSelector(deviceSelectorContainer, true, true);
     }
 
     public void buildTreeViewPanel(Composite parent) {
@@ -482,11 +407,11 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
         Composite treeViewOverviewContainer = new Composite(sideSash, SWT.BORDER);
         treeViewOverviewContainer.setLayout(new FillLayout());
-        TreeViewOverview treeViewOverview = new TreeViewOverview(treeViewOverviewContainer);
+        new TreeViewOverview(treeViewOverviewContainer);
 
         Composite propertyViewerContainer = new Composite(sideSash, SWT.BORDER);
         propertyViewerContainer.setLayout(new FillLayout());
-        PropertyViewer propertyViewer = new PropertyViewer(propertyViewerContainer);
+        new PropertyViewer(propertyViewerContainer);
 
         Composite layoutViewerContainer = new Composite(sideSash, SWT.NONE);
         GridLayout layoutViewerLayout = new GridLayout();
@@ -514,10 +439,12 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         onBlackWhiteButton = new Button(buttonBar, SWT.PUSH);
         onBlackWhiteButton.setImage(onWhiteImage);
         onBlackWhiteButton.addSelectionListener(onBlackWhiteSelectionListener);
+        onBlackWhiteButton.setToolTipText("Change layout viewer background color");
 
         showExtras = new Button(buttonBar, SWT.CHECK);
         showExtras.setText("Show Extras");
         showExtras.addSelectionListener(showExtrasSelectionListener);
+        showExtras.setToolTipText("Show images");
 
         ActionButton loadAllViewsButton =
                 new ActionButton(fullButtonBar, LoadAllViewsAction.getAction());
@@ -578,8 +505,6 @@ public class HierarchyViewerApplication extends ApplicationWindow {
                 new ActionButton(innerButtonPanel, ShowOverlayAction.getAction());
         showInLoupe.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        ShowOverlayAction.getAction().setEnabled(false);
-
         ActionButton autoRefresh =
                 new ActionButton(innerButtonPanel, PixelPerfectAutoRefreshAction.getAction());
         autoRefresh.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -590,7 +515,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
         Composite pixelPerfectTreeContainer = new Composite(mainSash, SWT.BORDER);
         pixelPerfectTreeContainer.setLayout(new FillLayout());
-        PixelPerfectTree pixelPerfectTree = new PixelPerfectTree(pixelPerfectTreeContainer);
+        new PixelPerfectTree(pixelPerfectTreeContainer);
 
         Composite pixelPerfectLoupeContainer = new Composite(mainSash, SWT.NONE);
         GridLayout loupeLayout = new GridLayout();
@@ -614,135 +539,19 @@ public class HierarchyViewerApplication extends ApplicationWindow {
                 new PixelPerfectPixelPanel(pixelPerfectLoupeBorder);
         pixelPerfectPixelPanel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-        Composite pixelPerfectControls = new Composite(pixelPerfectLoupeContainer, SWT.NONE);
+        PixelPerfectControls pixelPerfectControls =
+                new PixelPerfectControls(pixelPerfectLoupeContainer);
         pixelPerfectControls.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        pixelPerfectControls.setLayout(new FormLayout());
 
-        Label overlayTransparencyRight = new Label(pixelPerfectControls, SWT.NONE);
-        overlayTransparencyRight.setText("100%");
-        FormData overlayTransparencyRightData = new FormData();
-        overlayTransparencyRightData.right = new FormAttachment(100, -2);
-        overlayTransparencyRightData.top = new FormAttachment(0, 2);
-        overlayTransparencyRight.setLayoutData(overlayTransparencyRightData);
-
-        Label refreshRight = new Label(pixelPerfectControls, SWT.NONE);
-        refreshRight.setText("40s");
-        FormData refreshRightData = new FormData();
-        refreshRightData.right = new FormAttachment(100, -2);
-        refreshRightData.top = new FormAttachment(overlayTransparencyRight, 2);
-        refreshRightData.left = new FormAttachment(overlayTransparencyRight, 0, SWT.LEFT);
-        refreshRight.setLayoutData(refreshRightData);
-
-        Label zoomRight = new Label(pixelPerfectControls, SWT.NONE);
-        zoomRight.setText("24x");
-        FormData zoomRightData = new FormData();
-        zoomRightData.right = new FormAttachment(100, -2);
-        zoomRightData.top = new FormAttachment(refreshRight, 2);
-        zoomRightData.left = new FormAttachment(overlayTransparencyRight, 0, SWT.LEFT);
-        zoomRight.setLayoutData(zoomRightData);
-
-        Label overlayTransparency = new Label(pixelPerfectControls, SWT.NONE);
-        Label refresh = new Label(pixelPerfectControls, SWT.NONE);
-
-        overlayTransparency.setText("Overlay:");
-        FormData overlayTransparencyData = new FormData();
-        overlayTransparencyData.left = new FormAttachment(0, 2);
-        overlayTransparencyData.top = new FormAttachment(0, 2);
-        overlayTransparencyData.right = new FormAttachment(refresh, 0, SWT.RIGHT);
-        overlayTransparency.setLayoutData(overlayTransparencyData);
-
-        refresh.setText("Refresh Rate:");
-        FormData refreshData = new FormData();
-        refreshData.top = new FormAttachment(overlayTransparency, 2);
-        refreshData.left = new FormAttachment(0, 2);
-        refresh.setLayoutData(refreshData);
-
-        Label zoom = new Label(pixelPerfectControls, SWT.NONE);
-        zoom.setText("Zoom:");
-        FormData zoomData = new FormData();
-        zoomData.right = new FormAttachment(refresh, 0, SWT.RIGHT);
-        zoomData.top = new FormAttachment(refresh, 2);
-        zoomData.left = new FormAttachment(0, 2);
-        zoom.setLayoutData(zoomData);
-
-        Label overlayTransparencyLeft = new Label(pixelPerfectControls, SWT.RIGHT);
-        overlayTransparencyLeft.setText("0%");
-        FormData overlayTransparencyLeftData = new FormData();
-        overlayTransparencyLeftData.top = new FormAttachment(0, 2);
-        overlayTransparencyLeftData.left = new FormAttachment(overlayTransparency, 2);
-        overlayTransparencyLeft.setLayoutData(overlayTransparencyLeftData);
-
-        Label refreshLeft = new Label(pixelPerfectControls, SWT.RIGHT);
-        refreshLeft.setText("1s");
-        FormData refreshLeftData = new FormData();
-        refreshLeftData.top = new FormAttachment(overlayTransparencyLeft, 2);
-        refreshLeftData.left = new FormAttachment(refresh, 2);
-        refreshLeft.setLayoutData(refreshLeftData);
-
-        Label zoomLeft = new Label(pixelPerfectControls, SWT.RIGHT);
-        zoomLeft.setText("2x");
-        FormData zoomLeftData = new FormData();
-        zoomLeftData.top = new FormAttachment(refreshLeft, 2);
-        zoomLeftData.left = new FormAttachment(zoom, 2);
-        zoomLeft.setLayoutData(zoomLeftData);
-
-        overlaySlider = new Slider(pixelPerfectControls, SWT.HORIZONTAL);
-        overlaySlider.setMinimum(0);
-        overlaySlider.setMaximum(101);
-        overlaySlider.setThumb(1);
-        overlaySlider.setSelection(50);
-        overlaySlider.setEnabled(false);
-        FormData overlaySliderData = new FormData();
-        overlaySliderData.right = new FormAttachment(overlayTransparencyRight, -4);
-        overlaySliderData.top = new FormAttachment(0, 2);
-        overlaySliderData.left = new FormAttachment(overlayTransparencyLeft, 4);
-        overlaySlider.setLayoutData(overlaySliderData);
-
-        overlaySlider.addSelectionListener(overlaySliderSelectionListener);
-
-        refreshSlider = new Slider(pixelPerfectControls, SWT.HORIZONTAL);
-        refreshSlider.setMinimum(1);
-        refreshSlider.setMaximum(41);
-        refreshSlider.setThumb(1);
-        refreshSlider.setSelection(refreshInterval);
-        FormData refreshSliderData = new FormData();
-        refreshSliderData.right = new FormAttachment(overlayTransparencyRight, -4);
-        refreshSliderData.top = new FormAttachment(overlayTransparencyRight, 2);
-        refreshSliderData.left = new FormAttachment(overlaySlider, 0, SWT.LEFT);
-        refreshSlider.setLayoutData(refreshSliderData);
-
-        refreshSlider.addSelectionListener(refreshSliderSelectionListener);
-
-        ppZoomSlider = new Slider(pixelPerfectControls, SWT.HORIZONTAL);
-        ppZoomSlider.setMinimum(2);
-        ppZoomSlider.setMaximum(25);
-        ppZoomSlider.setThumb(1);
-        ppZoomSlider.setSelection(PixelPerfectModel.DEFAULT_ZOOM);
-        FormData zoomSliderData = new FormData();
-        zoomSliderData.right = new FormAttachment(overlayTransparencyRight, -4);
-        zoomSliderData.top = new FormAttachment(refreshRight, 2);
-        zoomSliderData.left = new FormAttachment(overlaySlider, 0, SWT.LEFT);
-        ppZoomSlider.setLayoutData(zoomSliderData);
-
-        ppZoomSlider.addSelectionListener(ppZoomSliderSelectionListener);
 
         Composite pixelPerfectContainer = new Composite(mainSash, SWT.BORDER);
         pixelPerfectContainer.setLayout(new FillLayout());
-        PixelPerfect pixelPerfect = new PixelPerfect(pixelPerfectContainer);
+        new PixelPerfect(pixelPerfectContainer);
 
         mainSash.setWeights(new int[] {
                 272, 376, 346
         });
 
-    }
-
-    public void setAutoRefresh(boolean value) {
-        if (value) {
-            refreshTimeLeft = refreshInterval;
-            autoRefresh = true;
-        } else {
-            autoRefresh = false;
-        }
     }
 
     public void showOverlayInLoupe(boolean value) {
@@ -816,9 +625,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
         deviceSelector.setFocus();
 
-        statusBarStackLayout.topControl = null;
-        statusBarControlPanel.setVisible(false);
-        statusBarControlPanel.layout();
+        treeViewControls.setVisible(false);
     }
 
     public void showTreeView() {
@@ -865,9 +672,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
         treeView.setFocus();
 
-        statusBarStackLayout.topControl = treeViewControls;
-        statusBarControlPanel.setVisible(true);
-        statusBarControlPanel.layout();
+        treeViewControls.setVisible(true);
     }
 
     public void showPixelPerfect() {
@@ -913,9 +718,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
         pixelPerfectLoupe.setFocus();
 
-        statusBarStackLayout.topControl = null;
-        statusBarControlPanel.setVisible(false);
-        statusBarControlPanel.layout();
+        treeViewControls.setVisible(false);
     }
 
     private SelectionListener deviceViewButtonSelectionListener = new SelectionListener() {
@@ -988,135 +791,6 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
     };
 
-    private SelectionListener zoomSliderSelectionListener = new SelectionListener() {
-        private int oldValue;
-
-        public void widgetDefaultSelected(SelectionEvent e) {
-            // pass
-        }
-
-        public void widgetSelected(SelectionEvent e) {
-            int newValue = zoomSlider.getSelection();
-            if (oldValue != newValue) {
-                TreeViewModel.getModel().removeTreeChangeListener(treeChangeListener);
-                TreeViewModel.getModel().setZoom(newValue / 10.0);
-                TreeViewModel.getModel().addTreeChangeListener(treeChangeListener);
-                oldValue = newValue;
-            }
-        }
-    };
-
-    private Runnable autoRefresher = new Runnable() {
-        public void run() {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    break;
-                }
-                refreshTimeLeft--;
-                if (autoRefresh && refreshTimeLeft <= 0) {
-                    HierarchyViewerDirector.getDirector().refreshPixelPerfect();
-                    refreshTimeLeft = refreshInterval;
-                }
-            }
-        }
-    };
-
-    private SelectionListener overlaySliderSelectionListener = new SelectionListener() {
-        private int oldValue;
-
-        public void widgetDefaultSelected(SelectionEvent e) {
-            // pass
-        }
-
-        public void widgetSelected(SelectionEvent e) {
-            int newValue = overlaySlider.getSelection();
-            if (oldValue != newValue) {
-                PixelPerfectModel.getModel().removeImageChangeListener(imageChangeListener);
-                PixelPerfectModel.getModel().setOverlayTransparency(newValue / 100.0);
-                PixelPerfectModel.getModel().addImageChangeListener(imageChangeListener);
-                oldValue = newValue;
-            }
-        }
-    };
-
-    private SelectionListener refreshSliderSelectionListener = new SelectionListener() {
-        private int oldValue;
-
-        public void widgetDefaultSelected(SelectionEvent e) {
-            // pass
-        }
-
-        public void widgetSelected(SelectionEvent e) {
-            int newValue = refreshSlider.getSelection();
-            if (oldValue != newValue) {
-                refreshInterval = newValue;
-                refreshTimeLeft = Math.min(refreshTimeLeft, refreshInterval);
-                oldValue = newValue;
-            }
-        }
-    };
-
-    private SelectionListener ppZoomSliderSelectionListener = new SelectionListener() {
-        private int oldValue;
-
-        public void widgetDefaultSelected(SelectionEvent e) {
-            // pass
-        }
-
-        public void widgetSelected(SelectionEvent e) {
-            int newValue = ppZoomSlider.getSelection();
-            if (oldValue != newValue) {
-                PixelPerfectModel.getModel().removeImageChangeListener(imageChangeListener);
-                PixelPerfectModel.getModel().setZoom(newValue);
-                PixelPerfectModel.getModel().addImageChangeListener(imageChangeListener);
-                oldValue = newValue;
-            }
-        }
-    };
-
-    private ModifyListener filterTextModifyListener = new ModifyListener() {
-        public void modifyText(ModifyEvent e) {
-            HierarchyViewerDirector.getDirector().filterNodes(filterText.getText());
-        }
-    };
-
-    private WindowChangeListener windowChangeListener = new WindowChangeListener() {
-        public void deviceChanged(IDevice device) {
-            // pass
-        }
-
-        public void deviceConnected(IDevice device) {
-            // pass
-        }
-
-        public void deviceDisconnected(IDevice device) {
-            // pass
-        }
-
-        public void focusChanged(IDevice device) {
-            // pass
-        }
-
-        public void selectionChanged(final IDevice device, final Window window) {
-            Display.getDefault().syncExec(new Runnable() {
-                public void run() {
-                    if (window == null) {
-                        LoadViewHierarchyAction.getAction().setEnabled(false);
-                    } else {
-                        LoadViewHierarchyAction.getAction().setEnabled(true);
-                    }
-                    if (device == null) {
-                        InspectScreenshotAction.getAction().setEnabled(false);
-                    } else {
-                        InspectScreenshotAction.getAction().setEnabled(true);
-                    }
-                }
-            });
-        }
-    };
-
     private TreeChangeListener treeChangeListener = new TreeChangeListener() {
         public void selectionChanged() {
             // pass
@@ -1131,9 +805,6 @@ public class HierarchyViewerApplication extends ApplicationWindow {
                     } else {
                         showTreeView();
                         treeViewButton.setEnabled(true);
-                        zoomSlider.setSelection((int) Math
-                                .round(TreeViewModel.getModel().getZoom() * 10));
-                        filterText.setText("");
                     }
                 }
             });
@@ -1145,7 +816,6 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
         public void zoomChanged() {
             // pass
-            zoomSlider.setSelection((int) Math.round(TreeViewModel.getModel().getZoom() * 10));
         }
     };
 
@@ -1166,14 +836,10 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         public void imageLoaded() {
             Display.getDefault().syncExec(new Runnable() {
                 public void run() {
-                    Image overlayImage = PixelPerfectModel.getModel().getOverlayImage();
-                    ShowOverlayAction.getAction().setEnabled(overlayImage != null);
-                    overlaySlider.setEnabled(overlayImage != null);
                     if (PixelPerfectModel.getModel().getImage() == null) {
                         pixelPerfectButton.setEnabled(false);
                         showDeviceSelector();
                     } else {
-                        ppZoomSlider.setSelection(PixelPerfectModel.getModel().getZoom());
                         pixelPerfectButton.setEnabled(true);
                         showPixelPerfect();
                     }
@@ -1182,22 +848,11 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
 
         public void overlayChanged() {
-            Display.getDefault().syncExec(new Runnable() {
-                public void run() {
-                    Image overlayImage = PixelPerfectModel.getModel().getOverlayImage();
-                    ShowOverlayAction.getAction().setEnabled(overlayImage != null);
-                    overlaySlider.setEnabled(overlayImage != null);
-                }
-            });
+            // pass
         }
 
         public void overlayTransparencyChanged() {
-            Display.getDefault().syncExec(new Runnable() {
-                public void run() {
-                    overlaySlider.setSelection((int) (PixelPerfectModel.getModel()
-                            .getOverlayTransparency() * 100));
-                }
-            });
+            // pass
         }
 
         public void selectionChanged() {
@@ -1205,11 +860,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
 
         public void zoomChanged() {
-            Display.getDefault().syncExec(new Runnable() {
-                public void run() {
-                    ppZoomSlider.setSelection(PixelPerfectModel.getModel().getZoom());
-                }
-            });
+            // pass
         }
 
     };

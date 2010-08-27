@@ -19,6 +19,9 @@ package com.android.hierarchyviewer.actions;
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewer.HierarchyViewerApplication;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
+import com.android.hierarchyviewerlib.actions.ImageAction;
+import com.android.hierarchyviewerlib.models.PixelPerfectModel;
+import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -26,7 +29,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
-public class ShowOverlayAction extends Action implements ImageAction {
+public class ShowOverlayAction extends Action implements ImageAction, ImageChangeListener {
 
     private static ShowOverlayAction action;
 
@@ -39,6 +42,8 @@ public class ShowOverlayAction extends Action implements ImageAction {
         image = imageLoader.loadImage("show-overlay.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
         setToolTipText("Show the overlay in the loupe view");
+        setEnabled(PixelPerfectModel.getModel().getOverlayImage() != null);
+        PixelPerfectModel.getModel().addImageChangeListener(this);
     }
 
     public static ShowOverlayAction getAction() {
@@ -55,5 +60,46 @@ public class ShowOverlayAction extends Action implements ImageAction {
 
     public Image getImage() {
         return image;
+    }
+    
+    public void crosshairMoved() {
+        // pass
+    }
+
+    public void treeChanged() {
+        // pass
+    }
+
+    public void imageChanged() {
+        // pass
+    }
+
+    public void imageLoaded() {
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                Image overlayImage = PixelPerfectModel.getModel().getOverlayImage();
+                setEnabled(overlayImage != null);
+            }
+        });
+    }
+
+    public void overlayChanged() {
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                setEnabled(PixelPerfectModel.getModel().getOverlayImage() != null);
+            }
+        });
+    }
+
+    public void overlayTransparencyChanged() {
+        // pass
+    }
+
+    public void selectionChanged() {
+        // pass
+    }
+
+    public void zoomChanged() {
+        // pass
     }
 }

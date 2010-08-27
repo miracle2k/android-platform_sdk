@@ -16,7 +16,7 @@
 
 package com.android.hierarchyviewer.util;
 
-import com.android.hierarchyviewer.actions.ImageAction;
+import com.android.hierarchyviewerlib.actions.ImageAction;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -44,6 +44,7 @@ public class ActionButton implements IPropertyChangeListener, SelectionListener 
         this.action.addPropertyChangeListener(this);
         button.addSelectionListener(this);
         button.setToolTipText(action.getToolTipText());
+        button.setEnabled(this.action.isEnabled());
     }
 
     public void propertyChange(PropertyChangeEvent e) {

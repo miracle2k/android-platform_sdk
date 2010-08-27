@@ -52,6 +52,8 @@ public class PixelPerfectPixelPanel extends Canvas implements ImageChangeListene
 
         addPaintListener(paintListener);
         addDisposeListener(disposeListener);
+
+        imageLoaded();
     }
 
     @Override
@@ -135,7 +137,7 @@ public class PixelPerfectPixelPanel extends Canvas implements ImageChangeListene
     };
 
     private void doRedraw() {
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 redraw();
             }

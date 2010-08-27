@@ -14,42 +14,45 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
-public class RefreshViewAction extends Action implements ImageAction {
+public class CapturePSDAction extends TreeViewEnabledAction implements ImageAction {
 
-    private static RefreshViewAction action;
+    private static CapturePSDAction action;
 
     private Image image;
 
-    private RefreshViewAction() {
-        super("Load View &Hierarchy");
-        setAccelerator(SWT.MOD1 + 'H');
+    private Shell shell;
+
+    private CapturePSDAction(Shell shell) {
+        super("&Capture Layers");
+        this.shell = shell;
+        setAccelerator(SWT.MOD1 + 'C');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault());
+        image = imageLoader.loadImage("capture-psd.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Reload the view hierarchy");
+        setToolTipText("Capture the window layers as a photoshop document");
     }
 
-    public static RefreshViewAction getAction() {
+    public static CapturePSDAction getAction(Shell shell) {
         if (action == null) {
-            action = new RefreshViewAction();
+            action = new CapturePSDAction(shell);
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().reloadViewHierarchy();
+        HierarchyViewerDirector.getDirector().capturePSD(shell);
     }
 
     public Image getImage() {

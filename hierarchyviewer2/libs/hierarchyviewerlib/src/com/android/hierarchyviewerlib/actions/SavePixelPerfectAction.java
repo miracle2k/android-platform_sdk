@@ -14,46 +14,45 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-public class CapturePSDAction extends Action implements ImageAction {
+public class SavePixelPerfectAction extends PixelPerfectEnabledAction implements ImageAction {
 
-    private static CapturePSDAction action;
+    private static SavePixelPerfectAction action;
 
     private Image image;
 
     private Shell shell;
 
-    private CapturePSDAction(Shell shell) {
-        super("&Capture Layers");
+    private SavePixelPerfectAction(Shell shell) {
+        super("&Save as PNG");
         this.shell = shell;
-        setAccelerator(SWT.MOD1 + 'C');
+        setAccelerator(SWT.MOD1 + 'S');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("capture-psd.png", Display.getDefault());
+        image = imageLoader.loadImage("save.png", Display.getDefault());
         setImageDescriptor(ImageDescriptor.createFromImage(image));
-        setToolTipText("Capture the window layers as a photoshop document");
+        setToolTipText("Save the screenshot as a PNG image");
     }
 
-    public static CapturePSDAction getAction(Shell shell) {
+    public static SavePixelPerfectAction getAction(Shell shell) {
         if (action == null) {
-            action = new CapturePSDAction(shell);
+            action = new SavePixelPerfectAction(shell);
         }
         return action;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().capturePSD(shell);
+        HierarchyViewerDirector.getDirector().savePixelPerfect(shell);
     }
 
     public Image getImage() {

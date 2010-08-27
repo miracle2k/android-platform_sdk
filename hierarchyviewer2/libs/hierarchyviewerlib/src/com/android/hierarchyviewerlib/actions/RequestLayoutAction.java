@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.hierarchyviewer.actions;
+package com.android.hierarchyviewerlib.actions;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
-public class RequestLayoutAction extends Action implements ImageAction {
+public class RequestLayoutAction extends SelectedNodeEnabledAction implements ImageAction {
 
     private static RequestLayoutAction action;
 

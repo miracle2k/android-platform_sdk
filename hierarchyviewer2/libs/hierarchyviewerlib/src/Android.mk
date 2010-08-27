@@ -20,9 +20,9 @@ LOCAL_JAVA_RESOURCE_DIRS := resources
 
 LOCAL_JAVA_LIBRARIES := ddmlib \
     ddmuilib \
-    hierarchyviewerlib \
     swt \
-    org.eclipse.jface_3.4.2.M20090107-0800
+    org.eclipse.jface_3.4.2.M20090107-0800 \
+    org.eclipse.core.commands_3.4.0.I20080509-2000
 
 LOCAL_MODULE := hierarchyviewerlib
 
