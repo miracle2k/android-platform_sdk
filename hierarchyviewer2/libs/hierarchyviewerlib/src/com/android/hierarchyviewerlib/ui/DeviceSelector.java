@@ -202,7 +202,8 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
         }
     };
 
-    // HACK TO GET RID OF AN ERROR
+    // If the window gets too small, hide the data, otherwise SWT throws an
+    // ERROR.
 
     private ControlListener controlListener = new ControlAdapter() {
         private boolean noInput = false;
@@ -272,7 +273,6 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
     }
 
     public void widgetDefaultSelected(SelectionEvent e) {
-        // TODO: Double click to open view hierarchy
         Object selection = ((TreeItem) e.item).getData();
         if (selection instanceof IDevice) {
             HierarchyViewerDirector.getDirector().loadPixelPerfectData((IDevice) selection);

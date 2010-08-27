@@ -293,6 +293,7 @@ public class PixelPerfectLoupe extends Canvas implements ImageChangeListener {
         }
     }
 
+    // Note the syncExec and then synchronized... It avoids deadlock
     public void imageLoaded() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {

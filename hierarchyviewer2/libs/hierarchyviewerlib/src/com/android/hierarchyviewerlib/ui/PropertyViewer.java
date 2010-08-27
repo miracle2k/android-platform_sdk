@@ -230,7 +230,8 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
         }
     };
 
-    // HACK TO GET RID OF AN ERROR
+    // If the window gets too small, hide the data, otherwise SWT throws an
+    // ERROR.
 
     private ControlListener controlListener = new ControlAdapter() {
         private boolean noInput = false;

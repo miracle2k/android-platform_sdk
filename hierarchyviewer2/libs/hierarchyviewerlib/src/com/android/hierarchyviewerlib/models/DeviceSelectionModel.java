@@ -110,18 +110,11 @@ public class DeviceSelectionModel {
     public void updateFocusedWindow(IDevice device, int focusedWindow) {
         Integer oldValue = null;
         synchronized (deviceMap) {
-            // A value of -1 means that no window has focus. This is a strange
-            // transitive state in the window manager service.
-            if (focusedWindow == -1) {
-                oldValue = focusedWindowHashes.remove(device);
-            } else {
-                oldValue = focusedWindowHashes.put(device, new Integer(focusedWindow));
-            }
+            oldValue = focusedWindowHashes.put(device, new Integer(focusedWindow));
         }
         // Only notify if the values are different. It would be cool if Java
         // containers accepted basic types like int.
-        if ((oldValue == null && focusedWindow != -1)
-                || (oldValue != null && oldValue.intValue() != focusedWindow)) {
+        if (oldValue == null || (oldValue != null && oldValue.intValue() != focusedWindow)) {
             notifyFocusChanged(device);
         }
     }

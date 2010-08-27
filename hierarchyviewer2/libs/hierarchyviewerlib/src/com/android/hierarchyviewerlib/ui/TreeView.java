@@ -112,6 +112,37 @@ public class TreeView extends Canvas implements TreeChangeListener {
 
     private DrawableViewNode lastDrawnSelectedViewNode;
 
+    // The profile-image box needs to be moved to,
+    // so add some dragging leeway.
+    private static final int DRAG_LEEWAY = 220;
+
+    // Profile-image box constants
+    private static final int RECT_WIDTH = 190;
+
+    private static final int RECT_HEIGHT = 224;
+
+    private static final int BUTTON_RIGHT_OFFSET = 5;
+
+    private static final int BUTTON_TOP_OFFSET = 5;
+
+    private static final int IMAGE_WIDTH = 125;
+
+    private static final int IMAGE_HEIGHT = 120;
+
+    private static final int IMAGE_OFFSET = 6;
+
+    private static final int IMAGE_ROUNDING = 8;
+
+    private static final int RECTANGLE_SIZE = 5;
+
+    private static final int TEXT_SIDE_OFFSET = 8;
+
+    private static final int TEXT_TOP_OFFSET = 4;
+
+    private static final int TEXT_SPACING = 2;
+
+    private static final int TEXT_ROUNDING = 20;
+
     public TreeView(Composite parent) {
         super(parent, SWT.NONE);
 
@@ -164,8 +195,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
             synchronized (TreeView.this) {
                 if (tree != null && viewport != null) {
 
-                    // I don't know what the best behaviour is... This seems
-                    // like a good idea.
+                    // Keep the center in the same place.
                     Point viewCenter =
                             new Point(viewport.x + viewport.width / 2, viewport.y + viewport.height
                                     / 2);
@@ -196,10 +226,12 @@ public class TreeView extends Canvas implements TreeChangeListener {
                             }
                             break;
                         case SWT.ARROW_UP:
-                            int levelsOut = 0;
+
+                            // On up and down, it is cool to go up and down only
+                            // the leaf nodes.
+                            // It goes well with the layout viewer
                             DrawableViewNode currentNode = selectedNode;
                             while (currentNode.parent != null && currentNode.viewNode.index == 0) {
-                                levelsOut++;
                                 currentNode = currentNode.parent;
                             }
                             if (currentNode.parent != null) {
@@ -211,7 +243,6 @@ public class TreeView extends Canvas implements TreeChangeListener {
                                     currentNode =
                                             currentNode.children
                                                     .get(currentNode.children.size() - 1);
-                                    levelsOut--;
                                 }
                             }
                             if (selectionChanged) {
@@ -219,12 +250,10 @@ public class TreeView extends Canvas implements TreeChangeListener {
                             }
                             break;
                         case SWT.ARROW_DOWN:
-                            levelsOut = 0;
                             currentNode = selectedNode;
                             while (currentNode.parent != null
                                     && currentNode.viewNode.index + 1 == currentNode.parent.children
                                             .size()) {
-                                levelsOut++;
                                 currentNode = currentNode.parent;
                             }
                             if (currentNode.parent != null) {
@@ -234,7 +263,6 @@ public class TreeView extends Canvas implements TreeChangeListener {
                                                 .get(currentNode.viewNode.index + 1);
                                 while (currentNode.children.size() != 0) {
                                     currentNode = currentNode.children.get(0);
-                                    levelsOut--;
                                 }
                             }
                             if (selectionChanged) {
@@ -245,6 +273,9 @@ public class TreeView extends Canvas implements TreeChangeListener {
                             DrawableViewNode rightNode = null;
                             double mostOverlap = 0;
                             final int N = selectedNode.children.size();
+
+                            // We consider all the children and pick the one
+                            // who's tree overlaps the most.
                             for (int i = 0; i < N; i++) {
                                 DrawableViewNode child = selectedNode.children.get(i);
                                 DrawableViewNode topMostChild = child;
@@ -305,12 +336,16 @@ public class TreeView extends Canvas implements TreeChangeListener {
             synchronized (TreeView.this) {
                 if (tree != null && viewport != null) {
                     Point pt = transformPoint(e.x, e.y);
+
+                    // Ignore profiling rectangle, except for...
                     if (selectedRectangleLocation != null
                             && pt.x >= selectedRectangleLocation.x
                             && pt.x < selectedRectangleLocation.x + selectedRectangleLocation.width
                             && pt.y >= selectedRectangleLocation.y
                             && pt.y < selectedRectangleLocation.y
                                     + selectedRectangleLocation.height) {
+
+                        // the small button!
                         if ((pt.x - buttonCenter.x) * (pt.x - buttonCenter.x)
                                 + (pt.y - buttonCenter.y) * (pt.y - buttonCenter.y) <= (BUTTON_SIZE * BUTTON_SIZE) / 4) {
                             buttonClicked = true;
@@ -319,6 +354,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
                         return;
                     }
                     draggedNode = tree.getSelected(pt.x, pt.y);
+
+                    // Update the selection.
                     if (draggedNode != null && draggedNode != selectedNode) {
                         selectedNode = draggedNode;
                         selectionChanged = true;
@@ -326,9 +363,12 @@ public class TreeView extends Canvas implements TreeChangeListener {
                     } else if (draggedNode != null) {
                         alreadySelectedOnMouseDown = true;
                     }
+
+                    // Can't drag the root.
                     if (draggedNode == tree) {
                         draggedNode = null;
                     }
+
                     if (draggedNode != null) {
                         lastPoint = pt;
                     } else {
@@ -351,11 +391,18 @@ public class TreeView extends Canvas implements TreeChangeListener {
             synchronized (TreeView.this) {
                 if (tree != null && viewport != null && lastPoint != null) {
                     if (draggedNode == null) {
+                        // The viewport moves.
                         handleMouseDrag(new Point(e.x, e.y));
                         viewportChanged = true;
                     } else {
+                        // The nodes move.
                         handleMouseDrag(transformPoint(e.x, e.y));
                     }
+
+                    // Deselect on the second click...
+                    // This is in the mouse up, because mouse up happens after a
+                    // double click event.
+                    // During a double click, we don't want to deselect.
                     Point pt = transformPoint(e.x, e.y);
                     DrawableViewNode mouseUpOn = tree.getSelected(pt.x, pt.y);
                     if (mouseUpOn != null && mouseUpOn == selectedNode
@@ -367,6 +414,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
                     draggedNode = null;
                     redraw = true;
                 }
+
+                // Just clicked the button here.
                 if (buttonClicked) {
                     HierarchyViewerDirector.getDirector().showCapture(getShell(),
                             selectedNode.viewNode);
@@ -374,6 +423,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
                     redrawButton = true;
                 }
             }
+
+            // Complicated.
             if (viewportChanged) {
                 model.setViewport(viewport);
             } else if (redraw) {
@@ -418,6 +469,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
     };
 
     private void handleMouseDrag(Point pt) {
+
+        // Case 1: a node is dragged. DrawableViewNode knows how to handle this.
         if (draggedNode != null) {
             if (lastPoint.y - pt.y != 0) {
                 nodeMoved = true;
@@ -426,42 +479,42 @@ public class TreeView extends Canvas implements TreeChangeListener {
             lastPoint = pt;
             return;
         }
+
+        // Case 2: the viewport is dragged. We have to make sure we respect the
+        // bounds - don't let the user drag way out... + some leeway for the
+        // profiling box.
         double xDif = (lastPoint.x - pt.x) / zoom;
         double yDif = (lastPoint.y - pt.y) / zoom;
 
-        if (viewport.width > tree.bounds.width) {
-            if (xDif < 0 && viewport.x + viewport.width > tree.bounds.x + tree.bounds.width) {
-                viewport.x =
-                        Math.max(viewport.x + xDif, tree.bounds.x + tree.bounds.width
-                                - viewport.width);
-            } else if (xDif > 0 && viewport.x < tree.bounds.x) {
-                viewport.x = Math.min(viewport.x + xDif, tree.bounds.x);
+        double treeX = tree.bounds.x - DRAG_LEEWAY;
+        double treeY = tree.bounds.y - DRAG_LEEWAY;
+        double treeWidth = tree.bounds.width + 2 * DRAG_LEEWAY;
+        double treeHeight = tree.bounds.height + 2 * DRAG_LEEWAY;
+
+        if (viewport.width > treeWidth) {
+            if (xDif < 0 && viewport.x + viewport.width > treeX + treeWidth) {
+                viewport.x = Math.max(viewport.x + xDif, treeX + treeWidth - viewport.width);
+            } else if (xDif > 0 && viewport.x < treeX) {
+                viewport.x = Math.min(viewport.x + xDif, treeX);
             }
         } else {
-            if (xDif < 0 && viewport.x > tree.bounds.x) {
-                viewport.x = Math.max(viewport.x + xDif, tree.bounds.x);
-            } else if (xDif > 0 && viewport.x + viewport.width < tree.bounds.x + tree.bounds.width) {
-                viewport.x =
-                        Math.min(viewport.x + xDif, tree.bounds.x + tree.bounds.width
-                                - viewport.width);
+            if (xDif < 0 && viewport.x > treeX) {
+                viewport.x = Math.max(viewport.x + xDif, treeX);
+            } else if (xDif > 0 && viewport.x + viewport.width < treeX + treeWidth) {
+                viewport.x = Math.min(viewport.x + xDif, treeX + treeWidth - viewport.width);
             }
         }
-        if (viewport.height > tree.bounds.height) {
-            if (yDif < 0 && viewport.y + viewport.height > tree.bounds.y + tree.bounds.height) {
-                viewport.y =
-                        Math.max(viewport.y + yDif, tree.bounds.y + tree.bounds.height
-                                - viewport.height);
-            } else if (yDif > 0 && viewport.y < tree.bounds.y) {
-                viewport.y = Math.min(viewport.y + yDif, tree.bounds.y);
+        if (viewport.height > treeHeight) {
+            if (yDif < 0 && viewport.y + viewport.height > treeY + treeHeight) {
+                viewport.y = Math.max(viewport.y + yDif, treeY + treeHeight - viewport.height);
+            } else if (yDif > 0 && viewport.y < treeY) {
+                viewport.y = Math.min(viewport.y + yDif, treeY);
             }
         } else {
-            if (yDif < 0 && viewport.y > tree.bounds.y) {
-                viewport.y = Math.max(viewport.y + yDif, tree.bounds.y);
-            } else if (yDif > 0
-                    && viewport.y + viewport.height < tree.bounds.y + tree.bounds.height) {
-                viewport.y =
-                        Math.min(viewport.y + yDif, tree.bounds.y + tree.bounds.height
-                                - viewport.height);
+            if (yDif < 0 && viewport.y > treeY) {
+                viewport.y = Math.max(viewport.y + yDif, treeY);
+            } else if (yDif > 0 && viewport.y + viewport.height < treeY + treeHeight) {
+                viewport.y = Math.min(viewport.y + yDif, treeY + treeHeight - viewport.height);
             }
         }
         lastPoint = pt;
@@ -496,6 +549,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
                 e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
                 e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
                 if (tree != null && viewport != null) {
+
+                    // Easy stuff!
                     e.gc.setTransform(transform);
                     e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
                     Path connectionPath = new Path(Display.getDefault());
@@ -503,24 +558,25 @@ public class TreeView extends Canvas implements TreeChangeListener {
                     e.gc.drawPath(connectionPath);
                     connectionPath.dispose();
 
+                    // Draw the profiling box.
                     if (selectedNode != null) {
-                        int RECT_WIDTH = 155;
-                        int RECT_HEIGHT = 224;
 
+                        // Draw the little triangle
                         int x = selectedNode.left + DrawableViewNode.NODE_WIDTH / 2;
                         int y = (int) selectedNode.top + 4;
                         e.gc.setBackground(boxColor);
                         e.gc.fillPolygon(new int[] {
                                 x, y, x - 15, y - 15, x + 15, y - 15
                         });
+
+                        // Draw the rectangle and update the location.
                         y -= 10 + RECT_HEIGHT;
-                        e.gc.fillRoundRectangle(x - RECT_WIDTH / 2, y, RECT_WIDTH, RECT_HEIGHT, 15,
-                                15);
+                        e.gc.fillRoundRectangle(x - RECT_WIDTH / 2, y, RECT_WIDTH, RECT_HEIGHT, 30,
+                                30);
                         selectedRectangleLocation =
                                 new Rectangle(x - RECT_WIDTH / 2, y, RECT_WIDTH, RECT_HEIGHT);
-                        int BUTTON_RIGHT_OFFSET = 1;
-                        int BUTTON_TOP_OFFSET = 2;
 
+                        // Draw the button
                         buttonCenter =
                                 new Point(x - BUTTON_RIGHT_OFFSET + (RECT_WIDTH - BUTTON_SIZE) / 2,
                                         y + BUTTON_TOP_OFFSET + BUTTON_SIZE / 2);
@@ -538,23 +594,23 @@ public class TreeView extends Canvas implements TreeChangeListener {
                         e.gc.fillOval(x + RECT_WIDTH / 2 - BUTTON_RIGHT_OFFSET - BUTTON_SIZE, y
                                 + BUTTON_TOP_OFFSET, BUTTON_SIZE, BUTTON_SIZE);
 
-                        int RECTANGLE_SIZE = 5;
-
                         e.gc.drawRectangle(x - BUTTON_RIGHT_OFFSET
                                 + (RECT_WIDTH - BUTTON_SIZE - RECTANGLE_SIZE) / 2 - 1, y
                                 + BUTTON_TOP_OFFSET + (BUTTON_SIZE - RECTANGLE_SIZE) / 2,
                                 RECTANGLE_SIZE + 1, RECTANGLE_SIZE);
 
                         y += 15;
-                        int IMAGE_WIDTH = 125;
-                        int IMAGE_HEIGHT = 120;
 
-                        int IMAGE_OFFSET = 6;
-                        int IMAGE_ROUNDING = 8;
-
+                        // If there is an image, draw it.
                         if (selectedNode.viewNode.image != null
-                                && selectedNode.viewNode.image.getBounds().height != 0
-                                && selectedNode.viewNode.image.getBounds().width != 0) {
+                                && selectedNode.viewNode.image.getBounds().height != 1
+                                && selectedNode.viewNode.image.getBounds().width != 1) {
+
+                            // Scaling the image to the right size takes lots of
+                            // time, so we want to do it only once.
+
+                            // If the selection changed, get rid of the old
+                            // image.
                             if (lastDrawnSelectedViewNode != selectedNode) {
                                 if (scaledSelectedImage != null) {
                                     scaledSelectedImage.dispose();
@@ -562,6 +618,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
                                 }
                                 lastDrawnSelectedViewNode = selectedNode;
                             }
+
                             if (scaledSelectedImage == null) {
                                 double ratio =
                                         1.0 * selectedNode.viewNode.image.getBounds().width
@@ -578,8 +635,12 @@ public class TreeView extends Canvas implements TreeChangeListener {
                                                     .getBounds().height);
                                     newWidth = (int) (newHeight * ratio);
                                 }
-                                newWidth = Math.max(newWidth, 1);
-                                newHeight = Math.max(newHeight, 1);
+
+                                // Interesting note... We make the image twice
+                                // the needed size so that there is better
+                                // resolution under zoom.
+                                newWidth = Math.max(newWidth * 2, 1);
+                                newHeight = Math.max(newHeight * 2, 1);
                                 scaledSelectedImage =
                                         new Image(Display.getDefault(), newWidth, newHeight);
                                 GC gc = new GC(scaledSelectedImage);
@@ -591,17 +652,41 @@ public class TreeView extends Canvas implements TreeChangeListener {
                                         newWidth, newHeight);
                                 gc.dispose();
                             }
+
+                            // Draw the background rectangle
                             e.gc.setBackground(textBackgroundColor);
-                            e.gc.fillRoundRectangle(x - scaledSelectedImage.getBounds().width / 2
+                            e.gc.fillRoundRectangle(x - scaledSelectedImage.getBounds().width / 4
                                     - IMAGE_OFFSET, y
-                                    + (IMAGE_HEIGHT - scaledSelectedImage.getBounds().height) / 2
-                                    - IMAGE_OFFSET, scaledSelectedImage.getBounds().width + 2
-                                    * IMAGE_OFFSET, scaledSelectedImage.getBounds().height + 2
-                                    * IMAGE_OFFSET, IMAGE_ROUNDING, IMAGE_ROUNDING);
-                            e.gc.drawImage(scaledSelectedImage, x
-                                    - scaledSelectedImage.getBounds().width / 2, y
-                                    + (IMAGE_HEIGHT - scaledSelectedImage.getBounds().height) / 2);
+                                    + (IMAGE_HEIGHT - scaledSelectedImage.getBounds().height / 2)
+                                    / 2 - IMAGE_OFFSET, scaledSelectedImage.getBounds().width / 2
+                                    + 2 * IMAGE_OFFSET, scaledSelectedImage.getBounds().height / 2
+                                    + 2 * IMAGE_OFFSET, IMAGE_ROUNDING, IMAGE_ROUNDING);
+
+                            // Under max zoom, we want the image to be
+                            // untransformed. So, get back to the identity
+                            // transform.
+                            int imageX = x - scaledSelectedImage.getBounds().width / 4;
+                            int imageY =
+                                    y + (IMAGE_HEIGHT - scaledSelectedImage.getBounds().height / 2)
+                                            / 2;
+
+                            Transform untransformedTransform = new Transform(Display.getDefault());
+                            e.gc.setTransform(untransformedTransform);
+                            float[] pt = new float[] {
+                                    imageX, imageY
+                            };
+                            transform.transform(pt);
+                            e.gc.drawImage(scaledSelectedImage, 0, 0, scaledSelectedImage
+                                    .getBounds().width, scaledSelectedImage.getBounds().height,
+                                    (int) pt[0], (int) pt[1], (int) (scaledSelectedImage
+                                            .getBounds().width
+                                            * zoom / 2),
+                                    (int) (scaledSelectedImage.getBounds().height * zoom / 2));
+                            untransformedTransform.dispose();
+                            e.gc.setTransform(transform);
                         }
+
+                        // Text stuff
 
                         y += IMAGE_HEIGHT;
                         y += 10;
@@ -628,11 +713,6 @@ public class TreeView extends Canvas implements TreeChangeListener {
                                         + (selectedNode.viewNode.drawTime != -1 ? formatter
                                                 .format(selectedNode.viewNode.drawTime)
                                                 + " ms" : "n/a");
-
-                        int TEXT_SIDE_OFFSET = 8;
-                        int TEXT_TOP_OFFSET = 4;
-                        int TEXT_SPACING = 2;
-                        int TEXT_ROUNDING = 20;
 
                         org.eclipse.swt.graphics.Point titleExtent = e.gc.stringExtent(text);
                         org.eclipse.swt.graphics.Point measureExtent =
@@ -678,67 +758,6 @@ public class TreeView extends Canvas implements TreeChangeListener {
                         selectedRectangleLocation = null;
                         buttonCenter = null;
                     }
-
-                    /*
-                     * Transform tempTransform = new
-                     * Transform(Display.getDefault());
-                     * e.gc.setTransform(tempTransform);
-                     * e.gc.setBackground(Display
-                     * .getDefault().getSystemColor(SWT.COLOR_GRAY));
-                     * e.gc.setForeground
-                     * (Display.getDefault().getSystemColor(SWT.COLOR_RED)); //
-                     * Draw the number of views. String viewsString =
-                     * Integer.toString(tree.viewNode.viewCount) + " view"; if
-                     * (tree.viewNode.viewCount != 1) { viewsString += 's'; }
-                     * org.eclipse.swt.graphics.Point stringExtent =
-                     * e.gc.stringExtent(viewsString); e.gc.fillRectangle(0,
-                     * getBounds().height - stringExtent.y - 4, stringExtent.x +
-                     * 4, stringExtent.y + 4); e.gc.drawText(viewsString, 2,
-                     * getBounds().height - stringExtent.y - 2);
-                     * DrawableViewNode profiledNode =
-                     * (tree.viewNode.protocolVersion < 3) ? tree :
-                     * selectedNode; // Draw the profiling stuff if
-                     * (profiledNode != null &&
-                     * profiledNode.viewNode.measureTime != -1) { DecimalFormat
-                     * formatter = new DecimalFormat("0.000"); String
-                     * measureString = "Measure:"; String measureTimeString =
-                     * formatter.format(profiledNode.viewNode.measureTime) +
-                     * " ms"; String layoutString = "Layout:"; String
-                     * layoutTimeString =
-                     * formatter.format(profiledNode.viewNode.layoutTime) +
-                     * " ms"; String drawString = "Draw:"; String drawTimeString
-                     * = formatter.format(profiledNode.viewNode.drawTime) +
-                     * " ms"; org.eclipse.swt.graphics.Point measureExtent =
-                     * e.gc.stringExtent(measureString);
-                     * org.eclipse.swt.graphics.Point measureTimeExtent =
-                     * e.gc.stringExtent(measureTimeString);
-                     * org.eclipse.swt.graphics.Point layoutExtent =
-                     * e.gc.stringExtent(layoutString);
-                     * org.eclipse.swt.graphics.Point layoutTimeExtent =
-                     * e.gc.stringExtent(layoutTimeString);
-                     * org.eclipse.swt.graphics.Point drawExtent =
-                     * e.gc.stringExtent(drawString);
-                     * org.eclipse.swt.graphics.Point drawTimeExtent =
-                     * e.gc.stringExtent(drawTimeString); int letterHeight =
-                     * e.gc.getFontMetrics().getHeight(); int width =
-                     * Math.max(measureExtent.x, Math.max(layoutExtent.x,
-                     * drawExtent.x)) + Math.max(measureTimeExtent.x, Math.max(
-                     * layoutTimeExtent.x, drawTimeExtent.x)) + 8; int height =
-                     * 3 * letterHeight + 8; int x = getBounds().width - width;
-                     * int y = getBounds().height - height;
-                     * e.gc.fillRectangle(x, y, width, height); x += 2; y += 2;
-                     * e.gc.drawText(measureString, x, y); y += letterHeight +
-                     * 2; e.gc.drawText(layoutString, x, y); y += letterHeight +
-                     * 2; e.gc.drawText(drawString, x, y); x = getBounds().width
-                     * - measureTimeExtent.x - 2; y = getBounds().height -
-                     * height + 2; e.gc.drawText(measureTimeString, x, y); x =
-                     * getBounds().width - layoutTimeExtent.x - 2; y +=
-                     * letterHeight + 2; e.gc.drawText(layoutTimeString, x, y);
-                     * x = getBounds().width - drawTimeExtent.x - 2; y +=
-                     * letterHeight + 2; e.gc.drawText(drawTimeString, x, y); }
-                     * tempTransform.dispose();
-                     */
-
                 }
             }
         }
@@ -904,6 +923,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
         transform.translate((float) -tree.bounds.x, (float) -tree.bounds.y);
         Path connectionPath = new Path(Display.getDefault());
         GC gc = new GC(image);
+
+        // Can't use Display.getDefault().getSystemColor in a non-UI thread.
         Color white = new Color(Display.getDefault(), 255, 255, 255);
         Color black = new Color(Display.getDefault(), 0, 0, 0);
         gc.setForeground(white);
@@ -939,6 +960,8 @@ public class TreeView extends Canvas implements TreeChangeListener {
         });
     }
 
+    // Fickle behaviour... When a new tree is loaded, the model doesn't know
+    // about the viewport until it passes through here.
     public void treeChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
@@ -975,6 +998,7 @@ public class TreeView extends Canvas implements TreeChangeListener {
         }
     }
 
+    // Note the syncExec and then synchronized... It avoids deadlock
     public void viewportChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
