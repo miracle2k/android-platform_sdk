@@ -10,14 +10,8 @@
    </copyright>
 
    <requires>
-      <import plugin="org.eclipse.ui"/>
-      <import plugin="org.eclipse.core.runtime"/>
-      <import plugin="org.eclipse.core.resources"/>
-      <import plugin="com.android.ide.eclipse.adt"/>
       <import plugin="org.junit"/>
-      <import plugin="org.eclipse.jdt.core"/>
-      <import plugin="org.eclipse.jdt.launching"/>
-      <import plugin="org.eclipse.ui.views"/>
+      <import plugin="com.android.ide.eclipse.adt" match="perfect"/>
    </requires>
 
    <plugin

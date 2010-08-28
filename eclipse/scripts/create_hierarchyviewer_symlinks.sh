@@ -60,7 +60,7 @@ DEST=$BASE/libs
 
 mkdir -p $DEST
 
-LIBS="ddmlib ddmuilib hierarchyviewerlib "
+LIBS="hierarchyviewerlib "
 echo "make java libs ..."
 make -j3 showcommands $LIBS || die "Hierarchy Viewer: Fail to build one of $LIBS."
 
