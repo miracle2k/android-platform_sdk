@@ -513,6 +513,7 @@ public class DeviceBridge {
         DeviceConnection connection = null;
         try {
             connection = new DeviceConnection(window.getDevice());
+            connection.getSocket().setSoTimeout(5000);
             connection.sendCommand("CAPTURE " + window.encode() + " " + viewNode.toString()); //$NON-NLS-1$
             return new Image(Display.getDefault(), connection.getSocket().getInputStream());
         } catch (Exception e) {
