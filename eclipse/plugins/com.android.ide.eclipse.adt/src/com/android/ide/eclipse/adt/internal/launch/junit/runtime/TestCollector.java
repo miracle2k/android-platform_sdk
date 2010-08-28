@@ -48,6 +48,10 @@ class TestCollector implements ITestRunListener {
         // ignore
     }
 
+    public void testEnded(TestIdentifier test, Map<String, String> testMetrics) {
+        // ignore
+    }
+
     /* (non-Javadoc)
      * @see com.android.ddmlib.testrunner.ITestRunListener#testFailed(com.android.ddmlib.testrunner.ITestRunListener.TestFailure, com.android.ddmlib.testrunner.TestIdentifier, java.lang.String)
      */
