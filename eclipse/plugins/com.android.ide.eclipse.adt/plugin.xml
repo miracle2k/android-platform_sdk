@@ -288,6 +288,12 @@
                id="com.android.ide.eclipse.adt.project.RenamePackageAction"
                label="Rename Application Package"
                menubarPath="com.android.ide.eclipse.adt.AndroidTools/group3"/>
+         <action
+               class="com.android.ide.eclipse.adt.internal.actions.DexDumpAction"
+               enablesFor="1"
+               id="com.android.ide.eclipse.adt.DexDumpAction"
+               label="Display dex bytecode"
+               menubarPath="com.android.ide.eclipse.adt.AndroidTools/group3"/>
       </objectContribution>
       <objectContribution
             id="com.android.ide.eclipse.adt.contribution3"

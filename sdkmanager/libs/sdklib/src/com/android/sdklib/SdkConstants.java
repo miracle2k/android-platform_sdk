@@ -128,6 +128,10 @@ public final class SdkConstants {
     public final static String FN_ZIPALIGN = (CURRENT_PLATFORM == PLATFORM_WINDOWS) ?
             "zipalign.exe" : "zipalign"; //$NON-NLS-1$ //$NON-NLS-2$
 
+    /** dexdump executable (with extension for the current OS)  */
+    public final static String FN_DEXDUMP = (CURRENT_PLATFORM == PLATFORM_WINDOWS) ?
+            "dexdump.exe" : "dexdump"; //$NON-NLS-1$ //$NON-NLS-2$
+
     /** properties file for SDK Updater packages */
     public final static String FN_SOURCE_PROP = "source.properties"; //$NON-NLS-1$
     /** properties file for content hash of installed packages */
