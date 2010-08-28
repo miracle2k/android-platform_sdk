@@ -19,7 +19,7 @@ package com.android.ide.eclipse.hierarchyviewer.views;
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
-import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
+import com.android.hierarchyviewerlib.models.TreeViewModel.ITreeChangeListener;
 import com.android.hierarchyviewerlib.ui.LayoutViewer;
 
 import org.eclipse.jface.action.Action;
@@ -34,7 +34,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.part.ViewPart;
 
-public class LayoutView extends ViewPart implements TreeChangeListener {
+public class LayoutView extends ViewPart implements ITreeChangeListener {
 
     public static final String ID = "com.android.ide.eclipse.hierarchyviewer.views.LayoutView"; //$NON-NLS-1$
 
