@@ -28,16 +28,16 @@ import java.util.concurrent.Executors;
  */
 public class HierarchyViewerApplicationDirector extends HierarchyViewerDirector {
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
 
     public static HierarchyViewerDirector createDirector() {
-        return director = new HierarchyViewerApplicationDirector();
+        return sDirector = new HierarchyViewerApplicationDirector();
     }
 
     @Override
     public void terminate() {
         super.terminate();
-        executor.shutdown();
+        mExecutor.shutdown();
     }
 
     /*
@@ -46,7 +46,7 @@ public class HierarchyViewerApplicationDirector extends HierarchyViewerDirector 
      */
     @Override
     public String getAdbLocation() {
-        String hvParentLocation = System.getProperty("com.android.hierarchyviewer.bindir");
+        String hvParentLocation = System.getProperty("com.android.hierarchyviewer.bindir"); //$NON-NLS-1$
         if (hvParentLocation != null && hvParentLocation.length() != 0) {
             return hvParentLocation + File.separator + SdkConstants.FN_ADB;
         }
@@ -60,7 +60,7 @@ public class HierarchyViewerApplicationDirector extends HierarchyViewerDirector 
      */
     @Override
     public void executeInBackground(final String taskName, final Runnable task) {
-        executor.execute(new Runnable() {
+        mExecutor.execute(new Runnable() {
             public void run() {
                 HierarchyViewerApplication.getApp().startTask(taskName);
                 task.run();

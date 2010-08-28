@@ -17,12 +17,12 @@
 package com.android.hierarchyviewerlib.actions;
 
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
-import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
+import com.android.hierarchyviewerlib.models.PixelPerfectModel.IImageChangeListener;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.swt.widgets.Display;
 
-public class PixelPerfectEnabledAction extends Action implements ImageChangeListener {
+public class PixelPerfectEnabledAction extends Action implements IImageChangeListener {
     public PixelPerfectEnabledAction(String name) {
         super(name);
         setEnabled(PixelPerfectModel.getModel().getImage() != null);

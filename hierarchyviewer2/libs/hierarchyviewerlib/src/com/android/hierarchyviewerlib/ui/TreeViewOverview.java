@@ -18,7 +18,7 @@ package com.android.hierarchyviewerlib.ui;
 
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
-import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
+import com.android.hierarchyviewerlib.models.TreeViewModel.ITreeChangeListener;
 import com.android.hierarchyviewerlib.ui.util.DrawableViewNode;
 import com.android.hierarchyviewerlib.ui.util.DrawableViewNode.Point;
 import com.android.hierarchyviewerlib.ui.util.DrawableViewNode.Rectangle;
@@ -41,72 +41,72 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 
-public class TreeViewOverview extends Canvas implements TreeChangeListener {
+public class TreeViewOverview extends Canvas implements ITreeChangeListener {
 
-    private TreeViewModel model;
+    private TreeViewModel mModel;
 
-    private DrawableViewNode tree;
+    private DrawableViewNode mTree;
 
-    private Rectangle viewport;
+    private Rectangle mViewport;
 
-    private Transform transform;
+    private Transform mTransform;
 
-    private Transform inverse;
+    private Transform mInverse;
 
-    private Rectangle bounds = new Rectangle();
+    private Rectangle mBounds = new Rectangle();
 
-    private double scale;
+    private double mScale;
 
-    private boolean dragging = false;
+    private boolean mDragging = false;
 
-    private DrawableViewNode selectedNode;
+    private DrawableViewNode mSelectedNode;
 
-    private static Image notSelectedImage;
+    private static Image sNotSelectedImage;
 
-    private static Image selectedImage;
+    private static Image sSelectedImage;
 
-    private static Image filteredImage;
+    private static Image sFilteredImage;
 
-    private static Image filteredSelectedImage;
+    private static Image sFilteredSelectedImage;
 
     public TreeViewOverview(Composite parent) {
         super(parent, SWT.NONE);
 
-        model = TreeViewModel.getModel();
-        model.addTreeChangeListener(this);
+        mModel = TreeViewModel.getModel();
+        mModel.addTreeChangeListener(this);
 
         loadResources();
 
-        addPaintListener(paintListener);
-        addMouseListener(mouseListener);
-        addMouseMoveListener(mouseMoveListener);
-        addListener(SWT.Resize, resizeListener);
-        addDisposeListener(disposeListener);
+        addPaintListener(mPaintListener);
+        addMouseListener(mMouseListener);
+        addMouseMoveListener(mMouseMoveListener);
+        addListener(SWT.Resize, mResizeListener);
+        addDisposeListener(mDisposeListener);
 
-        transform = new Transform(Display.getDefault());
-        inverse = new Transform(Display.getDefault());
+        mTransform = new Transform(Display.getDefault());
+        mInverse = new Transform(Display.getDefault());
 
         loadAllData();
     }
 
     private void loadResources() {
         ImageLoader loader = ImageLoader.getLoader(this.getClass());
-        notSelectedImage = loader.loadImage("not-selected.png", Display.getDefault());
-        selectedImage = loader.loadImage("selected-small.png", Display.getDefault());
-        filteredImage = loader.loadImage("filtered.png", Display.getDefault());
-        filteredSelectedImage =
-                loader.loadImage("selected-filtered-small.png", Display.getDefault());
+        sNotSelectedImage = loader.loadImage("not-selected.png", Display.getDefault()); //$NON-NLS-1$
+        sSelectedImage = loader.loadImage("selected-small.png", Display.getDefault()); //$NON-NLS-1$
+        sFilteredImage = loader.loadImage("filtered.png", Display.getDefault()); //$NON-NLS-1$
+        sFilteredSelectedImage =
+                loader.loadImage("selected-filtered-small.png", Display.getDefault()); //$NON-NLS-1$
     }
 
-    private DisposeListener disposeListener = new DisposeListener() {
+    private DisposeListener mDisposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
-            model.removeTreeChangeListener(TreeViewOverview.this);
-            transform.dispose();
-            inverse.dispose();
+            mModel.removeTreeChangeListener(TreeViewOverview.this);
+            mTransform.dispose();
+            mInverse.dispose();
         }
     };
 
-    private MouseListener mouseListener = new MouseListener() {
+    private MouseListener mMouseListener = new MouseListener() {
 
         public void mouseDoubleClick(MouseEvent e) {
             // pass
@@ -115,16 +115,16 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         public void mouseDown(MouseEvent e) {
             boolean redraw = false;
             synchronized (TreeViewOverview.this) {
-                if (tree != null && viewport != null) {
-                    dragging = true;
+                if (mTree != null && mViewport != null) {
+                    mDragging = true;
                     redraw = true;
                     handleMouseEvent(transformPoint(e.x, e.y));
                 }
             }
             if (redraw) {
-                model.removeTreeChangeListener(TreeViewOverview.this);
-                model.setViewport(viewport);
-                model.addTreeChangeListener(TreeViewOverview.this);
+                mModel.removeTreeChangeListener(TreeViewOverview.this);
+                mModel.setViewport(mViewport);
+                mModel.addTreeChangeListener(TreeViewOverview.this);
                 doRedraw();
             }
         }
@@ -132,8 +132,8 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         public void mouseUp(MouseEvent e) {
             boolean redraw = false;
             synchronized (TreeViewOverview.this) {
-                if (tree != null && viewport != null) {
-                    dragging = false;
+                if (mTree != null && mViewport != null) {
+                    mDragging = false;
                     redraw = true;
                     handleMouseEvent(transformPoint(e.x, e.y));
 
@@ -145,47 +145,47 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
                 }
             }
             if (redraw) {
-                model.removeTreeChangeListener(TreeViewOverview.this);
-                model.setViewport(viewport);
-                model.addTreeChangeListener(TreeViewOverview.this);
+                mModel.removeTreeChangeListener(TreeViewOverview.this);
+                mModel.setViewport(mViewport);
+                mModel.addTreeChangeListener(TreeViewOverview.this);
                 doRedraw();
             }
         }
 
     };
 
-    private MouseMoveListener mouseMoveListener = new MouseMoveListener() {
+    private MouseMoveListener mMouseMoveListener = new MouseMoveListener() {
         public void mouseMove(MouseEvent e) {
             boolean moved = false;
             synchronized (TreeViewOverview.this) {
-                if (dragging) {
+                if (mDragging) {
                     moved = true;
                     handleMouseEvent(transformPoint(e.x, e.y));
                 }
             }
             if (moved) {
-                model.removeTreeChangeListener(TreeViewOverview.this);
-                model.setViewport(viewport);
-                model.addTreeChangeListener(TreeViewOverview.this);
+                mModel.removeTreeChangeListener(TreeViewOverview.this);
+                mModel.setViewport(mViewport);
+                mModel.addTreeChangeListener(TreeViewOverview.this);
                 doRedraw();
             }
         }
     };
 
     private void handleMouseEvent(Point pt) {
-        viewport.x = pt.x - viewport.width / 2;
-        viewport.y = pt.y - viewport.height / 2;
-        if (viewport.x < bounds.x) {
-            viewport.x = bounds.x;
+        mViewport.x = pt.x - mViewport.width / 2;
+        mViewport.y = pt.y - mViewport.height / 2;
+        if (mViewport.x < mBounds.x) {
+            mViewport.x = mBounds.x;
         }
-        if (viewport.y < bounds.y) {
-            viewport.y = bounds.y;
+        if (mViewport.y < mBounds.y) {
+            mViewport.y = mBounds.y;
         }
-        if (viewport.x + viewport.width > bounds.x + bounds.width) {
-            viewport.x = bounds.x + bounds.width - viewport.width;
+        if (mViewport.x + mViewport.width > mBounds.x + mBounds.width) {
+            mViewport.x = mBounds.x + mBounds.width - mViewport.width;
         }
-        if (viewport.y + viewport.height > bounds.y + bounds.height) {
-            viewport.y = bounds.y + bounds.height - viewport.height;
+        if (mViewport.y + mViewport.height > mBounds.y + mBounds.height) {
+            mViewport.y = mBounds.y + mBounds.height - mViewport.height;
         }
     }
 
@@ -193,11 +193,11 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         float[] pt = {
                 (float) x, (float) y
         };
-        inverse.transform(pt);
+        mInverse.transform(pt);
         return new Point(pt[0], pt[1]);
     }
 
-    private Listener resizeListener = new Listener() {
+    private Listener mResizeListener = new Listener() {
         public void handleEvent(Event arg0) {
             synchronized (TreeViewOverview.this) {
                 setTransform();
@@ -206,33 +206,33 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         }
     };
 
-    private PaintListener paintListener = new PaintListener() {
+    private PaintListener mPaintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
             synchronized (TreeViewOverview.this) {
-                if (tree != null) {
+                if (mTree != null) {
                     e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
                     e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
                     e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
-                    e.gc.setTransform(transform);
-                    e.gc.setLineWidth((int) Math.ceil(0.7 / scale));
+                    e.gc.setTransform(mTransform);
+                    e.gc.setLineWidth((int) Math.ceil(0.7 / mScale));
                     Path connectionPath = new Path(Display.getDefault());
-                    paintRecursive(e.gc, tree, connectionPath);
+                    paintRecursive(e.gc, mTree, connectionPath);
                     e.gc.drawPath(connectionPath);
                     connectionPath.dispose();
 
-                    if (viewport != null) {
+                    if (mViewport != null) {
                         e.gc.setAlpha(50);
                         e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
-                        e.gc.fillRectangle((int) viewport.x, (int) viewport.y, (int) Math
-                                .ceil(viewport.width), (int) Math.ceil(viewport.height));
+                        e.gc.fillRectangle((int) mViewport.x, (int) mViewport.y, (int) Math
+                                .ceil(mViewport.width), (int) Math.ceil(mViewport.height));
 
                         e.gc.setAlpha(255);
                         e.gc
                                 .setForeground(Display.getDefault().getSystemColor(
                                         SWT.COLOR_DARK_GRAY));
-                        e.gc.setLineWidth((int) Math.ceil(2 / scale));
-                        e.gc.drawRectangle((int) viewport.x, (int) viewport.y, (int) Math
-                                .ceil(viewport.width), (int) Math.ceil(viewport.height));
+                        e.gc.setLineWidth((int) Math.ceil(2 / mScale));
+                        e.gc.drawRectangle((int) mViewport.x, (int) mViewport.y, (int) Math
+                                .ceil(mViewport.width), (int) Math.ceil(mViewport.height));
                     }
                 }
             }
@@ -240,14 +240,14 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     };
 
     private void paintRecursive(GC gc, DrawableViewNode node, Path connectionPath) {
-        if (selectedNode == node && node.viewNode.filtered) {
-            gc.drawImage(filteredSelectedImage, node.left, (int) Math.round(node.top));
-        } else if (selectedNode == node) {
-            gc.drawImage(selectedImage, node.left, (int) Math.round(node.top));
+        if (mSelectedNode == node && node.viewNode.filtered) {
+            gc.drawImage(sFilteredSelectedImage, node.left, (int) Math.round(node.top));
+        } else if (mSelectedNode == node) {
+            gc.drawImage(sSelectedImage, node.left, (int) Math.round(node.top));
         } else if (node.viewNode.filtered) {
-            gc.drawImage(filteredImage, node.left, (int) Math.round(node.top));
+            gc.drawImage(sFilteredImage, node.left, (int) Math.round(node.top));
         } else {
-            gc.drawImage(notSelectedImage, node.left, (int) Math.round(node.top));
+            gc.drawImage(sNotSelectedImage, node.left, (int) Math.round(node.top));
         }
         int N = node.children.size();
         if (N == 0) {
@@ -284,9 +284,9 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (this) {
-                    tree = model.getTree();
-                    selectedNode = model.getSelection();
-                    viewport = model.getViewport();
+                    mTree = mModel.getTree();
+                    mSelectedNode = mModel.getSelection();
+                    mViewport = mModel.getViewport();
                     setBounds();
                     setTransform();
                 }
@@ -299,9 +299,9 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (this) {
-                    tree = model.getTree();
-                    selectedNode = model.getSelection();
-                    viewport = model.getViewport();
+                    mTree = mModel.getTree();
+                    mSelectedNode = mModel.getSelection();
+                    mViewport = mModel.getViewport();
                     setBounds();
                     setTransform();
                 }
@@ -311,48 +311,48 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
     }
 
     private void setBounds() {
-        if (viewport != null && tree != null) {
-            bounds.x = Math.min(viewport.x, tree.bounds.x);
-            bounds.y = Math.min(viewport.y, tree.bounds.y);
-            bounds.width =
-                    Math.max(viewport.x + viewport.width, tree.bounds.x + tree.bounds.width)
-                            - bounds.x;
-            bounds.height =
-                    Math.max(viewport.y + viewport.height, tree.bounds.y + tree.bounds.height)
-                            - bounds.y;
-        } else if (tree != null) {
-            bounds.x = tree.bounds.x;
-            bounds.y = tree.bounds.y;
-            bounds.width = tree.bounds.x + tree.bounds.width - bounds.x;
-            bounds.height = tree.bounds.y + tree.bounds.height - bounds.y;
+        if (mViewport != null && mTree != null) {
+            mBounds.x = Math.min(mViewport.x, mTree.bounds.x);
+            mBounds.y = Math.min(mViewport.y, mTree.bounds.y);
+            mBounds.width =
+                    Math.max(mViewport.x + mViewport.width, mTree.bounds.x + mTree.bounds.width)
+                            - mBounds.x;
+            mBounds.height =
+                    Math.max(mViewport.y + mViewport.height, mTree.bounds.y + mTree.bounds.height)
+                            - mBounds.y;
+        } else if (mTree != null) {
+            mBounds.x = mTree.bounds.x;
+            mBounds.y = mTree.bounds.y;
+            mBounds.width = mTree.bounds.x + mTree.bounds.width - mBounds.x;
+            mBounds.height = mTree.bounds.y + mTree.bounds.height - mBounds.y;
         }
     }
 
     private void setTransform() {
-        if (tree != null) {
+        if (mTree != null) {
 
-            transform.identity();
-            inverse.identity();
+            mTransform.identity();
+            mInverse.identity();
             final Point size = new Point();
             size.x = getBounds().width;
             size.y = getBounds().height;
-            if (bounds.width == 0 || bounds.height == 0 || size.x == 0 || size.y == 0) {
-                scale = 1;
+            if (mBounds.width == 0 || mBounds.height == 0 || size.x == 0 || size.y == 0) {
+                mScale = 1;
             } else {
-                scale = Math.min(size.x / bounds.width, size.y / bounds.height);
+                mScale = Math.min(size.x / mBounds.width, size.y / mBounds.height);
             }
-            transform.scale((float) scale, (float) scale);
-            inverse.scale((float) scale, (float) scale);
-            transform.translate((float) -bounds.x, (float) -bounds.y);
-            inverse.translate((float) -bounds.x, (float) -bounds.y);
-            if (size.x / bounds.width < size.y / bounds.height) {
-                transform.translate(0, (float) (size.y / scale - bounds.height) / 2);
-                inverse.translate(0, (float) (size.y / scale - bounds.height) / 2);
+            mTransform.scale((float) mScale, (float) mScale);
+            mInverse.scale((float) mScale, (float) mScale);
+            mTransform.translate((float) -mBounds.x, (float) -mBounds.y);
+            mInverse.translate((float) -mBounds.x, (float) -mBounds.y);
+            if (size.x / mBounds.width < size.y / mBounds.height) {
+                mTransform.translate(0, (float) (size.y / mScale - mBounds.height) / 2);
+                mInverse.translate(0, (float) (size.y / mScale - mBounds.height) / 2);
             } else {
-                transform.translate((float) (size.x / scale - bounds.width) / 2, 0);
-                inverse.translate((float) (size.x / scale - bounds.width) / 2, 0);
+                mTransform.translate((float) (size.x / mScale - mBounds.width) / 2, 0);
+                mInverse.translate((float) (size.x / mScale - mBounds.width) / 2, 0);
             }
-            inverse.invert();
+            mInverse.invert();
         }
     }
 
@@ -360,7 +360,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (this) {
-                    viewport = model.getViewport();
+                    mViewport = mModel.getViewport();
                     setBounds();
                     setTransform();
                 }
@@ -375,7 +375,7 @@ public class TreeViewOverview extends Canvas implements TreeChangeListener {
 
     public void selectionChanged() {
         synchronized (this) {
-            selectedNode = model.getSelection();
+            mSelectedNode = mModel.getSelection();
         }
         doRedraw();
     }

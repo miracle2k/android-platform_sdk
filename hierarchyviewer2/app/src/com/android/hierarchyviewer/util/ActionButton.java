@@ -28,35 +28,35 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 
 public class ActionButton implements IPropertyChangeListener, SelectionListener {
-    private Button button;
+    private Button mButton;
 
-    private Action action;
+    private Action mAction;
 
     public ActionButton(Composite parent, ImageAction action) {
-        this.action = (Action) action;
-        if (this.action.getStyle() == Action.AS_CHECK_BOX) {
-            button = new Button(parent, SWT.CHECK);
+        this.mAction = (Action) action;
+        if (this.mAction.getStyle() == Action.AS_CHECK_BOX) {
+            mButton = new Button(parent, SWT.CHECK);
         } else {
-            button = new Button(parent, SWT.PUSH);
+            mButton = new Button(parent, SWT.PUSH);
         }
-        button.setText(action.getText());
-        button.setImage(action.getImage());
-        this.action.addPropertyChangeListener(this);
-        button.addSelectionListener(this);
-        button.setToolTipText(action.getToolTipText());
-        button.setEnabled(this.action.isEnabled());
+        mButton.setText(action.getText());
+        mButton.setImage(action.getImage());
+        this.mAction.addPropertyChangeListener(this);
+        mButton.addSelectionListener(this);
+        mButton.setToolTipText(action.getToolTipText());
+        mButton.setEnabled(this.mAction.isEnabled());
     }
 
     public void propertyChange(PropertyChangeEvent e) {
-        if (e.getProperty().toUpperCase().equals("ENABLED")) {
-            button.setEnabled((Boolean) e.getNewValue());
-        } else if (e.getProperty().toUpperCase().equals("CHECKED")) {
-            button.setSelection(action.isChecked());
+        if (e.getProperty().toUpperCase().equals("ENABLED")) { //$NON-NLS-1$
+            mButton.setEnabled((Boolean) e.getNewValue());
+        } else if (e.getProperty().toUpperCase().equals("CHECKED")) { //$NON-NLS-1$
+            mButton.setSelection(mAction.isChecked());
         }
     }
 
     public void setLayoutData(Object data) {
-        button.setLayoutData(data);
+        mButton.setLayoutData(data);
     }
 
     public void widgetDefaultSelected(SelectionEvent e) {
@@ -64,13 +64,13 @@ public class ActionButton implements IPropertyChangeListener, SelectionListener 
     }
 
     public void widgetSelected(SelectionEvent e) {
-        if (action.getStyle() == Action.AS_CHECK_BOX) {
-            action.setChecked(button.getSelection());
+        if (mAction.getStyle() == Action.AS_CHECK_BOX) {
+            mAction.setChecked(mButton.getSelection());
         }
-        action.run();
+        mAction.run();
     }
 
     public void addSelectionListener(SelectionListener listener) {
-        button.addSelectionListener(listener);
+        mButton.addSelectionListener(listener);
     }
 }

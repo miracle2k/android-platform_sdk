@@ -27,35 +27,35 @@ import org.eclipse.swt.widgets.Shell;
 
 public class LoadOverlayAction extends PixelPerfectEnabledAction implements ImageAction {
 
-    private static LoadOverlayAction action;
+    private static LoadOverlayAction sAction;
 
-    private Image image;
+    private Image mImage;
 
-    private Shell shell;
+    private Shell mShell;
 
     private LoadOverlayAction(Shell shell) {
         super("Load &Overlay");
-        this.shell = shell;
+        this.mShell = shell;
         setAccelerator(SWT.MOD1 + 'O');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("load-overlay.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("load-overlay.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Load an image to overlay the screenshot");
     }
 
     public static LoadOverlayAction getAction(Shell shell) {
-        if (action == null) {
-            action = new LoadOverlayAction(shell);
+        if (sAction == null) {
+            sAction = new LoadOverlayAction(shell);
         }
-        return action;
+        return sAction;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().loadOverlay(shell);
+        HierarchyViewerDirector.getDirector().loadOverlay(mShell);
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

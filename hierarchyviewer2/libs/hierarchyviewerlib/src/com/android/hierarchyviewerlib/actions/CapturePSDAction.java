@@ -27,35 +27,35 @@ import org.eclipse.swt.widgets.Shell;
 
 public class CapturePSDAction extends TreeViewEnabledAction implements ImageAction {
 
-    private static CapturePSDAction action;
+    private static CapturePSDAction sAction;
 
-    private Image image;
+    private Image mImage;
 
-    private Shell shell;
+    private Shell mShell;
 
     private CapturePSDAction(Shell shell) {
         super("&Capture Layers");
-        this.shell = shell;
+        this.mShell = shell;
         setAccelerator(SWT.MOD1 + 'C');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("capture-psd.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("capture-psd.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Capture the window layers as a photoshop document");
     }
 
     public static CapturePSDAction getAction(Shell shell) {
-        if (action == null) {
-            action = new CapturePSDAction(shell);
+        if (sAction == null) {
+            sAction = new CapturePSDAction(shell);
         }
-        return action;
+        return sAction;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().capturePSD(shell);
+        HierarchyViewerDirector.getDirector().capturePSD(mShell);
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

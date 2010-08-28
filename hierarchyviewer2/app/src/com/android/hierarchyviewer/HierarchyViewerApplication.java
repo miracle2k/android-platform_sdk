@@ -39,8 +39,8 @@ import com.android.hierarchyviewerlib.actions.SavePixelPerfectAction;
 import com.android.hierarchyviewerlib.actions.SaveTreeViewAction;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
-import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
-import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
+import com.android.hierarchyviewerlib.models.PixelPerfectModel.IImageChangeListener;
+import com.android.hierarchyviewerlib.models.TreeViewModel.ITreeChangeListener;
 import com.android.hierarchyviewerlib.ui.DeviceSelector;
 import com.android.hierarchyviewerlib.ui.LayoutViewer;
 import com.android.hierarchyviewerlib.ui.PixelPerfect;
@@ -84,74 +84,74 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
     private static final int INITIAL_HEIGHT = 768;
 
-    private static HierarchyViewerApplication APP;
+    private static HierarchyViewerApplication mApp;
 
     // Images for moving between the 3 main windows.
 
-    private Image deviceViewImage;
+    private Image mDeviceViewImage;
 
-    private Image pixelPerfectImage;
+    private Image mPixelPerfectImage;
 
-    private Image treeViewImage;
+    private Image mTreeViewImage;
 
-    private Image deviceViewSelectedImage;
+    private Image mDeviceViewSelectedImage;
 
-    private Image pixelPerfectSelectedImage;
+    private Image mPixelPerfectSelectedImage;
 
-    private Image treeViewSelectedImage;
+    private Image mTreeViewSelectedImage;
 
     // And their buttons
 
-    private Button treeViewButton;
+    private Button mTreeViewButton;
 
-    private Button pixelPerfectButton;
+    private Button mPixelPerfectButton;
 
-    private Button deviceViewButton;
+    private Button mDeviceViewButton;
 
-    private Label progressLabel;
+    private Label mProgressLabel;
 
-    private ProgressBar progressBar;
+    private ProgressBar mProgressBar;
 
-    private String progressString;
+    private String mProgressString;
 
-    private Composite deviceSelectorPanel;
+    private Composite mDeviceSelectorPanel;
 
-    private Composite treeViewPanel;
+    private Composite mTreeViewPanel;
 
-    private Composite pixelPerfectPanel;
+    private Composite mPixelPerfectPanel;
 
-    private StackLayout mainWindowStackLayout;
+    private StackLayout mMainWindowStackLayout;
 
-    private DeviceSelector deviceSelector;
+    private DeviceSelector mDeviceSelector;
 
-    private Composite statusBar;
+    private Composite mStatusBar;
 
-    private TreeView treeView;
+    private TreeView mTreeView;
 
-    private Composite mainWindow;
+    private Composite mMainWindow;
 
-    private Image onBlackImage;
+    private Image mOnBlackImage;
 
-    private Image onWhiteImage;
+    private Image mOnWhiteImage;
 
-    private Button onBlackWhiteButton;
+    private Button mOnBlackWhiteButton;
 
-    private Button showExtras;
+    private Button mShowExtras;
 
-    private LayoutViewer layoutViewer;
+    private LayoutViewer mLayoutViewer;
 
-    private PixelPerfectLoupe pixelPerfectLoupe;
+    private PixelPerfectLoupe mPixelPerfectLoupe;
 
-    private Composite treeViewControls;
+    private Composite mTreeViewControls;
 
     public static final HierarchyViewerApplication getApp() {
-        return APP;
+        return mApp;
     }
 
     public HierarchyViewerApplication() {
         super(null);
 
-        APP = this;
+        mApp = this;
 
         addMenuBar();
     }
@@ -161,7 +161,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         super.configureShell(shell);
         shell.setText("Hierarchy Viewer");
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        Image image = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault());
+        Image image = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault()); //$NON-NLS-1$
         shell.setImage(image);
     }
 
@@ -203,17 +203,17 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
     private void loadResources() {
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        treeViewImage = imageLoader.loadImage("tree-view.png", Display.getDefault());
-        treeViewSelectedImage =
-                imageLoader.loadImage("tree-view-selected.png", Display.getDefault());
-        pixelPerfectImage = imageLoader.loadImage("pixel-perfect-view.png", Display.getDefault());
-        pixelPerfectSelectedImage =
-                imageLoader.loadImage("pixel-perfect-view-selected.png", Display.getDefault());
-        deviceViewImage = imageLoader.loadImage("device-view.png", Display.getDefault());
-        deviceViewSelectedImage =
-                imageLoader.loadImage("device-view-selected.png", Display.getDefault());
-        onBlackImage = imageLoader.loadImage("on-black.png", Display.getDefault());
-        onWhiteImage = imageLoader.loadImage("on-white.png", Display.getDefault());
+        mTreeViewImage = imageLoader.loadImage("tree-view.png", Display.getDefault()); //$NON-NLS-1$
+        mTreeViewSelectedImage =
+                imageLoader.loadImage("tree-view-selected.png", Display.getDefault()); //$NON-NLS-1$
+        mPixelPerfectImage = imageLoader.loadImage("pixel-perfect-view.png", Display.getDefault()); //$NON-NLS-1$
+        mPixelPerfectSelectedImage =
+                imageLoader.loadImage("pixel-perfect-view-selected.png", Display.getDefault()); //$NON-NLS-1$
+        mDeviceViewImage = imageLoader.loadImage("device-view.png", Display.getDefault()); //$NON-NLS-1$
+        mDeviceViewSelectedImage =
+                imageLoader.loadImage("device-view-selected.png", Display.getDefault()); //$NON-NLS-1$
+        mOnBlackImage = imageLoader.loadImage("on-black.png", Display.getDefault()); //$NON-NLS-1$
+        mOnWhiteImage = imageLoader.loadImage("on-white.png", Display.getDefault()); //$NON-NLS-1$
     }
 
     @Override
@@ -225,14 +225,14 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         mainLayout.marginHeight = mainLayout.marginWidth = 0;
         mainLayout.verticalSpacing = mainLayout.horizontalSpacing = 0;
         control.setLayout(mainLayout);
-        mainWindow = new Composite(control, SWT.NONE);
-        mainWindow.setLayoutData(new GridData(GridData.FILL_BOTH));
-        mainWindowStackLayout = new StackLayout();
-        mainWindow.setLayout(mainWindowStackLayout);
+        mMainWindow = new Composite(control, SWT.NONE);
+        mMainWindow.setLayoutData(new GridData(GridData.FILL_BOTH));
+        mMainWindowStackLayout = new StackLayout();
+        mMainWindow.setLayout(mMainWindowStackLayout);
 
-        buildDeviceSelectorPanel(mainWindow);
-        buildTreeViewPanel(mainWindow);
-        buildPixelPerfectPanel(mainWindow);
+        buildDeviceSelectorPanel(mMainWindow);
+        buildTreeViewPanel(mMainWindow);
+        buildPixelPerfectPanel(mMainWindow);
 
         buildStatusBar(control);
 
@@ -243,78 +243,78 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
 
     private void buildStatusBar(Composite parent) {
-        statusBar = new Composite(parent, SWT.NONE);
-        statusBar.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        mStatusBar = new Composite(parent, SWT.NONE);
+        mStatusBar.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         FormLayout statusBarLayout = new FormLayout();
         statusBarLayout.marginHeight = statusBarLayout.marginWidth = 2;
 
-        statusBar.setLayout(statusBarLayout);
+        mStatusBar.setLayout(statusBarLayout);
 
-        deviceViewButton = new Button(statusBar, SWT.TOGGLE);
-        deviceViewButton.setImage(deviceViewImage);
-        deviceViewButton.setToolTipText("Switch to the window selection view");
-        deviceViewButton.addSelectionListener(deviceViewButtonSelectionListener);
+        mDeviceViewButton = new Button(mStatusBar, SWT.TOGGLE);
+        mDeviceViewButton.setImage(mDeviceViewImage);
+        mDeviceViewButton.setToolTipText("Switch to the window selection view");
+        mDeviceViewButton.addSelectionListener(deviceViewButtonSelectionListener);
         FormData deviceViewButtonFormData = new FormData();
         deviceViewButtonFormData.left = new FormAttachment();
-        deviceViewButton.setLayoutData(deviceViewButtonFormData);
+        mDeviceViewButton.setLayoutData(deviceViewButtonFormData);
 
-        treeViewButton = new Button(statusBar, SWT.TOGGLE);
-        treeViewButton.setImage(treeViewImage);
-        treeViewButton.setEnabled(false);
-        treeViewButton.setToolTipText("Switch to the tree view");
-        treeViewButton.addSelectionListener(treeViewButtonSelectionListener);
+        mTreeViewButton = new Button(mStatusBar, SWT.TOGGLE);
+        mTreeViewButton.setImage(mTreeViewImage);
+        mTreeViewButton.setEnabled(false);
+        mTreeViewButton.setToolTipText("Switch to the tree view");
+        mTreeViewButton.addSelectionListener(treeViewButtonSelectionListener);
         FormData treeViewButtonFormData = new FormData();
-        treeViewButtonFormData.left = new FormAttachment(deviceViewButton, 2);
-        treeViewButton.setLayoutData(treeViewButtonFormData);
+        treeViewButtonFormData.left = new FormAttachment(mDeviceViewButton, 2);
+        mTreeViewButton.setLayoutData(treeViewButtonFormData);
 
-        pixelPerfectButton = new Button(statusBar, SWT.TOGGLE);
-        pixelPerfectButton.setImage(pixelPerfectImage);
-        pixelPerfectButton.setEnabled(false);
-        pixelPerfectButton.setToolTipText("Switch to the pixel perfect view");
-        pixelPerfectButton.addSelectionListener(pixelPerfectButtonSelectionListener);
+        mPixelPerfectButton = new Button(mStatusBar, SWT.TOGGLE);
+        mPixelPerfectButton.setImage(mPixelPerfectImage);
+        mPixelPerfectButton.setEnabled(false);
+        mPixelPerfectButton.setToolTipText("Switch to the pixel perfect view");
+        mPixelPerfectButton.addSelectionListener(pixelPerfectButtonSelectionListener);
         FormData pixelPerfectButtonFormData = new FormData();
-        pixelPerfectButtonFormData.left = new FormAttachment(treeViewButton, 2);
-        pixelPerfectButton.setLayoutData(pixelPerfectButtonFormData);
+        pixelPerfectButtonFormData.left = new FormAttachment(mTreeViewButton, 2);
+        mPixelPerfectButton.setLayoutData(pixelPerfectButtonFormData);
 
         // Tree View control panel...
-        treeViewControls = new TreeViewControls(statusBar);
+        mTreeViewControls = new TreeViewControls(mStatusBar);
         FormData treeViewControlsFormData = new FormData();
-        treeViewControlsFormData.left = new FormAttachment(pixelPerfectButton, 2);
-        treeViewControlsFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
+        treeViewControlsFormData.left = new FormAttachment(mPixelPerfectButton, 2);
+        treeViewControlsFormData.top = new FormAttachment(mTreeViewButton, 0, SWT.CENTER);
         treeViewControlsFormData.width = 552;
-        treeViewControls.setLayoutData(treeViewControlsFormData);
+        mTreeViewControls.setLayoutData(treeViewControlsFormData);
 
         // Progress stuff
-        progressLabel = new Label(statusBar, SWT.RIGHT);
+        mProgressLabel = new Label(mStatusBar, SWT.RIGHT);
 
-        progressBar = new ProgressBar(statusBar, SWT.HORIZONTAL | SWT.INDETERMINATE | SWT.SMOOTH);
+        mProgressBar = new ProgressBar(mStatusBar, SWT.HORIZONTAL | SWT.INDETERMINATE | SWT.SMOOTH);
         FormData progressBarFormData = new FormData();
         progressBarFormData.right = new FormAttachment(100, 0);
-        progressBarFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
-        progressBar.setLayoutData(progressBarFormData);
+        progressBarFormData.top = new FormAttachment(mTreeViewButton, 0, SWT.CENTER);
+        mProgressBar.setLayoutData(progressBarFormData);
 
         FormData progressLabelFormData = new FormData();
-        progressLabelFormData.right = new FormAttachment(progressBar, -2);
-        progressLabelFormData.top = new FormAttachment(treeViewButton, 0, SWT.CENTER);
-        progressLabel.setLayoutData(progressLabelFormData);
+        progressLabelFormData.right = new FormAttachment(mProgressBar, -2);
+        progressLabelFormData.top = new FormAttachment(mTreeViewButton, 0, SWT.CENTER);
+        mProgressLabel.setLayoutData(progressLabelFormData);
 
-        if (progressString == null) {
-            progressLabel.setVisible(false);
-            progressBar.setVisible(false);
+        if (mProgressString == null) {
+            mProgressLabel.setVisible(false);
+            mProgressBar.setVisible(false);
         } else {
-            progressLabel.setText(progressString);
+            mProgressLabel.setText(mProgressString);
         }
     }
 
     private void buildDeviceSelectorPanel(Composite parent) {
-        deviceSelectorPanel = new Composite(parent, SWT.NONE);
+        mDeviceSelectorPanel = new Composite(parent, SWT.NONE);
         GridLayout gridLayout = new GridLayout();
         gridLayout.marginWidth = gridLayout.marginHeight = 0;
         gridLayout.horizontalSpacing = gridLayout.verticalSpacing = 0;
-        deviceSelectorPanel.setLayout(gridLayout);
+        mDeviceSelectorPanel.setLayout(gridLayout);
 
-        Composite buttonPanel = new Composite(deviceSelectorPanel, SWT.NONE);
+        Composite buttonPanel = new Composite(mDeviceSelectorPanel, SWT.NONE);
         buttonPanel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         GridLayout buttonLayout = new GridLayout();
@@ -341,20 +341,20 @@ public class HierarchyViewerApplication extends ApplicationWindow {
                 new ActionButton(innerButtonPanel, InspectScreenshotAction.getAction());
         inspectScreenshotButton.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        Composite deviceSelectorContainer = new Composite(deviceSelectorPanel, SWT.BORDER);
+        Composite deviceSelectorContainer = new Composite(mDeviceSelectorPanel, SWT.BORDER);
         deviceSelectorContainer.setLayoutData(new GridData(GridData.FILL_BOTH));
         deviceSelectorContainer.setLayout(new FillLayout());
-        deviceSelector = new DeviceSelector(deviceSelectorContainer, true, true);
+        mDeviceSelector = new DeviceSelector(deviceSelectorContainer, true, true);
     }
 
     public void buildTreeViewPanel(Composite parent) {
-        treeViewPanel = new Composite(parent, SWT.NONE);
+        mTreeViewPanel = new Composite(parent, SWT.NONE);
         GridLayout gridLayout = new GridLayout();
         gridLayout.marginWidth = gridLayout.marginHeight = 0;
         gridLayout.horizontalSpacing = gridLayout.verticalSpacing = 0;
-        treeViewPanel.setLayout(gridLayout);
+        mTreeViewPanel.setLayout(gridLayout);
 
-        Composite buttonPanel = new Composite(treeViewPanel, SWT.NONE);
+        Composite buttonPanel = new Composite(mTreeViewPanel, SWT.NONE);
         buttonPanel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         GridLayout buttonLayout = new GridLayout();
@@ -392,11 +392,11 @@ public class HierarchyViewerApplication extends ApplicationWindow {
                 new ActionButton(innerButtonPanel, RequestLayoutAction.getAction());
         requestLayout.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        SashForm mainSash = new SashForm(treeViewPanel, SWT.HORIZONTAL | SWT.SMOOTH);
+        SashForm mainSash = new SashForm(mTreeViewPanel, SWT.HORIZONTAL | SWT.SMOOTH);
         mainSash.setLayoutData(new GridData(GridData.FILL_BOTH));
         Composite treeViewContainer = new Composite(mainSash, SWT.BORDER);
         treeViewContainer.setLayout(new FillLayout());
-        treeView = new TreeView(treeViewContainer);
+        mTreeView = new TreeView(treeViewContainer);
 
         SashForm sideSash = new SashForm(mainSash, SWT.VERTICAL | SWT.SMOOTH);
 
@@ -436,15 +436,15 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         rowLayout.center = true;
         buttonBar.setLayout(rowLayout);
 
-        onBlackWhiteButton = new Button(buttonBar, SWT.PUSH);
-        onBlackWhiteButton.setImage(onWhiteImage);
-        onBlackWhiteButton.addSelectionListener(onBlackWhiteSelectionListener);
-        onBlackWhiteButton.setToolTipText("Change layout viewer background color");
+        mOnBlackWhiteButton = new Button(buttonBar, SWT.PUSH);
+        mOnBlackWhiteButton.setImage(mOnWhiteImage);
+        mOnBlackWhiteButton.addSelectionListener(onBlackWhiteSelectionListener);
+        mOnBlackWhiteButton.setToolTipText("Change layout viewer background color");
 
-        showExtras = new Button(buttonBar, SWT.CHECK);
-        showExtras.setText("Show Extras");
-        showExtras.addSelectionListener(showExtrasSelectionListener);
-        showExtras.setToolTipText("Show images");
+        mShowExtras = new Button(buttonBar, SWT.CHECK);
+        mShowExtras.setText("Show Extras");
+        mShowExtras.addSelectionListener(showExtrasSelectionListener);
+        mShowExtras.setToolTipText("Show images");
 
         ActionButton loadAllViewsButton =
                 new ActionButton(fullButtonBar, LoadAllViewsAction.getAction());
@@ -454,7 +454,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         Composite layoutViewerMainContainer = new Composite(layoutViewerContainer, SWT.BORDER);
         layoutViewerMainContainer.setLayoutData(new GridData(GridData.FILL_BOTH));
         layoutViewerMainContainer.setLayout(new FillLayout());
-        layoutViewer = new LayoutViewer(layoutViewerMainContainer);
+        mLayoutViewer = new LayoutViewer(layoutViewerMainContainer);
 
         sideSash.SASH_WIDTH = 4;
         sideSash.setWeights(new int[] {
@@ -464,13 +464,13 @@ public class HierarchyViewerApplication extends ApplicationWindow {
     }
 
     private void buildPixelPerfectPanel(Composite parent) {
-        pixelPerfectPanel = new Composite(parent, SWT.NONE);
+        mPixelPerfectPanel = new Composite(parent, SWT.NONE);
         GridLayout gridLayout = new GridLayout();
         gridLayout.marginWidth = gridLayout.marginHeight = 0;
         gridLayout.horizontalSpacing = gridLayout.verticalSpacing = 0;
-        pixelPerfectPanel.setLayout(gridLayout);
+        mPixelPerfectPanel.setLayout(gridLayout);
 
-        Composite buttonPanel = new Composite(pixelPerfectPanel, SWT.NONE);
+        Composite buttonPanel = new Composite(mPixelPerfectPanel, SWT.NONE);
         buttonPanel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         GridLayout buttonLayout = new GridLayout();
@@ -509,7 +509,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
                 new ActionButton(innerButtonPanel, PixelPerfectAutoRefreshAction.getAction());
         autoRefresh.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        SashForm mainSash = new SashForm(pixelPerfectPanel, SWT.HORIZONTAL | SWT.SMOOTH);
+        SashForm mainSash = new SashForm(mPixelPerfectPanel, SWT.HORIZONTAL | SWT.SMOOTH);
         mainSash.setLayoutData(new GridData(GridData.FILL_BOTH));
         mainSash.SASH_WIDTH = 4;
 
@@ -532,8 +532,8 @@ public class HierarchyViewerApplication extends ApplicationWindow {
                 pixelPerfectLoupeBorderGridLayout.verticalSpacing = 0;
         pixelPerfectLoupeBorder.setLayout(pixelPerfectLoupeBorderGridLayout);
 
-        pixelPerfectLoupe = new PixelPerfectLoupe(pixelPerfectLoupeBorder);
-        pixelPerfectLoupe.setLayoutData(new GridData(GridData.FILL_BOTH));
+        mPixelPerfectLoupe = new PixelPerfectLoupe(pixelPerfectLoupeBorder);
+        mPixelPerfectLoupe.setLayoutData(new GridData(GridData.FILL_BOTH));
 
         PixelPerfectPixelPanel pixelPerfectPixelPanel =
                 new PixelPerfectPixelPanel(pixelPerfectLoupeBorder);
@@ -555,19 +555,19 @@ public class HierarchyViewerApplication extends ApplicationWindow {
     }
 
     public void showOverlayInLoupe(boolean value) {
-        pixelPerfectLoupe.setShowOverlay(value);
+        mPixelPerfectLoupe.setShowOverlay(value);
     }
 
     // Shows the progress notification...
     public void startTask(final String taskName) {
-        progressString = taskName;
+        mProgressString = taskName;
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                if (progressLabel != null && progressBar != null) {
-                    progressLabel.setText(taskName);
-                    progressLabel.setVisible(true);
-                    progressBar.setVisible(true);
-                    statusBar.layout();
+                if (mProgressLabel != null && mProgressBar != null) {
+                    mProgressLabel.setText(taskName);
+                    mProgressLabel.setVisible(true);
+                    mProgressBar.setVisible(true);
+                    mStatusBar.layout();
                 }
             }
         });
@@ -575,12 +575,12 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
     // And hides it!
     public void endTask() {
-        progressString = null;
+        mProgressString = null;
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                if (progressLabel != null && progressBar != null) {
-                    progressLabel.setVisible(false);
-                    progressBar.setVisible(false);
+                if (mProgressLabel != null && mProgressBar != null) {
+                    mProgressLabel.setVisible(false);
+                    mProgressBar.setVisible(false);
                 }
             }
         });
@@ -610,22 +610,22 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
         mm.updateAll(true);
 
-        deviceViewButton.setSelection(true);
-        deviceViewButton.setImage(deviceViewSelectedImage);
+        mDeviceViewButton.setSelection(true);
+        mDeviceViewButton.setImage(mDeviceViewSelectedImage);
 
-        treeViewButton.setSelection(false);
-        treeViewButton.setImage(treeViewImage);
+        mTreeViewButton.setSelection(false);
+        mTreeViewButton.setImage(mTreeViewImage);
 
-        pixelPerfectButton.setSelection(false);
-        pixelPerfectButton.setImage(pixelPerfectImage);
+        mPixelPerfectButton.setSelection(false);
+        mPixelPerfectButton.setImage(mPixelPerfectImage);
 
-        mainWindowStackLayout.topControl = deviceSelectorPanel;
+        mMainWindowStackLayout.topControl = mDeviceSelectorPanel;
 
-        mainWindow.layout();
+        mMainWindow.layout();
 
-        deviceSelector.setFocus();
+        mDeviceSelector.setFocus();
 
-        treeViewControls.setVisible(false);
+        mTreeViewControls.setVisible(false);
     }
 
     public void showTreeView() {
@@ -657,22 +657,22 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
         mm.updateAll(true);
 
-        deviceViewButton.setSelection(false);
-        deviceViewButton.setImage(deviceViewImage);
+        mDeviceViewButton.setSelection(false);
+        mDeviceViewButton.setImage(mDeviceViewImage);
 
-        treeViewButton.setSelection(true);
-        treeViewButton.setImage(treeViewSelectedImage);
+        mTreeViewButton.setSelection(true);
+        mTreeViewButton.setImage(mTreeViewSelectedImage);
 
-        pixelPerfectButton.setSelection(false);
-        pixelPerfectButton.setImage(pixelPerfectImage);
+        mPixelPerfectButton.setSelection(false);
+        mPixelPerfectButton.setImage(mPixelPerfectImage);
 
-        mainWindowStackLayout.topControl = treeViewPanel;
+        mMainWindowStackLayout.topControl = mTreeViewPanel;
 
-        mainWindow.layout();
+        mMainWindow.layout();
 
-        treeView.setFocus();
+        mTreeView.setFocus();
 
-        treeViewControls.setVisible(true);
+        mTreeViewControls.setVisible(true);
     }
 
     public void showPixelPerfect() {
@@ -703,22 +703,22 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
         mm.updateAll(true);
 
-        deviceViewButton.setSelection(false);
-        deviceViewButton.setImage(deviceViewImage);
+        mDeviceViewButton.setSelection(false);
+        mDeviceViewButton.setImage(mDeviceViewImage);
 
-        treeViewButton.setSelection(false);
-        treeViewButton.setImage(treeViewImage);
+        mTreeViewButton.setSelection(false);
+        mTreeViewButton.setImage(mTreeViewImage);
 
-        pixelPerfectButton.setSelection(true);
-        pixelPerfectButton.setImage(pixelPerfectSelectedImage);
+        mPixelPerfectButton.setSelection(true);
+        mPixelPerfectButton.setImage(mPixelPerfectSelectedImage);
 
-        mainWindowStackLayout.topControl = pixelPerfectPanel;
+        mMainWindowStackLayout.topControl = mPixelPerfectPanel;
 
-        mainWindow.layout();
+        mMainWindow.layout();
 
-        pixelPerfectLoupe.setFocus();
+        mPixelPerfectLoupe.setFocus();
 
-        treeViewControls.setVisible(false);
+        mTreeViewControls.setVisible(false);
     }
 
     private SelectionListener deviceViewButtonSelectionListener = new SelectionListener() {
@@ -727,7 +727,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
 
         public void widgetSelected(SelectionEvent e) {
-            deviceViewButton.setSelection(true);
+            mDeviceViewButton.setSelection(true);
             showDeviceSelector();
         }
     };
@@ -738,7 +738,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
 
         public void widgetSelected(SelectionEvent e) {
-            treeViewButton.setSelection(true);
+            mTreeViewButton.setSelection(true);
             showTreeView();
         }
     };
@@ -749,7 +749,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
 
         public void widgetSelected(SelectionEvent e) {
-            pixelPerfectButton.setSelection(true);
+            mPixelPerfectButton.setSelection(true);
             showPixelPerfect();
         }
     };
@@ -760,12 +760,12 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
 
         public void widgetSelected(SelectionEvent e) {
-            if (layoutViewer.getOnBlack()) {
-                layoutViewer.setOnBlack(false);
-                onBlackWhiteButton.setImage(onBlackImage);
+            if (mLayoutViewer.getOnBlack()) {
+                mLayoutViewer.setOnBlack(false);
+                mOnBlackWhiteButton.setImage(mOnBlackImage);
             } else {
-                layoutViewer.setOnBlack(true);
-                onBlackWhiteButton.setImage(onWhiteImage);
+                mLayoutViewer.setOnBlack(true);
+                mOnBlackWhiteButton.setImage(mOnWhiteImage);
             }
         }
     };
@@ -776,7 +776,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
 
         public void widgetSelected(SelectionEvent e) {
-            layoutViewer.setShowExtras(showExtras.getSelection());
+            mLayoutViewer.setShowExtras(mShowExtras.getSelection());
         }
     };
 
@@ -786,12 +786,12 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
 
         public void widgetSelected(SelectionEvent e) {
-            showExtras.setSelection(true);
+            mShowExtras.setSelection(true);
             showExtrasSelectionListener.widgetSelected(null);
         }
     };
 
-    private TreeChangeListener treeChangeListener = new TreeChangeListener() {
+    private ITreeChangeListener treeChangeListener = new ITreeChangeListener() {
         public void selectionChanged() {
             // pass
         }
@@ -801,10 +801,10 @@ public class HierarchyViewerApplication extends ApplicationWindow {
                 public void run() {
                     if (TreeViewModel.getModel().getTree() == null) {
                         showDeviceSelector();
-                        treeViewButton.setEnabled(false);
+                        mTreeViewButton.setEnabled(false);
                     } else {
                         showTreeView();
-                        treeViewButton.setEnabled(true);
+                        mTreeViewButton.setEnabled(true);
                     }
                 }
             });
@@ -819,7 +819,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
     };
 
-    private ImageChangeListener imageChangeListener = new ImageChangeListener() {
+    private IImageChangeListener imageChangeListener = new IImageChangeListener() {
 
         public void crosshairMoved() {
             // pass
@@ -837,10 +837,10 @@ public class HierarchyViewerApplication extends ApplicationWindow {
             Display.getDefault().syncExec(new Runnable() {
                 public void run() {
                     if (PixelPerfectModel.getModel().getImage() == null) {
-                        pixelPerfectButton.setEnabled(false);
+                        mPixelPerfectButton.setEnabled(false);
                         showDeviceSelector();
                     } else {
-                        pixelPerfectButton.setEnabled(true);
+                        mPixelPerfectButton.setEnabled(true);
                         showPixelPerfect();
                     }
                 }

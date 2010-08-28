@@ -34,15 +34,15 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 public class AboutDialog extends Dialog {
-    private Image aboutImage;
+    private Image mAboutImage;
 
-    private Image smallImage;
+    private Image mSmallImage;
 
     public AboutDialog(Shell shell) {
         super(shell);
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        smallImage = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault());
-        aboutImage = imageLoader.loadImage("about.jpg", Display.getDefault());
+        mSmallImage = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault()); //$NON-NLS-1$
+        mAboutImage = imageLoader.loadImage("about.jpg", Display.getDefault()); //$NON-NLS-1$
     }
 
     @Override
@@ -58,14 +58,14 @@ public class AboutDialog extends Dialog {
         imageControl.setLayout(new FillLayout());
         imageControl.setLayoutData(new GridData(GridData.FILL_VERTICAL));
         Label imageLabel = new Label(imageControl, SWT.CENTER);
-        imageLabel.setImage(aboutImage);
+        imageLabel.setImage(mAboutImage);
 
         CLabel textLabel = new CLabel(control, SWT.NONE);
         textLabel
                 .setText("Hierarchy Viewer\nCopyright 2010, The Android Open Source Project\nAll Rights Reserved.");
         textLabel.setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER, true, true));
         getShell().setText("About...");
-        getShell().setImage(smallImage);
+        getShell().setImage(mSmallImage);
         return control;
 
     }

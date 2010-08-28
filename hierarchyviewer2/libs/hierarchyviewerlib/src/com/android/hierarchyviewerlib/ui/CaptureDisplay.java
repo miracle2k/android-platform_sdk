@@ -40,172 +40,172 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
 public class CaptureDisplay {
-    private static Shell shell;
+    private static Shell sShell;
 
-    private static Canvas canvas;
+    private static Canvas sCanvas;
 
-    private static Image image;
+    private static Image sImage;
 
-    private static ViewNode viewNode;
+    private static ViewNode sViewNode;
 
-    private static Composite buttonBar;
+    private static Composite sButtonBar;
 
-    private static Button onWhite;
+    private static Button sOnWhite;
 
-    private static Button onBlack;
+    private static Button sOnBlack;
 
-    private static Button showExtras;
+    private static Button sShowExtras;
 
     public static void show(Shell parentShell, ViewNode viewNode, Image image) {
-        if (shell == null) {
+        if (sShell == null) {
             createShell();
         }
-        if (shell.isVisible() && CaptureDisplay.viewNode != null) {
-            CaptureDisplay.viewNode.dereferenceImage();
+        if (sShell.isVisible() && CaptureDisplay.sViewNode != null) {
+            CaptureDisplay.sViewNode.dereferenceImage();
         }
-        CaptureDisplay.image = image;
-        CaptureDisplay.viewNode = viewNode;
+        CaptureDisplay.sImage = image;
+        CaptureDisplay.sViewNode = viewNode;
         viewNode.referenceImage();
-        shell.setText(viewNode.name);
+        sShell.setText(viewNode.name);
 
-        boolean shellVisible = shell.isVisible();
+        boolean shellVisible = sShell.isVisible();
         if (!shellVisible) {
-            shell.setSize(0, 0);
+            sShell.setSize(0, 0);
         }
         Rectangle bounds =
-                shell.computeTrim(0, 0, Math.max(buttonBar.getBounds().width,
-                        image.getBounds().width), buttonBar.getBounds().height
+                sShell.computeTrim(0, 0, Math.max(sButtonBar.getBounds().width,
+                        image.getBounds().width), sButtonBar.getBounds().height
                         + image.getBounds().height + 5);
-        shell.setSize(bounds.width, bounds.height);
+        sShell.setSize(bounds.width, bounds.height);
         if (!shellVisible) {
-            shell.setLocation(parentShell.getBounds().x
+            sShell.setLocation(parentShell.getBounds().x
                     + (parentShell.getBounds().width - bounds.width) / 2, parentShell.getBounds().y
                     + (parentShell.getBounds().height - bounds.height) / 2);
         }
-        shell.open();
+        sShell.open();
         if (shellVisible) {
-            canvas.redraw();
+            sCanvas.redraw();
         }
     }
 
     private static void createShell() {
-        shell = new Shell(Display.getDefault(), SWT.CLOSE | SWT.TITLE);
+        sShell = new Shell(Display.getDefault(), SWT.CLOSE | SWT.TITLE);
         GridLayout gridLayout = new GridLayout();
         gridLayout.marginWidth = 0;
         gridLayout.marginHeight = 0;
-        shell.setLayout(gridLayout);
+        sShell.setLayout(gridLayout);
 
-        buttonBar = new Composite(shell, SWT.NONE);
+        sButtonBar = new Composite(sShell, SWT.NONE);
         RowLayout rowLayout = new RowLayout(SWT.HORIZONTAL);
         rowLayout.pack = true;
         rowLayout.center = true;
-        buttonBar.setLayout(rowLayout);
-        Composite buttons = new Composite(buttonBar, SWT.NONE);
+        sButtonBar.setLayout(rowLayout);
+        Composite buttons = new Composite(sButtonBar, SWT.NONE);
         buttons.setLayout(new FillLayout());
 
-        onWhite = new Button(buttons, SWT.TOGGLE);
-        onWhite.setText("On White");
-        onBlack = new Button(buttons, SWT.TOGGLE);
-        onBlack.setText("On Black");
-        onBlack.setSelection(true);
-        onWhite.addSelectionListener(whiteSelectionListener);
-        onBlack.addSelectionListener(blackSelectionListener);
+        sOnWhite = new Button(buttons, SWT.TOGGLE);
+        sOnWhite.setText("On White");
+        sOnBlack = new Button(buttons, SWT.TOGGLE);
+        sOnBlack.setText("On Black");
+        sOnBlack.setSelection(true);
+        sOnWhite.addSelectionListener(sWhiteSelectionListener);
+        sOnBlack.addSelectionListener(sBlackSelectionListener);
 
-        showExtras = new Button(buttonBar, SWT.CHECK);
-        showExtras.setText("Show Extras");
-        showExtras.addSelectionListener(extrasSelectionListener);
+        sShowExtras = new Button(sButtonBar, SWT.CHECK);
+        sShowExtras.setText("Show Extras");
+        sShowExtras.addSelectionListener(sExtrasSelectionListener);
 
-        canvas = new Canvas(shell, SWT.NONE);
-        canvas.setLayoutData(new GridData(GridData.FILL_BOTH));
-        canvas.addPaintListener(paintListener);
+        sCanvas = new Canvas(sShell, SWT.NONE);
+        sCanvas.setLayoutData(new GridData(GridData.FILL_BOTH));
+        sCanvas.addPaintListener(sPaintListener);
 
-        shell.addShellListener(shellListener);
+        sShell.addShellListener(sShellListener);
 
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        Image image = imageLoader.loadImage("display.png", Display.getDefault());
-        shell.setImage(image);
+        Image image = imageLoader.loadImage("display.png", Display.getDefault()); //$NON-NLS-1$
+        sShell.setImage(image);
     }
 
-    private static PaintListener paintListener = new PaintListener() {
+    private static PaintListener sPaintListener = new PaintListener() {
 
         public void paintControl(PaintEvent e) {
-            if (onWhite.getSelection()) {
+            if (sOnWhite.getSelection()) {
                 e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
             } else {
                 e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
             }
-            e.gc.fillRectangle(0, 0, canvas.getBounds().width, canvas.getBounds().height);
-            if (image != null) {
-                int width = image.getBounds().width;
-                int height = image.getBounds().height;
-                int x = (canvas.getBounds().width - width) / 2;
-                int y = (canvas.getBounds().height - height) / 2;
-                e.gc.drawImage(image, x, y);
-                if (showExtras.getSelection()) {
-                    if ((viewNode.paddingLeft | viewNode.paddingRight | viewNode.paddingTop | viewNode.paddingBottom) != 0) {
+            e.gc.fillRectangle(0, 0, sCanvas.getBounds().width, sCanvas.getBounds().height);
+            if (sImage != null) {
+                int width = sImage.getBounds().width;
+                int height = sImage.getBounds().height;
+                int x = (sCanvas.getBounds().width - width) / 2;
+                int y = (sCanvas.getBounds().height - height) / 2;
+                e.gc.drawImage(sImage, x, y);
+                if (sShowExtras.getSelection()) {
+                    if ((sViewNode.paddingLeft | sViewNode.paddingRight | sViewNode.paddingTop | sViewNode.paddingBottom) != 0) {
                         e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_BLUE));
-                        e.gc.drawRectangle(x + viewNode.paddingLeft, y + viewNode.paddingTop, width
-                                - viewNode.paddingLeft - viewNode.paddingRight - 1, height
-                                - viewNode.paddingTop - viewNode.paddingBottom - 1);
+                        e.gc.drawRectangle(x + sViewNode.paddingLeft, y + sViewNode.paddingTop, width
+                                - sViewNode.paddingLeft - sViewNode.paddingRight - 1, height
+                                - sViewNode.paddingTop - sViewNode.paddingBottom - 1);
                     }
-                    if (viewNode.hasMargins) {
+                    if (sViewNode.hasMargins) {
                         e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_GREEN));
-                        e.gc.drawRectangle(x - viewNode.marginLeft, y - viewNode.marginTop, width
-                                + viewNode.marginLeft + viewNode.marginRight - 1, height
-                                + viewNode.marginTop + viewNode.marginBottom - 1);
+                        e.gc.drawRectangle(x - sViewNode.marginLeft, y - sViewNode.marginTop, width
+                                + sViewNode.marginLeft + sViewNode.marginRight - 1, height
+                                + sViewNode.marginTop + sViewNode.marginBottom - 1);
                     }
-                    if (viewNode.baseline != -1) {
+                    if (sViewNode.baseline != -1) {
                         e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_RED));
-                        e.gc.drawLine(x, y + viewNode.baseline, x + width - 1, viewNode.baseline);
+                        e.gc.drawLine(x, y + sViewNode.baseline, x + width - 1, sViewNode.baseline);
                     }
                 }
             }
         }
     };
 
-    private static ShellAdapter shellListener = new ShellAdapter() {
+    private static ShellAdapter sShellListener = new ShellAdapter() {
         @Override
         public void shellClosed(ShellEvent e) {
             e.doit = false;
-            shell.setVisible(false);
-            if (viewNode != null) {
-                viewNode.dereferenceImage();
+            sShell.setVisible(false);
+            if (sViewNode != null) {
+                sViewNode.dereferenceImage();
             }
         }
 
     };
 
-    private static SelectionListener whiteSelectionListener = new SelectionListener() {
+    private static SelectionListener sWhiteSelectionListener = new SelectionListener() {
         public void widgetDefaultSelected(SelectionEvent e) {
             // pass
         }
 
         public void widgetSelected(SelectionEvent e) {
-            onWhite.setSelection(true);
-            onBlack.setSelection(false);
-            canvas.redraw();
+            sOnWhite.setSelection(true);
+            sOnBlack.setSelection(false);
+            sCanvas.redraw();
         }
     };
 
-    private static SelectionListener blackSelectionListener = new SelectionListener() {
+    private static SelectionListener sBlackSelectionListener = new SelectionListener() {
         public void widgetDefaultSelected(SelectionEvent e) {
             // pass
         }
 
         public void widgetSelected(SelectionEvent e) {
-            onBlack.setSelection(true);
-            onWhite.setSelection(false);
-            canvas.redraw();
+            sOnBlack.setSelection(true);
+            sOnWhite.setSelection(false);
+            sCanvas.redraw();
         }
     };
 
-    private static SelectionListener extrasSelectionListener = new SelectionListener() {
+    private static SelectionListener sExtrasSelectionListener = new SelectionListener() {
         public void widgetDefaultSelected(SelectionEvent e) {
             // pass
         }
 
         public void widgetSelected(SelectionEvent e) {
-            canvas.redraw();
+            sCanvas.redraw();
         }
     };
 }

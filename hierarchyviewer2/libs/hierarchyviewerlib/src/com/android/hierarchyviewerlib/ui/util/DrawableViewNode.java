@@ -86,7 +86,7 @@ public class DrawableViewNode {
 
         @Override
         public String toString() {
-            return "{" + x + ", " + y + ", " + width + ", " + height + "}";
+            return "{" + x + ", " + y + ", " + width + ", " + height + "}"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
         }
 
     }
@@ -104,7 +104,7 @@ public class DrawableViewNode {
 
         @Override
         public String toString() {
-            return "(" + x + ", " + y + ")";
+            return "(" + x + ", " + y + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         }
     }
 

@@ -26,24 +26,24 @@ import org.eclipse.swt.widgets.Display;
 
 public class RefreshPixelPerfectAction extends PixelPerfectEnabledAction implements ImageAction {
 
-    private static RefreshPixelPerfectAction action;
+    private static RefreshPixelPerfectAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private RefreshPixelPerfectAction() {
         super("&Refresh Screenshot");
         setAccelerator(SWT.F5);
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("refresh-windows.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("refresh-windows.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Refresh the screenshot");
     }
 
     public static RefreshPixelPerfectAction getAction() {
-        if (action == null) {
-            action = new RefreshPixelPerfectAction();
+        if (sAction == null) {
+            sAction = new RefreshPixelPerfectAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
@@ -52,6 +52,6 @@ public class RefreshPixelPerfectAction extends PixelPerfectEnabledAction impleme
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

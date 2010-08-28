@@ -21,7 +21,7 @@ import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.device.Window;
 import com.android.hierarchyviewerlib.models.DeviceSelectionModel;
-import com.android.hierarchyviewerlib.models.DeviceSelectionModel.WindowChangeListener;
+import com.android.hierarchyviewerlib.models.DeviceSelectionModel.IWindowChangeListener;
 
 import org.eclipse.jface.viewers.IFontProvider;
 import org.eclipse.jface.viewers.ILabelProvider;
@@ -47,29 +47,29 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
-public class DeviceSelector extends Composite implements WindowChangeListener, SelectionListener {
-    private TreeViewer treeViewer;
+public class DeviceSelector extends Composite implements IWindowChangeListener, SelectionListener {
+    private TreeViewer mTreeViewer;
 
-    private Tree tree;
+    private Tree mTree;
 
-    private DeviceSelectionModel model;
+    private DeviceSelectionModel mModel;
 
-    private Font boldFont;
+    private Font mBoldFont;
 
-    private Image deviceImage;
+    private Image mDeviceImage;
 
-    private Image emulatorImage;
+    private Image mEmulatorImage;
 
     private final static int ICON_WIDTH = 16;
 
-    private boolean doTreeViewStuff;
+    private boolean mDoTreeViewStuff;
 
-    private boolean doPixelPerfectStuff;
+    private boolean mDoPixelPerfectStuff;
 
     private class ContentProvider implements ITreeContentProvider, ILabelProvider, IFontProvider {
         public Object[] getChildren(Object parentElement) {
-            if (parentElement instanceof IDevice && doTreeViewStuff) {
-                Window[] list = model.getWindows((IDevice) parentElement);
+            if (parentElement instanceof IDevice && mDoTreeViewStuff) {
+                Window[] list = mModel.getWindows((IDevice) parentElement);
                 if (list != null) {
                     return list;
                 }
@@ -85,8 +85,8 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
         }
 
         public boolean hasChildren(Object element) {
-            if (element instanceof IDevice && doTreeViewStuff) {
-                Window[] list = model.getWindows((IDevice) element);
+            if (element instanceof IDevice && mDoTreeViewStuff) {
+                Window[] list = mModel.getWindows((IDevice) element);
                 if (list != null) {
                     return list.length != 0;
                 }
@@ -96,7 +96,7 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
 
         public Object[] getElements(Object inputElement) {
             if (inputElement instanceof DeviceSelectionModel) {
-                return model.getDevices();
+                return mModel.getDevices();
             }
             return new Object[0];
         }
@@ -112,9 +112,9 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
         public Image getImage(Object element) {
             if (element instanceof IDevice) {
                 if (((IDevice) element).isEmulator()) {
-                    return emulatorImage;
+                    return mEmulatorImage;
                 }
-                return deviceImage;
+                return mDeviceImage;
             }
             return null;
         }
@@ -130,9 +130,9 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
 
         public Font getFont(Object element) {
             if (element instanceof Window) {
-                int focusedWindow = model.getFocusedWindow(((Window) element).getDevice());
+                int focusedWindow = mModel.getFocusedWindow(((Window) element).getDevice());
                 if (focusedWindow == ((Window) element).getHashCode()) {
-                    return boldFont;
+                    return mBoldFont;
                 }
             }
             return null;
@@ -154,28 +154,28 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
 
     public DeviceSelector(Composite parent, boolean doTreeViewStuff, boolean doPixelPerfectStuff) {
         super(parent, SWT.NONE);
-        this.doTreeViewStuff = doTreeViewStuff;
-        this.doPixelPerfectStuff = doPixelPerfectStuff;
+        this.mDoTreeViewStuff = doTreeViewStuff;
+        this.mDoPixelPerfectStuff = doPixelPerfectStuff;
         setLayout(new FillLayout());
-        treeViewer = new TreeViewer(this, SWT.SINGLE);
-        treeViewer.setAutoExpandLevel(TreeViewer.ALL_LEVELS);
+        mTreeViewer = new TreeViewer(this, SWT.SINGLE);
+        mTreeViewer.setAutoExpandLevel(TreeViewer.ALL_LEVELS);
 
-        tree = treeViewer.getTree();
-        tree.setLinesVisible(true);
-        tree.addSelectionListener(this);
+        mTree = mTreeViewer.getTree();
+        mTree.setLinesVisible(true);
+        mTree.addSelectionListener(this);
 
-        addDisposeListener(disposeListener);
+        addDisposeListener(mDisposeListener);
 
         loadResources();
 
-        model = DeviceSelectionModel.getModel();
+        mModel = DeviceSelectionModel.getModel();
         ContentProvider contentProvider = new ContentProvider();
-        treeViewer.setContentProvider(contentProvider);
-        treeViewer.setLabelProvider(contentProvider);
-        model.addWindowChangeListener(this);
-        treeViewer.setInput(model);
+        mTreeViewer.setContentProvider(contentProvider);
+        mTreeViewer.setLabelProvider(contentProvider);
+        mModel.addWindowChangeListener(this);
+        mTreeViewer.setInput(mModel);
 
-        addControlListener(controlListener);
+        addControlListener(mControlListener);
     }
 
     public void loadResources() {
@@ -189,38 +189,38 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
                             .getStyle()
                             | SWT.BOLD);
         }
-        boldFont = new Font(Display.getDefault(), newFontData);
+        mBoldFont = new Font(Display.getDefault(), newFontData);
 
         ImageLoader loader = ImageLoader.getDdmUiLibLoader();
-        deviceImage =
-                loader.loadImage(display, "device.png", ICON_WIDTH, ICON_WIDTH, display
+        mDeviceImage =
+                loader.loadImage(display, "device.png", ICON_WIDTH, ICON_WIDTH, display //$NON-NLS-1$
                         .getSystemColor(SWT.COLOR_RED));
 
-        emulatorImage =
-                loader.loadImage(display, "emulator.png", ICON_WIDTH, ICON_WIDTH, display
+        mEmulatorImage =
+                loader.loadImage(display, "emulator.png", ICON_WIDTH, ICON_WIDTH, display //$NON-NLS-1$
                         .getSystemColor(SWT.COLOR_BLUE));
     }
 
-    private DisposeListener disposeListener = new DisposeListener() {
+    private DisposeListener mDisposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
-            model.removeWindowChangeListener(DeviceSelector.this);
-            boldFont.dispose();
+            mModel.removeWindowChangeListener(DeviceSelector.this);
+            mBoldFont.dispose();
         }
     };
 
     // If the window gets too small, hide the data, otherwise SWT throws an
     // ERROR.
 
-    private ControlListener controlListener = new ControlAdapter() {
+    private ControlListener mControlListener = new ControlAdapter() {
         private boolean noInput = false;
 
         @Override
         public void controlResized(ControlEvent e) {
             if (getBounds().height <= 38) {
-                treeViewer.setInput(null);
+                mTreeViewer.setInput(null);
                 noInput = true;
             } else if (noInput) {
-                treeViewer.setInput(model);
+                mTreeViewer.setInput(mModel);
                 noInput = false;
             }
         }
@@ -228,20 +228,20 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
 
     @Override
     public boolean setFocus() {
-        return tree.setFocus();
+        return mTree.setFocus();
     }
 
     public void setMode(boolean doTreeViewStuff, boolean doPixelPerfectStuff) {
-        if (this.doTreeViewStuff != doTreeViewStuff
-                || this.doPixelPerfectStuff != doPixelPerfectStuff) {
-            final boolean expandAll = !this.doTreeViewStuff && doTreeViewStuff;
-            this.doTreeViewStuff = doTreeViewStuff;
-            this.doPixelPerfectStuff = doPixelPerfectStuff;
+        if (this.mDoTreeViewStuff != doTreeViewStuff
+                || this.mDoPixelPerfectStuff != doPixelPerfectStuff) {
+            final boolean expandAll = !this.mDoTreeViewStuff && doTreeViewStuff;
+            this.mDoTreeViewStuff = doTreeViewStuff;
+            this.mDoPixelPerfectStuff = doPixelPerfectStuff;
             Display.getDefault().syncExec(new Runnable() {
                 public void run() {
-                    treeViewer.refresh();
+                    mTreeViewer.refresh();
                     if (expandAll) {
-                        treeViewer.expandAll();
+                        mTreeViewer.expandAll();
                     }
                 }
             });
@@ -251,8 +251,8 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
     public void deviceConnected(final IDevice device) {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                treeViewer.refresh();
-                treeViewer.setExpandedState(device, true);
+                mTreeViewer.refresh();
+                mTreeViewer.setExpandedState(device, true);
             }
         });
     }
@@ -260,11 +260,11 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
     public void deviceChanged(final IDevice device) {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                TreeSelection selection = (TreeSelection) treeViewer.getSelection();
-                treeViewer.refresh(device);
+                TreeSelection selection = (TreeSelection) mTreeViewer.getSelection();
+                mTreeViewer.refresh(device);
                 if (selection.getFirstElement() instanceof Window
                         && ((Window) selection.getFirstElement()).getDevice() == device) {
-                    treeViewer.setSelection(selection, true);
+                    mTreeViewer.setSelection(selection, true);
                 }
             }
         });
@@ -273,7 +273,7 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
     public void deviceDisconnected(final IDevice device) {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                treeViewer.refresh();
+                mTreeViewer.refresh();
             }
         });
     }
@@ -281,11 +281,11 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
     public void focusChanged(final IDevice device) {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                TreeSelection selection = (TreeSelection) treeViewer.getSelection();
-                treeViewer.refresh(device);
+                TreeSelection selection = (TreeSelection) mTreeViewer.getSelection();
+                mTreeViewer.refresh(device);
                 if (selection.getFirstElement() instanceof Window
                         && ((Window) selection.getFirstElement()).getDevice() == device) {
-                    treeViewer.setSelection(selection, true);
+                    mTreeViewer.setSelection(selection, true);
                 }
             }
         });
@@ -297,9 +297,9 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
 
     public void widgetDefaultSelected(SelectionEvent e) {
         Object selection = ((TreeItem) e.item).getData();
-        if (selection instanceof IDevice && doPixelPerfectStuff) {
+        if (selection instanceof IDevice && mDoPixelPerfectStuff) {
             HierarchyViewerDirector.getDirector().loadPixelPerfectData((IDevice) selection);
-        } else if (selection instanceof Window && doTreeViewStuff) {
+        } else if (selection instanceof Window && mDoTreeViewStuff) {
             HierarchyViewerDirector.getDirector().loadViewTreeData((Window) selection);
         }
     }
@@ -307,9 +307,9 @@ public class DeviceSelector extends Composite implements WindowChangeListener, S
     public void widgetSelected(SelectionEvent e) {
         Object selection = ((TreeItem) e.item).getData();
         if (selection instanceof IDevice) {
-            model.setSelection((IDevice) selection, null);
+            mModel.setSelection((IDevice) selection, null);
         } else if (selection instanceof Window) {
-            model.setSelection(((Window) selection).getDevice(), (Window) selection);
+            mModel.setSelection(((Window) selection).getDevice(), (Window) selection);
         }
     }
 }

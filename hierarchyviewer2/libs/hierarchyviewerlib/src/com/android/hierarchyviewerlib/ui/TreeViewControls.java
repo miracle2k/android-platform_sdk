@@ -18,7 +18,7 @@ package com.android.hierarchyviewerlib.ui;
 
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
-import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
+import com.android.hierarchyviewerlib.models.TreeViewModel.ITreeChangeListener;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
@@ -35,11 +35,11 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Slider;
 import org.eclipse.swt.widgets.Text;
 
-public class TreeViewControls extends Composite implements TreeChangeListener {
+public class TreeViewControls extends Composite implements ITreeChangeListener {
 
-    private Text filterText;
+    private Text mFilterText;
 
-    private Slider zoomSlider;
+    private Slider mZoomSlider;
 
     public TreeViewControls(Composite parent) {
         super(parent, SWT.NONE);
@@ -52,44 +52,44 @@ public class TreeViewControls extends Composite implements TreeChangeListener {
         filterLabel.setText("Filter by class or id:");
         filterLabel.setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER, false, true));
 
-        filterText = new Text(this, SWT.LEFT | SWT.SINGLE);
-        filterText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        filterText.addModifyListener(filterTextModifyListener);
-        filterText.setText(HierarchyViewerDirector.getDirector().getFilterText());
+        mFilterText = new Text(this, SWT.LEFT | SWT.SINGLE);
+        mFilterText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        mFilterText.addModifyListener(mFilterTextModifyListener);
+        mFilterText.setText(HierarchyViewerDirector.getDirector().getFilterText());
 
         Label smallZoomLabel = new Label(this, SWT.NONE);
         smallZoomLabel.setText(" 20%");
         smallZoomLabel
                 .setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER, false, true));
 
-        zoomSlider = new Slider(this, SWT.HORIZONTAL);
+        mZoomSlider = new Slider(this, SWT.HORIZONTAL);
         GridData zoomSliderGridData = new GridData(GridData.CENTER, GridData.CENTER, false, false);
         zoomSliderGridData.widthHint = 190;
-        zoomSlider.setLayoutData(zoomSliderGridData);
-        zoomSlider.setMinimum((int) (TreeViewModel.MIN_ZOOM * 10));
-        zoomSlider.setMaximum((int) (TreeViewModel.MAX_ZOOM * 10 + 1));
-        zoomSlider.setThumb(1);
-        zoomSlider.setSelection((int) Math.round(TreeViewModel.getModel().getZoom() * 10));
+        mZoomSlider.setLayoutData(zoomSliderGridData);
+        mZoomSlider.setMinimum((int) (TreeViewModel.MIN_ZOOM * 10));
+        mZoomSlider.setMaximum((int) (TreeViewModel.MAX_ZOOM * 10 + 1));
+        mZoomSlider.setThumb(1);
+        mZoomSlider.setSelection((int) Math.round(TreeViewModel.getModel().getZoom() * 10));
 
-        zoomSlider.addSelectionListener(zoomSliderSelectionListener);
+        mZoomSlider.addSelectionListener(mZoomSliderSelectionListener);
 
         Label largeZoomLabel = new Label(this, SWT.NONE);
         largeZoomLabel
                 .setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER, false, true));
         largeZoomLabel.setText("200%");
 
-        addDisposeListener(disposeListener);
+        addDisposeListener(mDisposeListener);
 
         TreeViewModel.getModel().addTreeChangeListener(this);
     }
 
-    private DisposeListener disposeListener = new DisposeListener() {
+    private DisposeListener mDisposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
             TreeViewModel.getModel().removeTreeChangeListener(TreeViewControls.this);
         }
     };
 
-    private SelectionListener zoomSliderSelectionListener = new SelectionListener() {
+    private SelectionListener mZoomSliderSelectionListener = new SelectionListener() {
         private int oldValue;
 
         public void widgetDefaultSelected(SelectionEvent e) {
@@ -97,7 +97,7 @@ public class TreeViewControls extends Composite implements TreeChangeListener {
         }
 
         public void widgetSelected(SelectionEvent e) {
-            int newValue = zoomSlider.getSelection();
+            int newValue = mZoomSlider.getSelection();
             if (oldValue != newValue) {
                 TreeViewModel.getModel().removeTreeChangeListener(TreeViewControls.this);
                 TreeViewModel.getModel().setZoom(newValue / 10.0);
@@ -107,9 +107,9 @@ public class TreeViewControls extends Composite implements TreeChangeListener {
         }
     };
 
-    private ModifyListener filterTextModifyListener = new ModifyListener() {
+    private ModifyListener mFilterTextModifyListener = new ModifyListener() {
         public void modifyText(ModifyEvent e) {
-            HierarchyViewerDirector.getDirector().filterNodes(filterText.getText());
+            HierarchyViewerDirector.getDirector().filterNodes(mFilterText.getText());
         }
     };
 
@@ -121,10 +121,10 @@ public class TreeViewControls extends Composite implements TreeChangeListener {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 if (TreeViewModel.getModel().getTree() != null) {
-                    zoomSlider.setSelection((int) Math
+                    mZoomSlider.setSelection((int) Math
                             .round(TreeViewModel.getModel().getZoom() * 10));
                 }
-                filterText.setText("");
+                mFilterText.setText(""); //$NON-NLS-1$
             }
         });
     }
@@ -136,7 +136,7 @@ public class TreeViewControls extends Composite implements TreeChangeListener {
     public void zoomChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                zoomSlider.setSelection((int) Math.round(TreeViewModel.getModel().getZoom() * 10));
+                mZoomSlider.setSelection((int) Math.round(TreeViewModel.getModel().getZoom() * 10));
             }
         });
     };

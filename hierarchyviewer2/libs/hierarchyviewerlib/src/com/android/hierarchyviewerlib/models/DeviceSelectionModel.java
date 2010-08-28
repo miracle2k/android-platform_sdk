@@ -29,84 +29,84 @@ import java.util.HashMap;
  */
 public class DeviceSelectionModel {
 
-    private final HashMap<IDevice, Window[]> deviceMap = new HashMap<IDevice, Window[]>();
+    private final HashMap<IDevice, Window[]> mDeviceMap = new HashMap<IDevice, Window[]>();
 
-    private final HashMap<IDevice, Integer> focusedWindowHashes = new HashMap<IDevice, Integer>();
+    private final HashMap<IDevice, Integer> mFocusedWindowHashes = new HashMap<IDevice, Integer>();
 
-    private final ArrayList<IDevice> deviceList = new ArrayList<IDevice>();
+    private final ArrayList<IDevice> mDeviceList = new ArrayList<IDevice>();
 
-    private final ArrayList<WindowChangeListener> windowChangeListeners =
-            new ArrayList<WindowChangeListener>();
+    private final ArrayList<IWindowChangeListener> mWindowChangeListeners =
+            new ArrayList<IWindowChangeListener>();
 
-    private IDevice selectedDevice;
+    private IDevice mSelectedDevice;
 
-    private Window selectedWindow;
+    private Window mSelectedWindow;
 
-    private static DeviceSelectionModel model;
+    private static DeviceSelectionModel sModel;
 
     public static DeviceSelectionModel getModel() {
-        if (model == null) {
-            model = new DeviceSelectionModel();
+        if (sModel == null) {
+            sModel = new DeviceSelectionModel();
         }
-        return model;
+        return sModel;
     }
 
     public boolean containsDevice(IDevice device) {
-        synchronized (deviceMap) {
-            return deviceMap.containsKey(device);
+        synchronized (mDeviceMap) {
+            return mDeviceMap.containsKey(device);
         }
     }
 
     public void addDevice(IDevice device, Window[] windows) {
-        synchronized (deviceMap) {
-            deviceMap.put(device, windows);
-            deviceList.add(device);
+        synchronized (mDeviceMap) {
+            mDeviceMap.put(device, windows);
+            mDeviceList.add(device);
         }
         notifyDeviceConnected(device);
     }
 
     public void removeDevice(IDevice device) {
         boolean selectionChanged = false;
-        synchronized (deviceMap) {
-            deviceList.remove(device);
-            if (!deviceList.contains(device)) {
-                deviceMap.remove(device);
-                focusedWindowHashes.remove(device);
-                if (selectedDevice == device) {
-                    selectedDevice = null;
-                    selectedWindow = null;
+        synchronized (mDeviceMap) {
+            mDeviceList.remove(device);
+            if (!mDeviceList.contains(device)) {
+                mDeviceMap.remove(device);
+                mFocusedWindowHashes.remove(device);
+                if (mSelectedDevice == device) {
+                    mSelectedDevice = null;
+                    mSelectedWindow = null;
                     selectionChanged = true;
                 }
             }
         }
         notifyDeviceDisconnected(device);
         if (selectionChanged) {
-            notifySelectionChanged(selectedDevice, selectedWindow);
+            notifySelectionChanged(mSelectedDevice, mSelectedWindow);
         }
     }
 
     public void updateDevice(IDevice device, Window[] windows) {
         boolean selectionChanged = false;
-        synchronized (deviceMap) {
-            deviceMap.put(device, windows);
+        synchronized (mDeviceMap) {
+            mDeviceMap.put(device, windows);
             // If the selected window no longer exists, we clear the selection.
-            if (selectedDevice == device && selectedWindow != null) {
+            if (mSelectedDevice == device && mSelectedWindow != null) {
                 boolean windowStillExists = false;
                 for (int i = 0; i < windows.length && !windowStillExists; i++) {
-                    if (windows[i].equals(selectedWindow)) {
+                    if (windows[i].equals(mSelectedWindow)) {
                         windowStillExists = true;
                     }
                 }
                 if (!windowStillExists) {
-                    selectedDevice = null;
-                    selectedWindow = null;
+                    mSelectedDevice = null;
+                    mSelectedWindow = null;
                     selectionChanged = true;
                 }
             }
         }
         notifyDeviceChanged(device);
         if (selectionChanged) {
-            notifySelectionChanged(selectedDevice, selectedWindow);
+            notifySelectionChanged(mSelectedDevice, mSelectedWindow);
         }
     }
 
@@ -115,8 +115,8 @@ public class DeviceSelectionModel {
      */
     public void updateFocusedWindow(IDevice device, int focusedWindow) {
         Integer oldValue = null;
-        synchronized (deviceMap) {
-            oldValue = focusedWindowHashes.put(device, new Integer(focusedWindow));
+        synchronized (mDeviceMap) {
+            oldValue = mFocusedWindowHashes.put(device, new Integer(focusedWindow));
         }
         // Only notify if the values are different. It would be cool if Java
         // containers accepted basic types like int.
@@ -125,7 +125,7 @@ public class DeviceSelectionModel {
         }
     }
 
-    public static interface WindowChangeListener {
+    public static interface IWindowChangeListener {
         public void deviceConnected(IDevice device);
 
         public void deviceChanged(IDevice device);
@@ -137,21 +137,21 @@ public class DeviceSelectionModel {
         public void selectionChanged(IDevice device, Window window);
     }
 
-    private WindowChangeListener[] getWindowChangeListenerList() {
-        WindowChangeListener[] listeners = null;
-        synchronized (windowChangeListeners) {
-            if (windowChangeListeners.size() == 0) {
+    private IWindowChangeListener[] getWindowChangeListenerList() {
+        IWindowChangeListener[] listeners = null;
+        synchronized (mWindowChangeListeners) {
+            if (mWindowChangeListeners.size() == 0) {
                 return null;
             }
             listeners =
-                    windowChangeListeners.toArray(new WindowChangeListener[windowChangeListeners
+                    mWindowChangeListeners.toArray(new IWindowChangeListener[mWindowChangeListeners
                             .size()]);
         }
         return listeners;
     }
 
     private void notifyDeviceConnected(IDevice device) {
-        WindowChangeListener[] listeners = getWindowChangeListenerList();
+        IWindowChangeListener[] listeners = getWindowChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].deviceConnected(device);
@@ -160,7 +160,7 @@ public class DeviceSelectionModel {
     }
 
     private void notifyDeviceChanged(IDevice device) {
-        WindowChangeListener[] listeners = getWindowChangeListenerList();
+        IWindowChangeListener[] listeners = getWindowChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].deviceChanged(device);
@@ -169,7 +169,7 @@ public class DeviceSelectionModel {
     }
 
     private void notifyDeviceDisconnected(IDevice device) {
-        WindowChangeListener[] listeners = getWindowChangeListenerList();
+        IWindowChangeListener[] listeners = getWindowChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].deviceDisconnected(device);
@@ -178,7 +178,7 @@ public class DeviceSelectionModel {
     }
 
     private void notifyFocusChanged(IDevice device) {
-        WindowChangeListener[] listeners = getWindowChangeListenerList();
+        IWindowChangeListener[] listeners = getWindowChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].focusChanged(device);
@@ -187,7 +187,7 @@ public class DeviceSelectionModel {
     }
 
     private void notifySelectionChanged(IDevice device, Window window) {
-        WindowChangeListener[] listeners = getWindowChangeListenerList();
+        IWindowChangeListener[] listeners = getWindowChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].selectionChanged(device, window);
@@ -195,28 +195,28 @@ public class DeviceSelectionModel {
         }
     }
 
-    public void addWindowChangeListener(WindowChangeListener listener) {
-        synchronized (windowChangeListeners) {
-            windowChangeListeners.add(listener);
+    public void addWindowChangeListener(IWindowChangeListener listener) {
+        synchronized (mWindowChangeListeners) {
+            mWindowChangeListeners.add(listener);
         }
     }
 
-    public void removeWindowChangeListener(WindowChangeListener listener) {
-        synchronized (windowChangeListeners) {
-            windowChangeListeners.remove(listener);
+    public void removeWindowChangeListener(IWindowChangeListener listener) {
+        synchronized (mWindowChangeListeners) {
+            mWindowChangeListeners.remove(listener);
         }
     }
 
     public IDevice[] getDevices() {
-        synchronized (deviceMap) {
-            return deviceList.toArray(new IDevice[deviceList.size()]);
+        synchronized (mDeviceMap) {
+            return mDeviceList.toArray(new IDevice[mDeviceList.size()]);
         }
     }
 
     public Window[] getWindows(IDevice device) {
         Window[] windows;
-        synchronized (deviceMap) {
-            windows = deviceMap.get(device);
+        synchronized (mDeviceMap) {
+            windows = mDeviceMap.get(device);
         }
         return windows;
     }
@@ -225,8 +225,8 @@ public class DeviceSelectionModel {
     // that a window with hashcode -1 gets highlighted. If you remember, this is
     // the infamous <Focused Window>
     public int getFocusedWindow(IDevice device) {
-        synchronized (deviceMap) {
-            Integer focusedWindow = focusedWindowHashes.get(device);
+        synchronized (mDeviceMap) {
+            Integer focusedWindow = mFocusedWindowHashes.get(device);
             if (focusedWindow == null) {
                 return -1;
             }
@@ -235,22 +235,22 @@ public class DeviceSelectionModel {
     }
 
     public void setSelection(IDevice device, Window window) {
-        synchronized (deviceMap) {
-            selectedDevice = device;
-            selectedWindow = window;
+        synchronized (mDeviceMap) {
+            mSelectedDevice = device;
+            mSelectedWindow = window;
         }
         notifySelectionChanged(device, window);
     }
 
     public IDevice getSelectedDevice() {
-        synchronized (deviceMap) {
-            return selectedDevice;
+        synchronized (mDeviceMap) {
+            return mSelectedDevice;
         }
     }
 
     public Window getSelectedWindow() {
-        synchronized (deviceMap) {
-            return selectedWindow;
+        synchronized (mDeviceMap) {
+            return mSelectedWindow;
         }
     }
 }

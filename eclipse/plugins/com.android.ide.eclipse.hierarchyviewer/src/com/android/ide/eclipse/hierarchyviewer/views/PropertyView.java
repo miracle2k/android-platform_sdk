@@ -24,20 +24,20 @@ import org.eclipse.ui.part.ViewPart;
 
 public class PropertyView extends ViewPart {
 
-    public static final String ID = "com.android.ide.eclipse.hierarchyviewer.views.PropertyView";
+    public static final String ID = "com.android.ide.eclipse.hierarchyviewer.views.PropertyView"; //$NON-NLS-1$
 
-    private PropertyViewer propertyViewer;
+    private PropertyViewer mPropertyViewer;
 
     @Override
     public void createPartControl(Composite parent) {
         parent.setLayout(new FillLayout());
 
-        propertyViewer = new PropertyViewer(parent);
+        mPropertyViewer = new PropertyViewer(parent);
     }
 
     @Override
     public void setFocus() {
-        propertyViewer.setFocus();
+        mPropertyViewer.setFocus();
     }
 
 }

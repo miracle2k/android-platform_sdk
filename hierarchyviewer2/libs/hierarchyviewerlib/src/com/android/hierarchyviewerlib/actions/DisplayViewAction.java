@@ -27,35 +27,35 @@ import org.eclipse.swt.widgets.Shell;
 
 public class DisplayViewAction extends SelectedNodeEnabledAction implements ImageAction {
 
-    private static DisplayViewAction action;
+    private static DisplayViewAction sAction;
 
-    private Image image;
+    private Image mImage;
 
-    private Shell shell;
+    private Shell mShell;
 
     private DisplayViewAction(Shell shell) {
         super("&Display View");
-        this.shell = shell;
+        this.mShell = shell;
         setAccelerator(SWT.MOD1 + 'D');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("display.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("display.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Display the selected view image in a separate window");
     }
 
     public static DisplayViewAction getAction(Shell shell) {
-        if (action == null) {
-            action = new DisplayViewAction(shell);
+        if (sAction == null) {
+            sAction = new DisplayViewAction(shell);
         }
-        return action;
+        return sAction;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().showCapture(shell);
+        HierarchyViewerDirector.getDirector().showCapture(mShell);
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

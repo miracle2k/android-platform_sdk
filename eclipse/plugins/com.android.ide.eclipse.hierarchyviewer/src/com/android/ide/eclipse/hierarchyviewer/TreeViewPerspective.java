@@ -29,7 +29,7 @@ import org.eclipse.ui.IPerspectiveFactory;
 
 public class TreeViewPerspective implements IPerspectiveFactory {
 
-    public static final String ID = "com.android.ide.eclipse.hierarchyviewer.TreeViewPerspective";
+    public static final String ID = "com.android.ide.eclipse.hierarchyviewer.TreeViewPerspective"; //$NON-NLS-1$
 
     public void createInitialLayout(IPageLayout layout) {
         layout.setEditorAreaVisible(false);
@@ -37,18 +37,18 @@ public class TreeViewPerspective implements IPerspectiveFactory {
         String editorArea = layout.getEditorArea();
         IFolderLayout folder;
 
-        folder = layout.createFolder("properties", IPageLayout.LEFT, 0.10f, editorArea);
+        folder = layout.createFolder("properties", IPageLayout.LEFT, 0.10f, editorArea); //$NON-NLS-1$
         folder.addView(DeviceSelectorView.ID);
         folder.addView(PropertyView.ID);
 
-        folder = layout.createFolder("main", IPageLayout.RIGHT, 0.24f, "properties");
+        folder = layout.createFolder("main", IPageLayout.RIGHT, 0.24f, "properties"); //$NON-NLS-1$ //$NON-NLS-2$
         folder.addView(TreeViewView.ID);
 
-        folder = layout.createFolder("panel-top", IPageLayout.RIGHT, 0.7f, "main");
+        folder = layout.createFolder("panel-top", IPageLayout.RIGHT, 0.7f, "main"); //$NON-NLS-1$ //$NON-NLS-2$
         folder.addView(TreeOverviewView.ID);
 
 
-        folder = layout.createFolder("panel-bottom", IPageLayout.BOTTOM, 0.5f, "panel-top");
+        folder = layout.createFolder("panel-bottom", IPageLayout.BOTTOM, 0.5f, "panel-top"); //$NON-NLS-1$ //$NON-NLS-2$
         folder.addView(LayoutView.ID);
 
         layout.addShowViewShortcut(DeviceSelectorView.ID);
@@ -57,7 +57,7 @@ public class TreeViewPerspective implements IPerspectiveFactory {
         layout.addShowViewShortcut(LayoutView.ID);
         layout.addShowViewShortcut(TreeViewView.ID);
 
-        layout.addPerspectiveShortcut("org.eclipse.jdt.ui.JavaPerspective");
+        layout.addPerspectiveShortcut("org.eclipse.jdt.ui.JavaPerspective"); //$NON-NLS-1$
         layout.addPerspectiveShortcut(PixelPerfectPespective.ID);
         layout.addPerspectiveShortcut(Perspective.ID);
     }

@@ -21,7 +21,7 @@ import com.android.hierarchyviewer.HierarchyViewerApplication;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.actions.ImageAction;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
-import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
+import com.android.hierarchyviewerlib.models.PixelPerfectModel.IImageChangeListener;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -29,37 +29,37 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
-public class ShowOverlayAction extends Action implements ImageAction, ImageChangeListener {
+public class ShowOverlayAction extends Action implements ImageAction, IImageChangeListener {
 
-    private static ShowOverlayAction action;
+    private static ShowOverlayAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private ShowOverlayAction() {
         super("Show In &Loupe", Action.AS_CHECK_BOX);
         setAccelerator(SWT.MOD1 + 'L');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("show-overlay.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("show-overlay.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Show the overlay in the loupe view");
         setEnabled(PixelPerfectModel.getModel().getOverlayImage() != null);
         PixelPerfectModel.getModel().addImageChangeListener(this);
     }
 
     public static ShowOverlayAction getAction() {
-        if (action == null) {
-            action = new ShowOverlayAction();
+        if (sAction == null) {
+            sAction = new ShowOverlayAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
     public void run() {
-        HierarchyViewerApplication.getApp().showOverlayInLoupe(action.isChecked());
+        HierarchyViewerApplication.getApp().showOverlayInLoupe(sAction.isChecked());
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
     
     public void crosshairMoved() {

@@ -31,14 +31,14 @@ import org.eclipse.ui.part.ViewPart;
 public class PixelPerfectView extends ViewPart {
 
     public static final String ID =
-            "com.android.ide.eclipse.hierarchyviewer.views.PixelPerfectView";
+            "com.android.ide.eclipse.hierarchyviewer.views.PixelPerfectView"; //$NON-NLS-1$
 
-    private PixelPerfect pixelPerfect;
+    private PixelPerfect mPixelPerfect;
 
     @Override
     public void createPartControl(Composite parent) {
         parent.setLayout(new FillLayout());
-        pixelPerfect = new PixelPerfect(parent);
+        mPixelPerfect = new PixelPerfect(parent);
 
         placeActions();
     }
@@ -61,7 +61,7 @@ public class PixelPerfectView extends ViewPart {
 
     @Override
     public void setFocus() {
-        pixelPerfect.setFocus();
+        mPixelPerfect.setFocus();
     }
 
 }

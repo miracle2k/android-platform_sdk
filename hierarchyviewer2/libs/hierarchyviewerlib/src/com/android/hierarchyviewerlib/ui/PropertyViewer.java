@@ -19,7 +19,7 @@ package com.android.hierarchyviewerlib.ui;
 import com.android.hierarchyviewerlib.device.ViewNode;
 import com.android.hierarchyviewerlib.device.ViewNode.Property;
 import com.android.hierarchyviewerlib.models.TreeViewModel;
-import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
+import com.android.hierarchyviewerlib.models.TreeViewModel.ITreeChangeListener;
 import com.android.hierarchyviewerlib.ui.util.DrawableViewNode;
 import com.android.hierarchyviewerlib.ui.util.TreeColumnResizer;
 
@@ -45,25 +45,25 @@ import org.eclipse.swt.widgets.TreeColumn;
 
 import java.util.ArrayList;
 
-public class PropertyViewer extends Composite implements TreeChangeListener {
-    private TreeViewModel model;
+public class PropertyViewer extends Composite implements ITreeChangeListener {
+    private TreeViewModel mModel;
 
-    private TreeViewer treeViewer;
+    private TreeViewer mTreeViewer;
 
-    private Tree tree;
+    private Tree mTree;
 
-    private DrawableViewNode selectedNode;
+    private DrawableViewNode mSelectedNode;
 
-    private Font smallFont;
+    private Font mSmallFont;
 
     private class ContentProvider implements ITreeContentProvider, ITableLabelProvider {
 
         public Object[] getChildren(Object parentElement) {
             synchronized (PropertyViewer.this) {
-                if (selectedNode != null && parentElement instanceof String) {
+                if (mSelectedNode != null && parentElement instanceof String) {
                     String category = (String) parentElement;
                     ArrayList<Property> returnValue = new ArrayList<Property>();
-                    for (Property property : selectedNode.viewNode.properties) {
+                    for (Property property : mSelectedNode.viewNode.properties) {
                         if (category.equals(ViewNode.MISCELLANIOUS)) {
                             if (property.name.indexOf(':') == -1) {
                                 returnValue.add(property);
@@ -82,8 +82,8 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
 
         public Object getParent(Object element) {
             synchronized (PropertyViewer.this) {
-                if (selectedNode != null && element instanceof Property) {
-                    if (selectedNode.viewNode.categories.size() == 0) {
+                if (mSelectedNode != null && element instanceof Property) {
+                    if (mSelectedNode.viewNode.categories.size() == 0) {
                         return null;
                     }
                     String name = ((Property) element).name;
@@ -99,9 +99,9 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
 
         public boolean hasChildren(Object element) {
             synchronized (PropertyViewer.this) {
-                if (selectedNode != null && element instanceof String) {
+                if (mSelectedNode != null && element instanceof String) {
                     String category = (String) element;
-                    for (String name : selectedNode.viewNode.namedProperties.keySet()) {
+                    for (String name : mSelectedNode.viewNode.namedProperties.keySet()) {
                         if (category.equals(ViewNode.MISCELLANIOUS)) {
                             if (name.indexOf(':') == -1) {
                                 return true;
@@ -119,13 +119,13 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
 
         public Object[] getElements(Object inputElement) {
             synchronized (PropertyViewer.this) {
-                if (selectedNode != null && inputElement instanceof TreeViewModel) {
-                    if (selectedNode.viewNode.categories.size() == 0) {
-                        return selectedNode.viewNode.properties
-                                .toArray(new Property[selectedNode.viewNode.properties.size()]);
+                if (mSelectedNode != null && inputElement instanceof TreeViewModel) {
+                    if (mSelectedNode.viewNode.categories.size() == 0) {
+                        return mSelectedNode.viewNode.properties
+                                .toArray(new Property[mSelectedNode.viewNode.properties.size()]);
                     } else {
-                        return selectedNode.viewNode.categories
-                                .toArray(new String[selectedNode.viewNode.categories.size()]);
+                        return mSelectedNode.viewNode.categories
+                                .toArray(new String[mSelectedNode.viewNode.categories.size()]);
                     }
                 }
                 return new Object[0];
@@ -146,7 +146,7 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
 
         public String getColumnText(Object element, int column) {
             synchronized (PropertyViewer.this) {
-                if (selectedNode != null) {
+                if (mSelectedNode != null) {
                     if (element instanceof String && column == 0) {
                         String category = (String) element;
                         return Character.toUpperCase(category.charAt(0)) + category.substring(1);
@@ -184,32 +184,32 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
     public PropertyViewer(Composite parent) {
         super(parent, SWT.NONE);
         setLayout(new FillLayout());
-        treeViewer = new TreeViewer(this, SWT.NONE);
+        mTreeViewer = new TreeViewer(this, SWT.NONE);
 
-        tree = treeViewer.getTree();
-        tree.setLinesVisible(true);
-        tree.setHeaderVisible(true);
+        mTree = mTreeViewer.getTree();
+        mTree.setLinesVisible(true);
+        mTree.setHeaderVisible(true);
 
-        TreeColumn propertyColumn = new TreeColumn(tree, SWT.NONE);
+        TreeColumn propertyColumn = new TreeColumn(mTree, SWT.NONE);
         propertyColumn.setText("Property");
-        TreeColumn valueColumn = new TreeColumn(tree, SWT.NONE);
+        TreeColumn valueColumn = new TreeColumn(mTree, SWT.NONE);
         valueColumn.setText("Value");
 
-        model = TreeViewModel.getModel();
+        mModel = TreeViewModel.getModel();
         ContentProvider contentProvider = new ContentProvider();
-        treeViewer.setContentProvider(contentProvider);
-        treeViewer.setLabelProvider(contentProvider);
-        treeViewer.setInput(model);
-        model.addTreeChangeListener(this);
+        mTreeViewer.setContentProvider(contentProvider);
+        mTreeViewer.setLabelProvider(contentProvider);
+        mTreeViewer.setInput(mModel);
+        mModel.addTreeChangeListener(this);
 
         loadResources();
-        addDisposeListener(disposeListener);
+        addDisposeListener(mDisposeListener);
 
-        tree.setFont(smallFont);
+        mTree.setFont(mSmallFont);
 
         new TreeColumnResizer(this, propertyColumn, valueColumn);
 
-        addControlListener(controlListener);
+        addControlListener(mControlListener);
 
         treeChanged();
     }
@@ -222,20 +222,20 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
         for (int i = 0; i < fontData.length; i++) {
             newFontData[i] = new FontData(fontData[i].getName(), 8, fontData[i].getStyle());
         }
-        smallFont = new Font(Display.getDefault(), newFontData);
+        mSmallFont = new Font(Display.getDefault(), newFontData);
     }
 
-    private DisposeListener disposeListener = new DisposeListener() {
+    private DisposeListener mDisposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
-            model.removeTreeChangeListener(PropertyViewer.this);
-            smallFont.dispose();
+            mModel.removeTreeChangeListener(PropertyViewer.this);
+            mSmallFont.dispose();
         }
     };
 
     // If the window gets too small, hide the data, otherwise SWT throws an
     // ERROR.
 
-    private ControlListener controlListener = new ControlAdapter() {
+    private ControlListener mControlListener = new ControlAdapter() {
         private boolean noInput = false;
 
         private boolean noHeader = false;
@@ -243,17 +243,17 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
         @Override
         public void controlResized(ControlEvent e) {
             if (getBounds().height <= 20) {
-                tree.setHeaderVisible(false);
+                mTree.setHeaderVisible(false);
                 noHeader = true;
             } else if (noHeader) {
-                tree.setHeaderVisible(true);
+                mTree.setHeaderVisible(true);
                 noHeader = false;
             }
             if (getBounds().height <= 38) {
-                treeViewer.setInput(null);
+                mTreeViewer.setInput(null);
                 noInput = true;
             } else if (noInput) {
-                treeViewer.setInput(model);
+                mTreeViewer.setInput(mModel);
                 noInput = false;
             }
         }
@@ -261,14 +261,14 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
 
     public void selectionChanged() {
         synchronized (this) {
-            selectedNode = model.getSelection();
+            mSelectedNode = mModel.getSelection();
         }
         doRefresh();
     }
 
     public void treeChanged() {
         synchronized (this) {
-            selectedNode = model.getSelection();
+            mSelectedNode = mModel.getSelection();
         }
         doRefresh();
     }
@@ -284,7 +284,7 @@ public class PropertyViewer extends Composite implements TreeChangeListener {
     private void doRefresh() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                treeViewer.refresh();
+                mTreeViewer.refresh();
             }
         });
     }

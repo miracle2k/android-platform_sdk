@@ -41,24 +41,24 @@ import org.eclipse.ui.part.ViewPart;
 public class PixelPerfectLoupeView extends ViewPart implements ImageChangeListener {
 
     public static final String ID =
-            "com.android.ide.eclipse.hierarchyviewer.views.PixelPerfectLoupeView";
+            "com.android.ide.eclipse.hierarchyviewer.views.PixelPerfectLoupeView"; //$NON-NLS-1$
 
-    private PixelPerfectLoupe pixelPerfectLoupe;
+    private PixelPerfectLoupe mPixelPerfectLoupe;
 
-    private Action showInLoupeAction = new Action("&Show Overlay", Action.AS_CHECK_BOX) {
+    private Action mShowInLoupeAction = new Action("&Show Overlay", Action.AS_CHECK_BOX) {
         @Override
         public void run() {
-            pixelPerfectLoupe.setShowOverlay(isChecked());
+            mPixelPerfectLoupe.setShowOverlay(isChecked());
         }
     };
     @Override
     public void createPartControl(Composite parent) {
-        showInLoupeAction.setAccelerator(SWT.MOD1 + 'S');
+        mShowInLoupeAction.setAccelerator(SWT.MOD1 + 'S');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        Image image = imageLoader.loadImage("show-overlay.png", Display.getDefault());
-        showInLoupeAction.setImageDescriptor(ImageDescriptor.createFromImage(image));
-        showInLoupeAction.setToolTipText("Show the overlay in the loupe view");
-        showInLoupeAction.setEnabled(PixelPerfectModel.getModel().getOverlayImage() != null);
+        Image image = imageLoader.loadImage("show-overlay.png", Display.getDefault()); //$NON-NLS-1$
+        mShowInLoupeAction.setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mShowInLoupeAction.setToolTipText("Show the overlay in the loupe view");
+        mShowInLoupeAction.setEnabled(PixelPerfectModel.getModel().getOverlayImage() != null);
         PixelPerfectModel.getModel().addImageChangeListener(this);
 
         GridLayout loupeLayout = new GridLayout();
@@ -75,8 +75,8 @@ public class PixelPerfectLoupeView extends ViewPart implements ImageChangeListen
                 pixelPerfectLoupeBorderGridLayout.verticalSpacing = 0;
         pixelPerfectLoupeBorder.setLayout(pixelPerfectLoupeBorderGridLayout);
 
-        pixelPerfectLoupe = new PixelPerfectLoupe(pixelPerfectLoupeBorder);
-        pixelPerfectLoupe.setLayoutData(new GridData(GridData.FILL_BOTH));
+        mPixelPerfectLoupe = new PixelPerfectLoupe(pixelPerfectLoupeBorder);
+        mPixelPerfectLoupe.setLayoutData(new GridData(GridData.FILL_BOTH));
 
         PixelPerfectPixelPanel pixelPerfectPixelPanel =
                 new PixelPerfectPixelPanel(pixelPerfectLoupeBorder);
@@ -95,12 +95,12 @@ public class PixelPerfectLoupeView extends ViewPart implements ImageChangeListen
         IMenuManager mm = actionBars.getMenuManager();
         mm.removeAll();
         mm.add(PixelPerfectAutoRefreshAction.getAction());
-        mm.add(showInLoupeAction);
+        mm.add(mShowInLoupeAction);
 
         IToolBarManager tm = actionBars.getToolBarManager();
         tm.removeAll();
         tm.add(PixelPerfectAutoRefreshAction.getAction());
-        tm.add(showInLoupeAction);
+        tm.add(mShowInLoupeAction);
     }
 
     @Override
@@ -111,7 +111,7 @@ public class PixelPerfectLoupeView extends ViewPart implements ImageChangeListen
 
     @Override
     public void setFocus() {
-        pixelPerfectLoupe.setFocus();
+        mPixelPerfectLoupe.setFocus();
     }
     
     public void crosshairMoved() {
@@ -130,7 +130,7 @@ public class PixelPerfectLoupeView extends ViewPart implements ImageChangeListen
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 Image overlayImage = PixelPerfectModel.getModel().getOverlayImage();
-                showInLoupeAction.setEnabled(overlayImage != null);
+                mShowInLoupeAction.setEnabled(overlayImage != null);
             }
         });
     }
@@ -138,7 +138,8 @@ public class PixelPerfectLoupeView extends ViewPart implements ImageChangeListen
     public void overlayChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                showInLoupeAction.setEnabled(PixelPerfectModel.getModel().getOverlayImage() != null);
+                mShowInLoupeAction
+                        .setEnabled(PixelPerfectModel.getModel().getOverlayImage() != null);
             }
         });
     }

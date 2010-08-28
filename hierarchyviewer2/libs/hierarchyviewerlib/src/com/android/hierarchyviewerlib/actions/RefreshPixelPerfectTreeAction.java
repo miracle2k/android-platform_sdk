@@ -26,24 +26,24 @@ import org.eclipse.swt.widgets.Display;
 
 public class RefreshPixelPerfectTreeAction extends PixelPerfectEnabledAction implements ImageAction {
 
-    private static RefreshPixelPerfectTreeAction action;
+    private static RefreshPixelPerfectTreeAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private RefreshPixelPerfectTreeAction() {
         super("Refresh &Tree");
         setAccelerator(SWT.MOD1 + 'T');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Refresh the tree");
     }
 
     public static RefreshPixelPerfectTreeAction getAction() {
-        if (action == null) {
-            action = new RefreshPixelPerfectTreeAction();
+        if (sAction == null) {
+            sAction = new RefreshPixelPerfectTreeAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
@@ -52,6 +52,6 @@ public class RefreshPixelPerfectTreeAction extends PixelPerfectEnabledAction imp
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

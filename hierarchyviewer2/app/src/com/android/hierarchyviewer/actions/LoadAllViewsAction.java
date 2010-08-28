@@ -28,24 +28,24 @@ import org.eclipse.swt.widgets.Display;
 
 public class LoadAllViewsAction extends TreeViewEnabledAction implements ImageAction {
 
-    private static LoadAllViewsAction action;
+    private static LoadAllViewsAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private LoadAllViewsAction() {
         super("Load All &Views");
         setAccelerator(SWT.MOD1 + 'V');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("load-all-views.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("load-all-views.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Load all view images");
     }
 
     public static LoadAllViewsAction getAction() {
-        if (action == null) {
-            action = new LoadAllViewsAction();
+        if (sAction == null) {
+            sAction = new LoadAllViewsAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
@@ -54,6 +54,6 @@ public class LoadAllViewsAction extends TreeViewEnabledAction implements ImageAc
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

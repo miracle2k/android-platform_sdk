@@ -21,7 +21,7 @@ import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.device.Window;
 import com.android.hierarchyviewerlib.models.DeviceSelectionModel;
-import com.android.hierarchyviewerlib.models.DeviceSelectionModel.WindowChangeListener;
+import com.android.hierarchyviewerlib.models.DeviceSelectionModel.IWindowChangeListener;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -29,18 +29,18 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
-public class InspectScreenshotAction extends Action implements ImageAction, WindowChangeListener {
+public class InspectScreenshotAction extends Action implements ImageAction, IWindowChangeListener {
 
-    private static InspectScreenshotAction action;
+    private static InspectScreenshotAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private InspectScreenshotAction() {
         super("Inspect &Screenshot");
         setAccelerator(SWT.MOD1 + 'S');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("inspect-screenshot.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("inspect-screenshot.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Inspect a screenshot in the pixel perfect view");
         setEnabled(
                 DeviceSelectionModel.getModel().getSelectedDevice() != null);
@@ -48,10 +48,10 @@ public class InspectScreenshotAction extends Action implements ImageAction, Wind
     }
 
     public static InspectScreenshotAction getAction() {
-        if (action == null) {
-            action = new InspectScreenshotAction();
+        if (sAction == null) {
+            sAction = new InspectScreenshotAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class InspectScreenshotAction extends Action implements ImageAction, Wind
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 
     public void deviceChanged(IDevice device) {

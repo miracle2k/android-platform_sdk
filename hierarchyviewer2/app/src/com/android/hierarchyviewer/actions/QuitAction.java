@@ -23,7 +23,7 @@ import org.eclipse.swt.SWT;
 
 public class QuitAction extends Action {
 
-    private static QuitAction action;
+    private static QuitAction sAction;
 
     private QuitAction() {
         super("E&xit");
@@ -31,10 +31,10 @@ public class QuitAction extends Action {
     }
 
     public static QuitAction getAction() {
-        if (action == null) {
-            action = new QuitAction();
+        if (sAction == null) {
+            sAction = new QuitAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override

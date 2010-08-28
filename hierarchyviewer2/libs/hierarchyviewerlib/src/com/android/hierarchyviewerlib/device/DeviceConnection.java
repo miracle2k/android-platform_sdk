@@ -34,42 +34,42 @@ import java.nio.channels.SocketChannel;
 public class DeviceConnection {
 
     // Now a socket channel, since socket channels are friendly with interrupts.
-    private SocketChannel socketChannel;
+    private SocketChannel mSocketChannel;
 
-    private BufferedReader in;
+    private BufferedReader mIn;
 
-    private BufferedWriter out;
+    private BufferedWriter mOut;
 
     public DeviceConnection(IDevice device) throws IOException {
-        socketChannel = SocketChannel.open();
+        mSocketChannel = SocketChannel.open();
         int port = DeviceBridge.getDeviceLocalPort(device);
 
         if (port == -1) {
             throw new IOException();
         }
 
-        socketChannel.connect(new InetSocketAddress("127.0.0.1", port));
-        socketChannel.socket().setSoTimeout(40000);
+        mSocketChannel.connect(new InetSocketAddress("127.0.0.1", port)); //$NON-NLS-1$
+        mSocketChannel.socket().setSoTimeout(40000);
     }
 
     public BufferedReader getInputStream() throws IOException {
-        if (in == null) {
-            in = new BufferedReader(new InputStreamReader(socketChannel.socket().getInputStream()));
+        if (mIn == null) {
+            mIn = new BufferedReader(new InputStreamReader(mSocketChannel.socket().getInputStream()));
         }
-        return in;
+        return mIn;
     }
 
     public BufferedWriter getOutputStream() throws IOException {
-        if (out == null) {
-            out =
-                    new BufferedWriter(new OutputStreamWriter(socketChannel.socket()
+        if (mOut == null) {
+            mOut =
+                    new BufferedWriter(new OutputStreamWriter(mSocketChannel.socket()
                             .getOutputStream()));
         }
-        return out;
+        return mOut;
     }
 
     public Socket getSocket() {
-        return socketChannel.socket();
+        return mSocketChannel.socket();
     }
 
     public void sendCommand(String command) throws IOException {
@@ -81,19 +81,19 @@ public class DeviceConnection {
 
     public void close() {
         try {
-            if (in != null) {
-                in.close();
+            if (mIn != null) {
+                mIn.close();
             }
         } catch (IOException e) {
         }
         try {
-            if (out != null) {
-                out.close();
+            if (mOut != null) {
+                mOut.close();
             }
         } catch (IOException e) {
         }
         try {
-            socketChannel.close();
+            mSocketChannel.close();
         } catch (IOException e) {
         }
     }
