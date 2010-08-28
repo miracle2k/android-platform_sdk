@@ -182,12 +182,14 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
                 // the user, or through a configuration change in the configuration selector.)
                 if (mGraphicalEditor == null) {
 
-                    String useGle2 = System.getenv("USE_GLE2");     //$NON-NLS-1$
+                    String useGle1 = System.getenv("USE_GLE1");     //$NON-NLS-1$
 
-                    if (useGle2 != null && !useGle2.equals("0")) {  //$NON-NLS-1$
-                        mGraphicalEditor = new GraphicalEditorPart(this);
-                    } else {
+                    if (useGle1 != null && !useGle1.equals("0")) {  //$NON-NLS-1$
+                        // If USE_GLE1 exists and is non-zero, use the old GLE v1
                         mGraphicalEditor = new GraphicalLayoutEditor(this);
+                    } else {
+                        // Otherwise we now default to the new GLE v2
+                        mGraphicalEditor = new GraphicalEditorPart(this);
                     }
 
                     mGraphicalEditorIndex = addPage(mGraphicalEditor, getEditorInput());
