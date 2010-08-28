@@ -35,7 +35,7 @@ import org.eclipse.ui.PartInitException;
 public class HierarchyViewerPluginDirector extends HierarchyViewerDirector {
 
     public static HierarchyViewerDirector createDirector() {
-        return director = new HierarchyViewerPluginDirector();
+        return sDirector = new HierarchyViewerPluginDirector();
     }
 
     @Override

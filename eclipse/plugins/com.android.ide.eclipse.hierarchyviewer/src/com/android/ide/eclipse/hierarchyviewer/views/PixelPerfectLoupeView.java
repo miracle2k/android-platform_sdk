@@ -20,7 +20,7 @@ import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.actions.PixelPerfectAutoRefreshAction;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
-import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
+import com.android.hierarchyviewerlib.models.PixelPerfectModel.IImageChangeListener;
 import com.android.hierarchyviewerlib.ui.PixelPerfectControls;
 import com.android.hierarchyviewerlib.ui.PixelPerfectLoupe;
 import com.android.hierarchyviewerlib.ui.PixelPerfectPixelPanel;
@@ -38,7 +38,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.part.ViewPart;
 
-public class PixelPerfectLoupeView extends ViewPart implements ImageChangeListener {
+public class PixelPerfectLoupeView extends ViewPart implements IImageChangeListener {
 
     public static final String ID =
             "com.android.ide.eclipse.hierarchyviewer.views.PixelPerfectLoupeView"; //$NON-NLS-1$
