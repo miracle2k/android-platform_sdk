@@ -24,37 +24,37 @@ import com.android.ddmlib.IDevice;
  */
 public class Window {
 
-    private String title;
+    private String mTitle;
 
-    private int hashCode;
+    private int mHashCode;
 
-    private IDevice device;
+    private IDevice mDevice;
 
     public Window(IDevice device, String title, int hashCode) {
-        this.device = device;
-        this.title = title;
-        this.hashCode = hashCode;
+        this.mDevice = device;
+        this.mTitle = title;
+        this.mHashCode = hashCode;
     }
 
     public String getTitle() {
-        return title;
+        return mTitle;
     }
 
     public int getHashCode() {
-        return hashCode;
+        return mHashCode;
     }
 
     public String encode() {
-        return Integer.toHexString(hashCode);
+        return Integer.toHexString(mHashCode);
     }
 
     @Override
     public String toString() {
-        return title;
+        return mTitle;
     }
 
     public IDevice getDevice() {
-        return device;
+        return mDevice;
     }
 
     public static Window getFocusedWindow(IDevice device) {
@@ -69,8 +69,8 @@ public class Window {
     @Override
     public boolean equals(Object other) {
         if (other instanceof Window) {
-            return hashCode == ((Window) other).hashCode
-                    && device.getSerialNumber().equals(((Window) other).device.getSerialNumber());
+            return mHashCode == ((Window) other).mHashCode
+                    && mDevice.getSerialNumber().equals(((Window) other).mDevice.getSerialNumber());
         }
         return false;
     }

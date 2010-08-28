@@ -17,12 +17,12 @@
 package com.android.hierarchyviewerlib.actions;
 
 import com.android.hierarchyviewerlib.models.TreeViewModel;
-import com.android.hierarchyviewerlib.models.TreeViewModel.TreeChangeListener;
+import com.android.hierarchyviewerlib.models.TreeViewModel.ITreeChangeListener;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.swt.widgets.Display;
 
-public class TreeViewEnabledAction extends Action implements TreeChangeListener {
+public class TreeViewEnabledAction extends Action implements ITreeChangeListener {
     public TreeViewEnabledAction(String name) {
         super(name);
         setEnabled(TreeViewModel.getModel().getTree() != null);

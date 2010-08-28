@@ -25,19 +25,19 @@ import org.eclipse.ui.part.ViewPart;
 public class TreeOverviewView extends ViewPart {
 
     public static final String ID =
-            "com.android.ide.eclipse.hierarchyviewer.views.TreeOverviewView";
+            "com.android.ide.eclipse.hierarchyviewer.views.TreeOverviewView"; //$NON-NLS-1$
 
-    private TreeViewOverview treeViewOverview;
+    private TreeViewOverview mTreeViewOverview;
     @Override
     public void createPartControl(Composite parent) {
         parent.setLayout(new FillLayout());
 
-        treeViewOverview = new TreeViewOverview(parent);
+        mTreeViewOverview = new TreeViewOverview(parent);
     }
 
     @Override
     public void setFocus() {
-        treeViewOverview.setFocus();
+        mTreeViewOverview.setFocus();
     }
 
 }

@@ -29,14 +29,14 @@ import org.eclipse.ui.part.ViewPart;
 public class PixelPerfectTreeView extends ViewPart {
 
     public static final String ID =
-            "com.android.ide.eclipse.hierarchyviewer.views.PixelPerfectTreeView";
+            "com.android.ide.eclipse.hierarchyviewer.views.PixelPerfectTreeView"; //$NON-NLS-1$
 
-    private PixelPerfectTree pixelPerfectTree;
+    private PixelPerfectTree mPixelPerfectTree;
 
     @Override
     public void createPartControl(Composite parent) {
         parent.setLayout(new FillLayout());
-        pixelPerfectTree = new PixelPerfectTree(parent);
+        mPixelPerfectTree = new PixelPerfectTree(parent);
 
         placeActions();
     }
@@ -55,7 +55,7 @@ public class PixelPerfectTreeView extends ViewPart {
 
     @Override
     public void setFocus() {
-        pixelPerfectTree.setFocus();
+        mPixelPerfectTree.setFocus();
     }
 
 }

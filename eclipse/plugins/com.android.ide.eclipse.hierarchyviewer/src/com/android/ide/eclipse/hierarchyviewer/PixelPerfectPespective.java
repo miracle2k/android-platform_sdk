@@ -29,7 +29,7 @@ import org.eclipse.ui.IPerspectiveFactory;
 public class PixelPerfectPespective implements IPerspectiveFactory {
 
     public static final String ID =
-            "com.android.ide.eclipse.hierarchyviewer.PixelPerfectPespective";
+            "com.android.ide.eclipse.hierarchyviewer.PixelPerfectPespective"; //$NON-NLS-1$
 
     public void createInitialLayout(IPageLayout layout) {
         layout.setEditorAreaVisible(false);
@@ -37,14 +37,14 @@ public class PixelPerfectPespective implements IPerspectiveFactory {
         String editorArea = layout.getEditorArea();
         IFolderLayout folder;
 
-        folder = layout.createFolder("tree", IPageLayout.LEFT, 0.25f, editorArea);
+        folder = layout.createFolder("tree", IPageLayout.LEFT, 0.25f, editorArea); //$NON-NLS-1$
         folder.addView(DeviceSelectorView.ID);
         folder.addView(PixelPerfectTreeView.ID);
 
-        folder = layout.createFolder("overview", IPageLayout.RIGHT, 0.4f, editorArea);
+        folder = layout.createFolder("overview", IPageLayout.RIGHT, 0.4f, editorArea); //$NON-NLS-1$
         folder.addView(PixelPerfectView.ID);
 
-        folder = layout.createFolder("main", IPageLayout.RIGHT, 0.35f, editorArea);
+        folder = layout.createFolder("main", IPageLayout.RIGHT, 0.35f, editorArea); //$NON-NLS-1$
         folder.addView(PixelPerfectLoupeView.ID);
 
 
@@ -53,7 +53,7 @@ public class PixelPerfectPespective implements IPerspectiveFactory {
         layout.addShowViewShortcut(PixelPerfectLoupeView.ID);
         layout.addShowViewShortcut(PixelPerfectView.ID);
 
-        layout.addPerspectiveShortcut("org.eclipse.jdt.ui.JavaPerspective");
+        layout.addPerspectiveShortcut("org.eclipse.jdt.ui.JavaPerspective"); //$NON-NLS-1$
         layout.addPerspectiveShortcut(TreeViewPerspective.ID);
         layout.addPerspectiveShortcut(Perspective.ID);
     }

@@ -59,33 +59,33 @@ import java.util.TimerTask;
 public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
         IWindowChangeListener {
 
-    protected static HierarchyViewerDirector director;
+    protected static HierarchyViewerDirector sDirector;
 
     public static final String TAG = "hierarchyviewer";
 
-    private int pixelPerfectRefreshesInProgress = 0;
+    private int mPixelPerfectRefreshesInProgress = 0;
 
-    private Timer pixelPerfectRefreshTimer = new Timer();
+    private Timer mPixelPerfectRefreshTimer = new Timer();
 
-    private boolean autoRefresh = false;
+    private boolean mAutoRefresh = false;
 
     public static final int DEFAULT_PIXEL_PERFECT_AUTOREFRESH_INTERVAL = 5;
 
-    private int pixelPerfectAutoRefreshInterval = DEFAULT_PIXEL_PERFECT_AUTOREFRESH_INTERVAL;
+    private int mPixelPerfectAutoRefreshInterval = DEFAULT_PIXEL_PERFECT_AUTOREFRESH_INTERVAL;
 
-    private PixelPerfectAutoRefreshTask currentAutoRefreshTask;
+    private PixelPerfectAutoRefreshTask mCurrentAutoRefreshTask;
 
-    private String filterText = "";
+    private String mFilterText = ""; //$NON-NLS-1$
 
     public void terminate() {
         WindowUpdater.terminate();
-        pixelPerfectRefreshTimer.cancel();
+        mPixelPerfectRefreshTimer.cancel();
     }
 
     public abstract String getAdbLocation();
 
     public static HierarchyViewerDirector getDirector() {
-        return director;
+        return sDirector;
     }
 
     public void initDebugBridge() {
@@ -174,7 +174,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                 Window treeViewWindow = TreeViewModel.getModel().getWindow();
                 if (treeViewWindow != null && treeViewWindow.getDevice() == device) {
                     TreeViewModel.getModel().setData(null, null);
-                    filterText = "";
+                    mFilterText = ""; //$NON-NLS-1$
                 }
             }
         });
@@ -219,9 +219,9 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
             // want it to refresh following the last focus change.
             boolean proceed = false;
             synchronized (this) {
-                if (pixelPerfectRefreshesInProgress <= 1) {
+                if (mPixelPerfectRefreshesInProgress <= 1) {
                     proceed = true;
-                    pixelPerfectRefreshesInProgress++;
+                    mPixelPerfectRefreshesInProgress++;
                 }
             }
             if (proceed) {
@@ -232,7 +232,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                             PixelPerfectModel.getModel().setImage(screenshotImage);
                         }
                         synchronized (HierarchyViewerDirector.this) {
-                            pixelPerfectRefreshesInProgress--;
+                            mPixelPerfectRefreshesInProgress--;
                         }
                     }
 
@@ -307,7 +307,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
         executeInBackground("Loading view hierarchy", new Runnable() {
             public void run() {
 
-                filterText = "";
+                mFilterText = ""; //$NON-NLS-1$
 
                 ViewNode viewNode = DeviceBridge.loadWindowData(window);
                 if (viewNode != null) {
@@ -324,7 +324,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
             public void run() {
                 FileDialog fileDialog = new FileDialog(shell, SWT.OPEN);
                 fileDialog.setFilterExtensions(new String[] {
-                    "*.jpg;*.jpeg;*.png;*.gif;*.bmp"
+                    "*.jpg;*.jpeg;*.png;*.gif;*.bmp" //$NON-NLS-1$
                 });
                 fileDialog.setFilterNames(new String[] {
                     "Image (*.jpg, *.jpeg, *.png, *.gif, *.bmp)"
@@ -430,7 +430,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                 if (viewNode != null) {
                     FileDialog fileDialog = new FileDialog(shell, SWT.SAVE);
                     fileDialog.setFilterExtensions(new String[] {
-                        "*.png"
+                        "*.png" //$NON-NLS-1$
                     });
                     fileDialog.setFilterNames(new String[] {
                         "Portable Network Graphics File (*.png)"
@@ -446,8 +446,8 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                                     image.getImageData()
                                 };
                                 String extensionedFileName = fileName;
-                                if (!extensionedFileName.toLowerCase().endsWith(".png")) {
-                                    extensionedFileName += ".png";
+                                if (!extensionedFileName.toLowerCase().endsWith(".png")) { //$NON-NLS-1$
+                                    extensionedFileName += ".png"; //$NON-NLS-1$
                                 }
                                 try {
                                     imageLoader.save(extensionedFileName, SWT.IMAGE_PNG);
@@ -472,7 +472,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                     final ImageData imageData = untouchableImage.getImageData();
                     FileDialog fileDialog = new FileDialog(shell, SWT.SAVE);
                     fileDialog.setFilterExtensions(new String[] {
-                        "*.png"
+                        "*.png" //$NON-NLS-1$
                     });
                     fileDialog.setFilterNames(new String[] {
                         "Portable Network Graphics File (*.png)"
@@ -487,8 +487,8 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                                     imageData
                                 };
                                 String extensionedFileName = fileName;
-                                if (!extensionedFileName.toLowerCase().endsWith(".png")) {
-                                    extensionedFileName += ".png";
+                                if (!extensionedFileName.toLowerCase().endsWith(".png")) { //$NON-NLS-1$
+                                    extensionedFileName += ".png"; //$NON-NLS-1$
                                 }
                                 try {
                                     imageLoader.save(extensionedFileName, SWT.IMAGE_PNG);
@@ -511,7 +511,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                 if (window != null) {
                     FileDialog fileDialog = new FileDialog(shell, SWT.SAVE);
                     fileDialog.setFilterExtensions(new String[] {
-                        "*.psd"
+                        "*.psd" //$NON-NLS-1$
                     });
                     fileDialog.setFilterNames(new String[] {
                         "Photoshop Document (*.psd)"
@@ -524,8 +524,8 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
                                 PsdFile psdFile = DeviceBridge.captureLayers(window);
                                 if (psdFile != null) {
                                     String extensionedFileName = fileName;
-                                    if (!extensionedFileName.toLowerCase().endsWith(".psd")) {
-                                        extensionedFileName += ".psd";
+                                    if (!extensionedFileName.toLowerCase().endsWith(".psd")) { //$NON-NLS-1$
+                                        extensionedFileName += ".psd"; //$NON-NLS-1$
                                     }
                                     try {
                                         psdFile.write(new FileOutputStream(extensionedFileName));
@@ -596,7 +596,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
     }
 
     public void filterNodes(String filterText) {
-        this.filterText = filterText;
+        this.mFilterText = filterText;
         DrawableViewNode tree = TreeViewModel.getModel().getTree();
         if (tree != null) {
             tree.viewNode.filter(filterText);
@@ -606,7 +606,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
     }
 
     public String getFilterText() {
-        return filterText;
+        return mFilterText;
     }
 
     private static class PixelPerfectAutoRefreshTask extends TimerTask {
@@ -617,44 +617,44 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
     };
 
     public void setPixelPerfectAutoRefresh(boolean value) {
-        synchronized (pixelPerfectRefreshTimer) {
-            if (value == autoRefresh) {
+        synchronized (mPixelPerfectRefreshTimer) {
+            if (value == mAutoRefresh) {
                 return;
             }
-            autoRefresh = value;
-            if (autoRefresh) {
-                currentAutoRefreshTask = new PixelPerfectAutoRefreshTask();
-                pixelPerfectRefreshTimer.schedule(currentAutoRefreshTask,
-                        pixelPerfectAutoRefreshInterval * 1000,
-                        pixelPerfectAutoRefreshInterval * 1000);
+            mAutoRefresh = value;
+            if (mAutoRefresh) {
+                mCurrentAutoRefreshTask = new PixelPerfectAutoRefreshTask();
+                mPixelPerfectRefreshTimer.schedule(mCurrentAutoRefreshTask,
+                        mPixelPerfectAutoRefreshInterval * 1000,
+                        mPixelPerfectAutoRefreshInterval * 1000);
             } else {
-                currentAutoRefreshTask.cancel();
-                currentAutoRefreshTask = null;
+                mCurrentAutoRefreshTask.cancel();
+                mCurrentAutoRefreshTask = null;
             }
         }
     }
     
     public void setPixelPerfectAutoRefreshInterval(int value) {
-        synchronized (pixelPerfectRefreshTimer) {
-            if (pixelPerfectAutoRefreshInterval == value) {
+        synchronized (mPixelPerfectRefreshTimer) {
+            if (mPixelPerfectAutoRefreshInterval == value) {
                 return;
             }
-            pixelPerfectAutoRefreshInterval = value;
-            if (autoRefresh) {
-                currentAutoRefreshTask.cancel();
+            mPixelPerfectAutoRefreshInterval = value;
+            if (mAutoRefresh) {
+                mCurrentAutoRefreshTask.cancel();
                 long timeLeft =
-                        Math.max(0, pixelPerfectAutoRefreshInterval
+                        Math.max(0, mPixelPerfectAutoRefreshInterval
                                 * 1000
-                                - (System.currentTimeMillis() - currentAutoRefreshTask
+                                - (System.currentTimeMillis() - mCurrentAutoRefreshTask
                                         .scheduledExecutionTime()));
-                currentAutoRefreshTask = new PixelPerfectAutoRefreshTask();
-                pixelPerfectRefreshTimer.schedule(currentAutoRefreshTask, timeLeft,
-                        pixelPerfectAutoRefreshInterval * 1000);
+                mCurrentAutoRefreshTask = new PixelPerfectAutoRefreshTask();
+                mPixelPerfectRefreshTimer.schedule(mCurrentAutoRefreshTask, timeLeft,
+                        mPixelPerfectAutoRefreshInterval * 1000);
             }
         }
     }
 
     public int getPixelPerfectAutoRefreshInverval() {
-        return pixelPerfectAutoRefreshInterval;
+        return mPixelPerfectAutoRefreshInterval;
     }
 }

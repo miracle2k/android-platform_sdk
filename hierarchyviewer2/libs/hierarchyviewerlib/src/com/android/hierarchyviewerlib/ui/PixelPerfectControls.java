@@ -18,7 +18,7 @@ package com.android.hierarchyviewerlib.ui;
 
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
-import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
+import com.android.hierarchyviewerlib.models.PixelPerfectModel.IImageChangeListener;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
@@ -34,13 +34,13 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Slider;
 
-public class PixelPerfectControls extends Composite implements ImageChangeListener {
+public class PixelPerfectControls extends Composite implements IImageChangeListener {
 
-    private Slider overlaySlider;
+    private Slider mOverlaySlider;
 
-    private Slider zoomSlider;
+    private Slider mZoomSlider;
 
-    private Slider autoRefreshSlider;
+    private Slider mAutoRefreshSlider;
 
     public PixelPerfectControls(Composite parent) {
         super(parent, SWT.NONE);
@@ -114,56 +114,56 @@ public class PixelPerfectControls extends Composite implements ImageChangeListen
         zoomLeftData.left = new FormAttachment(zoom, 2);
         zoomLeft.setLayoutData(zoomLeftData);
 
-        overlaySlider = new Slider(this, SWT.HORIZONTAL);
-        overlaySlider.setMinimum(0);
-        overlaySlider.setMaximum(101);
-        overlaySlider.setThumb(1);
-        overlaySlider.setSelection((int) Math.round(PixelPerfectModel.getModel()
+        mOverlaySlider = new Slider(this, SWT.HORIZONTAL);
+        mOverlaySlider.setMinimum(0);
+        mOverlaySlider.setMaximum(101);
+        mOverlaySlider.setThumb(1);
+        mOverlaySlider.setSelection((int) Math.round(PixelPerfectModel.getModel()
                 .getOverlayTransparency() * 100));
 
         Image overlayImage = PixelPerfectModel.getModel().getOverlayImage();
-        overlaySlider.setEnabled(overlayImage != null);
+        mOverlaySlider.setEnabled(overlayImage != null);
         FormData overlaySliderData = new FormData();
         overlaySliderData.right = new FormAttachment(overlayTransparencyRight, -4);
         overlaySliderData.top = new FormAttachment(0, 2);
         overlaySliderData.left = new FormAttachment(overlayTransparencyLeft, 4);
-        overlaySlider.setLayoutData(overlaySliderData);
+        mOverlaySlider.setLayoutData(overlaySliderData);
 
-        overlaySlider.addSelectionListener(overlaySliderSelectionListener);
+        mOverlaySlider.addSelectionListener(overlaySliderSelectionListener);
 
-        autoRefreshSlider = new Slider(this, SWT.HORIZONTAL);
-        autoRefreshSlider.setMinimum(1);
-        autoRefreshSlider.setMaximum(41);
-        autoRefreshSlider.setThumb(1);
-        autoRefreshSlider.setSelection(HierarchyViewerDirector.getDirector()
+        mAutoRefreshSlider = new Slider(this, SWT.HORIZONTAL);
+        mAutoRefreshSlider.setMinimum(1);
+        mAutoRefreshSlider.setMaximum(41);
+        mAutoRefreshSlider.setThumb(1);
+        mAutoRefreshSlider.setSelection(HierarchyViewerDirector.getDirector()
                 .getPixelPerfectAutoRefreshInverval());
         FormData refreshSliderData = new FormData();
         refreshSliderData.right = new FormAttachment(overlayTransparencyRight, -4);
         refreshSliderData.top = new FormAttachment(overlayTransparencyRight, 2);
-        refreshSliderData.left = new FormAttachment(overlaySlider, 0, SWT.LEFT);
-        autoRefreshSlider.setLayoutData(refreshSliderData);
+        refreshSliderData.left = new FormAttachment(mOverlaySlider, 0, SWT.LEFT);
+        mAutoRefreshSlider.setLayoutData(refreshSliderData);
 
-        autoRefreshSlider.addSelectionListener(refreshSliderSelectionListener);
+        mAutoRefreshSlider.addSelectionListener(mRefreshSliderSelectionListener);
 
-        zoomSlider = new Slider(this, SWT.HORIZONTAL);
-        zoomSlider.setMinimum(2);
-        zoomSlider.setMaximum(25);
-        zoomSlider.setThumb(1);
-        zoomSlider.setSelection(PixelPerfectModel.getModel().getZoom());
+        mZoomSlider = new Slider(this, SWT.HORIZONTAL);
+        mZoomSlider.setMinimum(2);
+        mZoomSlider.setMaximum(25);
+        mZoomSlider.setThumb(1);
+        mZoomSlider.setSelection(PixelPerfectModel.getModel().getZoom());
         FormData zoomSliderData = new FormData();
         zoomSliderData.right = new FormAttachment(overlayTransparencyRight, -4);
         zoomSliderData.top = new FormAttachment(refreshRight, 2);
-        zoomSliderData.left = new FormAttachment(overlaySlider, 0, SWT.LEFT);
-        zoomSlider.setLayoutData(zoomSliderData);
+        zoomSliderData.left = new FormAttachment(mOverlaySlider, 0, SWT.LEFT);
+        mZoomSlider.setLayoutData(zoomSliderData);
 
-        zoomSlider.addSelectionListener(zoomSliderSelectionListener);
+        mZoomSlider.addSelectionListener(mZoomSliderSelectionListener);
 
-        addDisposeListener(disposeListener);
+        addDisposeListener(mDisposeListener);
 
         PixelPerfectModel.getModel().addImageChangeListener(this);
     }
 
-    private DisposeListener disposeListener = new DisposeListener() {
+    private DisposeListener mDisposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
             PixelPerfectModel.getModel().removeImageChangeListener(PixelPerfectControls.this);
         }
@@ -177,7 +177,7 @@ public class PixelPerfectControls extends Composite implements ImageChangeListen
         }
 
         public void widgetSelected(SelectionEvent e) {
-            int newValue = overlaySlider.getSelection();
+            int newValue = mOverlaySlider.getSelection();
             if (oldValue != newValue) {
                 PixelPerfectModel.getModel().removeImageChangeListener(PixelPerfectControls.this);
                 PixelPerfectModel.getModel().setOverlayTransparency(newValue / 100.0);
@@ -187,7 +187,7 @@ public class PixelPerfectControls extends Composite implements ImageChangeListen
         }
     };
 
-    private SelectionListener refreshSliderSelectionListener = new SelectionListener() {
+    private SelectionListener mRefreshSliderSelectionListener = new SelectionListener() {
         private int oldValue;
 
         public void widgetDefaultSelected(SelectionEvent e) {
@@ -195,14 +195,14 @@ public class PixelPerfectControls extends Composite implements ImageChangeListen
         }
 
         public void widgetSelected(SelectionEvent e) {
-            int newValue = autoRefreshSlider.getSelection();
+            int newValue = mAutoRefreshSlider.getSelection();
             if (oldValue != newValue) {
                 HierarchyViewerDirector.getDirector().setPixelPerfectAutoRefreshInterval(newValue);
             }
         }
     };
 
-    private SelectionListener zoomSliderSelectionListener = new SelectionListener() {
+    private SelectionListener mZoomSliderSelectionListener = new SelectionListener() {
         private int oldValue;
 
         public void widgetDefaultSelected(SelectionEvent e) {
@@ -210,7 +210,7 @@ public class PixelPerfectControls extends Composite implements ImageChangeListen
         }
 
         public void widgetSelected(SelectionEvent e) {
-            int newValue = zoomSlider.getSelection();
+            int newValue = mZoomSlider.getSelection();
             if (oldValue != newValue) {
                 PixelPerfectModel.getModel().removeImageChangeListener(PixelPerfectControls.this);
                 PixelPerfectModel.getModel().setZoom(newValue);
@@ -236,10 +236,10 @@ public class PixelPerfectControls extends Composite implements ImageChangeListen
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 Image overlayImage = PixelPerfectModel.getModel().getOverlayImage();
-                overlaySlider.setEnabled(overlayImage != null);
+                mOverlaySlider.setEnabled(overlayImage != null);
                 if (PixelPerfectModel.getModel().getImage() == null) {
                 } else {
-                    zoomSlider.setSelection(PixelPerfectModel.getModel().getZoom());
+                    mZoomSlider.setSelection(PixelPerfectModel.getModel().getZoom());
                 }
             }
         });
@@ -249,7 +249,7 @@ public class PixelPerfectControls extends Composite implements ImageChangeListen
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 Image overlayImage = PixelPerfectModel.getModel().getOverlayImage();
-                overlaySlider.setEnabled(overlayImage != null);
+                mOverlaySlider.setEnabled(overlayImage != null);
             }
         });
     }
@@ -257,7 +257,7 @@ public class PixelPerfectControls extends Composite implements ImageChangeListen
     public void overlayTransparencyChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                overlaySlider.setSelection((int) (PixelPerfectModel.getModel()
+                mOverlaySlider.setSelection((int) (PixelPerfectModel.getModel()
                         .getOverlayTransparency() * 100));
             }
         });
@@ -270,7 +270,7 @@ public class PixelPerfectControls extends Composite implements ImageChangeListen
     public void zoomChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                zoomSlider.setSelection(PixelPerfectModel.getModel().getZoom());
+                mZoomSlider.setSelection(PixelPerfectModel.getModel().getZoom());
             }
         });
     }

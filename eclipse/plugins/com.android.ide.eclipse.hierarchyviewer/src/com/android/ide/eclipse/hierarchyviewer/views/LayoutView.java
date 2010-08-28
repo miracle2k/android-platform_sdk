@@ -36,68 +36,68 @@ import org.eclipse.ui.part.ViewPart;
 
 public class LayoutView extends ViewPart implements TreeChangeListener {
 
-    public static final String ID = "com.android.ide.eclipse.hierarchyviewer.views.LayoutView";
+    public static final String ID = "com.android.ide.eclipse.hierarchyviewer.views.LayoutView"; //$NON-NLS-1$
 
-    private LayoutViewer layoutViewer;
+    private LayoutViewer mLayoutViewer;
 
-    private Image onBlack;
+    private Image mOnBlack;
 
-    private Image onWhite;
+    private Image mOnWhite;
 
-    private Action showExtrasAction = new Action("Show &Extras", Action.AS_CHECK_BOX) {
+    private Action mShowExtrasAction = new Action("Show &Extras", Action.AS_CHECK_BOX) {
         @Override
         public void run() {
-            layoutViewer.setShowExtras(isChecked());
+            mLayoutViewer.setShowExtras(isChecked());
         }
     };
 
-    private Action loadAllViewsAction = new Action("Load All &Views") {
+    private Action mLoadAllViewsAction = new Action("Load All &Views") {
         @Override
         public void run() {
             HierarchyViewerDirector.getDirector().loadAllViews();
-            showExtrasAction.setChecked(true);
-            layoutViewer.setShowExtras(true);
+            mShowExtrasAction.setChecked(true);
+            mLayoutViewer.setShowExtras(true);
         }
     };
 
-    private Action onBlackWhiteAction = new Action("Change Background &Color") {
+    private Action mOnBlackWhiteAction = new Action("Change Background &Color") {
         @Override
         public void run() {
-            boolean newValue = !layoutViewer.getOnBlack();
-            layoutViewer.setOnBlack(newValue);
+            boolean newValue = !mLayoutViewer.getOnBlack();
+            mLayoutViewer.setOnBlack(newValue);
             if (newValue) {
-                setImageDescriptor(ImageDescriptor.createFromImage(onWhite));
+                setImageDescriptor(ImageDescriptor.createFromImage(mOnWhite));
             } else {
-                setImageDescriptor(ImageDescriptor.createFromImage(onBlack));
+                setImageDescriptor(ImageDescriptor.createFromImage(mOnBlack));
             }
         }
     };
 
     @Override
     public void createPartControl(Composite parent) {
-        showExtrasAction.setAccelerator(SWT.MOD1 + 'E');
+        mShowExtrasAction.setAccelerator(SWT.MOD1 + 'E');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        Image image = imageLoader.loadImage("show-extras.png", Display.getDefault());
-        showExtrasAction.setImageDescriptor(ImageDescriptor.createFromImage(image));
-        showExtrasAction.setToolTipText("Show images");
-        showExtrasAction.setEnabled(TreeViewModel.getModel().getTree() != null);
+        Image image = imageLoader.loadImage("show-extras.png", Display.getDefault()); //$NON-NLS-1$
+        mShowExtrasAction.setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mShowExtrasAction.setToolTipText("Show images");
+        mShowExtrasAction.setEnabled(TreeViewModel.getModel().getTree() != null);
 
-        onWhite = imageLoader.loadImage("on-white.png", Display.getDefault());
-        onBlack = imageLoader.loadImage("on-black.png", Display.getDefault());
+        mOnWhite = imageLoader.loadImage("on-white.png", Display.getDefault()); //$NON-NLS-1$
+        mOnBlack = imageLoader.loadImage("on-black.png", Display.getDefault()); //$NON-NLS-1$
 
-        onBlackWhiteAction.setAccelerator(SWT.MOD1 + 'C');
-        onBlackWhiteAction.setImageDescriptor(ImageDescriptor.createFromImage(onWhite));
-        onBlackWhiteAction.setToolTipText("Change layout viewer background color");
+        mOnBlackWhiteAction.setAccelerator(SWT.MOD1 + 'C');
+        mOnBlackWhiteAction.setImageDescriptor(ImageDescriptor.createFromImage(mOnWhite));
+        mOnBlackWhiteAction.setToolTipText("Change layout viewer background color");
 
-        loadAllViewsAction.setAccelerator(SWT.MOD1 + 'V');
-        image = imageLoader.loadImage("load-all-views.png", Display.getDefault());
-        loadAllViewsAction.setImageDescriptor(ImageDescriptor.createFromImage(image));
-        loadAllViewsAction.setToolTipText("Load all view images");
-        loadAllViewsAction.setEnabled(TreeViewModel.getModel().getTree() != null);
+        mLoadAllViewsAction.setAccelerator(SWT.MOD1 + 'V');
+        image = imageLoader.loadImage("load-all-views.png", Display.getDefault()); //$NON-NLS-1$
+        mLoadAllViewsAction.setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mLoadAllViewsAction.setToolTipText("Load all view images");
+        mLoadAllViewsAction.setEnabled(TreeViewModel.getModel().getTree() != null);
 
         parent.setLayout(new FillLayout());
 
-        layoutViewer = new LayoutViewer(parent);
+        mLayoutViewer = new LayoutViewer(parent);
 
         placeActions();
 
@@ -109,15 +109,15 @@ public class LayoutView extends ViewPart implements TreeChangeListener {
 
         IMenuManager mm = actionBars.getMenuManager();
         mm.removeAll();
-        mm.add(onBlackWhiteAction);
-        mm.add(showExtrasAction);
-        mm.add(loadAllViewsAction);
+        mm.add(mOnBlackWhiteAction);
+        mm.add(mShowExtrasAction);
+        mm.add(mLoadAllViewsAction);
 
         IToolBarManager tm = actionBars.getToolBarManager();
         tm.removeAll();
-        tm.add(onBlackWhiteAction);
-        tm.add(showExtrasAction);
-        tm.add(loadAllViewsAction);
+        tm.add(mOnBlackWhiteAction);
+        tm.add(mShowExtrasAction);
+        tm.add(mLoadAllViewsAction);
     }
 
     @Override
@@ -128,7 +128,7 @@ public class LayoutView extends ViewPart implements TreeChangeListener {
 
     @Override
     public void setFocus() {
-        layoutViewer.setFocus();
+        mLayoutViewer.setFocus();
     }
 
     public void selectionChanged() {
@@ -138,8 +138,8 @@ public class LayoutView extends ViewPart implements TreeChangeListener {
     public void treeChanged() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                loadAllViewsAction.setEnabled(TreeViewModel.getModel().getTree() != null);
-                showExtrasAction.setEnabled(TreeViewModel.getModel().getTree() != null);
+                mLoadAllViewsAction.setEnabled(TreeViewModel.getModel().getTree() != null);
+                mShowExtrasAction.setEnabled(TreeViewModel.getModel().getTree() != null);
             }
         });
     }

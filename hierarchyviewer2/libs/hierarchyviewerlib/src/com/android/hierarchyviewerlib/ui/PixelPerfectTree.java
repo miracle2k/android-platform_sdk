@@ -19,7 +19,7 @@ package com.android.hierarchyviewerlib.ui;
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.device.ViewNode;
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
-import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
+import com.android.hierarchyviewerlib.models.PixelPerfectModel.IImageChangeListener;
 
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
@@ -40,17 +40,17 @@ import org.eclipse.swt.widgets.Tree;
 
 import java.util.List;
 
-public class PixelPerfectTree extends Composite implements ImageChangeListener, SelectionListener {
+public class PixelPerfectTree extends Composite implements IImageChangeListener, SelectionListener {
 
-    private TreeViewer treeViewer;
+    private TreeViewer mTreeViewer;
 
-    private Tree tree;
+    private Tree mTree;
 
-    private PixelPerfectModel model;
+    private PixelPerfectModel mModel;
 
-    private Image folderImage;
+    private Image mFolderImage;
 
-    private Image fileImage;
+    private Image mFileImage;
 
     private class ContentProvider implements ITreeContentProvider, ILabelProvider {
         public Object[] getChildren(Object element) {
@@ -99,9 +99,9 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
         public Image getImage(Object element) {
             if (element instanceof ViewNode) {
                 if (hasChildren(element)) {
-                    return folderImage;
+                    return mFolderImage;
                 }
-                return fileImage;
+                return mFileImage;
             }
             return null;
         }
@@ -130,47 +130,47 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
     public PixelPerfectTree(Composite parent) {
         super(parent, SWT.NONE);
         setLayout(new FillLayout());
-        treeViewer = new TreeViewer(this, SWT.SINGLE);
-        treeViewer.setAutoExpandLevel(TreeViewer.ALL_LEVELS);
+        mTreeViewer = new TreeViewer(this, SWT.SINGLE);
+        mTreeViewer.setAutoExpandLevel(TreeViewer.ALL_LEVELS);
 
-        tree = treeViewer.getTree();
-        tree.addSelectionListener(this);
+        mTree = mTreeViewer.getTree();
+        mTree.addSelectionListener(this);
 
         loadResources();
 
-        addDisposeListener(disposeListener);
+        addDisposeListener(mDisposeListener);
 
-        model = PixelPerfectModel.getModel();
+        mModel = PixelPerfectModel.getModel();
         ContentProvider contentProvider = new ContentProvider();
-        treeViewer.setContentProvider(contentProvider);
-        treeViewer.setLabelProvider(contentProvider);
-        treeViewer.setInput(model);
-        model.addImageChangeListener(this);
+        mTreeViewer.setContentProvider(contentProvider);
+        mTreeViewer.setLabelProvider(contentProvider);
+        mTreeViewer.setInput(mModel);
+        mModel.addImageChangeListener(this);
 
     }
 
     private void loadResources() {
         ImageLoader loader = ImageLoader.getDdmUiLibLoader();
-        fileImage = loader.loadImage("file.png", Display.getDefault());
-        folderImage = loader.loadImage("folder.png", Display.getDefault());
+        mFileImage = loader.loadImage("file.png", Display.getDefault());
+        mFolderImage = loader.loadImage("folder.png", Display.getDefault());
     }
 
-    private DisposeListener disposeListener = new DisposeListener() {
+    private DisposeListener mDisposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
-            model.removeImageChangeListener(PixelPerfectTree.this);
+            mModel.removeImageChangeListener(PixelPerfectTree.this);
         }
     };
 
     @Override
     public boolean setFocus() {
-        return tree.setFocus();
+        return mTree.setFocus();
     }
 
     public void imageLoaded() {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
-                treeViewer.refresh();
-                treeViewer.expandAll();
+                mTreeViewer.refresh();
+                mTreeViewer.expandAll();
             }
         });
     }
@@ -197,10 +197,10 @@ public class PixelPerfectTree extends Composite implements ImageChangeListener, 
 
     public void widgetSelected(SelectionEvent e) {
         // To combat phantom selection...
-        if (((TreeSelection) treeViewer.getSelection()).isEmpty()) {
-            model.setSelected(null);
+        if (((TreeSelection) mTreeViewer.getSelection()).isEmpty()) {
+            mModel.setSelected(null);
         } else {
-            model.setSelected((ViewNode) e.item.getData());
+            mModel.setSelected((ViewNode) e.item.getData());
         }
     }
 

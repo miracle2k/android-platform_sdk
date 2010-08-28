@@ -29,58 +29,58 @@ public class TreeViewModel {
 
     public static final double MIN_ZOOM = 0.2;
 
-    private Window window;
+    private Window mWindow;
 
-    private DrawableViewNode tree;
+    private DrawableViewNode mTree;
 
-    private DrawableViewNode selectedNode;
+    private DrawableViewNode mSelectedNode;
 
-    private Rectangle viewport;
+    private Rectangle mViewport;
 
-    private double zoom;
+    private double mZoom;
 
-    private final ArrayList<TreeChangeListener> treeChangeListeners =
-            new ArrayList<TreeChangeListener>();
+    private final ArrayList<ITreeChangeListener> mTreeChangeListeners =
+            new ArrayList<ITreeChangeListener>();
 
-    private static TreeViewModel model;
+    private static TreeViewModel sModel;
 
     public static TreeViewModel getModel() {
-        if (model == null) {
-            model = new TreeViewModel();
+        if (sModel == null) {
+            sModel = new TreeViewModel();
         }
-        return model;
+        return sModel;
     }
 
     public void setData(Window window, ViewNode viewNode) {
         synchronized (this) {
-            if (tree != null) {
-                tree.viewNode.dispose();
+            if (mTree != null) {
+                mTree.viewNode.dispose();
             }
-            this.window = window;
+            this.mWindow = window;
             if (viewNode == null) {
-                tree = null;
+                mTree = null;
             } else {
-                tree = new DrawableViewNode(viewNode);
-                tree.setLeft();
-                tree.placeRoot();
+                mTree = new DrawableViewNode(viewNode);
+                mTree.setLeft();
+                mTree.placeRoot();
             }
-            viewport = null;
-            zoom = 1;
-            selectedNode = null;
+            mViewport = null;
+            mZoom = 1;
+            mSelectedNode = null;
         }
         notifyTreeChanged();
     }
 
     public void setSelection(DrawableViewNode selectedNode) {
         synchronized (this) {
-            this.selectedNode = selectedNode;
+            this.mSelectedNode = selectedNode;
         }
         notifySelectionChanged();
     }
 
     public void setViewport(Rectangle viewport) {
         synchronized (this) {
-            this.viewport = viewport;
+            this.mViewport = viewport;
         }
         notifyViewportChanged();
     }
@@ -88,9 +88,9 @@ public class TreeViewModel {
     public void setZoom(double newZoom) {
         Point zoomPoint = null;
         synchronized (this) {
-            if (tree != null && viewport != null) {
+            if (mTree != null && mViewport != null) {
                 zoomPoint =
-                        new Point(viewport.x + viewport.width / 2, viewport.y + viewport.height / 2);
+                        new Point(mViewport.x + mViewport.width / 2, mViewport.y + mViewport.height / 2);
             }
         }
         zoomOnPoint(newZoom, zoomPoint);
@@ -98,18 +98,18 @@ public class TreeViewModel {
 
     public void zoomOnPoint(double newZoom, Point zoomPoint) {
         synchronized (this) {
-            if (tree != null && this.viewport != null) {
+            if (mTree != null && this.mViewport != null) {
                 if (newZoom < MIN_ZOOM) {
                     newZoom = MIN_ZOOM;
                 }
                 if (newZoom > MAX_ZOOM) {
                     newZoom = MAX_ZOOM;
                 }
-                viewport.x = zoomPoint.x - (zoomPoint.x - viewport.x) * zoom / newZoom;
-                viewport.y = zoomPoint.y - (zoomPoint.y - viewport.y) * zoom / newZoom;
-                viewport.width = viewport.width * zoom / newZoom;
-                viewport.height = viewport.height * zoom / newZoom;
-                zoom = newZoom;
+                mViewport.x = zoomPoint.x - (zoomPoint.x - mViewport.x) * mZoom / newZoom;
+                mViewport.y = zoomPoint.y - (zoomPoint.y - mViewport.y) * mZoom / newZoom;
+                mViewport.width = mViewport.width * mZoom / newZoom;
+                mViewport.height = mViewport.height * mZoom / newZoom;
+                mZoom = newZoom;
             }
         }
         notifyZoomChanged();
@@ -117,35 +117,35 @@ public class TreeViewModel {
 
     public DrawableViewNode getTree() {
         synchronized (this) {
-            return tree;
+            return mTree;
         }
     }
 
     public Window getWindow() {
         synchronized (this) {
-            return window;
+            return mWindow;
         }
     }
 
     public Rectangle getViewport() {
         synchronized (this) {
-            return viewport;
+            return mViewport;
         }
     }
 
     public double getZoom() {
         synchronized (this) {
-            return zoom;
+            return mZoom;
         }
     }
 
     public DrawableViewNode getSelection() {
         synchronized (this) {
-            return selectedNode;
+            return mSelectedNode;
         }
     }
 
-    public static interface TreeChangeListener {
+    public static interface ITreeChangeListener {
         public void treeChanged();
 
         public void selectionChanged();
@@ -155,20 +155,20 @@ public class TreeViewModel {
         public void zoomChanged();
     }
 
-    private TreeChangeListener[] getTreeChangeListenerList() {
-        TreeChangeListener[] listeners = null;
-        synchronized (treeChangeListeners) {
-            if (treeChangeListeners.size() == 0) {
+    private ITreeChangeListener[] getTreeChangeListenerList() {
+        ITreeChangeListener[] listeners = null;
+        synchronized (mTreeChangeListeners) {
+            if (mTreeChangeListeners.size() == 0) {
                 return null;
             }
             listeners =
-                    treeChangeListeners.toArray(new TreeChangeListener[treeChangeListeners.size()]);
+                    mTreeChangeListeners.toArray(new ITreeChangeListener[mTreeChangeListeners.size()]);
         }
         return listeners;
     }
 
     public void notifyTreeChanged() {
-        TreeChangeListener[] listeners = getTreeChangeListenerList();
+        ITreeChangeListener[] listeners = getTreeChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].treeChanged();
@@ -177,7 +177,7 @@ public class TreeViewModel {
     }
 
     public void notifySelectionChanged() {
-        TreeChangeListener[] listeners = getTreeChangeListenerList();
+        ITreeChangeListener[] listeners = getTreeChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].selectionChanged();
@@ -186,7 +186,7 @@ public class TreeViewModel {
     }
 
     public void notifyViewportChanged() {
-        TreeChangeListener[] listeners = getTreeChangeListenerList();
+        ITreeChangeListener[] listeners = getTreeChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].viewportChanged();
@@ -195,7 +195,7 @@ public class TreeViewModel {
     }
 
     public void notifyZoomChanged() {
-        TreeChangeListener[] listeners = getTreeChangeListenerList();
+        ITreeChangeListener[] listeners = getTreeChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].zoomChanged();
@@ -203,15 +203,15 @@ public class TreeViewModel {
         }
     }
 
-    public void addTreeChangeListener(TreeChangeListener listener) {
-        synchronized (treeChangeListeners) {
-            treeChangeListeners.add(listener);
+    public void addTreeChangeListener(ITreeChangeListener listener) {
+        synchronized (mTreeChangeListeners) {
+            mTreeChangeListeners.add(listener);
         }
     }
 
-    public void removeTreeChangeListener(TreeChangeListener listener) {
-        synchronized (treeChangeListeners) {
-            treeChangeListeners.remove(listener);
+    public void removeTreeChangeListener(ITreeChangeListener listener) {
+        synchronized (mTreeChangeListeners) {
+            mTreeChangeListeners.remove(listener);
         }
     }
 }

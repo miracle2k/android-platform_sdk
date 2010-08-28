@@ -48,11 +48,11 @@ public class HierarchyViewerPluginDirector extends HierarchyViewerDirector {
             }
         };
         job.setPriority(Job.SHORT);
-        job.setRule(schedulingRule);
+        job.setRule(mSchedulingRule);
         job.schedule();
     }
 
-    private ISchedulingRule schedulingRule = new ISchedulingRule() {
+    private ISchedulingRule mSchedulingRule = new ISchedulingRule() {
         public boolean contains(ISchedulingRule rule) {
             return rule == this;
         }

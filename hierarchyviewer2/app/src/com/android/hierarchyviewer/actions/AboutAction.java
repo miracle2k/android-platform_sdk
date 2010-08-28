@@ -30,35 +30,35 @@ import org.eclipse.swt.widgets.Shell;
 
 public class AboutAction extends Action implements ImageAction {
 
-    private static AboutAction action;
+    private static AboutAction sAction;
 
-    private Image image;
+    private Image mImage;
 
-    private Shell shell;
+    private Shell mShell;
 
     private AboutAction(Shell shell) {
         super("&About");
-        this.shell = shell;
+        this.mShell = shell;
         setAccelerator(SWT.MOD1 + 'A');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("about-small.jpg", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("about-small.jpg", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Shows the about dialog");
     }
 
     public static AboutAction getAction(Shell shell) {
-        if (action == null) {
-            action = new AboutAction(shell);
+        if (sAction == null) {
+            sAction = new AboutAction(shell);
         }
-        return action;
+        return sAction;
     }
 
     @Override
     public void run() {
-        new AboutDialog(shell).open();
+        new AboutDialog(mShell).open();
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

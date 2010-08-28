@@ -26,24 +26,24 @@ import org.eclipse.swt.widgets.Display;
 
 public class RequestLayoutAction extends SelectedNodeEnabledAction implements ImageAction {
 
-    private static RequestLayoutAction action;
+    private static RequestLayoutAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private RequestLayoutAction() {
         super("Request &Layout");
         setAccelerator(SWT.MOD1 + 'L');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("request-layout.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("request-layout.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Request the view to lay out");
     }
 
     public static RequestLayoutAction getAction() {
-        if (action == null) {
-            action = new RequestLayoutAction();
+        if (sAction == null) {
+            sAction = new RequestLayoutAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
@@ -52,6 +52,6 @@ public class RequestLayoutAction extends SelectedNodeEnabledAction implements Im
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

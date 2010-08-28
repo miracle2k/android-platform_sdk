@@ -39,9 +39,9 @@ import org.eclipse.ui.part.ViewPart;
 // Awesome name.
 public class TreeViewView extends ViewPart {
 
-    public static final String ID = "com.android.ide.eclipse.hierarchyviewer.views.TreeViewView";
+    public static final String ID = "com.android.ide.eclipse.hierarchyviewer.views.TreeViewView"; //$NON-NLS-1$
 
-    private TreeView treeView;
+    private TreeView mTreeView;
 
     @Override
     public void createPartControl(Composite parent) {
@@ -54,7 +54,7 @@ public class TreeViewView extends ViewPart {
         treeViewContainer.setLayoutData(new GridData(GridData.FILL_BOTH));
         treeViewContainer.setLayout(new FillLayout());
 
-        treeView = new TreeView(treeViewContainer);
+        mTreeView = new TreeView(treeViewContainer);
 
         TreeViewControls treeViewControls = new TreeViewControls(parent);
         treeViewControls.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -91,7 +91,7 @@ public class TreeViewView extends ViewPart {
 
     @Override
     public void setFocus() {
-        treeView.setFocus();
+        mTreeView.setFocus();
     }
 
 }

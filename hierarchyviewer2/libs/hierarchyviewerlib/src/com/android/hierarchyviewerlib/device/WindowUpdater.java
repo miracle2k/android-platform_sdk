@@ -29,10 +29,10 @@ import java.util.HashMap;
  * It notifies all it's listeners of changes.
  */
 public class WindowUpdater {
-    private static HashMap<IDevice, ArrayList<IWindowChangeListener>> windowChangeListeners =
+    private static HashMap<IDevice, ArrayList<IWindowChangeListener>> sWindowChangeListeners =
             new HashMap<IDevice, ArrayList<IWindowChangeListener>>();
 
-    private static HashMap<IDevice, Thread> listeningThreads = new HashMap<IDevice, Thread>();
+    private static HashMap<IDevice, Thread> sListeningThreads = new HashMap<IDevice, Thread>();
 
     public static interface IWindowChangeListener {
         public void windowsChanged(IDevice device);
@@ -41,58 +41,58 @@ public class WindowUpdater {
     }
 
     public static void terminate() {
-        synchronized (listeningThreads) {
-            for (IDevice device : listeningThreads.keySet()) {
-                listeningThreads.get(device).interrupt();
+        synchronized (sListeningThreads) {
+            for (IDevice device : sListeningThreads.keySet()) {
+                sListeningThreads.get(device).interrupt();
 
             }
         }
     }
 
     public static void startListenForWindowChanges(IWindowChangeListener listener, IDevice device) {
-        synchronized (windowChangeListeners) {
+        synchronized (sWindowChangeListeners) {
             // In this case, a listening thread already exists, so we don't need
             // to create another one.
-            if (windowChangeListeners.containsKey(device)) {
-                windowChangeListeners.get(device).add(listener);
+            if (sWindowChangeListeners.containsKey(device)) {
+                sWindowChangeListeners.get(device).add(listener);
                 return;
             }
             ArrayList<IWindowChangeListener> listeners = new ArrayList<IWindowChangeListener>();
             listeners.add(listener);
-            windowChangeListeners.put(device, listeners);
+            sWindowChangeListeners.put(device, listeners);
         }
         // Start listening
         Thread listeningThread = new Thread(new WindowChangeMonitor(device));
-        synchronized (listeningThreads) {
-            listeningThreads.put(device, listeningThread);
+        synchronized (sListeningThreads) {
+            sListeningThreads.put(device, listeningThread);
         }
         listeningThread.start();
     }
 
     public static void stopListenForWindowChanges(IWindowChangeListener listener, IDevice device) {
-        synchronized (windowChangeListeners) {
-            ArrayList<IWindowChangeListener> listeners = windowChangeListeners.get(device);
+        synchronized (sWindowChangeListeners) {
+            ArrayList<IWindowChangeListener> listeners = sWindowChangeListeners.get(device);
             listeners.remove(listener);
             // There are more listeners, so don't stop the listening thread.
             if (listeners.size() != 0) {
                 return;
             }
-            windowChangeListeners.remove(device);
+            sWindowChangeListeners.remove(device);
         }
         // Everybody left, so the party's over!
         Thread listeningThread;
-        synchronized (listeningThreads) {
-            listeningThread = listeningThreads.get(device);
-            listeningThreads.remove(device);
+        synchronized (sListeningThreads) {
+            listeningThread = sListeningThreads.get(device);
+            sListeningThreads.remove(device);
         }
         listeningThread.interrupt();
     }
 
     private static IWindowChangeListener[] getWindowChangeListenersAsArray(IDevice device) {
         IWindowChangeListener[] listeners;
-        synchronized (windowChangeListeners) {
+        synchronized (sWindowChangeListeners) {
             ArrayList<IWindowChangeListener> windowChangeListenerList =
-                    windowChangeListeners.get(device);
+                    sWindowChangeListeners.get(device);
             if (windowChangeListenerList == null) {
                 return null;
             }

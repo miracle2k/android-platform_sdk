@@ -35,52 +35,52 @@ public class PixelPerfectModel {
 
     public static final int DEFAULT_OVERLAY_TRANSPARENCY_PERCENTAGE = 50;
 
-    private IDevice device;
+    private IDevice mDevice;
 
-    private Image image;
+    private Image mImage;
 
-    private Point crosshairLocation;
+    private Point mCrosshairLocation;
 
-    private ViewNode viewNode;
+    private ViewNode mViewNode;
 
-    private ViewNode selected;
+    private ViewNode mSelectedNode;
 
-    private int zoom;
+    private int mZoom;
 
-    private final ArrayList<ImageChangeListener> imageChangeListeners =
-            new ArrayList<ImageChangeListener>();
+    private final ArrayList<IImageChangeListener> mImageChangeListeners =
+            new ArrayList<IImageChangeListener>();
 
-    private Image overlayImage;
+    private Image mOverlayImage;
 
-    private double overlayTransparency = DEFAULT_OVERLAY_TRANSPARENCY_PERCENTAGE / 100.0;
+    private double mOverlayTransparency = DEFAULT_OVERLAY_TRANSPARENCY_PERCENTAGE / 100.0;
 
-    private static PixelPerfectModel model;
+    private static PixelPerfectModel sModel;
 
     public static PixelPerfectModel getModel() {
-        if (model == null) {
-            model = new PixelPerfectModel();
+        if (sModel == null) {
+            sModel = new PixelPerfectModel();
         }
-        return model;
+        return sModel;
     }
 
     public void setData(final IDevice device, final Image image, final ViewNode viewNode) {
-        final Image toDispose = this.image;
-        final Image toDispose2 = this.overlayImage;
+        final Image toDispose = this.mImage;
+        final Image toDispose2 = this.mOverlayImage;
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (PixelPerfectModel.this) {
-                    PixelPerfectModel.this.device = device;
-                    PixelPerfectModel.this.image = image;
-                    PixelPerfectModel.this.viewNode = viewNode;
+                    PixelPerfectModel.this.mDevice = device;
+                    PixelPerfectModel.this.mImage = image;
+                    PixelPerfectModel.this.mViewNode = viewNode;
                     if (image != null) {
-                        PixelPerfectModel.this.crosshairLocation =
+                        PixelPerfectModel.this.mCrosshairLocation =
                                 new Point(image.getBounds().width / 2, image.getBounds().height / 2);
                     } else {
-                        PixelPerfectModel.this.crosshairLocation = null;
+                        PixelPerfectModel.this.mCrosshairLocation = null;
                     }
-                    overlayImage = null;
-                    PixelPerfectModel.this.selected = null;
-                    zoom = DEFAULT_ZOOM;
+                    mOverlayImage = null;
+                    PixelPerfectModel.this.mSelectedNode = null;
+                    mZoom = DEFAULT_ZOOM;
                 }
             }
         });
@@ -104,14 +104,14 @@ public class PixelPerfectModel {
 
     public void setCrosshairLocation(int x, int y) {
         synchronized (this) {
-            crosshairLocation = new Point(x, y);
+            mCrosshairLocation = new Point(x, y);
         }
         notifyCrosshairMoved();
     }
 
     public void setSelected(ViewNode selected) {
         synchronized (this) {
-            this.selected = selected;
+            this.mSelectedNode = selected;
         }
         notifySelectionChanged();
     }
@@ -120,8 +120,8 @@ public class PixelPerfectModel {
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (PixelPerfectModel.this) {
-                    PixelPerfectModel.this.viewNode = viewNode;
-                    PixelPerfectModel.this.selected = null;
+                    PixelPerfectModel.this.mViewNode = viewNode;
+                    PixelPerfectModel.this.mSelectedNode = null;
                 }
             }
         });
@@ -129,11 +129,11 @@ public class PixelPerfectModel {
     }
 
     public void setImage(final Image image) {
-        final Image toDispose = this.image;
+        final Image toDispose = this.mImage;
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (PixelPerfectModel.this) {
-                    PixelPerfectModel.this.image = image;
+                    PixelPerfectModel.this.mImage = image;
                 }
             }
         });
@@ -155,17 +155,17 @@ public class PixelPerfectModel {
             if (newZoom > MAX_ZOOM) {
                 newZoom = MAX_ZOOM;
             }
-            zoom = newZoom;
+            mZoom = newZoom;
         }
         notifyZoomChanged();
     }
 
     public void setOverlayImage(final Image overlayImage) {
-        final Image toDispose = this.overlayImage;
+        final Image toDispose = this.mOverlayImage;
         Display.getDefault().syncExec(new Runnable() {
             public void run() {
                 synchronized (PixelPerfectModel.this) {
-                    PixelPerfectModel.this.overlayImage = overlayImage;
+                    PixelPerfectModel.this.mOverlayImage = overlayImage;
                 }
             }
         });
@@ -183,60 +183,60 @@ public class PixelPerfectModel {
         synchronized (this) {
             value = Math.max(value, 0);
             value = Math.min(value, 1);
-            overlayTransparency = value;
+            mOverlayTransparency = value;
         }
         notifyOverlayTransparencyChanged();
     }
 
     public ViewNode getViewNode() {
         synchronized (this) {
-            return viewNode;
+            return mViewNode;
         }
     }
 
     public Point getCrosshairLocation() {
         synchronized (this) {
-            return crosshairLocation;
+            return mCrosshairLocation;
         }
     }
 
     public Image getImage() {
         synchronized (this) {
-            return image;
+            return mImage;
         }
     }
 
     public ViewNode getSelected() {
         synchronized (this) {
-            return selected;
+            return mSelectedNode;
         }
     }
 
     public IDevice getDevice() {
         synchronized (this) {
-            return device;
+            return mDevice;
         }
     }
 
     public int getZoom() {
         synchronized (this) {
-            return zoom;
+            return mZoom;
         }
     }
 
     public Image getOverlayImage() {
         synchronized (this) {
-            return overlayImage;
+            return mOverlayImage;
         }
     }
 
     public double getOverlayTransparency() {
         synchronized (this) {
-            return overlayTransparency;
+            return mOverlayTransparency;
         }
     }
 
-    public static interface ImageChangeListener {
+    public static interface IImageChangeListener {
         public void imageLoaded();
 
         public void imageChanged();
@@ -254,21 +254,21 @@ public class PixelPerfectModel {
         public void overlayTransparencyChanged();
     }
 
-    private ImageChangeListener[] getImageChangeListenerList() {
-        ImageChangeListener[] listeners = null;
-        synchronized (imageChangeListeners) {
-            if (imageChangeListeners.size() == 0) {
+    private IImageChangeListener[] getImageChangeListenerList() {
+        IImageChangeListener[] listeners = null;
+        synchronized (mImageChangeListeners) {
+            if (mImageChangeListeners.size() == 0) {
                 return null;
             }
             listeners =
-                    imageChangeListeners.toArray(new ImageChangeListener[imageChangeListeners
+                    mImageChangeListeners.toArray(new IImageChangeListener[mImageChangeListeners
                             .size()]);
         }
         return listeners;
     }
 
     public void notifyImageLoaded() {
-        ImageChangeListener[] listeners = getImageChangeListenerList();
+        IImageChangeListener[] listeners = getImageChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].imageLoaded();
@@ -277,7 +277,7 @@ public class PixelPerfectModel {
     }
 
     public void notifyImageChanged() {
-        ImageChangeListener[] listeners = getImageChangeListenerList();
+        IImageChangeListener[] listeners = getImageChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].imageChanged();
@@ -286,7 +286,7 @@ public class PixelPerfectModel {
     }
 
     public void notifyCrosshairMoved() {
-        ImageChangeListener[] listeners = getImageChangeListenerList();
+        IImageChangeListener[] listeners = getImageChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].crosshairMoved();
@@ -295,7 +295,7 @@ public class PixelPerfectModel {
     }
 
     public void notifySelectionChanged() {
-        ImageChangeListener[] listeners = getImageChangeListenerList();
+        IImageChangeListener[] listeners = getImageChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].selectionChanged();
@@ -304,7 +304,7 @@ public class PixelPerfectModel {
     }
 
     public void notifyTreeChanged() {
-        ImageChangeListener[] listeners = getImageChangeListenerList();
+        IImageChangeListener[] listeners = getImageChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].treeChanged();
@@ -313,7 +313,7 @@ public class PixelPerfectModel {
     }
 
     public void notifyZoomChanged() {
-        ImageChangeListener[] listeners = getImageChangeListenerList();
+        IImageChangeListener[] listeners = getImageChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].zoomChanged();
@@ -322,7 +322,7 @@ public class PixelPerfectModel {
     }
 
     public void notifyOverlayChanged() {
-        ImageChangeListener[] listeners = getImageChangeListenerList();
+        IImageChangeListener[] listeners = getImageChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].overlayChanged();
@@ -331,7 +331,7 @@ public class PixelPerfectModel {
     }
 
     public void notifyOverlayTransparencyChanged() {
-        ImageChangeListener[] listeners = getImageChangeListenerList();
+        IImageChangeListener[] listeners = getImageChangeListenerList();
         if (listeners != null) {
             for (int i = 0; i < listeners.length; i++) {
                 listeners[i].overlayTransparencyChanged();
@@ -339,15 +339,15 @@ public class PixelPerfectModel {
         }
     }
 
-    public void addImageChangeListener(ImageChangeListener listener) {
-        synchronized (imageChangeListeners) {
-            imageChangeListeners.add(listener);
+    public void addImageChangeListener(IImageChangeListener listener) {
+        synchronized (mImageChangeListeners) {
+            mImageChangeListeners.add(listener);
         }
     }
 
-    public void removeImageChangeListener(ImageChangeListener listener) {
-        synchronized (imageChangeListeners) {
-            imageChangeListeners.remove(listener);
+    public void removeImageChangeListener(IImageChangeListener listener) {
+        synchronized (mImageChangeListeners) {
+            mImageChangeListeners.remove(listener);
         }
     }
 }

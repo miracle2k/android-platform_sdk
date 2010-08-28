@@ -160,7 +160,7 @@ public class PsdFile {
 
         static final short MODE_LAB = 9;
 
-        final byte[] mSignature = "8BPS".getBytes();
+        final byte[] mSignature = "8BPS".getBytes(); //$NON-NLS-1$
 
         final short mVersion = 1;
 
@@ -214,7 +214,7 @@ public class PsdFile {
 
         int mLength = 0;
 
-        final byte[] mSignature = "8BIM".getBytes();
+        final byte[] mSignature = "8BIM".getBytes(); //$NON-NLS-1$
 
         final short mResourceId = RESOURCE_RESOLUTION_INFO;
 
@@ -342,9 +342,9 @@ public class PsdFile {
 
         final Channel[] mChannelInfo = new Channel[mChannelCount];
 
-        final byte[] mBlendSignature = "8BIM".getBytes();
+        final byte[] mBlendSignature = "8BIM".getBytes(); //$NON-NLS-1$
 
-        final byte[] mBlendMode = "norm".getBytes();
+        final byte[] mBlendMode = "norm".getBytes(); //$NON-NLS-1$
 
         final byte mOpacity = OPACITY_OPAQUE;
 
@@ -362,9 +362,9 @@ public class PsdFile {
 
         final byte[] mName;
 
-        final byte[] mLayerExtraSignature = "8BIM".getBytes();
+        final byte[] mLayerExtraSignature = "8BIM".getBytes(); //$NON-NLS-1$
 
-        final byte[] mLayerExtraKey = "luni".getBytes();
+        final byte[] mLayerExtraKey = "luni".getBytes(); //$NON-NLS-1$
 
         int mLayerExtraLength;
 
@@ -391,7 +391,7 @@ public class PsdFile {
             byte[] data = name.getBytes();
 
             try {
-                mLayerExtraLength = 4 + mOriginalName.getBytes("UTF-16").length;
+                mLayerExtraLength = 4 + mOriginalName.getBytes("UTF-16").length; //$NON-NLS-1$
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -465,7 +465,7 @@ public class PsdFile {
             out.write(mLayerExtraKey);
             out.writeInt(mLayerExtraLength);
             out.writeInt(mOriginalName.length() + 1);
-            out.write(mOriginalName.getBytes("UTF-16"));
+            out.write(mOriginalName.getBytes("UTF-16")); //$NON-NLS-1$
         }
 
         void writeImageData(DataOutputStream out) throws IOException {

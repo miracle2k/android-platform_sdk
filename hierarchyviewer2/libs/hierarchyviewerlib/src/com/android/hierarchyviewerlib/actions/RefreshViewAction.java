@@ -26,24 +26,24 @@ import org.eclipse.swt.widgets.Display;
 
 public class RefreshViewAction extends TreeViewEnabledAction implements ImageAction {
 
-    private static RefreshViewAction action;
+    private static RefreshViewAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private RefreshViewAction() {
         super("Load View &Hierarchy");
         setAccelerator(SWT.MOD1 + 'H');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Reload the view hierarchy");
     }
 
     public static RefreshViewAction getAction() {
-        if (action == null) {
-            action = new RefreshViewAction();
+        if (sAction == null) {
+            sAction = new RefreshViewAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
@@ -52,6 +52,6 @@ public class RefreshViewAction extends TreeViewEnabledAction implements ImageAct
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

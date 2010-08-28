@@ -27,35 +27,35 @@ import org.eclipse.swt.widgets.Shell;
 
 public class SavePixelPerfectAction extends PixelPerfectEnabledAction implements ImageAction {
 
-    private static SavePixelPerfectAction action;
+    private static SavePixelPerfectAction sAction;
 
-    private Image image;
+    private Image mImage;
 
-    private Shell shell;
+    private Shell mShell;
 
     private SavePixelPerfectAction(Shell shell) {
         super("&Save as PNG");
-        this.shell = shell;
+        this.mShell = shell;
         setAccelerator(SWT.MOD1 + 'S');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("save.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("save.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Save the screenshot as a PNG image");
     }
 
     public static SavePixelPerfectAction getAction(Shell shell) {
-        if (action == null) {
-            action = new SavePixelPerfectAction(shell);
+        if (sAction == null) {
+            sAction = new SavePixelPerfectAction(shell);
         }
-        return action;
+        return sAction;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().savePixelPerfect(shell);
+        HierarchyViewerDirector.getDirector().savePixelPerfect(mShell);
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

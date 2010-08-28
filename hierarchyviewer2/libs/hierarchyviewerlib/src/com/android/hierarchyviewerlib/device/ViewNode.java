@@ -183,58 +183,58 @@ public class ViewNode {
             }
         });
 
-        id = namedProperties.get("mID").value;
+        id = namedProperties.get("mID").value; //$NON-NLS-1$
 
         left =
-                namedProperties.containsKey("mLeft") ? getInt("mLeft", 0) : getInt("layout:mLeft",
+ namedProperties.containsKey("mLeft") ? getInt("mLeft", 0) : getInt("layout:mLeft", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                         0);
-        top = namedProperties.containsKey("mTop") ? getInt("mTop", 0) : getInt("layout:mTop", 0);
+        top = namedProperties.containsKey("mTop") ? getInt("mTop", 0) : getInt("layout:mTop", 0); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         width =
-                namedProperties.containsKey("getWidth()") ? getInt("getWidth()", 0) : getInt(
-                        "layout:getWidth()", 0);
+                namedProperties.containsKey("getWidth()") ? getInt("getWidth()", 0) : getInt( //$NON-NLS-1$ //$NON-NLS-2$
+                        "layout:getWidth()", 0); //$NON-NLS-1$
         height =
-                namedProperties.containsKey("getHeight()") ? getInt("getHeight()", 0) : getInt(
-                        "layout:getHeight()", 0);
+                namedProperties.containsKey("getHeight()") ? getInt("getHeight()", 0) : getInt( //$NON-NLS-1$ //$NON-NLS-2$
+                        "layout:getHeight()", 0); //$NON-NLS-1$
         scrollX =
-                namedProperties.containsKey("mScrollX") ? getInt("mScrollX", 0) : getInt(
-                        "scrolling:mScrollX", 0);
+                namedProperties.containsKey("mScrollX") ? getInt("mScrollX", 0) : getInt( //$NON-NLS-1$ //$NON-NLS-2$
+                        "scrolling:mScrollX", 0); //$NON-NLS-1$
         scrollY =
-                namedProperties.containsKey("mScrollY") ? getInt("mScrollY", 0) : getInt(
-                        "scrolling:mScrollY", 0);
+                namedProperties.containsKey("mScrollY") ? getInt("mScrollY", 0) : getInt( //$NON-NLS-1$ //$NON-NLS-2$
+                        "scrolling:mScrollY", 0); //$NON-NLS-1$
         paddingLeft =
-                namedProperties.containsKey("mPaddingLeft") ? getInt("mPaddingLeft", 0) : getInt(
-                        "padding:mPaddingLeft", 0);
+                namedProperties.containsKey("mPaddingLeft") ? getInt("mPaddingLeft", 0) : getInt( //$NON-NLS-1$ //$NON-NLS-2$
+                        "padding:mPaddingLeft", 0); //$NON-NLS-1$
         paddingRight =
-                namedProperties.containsKey("mPaddingRight") ? getInt("mPaddingRight", 0) : getInt(
-                        "padding:mPaddingRight", 0);
+                namedProperties.containsKey("mPaddingRight") ? getInt("mPaddingRight", 0) : getInt( //$NON-NLS-1$ //$NON-NLS-2$
+                        "padding:mPaddingRight", 0); //$NON-NLS-1$
         paddingTop =
-                namedProperties.containsKey("mPaddingTop") ? getInt("mPaddingTop", 0) : getInt(
-                        "padding:mPaddingTop", 0);
+                namedProperties.containsKey("mPaddingTop") ? getInt("mPaddingTop", 0) : getInt( //$NON-NLS-1$ //$NON-NLS-2$
+                        "padding:mPaddingTop", 0); //$NON-NLS-1$
         paddingBottom =
-                namedProperties.containsKey("mPaddingBottom") ? getInt("mPaddingBottom", 0)
-                        : getInt("padding:mPaddingBottom", 0);
+                namedProperties.containsKey("mPaddingBottom") ? getInt("mPaddingBottom", 0) //$NON-NLS-1$ //$NON-NLS-2$
+                        : getInt("padding:mPaddingBottom", 0); //$NON-NLS-1$
         marginLeft =
-                namedProperties.containsKey("layout_leftMargin") ? getInt("layout_leftMargin",
-                        Integer.MIN_VALUE) : getInt("layout:layout_leftMargin", Integer.MIN_VALUE);
+                namedProperties.containsKey("layout_leftMargin") ? getInt("layout_leftMargin", //$NON-NLS-1$ //$NON-NLS-2$
+                        Integer.MIN_VALUE) : getInt("layout:layout_leftMargin", Integer.MIN_VALUE); //$NON-NLS-1$
         marginRight =
-                namedProperties.containsKey("layout_rightMargin") ? getInt("layout_rightMargin",
-                        Integer.MIN_VALUE) : getInt("layout:layout_rightMargin", Integer.MIN_VALUE);
+                namedProperties.containsKey("layout_rightMargin") ? getInt("layout_rightMargin", //$NON-NLS-1$ //$NON-NLS-2$
+                        Integer.MIN_VALUE) : getInt("layout:layout_rightMargin", Integer.MIN_VALUE); //$NON-NLS-1$
         marginTop =
-                namedProperties.containsKey("layout_topMargin") ? getInt("layout_topMargin",
-                        Integer.MIN_VALUE) : getInt("layout:layout_topMargin", Integer.MIN_VALUE);
+                namedProperties.containsKey("layout_topMargin") ? getInt("layout_topMargin", //$NON-NLS-1$ //$NON-NLS-2$
+                        Integer.MIN_VALUE) : getInt("layout:layout_topMargin", Integer.MIN_VALUE); //$NON-NLS-1$
         marginBottom =
-                namedProperties.containsKey("layout_bottomMargin") ? getInt("layout_bottomMargin",
+                namedProperties.containsKey("layout_bottomMargin") ? getInt("layout_bottomMargin", //$NON-NLS-1$ //$NON-NLS-2$
                         Integer.MIN_VALUE)
-                        : getInt("layout:layout_bottomMargin", Integer.MIN_VALUE);
+                        : getInt("layout:layout_bottomMargin", Integer.MIN_VALUE); //$NON-NLS-1$
         baseline =
-                namedProperties.containsKey("getBaseline()") ? getInt("getBaseline()", 0) : getInt(
-                        "layout:getBaseline()", 0);
+                namedProperties.containsKey("getBaseline()") ? getInt("getBaseline()", 0) : getInt( //$NON-NLS-1$ //$NON-NLS-2$
+                        "layout:getBaseline()", 0); //$NON-NLS-1$
         willNotDraw =
-                namedProperties.containsKey("willNotDraw()") ? getBoolean("willNotDraw()", false)
-                        : getBoolean("drawing:willNotDraw()", false);
+                namedProperties.containsKey("willNotDraw()") ? getBoolean("willNotDraw()", false) //$NON-NLS-1$ //$NON-NLS-2$
+                        : getBoolean("drawing:willNotDraw()", false); //$NON-NLS-1$
         hasFocus =
-                namedProperties.containsKey("hasFocus()") ? getBoolean("hasFocus()", false)
-                        : getBoolean("focus:hasFocus()", false);
+                namedProperties.containsKey("hasFocus()") ? getBoolean("hasFocus()", false) //$NON-NLS-1$ //$NON-NLS-2$
+                        : getBoolean("focus:hasFocus()", false); //$NON-NLS-1$
 
         hasMargins =
                 marginLeft != Integer.MIN_VALUE && marginRight != Integer.MIN_VALUE
@@ -307,9 +307,9 @@ public class ViewNode {
         int dotIndex = name.lastIndexOf('.');
         String shortName = (dotIndex == -1) ? name : name.substring(dotIndex + 1);
         filtered =
-                !text.equals("")
+                !text.equals("") //$NON-NLS-1$
                         && (shortName.toLowerCase().contains(text.toLowerCase()) || (!id
-                                .equals("NO_ID") && id.toLowerCase().contains(text.toLowerCase())));
+                                .equals("NO_ID") && id.toLowerCase().contains(text.toLowerCase()))); //$NON-NLS-1$
         final int N = children.size();
         for (int i = 0; i < N; i++) {
             children.get(i).filter(text);
@@ -342,7 +342,7 @@ public class ViewNode {
 
     @Override
     public String toString() {
-        return name + "@" + hashCode;
+        return name + "@" + hashCode; //$NON-NLS-1$
     }
 
     public static class Property {

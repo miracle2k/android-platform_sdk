@@ -36,9 +36,9 @@ import org.eclipse.ui.part.ViewPart;
 public class DeviceSelectorView extends ViewPart implements IPerspectiveListener {
 
     public static final String ID =
-            "com.android.ide.eclipse.hierarchyviewer.views.DeviceSelectorView";
+            "com.android.ide.eclipse.hierarchyviewer.views.DeviceSelectorView"; //$NON-NLS-1$
 
-    private DeviceSelector deviceSelector;
+    private DeviceSelector mDeviceSelector;
 
     @Override
     public void createPartControl(Composite parent) {
@@ -53,7 +53,7 @@ public class DeviceSelectorView extends ViewPart implements IPerspectiveListener
         } else if (perspective.getId().equals(TreeViewPerspective.ID)) {
             doPixelPerfectStuff = false;
         }
-        deviceSelector = new DeviceSelector(parent, doTreeViewStuff, doPixelPerfectStuff);
+        mDeviceSelector = new DeviceSelector(parent, doTreeViewStuff, doPixelPerfectStuff);
 
         placeActions(doTreeViewStuff, doPixelPerfectStuff);
 
@@ -93,18 +93,18 @@ public class DeviceSelectorView extends ViewPart implements IPerspectiveListener
 
     @Override
     public void setFocus() {
-        deviceSelector.setFocus();
+        mDeviceSelector.setFocus();
     }
 
     public void perspectiveActivated(IWorkbenchPage page, IPerspectiveDescriptor perspective) {
         if (perspective.getId().equals(PixelPerfectPespective.ID)) {
-            deviceSelector.setMode(false, true);
+            mDeviceSelector.setMode(false, true);
             placeActions(false, true);
         } else if (perspective.getId().equals(TreeViewPerspective.ID)) {
-            deviceSelector.setMode(true, false);
+            mDeviceSelector.setMode(true, false);
             placeActions(true, false);
         } else {
-            deviceSelector.setMode(true, true);
+            mDeviceSelector.setMode(true, true);
             placeActions(true, true);
         }
     }

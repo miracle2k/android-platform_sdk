@@ -60,14 +60,14 @@ public class DeviceBridge {
 
     private static final int SERVICE_CODE_IS_SERVER_RUNNING = 3;
 
-    private static AndroidDebugBridge bridge;
+    private static AndroidDebugBridge sBridge;
 
-    private static final HashMap<IDevice, Integer> devicePortMap = new HashMap<IDevice, Integer>();
+    private static final HashMap<IDevice, Integer> sDevicePortMap = new HashMap<IDevice, Integer>();
 
-    private static final HashMap<IDevice, ViewServerInfo> viewServerInfo =
+    private static final HashMap<IDevice, ViewServerInfo> sViewServerInfo =
             new HashMap<IDevice, ViewServerInfo>();
 
-    private static int nextLocalPort = DEFAULT_SERVER_PORT;
+    private static int sNextLocalPort = DEFAULT_SERVER_PORT;
 
     public static class ViewServerInfo {
         public final int protocolVersion;
@@ -81,11 +81,11 @@ public class DeviceBridge {
     }
 
     public static void initDebugBridge(String adbLocation) {
-        if (bridge == null) {
+        if (sBridge == null) {
             AndroidDebugBridge.init(false /* debugger support */);
         }
-        if (bridge == null || !bridge.isConnected()) {
-            bridge = AndroidDebugBridge.createBridge(adbLocation, true);
+        if (sBridge == null || !sBridge.isConnected()) {
+            sBridge = AndroidDebugBridge.createBridge(adbLocation, true);
         }
     }
 
@@ -94,10 +94,10 @@ public class DeviceBridge {
     }
 
     public static IDevice[] getDevices() {
-        if (bridge == null) {
+        if (sBridge == null) {
             return new IDevice[0];
         }
-        return bridge.getDevices();
+        return sBridge.getDevices();
     }
 
     /*
@@ -121,12 +121,12 @@ public class DeviceBridge {
      * @param device
      */
     public static void setupDeviceForward(IDevice device) {
-        synchronized (devicePortMap) {
+        synchronized (sDevicePortMap) {
             if (device.getState() == IDevice.DeviceState.ONLINE) {
-                int localPort = nextLocalPort++;
+                int localPort = sNextLocalPort++;
                 try {
                     device.createForward(localPort, DEFAULT_SERVER_PORT);
-                    devicePortMap.put(device, localPort);
+                    sDevicePortMap.put(device, localPort);
                 } catch (TimeoutException e) {
                     Log.e(TAG, "Timeout setting up port forwarding for " + device);
                 } catch (AdbCommandRejectedException e) {
@@ -141,12 +141,12 @@ public class DeviceBridge {
     }
 
     public static void removeDeviceForward(IDevice device) {
-        synchronized (devicePortMap) {
-            final Integer localPort = devicePortMap.get(device);
+        synchronized (sDevicePortMap) {
+            final Integer localPort = sDevicePortMap.get(device);
             if (localPort != null) {
                 try {
                     device.removeForward(localPort, DEFAULT_SERVER_PORT);
-                    devicePortMap.remove(device);
+                    sDevicePortMap.remove(device);
                 } catch (TimeoutException e) {
                     Log.e(TAG, "Timeout removing port forwarding for " + device);
                 } catch (AdbCommandRejectedException e) {
@@ -160,8 +160,8 @@ public class DeviceBridge {
     }
 
     public static int getDeviceLocalPort(IDevice device) {
-        synchronized (devicePortMap) {
-            Integer port = devicePortMap.get(device);
+        synchronized (sDevicePortMap) {
+            Integer port = sDevicePortMap.get(device);
             if (port != null) {
                 return port;
             }
@@ -235,15 +235,15 @@ public class DeviceBridge {
     }
 
     private static String buildStartServerShellCommand(int port) {
-        return String.format("service call window %d i32 %d", SERVICE_CODE_START_SERVER, port);
+        return String.format("service call window %d i32 %d", SERVICE_CODE_START_SERVER, port); //$NON-NLS-1$
     }
 
     private static String buildStopServerShellCommand() {
-        return String.format("service call window %d", SERVICE_CODE_STOP_SERVER);
+        return String.format("service call window %d", SERVICE_CODE_STOP_SERVER); //$NON-NLS-1$
     }
 
     private static String buildIsServerRunningShellCommand() {
-        return String.format("service call window %d", SERVICE_CODE_IS_SERVER_RUNNING);
+        return String.format("service call window %d", SERVICE_CODE_IS_SERVER_RUNNING); //$NON-NLS-1$
     }
 
     private static class BooleanResultReader extends MultiLineReceiver {
@@ -256,7 +256,7 @@ public class DeviceBridge {
         @Override
         public void processNewLines(String[] strings) {
             if (strings.length > 0) {
-                Pattern pattern = Pattern.compile(".*?\\([0-9]{8} ([0-9]{8}).*");
+                Pattern pattern = Pattern.compile(".*?\\([0-9]{8} ([0-9]{8}).*"); //$NON-NLS-1$
                 Matcher matcher = pattern.matcher(strings[0]);
                 if (matcher.matches()) {
                     if (Integer.parseInt(matcher.group(1)) == 1) {
@@ -277,7 +277,7 @@ public class DeviceBridge {
         DeviceConnection connection = null;
         try {
             connection = new DeviceConnection(device);
-            connection.sendCommand("SERVER");
+            connection.sendCommand("SERVER"); //$NON-NLS-1$
             String line = connection.getInputStream().readLine();
             if (line != null) {
                 server = Integer.parseInt(line);
@@ -292,7 +292,7 @@ public class DeviceBridge {
         connection = null;
         try {
             connection = new DeviceConnection(device);
-            connection.sendCommand("PROTOCOL");
+            connection.sendCommand("PROTOCOL"); //$NON-NLS-1$
             String line = connection.getInputStream().readLine();
             if (line != null) {
                 protocol = Integer.parseInt(line);
@@ -308,21 +308,21 @@ public class DeviceBridge {
             return null;
         }
         ViewServerInfo returnValue = new ViewServerInfo(server, protocol);
-        synchronized (viewServerInfo) {
-            viewServerInfo.put(device, returnValue);
+        synchronized (sViewServerInfo) {
+            sViewServerInfo.put(device, returnValue);
         }
         return returnValue;
     }
 
     public static ViewServerInfo getViewServerInfo(IDevice device) {
-        synchronized (viewServerInfo) {
-            return viewServerInfo.get(device);
+        synchronized (sViewServerInfo) {
+            return sViewServerInfo.get(device);
         }
     }
 
     public static void removeViewServerInfo(IDevice device) {
-        synchronized (viewServerInfo) {
-            viewServerInfo.remove(device);
+        synchronized (sViewServerInfo) {
+            sViewServerInfo.remove(device);
         }
     }
 
@@ -336,11 +336,11 @@ public class DeviceBridge {
         ViewServerInfo serverInfo = getViewServerInfo(device);
         try {
             connection = new DeviceConnection(device);
-            connection.sendCommand("LIST");
+            connection.sendCommand("LIST"); //$NON-NLS-1$
             BufferedReader in = connection.getInputStream();
             String line;
             while ((line = in.readLine()) != null) {
-                if ("DONE.".equalsIgnoreCase(line)) {
+                if ("DONE.".equalsIgnoreCase(line)) { //$NON-NLS-1$
                     break;
                 }
 
@@ -391,7 +391,7 @@ public class DeviceBridge {
         DeviceConnection connection = null;
         try {
             connection = new DeviceConnection(device);
-            connection.sendCommand("GET_FOCUS");
+            connection.sendCommand("GET_FOCUS"); //$NON-NLS-1$
             String line = connection.getInputStream().readLine();
             if (line == null || line.length() == 0) {
                 return -1;
@@ -411,7 +411,7 @@ public class DeviceBridge {
         DeviceConnection connection = null;
         try {
             connection = new DeviceConnection(window.getDevice());
-            connection.sendCommand("DUMP " + window.encode());
+            connection.sendCommand("DUMP " + window.encode()); //$NON-NLS-1$
             BufferedReader in = connection.getInputStream();
             ViewNode currentNode = null;
             int currentDepth = -1;
@@ -457,11 +457,11 @@ public class DeviceBridge {
         DeviceConnection connection = null;
         try {
             connection = new DeviceConnection(window.getDevice());
-            connection.sendCommand("PROFILE " + window.encode() + " " + viewNode.toString());
+            connection.sendCommand("PROFILE " + window.encode() + " " + viewNode.toString()); //$NON-NLS-1$
             BufferedReader in = connection.getInputStream();
             int protocol;
-            synchronized (viewServerInfo) {
-                protocol = viewServerInfo.get(window.getDevice()).protocolVersion;
+            synchronized (sViewServerInfo) {
+                protocol = sViewServerInfo.get(window.getDevice()).protocolVersion;
             }
             if (protocol < 3) {
                 return loadProfileData(viewNode, in);
@@ -485,8 +485,8 @@ public class DeviceBridge {
 
     private static boolean loadProfileData(ViewNode node, BufferedReader in) throws IOException {
         String line;
-        if ((line = in.readLine()) == null || line.equalsIgnoreCase("-1 -1 -1")
-                || line.equalsIgnoreCase("DONE.")) {
+        if ((line = in.readLine()) == null || line.equalsIgnoreCase("-1 -1 -1") //$NON-NLS-1$
+                || line.equalsIgnoreCase("DONE.")) { //$NON-NLS-1$
             return false;
         }
         String[] data = line.split(" ");
@@ -513,7 +513,7 @@ public class DeviceBridge {
         DeviceConnection connection = null;
         try {
             connection = new DeviceConnection(window.getDevice());
-            connection.sendCommand("CAPTURE " + window.encode() + " " + viewNode.toString());
+            connection.sendCommand("CAPTURE " + window.encode() + " " + viewNode.toString()); //$NON-NLS-1$
             return new Image(Display.getDefault(), connection.getSocket().getInputStream());
         } catch (Exception e) {
             Log.e(TAG, "Unable to capture data for node " + viewNode + " in window "
@@ -533,7 +533,7 @@ public class DeviceBridge {
         try {
             connection = new DeviceConnection(window.getDevice());
 
-            connection.sendCommand("CAPTURE_LAYERS " + window.encode());
+            connection.sendCommand("CAPTURE_LAYERS " + window.encode()); //$NON-NLS-1$
 
             in =
                     new DataInputStream(new BufferedInputStream(connection.getSocket()
@@ -604,7 +604,7 @@ public class DeviceBridge {
         DeviceConnection connection = null;
         try {
             connection = new DeviceConnection(viewNode.window.getDevice());
-            connection.sendCommand("INVALIDATE " + viewNode.window.encode() + " " + viewNode);
+            connection.sendCommand("INVALIDATE " + viewNode.window.encode() + " " + viewNode); //$NON-NLS-1$
         } catch (Exception e) {
             Log.e(TAG, "Unable to invalidate view " + viewNode + " in window " + viewNode.window
                     + " on device " + viewNode.window.getDevice());
@@ -617,7 +617,7 @@ public class DeviceBridge {
         DeviceConnection connection = null;
         try {
             connection = new DeviceConnection(viewNode.window.getDevice());
-            connection.sendCommand("REQUEST_LAYOUT " + viewNode.window.encode() + " " + viewNode);
+            connection.sendCommand("REQUEST_LAYOUT " + viewNode.window.encode() + " " + viewNode); //$NON-NLS-1$
         } catch (Exception e) {
             Log.e(TAG, "Unable to request layout for node " + viewNode + " in window "
                     + viewNode.window + " on device " + viewNode.window.getDevice());

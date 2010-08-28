@@ -21,7 +21,7 @@ import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
 import com.android.hierarchyviewerlib.device.Window;
 import com.android.hierarchyviewerlib.models.DeviceSelectionModel;
-import com.android.hierarchyviewerlib.models.DeviceSelectionModel.WindowChangeListener;
+import com.android.hierarchyviewerlib.models.DeviceSelectionModel.IWindowChangeListener;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -29,18 +29,18 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
-public class LoadViewHierarchyAction extends Action implements ImageAction, WindowChangeListener {
+public class LoadViewHierarchyAction extends Action implements ImageAction, IWindowChangeListener {
 
-    private static LoadViewHierarchyAction action;
+    private static LoadViewHierarchyAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private LoadViewHierarchyAction() {
         super("Load View &Hierarchy");
         setAccelerator(SWT.MOD1 + 'H');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("load-view-hierarchy.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Load the view hierarchy into the tree view");
         setEnabled(
                 DeviceSelectionModel.getModel().getSelectedWindow() != null);
@@ -48,10 +48,10 @@ public class LoadViewHierarchyAction extends Action implements ImageAction, Wind
     }
 
     public static LoadViewHierarchyAction getAction() {
-        if (action == null) {
-            action = new LoadViewHierarchyAction();
+        if (sAction == null) {
+            sAction = new LoadViewHierarchyAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class LoadViewHierarchyAction extends Action implements ImageAction, Wind
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 
     public void deviceChanged(IDevice device) {

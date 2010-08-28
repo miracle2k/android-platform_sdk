@@ -27,32 +27,32 @@ import org.eclipse.swt.widgets.Display;
 
 public class PixelPerfectAutoRefreshAction extends PixelPerfectEnabledAction implements ImageAction {
 
-    private static PixelPerfectAutoRefreshAction action;
+    private static PixelPerfectAutoRefreshAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private PixelPerfectAutoRefreshAction() {
         super("Auto &Refresh", Action.AS_CHECK_BOX);
         setAccelerator(SWT.MOD1 + 'R');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("auto-refresh.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("auto-refresh.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Automatically refresh the screenshot");
     }
 
     public static PixelPerfectAutoRefreshAction getAction() {
-        if (action == null) {
-            action = new PixelPerfectAutoRefreshAction();
+        if (sAction == null) {
+            sAction = new PixelPerfectAutoRefreshAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().setPixelPerfectAutoRefresh(action.isChecked());
+        HierarchyViewerDirector.getDirector().setPixelPerfectAutoRefresh(sAction.isChecked());
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

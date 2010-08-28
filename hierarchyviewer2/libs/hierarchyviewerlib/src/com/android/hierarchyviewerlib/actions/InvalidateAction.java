@@ -26,24 +26,24 @@ import org.eclipse.swt.widgets.Display;
 
 public class InvalidateAction extends SelectedNodeEnabledAction implements ImageAction {
 
-    private static InvalidateAction action;
+    private static InvalidateAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private InvalidateAction() {
         super("&Invalidate Layout");
         setAccelerator(SWT.MOD1 + 'I');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("invalidate.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("invalidate.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Invalidate the layout for the current window");
     }
 
     public static InvalidateAction getAction() {
-        if (action == null) {
-            action = new InvalidateAction();
+        if (sAction == null) {
+            sAction = new InvalidateAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
@@ -52,6 +52,6 @@ public class InvalidateAction extends SelectedNodeEnabledAction implements Image
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

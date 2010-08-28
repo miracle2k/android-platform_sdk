@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.hierarchyviewer;
 
-import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.Log;
 import com.android.ddmlib.Log.ILogOutput;
 import com.android.ddmlib.Log.LogLevel;
@@ -40,14 +39,14 @@ import java.util.Calendar;
  */
 public class HierarchyViewerPlugin extends AbstractUIPlugin {
 
-    public static final String PLUGIN_ID = "com.android.ide.eclipse.hierarchyviewer";
+    public static final String PLUGIN_ID = "com.android.ide.eclipse.hierarchyviewer"; //$NON-NLS-1$
 
-    public static final String ADB_LOCATION = PLUGIN_ID + ".adb";
+    public static final String ADB_LOCATION = PLUGIN_ID + ".adb"; //$NON-NLS-1$
 
     // The shared instance
-    private static HierarchyViewerPlugin plugin;
+    private static HierarchyViewerPlugin sPlugin;
 
-    private Color redColor;
+    private Color mRedColor;
 
     /**
      * The constructor
@@ -58,18 +57,18 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
     @Override
     public void start(BundleContext context) throws Exception {
         super.start(context);
-        plugin = this;
+        sPlugin = this;
         
 
         // set the consoles.
-        final MessageConsole messageConsole = new MessageConsole("Hierarchy Viewer", null); // $NON-NLS-1$
+        final MessageConsole messageConsole = new MessageConsole("Hierarchy Viewer", null); //$NON-NLS-1$
         ConsolePlugin.getDefault().getConsoleManager().addConsoles(new IConsole[] {
             messageConsole
         });
 
         final MessageConsoleStream consoleStream = messageConsole.newMessageStream();
         final MessageConsoleStream errorConsoleStream = messageConsole.newMessageStream();
-        redColor = new Color(Display.getDefault(), 0xFF, 0x00, 0x00);
+        mRedColor = new Color(Display.getDefault(), 0xFF, 0x00, 0x00);
 
         // because this can be run, in some cases, by a non UI thread, and
         // because
@@ -78,7 +77,7 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
         // in the UI thread.
         Display.getDefault().asyncExec(new Runnable() {
             public void run() {
-                errorConsoleStream.setColor(redColor);
+                errorConsoleStream.setColor(mRedColor);
             }
         });
 
@@ -131,10 +130,10 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
      */
     @Override
     public void stop(BundleContext context) throws Exception {
-        plugin = null;
+        sPlugin = null;
         super.stop(context);
 
-        redColor.dispose();
+        mRedColor.dispose();
 
         HierarchyViewerDirector director = HierarchyViewerDirector.getDirector();
         director.stopListenForDevices();
@@ -148,7 +147,7 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
      * @return the shared instance
      */
     public static HierarchyViewerPlugin getPlugin() {
-        return plugin;
+        return sPlugin;
     }
 
     /**
@@ -160,7 +159,7 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
     public static void setAdb(String adb, boolean startAdb) {
         if (adb != null) {
             // store the location for future ddms only start.
-            plugin.getPreferenceStore().setValue(ADB_LOCATION, adb);
+            sPlugin.getPreferenceStore().setValue(ADB_LOCATION, adb);
 
             // starts the server in a thread in case this is blocking.
             if (startAdb) {
@@ -201,9 +200,9 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
         Calendar c = Calendar.getInstance();
 
         if (tag == null) {
-            return String.format("[%1$tF %1$tT]", c);
+            return String.format("[%1$tF %1$tT]", c); //$NON-NLS-1$
         }
 
-        return String.format("[%1$tF %1$tT - %2$s]", c, tag);
+        return String.format("[%1$tF %1$tT - %2$s]", c, tag); //$NON-NLS-1$
     }
 }

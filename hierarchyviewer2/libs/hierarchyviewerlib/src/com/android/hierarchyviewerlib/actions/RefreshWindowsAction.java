@@ -27,24 +27,24 @@ import org.eclipse.swt.widgets.Display;
 
 public class RefreshWindowsAction extends Action implements ImageAction {
 
-    private static RefreshWindowsAction action;
+    private static RefreshWindowsAction sAction;
 
-    private Image image;
+    private Image mImage;
 
     private RefreshWindowsAction() {
         super("&Refresh");
         setAccelerator(SWT.F5);
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("refresh-windows.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("refresh-windows.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Refresh the list of devices");
     }
 
     public static RefreshWindowsAction getAction() {
-        if (action == null) {
-            action = new RefreshWindowsAction();
+        if (sAction == null) {
+            sAction = new RefreshWindowsAction();
         }
-        return action;
+        return sAction;
     }
 
     @Override
@@ -53,6 +53,6 @@ public class RefreshWindowsAction extends Action implements ImageAction {
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

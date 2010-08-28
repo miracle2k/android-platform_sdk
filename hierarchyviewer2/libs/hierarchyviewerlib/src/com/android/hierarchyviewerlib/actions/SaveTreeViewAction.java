@@ -27,35 +27,35 @@ import org.eclipse.swt.widgets.Shell;
 
 public class SaveTreeViewAction extends TreeViewEnabledAction implements ImageAction {
 
-    private static SaveTreeViewAction action;
+    private static SaveTreeViewAction sAction;
 
-    private Image image;
+    private Image mImage;
 
-    private Shell shell;
+    private Shell mShell;
 
     private SaveTreeViewAction(Shell shell) {
         super("&Save as PNG");
-        this.shell = shell;
+        this.mShell = shell;
         setAccelerator(SWT.MOD1 + 'S');
         ImageLoader imageLoader = ImageLoader.getLoader(HierarchyViewerDirector.class);
-        image = imageLoader.loadImage("save.png", Display.getDefault());
-        setImageDescriptor(ImageDescriptor.createFromImage(image));
+        mImage = imageLoader.loadImage("save.png", Display.getDefault()); //$NON-NLS-1$
+        setImageDescriptor(ImageDescriptor.createFromImage(mImage));
         setToolTipText("Save the tree view as a PNG image");
     }
 
     public static SaveTreeViewAction getAction(Shell shell) {
-        if (action == null) {
-            action = new SaveTreeViewAction(shell);
+        if (sAction == null) {
+            sAction = new SaveTreeViewAction(shell);
         }
-        return action;
+        return sAction;
     }
 
     @Override
     public void run() {
-        HierarchyViewerDirector.getDirector().saveTreeView(shell);
+        HierarchyViewerDirector.getDirector().saveTreeView(mShell);
     }
 
     public Image getImage() {
-        return image;
+        return mImage;
     }
 }

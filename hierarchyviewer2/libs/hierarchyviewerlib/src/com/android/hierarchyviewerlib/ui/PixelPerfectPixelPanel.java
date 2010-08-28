@@ -17,7 +17,7 @@
 package com.android.hierarchyviewerlib.ui;
 
 import com.android.hierarchyviewerlib.models.PixelPerfectModel;
-import com.android.hierarchyviewerlib.models.PixelPerfectModel.ImageChangeListener;
+import com.android.hierarchyviewerlib.models.PixelPerfectModel.IImageChangeListener;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
@@ -32,14 +32,14 @@ import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 
-public class PixelPerfectPixelPanel extends Canvas implements ImageChangeListener {
-    private PixelPerfectModel model;
+public class PixelPerfectPixelPanel extends Canvas implements IImageChangeListener {
+    private PixelPerfectModel mModel;
 
-    private Image image;
+    private Image mImage;
 
-    private Image overlayImage;
+    private Image mOverlayImage;
 
-    private Point crosshairLocation;
+    private Point mCrosshairLocation;
 
     public static final int PREFERRED_WIDTH = 180;
 
@@ -47,11 +47,11 @@ public class PixelPerfectPixelPanel extends Canvas implements ImageChangeListene
 
     public PixelPerfectPixelPanel(Composite parent) {
         super(parent, SWT.NONE);
-        model = PixelPerfectModel.getModel();
-        model.addImageChangeListener(this);
+        mModel = PixelPerfectModel.getModel();
+        mModel.addImageChangeListener(this);
 
-        addPaintListener(paintListener);
-        addDisposeListener(disposeListener);
+        addPaintListener(mPaintListener);
+        addDisposeListener(mDisposeListener);
 
         imageLoaded();
     }
@@ -63,21 +63,21 @@ public class PixelPerfectPixelPanel extends Canvas implements ImageChangeListene
         return new Point(width, height);
     }
 
-    private DisposeListener disposeListener = new DisposeListener() {
+    private DisposeListener mDisposeListener = new DisposeListener() {
         public void widgetDisposed(DisposeEvent e) {
-            model.removeImageChangeListener(PixelPerfectPixelPanel.this);
+            mModel.removeImageChangeListener(PixelPerfectPixelPanel.this);
         }
     };
 
-    private PaintListener paintListener = new PaintListener() {
+    private PaintListener mPaintListener = new PaintListener() {
         public void paintControl(PaintEvent e) {
             synchronized (PixelPerfectPixelPanel.this) {
                 e.gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLACK));
                 e.gc.fillRectangle(0, 0, getBounds().width, getBounds().height);
-                if (image != null) {
+                if (mImage != null) {
                     RGB pixel =
-                            image.getImageData().palette.getRGB(image.getImageData().getPixel(
-                                    crosshairLocation.x, crosshairLocation.y));
+                            mImage.getImageData().palette.getRGB(mImage.getImageData().getPixel(
+                                    mCrosshairLocation.x, mCrosshairLocation.y));
                     Color rgbColor = new Color(Display.getDefault(), pixel);
                     e.gc.setForeground(Display.getDefault().getSystemColor(SWT.COLOR_WHITE));
                     e.gc.setBackground(rgbColor);
@@ -97,19 +97,19 @@ public class PixelPerfectPixelPanel extends Canvas implements ImageChangeListene
                     e.gc.drawText(Integer.toString(pixel.blue), 97, 35, true);
                     e.gc.drawText("X:", 132, 4, true);
                     e.gc.drawText("Y:", 132, 20, true);
-                    e.gc.drawText(Integer.toString(crosshairLocation.x) + " px", 149, 4, true);
-                    e.gc.drawText(Integer.toString(crosshairLocation.y) + " px", 149, 20, true);
+                    e.gc.drawText(Integer.toString(mCrosshairLocation.x) + " px", 149, 4, true);
+                    e.gc.drawText(Integer.toString(mCrosshairLocation.y) + " px", 149, 20, true);
 
-                    if (overlayImage != null) {
-                        int xInOverlay = crosshairLocation.x;
+                    if (mOverlayImage != null) {
+                        int xInOverlay = mCrosshairLocation.x;
                         int yInOverlay =
-                                crosshairLocation.y
-                                        - (image.getBounds().height - overlayImage.getBounds().height);
+                                mCrosshairLocation.y
+                                        - (mImage.getBounds().height - mOverlayImage.getBounds().height);
                         if (xInOverlay >= 0 && yInOverlay >= 0
-                                && xInOverlay < overlayImage.getBounds().width
-                                && yInOverlay < overlayImage.getBounds().height) {
+                                && xInOverlay < mOverlayImage.getBounds().width
+                                && yInOverlay < mOverlayImage.getBounds().height) {
                             pixel =
-                                    overlayImage.getImageData().palette.getRGB(overlayImage
+                                    mOverlayImage.getImageData().palette.getRGB(mOverlayImage
                                             .getImageData().getPixel(xInOverlay, yInOverlay));
                             rgbColor = new Color(Display.getDefault(), pixel);
                             e.gc
@@ -146,30 +146,30 @@ public class PixelPerfectPixelPanel extends Canvas implements ImageChangeListene
 
     public void crosshairMoved() {
         synchronized (this) {
-            crosshairLocation = model.getCrosshairLocation();
+            mCrosshairLocation = mModel.getCrosshairLocation();
         }
         doRedraw();
     }
 
     public void imageChanged() {
         synchronized (this) {
-            image = model.getImage();
+            mImage = mModel.getImage();
         }
         doRedraw();
     }
 
     public void imageLoaded() {
         synchronized (this) {
-            image = model.getImage();
-            crosshairLocation = model.getCrosshairLocation();
-            overlayImage = model.getOverlayImage();
+            mImage = mModel.getImage();
+            mCrosshairLocation = mModel.getCrosshairLocation();
+            mOverlayImage = mModel.getOverlayImage();
         }
         doRedraw();
     }
 
     public void overlayChanged() {
         synchronized (this) {
-            overlayImage = model.getOverlayImage();
+            mOverlayImage = mModel.getOverlayImage();
         }
         doRedraw();
     }
