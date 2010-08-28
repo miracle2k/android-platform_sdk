@@ -12,7 +12,5 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.ui.console,
  com.android.ide.eclipse.ddms
 Bundle-ClassPath: .,
- libs/hierarchyviewerlib.jar,
- libs/ddmlib.jar,
- libs/ddmuilib.jar
+ libs/hierarchyviewerlib.jar
 Export-Package: com.android.ide.eclipse.hierarchyviewer
