@@ -197,6 +197,10 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
             mExecution.getListener().notifyTestEnded(new TestCaseReference(test));
         }
 
+        public void testEnded(TestIdentifier test, Map<String, String> testMetrics) {
+            mExecution.getListener().notifyTestEnded(new TestCaseReference(test));
+        }
+
         /* (non-Javadoc)
          * @see com.android.ddmlib.testrunner.ITestRunListener#testFailed(com.android.ddmlib.testrunner.ITestRunListener.TestFailure, com.android.ddmlib.testrunner.TestIdentifier, java.lang.String)
          */

@@ -184,7 +184,7 @@ find . -name "@*" | xargs rm -rfv
 
 # Now execute the ant runner
 
-set +e  # don't stop on errors anymore, we want to catch there here
+set +e  # don't stop on errors anymore, we want to catch them here
 
 java \
   -jar $LAUNCHER \
