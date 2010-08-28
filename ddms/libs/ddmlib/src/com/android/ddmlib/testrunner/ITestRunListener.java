@@ -65,11 +65,13 @@ public interface ITestRunListener {
 
     /**
      * Reports the execution end of an individual test case.
-     * If {@link #testFailed} was not invoked, this test passed.
+     * If {@link #testFailed} was not invoked, this test passed.  Also returns any key/value
+     * metrics which may have been emitted during the test case's execution.
      * 
      * @param test identifies the test
+     * @param testMetrics a {@link Map} of the metrics emitted
      */
-    public void testEnded(TestIdentifier test);
+    public void testEnded(TestIdentifier test, Map<String, String> testMetrics);
 
     /**
      * Reports the failure of a individual test case.

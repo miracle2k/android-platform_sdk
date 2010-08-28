@@ -66,7 +66,7 @@ public class InstrumentationResultParserTest extends TestCase {
     }
 
     /**
-     * Tests that a single successful test execution.
+     * Tests basic parsing of a single successful test execution.
      */
     public void testTestSuccess() {
         StringBuilder output = createSuccessTest();
@@ -78,12 +78,21 @@ public class InstrumentationResultParserTest extends TestCase {
     }
 
     /**
+     * Tests basic parsing of a successful test execution with metrics.
+     */
+    public void testTestSuccessMetrics() {
+        StringBuilder output = buildCommonResult();
+
+        addStatusKey(output, "randomKey", "randomValue");
+        assertNotNull(mTestResult.mTestMetrics);
+        assertEquals("randomValue", mTestResult.mTestMetrics.get("randomKey"));
+    }
+
+    /**
      * Create instrumentation output for a successful single test case execution.
      */
     private StringBuilder createSuccessTest() {
         StringBuilder output = buildCommonResult();
-        addStartCode(output);
-        addCommonStatus(output);
         addSuccessCode(output);
         return output;
     }
@@ -231,7 +240,7 @@ public class InstrumentationResultParserTest extends TestCase {
         StringBuilder output = new StringBuilder();
         // add test start bundle
         addCommonStatus(output);
-        addStatusCode(output, "1");
+        addStartCode(output);
         // add end test bundle, without status
         addCommonStatus(output);
         return output;
@@ -345,7 +354,8 @@ public class InstrumentationResultParserTest extends TestCase {
         boolean mStopped;
         /** stores the error message provided to testRunFailed */
         String mRunFailedMessage;
-        Map<String, String> mResultBundle;
+        Map<String, String> mResultBundle = null;
+        Map<String, String> mTestMetrics = null;
 
         VerifyingTestResult() {
             mNumTestsRun = 0;
@@ -355,8 +365,9 @@ public class InstrumentationResultParserTest extends TestCase {
             mResultBundle = null;
         }
 
-        public void testEnded(TestIdentifier test) {
+        public void testEnded(TestIdentifier test, Map<String, String> testMetrics) {
             mNumTestsRun++;
+            mTestMetrics = testMetrics;
             assertEquals("Unexpected class name", mSuiteName, test.getClassName());
             assertEquals("Unexpected test ended", mTestName, test.getTestName());
 

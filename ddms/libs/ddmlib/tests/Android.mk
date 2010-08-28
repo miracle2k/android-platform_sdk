@@ -19,7 +19,9 @@ include $(CLEAR_VARS)
 # Only compile source java files in this lib.
 LOCAL_SRC_FILES := $(call all-java-files-under, src)
 
-LOCAL_MODULE := ddmlib
+LOCAL_MODULE := ddmlibTests
+
+LOCAL_JAVA_LIBRARIES := ddmlib junit
 
 include $(BUILD_HOST_JAVA_LIBRARY)
 
