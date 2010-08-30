@@ -292,7 +292,9 @@ public class UpdaterWindowImpl {
         mUpdaterData.notifyListeners(true /*init*/);
 
         if (mRequestAutoUpdate) {
-            mUpdaterData.updateOrInstallAll_WithGUI(null /*selectedArchives*/);
+            mUpdaterData.updateOrInstallAll_WithGUI(
+                    null /*selectedArchives*/,
+                    false /* includeObsoletes */);
         }
 
         return true;

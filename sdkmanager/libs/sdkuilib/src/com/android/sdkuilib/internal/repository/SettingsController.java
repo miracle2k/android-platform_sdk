@@ -54,6 +54,7 @@ public class SettingsController {
 
     /**
      * Returns the value of the {@link ISettingsPage#KEY_FORCE_HTTP} setting.
+     *
      * @see ISettingsPage#KEY_FORCE_HTTP
      */
     public boolean getForceHttp() {
@@ -62,6 +63,7 @@ public class SettingsController {
 
     /**
      * Returns the value of the {@link ISettingsPage#KEY_ASK_ADB_RESTART} setting.
+     *
      * @see ISettingsPage#KEY_ASK_ADB_RESTART
      */
     public boolean getAskBeforeAdbRestart() {
@@ -74,6 +76,7 @@ public class SettingsController {
 
     /**
      * Returns the value of the {@link ISettingsPage#KEY_SHOW_UPDATE_ONLY} setting.
+     *
      * @see ISettingsPage#KEY_SHOW_UPDATE_ONLY
      */
     public boolean getShowUpdateOnly() {
@@ -86,7 +89,8 @@ public class SettingsController {
 
     /**
      * Sets the value of the {@link ISettingsPage#KEY_SHOW_UPDATE_ONLY} setting.
-     * @param enabled True if only compatible update items should be shown.
+     *
+     * @param enabled True if only compatible non-obsolete update items should be shown.
      * @see ISettingsPage#KEY_SHOW_UPDATE_ONLY
      */
     public void setShowUpdateOnly(boolean enabled) {
@@ -112,6 +116,7 @@ public class SettingsController {
 
     /**
      * Sets the value of the {@link ISettingsPage#KEY_MONITOR_DENSITY} setting.
+     *
      * @param density the density of the monitor
      * @see ISettingsPage#KEY_MONITOR_DENSITY
      */

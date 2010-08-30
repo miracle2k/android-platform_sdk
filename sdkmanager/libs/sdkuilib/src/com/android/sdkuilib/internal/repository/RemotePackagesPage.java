@@ -139,7 +139,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         mUpdateOnlyCheckBox = new Button(parent, SWT.CHECK);
         mUpdateOnlyCheckBox.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1));
         mUpdateOnlyCheckBox.setText("Display updates only");
-        mUpdateOnlyCheckBox.setToolTipText("When selected, only compatible update packages are shown in the list above.");
+        mUpdateOnlyCheckBox.setToolTipText("When selected, only compatible non-obsolete update packages are shown in the list above.");
         mUpdateOnlyCheckBox.setSelection(mUpdaterData.getSettingsController().getShowUpdateOnly());
         mUpdateOnlyCheckBox.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -320,7 +320,9 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         }
 
         if (mUpdaterData != null) {
-            mUpdaterData.updateOrInstallAll_WithGUI(archives);
+            mUpdaterData.updateOrInstallAll_WithGUI(
+                    archives,
+                    mUpdateOnlyCheckBox.getSelection() /* includeObsoletes */);
         }
     }
 

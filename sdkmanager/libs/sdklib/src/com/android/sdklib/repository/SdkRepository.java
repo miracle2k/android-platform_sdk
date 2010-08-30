@@ -67,7 +67,7 @@ public class SdkRepository {
      * List of possible nodes in a repository XML. Used to populate options automatically
      * in the no-GUI mode.
      * <p/>
-     * Warning: if you edit this list, please also update the package-to-class map
+     * **IMPORTANT**: if you edit this list, please also update the package-to-class map
      * com.android.sdkuilib.internal.repository.UpdaterData.updateOrInstallAll_NoGUI().
      */
     public static final String[] NODES = {

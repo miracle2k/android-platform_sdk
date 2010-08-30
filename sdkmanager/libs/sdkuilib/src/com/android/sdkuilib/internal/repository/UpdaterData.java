@@ -31,6 +31,7 @@ import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.LocalSdkParser;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.PlatformPackage;
+import com.android.sdklib.internal.repository.PlatformToolPackage;
 import com.android.sdklib.internal.repository.RepoSource;
 import com.android.sdklib.internal.repository.RepoSources;
 import com.android.sdklib.internal.repository.SamplePackage;
@@ -593,7 +594,9 @@ class UpdaterData {
      *  This can be null, in which case a list of remote archive is fetched from all
      *  available sources.
      */
-    public void updateOrInstallAll_WithGUI(Collection<Archive> selectedArchives) {
+    public void updateOrInstallAll_WithGUI(
+            Collection<Archive> selectedArchives,
+            boolean includeObsoletes) {
         if (selectedArchives == null) {
             refreshSources(true);
         }
@@ -602,10 +605,15 @@ class UpdaterData {
         ArrayList<ArchiveInfo> archives = ul.computeUpdates(
                 selectedArchives,
                 getSources(),
-                getLocalSdkParser().getPackages());
+                getLocalSdkParser().getPackages(),
+                includeObsoletes);
 
         if (selectedArchives == null) {
-            ul.addNewPlatforms(archives, getSources(), getLocalSdkParser().getPackages());
+            ul.addNewPlatforms(
+                    archives,
+                    getSources(),
+                    getLocalSdkParser().getPackages(),
+                    includeObsoletes);
         }
 
         // TODO if selectedArchives is null and archives.len==0, find if there are
@@ -642,21 +650,27 @@ class UpdaterData {
         ArrayList<ArchiveInfo> archives = ul.computeUpdates(
                 null /*selectedArchives*/,
                 getSources(),
-                getLocalSdkParser().getPackages());
+                getLocalSdkParser().getPackages(),
+                includeObsoletes);
 
-        ul.addNewPlatforms(archives, getSources(), getLocalSdkParser().getPackages());
+        ul.addNewPlatforms(
+                archives,
+                getSources(),
+                getLocalSdkParser().getPackages(),
+                includeObsoletes);
 
         // Filter the selected archives to only keep the ones matching the filter
         if (pkgFilter != null && pkgFilter.size() > 0 && archives != null && archives.size() > 0) {
             // Map filter types to an SdkRepository Package type.
             HashMap<String, Class<? extends Package>> pkgMap =
                 new HashMap<String, Class<? extends Package>>();
-            pkgMap.put(SdkRepository.NODE_PLATFORM, PlatformPackage.class);
-            pkgMap.put(SdkRepository.NODE_ADD_ON,   AddonPackage.class);
-            pkgMap.put(SdkRepository.NODE_TOOL,     ToolPackage.class);
-            pkgMap.put(SdkRepository.NODE_DOC,      DocPackage.class);
-            pkgMap.put(SdkRepository.NODE_SAMPLE,   SamplePackage.class);
-            pkgMap.put(SdkRepository.NODE_EXTRA,    ExtraPackage.class);
+            pkgMap.put(SdkRepository.NODE_PLATFORM,         PlatformPackage.class);
+            pkgMap.put(SdkRepository.NODE_ADD_ON,           AddonPackage.class);
+            pkgMap.put(SdkRepository.NODE_TOOL,             ToolPackage.class);
+            pkgMap.put(SdkRepository.NODE_PLATFORM_TOOL,    PlatformToolPackage.class);
+            pkgMap.put(SdkRepository.NODE_DOC,              DocPackage.class);
+            pkgMap.put(SdkRepository.NODE_SAMPLE,           SamplePackage.class);
+            pkgMap.put(SdkRepository.NODE_EXTRA,            ExtraPackage.class);
 
             if (SdkRepository.NODES.length != pkgMap.size()) {
                 // Sanity check in case we forget to update this package map.
@@ -698,39 +712,11 @@ class UpdaterData {
             }
 
             if (archives.size() == 0) {
-                mSdkLog.warning("The package filter removed all packages. There is nothing to install.\n" +
-                        "Please consider trying updating again without a package filter.");
+                mSdkLog.printf("The package filter removed all packages. There is nothing to install.\n" +
+                        "Please consider trying updating again without a package filter.\n");
                 return;
             }
         }
-
-        if (!includeObsoletes && archives != null && archives.size() > 0) {
-            // Filter obsolete packages out
-            Iterator<ArchiveInfo> it = archives.iterator();
-            while (it.hasNext()) {
-                boolean keep = false;
-                ArchiveInfo ai = it.next();
-                Archive a = ai.getNewArchive();
-                if (a != null) {
-                    Package p = a.getParentPackage();
-                    if (p != null && !p.isObsolete()) {
-                        keep = true;
-                    }
-                }
-
-                if (!keep) {
-                    it.remove();
-                }
-            }
-
-            if (archives.size() == 0) {
-                mSdkLog.warning("All candidate packages were obsolete. Nothing to install.");
-                return;
-            }
-        }
-
-        // TODO if selectedArchives is null and archives.len==0, find if there are
-        // any new platform we can suggest to install instead.
 
         if (archives != null && archives.size() > 0) {
             if (dryMode) {
