@@ -23,18 +23,13 @@ import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.repository.AddonPackage;
 import com.android.sdklib.internal.repository.Archive;
-import com.android.sdklib.internal.repository.DocPackage;
-import com.android.sdklib.internal.repository.ExtraPackage;
 import com.android.sdklib.internal.repository.ITask;
 import com.android.sdklib.internal.repository.ITaskFactory;
 import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.LocalSdkParser;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.PlatformPackage;
-import com.android.sdklib.internal.repository.PlatformToolPackage;
 import com.android.sdklib.internal.repository.RepoSource;
 import com.android.sdklib.internal.repository.RepoSources;
-import com.android.sdklib.internal.repository.SamplePackage;
 import com.android.sdklib.internal.repository.ToolPackage;
 import com.android.sdklib.repository.SdkRepository;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
@@ -639,6 +634,7 @@ class UpdaterData {
      * @param dryMode True to check what would be updated/installed but do not actually
      *   download or install anything.
      */
+    @SuppressWarnings("unchecked")
     public void updateOrInstallAll_NoGUI(
             Collection<String> pkgFilter,
             boolean includeObsoletes,
@@ -664,19 +660,52 @@ class UpdaterData {
             // Map filter types to an SdkRepository Package type.
             HashMap<String, Class<? extends Package>> pkgMap =
                 new HashMap<String, Class<? extends Package>>();
-            pkgMap.put(SdkRepository.NODE_PLATFORM,         PlatformPackage.class);
-            pkgMap.put(SdkRepository.NODE_ADD_ON,           AddonPackage.class);
-            pkgMap.put(SdkRepository.NODE_TOOL,             ToolPackage.class);
-            pkgMap.put(SdkRepository.NODE_PLATFORM_TOOL,    PlatformToolPackage.class);
-            pkgMap.put(SdkRepository.NODE_DOC,              DocPackage.class);
-            pkgMap.put(SdkRepository.NODE_SAMPLE,           SamplePackage.class);
-            pkgMap.put(SdkRepository.NODE_EXTRA,            ExtraPackage.class);
+
+            // Automatically find the classes matching the node names
+            ClassLoader classLoader = getClass().getClassLoader();
+            String basePackage = Package.class.getPackage().getName();
+            for (String node : SdkRepository.NODES) {
+                // Capitalize the name
+                String name = node.substring(0, 1).toUpperCase() + node.substring(1);
+
+                // We can have one dash at most in a name. If it's present, we'll try
+                // with the dash or with the next letter capitalized.
+                int dash = name.indexOf('-');
+                if (dash > 0) {
+                    name = name.replaceFirst("-", "");
+                }
+
+                for (int alternatives = 0; alternatives < 2; alternatives++) {
+
+                    String fqcn = basePackage + "." + name + "Package";  //$NON-NLS-1$ //$NON-NLS-2$
+                    try {
+                        Class<? extends Package> clazz =
+                            (Class<? extends Package>) classLoader.loadClass(fqcn);
+                        if (clazz != null) {
+                            pkgMap.put(node, clazz);
+                            continue;
+                        }
+                    } catch (Throwable ignore) {
+                    }
+
+                    if (alternatives == 0 && dash > 0) {
+                        // Try an alternative where the next letter after the dash
+                        // is converted to an upper case.
+                        name = name.substring(0, dash) +
+                               name.substring(dash, dash + 1).toUpperCase() +
+                               name.substring(dash + 1);
+                    } else {
+                        break;
+                    }
+                }
+            }
 
             if (SdkRepository.NODES.length != pkgMap.size()) {
-                // Sanity check in case we forget to update this package map.
+                // Sanity check in case we forget to update this node array.
                 // We don't cancel the operation though.
-                mSdkLog.error(null,
-                    "Filter Mismatch!\nThe package filter list has changed. Please report this.");
+                mSdkLog.printf(
+                    "*** Filter Mismatch! ***\n" +
+                    "*** The package filter list has changed. Please report this.");
             }
 
             // Now make a set of the types that are allowed by the filter.
