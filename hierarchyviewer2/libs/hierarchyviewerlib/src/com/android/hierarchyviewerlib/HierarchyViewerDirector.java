@@ -17,6 +17,7 @@
 package com.android.hierarchyviewerlib;
 
 import com.android.ddmlib.AdbCommandRejectedException;
+import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
 import com.android.ddmlib.RawImage;
@@ -88,6 +89,21 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
         return sDirector;
     }
 
+    /**
+     * Init the DeviceBridge with an existing {@link AndroidDebugBridge}. This loops until
+     * a bridge exists or a timeout is reached.
+     */
+    public boolean acquireBridge() {
+        return DeviceBridge.acquireBridge();
+    }
+
+    /**
+     * Creates an {@link AndroidDebugBridge} connected to adb at the given location.
+     *
+     * If a bridge is already running, this disconnects it and creates a new one.
+     *
+     * @param adbLocation the location to adb.
+     */
     public void initDebugBridge() {
         DeviceBridge.initDebugBridge(getAdbLocation());
     }
@@ -633,7 +649,7 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
             }
         }
     }
-    
+
     public void setPixelPerfectAutoRefreshInterval(int value) {
         synchronized (mPixelPerfectRefreshTimer) {
             if (mPixelPerfectAutoRefreshInterval == value) {

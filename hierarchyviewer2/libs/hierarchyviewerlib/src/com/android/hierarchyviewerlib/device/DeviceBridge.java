@@ -80,6 +80,37 @@ public class DeviceBridge {
         }
     }
 
+    /**
+     * Init the DeviceBridge with an existing {@link AndroidDebugBridge}. This loops until
+     * a bridge exists or a timeout is reached.
+     */
+    public static boolean acquireBridge() {
+        int count = 10;
+        do {
+            sBridge = AndroidDebugBridge.getBridge();
+            if (sBridge == null) {
+                try {
+                    Thread.sleep(500);
+                    count--;
+                    if (count == 0) {
+                        return false;
+                    }
+                } catch (InterruptedException e) {
+                    // pass
+                }
+            }
+        } while (sBridge == null);
+
+        return true;
+    }
+
+    /**
+     * Creates an {@link AndroidDebugBridge} connected to adb at the given location.
+     *
+     * If a bridge is already running, this disconnects it and creates a new one.
+     *
+     * @param adbLocation the location to adb.
+     */
     public static void initDebugBridge(String adbLocation) {
         if (sBridge == null) {
             AndroidDebugBridge.init(false /* debugger support */);
@@ -89,6 +120,7 @@ public class DeviceBridge {
         }
     }
 
+    /** Disconnects the current {@link AndroidDebugBridge}. */
     public static void terminate() {
         AndroidDebugBridge.terminate();
     }
@@ -117,7 +149,7 @@ public class DeviceBridge {
      * <p/>
      * This starts a port forwarding between a local port and a port on the
      * device.
-     * 
+     *
      * @param device
      */
     public static void setupDeviceForward(IDevice device) {

@@ -240,8 +240,8 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
         CustomToggle[] toggles = new CustomToggle[] {
                 new CustomToggle(
-                        "Explode",
-                        null, //image
+                        null, //text
+                        IconFactory.getInstance().getIcon("explode"),
                         "Displays extra margins in the layout."
                         ) {
                     @Override
@@ -251,8 +251,8 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
                     }
                 },
                 new CustomToggle(
-                        "Outline",
-                        null, //image
+                        null, //text
+                        IconFactory.getInstance().getIcon("outline"),
                         "Shows the outline of all views in the layout."
                         ) {
                     @Override

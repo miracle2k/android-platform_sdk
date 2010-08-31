@@ -61,6 +61,7 @@ public final class AndroidDebugBridge {
     private static InetSocketAddress sSocketAddr;
 
     private static AndroidDebugBridge sThis;
+    private static boolean sInitialized = false;
     private static boolean sClientSupport;
 
     /** Full path to adb. */
@@ -173,7 +174,11 @@ public final class AndroidDebugBridge {
      * @see AndroidDebugBridge#createBridge(String, boolean)
      * @see DdmPreferences
      */
-    public static void init(boolean clientSupport) {
+    public static synchronized void init(boolean clientSupport) {
+        if (sInitialized) {
+            throw new IllegalStateException("AndroidDebugBridge.init() has already been called.");
+        }
+        sInitialized = true;
         sClientSupport = clientSupport;
 
         // Determine port and instantiate socket address.
