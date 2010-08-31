@@ -202,7 +202,7 @@ public class RepoSourcesAdapter {
 
             // filter out only the packages that are new/upgrade.
             if (packages != null && mUpdaterData.getSettingsController().getShowUpdateOnly()) {
-                packages = filteredPackages(packages);
+                packages = filterUpdateOnlyPackages(packages);
             }
             if (packages != null && packages.length == 0) {
                 packages = null;
@@ -279,11 +279,12 @@ public class RepoSourcesAdapter {
 
     /**
      * Filters out a list of remote packages to only keep the ones that are either new or
-     * updates of existing package.
+     * updates of existing package. This also removes obsolete packages.
+     *
      * @param remotePackages the list of packages to filter.
      * @return a non null (but maybe empty) list of new or update packages.
      */
-    private Package[] filteredPackages(Package[] remotePackages) {
+    private Package[] filterUpdateOnlyPackages(Package[] remotePackages) {
         // get the installed packages
         Package[] installedPackages = mUpdaterData.getInstalledPackage();
 
@@ -295,7 +296,7 @@ public class RepoSourcesAdapter {
         for (Package remotePkg : remotePackages) {
             boolean newPkg = true;
 
-            // We're not going to offer obsolete packages as updates.
+            // Obsolete packages are not offered as updates.
             if (remotePkg.isObsolete()) {
                 continue;
             }
