@@ -23,17 +23,13 @@ import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.repository.AddonPackage;
 import com.android.sdklib.internal.repository.Archive;
-import com.android.sdklib.internal.repository.DocPackage;
-import com.android.sdklib.internal.repository.ExtraPackage;
 import com.android.sdklib.internal.repository.ITask;
 import com.android.sdklib.internal.repository.ITaskFactory;
 import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.LocalSdkParser;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.PlatformPackage;
 import com.android.sdklib.internal.repository.RepoSource;
 import com.android.sdklib.internal.repository.RepoSources;
-import com.android.sdklib.internal.repository.SamplePackage;
 import com.android.sdklib.internal.repository.ToolPackage;
 import com.android.sdklib.repository.SdkRepository;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
@@ -593,7 +589,9 @@ class UpdaterData {
      *  This can be null, in which case a list of remote archive is fetched from all
      *  available sources.
      */
-    public void updateOrInstallAll_WithGUI(Collection<Archive> selectedArchives) {
+    public void updateOrInstallAll_WithGUI(
+            Collection<Archive> selectedArchives,
+            boolean includeObsoletes) {
         if (selectedArchives == null) {
             refreshSources(true);
         }
@@ -602,10 +600,15 @@ class UpdaterData {
         ArrayList<ArchiveInfo> archives = ul.computeUpdates(
                 selectedArchives,
                 getSources(),
-                getLocalSdkParser().getPackages());
+                getLocalSdkParser().getPackages(),
+                includeObsoletes);
 
         if (selectedArchives == null) {
-            ul.addNewPlatforms(archives, getSources(), getLocalSdkParser().getPackages());
+            ul.addNewPlatforms(
+                    archives,
+                    getSources(),
+                    getLocalSdkParser().getPackages(),
+                    includeObsoletes);
         }
 
         // TODO if selectedArchives is null and archives.len==0, find if there are
@@ -631,6 +634,7 @@ class UpdaterData {
      * @param dryMode True to check what would be updated/installed but do not actually
      *   download or install anything.
      */
+    @SuppressWarnings("unchecked")
     public void updateOrInstallAll_NoGUI(
             Collection<String> pkgFilter,
             boolean includeObsoletes,
@@ -642,27 +646,66 @@ class UpdaterData {
         ArrayList<ArchiveInfo> archives = ul.computeUpdates(
                 null /*selectedArchives*/,
                 getSources(),
-                getLocalSdkParser().getPackages());
+                getLocalSdkParser().getPackages(),
+                includeObsoletes);
 
-        ul.addNewPlatforms(archives, getSources(), getLocalSdkParser().getPackages());
+        ul.addNewPlatforms(
+                archives,
+                getSources(),
+                getLocalSdkParser().getPackages(),
+                includeObsoletes);
 
         // Filter the selected archives to only keep the ones matching the filter
         if (pkgFilter != null && pkgFilter.size() > 0 && archives != null && archives.size() > 0) {
             // Map filter types to an SdkRepository Package type.
             HashMap<String, Class<? extends Package>> pkgMap =
                 new HashMap<String, Class<? extends Package>>();
-            pkgMap.put(SdkRepository.NODE_PLATFORM, PlatformPackage.class);
-            pkgMap.put(SdkRepository.NODE_ADD_ON,   AddonPackage.class);
-            pkgMap.put(SdkRepository.NODE_TOOL,     ToolPackage.class);
-            pkgMap.put(SdkRepository.NODE_DOC,      DocPackage.class);
-            pkgMap.put(SdkRepository.NODE_SAMPLE,   SamplePackage.class);
-            pkgMap.put(SdkRepository.NODE_EXTRA,    ExtraPackage.class);
+
+            // Automatically find the classes matching the node names
+            ClassLoader classLoader = getClass().getClassLoader();
+            String basePackage = Package.class.getPackage().getName();
+            for (String node : SdkRepository.NODES) {
+                // Capitalize the name
+                String name = node.substring(0, 1).toUpperCase() + node.substring(1);
+
+                // We can have one dash at most in a name. If it's present, we'll try
+                // with the dash or with the next letter capitalized.
+                int dash = name.indexOf('-');
+                if (dash > 0) {
+                    name = name.replaceFirst("-", "");
+                }
+
+                for (int alternatives = 0; alternatives < 2; alternatives++) {
+
+                    String fqcn = basePackage + "." + name + "Package";  //$NON-NLS-1$ //$NON-NLS-2$
+                    try {
+                        Class<? extends Package> clazz =
+                            (Class<? extends Package>) classLoader.loadClass(fqcn);
+                        if (clazz != null) {
+                            pkgMap.put(node, clazz);
+                            continue;
+                        }
+                    } catch (Throwable ignore) {
+                    }
+
+                    if (alternatives == 0 && dash > 0) {
+                        // Try an alternative where the next letter after the dash
+                        // is converted to an upper case.
+                        name = name.substring(0, dash) +
+                               name.substring(dash, dash + 1).toUpperCase() +
+                               name.substring(dash + 1);
+                    } else {
+                        break;
+                    }
+                }
+            }
 
             if (SdkRepository.NODES.length != pkgMap.size()) {
-                // Sanity check in case we forget to update this package map.
+                // Sanity check in case we forget to update this node array.
                 // We don't cancel the operation though.
-                mSdkLog.error(null,
-                    "Filter Mismatch!\nThe package filter list has changed. Please report this.");
+                mSdkLog.printf(
+                    "*** Filter Mismatch! ***\n" +
+                    "*** The package filter list has changed. Please report this.");
             }
 
             // Now make a set of the types that are allowed by the filter.
@@ -698,39 +741,11 @@ class UpdaterData {
             }
 
             if (archives.size() == 0) {
-                mSdkLog.warning("The package filter removed all packages. There is nothing to install.\n" +
-                        "Please consider trying updating again without a package filter.");
+                mSdkLog.printf("The package filter removed all packages. There is nothing to install.\n" +
+                        "Please consider trying updating again without a package filter.\n");
                 return;
             }
         }
-
-        if (!includeObsoletes && archives != null && archives.size() > 0) {
-            // Filter obsolete packages out
-            Iterator<ArchiveInfo> it = archives.iterator();
-            while (it.hasNext()) {
-                boolean keep = false;
-                ArchiveInfo ai = it.next();
-                Archive a = ai.getNewArchive();
-                if (a != null) {
-                    Package p = a.getParentPackage();
-                    if (p != null && !p.isObsolete()) {
-                        keep = true;
-                    }
-                }
-
-                if (!keep) {
-                    it.remove();
-                }
-            }
-
-            if (archives.size() == 0) {
-                mSdkLog.warning("All candidate packages were obsolete. Nothing to install.");
-                return;
-            }
-        }
-
-        // TODO if selectedArchives is null and archives.len==0, find if there are
-        // any new platform we can suggest to install instead.
 
         if (archives != null && archives.size() > 0) {
             if (dryMode) {

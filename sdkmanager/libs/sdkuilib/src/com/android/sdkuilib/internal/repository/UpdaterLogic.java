@@ -59,7 +59,8 @@ class UpdaterLogic {
     public ArrayList<ArchiveInfo> computeUpdates(
             Collection<Archive> selectedArchives,
             RepoSources sources,
-            Package[] localPkgs) {
+            Package[] localPkgs,
+            boolean includeObsoletes) {
 
         ArrayList<ArchiveInfo> archives = new ArrayList<ArchiveInfo>();
         ArrayList<Package> remotePkgs = new ArrayList<Package>();
@@ -69,7 +70,11 @@ class UpdaterLogic {
         ArchiveInfo[] localArchives = createLocalArchives(localPkgs);
 
         if (selectedArchives == null) {
-            selectedArchives = findUpdates(localArchives, remotePkgs, remoteSources);
+            selectedArchives = findUpdates(
+                    localArchives,
+                    remotePkgs,
+                    remoteSources,
+                    includeObsoletes);
         }
 
         for (Archive a : selectedArchives) {
@@ -89,9 +94,11 @@ class UpdaterLogic {
      * Finds new packages that the user does not have in his/her local SDK
      * and adds them to the list of archives to install.
      */
-    public void addNewPlatforms(ArrayList<ArchiveInfo> archives,
+    public void addNewPlatforms(
+            ArrayList<ArchiveInfo> archives,
             RepoSources sources,
-            Package[] localPkgs) {
+            Package[] localPkgs,
+            boolean includeObsoletes) {
 
         // Create ArchiveInfos out of local (installed) packages.
         ArchiveInfo[] localArchives = createLocalArchives(localPkgs);
@@ -137,6 +144,11 @@ class UpdaterLogic {
         Package suggestedDoc = null;
 
         for (Package p : remotePkgs) {
+            // Skip obsolete packages unless requested to include them.
+            if (p.isObsolete() && !includeObsoletes) {
+                continue;
+            }
+
             int rev = p.getRevision();
             int api = 0;
             boolean isPreview = false;
@@ -233,9 +245,11 @@ class UpdaterLogic {
     /**
      * Find suitable updates to all current local packages.
      */
-    private Collection<Archive> findUpdates(ArchiveInfo[] localArchives,
+    private Collection<Archive> findUpdates(
+            ArchiveInfo[] localArchives,
             ArrayList<Package> remotePkgs,
-            RepoSource[] remoteSources) {
+            RepoSource[] remoteSources,
+            boolean includeObsoletes) {
         ArrayList<Archive> updates = new ArrayList<Archive>();
 
         fetchRemotePackages(remotePkgs, remoteSources);
@@ -248,9 +262,11 @@ class UpdaterLogic {
             Package localPkg = na.getParentPackage();
 
             for (Package remotePkg : remotePkgs) {
-                if (localPkg.canBeUpdatedBy(remotePkg) == UpdateInfo.UPDATE) {
+                // Only look for non-obsolete updates unless requested to include them
+                if ((includeObsoletes || !remotePkg.isObsolete()) &&
+                        localPkg.canBeUpdatedBy(remotePkg) == UpdateInfo.UPDATE) {
                     // Found a suitable update. Only accept the remote package
-                    // if it provides at least one compatible archive.
+                    // if it provides at least one compatible archive
 
                     for (Archive a : remotePkg.getArchives()) {
                         if (a.isCompatible()) {
