@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.ExplodedRenderingHelper;
 import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
@@ -258,8 +259,8 @@ public class GraphicalEditorPart extends EditorPart
                     }
                 },
                 new CustomToggle(
-                        "Explode",
-                        null, //image
+                        null, //text
+                        IconFactory.getInstance().getIcon("explode"),
                         "Displays extra margins in the layout."
                         ) {
                     @Override
@@ -269,8 +270,8 @@ public class GraphicalEditorPart extends EditorPart
                     }
                 },
                 new CustomToggle(
-                        "Outline",
-                        null, //image
+                        null, //text
+                        IconFactory.getInstance().getIcon("outline"),
                         "Shows the of all views in the layout."
                         ) {
                     @Override
