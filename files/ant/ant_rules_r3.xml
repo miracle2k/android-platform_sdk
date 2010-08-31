@@ -436,11 +436,15 @@
         <echo>and run zipalign from the Android SDK tools.</echo>
     </target>
 
+    <target name="-set-release-mode">
+        <property name="build.mode.release" value="true"/>
+    </target>
+
     <!-- This runs -package-release and -release-nosign first and then runs
          only if release-sign is true (set in -release-check,
          called by -release-no-sign)-->
     <target name="release"
-                depends="-package-release, -release-prompt-for-password, -release-nosign"
+                depends="-set-release-mode, -package-release, -release-prompt-for-password, -release-nosign"
                 if="has.keystore"
                 description="Builds the application. The generated apk file must be signed before
                             it is published.">
