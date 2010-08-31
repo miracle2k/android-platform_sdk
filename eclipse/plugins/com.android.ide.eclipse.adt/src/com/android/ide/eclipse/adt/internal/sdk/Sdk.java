@@ -18,7 +18,9 @@ package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ddmlib.IDevice;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
+import com.android.ide.eclipse.adt.internal.project.AndroidNature;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
@@ -717,6 +719,16 @@ public final class Sdk  {
         }
 
         private void onProjectRemoved(IProject project, boolean deleted) {
+            try {
+                if (project.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
+                    return;
+                }
+            } catch (CoreException e) {
+                // this can only happen if the project does not exist or is not open, neither
+                // of which can happen here since we're processing a Project removed/deleted event
+                // which is processed before the project is actually removed/closed.
+            }
+
             // get the target project
             synchronized (sLock) {
                 // Don't use getProject() as it could create the ProjectState if it's not
@@ -794,6 +806,15 @@ public final class Sdk  {
         }
 
         private void onProjectOpened(final IProject openedProject) {
+            try {
+                if (openedProject.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
+                    return;
+                }
+            } catch (CoreException e) {
+                // this can only happen if the project does not exist or is not open, neither
+                // of which can happen here since we're processing a Project opened event.
+            }
+
             ProjectState openedState = getProjectState(openedProject);
             if (openedState != null) {
                 if (openedState.hasLibraries()) {
@@ -852,7 +873,15 @@ public final class Sdk  {
         }
 
         public void projectRenamed(IProject project, IPath from) {
-            System.out.println("RENAMED: " + project);
+            try {
+                if (project.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
+                    return;
+                }
+            } catch (CoreException e) {
+                // this can only happen if the project does not exist or is not open, neither
+                // of which can happen here since we're processing a Project renamed event.
+            }
+
             // a project was renamed.
             // if the project is a library, look for any project that depended on it
             // and update it. (default.properties and linked source folder)
@@ -911,6 +940,11 @@ public final class Sdk  {
                     // reload the content of the default.properties file and update
                     // the target.
                     IProject iProject = file.getProject();
+
+                    if (iProject.hasNature(AndroidConstants.NATURE_DEFAULT) == false) {
+                        return;
+                    }
+
                     ProjectState state = Sdk.getProjectState(iProject);
 
                     // get the current target
