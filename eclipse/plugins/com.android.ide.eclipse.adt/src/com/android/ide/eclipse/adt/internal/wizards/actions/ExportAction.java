@@ -64,7 +64,7 @@ public class ExportAction implements IObjectActionDelegate {
                         MessageDialog.openError(mShell, "Android Export",
                                 "Android library projects cannot be exported.");
                     } else {
-                        ExportHelper.exportProject(project);
+                        ExportHelper.exportUnsignedReleaseApk(project);
                     }
                 }
             }

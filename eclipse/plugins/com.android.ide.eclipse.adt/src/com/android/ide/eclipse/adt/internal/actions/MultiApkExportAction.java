@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.actions;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.AndroidPrintStream;
 import com.android.ide.eclipse.adt.internal.build.PostCompilerHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
@@ -43,6 +44,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.action.IAction;
@@ -175,6 +178,11 @@ public class MultiApkExportAction implements IObjectActionDelegate {
             binFolder.create(true, true, monitor);
         }
 
+        AndroidPrintStream stdout = new AndroidPrintStream(exportProject, null /*prefix*/,
+                System.out);
+        AndroidPrintStream stderr = new AndroidPrintStream(exportProject, null /*prefix*/,
+                System.err);
+
         for (ApkData apk : apks) {
             // find the IProject object for this apk.
             ProjectConfig projectConfig = apk.getProjectConfig();
@@ -218,11 +226,11 @@ public class MultiApkExportAction implements IObjectActionDelegate {
                 // if there are soft variants, only export those.
                 for (Entry<String, String> entry : variantMap.entrySet()) {
                     buildVariant(wsRoot, projectState, appPackage, versionCode, apk, entry,
-                            binFolder);
+                            binFolder, stdout, stderr);
                 }
             } else {
                 buildVariant(wsRoot, projectState, appPackage, versionCode, apk,
-                        null /*soft variant*/, binFolder);
+                        null /*soft variant*/, binFolder, stdout, stderr);
             }
         }
 
@@ -241,63 +249,71 @@ public class MultiApkExportAction implements IObjectActionDelegate {
      * @throws CoreException
      */
     private void buildVariant(IWorkspaceRoot wsRoot, ProjectState projectState, String appPackage,
-            int versionCode, ApkData apk, Entry<String, String> softVariant, IFolder binFolder)
+            int versionCode, ApkData apk, Entry<String, String> softVariant, IFolder binFolder,
+            AndroidPrintStream stdout, AndroidPrintStream stderr)
             throws CoreException {
-        // get the libraries for this project
-        IProject[] libProjects = projectState.getFullLibraryProjects();
+        try {
+            // get the libraries for this project
+            IProject[] libProjects = projectState.getFullLibraryProjects();
 
-        IProject project = projectState.getProject();
-        IJavaProject javaProject = JavaCore.create(project);
+            IProject project = projectState.getProject();
+            IJavaProject javaProject = JavaCore.create(project);
 
-        int compositeVersionCode = apk.getCompositeVersionCode(versionCode);
+            int compositeVersionCode = apk.getCompositeVersionCode(versionCode);
 
-        // figure out the file names
-        String pkgName = project.getName() + "-" + apk.getBuildInfo();
-        String finalNameRoot = appPackage + "-" + compositeVersionCode;
-        if (softVariant != null) {
-            String tmp = "-" + softVariant.getKey();
-            pkgName += tmp;
-            finalNameRoot += tmp;
+            // figure out the file names
+            String pkgName = project.getName() + "-" + apk.getBuildInfo();
+            String finalNameRoot = appPackage + "-" + compositeVersionCode;
+            if (softVariant != null) {
+                String tmp = "-" + softVariant.getKey();
+                pkgName += tmp;
+                finalNameRoot += tmp;
+            }
+
+            pkgName += ".ap_";
+            String outputName = finalNameRoot + "-unsigned.apk";
+
+            PostCompilerHelper helper = new PostCompilerHelper(project, stdout, stderr,
+                    false /*debugMode*/, false/*verbose*/);
+
+            // get the manifest file
+            IFile manifestFile = project.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
+            // get the project bin folder
+            IFolder projectBinFolder = wsRoot.getFolder(javaProject.getOutputLocation());
+            String projectBinFolderPath = projectBinFolder.getLocation().toOSString();
+
+            // package the resources
+            helper.packageResources(manifestFile, libProjects,
+                    softVariant != null ? softVariant.getValue() : null,
+                    compositeVersionCode, projectBinFolderPath, pkgName);
+
+            apk.setOutputName(softVariant != null ? softVariant.getKey() : null, outputName);
+
+            // do the final export.
+            IFile dexFile = projectBinFolder.getFile(SdkConstants.FN_APK_CLASSES_DEX);
+            String outputFile = binFolder.getFile(outputName).getLocation().toOSString();
+
+            // get the list of referenced projects.
+            IProject[] javaRefs = ProjectHelper.getReferencedProjects(project);
+            IJavaProject[] referencedJavaProjects = PostCompilerHelper.getJavaProjects(javaRefs);
+
+            helper.finalPackage(
+                    new File(projectBinFolderPath, pkgName).getAbsolutePath(),
+                    dexFile.getLocation().toOSString(),
+                    outputFile,
+                    javaProject,
+                    libProjects,
+                    referencedJavaProjects,
+                    apk.getAbi(),
+                    null, //key
+                    null, //certificate
+                    null); //ResourceMarker
+        } catch (CoreException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                    e.getMessage(), e));
         }
-
-        pkgName += ".ap_";
-        String outputName = finalNameRoot + "-unsigned.apk";
-
-        PostCompilerHelper helper = new PostCompilerHelper(project, System.out, System.err);
-
-        // get the manifest file
-        IFile manifestFile = project.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
-        // get the project bin folder
-        IFolder projectBinFolder = wsRoot.getFolder(javaProject.getOutputLocation());
-        String projectBinFolderPath = projectBinFolder.getLocation().toOSString();
-
-        // package the resources
-        if (helper.packageResources(manifestFile, libProjects,
-                softVariant != null ? softVariant.getValue() : null, compositeVersionCode,
-                projectBinFolderPath, pkgName) == false) {
-            return;
-        }
-
-        apk.setOutputName(softVariant != null ? softVariant.getKey() : null, outputName);
-
-        // do the final export.
-        IFile dexFile = projectBinFolder.getFile(SdkConstants.FN_APK_CLASSES_DEX);
-        String outputFile = binFolder.getFile(outputName).getLocation().toOSString();
-
-        // get the list of referenced projects.
-        IProject[] javaRefs = ProjectHelper.getReferencedProjects(project);
-        IJavaProject[] referencedJavaProjects = PostCompilerHelper.getJavaProjects(javaRefs);
-
-        helper.finalPackage(
-                new File(projectBinFolderPath, pkgName).getAbsolutePath(),
-                dexFile.getLocation().toOSString(),
-                outputFile,
-                false /*debugSign */,
-                javaProject,
-                libProjects,
-                referencedJavaProjects,
-                apk.getAbi(),
-                false /*debuggable*/);
 
     }
 }
