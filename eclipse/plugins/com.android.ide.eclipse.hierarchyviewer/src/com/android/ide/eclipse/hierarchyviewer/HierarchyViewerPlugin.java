@@ -58,7 +58,7 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
     public void start(BundleContext context) throws Exception {
         super.start(context);
         sPlugin = this;
-        
+
 
         // set the consoles.
         final MessageConsole messageConsole = new MessageConsole("Hierarchy Viewer", null); //$NON-NLS-1$
@@ -115,9 +115,10 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
         new Thread() {
             @Override
             public void run() {
-                director.initDebugBridge();
-                director.startListenForDevices();
-                director.populateDeviceSelectionModel();
+                if (director.acquireBridge()) {
+                    director.startListenForDevices();
+                    director.populateDeviceSelectionModel();
+                }
             }
         }.start();
     }
@@ -143,7 +144,7 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
 
     /**
      * Returns the shared instance
-     * 
+     *
      * @return the shared instance
      */
     public static HierarchyViewerPlugin getPlugin() {
@@ -152,7 +153,7 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
 
     /**
      * Set the location of the adb executable and optionally starts adb
-     * 
+     *
      * @param adb location of adb
      * @param startAdb flag to start adb
      */
@@ -177,7 +178,7 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
 
     /**
      * Prints a message, associated with a project to the specified stream
-     * 
+     *
      * @param stream The stream to write to
      * @param tag The tag associated to the message. Can be null
      * @param message The message to print.
@@ -192,7 +193,7 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
 
     /**
      * Creates a string containing the current date/time, and the tag
-     * 
+     *
      * @param tag The tag associated to the message. Can be null
      * @return The dateTag
      */
