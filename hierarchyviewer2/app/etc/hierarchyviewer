@@ -67,8 +67,7 @@ javaCmd="java"
 
 # Mac OS X needs an additional arg, or you get an "illegal thread" complaint.
 if [ `uname` = "Darwin" ]; then
-    os_opts=
-#    os_opts="-XstartOnFirstThread"
+    os_opts="-XstartOnFirstThread"
 else
     os_opts=
 fi
