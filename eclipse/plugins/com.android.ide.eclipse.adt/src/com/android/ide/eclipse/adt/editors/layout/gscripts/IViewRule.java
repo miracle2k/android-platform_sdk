@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -76,6 +77,25 @@ public interface IViewRule {
      * @return Null for the default behavior or a shortened string.
      */
     String getDisplayName();
+
+    /**
+     * Invoked by the Rules Engine to retrieve a set of actions to customize
+     * the context menu displayed for this view. The result is not cached and the
+     * method is invoked everytime the context menu is about to be shown.
+     * <p/>
+     * Most rules should consider returning <code>super.getContextMenu(node)</code>
+     * and appending their own custom menu actions, if any.
+     * <p/>
+     * Menu actions are either toggles or fixed lists with one currently-selected
+     * item. It is expected that the rule will need to recreate the actions with
+     * different selections when a menu is going to shown, which is why the result
+     * is not cached. However rules are encouraged to cache some or all of the result
+     * to speed up following calls if it makes sense.
+     *
+     * @return Null for no context menu, or a new {@link MenuAction} describing one
+     *   or more actions to display in the context menu.
+     */
+    List<MenuAction> getContextMenu(INode node);
 
 
     // ==== Selection ====

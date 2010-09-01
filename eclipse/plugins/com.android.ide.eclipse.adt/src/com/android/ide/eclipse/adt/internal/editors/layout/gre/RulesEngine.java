@@ -26,6 +26,7 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.MenuAction;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
@@ -49,6 +50,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 
+import groovy.lang.Closure;
 import groovy.lang.ExpandoMetaClass;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyCodeSource;
@@ -64,6 +66,7 @@ import java.nio.charset.Charset;
 import java.security.CodeSource;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 /* TODO:
@@ -158,6 +161,30 @@ public class RulesEngine {
     }
 
     /**
+     * A convenience function that invokes {@link Closure#call(Object[])} with the
+     * parameters given to the method.
+     * Any exception thrown by the closure invocation is trapped and logged.
+     *
+     * @param closure The closure to invoke
+     * @param params The parameters for the closure, conveniently wrapped as an
+     *               <code>Object[]</code>
+     * @return The optional return value from the closure call or null.
+     */
+    public Object callClosure(Closure closure, Object...params) {
+        try {
+            return closure.call(params);
+
+        } catch (Exception e) {
+            logError("invokeClosure %s failed: %s",
+                    closure.getClass().getSimpleName(),
+                    e.toString());
+        }
+
+        return null;
+    }
+
+
+    /**
      * Invokes {@link IViewRule#getDisplayName()} on the rule matching the specified element.
      *
      * @param element The view element to target. Can be null.
@@ -174,6 +201,31 @@ public class RulesEngine {
 
             } catch (Exception e) {
                 logError("%s.getDisplayName() failed: %s",
+                        rule.getClass().getSimpleName(),
+                        e.toString());
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Invokes {@link IViewRule#getContextMenu(INode)} on the rule matching the specified element.
+     *
+     * @param selectedNode The node selected. Never null.
+     * @return Null if the rule failed, there's no rule or the rule does not provide
+     *   any custom menu actions. Otherwise, a list of {@link MenuAction}.
+     */
+    public List<MenuAction> callGetContextMenu(NodeProxy selectedNode) {
+        // try to find a rule for this element's FQCN
+        IViewRule rule = loadRule(selectedNode.getNode());
+
+        if (rule != null) {
+            try {
+                return rule.getContextMenu(selectedNode);
+
+            } catch (Exception e) {
+                logError("%s.getContextMenu() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -763,6 +815,5 @@ public class RulesEngine {
             return RulesEngine.this.loadRule(fqcn, fqcn);
         }
     }
-
 
 }

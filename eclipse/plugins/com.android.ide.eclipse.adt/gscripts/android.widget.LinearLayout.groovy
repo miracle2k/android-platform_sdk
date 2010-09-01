@@ -22,7 +22,38 @@ package com.android.adt.gscripts;
 public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
     public static String ATTR_ORIENTATION = "orientation";
+    public static String VALUE_HORIZONTAL = "horizontal";
     public static String VALUE_VERTICAL = "vertical";
+
+    /**
+     * Add an explicit Orientation toggle to the context menu.
+     */
+    public List<MenuAction> getContextMenu(INode selectedNode) {
+
+        def curr_orient = selectedNode.getStringAttr(ANDROID_URI, ATTR_ORIENTATION);
+        if (!curr_orient) {
+            curr_orient = VALUE_VERTICAL;
+        }
+
+        def onChange = { MenuAction.Action action, String valueId, Boolean newValue ->
+            def actionId = action.getId();
+            def node = selectedNode;
+
+            if (actionId == "_orientation") {
+                node.editXml("Change LinearLayout " + ATTR_ORIENTATION) {
+                    node.setAttribute(ANDROID_URI, ATTR_ORIENTATION, valueId);
+                }
+            }
+        }
+
+        return super.getContextMenu(selectedNode) +
+               [ new MenuAction.Choices("_orientation", "Orientation",
+                        [ horizontal : "Horizontal",
+                          vertical : "Vertical" ],
+                        curr_orient,
+                        onChange ),
+               ];
+    }
 
     // ==== Drag'n'drop support ====
 

@@ -16,6 +16,7 @@
 
 package com.android.adt.gscripts;
 
+
 public class BaseLayout extends BaseView {
 
     public boolean onInitialize(String fqcn) {
@@ -26,6 +27,9 @@ public class BaseLayout extends BaseView {
         super.onDispose();
     }
 
+    public List<MenuAction> getContextMenu(INode selectedNode) {
+        return super.getContextMenu(selectedNode);
+    }
 
     // ==== Paste support ====
 

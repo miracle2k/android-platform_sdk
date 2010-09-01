@@ -36,6 +36,7 @@ import java.util.List;
  */
 public class UiViewElementNode extends UiElementNode {
 
+    /** An AttributeDescriptor array that depends on the current UiParent. */
     private AttributeDescriptor[] mCachedAttributeDescriptors;
 
     public UiViewElementNode(ViewElementDescriptor elementDescriptor) {

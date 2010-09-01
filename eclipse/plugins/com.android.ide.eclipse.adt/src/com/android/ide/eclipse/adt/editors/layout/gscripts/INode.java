@@ -177,6 +177,24 @@ public interface INode {
      */
     public IAttributeInfo getAttributeInfo(String uri, String attrName);
 
+    /**
+     * Returns the list of all attributes declared by this node's descriptor.
+     * <p/>
+     * This returns a fixed list of all attributes known to the view or layout descriptor.
+     * This list does not depend on whether the attributes are actually used in the
+     * XML for this node.
+     * <p/>
+     * Note that for views, the list of attributes also includes the layout attributes
+     * inherited from the parent view. This means callers must not cache this list based
+     * solely on the type of the node, as its attribute list changes depending on the place
+     * of the view in the view hierarchy.
+     * <p/>
+     * If you want attributes actually written in the XML and their values, please use
+     * {@link #getStringAttr(String, String)} or {@link #getLiveAttributes()} instead.
+     *
+     * @return A non-null possible-empty list of {@link IAttributeInfo}.
+     */
+    public IAttributeInfo[] getDeclaredAttributes();
 
     /**
      * Returns the list of all attributes defined in the XML for this node.
@@ -185,17 +203,19 @@ public interface INode {
      * That means that if called in the context of {@link #editXml(String, Closure)}, the value
      * returned here is not affected by {@link #setAttribute(String, String, String)} until
      * the editXml closure is completed and the actual XML is updated.
+     * <p/>
+     * If you want a list of all possible attributes, whether used in the XML or not by
+     * this node, please see {@link #getDeclaredAttributes()} instead.
      *
      * @return A non-null possible-empty list of {@link IAttribute}.
      */
-    public IAttribute[] getAttributes();
+    public IAttribute[] getLiveAttributes();
 
     // -----------
 
     /**
-     * An XML attribute in an {@link INode}.
+     * An XML attribute in an {@link INode} with a namespace URI, a name and its current value.
      * <p/>
-     * The attribute is always represented by a namespace URI, a name and a value.
      * The name cannot be empty.
      * The namespace URI can be empty for an attribute without a namespace but is never null.
      * The value can be empty but cannot be null.

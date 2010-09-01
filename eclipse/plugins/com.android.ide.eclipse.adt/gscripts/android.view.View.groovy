@@ -19,6 +19,9 @@ package com.android.adt.gscripts;
 /**
  * An {@link IViewRule} for android.view.View and all its derived classes.
  * This is the "root" rule, that is used whenever there is not more specific rule to apply.
+ * <p/>
+ * There is no customization here, everything that is common to all views is simply
+ * implemented in BaseView.
  */
 public class AndroidViewViewRule extends BaseView {
 
