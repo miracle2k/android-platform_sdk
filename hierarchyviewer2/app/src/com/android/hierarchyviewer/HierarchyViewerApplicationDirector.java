@@ -62,9 +62,9 @@ public class HierarchyViewerApplicationDirector extends HierarchyViewerDirector 
     public void executeInBackground(final String taskName, final Runnable task) {
         mExecutor.execute(new Runnable() {
             public void run() {
-                HierarchyViewerApplication.getApp().startTask(taskName);
+                HierarchyViewerApplication.getMainWindow().startTask(taskName);
                 task.run();
-                HierarchyViewerApplication.getApp().endTask();
+                HierarchyViewerApplication.getMainWindow().endTask();
             }
         });
     }

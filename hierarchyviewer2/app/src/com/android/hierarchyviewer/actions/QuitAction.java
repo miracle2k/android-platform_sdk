@@ -39,6 +39,6 @@ public class QuitAction extends Action {
 
     @Override
     public void run() {
-        HierarchyViewerApplication.getApp().close();
+        HierarchyViewerApplication.getMainWindow().close();
     }
 }

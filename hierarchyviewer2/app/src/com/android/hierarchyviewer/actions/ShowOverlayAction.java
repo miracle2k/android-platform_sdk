@@ -55,7 +55,7 @@ public class ShowOverlayAction extends Action implements ImageAction, IImageChan
 
     @Override
     public void run() {
-        HierarchyViewerApplication.getApp().showOverlayInLoupe(sAction.isChecked());
+        HierarchyViewerApplication.getMainWindow().showOverlayInLoupe(sAction.isChecked());
     }
 
     public Image getImage() {
