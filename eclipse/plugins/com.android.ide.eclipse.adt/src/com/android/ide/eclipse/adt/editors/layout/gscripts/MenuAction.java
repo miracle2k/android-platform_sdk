@@ -50,8 +50,11 @@ public abstract class MenuAction {
      * The unique id of the action.
      * @see #getId()
      */
-    final private String mId;
-    final private String mTitle;
+    private final String mId;
+    /**
+     * The UI-visible title of the action.
+     */
+    private final String mTitle;
 
     /**
      * Creates a new {@link MenuAction} with the given id and the given title.
@@ -147,17 +150,19 @@ public abstract class MenuAction {
      */
     public static abstract class Action extends MenuAction {
 
+
+
         /**
          * A closure executed when the action is selected in the context menu.
          *
          * @see #getAction() for details on the closure parameters.
          */
-        final private Closure mAction;
+        private final Closure mAction;
         /**
          * An optional group id, to place the action in a given sub-menu.
          * @null This value can be null.
          */
-        final private String mGroupId;
+        private final String mGroupId;
 
         /**
          * Constructs a new base {@link MenuAction} with its ID, title and action closure.
@@ -289,22 +294,34 @@ public abstract class MenuAction {
 
     /**
      * A "choices" is a one-out-of-many-choices action, displayed as a sub-menu with one or more
-     * items, with either zero or one of them being checked.
+     * items, with either zero or more of them being checked.
      * <p/>
      * Implementation detail: empty choices will not be displayed in the context menu.
      * <p/>
      * Choice items are sorted by their id, using String's natural sorting order.
      */
     public static class Choices extends Action {
+
+        /**
+         * Special value which will insert a separator in the choices' submenu.
+         */
+        public final static String SEPARATOR = "----";
+        /**
+         * Character used to split multiple checked choices, see {@link #getCurrent()}.
+         * The pipe character "|" is used, to natively match Android resource flag separators.
+         */
+        public final static String CHOICE_SEP = "|";
+
         /**
          * A non-null map of id=>choice-title. The map could be empty but not null.
          */
-        final private Map<String, String> mChoices;
+        private final Map<String, String> mChoices;
         /**
-         * The id of the current choice, the one that will be check marked.
+         * One or more id for the checked choice(s) that will be check marked.
          * Can be null. Can be an id not present in the choices map.
+         * If more than one choice, they must be separated by {@link #CHOICE_SEP}.
          */
-        final private String mCurrent;
+        private final String mCurrent;
 
         /**
          * Creates a new immutable multiple-choice action.
@@ -313,8 +330,9 @@ public abstract class MenuAction {
          * @param id The unique id of the action. Cannot be null.
          * @param title The UI-visible title of the context menu item. Cannot be null.
          * @param choices A map id=>title for all the multiple-choice items. Cannot be null.
-         * @param current The id of the current choice, the one that will be check marked.
+         * @param current The id(s) of the current choice(s) that will be check marked.
          *                Can be null. Can be an id not present in the choices map.
+         *                There can be more than one id separated by {@link #CHOICE_SEP}.
          * @param action A closure to execute when the context menu item is selected.
          */
         public Choices(String id, String title,
@@ -330,8 +348,9 @@ public abstract class MenuAction {
          * @param id The unique id of the action. Cannot be null.
          * @param title The UI-visible title of the context menu item. Cannot be null.
          * @param choices A map id=>title for all the multiple-choice items. Cannot be null.
-         * @param current The id of the current choice, the one that will be check marked.
+         * @param current The id(s) of the current choice(s) that will be check marked.
          *                Can be null. Can be an id not present in the choices map.
+         *                There can be more than one id separated by {@link #CHOICE_SEP}.
          * @param groupId The optional group id, to place the action in a given sub-menu.
          *                Can be null.
          * @param action A closure to execute when the context menu item is selected.
@@ -354,8 +373,9 @@ public abstract class MenuAction {
         }
 
         /**
-         * Returns the id of the current choice, the one that will be check marked.
+         * Returns the id(s) of the current choice(s) that are check marked.
          * Can be null. Can be an id not present in the choices map.
+         * There can be more than one id separated by {@link #CHOICE_SEP}.
          */
         public String getCurrent() {
             return mCurrent;

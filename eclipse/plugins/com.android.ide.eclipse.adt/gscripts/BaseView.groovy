@@ -138,21 +138,42 @@ public class BaseView implements IViewRule {
                 if (prop) {
                     node.editXml("Change attribute " + actionId) {
                         if (prop.isToggle) {
-                            node.setAttribute(ANDROID_URI, actionId, newValue ? "true" : "");
-                        } else if (props.isFlag) {
-                            def values = node.getStringAttr(ANDROID_URI, actionId);
-                            if (!values) values = "";
-                            values = values.split(",");
-                            if (newValue) {
-                                values << valueId;
-                            } else {
-                                values = values - valueId;
+                            // case of toggle
+                            String value = "";
+                            switch(valueId) {
+                                case "1t":
+                                    value = newValue ? "true" : "";
+                                    break;
+                                case "2f":
+                                    value = newValue ? "false" : "";
+                                    break;
                             }
-                            values = values.join(",")
+                            node.setAttribute(ANDROID_URI, actionId, value);
+                        } else if (prop.isFlag) {
+                            // case of a flag
+                            def values = "";
+                            if (valueId != "~2clr") {
+                                values = node.getStringAttr(ANDROID_URI, actionId);
+                                if (!values) {
+                                    values = [] as Set;
+                                } else {
+                                    values = ([] as Set) + (values.split("\\|") as Set);
+                                }
+                                if (newValue) {
+                                    values << valueId;
+                                } else {
+                                    values = values - valueId;
+                                }
+                                values = values.join("|");
+                            }
                             node.setAttribute(ANDROID_URI, actionId, values);
                         } else {
-                            // it's an enum
-                            node.setAttribute(ANDROID_URI, actionId, valueId);
+                            // case of an enum
+                            def value = "";
+                            if (valueId != "~2clr") {
+                                value = newValue ? valueId : "";
+                            }
+                            node.setAttribute(ANDROID_URI, actionId, value);
                         }
                     }
                 }
@@ -182,19 +203,22 @@ public class BaseView implements IViewRule {
             // Prepare the property map
             props = [:]
             for (attrInfo in selectedNode.getDeclaredAttributes()) {
+                def id = attrInfo?.getName();
+                if (id == null || id == ATTR_LAYOUT_WIDTH || id == ATTR_LAYOUT_HEIGHT) {
+                    // Layout width/height are already handled at the root level
+                    continue;
+                }
                 def formats = attrInfo?.getFormats();
                 if (formats == null) {
                     continue;
                 }
+
+                def title = prettyName(id);
+
                 if (IAttributeInfo.Format.BOOLEAN in formats) {
-                    def id = attrInfo.getName();
-                    def title = prettyName(id);
                     props[id] = [ isToggle: true, title: title ];
 
                 } else if (IAttributeInfo.Format.ENUM in formats) {
-                    def id = attrInfo.getName();
-                    def title = prettyName(id);
-
                     // Convert each enum into a map id=>title
                     def values = [:];
                     attrInfo.getEnumValues().each { e -> values[e] = prettyName(e) }
@@ -205,10 +229,7 @@ public class BaseView implements IViewRule {
                                  choices: values ];
 
                 } else if (IAttributeInfo.Format.FLAG in formats) {
-                    def id = attrInfo.getName();
-                    def title = prettyName(id);
-
-                    // Convert each enum into a map id=>title
+                    // Convert each flag into a map id=>title
                     def values = [:];
                     attrInfo.getFlagValues().each { e -> values[e] = prettyName(e) };
 
@@ -226,15 +247,46 @@ public class BaseView implements IViewRule {
         props.each { id, p ->
             def a = null;
             if (p.isToggle) {
+                // Toggles are handled as a multiple-choice between true, false and nothing (clear)
                 def value = selectedNode.getStringAttr(ANDROID_URI, id);
-                // is checked if value is defined and is true
-                value = value != null && Boolean.valueOf(value);
-                a = new MenuAction.Toggle("@prop@" + id, p.title, value, "properties", onChange);
-            } else {
-                // enum or flag
-                def current = selectedNode.getStringAttr(ANDROID_URI, id);
+                if (value != null) value = value.toLowerCase();
+                switch(value) {
+                    case "true":
+                        value = "1t";
+                        break;
+                    case "false":
+                        value = "2f";
+                        break;
+                    default:
+                        value = "4clr";
+                        break;
+                }
+
                 a = new MenuAction.Choices(
-                            "@prop@" + id, p.title, p.choices, current, "properties", onChange);
+                            "@prop@" + id,
+                            p.title,
+                            [ "1t": "True",
+                              "2f": "False",
+                              "3sep": MenuAction.Choices.SEPARATOR,
+                              "4clr": "Clear" ],
+                            value,
+                            "properties",
+                            onChange);
+            } else {
+                // Enum or flags. Their possible values are the multiple-choice items,
+                // with an extra "clear" option to remove everything.
+                def current = selectedNode.getStringAttr(ANDROID_URI, id);
+                if (!current) {
+                    current = "~2clr";
+                }
+                a = new MenuAction.Choices(
+                            "@prop@" + id,
+                            p.title,
+                            p.choices + [ "~1sep": MenuAction.Choices.SEPARATOR,
+                                          "~2clr": "Clear " + (p.isFlag ? "flag" : "enum") ],
+                            current,
+                            "properties",
+                            onChange);
             }
             if (a) list2.add(a);
         }

@@ -113,6 +113,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -123,6 +124,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 /**
  * Displays the image rendered by the {@link GraphicalEditorPart} and handles
@@ -1963,8 +1965,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                                             // Closure parameters are action, valueId, newValue
                                             action,
                                             null, // no valueId for a toggle
-                                            !isChecked
-                                            );
+                                            !isChecked);
                                 }
                             }
                         }
@@ -1987,6 +1988,13 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                     }
 
                     String current = ((MenuAction.Choices) action).getCurrent();
+                    Set<String> currents = null;
+                    if (current.indexOf(MenuAction.Choices.CHOICE_SEP) >= 0) {
+                        currents = new HashSet<String>(
+                                Arrays.asList(current.split(
+                                        Pattern.quote(MenuAction.Choices.CHOICE_SEP))));
+                        current = null;
+                    }
 
                     for (Entry<String, String> entry : choiceMap.entrySet() ) {
                         final String key = entry.getKey();
@@ -1996,7 +2004,14 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                             continue;
                         }
 
-                        final boolean isChecked = key.equals(current);
+                        if (MenuAction.Choices.SEPARATOR.equals(title)) {
+                            submenu.add(new Separator());
+                            continue;
+                        }
+
+                        final boolean isChecked =
+                            (currents != null && currents.contains(key)) ||
+                            key.equals(current);
 
                         Action a = new Action(title, IAction.AS_CHECK_BOX) {
                             @Override
@@ -2009,8 +2024,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                                                 // Closure parameters are action, valueId, newValue
                                                 action,
                                                 key,
-                                                !isChecked
-                                                );
+                                                !isChecked);
                                     }
                                 }
                             }
