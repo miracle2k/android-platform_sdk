@@ -16,6 +16,7 @@
 
 package com.android.hierarchyviewer;
 
+import com.android.ddmlib.Log;
 import com.android.ddmuilib.ImageLoader;
 import com.android.hierarchyviewer.actions.AboutAction;
 import com.android.hierarchyviewer.actions.LoadAllViewsAction;
@@ -81,77 +82,65 @@ import org.eclipse.swt.widgets.Shell;
 public class HierarchyViewerApplication extends ApplicationWindow {
 
     private static final int INITIAL_WIDTH = 1024;
-
     private static final int INITIAL_HEIGHT = 768;
 
-    private static HierarchyViewerApplication mApp;
+    private static HierarchyViewerApplication sMainWindow;
 
     // Images for moving between the 3 main windows.
-
     private Image mDeviceViewImage;
-
     private Image mPixelPerfectImage;
-
     private Image mTreeViewImage;
-
     private Image mDeviceViewSelectedImage;
-
     private Image mPixelPerfectSelectedImage;
-
     private Image mTreeViewSelectedImage;
 
     // And their buttons
-
     private Button mTreeViewButton;
-
     private Button mPixelPerfectButton;
-
     private Button mDeviceViewButton;
 
     private Label mProgressLabel;
-
     private ProgressBar mProgressBar;
-
     private String mProgressString;
 
     private Composite mDeviceSelectorPanel;
-
     private Composite mTreeViewPanel;
-
     private Composite mPixelPerfectPanel;
-
     private StackLayout mMainWindowStackLayout;
-
     private DeviceSelector mDeviceSelector;
-
     private Composite mStatusBar;
-
     private TreeView mTreeView;
-
     private Composite mMainWindow;
-
     private Image mOnBlackImage;
-
     private Image mOnWhiteImage;
-
     private Button mOnBlackWhiteButton;
-
     private Button mShowExtras;
-
     private LayoutViewer mLayoutViewer;
-
     private PixelPerfectLoupe mPixelPerfectLoupe;
-
     private Composite mTreeViewControls;
 
-    public static final HierarchyViewerApplication getApp() {
-        return mApp;
+    private HierarchyViewerDirector mDirector;
+
+    /*
+     * If a thread bails with an uncaught exception, bring the whole
+     * thing down.
+     */
+    private static class UncaughtHandler implements Thread.UncaughtExceptionHandler {
+        public void uncaughtException(Thread t, Throwable e) {
+            Log.e("HierarchyViewer", "shutting down due to uncaught exception");
+            Log.e("HierarchyViewer", e);
+            System.exit(1);
+        }
+    }
+
+    public static final HierarchyViewerApplication getMainWindow() {
+        return sMainWindow;
     }
 
     public HierarchyViewerApplication() {
-        super(null);
+        super(null /*shell*/);
 
-        mApp = this;
+        sMainWindow = this;
 
         addMenuBar();
     }
@@ -171,25 +160,17 @@ public class HierarchyViewerApplication extends ApplicationWindow {
     }
 
     public void run() {
-        HierarchyViewerDirector director = HierarchyViewerApplicationDirector.createDirector();
-        director.initDebugBridge();
-        director.startListenForDevices();
-        director.populateDeviceSelectionModel();
-        TreeViewModel.getModel().addTreeChangeListener(treeChangeListener);
-        PixelPerfectModel.getModel().addImageChangeListener(imageChangeListener);
-
         setBlockOnOpen(true);
 
         open();
 
-        TreeViewModel.getModel().removeTreeChangeListener(treeChangeListener);
-        PixelPerfectModel.getModel().removeImageChangeListener(imageChangeListener);
+        TreeViewModel.getModel().removeTreeChangeListener(mTreeChangeListener);
+        PixelPerfectModel.getModel().removeImageChangeListener(mImageChangeListener);
 
-        Display.getCurrent().dispose();
         ImageLoader.dispose();
-        director.stopListenForDevices();
-        director.stopDebugBridge();
-        director.terminate();
+        mDirector.stopListenForDevices();
+        mDirector.stopDebugBridge();
+        mDirector.terminate();
     }
 
     @Override
@@ -218,6 +199,15 @@ public class HierarchyViewerApplication extends ApplicationWindow {
 
     @Override
     protected Control createContents(Composite parent) {
+        // create this only once the window is opened to please SWT on Mac
+        mDirector = HierarchyViewerApplicationDirector.createDirector();
+        mDirector.initDebugBridge();
+        mDirector.startListenForDevices();
+        mDirector.populateDeviceSelectionModel();
+
+        TreeViewModel.getModel().addTreeChangeListener(mTreeChangeListener);
+        PixelPerfectModel.getModel().addImageChangeListener(mImageChangeListener);
+
         loadResources();
 
         Composite control = new Composite(parent, SWT.NONE);
@@ -591,10 +581,13 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         MenuManager mm = getMenuBarManager();
         mm.removeAll();
 
-        MenuManager file = new MenuManager("&File");
-        mm.add(file);
+        String os = System.getProperty("os.name"); //$NON-NLS-1$
+        if (os.startsWith("Mac OS") == false) { //$NON-NLS-1$
+            MenuManager file = new MenuManager("&File");
+            mm.add(file);
 
-        file.add(QuitAction.getAction());
+            file.add(QuitAction.getAction());
+        }
 
         MenuManager device = new MenuManager("&Devices");
         mm.add(device);
@@ -633,10 +626,13 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         MenuManager mm = getMenuBarManager();
         mm.removeAll();
 
-        MenuManager file = new MenuManager("&File");
-        mm.add(file);
+        String os = System.getProperty("os.name"); //$NON-NLS-1$
+        if (os.startsWith("Mac OS") == false) { //$NON-NLS-1$
+            MenuManager file = new MenuManager("&File");
+            mm.add(file);
 
-        file.add(QuitAction.getAction());
+            file.add(QuitAction.getAction());
+        }
 
         MenuManager treeViewMenu = new MenuManager("&Tree View");
         mm.add(treeViewMenu);
@@ -680,10 +676,13 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         MenuManager mm = getMenuBarManager();
         mm.removeAll();
 
-        MenuManager file = new MenuManager("&File");
-        mm.add(file);
+        String os = System.getProperty("os.name"); //$NON-NLS-1$
+        if (os.startsWith("Mac OS") == false) { //$NON-NLS-1$
+            MenuManager file = new MenuManager("&File");
+            mm.add(file);
 
-        file.add(QuitAction.getAction());
+            file.add(QuitAction.getAction());
+        }
 
         MenuManager pixelPerfect = new MenuManager("&Pixel Perfect");
         pixelPerfect.add(SavePixelPerfectAction.getAction(getShell()));
@@ -791,7 +790,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
     };
 
-    private ITreeChangeListener treeChangeListener = new ITreeChangeListener() {
+    private ITreeChangeListener mTreeChangeListener = new ITreeChangeListener() {
         public void selectionChanged() {
             // pass
         }
@@ -819,7 +818,7 @@ public class HierarchyViewerApplication extends ApplicationWindow {
         }
     };
 
-    private IImageChangeListener imageChangeListener = new IImageChangeListener() {
+    private IImageChangeListener mImageChangeListener = new IImageChangeListener() {
 
         public void crosshairMoved() {
             // pass
@@ -866,11 +865,9 @@ public class HierarchyViewerApplication extends ApplicationWindow {
     };
 
     public static void main(String[] args) {
-        Display.getDefault().syncExec(new Runnable() {
-            public void run() {
-                new HierarchyViewerApplication().run();
-            }
-        });
-        System.exit(0);
+        Thread.setDefaultUncaughtExceptionHandler(new UncaughtHandler());
+
+        Display.setAppName("HierarchyViewer");
+        new HierarchyViewerApplication().run();
     }
 }

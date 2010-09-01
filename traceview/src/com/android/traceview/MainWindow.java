@@ -58,7 +58,6 @@ public class MainWindow extends ApplicationWindow {
     public void run() {
         setBlockOnOpen(true);
         open();
-        Display.getCurrent().dispose();
     }
 
     @Override
@@ -221,6 +220,8 @@ public class MainWindow extends ApplicationWindow {
             reader = new DmTraceReader(traceName, regression);
         }
         reader.getTraceUnits().setTimeScale(TraceUnits.TimeScale.MilliSeconds);
+
+        Display.setAppName("Traceview");
         new MainWindow(traceName, reader).run();
     }
 }
