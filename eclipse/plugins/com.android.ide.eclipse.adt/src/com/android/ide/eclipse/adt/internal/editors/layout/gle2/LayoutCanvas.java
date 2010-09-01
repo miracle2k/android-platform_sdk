@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.MenuAction;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement.IDragAttribute;
@@ -44,6 +45,7 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
+import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
@@ -89,6 +91,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.actions.ActionFactory;
@@ -104,16 +107,24 @@ import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.xml.core.internal.document.NodeContainer;
 import org.w3c.dom.Node;
 
+import groovy.lang.Closure;
+
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 /**
  * Displays the image rendered by the {@link GraphicalEditorPart} and handles
@@ -135,7 +146,8 @@ import java.util.Set;
 /*
  * TODO list:
  * - gray on error, keep select but disable d'n'd.
- * - context menu handling of layout + local props (via IViewRules)
+ * - context menu: enum clear, flag values, toggles as tri-states
+ * - context menu: impl custom layout width/height
  * - properly handle custom views
  */
 class LayoutCanvas extends Canvas implements ISelectionProvider {
@@ -1654,64 +1666,6 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     //---------------
 
-    private void createContextMenu() {
-
-        mMenuManager = new MenuManager();
-        createMenuAction(mMenuManager);
-        setMenu(mMenuManager.createContextMenu(this));
-
-        /*
-        TODO insert generated menus/actions here.
-
-        Menu menu = new Menu(this);
-
-        ISharedImages wbImages = PlatformUI.getWorkbench().getSharedImages();
-
-        final MenuItem cutItem = new MenuItem (menu, SWT.PUSH);
-        cutItem.setText("Cut");
-        cutItem.setImage(wbImages.getImage(ISharedImages.IMG_TOOL_CUT));
-        cutItem.addListener (SWT.Selection, new Listener () {
-            public void handleEvent (Event event) {
-                // TODO
-            }
-        });
-
-        menu.addMenuListener(new MenuAdapter() {
-            @Override
-            public void menuShown(MenuEvent e) {
-                cutItem.setEnabled(!mSelections.isEmpty());
-                super.menuShown(e);
-            }
-        });
-
-        setMenu(menu);
-        */
-
-    }
-
-    /** Update menu actions that depends on the selection. */
-    private void updateMenuActions() {
-
-        boolean hasSelection = !mSelections.isEmpty();
-
-        mCutAction.setEnabled(hasSelection);
-        mCopyAction.setEnabled(hasSelection);
-        mDeleteAction.setEnabled(hasSelection);
-        mSelectAllAction.setEnabled(hasSelection);
-
-        // The paste operation is only available if we can paste our custom type.
-        // We do not currently support pasting random text (e.g. XML). Maybe later.
-        SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
-        boolean hasSxt = false;
-        for (TransferData td : mClipboard.getAvailableTypes()) {
-            if (sxt.isSupportedType(td)) {
-                hasSxt = true;
-                break;
-            }
-        }
-        mPasteAction.setEnabled(hasSxt);
-    }
-
     /**
      * Invoked by the constructor to add our cut/copy/paste/delete/select-all
      * handlers in the global action handlers of this editor's site.
@@ -1779,6 +1733,29 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         copyActionAttributes(mSelectAllAction, ActionFactory.SELECT_ALL);
     }
 
+    /** Update menu actions that depends on the selection. */
+    private void updateMenuActions() {
+
+        boolean hasSelection = !mSelections.isEmpty();
+
+        mCutAction.setEnabled(hasSelection);
+        mCopyAction.setEnabled(hasSelection);
+        mDeleteAction.setEnabled(hasSelection);
+        mSelectAllAction.setEnabled(hasSelection);
+
+        // The paste operation is only available if we can paste our custom type.
+        // We do not currently support pasting random text (e.g. XML). Maybe later.
+        SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
+        boolean hasSxt = false;
+        for (TransferData td : mClipboard.getAvailableTypes()) {
+            if (sxt.isSupportedType(td)) {
+                hasSxt = true;
+                break;
+            }
+        }
+        mPasteAction.setEnabled(hasSxt);
+    }
+
     /**
      * Helper for {@link #setupGlobalActionHandlers()}.
      * Copies the action attributes form the given {@link ActionFactory}'s action to
@@ -1803,6 +1780,42 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         action.setDisabledImageDescriptor(wa.getDisabledImageDescriptor());
     }
 
+    private void createContextMenu() {
+        // Create the menu manager and fill it with the static actions.
+        mMenuManager = new MenuManager() {
+            @Override
+            public boolean isDynamic() {
+                return true;
+            }
+        };
+
+        createMenuAction(mMenuManager);
+        Menu menu = mMenuManager.createContextMenu(this);
+        setMenu(menu);
+
+        // Remember how many static actions we have. Then each time the menu is
+        // shown, find dynamic contributions based on the current selection and insert
+        // them at the beginning of the menu.
+        final int numStaticActions = mMenuManager.getSize();
+        mMenuManager.addMenuListener(new IMenuListener() {
+            public void menuAboutToShow(IMenuManager manager) {
+
+                // Remove any previous dynamic contributions to keep only the
+                // default static items.
+                int n = mMenuManager.getSize() - numStaticActions;
+                if (n > 0) {
+                    IContributionItem[] items = mMenuManager.getItems();
+                    for (int i = 0; i < n; i++) {
+                        mMenuManager.remove(items[i]);
+                    }
+                }
+
+                populateDynamicContextMenu();
+            }
+        });
+
+    }
+
     /**
      * Invoked by the constructor to create our *static* context menu.
      * <p/>
@@ -1825,17 +1838,246 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         manager.add(mDeleteAction);
         manager.add(mSelectAllAction);
 
-        // TODO add view-sensitive menu items.
-
         manager.add(new Separator());
 
         String showInLabel = IDEWorkbenchMessages.Workbench_showIn;
         MenuManager showInSubMenu= new MenuManager(showInLabel);
-        showInSubMenu.add(
-                ContributionItemFactory.VIEWS_SHOW_IN.create(
-                        mLayoutEditor.getSite().getWorkbenchWindow()));
+        showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(
+                                                     mLayoutEditor.getSite().getWorkbenchWindow()));
         manager.add(showInSubMenu);
     }
+
+
+    private void populateDynamicContextMenu() {
+        // Collect actions for current selection
+
+        // Map action-id => action object (one per selected view that defined it)
+        final TreeMap<String /*id*/, ArrayList<MenuAction>> actionsMap =
+            new TreeMap<String, ArrayList<MenuAction>>();
+
+        // Map group-id => actions to place in this group.
+        TreeMap<String /*id*/, MenuAction.Group> groupMap = new TreeMap<String, MenuAction.Group>();
+
+        int maxMenuSelection = 0;
+        for (CanvasSelection selection : mSelections) {
+            List<MenuAction> viewActions = null;
+            if (selection != null) {
+                CanvasViewInfo vi = selection.getViewInfo();
+                if (vi != null) {
+                    viewActions = getMenuActions(vi);
+                }
+            }
+            if (viewActions == null) {
+                continue;
+            }
+
+            boolean foundAction = false;
+            for (MenuAction action : viewActions) {
+                if (action.getId() == null || action.getTitle() == null) {
+                    // TODO invalid action. Log verbose error.
+                    continue;
+                }
+
+                String id = action.getId();
+
+                if (action instanceof MenuAction.Group) {
+                    if (!groupMap.containsKey(id)) {
+                        groupMap.put(id, (MenuAction.Group) action);
+                    }
+                    continue;
+                }
+
+                ArrayList<MenuAction> actions = actionsMap.get(id);
+                if (actions == null) {
+                    actions = new ArrayList<MenuAction>();
+                    actionsMap.put(id, actions);
+                }
+
+                // All the actions for the same id should have be equal
+                if (!actions.isEmpty()) {
+                    if (action.equals(actions.get(0))) {
+                        // TODO invalid type mismatch. Log verbose error.
+                        continue;
+                    }
+                }
+
+                actions.add(action);
+                foundAction = true;
+            }
+
+            if (foundAction) {
+                maxMenuSelection++;
+            }
+        }
+
+        // Now create the actual menu contributions
+        String endId = mMenuManager.getItems()[0].getId();
+
+        Separator sep = new Separator();
+        sep.setId("-dyn-gle-sep");  //$NON-NLS-1$
+        mMenuManager.insertBefore(endId, sep);
+        endId = sep.getId();
+
+        // First create the groups
+        Map<String, MenuManager> menuGroups = new HashMap<String, MenuManager>();
+        for (MenuAction.Group group : groupMap.values()) {
+            String id = group.getId();
+            MenuManager submenu = new MenuManager(group.getTitle(), id);
+            menuGroups.put(id, submenu);
+            mMenuManager.insertBefore(endId, submenu);
+            endId = id;
+        }
+
+        boolean needGroupSep = !menuGroups.isEmpty();
+
+        // Now fill in the actions
+        for (ArrayList<MenuAction> actions : actionsMap.values()) {
+            // Filter actions... if we have a multiple selection, only accept actions
+            // which are common to *all* the selection which actually returned at least
+            // one menu action.
+            if (actions == null ||
+                    actions.isEmpty() ||
+                    actions.size() != maxMenuSelection) {
+                continue;
+            }
+
+            if (!(actions.get(0) instanceof MenuAction.Action)) {
+                continue;
+            }
+
+            final MenuAction.Action action = (MenuAction.Action) actions.get(0);
+
+            IContributionItem contrib = null;
+
+            if (action instanceof MenuAction.Toggle) {
+
+                final boolean isChecked = ((MenuAction.Toggle) action).isChecked();
+                Action a = new Action(action.getTitle(), IAction.AS_CHECK_BOX) {
+                    @Override
+                    public void run() {
+                        // Invoke the closures of all the actions using the same action-id
+                        for (MenuAction a2 : actionsMap.get(action.getId())) {
+                            if (a2 instanceof MenuAction.Action) {
+                                Closure c = ((MenuAction.Action) a2).getAction();
+                                if (c != null) {
+                                    mRulesEngine.callClosure(
+                                            ((MenuAction.Action) a2).getAction(),
+                                            // Closure parameters are action, valueId, newValue
+                                            action,
+                                            null, // no valueId for a toggle
+                                            !isChecked);
+                                }
+                            }
+                        }
+                    }
+                };
+                a.setId(action.getId());
+                a.setChecked(isChecked);
+
+                contrib = new ActionContributionItem(a);
+
+            } else if (action instanceof MenuAction.Choices) {
+
+                Map<String, String> choiceMap = ((MenuAction.Choices) action).getChoices();
+                if (choiceMap != null && !choiceMap.isEmpty()) {
+                    MenuManager submenu = new MenuManager(action.getTitle(), action.getId());
+
+                    // Convert to a tree map as needed so that keys be naturally ordered.
+                    if (!(choiceMap instanceof TreeMap<?, ?>)) {
+                        choiceMap = new TreeMap<String, String>(choiceMap);
+                    }
+
+                    String current = ((MenuAction.Choices) action).getCurrent();
+                    Set<String> currents = null;
+                    if (current.indexOf(MenuAction.Choices.CHOICE_SEP) >= 0) {
+                        currents = new HashSet<String>(
+                                Arrays.asList(current.split(
+                                        Pattern.quote(MenuAction.Choices.CHOICE_SEP))));
+                        current = null;
+                    }
+
+                    for (Entry<String, String> entry : choiceMap.entrySet() ) {
+                        final String key = entry.getKey();
+                        String title = entry.getValue();
+
+                        if (key == null || title == null) {
+                            continue;
+                        }
+
+                        if (MenuAction.Choices.SEPARATOR.equals(title)) {
+                            submenu.add(new Separator());
+                            continue;
+                        }
+
+                        final boolean isChecked =
+                            (currents != null && currents.contains(key)) ||
+                            key.equals(current);
+
+                        Action a = new Action(title, IAction.AS_CHECK_BOX) {
+                            @Override
+                            public void run() {
+                                // Invoke the closures of all the actions using the same action-id
+                                for (MenuAction a2 : actionsMap.get(action.getId())) {
+                                    if (a2 instanceof MenuAction.Action) {
+                                        mRulesEngine.callClosure(
+                                                ((MenuAction.Action) a2).getAction(),
+                                                // Closure parameters are action, valueId, newValue
+                                                action,
+                                                key,
+                                                !isChecked);
+                                    }
+                                }
+                            }
+                        };
+                        a.setId(String.format("%s_%s", action.getId(), key));     //$NON-NLS-1$
+                        a.setChecked(isChecked);
+                        submenu.add(a);
+                    }
+
+                    contrib = submenu;
+                }
+            }
+
+            if (contrib != null) {
+                MenuManager groupMenu = menuGroups.get(action.getGroupId());
+                if (groupMenu != null) {
+                    groupMenu.add(contrib);
+                } else {
+                    if (needGroupSep) {
+                        needGroupSep = false;
+
+                        sep = new Separator();
+                        sep.setId("-dyn-gle-sep2");  //$NON-NLS-1$
+                        mMenuManager.insertBefore(endId, sep);
+                        endId = sep.getId();
+                    }
+                    mMenuManager.insertBefore(endId, contrib);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns the menu actions computed by the groovy rule associated with this view.
+     */
+    public List<MenuAction> getMenuActions(CanvasViewInfo vi) {
+        if (vi == null) {
+            return null;
+        }
+
+        NodeProxy node = mNodeFactory.create(vi);
+        if (node == null) {
+            return null;
+        }
+
+        List<MenuAction> actions = mRulesEngine.callGetContextMenu(node);
+        if (actions == null || actions.size() == 0) {
+            return null;
+        }
+
+        return actions;
+    }
+
 
     /**
      * Invoked by {@link #mSelectAllAction}. It clears the selection and then
@@ -2182,4 +2424,5 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     private void debugPrintf(String message, Object... params) {
         if (DEBUG) AdtPlugin.printToConsole("Canvas", String.format(message, params));
     }
+
 }

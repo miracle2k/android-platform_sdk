@@ -16,8 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.annotations.VisibleForTesting;
-import com.android.ide.eclipse.adt.annotations.VisibleForTesting.Visibility;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement.IDragAttribute;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode.IAttribute;
 
