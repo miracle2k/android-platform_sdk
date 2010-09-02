@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.build;
+package com.android.ide.eclipse.adt.internal.build.builders;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.AndroidPrintStream;
-import com.android.ide.eclipse.adt.internal.build.PostCompilerHelper.AaptExecException;
-import com.android.ide.eclipse.adt.internal.build.PostCompilerHelper.AaptResultException;
-import com.android.ide.eclipse.adt.internal.build.PostCompilerHelper.DexException;
-import com.android.ide.eclipse.adt.internal.build.PostCompilerHelper.NativeLibInJarException;
-import com.android.ide.eclipse.adt.internal.build.PostCompilerHelper.ResourceMarker;
+import com.android.ide.eclipse.adt.internal.build.AaptExecException;
+import com.android.ide.eclipse.adt.internal.build.AaptParser;
+import com.android.ide.eclipse.adt.internal.build.AaptResultException;
+import com.android.ide.eclipse.adt.internal.build.DexException;
+import com.android.ide.eclipse.adt.internal.build.Messages;
+import com.android.ide.eclipse.adt.internal.build.NativeLibInJarException;
+import com.android.ide.eclipse.adt.internal.build.BuildHelper;
+import com.android.ide.eclipse.adt.internal.build.BuildHelper.ResourceMarker;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.ApkInstallManager;
@@ -141,7 +144,7 @@ public class PostCompilerBuilder extends BaseBuilder {
                         if (type == IResource.FILE) {
                             // check if the file is a valid file that would be
                             // included during the final packaging.
-                            if (PostCompilerHelper.checkFileForPackaging((IFile)resource)) {
+                            if (BuildHelper.checkFileForPackaging((IFile)resource)) {
                                 mMakeFinalPackage = true;
                             }
 
@@ -150,7 +153,7 @@ public class PostCompilerBuilder extends BaseBuilder {
                             // if this is a folder, we check if this is a valid folder as well.
                             // If this is a folder that needs to be ignored, we must return false,
                             // so that we ignore its content.
-                            return PostCompilerHelper.checkFolderForPackaging((IFolder)resource);
+                            return BuildHelper.checkFolderForPackaging((IFolder)resource);
                         }
                     }
                 }
@@ -226,7 +229,7 @@ public class PostCompilerBuilder extends BaseBuilder {
 
             // get the list of referenced projects.
             javaProjects = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = PostCompilerHelper.getJavaProjects(
+            IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(
                     javaProjects);
 
             // mix the java project and the library projects
@@ -406,7 +409,7 @@ public class PostCompilerBuilder extends BaseBuilder {
             // we need to test all three, as we may need to make the final package
             // but not the intermediary ones.
             if (mPackageResources || mConvertToDex || mBuildFinalPackage) {
-                PostCompilerHelper helper = new PostCompilerHelper(project,
+                BuildHelper helper = new BuildHelper(project,
                         mOutStream, mErrStream,
                         true /*debugMode*/,
                         AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE);
@@ -560,7 +563,7 @@ public class PostCompilerBuilder extends BaseBuilder {
                     BaseProjectHelper.markResource(project, AndroidConstants.MARKER_PACKAGING,
                             msg, IMarker.SEVERITY_ERROR);
 
-                    AdtPlugin.printErrorToConsole(project, (Object[]) e.getConsoleMsgs());
+                    AdtPlugin.printErrorToConsole(project, (Object[]) e.getAdditionalInfo());
                 } catch (CoreException e) {
                     // mark project and return
                     String msg = String.format(Messages.Final_Archive_Error_s, e.getMessage());

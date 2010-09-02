@@ -17,9 +17,9 @@
 package com.android.ide.eclipse.adt.internal.project;
 
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.build.PostCompilerBuilder;
-import com.android.ide.eclipse.adt.internal.build.PreCompilerBuilder;
-import com.android.ide.eclipse.adt.internal.build.ResourceManagerBuilder;
+import com.android.ide.eclipse.adt.internal.build.builders.PostCompilerBuilder;
+import com.android.ide.eclipse.adt.internal.build.builders.PreCompilerBuilder;
+import com.android.ide.eclipse.adt.internal.build.builders.ResourceManagerBuilder;
 
 import org.eclipse.core.resources.ICommand;
 import org.eclipse.core.resources.IProject;

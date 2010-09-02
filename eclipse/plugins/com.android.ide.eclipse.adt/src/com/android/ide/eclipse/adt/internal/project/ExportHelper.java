@@ -19,7 +19,7 @@ package com.android.ide.eclipse.adt.internal.project;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.AndroidPrintStream;
-import com.android.ide.eclipse.adt.internal.build.PostCompilerHelper;
+import com.android.ide.eclipse.adt.internal.build.BuildHelper;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.SdkConstants;
@@ -82,7 +82,7 @@ public final class ExportHelper {
                 }
             });
 
-            PostCompilerHelper helper = new PostCompilerHelper(project,
+            BuildHelper helper = new BuildHelper(project,
                     fakeStream, fakeStream,
                     false /*debugMode*/, false /*verbose*/);
 
@@ -114,7 +114,7 @@ public final class ExportHelper {
 
             IJavaProject javaProject = JavaCore.create(project);
             IProject[] javaProjects = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = PostCompilerHelper.getJavaProjects(
+            IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(
                     javaProjects);
 
             helper.executeDx(

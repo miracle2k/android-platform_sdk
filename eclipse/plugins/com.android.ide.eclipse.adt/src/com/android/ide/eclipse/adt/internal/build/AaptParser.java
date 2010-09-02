@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class AaptParser {
+public final class AaptParser {
 
     // TODO: rename the pattern to something that makes sense + javadoc comments.
     /**
@@ -133,7 +133,7 @@ public class AaptParser {
      * @param project the project containing the file to mark
      * @return true if the parsing failed, false if success.
      */
-    static final boolean parseOutput(List<String> results, IProject project) {
+    public static boolean parseOutput(List<String> results, IProject project) {
         return parseOutput(results.toArray(new String[results.size()]), project);
     }
 
@@ -144,7 +144,7 @@ public class AaptParser {
      * @param project the project containing the file to mark
      * @return true if the parsing failed, false if success.
      */
-    static final boolean parseOutput(String[] results, IProject project) {
+    public static boolean parseOutput(String[] results, IProject project) {
         // nothing to parse? just return false;
         if (results.length == 0) {
             return false;

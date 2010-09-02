@@ -16,9 +16,9 @@
 
 package com.android.ide.eclipse.adt;
 
-import com.android.ide.eclipse.adt.internal.build.PostCompilerBuilder;
-import com.android.ide.eclipse.adt.internal.build.PreCompilerBuilder;
-import com.android.ide.eclipse.adt.internal.build.ResourceManagerBuilder;
+import com.android.ide.eclipse.adt.internal.build.builders.PostCompilerBuilder;
+import com.android.ide.eclipse.adt.internal.build.builders.PreCompilerBuilder;
+import com.android.ide.eclipse.adt.internal.build.builders.ResourceManagerBuilder;
 import com.android.sdklib.SdkConstants;
 
 import java.io.File;
@@ -178,7 +178,8 @@ public class AndroidConstants {
      * from the {@link PreCompilerBuilder} */
     public final static String MARKER_ANDROID = LEGACY_PLUGIN_ID + ".androidProblem"; //$NON-NLS-1$
 
-    /** aapt marker error when running the package command, only to be used in {@link PostCompilerBuilder} */
+    /** aapt marker error when running the package command, only to be used in
+     * {@link PostCompilerBuilder} */
     public final static String MARKER_AAPT_PACKAGE = LEGACY_PLUGIN_ID + ".aapt2Problem"; //$NON-NLS-1$
 
     /** final packaging error marker, only to be used in {@link PostCompilerBuilder} */

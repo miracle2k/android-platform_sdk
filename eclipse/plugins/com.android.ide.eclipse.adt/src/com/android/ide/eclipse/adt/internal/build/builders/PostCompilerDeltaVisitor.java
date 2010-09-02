@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.build;
+package com.android.ide.eclipse.adt.internal.build.builders;
 
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.build.BaseBuilder.BaseDeltaVisitor;
+import com.android.ide.eclipse.adt.internal.build.BuildHelper;
+import com.android.ide.eclipse.adt.internal.build.builders.BaseBuilder.BaseDeltaVisitor;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.resources.IFile;
@@ -260,9 +261,9 @@ public class PostCompilerDeltaVisitor extends BaseDeltaVisitor
                         // Also excluded are aidl files, and package.html files
                         if (type == IResource.FOLDER) {
                             // always visit the subfolders, unless the folder is not to be included
-                            return PostCompilerHelper.checkFolderForPackaging((IFolder)resource);
+                            return BuildHelper.checkFolderForPackaging((IFolder)resource);
                         } else if (type == IResource.FILE) {
-                            if (PostCompilerHelper.checkFileForPackaging((IFile)resource)) {
+                            if (BuildHelper.checkFileForPackaging((IFile)resource)) {
                                 mMakeFinalPackage = true;
                             }
 
