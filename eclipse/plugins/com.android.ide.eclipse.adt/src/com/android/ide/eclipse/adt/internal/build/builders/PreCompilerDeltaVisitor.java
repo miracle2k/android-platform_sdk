@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.build;
+package com.android.ide.eclipse.adt.internal.build.builders;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.build.BaseBuilder.BaseDeltaVisitor;
-import com.android.ide.eclipse.adt.internal.build.PreCompilerBuilder.AidlData;
+import com.android.ide.eclipse.adt.internal.build.Messages;
+import com.android.ide.eclipse.adt.internal.build.builders.BaseBuilder.BaseDeltaVisitor;
+import com.android.ide.eclipse.adt.internal.build.builders.PreCompilerBuilder.AidlData;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.io.IFileWrapper;

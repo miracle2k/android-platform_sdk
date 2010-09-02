@@ -47,7 +47,7 @@
          point="org.eclipse.core.resources.builders">
       <builder
             hasNature="true">
-         <run class="com.android.ide.eclipse.adt.internal.build.ResourceManagerBuilder"/>
+         <run class="com.android.ide.eclipse.adt.internal.build.builders.ResourceManagerBuilder"/>
       </builder>
    </extension>
    <extension
@@ -56,7 +56,7 @@
          point="org.eclipse.core.resources.builders">
       <builder
             hasNature="true">
-         <run class="com.android.ide.eclipse.adt.internal.build.PreCompilerBuilder"/>
+         <run class="com.android.ide.eclipse.adt.internal.build.builders.PreCompilerBuilder"/>
       </builder>
    </extension>
    <extension
@@ -65,7 +65,7 @@
          point="org.eclipse.core.resources.builders">
       <builder
             hasNature="true">
-         <run class="com.android.ide.eclipse.adt.internal.build.PostCompilerBuilder"/>
+         <run class="com.android.ide.eclipse.adt.internal.build.builders.PostCompilerBuilder"/>
       </builder>
    </extension>
    <extension

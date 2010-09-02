@@ -153,11 +153,11 @@ public final class ApkBuilder {
         }
     }
 
-    private final File mApkFile;
-    private final File mResFile;
-    private final File mDexFile;
-    private final PrintStream mVerboseStream;
-    private final SignedJarBuilder mBuilder;
+    private File mApkFile;
+    private File mResFile;
+    private File mDexFile;
+    private PrintStream mVerboseStream;
+    private SignedJarBuilder mBuilder;
     private boolean mDebugMode = false;
     private boolean mIsSealed = false;
 
@@ -203,10 +203,121 @@ public final class ApkBuilder {
     }
 
     /**
+     * Signing information.
+     *
+     * Both the {@link PrivateKey} and the {@link X509Certificate} are guaranteed to be non-null.
+     *
+     */
+    public final static class SigningInfo {
+        public final PrivateKey key;
+        public final X509Certificate certificate;
+
+        private SigningInfo(PrivateKey key, X509Certificate certificate) {
+            if (key == null || certificate == null) {
+                throw new IllegalArgumentException("key and certificate cannot be null");
+            }
+            this.key = key;
+            this.certificate = certificate;
+        }
+    }
+
+    /**
+     * Returns the key and certificate from a given debug store.
+     *
+     * It is expected that the store password is 'android' and the key alias and password are
+     * 'androiddebugkey' and 'android' respectively.
+     *
+     * @param storeOsPath the OS path to the debug store.
+     * @param verboseStream an option {@link PrintStream} to display verbose information
+     * @return they key and certificate in a {@link SigningInfo} object or null.
+     * @throws ApkCreationException
+     */
+    public static SigningInfo getDebugKey(String storeOsPath, final PrintStream verboseStream)
+            throws ApkCreationException {
+        try {
+            if (storeOsPath != null) {
+                File storeFile = new File(storeOsPath);
+                try {
+                    checkInputFile(storeFile);
+                } catch (FileNotFoundException e) {
+                    // ignore these since the debug store can be created on the fly anyway.
+                }
+
+                // get the debug key
+                if (verboseStream != null) {
+                    verboseStream.println(String.format("Using keystore: %s", storeOsPath));
+                }
+
+                IKeyGenOutput keygenOutput = null;
+                if (verboseStream != null) {
+                    keygenOutput = new IKeyGenOutput() {
+                        public void out(String message) {
+                            verboseStream.println(message);
+                        }
+
+                        public void err(String message) {
+                            verboseStream.println(message);
+                        }
+                    };
+                }
+
+                DebugKeyProvider keyProvider = new DebugKeyProvider(
+                        storeOsPath, null /*store type*/, keygenOutput);
+
+                PrivateKey key = keyProvider.getDebugKey();
+                X509Certificate certificate = (X509Certificate)keyProvider.getCertificate();
+
+                if (key == null) {
+                    throw new ApkCreationException("Unable to get debug signature key");
+                }
+
+                // compare the certificate expiration date
+                if (certificate != null && certificate.getNotAfter().compareTo(new Date()) < 0) {
+                    // TODO, regenerate a new one.
+                    throw new ApkCreationException("Debug Certificate expired on " +
+                            DateFormat.getInstance().format(certificate.getNotAfter()));
+                }
+
+                return new SigningInfo(key, certificate);
+            } else {
+                return null;
+            }
+        } catch (KeytoolException e) {
+            if (e.getJavaHome() == null) {
+                throw new ApkCreationException(e.getMessage() +
+                        "\nJAVA_HOME seems undefined, setting it will help locating keytool automatically\n" +
+                        "You can also manually execute the following command\n:" +
+                        e.getCommandLine(), e);
+            } else {
+                throw new ApkCreationException(e.getMessage() +
+                        "\nJAVA_HOME is set to: " + e.getJavaHome() +
+                        "\nUpdate it if necessary, or manually execute the following command:\n" +
+                        e.getCommandLine(), e);
+            }
+        } catch (ApkCreationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApkCreationException(e);
+        }
+    }
+
+    /**
      * Creates a new instance.
+     *
+     * This creates a new builder that will create the specified output file, using the two
+     * mandatory given input files.
+     *
+     * An optional debug keystore can be provided. If set, it is expected that the store password
+     * is 'android' and the key alias and password are 'androiddebugkey' and 'android'.
+     *
+     * An optional {@link PrintStream} can also be provided for verbose output. If null, there will
+     * be no output.
+     *
      * @param apkOsPath the OS path of the file to create.
      * @param resOsPath the OS path of the packaged resource file.
      * @param dexOsPath the OS path of the dex file. This can be null for apk with no code.
+     * @param verboseStream the stream to which verbose output should go. If null, verbose mode
+     *                      is not enabled.
      * @throws ApkCreationException
      */
     public ApkBuilder(String apkOsPath, String resOsPath, String dexOsPath, String storeOsPath,
@@ -215,6 +326,35 @@ public final class ApkBuilder {
              new File(resOsPath),
              dexOsPath != null ? new File(dexOsPath) : null,
              storeOsPath,
+             verboseStream);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * This creates a new builder that will create the specified output file, using the two
+     * mandatory given input files.
+     *
+     * Optional {@link PrivateKey} and {@link X509Certificate} can be provided to sign the APK.
+     *
+     * An optional {@link PrintStream} can also be provided for verbose output. If null, there will
+     * be no output.
+     *
+     * @param apkOsPath the OS path of the file to create.
+     * @param resOsPath the OS path of the packaged resource file.
+     * @param dexOsPath the OS path of the dex file. This can be null for apk with no code.
+     * @param key the private key used to sign the package. Can be null.
+     * @param certificate the certificate used to sign the package. Can be null.
+     * @param verboseStream the stream to which verbose output should go. If null, verbose mode
+     *                      is not enabled.
+     * @throws ApkCreationException
+     */
+    public ApkBuilder(String apkOsPath, String resOsPath, String dexOsPath, PrivateKey key,
+            X509Certificate certificate, PrintStream verboseStream) throws ApkCreationException {
+        this(new File(apkOsPath),
+             new File(resOsPath),
+             dexOsPath != null ? new File(dexOsPath) : null,
+             key, certificate,
              verboseStream);
     }
 
@@ -239,7 +379,51 @@ public final class ApkBuilder {
      * @throws ApkCreationException
      */
     public ApkBuilder(File apkFile, File resFile, File dexFile, String debugStoreOsPath,
-            PrintStream verboseStream) throws ApkCreationException {
+            final PrintStream verboseStream) throws ApkCreationException {
+
+        SigningInfo info = getDebugKey(debugStoreOsPath, verboseStream);
+        if (info != null) {
+            init(apkFile, resFile, dexFile, info.key, info.certificate, verboseStream);
+        } else {
+            init(apkFile, resFile, dexFile, null /*key*/, null/*certificate*/, verboseStream);
+        }
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * This creates a new builder that will create the specified output file, using the two
+     * mandatory given input files.
+     *
+     * Optional {@link PrivateKey} and {@link X509Certificate} can be provided to sign the APK.
+     *
+     * An optional {@link PrintStream} can also be provided for verbose output. If null, there will
+     * be no output.
+     *
+     * @param apkFile the file to create
+     * @param resFile the file representing the packaged resource file.
+     * @param dexFile the file representing the dex file. This can be null for apk with no code.
+     * @param key the private key used to sign the package. Can be null.
+     * @param certificate the certificate used to sign the package. Can be null.
+     * @param verboseStream the stream to which verbose output should go. If null, verbose mode
+     *                      is not enabled.
+     * @throws ApkCreationException
+     */
+    public ApkBuilder(File apkFile, File resFile, File dexFile, PrivateKey key,
+            X509Certificate certificate, PrintStream verboseStream) throws ApkCreationException {
+        init(apkFile, resFile, dexFile, key, certificate, verboseStream);
+    }
+
+
+    /**
+     * Constructor init method.
+     *
+     * @see #ApkBuilder(File, File, File, String, PrintStream)
+     * @see #ApkBuilder(String, String, String, String, PrintStream)
+     * @see #ApkBuilder(File, File, File, PrivateKey, X509Certificate, PrintStream)
+     */
+    private void init(File apkFile, File resFile, File dexFile, PrivateKey key,
+            X509Certificate certificate, PrintStream verboseStream) throws ApkCreationException {
 
         try {
             checkOutputFile(mApkFile = apkFile);
@@ -251,56 +435,9 @@ public final class ApkBuilder {
             }
             mVerboseStream = verboseStream;
 
-            if (debugStoreOsPath != null) {
-                File storeFile = new File(debugStoreOsPath);
-                try {
-                    checkInputFile(storeFile);
-                } catch (FileNotFoundException e) {
-                    // ignore these since the debug store can be created on the fly anyway.
-                }
-
-                // get the debug key
-                verbosePrintln("Using keystore: %s", debugStoreOsPath);
-
-                IKeyGenOutput keygenOutput = null;
-                if (mVerboseStream != null) {
-                    keygenOutput = new IKeyGenOutput() {
-                        public void out(String message) {
-                            mVerboseStream.println(message);
-                        }
-
-                        public void err(String message) {
-                            mVerboseStream.println(message);
-                        }
-                    };
-                }
-
-                DebugKeyProvider keyProvider = new DebugKeyProvider(
-                        debugStoreOsPath, null /*store type*/, keygenOutput);
-
-                PrivateKey key = keyProvider.getDebugKey();
-                X509Certificate certificate = (X509Certificate)keyProvider.getCertificate();
-
-                if (key == null) {
-                    throw new ApkCreationException("Unable to get debug signature key");
-                }
-
-                // compare the certificate expiration date
-                if (certificate != null && certificate.getNotAfter().compareTo(new Date()) < 0) {
-                    // TODO, regenerate a new one.
-                    throw new ApkCreationException("Debug Certificate expired on " +
-                            DateFormat.getInstance().format(certificate.getNotAfter()));
-                }
-
-                mBuilder = new SignedJarBuilder(
-                        new FileOutputStream(mApkFile, false /* append */), key,
-                        certificate);
-            } else {
-                // no debug keystore? build without signing.
-                mBuilder = new SignedJarBuilder(
-                        new FileOutputStream(mApkFile, false /* append */),
-                        null /* key */, null /* certificate */);
-            }
+            mBuilder = new SignedJarBuilder(
+                    new FileOutputStream(mApkFile, false /* append */), key,
+                    certificate);
 
             verbosePrintln("Packaging %s", mApkFile.getName());
 
@@ -312,18 +449,6 @@ public final class ApkBuilder {
                 addFile(mDexFile, SdkConstants.FN_APK_CLASSES_DEX);
             }
 
-        } catch (KeytoolException e) {
-            if (e.getJavaHome() == null) {
-                throw new ApkCreationException(e.getMessage() +
-                        "\nJAVA_HOME seems undefined, setting it will help locating keytool automatically\n" +
-                        "You can also manually execute the following command\n:" +
-                        e.getCommandLine());
-            } else {
-                throw new ApkCreationException(e.getMessage() +
-                        "\nJAVA_HOME is set to: " + e.getJavaHome() +
-                        "\nUpdate it if necessary, or manually execute the following command:\n" +
-                        e.getCommandLine());
-            }
         } catch (ApkCreationException e) {
             throw e;
         } catch (Exception e) {
@@ -690,7 +815,7 @@ public final class ApkBuilder {
      * @throws FileNotFoundException if the file is not here.
      * @throws ApkCreationException If the file is a folder or a file that cannot be read.
      */
-    private void checkInputFile(File file) throws FileNotFoundException, ApkCreationException {
+    private static void checkInputFile(File file) throws FileNotFoundException, ApkCreationException {
         if (file.isDirectory()) {
             throw new ApkCreationException("%s is a directory!", file);
         }

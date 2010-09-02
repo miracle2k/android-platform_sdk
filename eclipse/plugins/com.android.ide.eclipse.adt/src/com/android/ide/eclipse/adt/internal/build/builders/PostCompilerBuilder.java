@@ -14,19 +14,31 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.build;
+package com.android.ide.eclipse.adt.internal.build.builders;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.AndroidPrintStream;
+import com.android.ide.eclipse.adt.internal.build.AaptExecException;
+import com.android.ide.eclipse.adt.internal.build.AaptParser;
+import com.android.ide.eclipse.adt.internal.build.AaptResultException;
+import com.android.ide.eclipse.adt.internal.build.DexException;
+import com.android.ide.eclipse.adt.internal.build.Messages;
+import com.android.ide.eclipse.adt.internal.build.NativeLibInJarException;
+import com.android.ide.eclipse.adt.internal.build.BuildHelper;
+import com.android.ide.eclipse.adt.internal.build.BuildHelper.ResourceMarker;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.ApkInstallManager;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.xml.AndroidManifest;
-import com.android.sdklib.xml.AndroidXPathFactory;
+import com.android.sdklib.build.ApkCreationException;
+import com.android.sdklib.build.DuplicateFileException;
+import com.android.sdklib.internal.build.DebugKeyProvider.KeytoolException;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -43,18 +55,12 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
-import org.xml.sax.InputSource;
 
 import java.io.File;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Map;
 
-import javax.xml.xpath.XPath;
-
 public class PostCompilerBuilder extends BaseBuilder {
-
-    private static final String CONSOLE_PREFIX_DX = "Dx"; //$NON-NLS-1$
 
     /** This ID is used in plugin.xml and in each project's .project file.
      * It cannot be changed even if the class is renamed/moved */
@@ -83,8 +89,8 @@ public class PostCompilerBuilder extends BaseBuilder {
      */
     private boolean mBuildFinalPackage = false;
 
-    private PrintStream mDxOutStream = null;
-    private PrintStream mDxErrStream = null;
+    private AndroidPrintStream mOutStream = null;
+    private AndroidPrintStream mErrStream = null;
 
     /**
      * Basic Resource Delta Visitor class to check if a referenced project had a change in its
@@ -138,7 +144,7 @@ public class PostCompilerBuilder extends BaseBuilder {
                         if (type == IResource.FILE) {
                             // check if the file is a valid file that would be
                             // included during the final packaging.
-                            if (PostCompilerHelper.checkFileForPackaging((IFile)resource)) {
+                            if (BuildHelper.checkFileForPackaging((IFile)resource)) {
                                 mMakeFinalPackage = true;
                             }
 
@@ -147,7 +153,7 @@ public class PostCompilerBuilder extends BaseBuilder {
                             // if this is a folder, we check if this is a valid folder as well.
                             // If this is a folder that needs to be ignored, we must return false,
                             // so that we ignore its content.
-                            return PostCompilerHelper.checkFolderForPackaging((IFolder)resource);
+                            return BuildHelper.checkFolderForPackaging((IFolder)resource);
                         }
                     }
                 }
@@ -167,6 +173,14 @@ public class PostCompilerBuilder extends BaseBuilder {
             return mMakeFinalPackage;
         }
     }
+
+    private ResourceMarker mResourceMarker = new ResourceMarker() {
+        public void setWarning(IResource resource, String message) {
+            BaseProjectHelper.markResource(resource, AndroidConstants.MARKER_PACKAGING,
+                    message, IMarker.SEVERITY_WARNING);
+        }
+    };
+
 
     public PostCompilerBuilder() {
         super();
@@ -215,7 +229,8 @@ public class PostCompilerBuilder extends BaseBuilder {
 
             // get the list of referenced projects.
             javaProjects = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = PostCompilerHelper.getJavaProjects(javaProjects);
+            IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(
+                    javaProjects);
 
             // mix the java project and the library projects
             final int libCount = libProjects.length;
@@ -292,8 +307,9 @@ public class PostCompilerBuilder extends BaseBuilder {
                     IJavaProject referencedJavaProject = referencedJavaProjects[i];
                     delta = getDelta(referencedJavaProject.getProject());
                     if (delta != null) {
-                        ReferencedProjectDeltaVisitor refProjectDv = new ReferencedProjectDeltaVisitor(
-                                referencedJavaProject);
+                        ReferencedProjectDeltaVisitor refProjectDv =
+                                new ReferencedProjectDeltaVisitor(referencedJavaProject);
+
                         delta.accept(refProjectDv);
 
                         // save the state
@@ -383,15 +399,20 @@ public class PostCompilerBuilder extends BaseBuilder {
 
             // Get the DX output stream. Since the builder is created for the life of the
             // project, they can be kept around.
-            if (mDxOutStream == null) {
-                mDxOutStream = AdtPlugin.getOutPrintStream(project, CONSOLE_PREFIX_DX);
-                mDxErrStream = AdtPlugin.getErrPrintStream(project, CONSOLE_PREFIX_DX);
+            if (mOutStream == null) {
+                mOutStream = new AndroidPrintStream(project, null /*prefix*/,
+                        AdtPlugin.getOutStream());
+                mErrStream = new AndroidPrintStream(project, null /*prefix*/,
+                        AdtPlugin.getOutStream());
             }
 
             // we need to test all three, as we may need to make the final package
             // but not the intermediary ones.
             if (mPackageResources || mConvertToDex || mBuildFinalPackage) {
-                PostCompilerHelper helper = new PostCompilerHelper(project, mDxOutStream, mDxErrStream);
+                BuildHelper helper = new BuildHelper(project,
+                        mOutStream, mErrStream,
+                        true /*debugMode*/,
+                        AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE);
 
                 // resource to the AndroidManifest.xml file
                 IFile manifestFile = project.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
@@ -429,12 +450,31 @@ public class PostCompilerBuilder extends BaseBuilder {
                     removeMarkersFromContainer(project, AndroidConstants.MARKER_AAPT_PACKAGE);
 
                     // need to figure out some path before we can execute aapt;
-                    if (helper.packageResources( manifestFile, libProjects, null /*resfilter*/,
-                            0 /*versionCode */, osBinPath,
-                            AndroidConstants.FN_RESOURCES_AP_) == false) {
-                        // aapt failed. Whatever files that needed to be marked
-                        // have already been marked. We just return.
+                    try {
+                        helper.packageResources(manifestFile, libProjects, null /*resfilter*/,
+                                0 /*versionCode */, osBinPath,
+                                AndroidConstants.FN_RESOURCES_AP_);
+                    } catch (AaptExecException e) {
+                        BaseProjectHelper.markResource(project, AndroidConstants.MARKER_PACKAGING,
+                                e.getMessage(), IMarker.SEVERITY_ERROR);
                         return allRefProjects;
+                    } catch (AaptResultException e) {
+                        // attempt to parse the error output
+                        String[] aaptOutput = e.getOutput();
+                        boolean parsingError = AaptParser.parseOutput(aaptOutput, project);
+
+                        // if we couldn't parse the output we display it in the console.
+                        if (parsingError) {
+                            AdtPlugin.printErrorToConsole(project, (Object[]) aaptOutput);
+
+                            // if the exec failed, and we couldn't parse the error output (and
+                            // therefore not all files that should have been marked, were marked),
+                            // we put a generic marker on the project and abort.
+                            BaseProjectHelper.markResource(project,
+                                    AndroidConstants.MARKER_PACKAGING,
+                                    Messages.Unparsed_AAPT_Errors,
+                                    IMarker.SEVERITY_ERROR);
+                        }
                     }
 
                     // build has been done. reset the state of the builder
@@ -446,8 +486,25 @@ public class PostCompilerBuilder extends BaseBuilder {
 
                 // then we check if we need to package the .class into classes.dex
                 if (mConvertToDex) {
-                    if (helper.executeDx(javaProject, osBinPath, osBinPath + File.separator +
-                            SdkConstants.FN_APK_CLASSES_DEX, referencedJavaProjects) == false) {
+                    try {
+                        helper.executeDx(javaProject, osBinPath, osBinPath + File.separator +
+                                SdkConstants.FN_APK_CLASSES_DEX, referencedJavaProjects,
+                                mResourceMarker);
+                    } catch (DexException e) {
+                        String message = e.getMessage();
+
+                        AdtPlugin.printErrorToConsole(project, message);
+                        BaseProjectHelper.markResource(project, AndroidConstants.MARKER_PACKAGING,
+                                message, IMarker.SEVERITY_ERROR);
+
+                        Throwable cause = e.getCause();
+
+                        if (cause instanceof NoClassDefFoundError
+                                || cause instanceof NoSuchMethodError) {
+                            AdtPlugin.printErrorToConsole(project, Messages.Incompatible_VM_Warning,
+                                    Messages.Requires_1_5_Error);
+                        }
+
                         // dx failed, we return
                         return allRefProjects;
                     }
@@ -459,33 +516,68 @@ public class PostCompilerBuilder extends BaseBuilder {
                     saveProjectBooleanProperty(PROPERTY_CONVERT_TO_DEX, mConvertToDex);
                 }
 
-                // figure out whether the application is debuggable.
-                // It is considered debuggable if the attribute debuggable is set to true
-                // in the manifest
-                boolean debuggable = false;
-                XPath xpath = AndroidXPathFactory.newXPath();
-                String result = xpath.evaluate(
-                        "/"  + AndroidManifest.NODE_MANIFEST +                //$NON-NLS-1$
-                        "/"  + AndroidManifest.NODE_APPLICATION +             //$NON-NLS-1$
-                        "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX +        //$NON-NLS-1$
-                                ":" + AndroidManifest.ATTRIBUTE_DEBUGGABLE,   //$NON-NLS-1$
-                        new InputSource(manifestFile.getContents()));
-                if (result.length() > 0) {
-                    debuggable = Boolean.valueOf(result);
-                }
-
                 // now we need to make the final package from the intermediary apk
                 // and classes.dex.
                 // This is the default package with all the resources.
 
                 String classesDexPath = osBinPath + File.separator +
                         SdkConstants.FN_APK_CLASSES_DEX;
-                if (helper.finalPackage(
+                try {
+                    helper.finalDebugPackage(
                         osBinPath + File.separator + AndroidConstants.FN_RESOURCES_AP_,
-                        classesDexPath, osFinalPackagePath, true /*debugSign*/,
-                        javaProject, libProjects,
-                        referencedJavaProjects, null /*abiFilter*/, debuggable) == false) {
+                        classesDexPath, osFinalPackagePath,
+                        javaProject, libProjects, referencedJavaProjects, mResourceMarker);
+                } catch (KeytoolException e) {
+                    String eMessage = e.getMessage();
+
+                    // mark the project with the standard message
+                    String msg = String.format(Messages.Final_Archive_Error_s, eMessage);
+                    BaseProjectHelper.markResource(project, AndroidConstants.MARKER_PACKAGING, msg,
+                            IMarker.SEVERITY_ERROR);
+
+                    // output more info in the console
+                    AdtPlugin.printErrorToConsole(project,
+                            msg,
+                            String.format(Messages.ApkBuilder_JAVA_HOME_is_s, e.getJavaHome()),
+                            Messages.ApkBuilder_Update_or_Execute_manually_s,
+                            e.getCommandLine());
+
                     return allRefProjects;
+                } catch (ApkCreationException e) {
+                    String eMessage = e.getMessage();
+
+                    // mark the project with the standard message
+                    String msg = String.format(Messages.Final_Archive_Error_s, eMessage);
+                    BaseProjectHelper.markResource(project, AndroidConstants.MARKER_PACKAGING, msg,
+                            IMarker.SEVERITY_ERROR);
+                } catch (AndroidLocationException e) {
+                    String eMessage = e.getMessage();
+
+                    // mark the project with the standard message
+                    String msg = String.format(Messages.Final_Archive_Error_s, eMessage);
+                    BaseProjectHelper.markResource(project, AndroidConstants.MARKER_PACKAGING, msg,
+                            IMarker.SEVERITY_ERROR);
+                } catch (NativeLibInJarException e) {
+                    String msg = e.getMessage();
+
+                    BaseProjectHelper.markResource(project, AndroidConstants.MARKER_PACKAGING,
+                            msg, IMarker.SEVERITY_ERROR);
+
+                    AdtPlugin.printErrorToConsole(project, (Object[]) e.getAdditionalInfo());
+                } catch (CoreException e) {
+                    // mark project and return
+                    String msg = String.format(Messages.Final_Archive_Error_s, e.getMessage());
+                    AdtPlugin.printErrorToConsole(project, msg);
+                    BaseProjectHelper.markResource(project, AndroidConstants.MARKER_PACKAGING, msg,
+                            IMarker.SEVERITY_ERROR);
+                } catch (DuplicateFileException e) {
+                    String msg1 = String.format(
+                            "Found duplicate file for APK: %1$s\nOrigin 1: %2$s\nOrigin 2: %3$s",
+                            e.getArchivePath(), e.getFile1(), e.getFile2());
+                    String msg2 = String.format(Messages.Final_Archive_Error_s, msg1);
+                    AdtPlugin.printErrorToConsole(project, msg2);
+                    BaseProjectHelper.markResource(project, AndroidConstants.MARKER_PACKAGING, msg2,
+                            IMarker.SEVERITY_ERROR);
                 }
 
                 // we are done.

@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.sdk;
+package com.android.ide.eclipse.adt.internal.build;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.build.Messages;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;

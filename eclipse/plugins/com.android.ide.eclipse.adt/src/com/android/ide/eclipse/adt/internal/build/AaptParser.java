@@ -25,11 +25,11 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class AaptParser {
+public final class AaptParser {
 
     // TODO: rename the pattern to something that makes sense + javadoc comments.
     /**
@@ -126,6 +126,16 @@ public class AaptParser {
     private final static Pattern sPattern9Line1 = Pattern.compile(
             "^Invalid configuration: (.+)$"); //$NON-NLS-1$
 
+    /**
+     * Parse the output of aapt and mark the incorrect file with error markers
+     *
+     * @param results the output of aapt
+     * @param project the project containing the file to mark
+     * @return true if the parsing failed, false if success.
+     */
+    public static boolean parseOutput(List<String> results, IProject project) {
+        return parseOutput(results.toArray(new String[results.size()]), project);
+    }
 
     /**
      * Parse the output of aapt and mark the incorrect file with error markers
@@ -134,10 +144,9 @@ public class AaptParser {
      * @param project the project containing the file to mark
      * @return true if the parsing failed, false if success.
      */
-    static final boolean parseOutput(ArrayList<String> results,
-            IProject project) {
+    public static boolean parseOutput(String[] results, IProject project) {
         // nothing to parse? just return false;
-        if (results.size() == 0) {
+        if (results.length == 0) {
             return false;
         }
 
@@ -147,8 +156,8 @@ public class AaptParser {
 
         Matcher m;
 
-        for (int i = 0; i < results.size(); i++) {
-            String p = results.get(i);
+        for (int i = 0; i < results.length ; i++) {
+            String p = results[i];
 
             m = sPattern0Line1.matcher(p);
             if (m.matches()) {
@@ -183,10 +192,10 @@ public class AaptParser {
                 String location = m.group(1);
                 String msg = p; // default msg is the line in case we don't find anything else
 
-                if (++i < results.size()) {
-                    msg = results.get(i).trim();
-                    if (++i < results.size()) {
-                        msg = msg + " - " + results.get(i).trim(); //$NON-NLS-1$
+                if (++i < results.length) {
+                    msg = results[i].trim();
+                    if (++i < results.length) {
+                        msg = msg + " - " + results[i].trim(); //$NON-NLS-1$
 
                         // skip the next line
                         i++;
@@ -429,16 +438,16 @@ public class AaptParser {
      * @param pattern The pattern to match
      * @return null if error or no match, the matcher otherwise.
      */
-    private static final Matcher getNextLineMatcher(ArrayList<String> lines,
+    private static final Matcher getNextLineMatcher(String[] lines,
             int nextIndex, Pattern pattern) {
         // unless we can't, because we reached the last line
-        if (nextIndex == lines.size()) {
+        if (nextIndex == lines.length) {
             // we expected a 2nd line, so we flag as error
             // and we bail
             return null;
         }
 
-        Matcher m = pattern.matcher(lines.get(nextIndex));
+        Matcher m = pattern.matcher(lines[nextIndex]);
         if (m.matches()) {
            return m;
         }

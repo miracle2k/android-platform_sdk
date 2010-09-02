@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.build;
+package com.android.ide.eclipse.adt.internal.build.builders;
 
 import com.android.sdklib.SdkConstants;
 

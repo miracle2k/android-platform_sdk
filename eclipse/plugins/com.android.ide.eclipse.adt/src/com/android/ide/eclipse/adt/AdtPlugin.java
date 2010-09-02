@@ -31,9 +31,7 @@ import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
-import com.android.ide.eclipse.adt.internal.project.ExportHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.adt.internal.project.ExportHelper.IExportCallback;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
@@ -44,7 +42,6 @@ import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
-import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.ide.eclipse.hierarchyviewer.HierarchyViewerPlugin;
 import com.android.sdklib.IAndroidTarget;
@@ -73,8 +70,6 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
@@ -105,12 +100,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -154,44 +147,6 @@ public class AdtPlugin extends AbstractUIPlugin {
             new ArrayList<ITargetChangeListener>();
 
     protected boolean mSdkIsLoading;
-
-    /**
-     * Custom PrintStream for Dx output. This class overrides the method
-     * <code>println()</code> and adds the standard output tag with the
-     * date and the project name in front of every messages.
-     */
-    private static final class AndroidPrintStream extends PrintStream {
-        private IProject mProject;
-        private String mPrefix;
-
-        /**
-         * Default constructor with project and output stream.
-         * The project is used to get the project name for the output tag.
-         *
-         * @param project The Project
-         * @param prefix A prefix to be printed before the actual message. Can be null
-         * @param stream The Stream
-         */
-        public AndroidPrintStream(IProject project, String prefix, OutputStream stream) {
-            super(stream);
-            mProject = project;
-        }
-
-        @Override
-        public void println(String message) {
-            // write the date/project tag first.
-            String tag = getMessageTag(mProject != null ? mProject.getName() : null);
-
-            print(tag);
-            print(' ');
-            if (mPrefix != null) {
-                print(mPrefix);
-            }
-
-            // then write the regular message
-            super.println(message);
-        }
-    }
 
     /**
      * An error handler for checkSdkLocationAndId() that will handle the generated error
@@ -343,19 +298,6 @@ public class AdtPlugin extends AbstractUIPlugin {
                 if (project != null) {
                     BaseProjectHelper.revealSource(project, className, line);
                 }
-            }
-        });
-
-        // setup export callback for editors
-        ExportHelper.setCallback(new IExportCallback() {
-            public void startExportWizard(IProject project) {
-                StructuredSelection selection = new StructuredSelection(project);
-
-                ExportWizard wizard = new ExportWizard();
-                wizard.init(PlatformUI.getWorkbench(), selection);
-                WizardDialog dialog = new WizardDialog(getDisplay().getActiveShell(),
-                        wizard);
-                dialog.open();
             }
         });
 
@@ -802,40 +744,6 @@ public class AdtPlugin extends AbstractUIPlugin {
         // now make sure it's not docked.
         ConsolePlugin.getDefault().getConsoleManager().showConsoleView(
                 AdtPlugin.getDefault().getAndroidConsole());
-    }
-
-    /**
-     * Returns an standard PrintStream object for a specific project.<br>
-     * This PrintStream will add a date/project at the beginning of every
-     * <code>println()</code> output.
-     *
-     * @param project The project object
-     * @param prefix The prefix to be added to the message. Can be null.
-     * @return a new PrintStream
-     */
-    public static synchronized PrintStream getOutPrintStream(IProject project, String prefix) {
-        if (sPlugin != null) {
-            return new AndroidPrintStream(project, prefix, sPlugin.mAndroidConsoleStream);
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns an error PrintStream object for a specific project.<br>
-     * This PrintStream will add a date/project at the beginning of every
-     * <code>println()</code> output.
-     *
-     * @param project The project object
-     * @param prefix The prefix to be added to the message. Can be null.
-     * @return a new PrintStream
-     */
-    public static synchronized PrintStream getErrPrintStream(IProject project, String prefix) {
-        if (sPlugin != null) {
-            return new AndroidPrintStream(project, prefix, sPlugin.mAndroidConsoleErrorStream);
-        }
-
-        return null;
     }
 
     /**
@@ -1365,6 +1273,10 @@ public class AdtPlugin extends AbstractUIPlugin {
         });
     }
 
+    public static synchronized OutputStream getOutStream() {
+        return sPlugin.mAndroidConsoleStream;
+    }
+
     public static synchronized OutputStream getErrorStream() {
         return sPlugin.mAndroidConsoleErrorStream;
     }
@@ -1409,7 +1321,7 @@ public class AdtPlugin extends AbstractUIPlugin {
      */
     public static synchronized void printToStream(MessageConsoleStream stream, String tag,
             Object... objects) {
-        String dateTag = getMessageTag(tag);
+        String dateTag = AndroidPrintStream.getMessageTag(tag);
 
         for (Object obj : objects) {
             stream.print(dateTag);
@@ -1423,21 +1335,4 @@ public class AdtPlugin extends AbstractUIPlugin {
             }
         }
     }
-
-    /**
-     * Creates a string containing the current date/time, and the tag.
-     * The tag does not end with a whitespace.
-     * @param tag The tag associated to the message. Can be null
-     * @return The dateTag
-     */
-    public static String getMessageTag(String tag) {
-        Calendar c = Calendar.getInstance();
-
-        if (tag == null) {
-            return String.format(Messages.Console_Date_Tag, c);
-        }
-
-        return String.format(Messages.Console_Data_Project_Tag, c, tag);
-    }
-
 }
