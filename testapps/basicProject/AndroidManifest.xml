@@ -13,4 +13,4 @@
         </activity>
     </application>
     <uses-sdk android:minSdkVersion="AOSP" />
-</manifest> 
+</manifest>
