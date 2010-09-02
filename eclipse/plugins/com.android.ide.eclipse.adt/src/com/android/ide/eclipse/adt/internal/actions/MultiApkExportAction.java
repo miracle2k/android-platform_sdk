@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.actions;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidPrintStream;
-import com.android.ide.eclipse.adt.internal.build.PostCompilerHelper;
+import com.android.ide.eclipse.adt.internal.build.BuildHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
@@ -273,7 +273,7 @@ public class MultiApkExportAction implements IObjectActionDelegate {
             pkgName += ".ap_";
             String outputName = finalNameRoot + "-unsigned.apk";
 
-            PostCompilerHelper helper = new PostCompilerHelper(project, stdout, stderr,
+            BuildHelper helper = new BuildHelper(project, stdout, stderr,
                     false /*debugMode*/, false/*verbose*/);
 
             // get the manifest file
@@ -295,7 +295,7 @@ public class MultiApkExportAction implements IObjectActionDelegate {
 
             // get the list of referenced projects.
             IProject[] javaRefs = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = PostCompilerHelper.getJavaProjects(javaRefs);
+            IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(javaRefs);
 
             helper.finalPackage(
                     new File(projectBinFolderPath, pkgName).getAbsolutePath(),

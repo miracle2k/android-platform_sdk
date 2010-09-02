@@ -23,7 +23,6 @@ import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.ide.eclipse.adt.internal.sdk.DexWrapper;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
@@ -55,8 +54,10 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.preference.IPreferenceStore;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -84,7 +85,7 @@ import java.util.List;
  * to the constructor.
  *
  */
-public class PostCompilerHelper {
+public class BuildHelper {
 
     private static final String CONSOLE_PREFIX_DX = "Dx"; //$NON-NLS-1$
 
@@ -93,74 +94,6 @@ public class PostCompilerHelper {
     private final AndroidPrintStream mErrStream;
     private final boolean mVerbose;
     private final boolean mDebugMode;
-
-    public static final class AaptExecException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        AaptExecException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
-
-    public static final class AaptResultException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        private final int mErrorCode;
-        private final String[] mOutput;
-
-        AaptResultException(int errorCode, String[] output) {
-            mErrorCode = errorCode;
-            mOutput = output;
-        }
-
-        public String[] getOutput() {
-            return mOutput;
-        }
-
-        public int getErrorCode() {
-            return mErrorCode;
-        }
-    }
-
-    public static final class DexException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        DexException(String message) {
-            super(message);
-        }
-
-        DexException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
-
-    public static final class NativeLibInJarException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        private final JarStatus mStatus;
-        private final String mLibName;
-        private final String[] mConsoleMsgs;
-
-        NativeLibInJarException(JarStatus status, String message, String libName,
-                String[] consoleMsgs) {
-            super(message);
-            mStatus = status;
-            mLibName = libName;
-            mConsoleMsgs = consoleMsgs;
-        }
-
-        public JarStatus getStatus() {
-            return mStatus;
-        }
-
-        public String getLibName() {
-            return mLibName;
-        }
-
-        public String[] getConsoleMsgs() {
-            return mConsoleMsgs;
-        }
-    }
 
     /**
      * An object able to put a marker on a resource.
@@ -177,7 +110,7 @@ public class PostCompilerHelper {
      * @param debugMode whether this is a debug build
      * @param verbose
      */
-    public PostCompilerHelper(IProject project, AndroidPrintStream outStream,
+    public BuildHelper(IProject project, AndroidPrintStream outStream,
             AndroidPrintStream errStream, boolean debugMode, boolean verbose) {
         mProject = project;
         mOutStream = outStream;
@@ -576,7 +509,7 @@ public class PostCompilerHelper {
             ArrayList<String> results = new ArrayList<String>();
 
             // get the output and return code from the process
-            execError = BaseBuilder.grabProcessOutput(mProject, process, results);
+            execError = grabProcessOutput(mProject, process, results);
 
             if (execError != 0) {
                 throw new AaptResultException(execError,
@@ -763,7 +696,7 @@ public class PostCompilerHelper {
      * @param file the IFile representing the file.
      * @return true if the file should be packaged as standard java resources.
      */
-    static boolean checkFileForPackaging(IFile file) {
+    public static boolean checkFileForPackaging(IFile file) {
         String name = file.getName();
 
         String ext = file.getFileExtension();
@@ -775,7 +708,7 @@ public class PostCompilerHelper {
      * standard Java resource.
      * @param folder the {@link IFolder} to check.
      */
-    static boolean checkFolderForPackaging(IFolder folder) {
+    public static boolean checkFolderForPackaging(IFolder folder) {
         String name = folder.getName();
         return ApkBuilder.checkFolderForPackaging(name);
     }
@@ -797,6 +730,71 @@ public class PostCompilerHelper {
         }
 
         return list.toArray(new IJavaProject[list.size()]);
+    }
+
+    /**
+     * Get the stderr output of a process and return when the process is done.
+     * @param process The process to get the ouput from
+     * @param results The array to store the stderr output
+     * @return the process return code.
+     * @throws InterruptedException
+     */
+    public final static int grabProcessOutput(final IProject project, final Process process,
+            final ArrayList<String> results)
+            throws InterruptedException {
+        // Due to the limited buffer size on windows for the standard io (stderr, stdout), we
+        // *need* to read both stdout and stderr all the time. If we don't and a process output
+        // a large amount, this could deadlock the process.
+
+        // read the lines as they come. if null is returned, it's
+        // because the process finished
+        new Thread("") { //$NON-NLS-1$
+            @Override
+            public void run() {
+                // create a buffer to read the stderr output
+                InputStreamReader is = new InputStreamReader(process.getErrorStream());
+                BufferedReader errReader = new BufferedReader(is);
+
+                try {
+                    while (true) {
+                        String line = errReader.readLine();
+                        if (line != null) {
+                            results.add(line);
+                        } else {
+                            break;
+                        }
+                    }
+                } catch (IOException e) {
+                    // do nothing.
+                }
+            }
+        }.start();
+
+        new Thread("") { //$NON-NLS-1$
+            @Override
+            public void run() {
+                InputStreamReader is = new InputStreamReader(process.getInputStream());
+                BufferedReader outReader = new BufferedReader(is);
+
+                try {
+                    while (true) {
+                        String line = outReader.readLine();
+                        if (line != null) {
+                            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
+                                    project, line);
+                        } else {
+                            break;
+                        }
+                    }
+                } catch (IOException e) {
+                    // do nothing.
+                }
+            }
+
+        }.start();
+
+        // get the return code from the process
+        return process.waitFor();
     }
 
 
