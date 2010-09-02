@@ -1786,10 +1786,10 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * <p/>
      * The menu has a static part with actions that are always available such as
      * copy, cut, paste and show in > explorer. This is created by
-     * {@link #createStaticMenuActions(IMenuManager)}.
+     * {@link #setupStaticMenuActions(IMenuManager)}.
      * <p/>
      * There's also a dynamic part that is populated by the groovy rules of the
-     * selected elements. This part is created by {@link #populateDynamicContextMenu()}
+     * selected elements. This part is created by {@link #populateDynamicContextMenu(MenuManager)}
      * when the {@link MenuManager}'s <code>menuAboutToShow</code> method is invoked.
      */
     private void createContextMenu() {
@@ -1803,29 +1803,43 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         };
 
         // Fill the menu manager with the static actions.
-        createStaticMenuActions(mMenuManager);
+        setupStaticMenuActions(mMenuManager);
+        setupDynamicMenuActions(mMenuManager);
         Menu menu = mMenuManager.createContextMenu(this);
         setMenu(menu);
+    }
 
+    /**
+     * Setups the menu manager to receive dynamic menu contributions from the {@link IViewRule}s
+     * when it's about to be shown.
+     * <p/>
+     * Implementation detail: this method is package protected as it is also used by
+     * {@link OutlinePage2} to create the exact same dynamic context menu. This means that this
+     * methods and all its descendant must <em>not</em> access the local {@link #mMenuManager}
+     * variable.
+     *
+     * @param menuManager The menu manager to modify.
+     */
+    /*package*/ void setupDynamicMenuActions(final MenuManager menuManager) {
         // Remember how many static actions we have. Then each time the menu is
         // shown, find dynamic contributions based on the current selection and insert
         // them at the beginning of the menu.
-        final int numStaticActions = mMenuManager.getSize();
-        mMenuManager.addMenuListener(new IMenuListener() {
+        final int numStaticActions = menuManager.getSize();
+        menuManager.addMenuListener(new IMenuListener() {
             public void menuAboutToShow(IMenuManager manager) {
 
                 // Remove any previous dynamic contributions to keep only the
                 // default static items.
-                int n = mMenuManager.getSize() - numStaticActions;
+                int n = menuManager.getSize() - numStaticActions;
                 if (n > 0) {
-                    IContributionItem[] items = mMenuManager.getItems();
+                    IContributionItem[] items = menuManager.getItems();
                     for (int i = 0; i < n; i++) {
-                        mMenuManager.remove(items[i]);
+                        menuManager.remove(items[i]);
                     }
                 }
 
                 // Now add all the dynamic menu actions depending on the current selection.
-                populateDynamicContextMenu();
+                populateDynamicContextMenu(menuManager);
             }
         });
 
@@ -1841,7 +1855,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * created by {@link #setupGlobalActionHandlers()}, so this method must be
      * invoked after that one.
      */
-    private void createStaticMenuActions(IMenuManager manager) {
+    private void setupStaticMenuActions(IMenuManager manager) {
         manager.removeAll();
 
         manager.add(mCutAction);
@@ -1869,8 +1883,9 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * This is invoked by <code>menuAboutToShow</code> on {@link #mMenuManager}.
      * All previous dynamic menu actions have been removed and this method can now insert
      * any new actions that depend on the current selection.
+     * @param menuManager
      */
-    private void populateDynamicContextMenu() {
+    private void populateDynamicContextMenu(MenuManager menuManager) {
         // Map action-id => action object (one per selected view that defined it)
         final TreeMap<String /*id*/, ArrayList<MenuAction>> actionsMap =
             new TreeMap<String, ArrayList<MenuAction>>();
@@ -1881,11 +1896,11 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         int maxMenuSelection = collectDynamicMenuActions(actionsMap, groupsMap);
 
         // Now create the actual menu contributions
-        String endId = mMenuManager.getItems()[0].getId();
+        String endId = menuManager.getItems()[0].getId();
 
         Separator sep = new Separator();
         sep.setId("-dyn-gle-sep");  //$NON-NLS-1$
-        mMenuManager.insertBefore(endId, sep);
+        menuManager.insertBefore(endId, sep);
         endId = sep.getId();
 
         // First create the groups
@@ -1894,7 +1909,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             String id = group.getId();
             MenuManager submenu = new MenuManager(group.getTitle(), id);
             menuGroups.put(id, submenu);
-            mMenuManager.insertBefore(endId, submenu);
+            menuManager.insertBefore(endId, submenu);
             endId = id;
         }
 
@@ -1940,10 +1955,10 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
                         sep = new Separator();
                         sep.setId("-dyn-gle-sep2");  //$NON-NLS-1$
-                        mMenuManager.insertBefore(endId, sep);
+                        menuManager.insertBefore(endId, sep);
                         endId = sep.getId();
                     }
-                    mMenuManager.insertBefore(endId, contrib);
+                    menuManager.insertBefore(endId, contrib);
                 }
             }
         }
@@ -1951,7 +1966,8 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     /**
      * Collects all the {@link MenuAction} contributed by the {@link IViewRule} of the
-     * current selection. This is the first step of {@link #populateDynamicContextMenu()}.
+     * current selection.
+     * This is the first step of {@link #populateDynamicContextMenu(MenuManager)}.
      *
      * @param outActionsMap Map that collects all the contributed actions.
      * @param outGroupsMap Map that collects all the contributed groups (sub-menus).
@@ -2017,7 +2033,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     }
 
     /**
-     * Invoked by {@link #populateDynamicContextMenu()} to create a new menu item
+     * Invoked by {@link #populateDynamicContextMenu(MenuManager)} to create a new menu item
      * for a {@link MenuAction.Toggle}.
      * <p/>
      * Toggles are represented by a checked menu item.
@@ -2056,7 +2072,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     }
 
     /**
-     * Invoked by {@link #populateDynamicContextMenu()} to create a new menu item
+     * Invoked by {@link #populateDynamicContextMenu(MenuManager)} to create a new menu item
      * for a {@link MenuAction.Choices}.
      * <p/>
      * Multiple-choices are represented by a sub-menu containing checked items.
