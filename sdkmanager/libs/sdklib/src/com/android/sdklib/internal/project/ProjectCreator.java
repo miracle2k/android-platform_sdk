@@ -492,17 +492,6 @@ public class ProjectCreator {
             return false;
         }
 
-        // before doing anything, make sure library (if present) can be applied.
-        if (libraryPath != null) {
-            IAndroidTarget finalTarget = target != null ? target : originalTarget;
-            if (finalTarget.getProperty(SdkConstants.PROP_SDK_SUPPORT_LIBRARY, false) == false) {
-                mLog.error(null,
-                        "The build system for this project target (%1$s) does not support libraries",
-                        finalTarget.getFullName());
-                return false;
-            }
-        }
-
         boolean saveDefaultProps = false;
 
         ProjectPropertiesWorkingCopy propsWC = null;

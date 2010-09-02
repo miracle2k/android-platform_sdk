@@ -75,6 +75,7 @@ public final class AaptExecLoopTask extends Task {
     private String mExecutable;
     private String mCommand;
     private boolean mForce = true; // true due to legacy reasons
+    private boolean mDebug = false;
     private boolean mVerbose = false;
     private int mVersionCode = 0;
     private String mManifest;
@@ -82,7 +83,6 @@ public final class AaptExecLoopTask extends Task {
     private String mAssets;
     private String mAndroidJar;
     private String mApkFolder;
-    @Deprecated private String mApkBaseName;
     private String mApkName;
     private String mResourceFilter;
     private String mRFolder;
@@ -129,6 +129,10 @@ public final class AaptExecLoopTask extends Task {
                         "WARNING: Ignoring invalid version code value '%s'.", versionCode));
             }
         }
+    }
+
+    public void setDebug(boolean value) {
+        mDebug = value;
     }
 
     /**
@@ -190,28 +194,6 @@ public final class AaptExecLoopTask extends Task {
      */
     public void setApkfolder(Path apkFolder) {
         mApkFolder = TaskHelper.checkSinglePath("apkfolder", apkFolder);
-    }
-
-    /**
-     * Sets the value of the "basename" attribute.
-     * @param baseName the value.
-     * @deprecated use {@link #setApkbasename(String)}
-     */
-    @Deprecated
-    public void setBasename(String baseName) {
-        System.out.println("WARNNG: Using deprecated 'basename' attribute in AaptExecLoopTask." +
-                "Use 'resourcefilename' (string) instead.");
-        mApkBaseName = baseName;
-    }
-
-    /**
-     * Sets the value of the "apkbasename" attribute.
-     * @param apkbaseName the value.
-     */
-    public void setApkbasename(String apkbaseName) {
-        System.out.println("WARNNG: Using deprecated 'apkbasename' attribute in AaptExecLoopTask." +
-                "Use 'resourcefilename' (string) instead.");
-        mApkBaseName = apkbaseName;
     }
 
     /**
@@ -333,6 +315,10 @@ public final class AaptExecLoopTask extends Task {
             task.createArg().setValue("-v");
         }
 
+        if (mDebug) {
+            task.createArg().setValue("--debug-mode");
+        }
+
         if (generateRClass) {
             task.createArg().setValue("-m");
         }
@@ -427,8 +413,6 @@ public final class AaptExecLoopTask extends Task {
         String filename = null;
         if (mApkName != null) {
             filename = mApkName;
-        } else if (mApkBaseName != null) {
-            filename = mApkBaseName + ".ap_";
         }
 
         if (filename != null) {

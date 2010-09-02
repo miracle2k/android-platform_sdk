@@ -22,7 +22,6 @@ import com.android.sdklib.build.DuplicateFileException;
 import com.android.sdklib.build.SealedApkException;
 
 import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.Path;
 
@@ -37,11 +36,9 @@ public class ApkBuilderTask extends Task {
             Pattern.CASE_INSENSITIVE);
 
     private String mOutFolder;
-    @Deprecated private String mBaseName;
     private String mApkFilepath;
     private String mResourceFile;
     private boolean mVerbose = false;
-    private boolean mSigned = true;
     private boolean mDebug = false;
     private boolean mHasCode = true;
     private String mAbiFilter = null;
@@ -61,17 +58,6 @@ public class ApkBuilderTask extends Task {
      */
     public void setOutfolder(Path outFolder) {
         mOutFolder = TaskHelper.checkSinglePath("outfolder", outFolder);
-    }
-
-    /**
-     * Sets the value of the "basename" attribute.
-     * @param baseName the value.
-     * @deprecated
-     */
-    public void setBasename(String baseName) {
-        System.out.println("WARNING: Using deprecated 'basename' attribute in ApkBuilderTask." +
-                "Use 'apkfilepath' (path) instead.");
-        mBaseName = baseName;
     }
 
     /**
@@ -96,14 +82,6 @@ public class ApkBuilderTask extends Task {
      */
     public void setVerbose(boolean verbose) {
         mVerbose = verbose;
-    }
-
-    /**
-     * Sets the value of the "signed" attribute.
-     * @param signed the value.
-     */
-    public void setSigned(boolean signed) {
-        mSigned = signed;
     }
 
     /**
@@ -209,26 +187,10 @@ public class ApkBuilderTask extends Task {
 
     @Override
     public void execute() throws BuildException {
-        Project antProject = getProject();
-
-        // get the rules revision to figure out how to build the output file.
-        String rulesRevStr = antProject.getProperty(TaskHelper.PROP_RULES_REV);
-        int rulesRev = 1;
-        try {
-            rulesRev = Integer.parseInt(rulesRevStr);
-        } catch (NumberFormatException e) {
-            // this shouldn't happen since setup task is the one setting up every time.
-        }
 
         File outputFile;
         if (mApkFilepath != null) {
             outputFile = new File(mApkFilepath);
-        } else if (rulesRev == 2) {
-            if (mSigned) {
-                outputFile = new File(mOutFolder, mBaseName + "-debug-unaligned.apk");
-            } else {
-                outputFile = new File(mOutFolder, mBaseName + "-unsigned.apk");
-            }
         } else {
             throw new BuildException("missing attribute 'apkFilepath'");
         }
@@ -246,7 +208,7 @@ public class ApkBuilderTask extends Task {
         }
 
         try {
-            if (mSigned) {
+            if (mDebug) {
                 System.out.println(String.format(
                         "Creating %s and signing it with a debug key...", outputFile.getName()));
             } else {
@@ -258,7 +220,7 @@ public class ApkBuilderTask extends Task {
                     outputFile,
                     new File(mOutFolder, mResourceFile),
                     dexFile,
-                    mSigned ? ApkBuilder.getDebugKeystore() : null,
+                    mDebug ? ApkBuilder.getDebugKeystore() : null,
                     mVerbose ? System.out : null);
             apkBuilder.setDebugMode(mDebug);
 
