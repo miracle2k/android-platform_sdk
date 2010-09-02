@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.build;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.AndroidPrintStream;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
@@ -32,13 +33,13 @@ import com.android.sdklib.build.ApkCreationException;
 import com.android.sdklib.build.DuplicateFileException;
 import com.android.sdklib.build.SealedApkException;
 import com.android.sdklib.build.ApkBuilder.JarStatus;
+import com.android.sdklib.build.ApkBuilder.SigningInfo;
 import com.android.sdklib.internal.build.DebugKeyProvider;
 import com.android.sdklib.internal.build.SignedJarBuilder;
 import com.android.sdklib.internal.build.DebugKeyProvider.KeytoolException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
-import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
@@ -57,6 +58,8 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,17 +75,115 @@ import java.util.List;
  * {@link #finalPackage(String, String, String, boolean, IJavaProject, IProject[], IJavaProject[], String, boolean)}
  * will make the apk from all the previous components.
  *
+ * This class only executes the 3 above actions. It does not handle the errors, and simply sends
+ * them back as custom exceptions.
+ *
+ * Warnings are handled by the {@link ResourceMarker} interface.
+ *
+ * Console output (verbose and non verbose) is handled through the {@link AndroidPrintStream} passed
+ * to the constructor.
+ *
  */
 public class PostCompilerHelper {
 
-    private final IProject mProject;
-    private final PrintStream mOutStream;
-    private final PrintStream mErrStream;
+    private static final String CONSOLE_PREFIX_DX = "Dx"; //$NON-NLS-1$
 
-    public PostCompilerHelper(IProject project, PrintStream outStream, PrintStream errStream) {
+    private final IProject mProject;
+    private final AndroidPrintStream mOutStream;
+    private final AndroidPrintStream mErrStream;
+    private final boolean mVerbose;
+    private final boolean mDebugMode;
+
+    public static final class AaptExecException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        AaptExecException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static final class AaptResultException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        private final int mErrorCode;
+        private final String[] mOutput;
+
+        AaptResultException(int errorCode, String[] output) {
+            mErrorCode = errorCode;
+            mOutput = output;
+        }
+
+        public String[] getOutput() {
+            return mOutput;
+        }
+
+        public int getErrorCode() {
+            return mErrorCode;
+        }
+    }
+
+    public static final class DexException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        DexException(String message) {
+            super(message);
+        }
+
+        DexException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static final class NativeLibInJarException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        private final JarStatus mStatus;
+        private final String mLibName;
+        private final String[] mConsoleMsgs;
+
+        NativeLibInJarException(JarStatus status, String message, String libName,
+                String[] consoleMsgs) {
+            super(message);
+            mStatus = status;
+            mLibName = libName;
+            mConsoleMsgs = consoleMsgs;
+        }
+
+        public JarStatus getStatus() {
+            return mStatus;
+        }
+
+        public String getLibName() {
+            return mLibName;
+        }
+
+        public String[] getConsoleMsgs() {
+            return mConsoleMsgs;
+        }
+    }
+
+    /**
+     * An object able to put a marker on a resource.
+     */
+    public interface ResourceMarker {
+        void setWarning(IResource resource, String message);
+    }
+
+    /**
+     * Creates a new post-compiler helper
+     * @param project
+     * @param outStream
+     * @param errStream
+     * @param debugMode whether this is a debug build
+     * @param verbose
+     */
+    public PostCompilerHelper(IProject project, AndroidPrintStream outStream,
+            AndroidPrintStream errStream, boolean debugMode, boolean verbose) {
         mProject = project;
         mOutStream = outStream;
         mErrStream = errStream;
+        mDebugMode = debugMode;
+        mVerbose = verbose;
     }
 
     /**
@@ -95,10 +196,12 @@ public class PostCompilerHelper {
      * If the value is <=0, no values are inserted.
      * @param outputFolder where to write the resource ap_ file.
      * @param outputFilename the name of the resource ap_ file.
-     * @return true if success.
+     * @throws AaptExecException
+     * @throws AaptResultException
      */
-    public boolean packageResources(IFile manifestFile, IProject[] libProjects, String resFilter,
-            int versionCode, String outputFolder, String outputFilename) {
+    public void packageResources(IFile manifestFile, IProject[] libProjects, String resFilter,
+            int versionCode, String outputFolder, String outputFilename)
+            throws AaptExecException, AaptResultException {
         // need to figure out some path before we can execute aapt;
 
         // get the resource folder
@@ -138,21 +241,68 @@ public class PostCompilerHelper {
             }
 
             // build the default resource package
-            if (executeAapt(osManifestPath, osResPaths, osAssetsPath,
+            executeAapt(osManifestPath, osResPaths, osAssetsPath,
                     outputFolder + File.separator + outputFilename, resFilter,
-                    versionCode) == false) {
-                // aapt failed. Whatever files that needed to be marked
-                // have already been marked. We just return.
-                return false;
-            }
+                    versionCode);
         }
-
-        return true;
     }
 
     /**
-     * Makes the final package. Package the dex files, the temporary resource file into the final
-     * package file.
+     * Makes a final package signed with the debug key.
+     *
+     * Packages the dex files, the temporary resource file into the final package file.
+     *
+     * Whether the package is a debug package is controlled with the <var>debugMode</var> parameter
+     * in {@link #PostCompilerHelper(IProject, PrintStream, PrintStream, boolean, boolean)}
+     *
+     * @param intermediateApk The path to the temporary resource file.
+     * @param dex The path to the dex file.
+     * @param output The path to the final package file to create.
+     * @param javaProject the java project being compiled
+     * @param libProjects an optional list of library projects (can be null)
+     * @param referencedJavaProjects referenced projects.
+     * @return true if success, false otherwise.
+     * @throws ApkCreationException
+     * @throws AndroidLocationException
+     * @throws KeytoolException
+     * @throws NativeLibInJarException
+     * @throws CoreException
+     * @throws DuplicateFileException
+     */
+    public void finalDebugPackage(String intermediateApk, String dex, String output,
+            final IJavaProject javaProject, IProject[] libProjects,
+            IJavaProject[] referencedJavaProjects, ResourceMarker resMarker)
+            throws ApkCreationException, KeytoolException, AndroidLocationException,
+            NativeLibInJarException, DuplicateFileException, CoreException {
+
+        // get the debug keystore to use.
+        IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
+        String keystoreOsPath = store.getString(AdtPrefs.PREFS_CUSTOM_DEBUG_KEYSTORE);
+        if (keystoreOsPath == null || new File(keystoreOsPath).isFile() == false) {
+            keystoreOsPath = DebugKeyProvider.getDefaultKeyStoreOsPath();
+            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, mProject,
+                    Messages.ApkBuilder_Using_Default_Key);
+        } else {
+            AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, mProject,
+                    String.format(Messages.ApkBuilder_Using_s_To_Sign, keystoreOsPath));
+        }
+
+        // from the keystore, get the signing info
+        SigningInfo info = ApkBuilder.getDebugKey(keystoreOsPath, mVerbose ? mOutStream : null);
+
+        finalPackage(intermediateApk, dex, output, javaProject, libProjects,
+                referencedJavaProjects, null /*abiFilter*/,
+                info != null ? info.key : null, info != null ? info.certificate : null, resMarker);
+    }
+
+    /**
+     * Makes the final package.
+     *
+     * Packages the dex files, the temporary resource file into the final package file.
+     *
+     * Whether the package is a debug package is controlled with the <var>debugMode</var> parameter
+     * in {@link #PostCompilerHelper(IProject, PrintStream, PrintStream, boolean, boolean)}
+     *
      * @param intermediateApk The path to the temporary resource file.
      * @param dex The path to the dex file.
      * @param output The path to the final package file to create.
@@ -162,101 +312,75 @@ public class PostCompilerHelper {
      * @param referencedJavaProjects referenced projects.
      * @param abiFilter an optional filter. If not null, then only the matching ABI is included in
      * the final archive
-     * @param debuggable whether the project manifest has debuggable==true. If true, any gdbserver
-     * executables will be packaged with the native libraries.
      * @return true if success, false otherwise.
+     * @throws NativeLibInJarException
+     * @throws ApkCreationException
+     * @throws CoreException
+     * @throws DuplicateFileException
      */
-    public boolean finalPackage(String intermediateApk, String dex, String output,
-            boolean debugSign, final IJavaProject javaProject, IProject[] libProjects,
-            IJavaProject[] referencedJavaProjects, String abiFilter, boolean debuggable) {
-
-        IProject project = javaProject.getProject();
-
-        String keystoreOsPath = null;
-        if (debugSign) {
-            IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
-            keystoreOsPath = store.getString(AdtPrefs.PREFS_CUSTOM_DEBUG_KEYSTORE);
-            if (keystoreOsPath == null || new File(keystoreOsPath).isFile() == false) {
-                try {
-                    keystoreOsPath = DebugKeyProvider.getDefaultKeyStoreOsPath();
-                    AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, mProject,
-                            Messages.ApkBuilder_Using_Default_Key);
-                } catch (KeytoolException e) {
-                    String eMessage = e.getMessage();
-
-                    // mark the project with the standard message
-                    String msg = String.format(Messages.Final_Archive_Error_s, eMessage);
-                    BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING, msg,
-                            IMarker.SEVERITY_ERROR);
-
-                    // output more info in the console
-                    AdtPlugin.printErrorToConsole(mProject,
-                            msg,
-                            String.format(Messages.ApkBuilder_JAVA_HOME_is_s, e.getJavaHome()),
-                            Messages.ApkBuilder_Update_or_Execute_manually_s,
-                            e.getCommandLine());
-
-                    return false;
-                } catch (AndroidLocationException e) {
-                    String eMessage = e.getMessage();
-
-                    // mark the project with the standard message
-                    String msg = String.format(Messages.Final_Archive_Error_s, eMessage);
-                    BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING, msg,
-                            IMarker.SEVERITY_ERROR);
-
-                    return false;
-                }
-            } else {
-                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, mProject,
-                        String.format(Messages.ApkBuilder_Using_s_To_Sign, keystoreOsPath));
-            }
-        }
-
+    public void finalPackage(String intermediateApk, String dex, String output,
+            final IJavaProject javaProject, IProject[] libProjects,
+            IJavaProject[] referencedJavaProjects, String abiFilter, PrivateKey key,
+            X509Certificate certificate, ResourceMarker resMarker)
+            throws NativeLibInJarException, ApkCreationException, DuplicateFileException,
+            CoreException {
 
         try {
-            ApkBuilder apkBuilder = new ApkBuilder(output, intermediateApk, dex, keystoreOsPath,
-                    AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE ?
-                            AdtPlugin.getOutPrintStream(project, null): null);
-            apkBuilder.setDebugMode(debuggable);
+            ApkBuilder apkBuilder = new ApkBuilder(output, intermediateApk, dex,
+                    key, certificate,
+                    mVerbose ? mOutStream: null);
+            apkBuilder.setDebugMode(mDebugMode);
 
             // Now we write the standard resources from the project and the referenced projects.
             writeStandardResources(apkBuilder, javaProject, referencedJavaProjects);
 
             // Now we write the standard resources from the external jars
-            for (String libraryOsPath : getExternalJars()) {
-                JarStatus status = apkBuilder.addResourcesFromJar(new File(libraryOsPath));
+            for (String libraryOsPath : getExternalJars(resMarker)) {
+                JarStatus jarStatus = apkBuilder.addResourcesFromJar(new File(libraryOsPath));
 
                 // check if we found native libraries in the external library. This
                 // constitutes an error or warning depending on if they are in lib/
-                if (status.getNativeLibs().size() > 0) {
+                if (jarStatus.getNativeLibs().size() > 0) {
                     String libName = new File(libraryOsPath).getName();
+
                     String msg = String.format(
                             "Native libraries detected in '%1$s'. See console for more information.",
                             libName);
 
-                    BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING,
-                            msg,
-                            status.hasNativeLibsConflicts() ||
-                                    AdtPrefs.getPrefs().getBuildForceErrorOnNativeLibInJar() ?
-                                    IMarker.SEVERITY_ERROR : IMarker.SEVERITY_WARNING);
-
                     ArrayList<String> consoleMsgs = new ArrayList<String>();
+
                     consoleMsgs.add(String.format(
                             "The library '%1$s' contains native libraries that will not run on the device.",
                             libName));
-                    if (status.hasNativeLibsConflicts()) {
+
+                    if (jarStatus.hasNativeLibsConflicts()) {
                         consoleMsgs.add("Additionally some of those libraries will interfer with the installation of the application because of their location in lib/");
                         consoleMsgs.add("lib/ is reserved for NDK libraries.");
                     }
+
                     consoleMsgs.add("The following libraries were found:");
-                    for (String lib : status.getNativeLibs()) {
+
+                    for (String lib : jarStatus.getNativeLibs()) {
                         consoleMsgs.add(" - " + lib);
                     }
-                    AdtPlugin.printErrorToConsole(mProject,
-                            consoleMsgs.toArray());
 
-                    return false;
+                    String[] consoleStrings = consoleMsgs.toArray(new String[consoleMsgs.size()]);
+
+                    // if there's a conflict or if the prefs force error on any native code in jar
+                    // files, throw an exception
+                    if (jarStatus.hasNativeLibsConflicts() ||
+                            AdtPrefs.getPrefs().getBuildForceErrorOnNativeLibInJar()) {
+                        throw new NativeLibInJarException(jarStatus, msg, libName, consoleStrings);
+                    } else {
+                        // otherwise, put a warning, and output to the console also.
+                        if (resMarker != null) {
+                            resMarker.setWarning(mProject, msg);
+                        }
+
+                        for (String string : consoleStrings) {
+                            mOutStream.println(string);
+                        }
+                    }
                 }
             }
 
@@ -282,46 +406,9 @@ public class PostCompilerHelper {
 
             // seal the APK.
             apkBuilder.sealApk();
-            return true;
-        } catch (CoreException e) {
-            // mark project and return
-            String msg = String.format(Messages.Final_Archive_Error_s, e.getMessage());
-            AdtPlugin.printErrorToConsole(mProject, msg);
-            BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING, msg,
-                    IMarker.SEVERITY_ERROR);
-        } catch (ApkCreationException e) {
-            // mark project and return
-            String msg = String.format(Messages.Final_Archive_Error_s, e.getMessage());
-            AdtPlugin.printErrorToConsole(mProject, msg);
-            BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING, msg,
-                    IMarker.SEVERITY_ERROR);
-        } catch (DuplicateFileException e) {
-            String msg1 = String.format(
-                    "Found duplicate file for APK: %1$s\nOrigin 1: %2$s\nOrigin 2: %3$s",
-                    e.getArchivePath(), e.getFile1(), e.getFile2());
-            String msg2 = String.format(Messages.Final_Archive_Error_s, msg1);
-            AdtPlugin.printErrorToConsole(mProject, msg2);
-            BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING, msg2,
-                    IMarker.SEVERITY_ERROR);
         } catch (SealedApkException e) {
             // this won't happen as we control when the apk is sealed.
-        } catch (Exception e) {
-            // try to catch other exception to actually display an error. This will be useful
-            // if we get an NPE or something so that we can at least notify the user that something
-            // went wrong (otherwise the build appears to succeed but the zip archive is not closed
-            // and therefore invalid.
-            String msg = e.getMessage();
-            if (msg == null) {
-                msg = e.getClass().getCanonicalName();
-            }
-
-            msg = String.format("Unknown error: %1$s", msg);
-            AdtPlugin.printErrorToConsole(mProject, msg);
-            BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING, msg,
-                    IMarker.SEVERITY_ERROR);
         }
-
-        return false;
     }
 
     /**
@@ -332,9 +419,11 @@ public class PostCompilerHelper {
      * @param referencedJavaProjects the list of referenced projects for this project.
      *
      * @throws CoreException
+     * @throws DexException
      */
-    boolean executeDx(IJavaProject javaProject, String osBinPath, String osOutFilePath,
-            IJavaProject[] referencedJavaProjects) throws CoreException {
+    public void executeDx(IJavaProject javaProject, String osBinPath, String osOutFilePath,
+            IJavaProject[] referencedJavaProjects, ResourceMarker resMarker) throws CoreException,
+            DexException {
 
         IAndroidTarget target = Sdk.getCurrent().getTarget(mProject);
         AndroidTargetData targetData = Sdk.getCurrent().getTargetData(target);
@@ -353,7 +442,7 @@ public class PostCompilerHelper {
 
         try {
             // get the list of libraries to include with the source code
-            String[] libraries = getExternalJars();
+            String[] libraries = getExternalJars(resMarker);
 
             // get the list of referenced projects output to add
             String[] projectOutputs = getProjectOutputs(referencedJavaProjects);
@@ -369,39 +458,34 @@ public class PostCompilerHelper {
             // then external jars.
             System.arraycopy(libraries, 0, fileNames, 1 + projectOutputs.length, libraries.length);
 
+            // set a temporary prefix on the print streams.
+            mOutStream.setPrefix(CONSOLE_PREFIX_DX);
+            mErrStream.setPrefix(CONSOLE_PREFIX_DX);
+
             int res = wrapper.run(osOutFilePath, fileNames,
-                    AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE,
+                    mVerbose,
                     mOutStream, mErrStream);
+
+            mOutStream.setPrefix(null);
+            mErrStream.setPrefix(null);
 
             if (res != 0) {
                 // output error message and marker the project.
-                String message = String.format(Messages.Dalvik_Error_d,
-                        res);
-                AdtPlugin.printErrorToConsole(mProject, message);
-                BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING,
-                        message, IMarker.SEVERITY_ERROR);
-                return false;
+                String message = String.format(Messages.Dalvik_Error_d, res);
+                throw new DexException(message);
             }
-        } catch (Throwable ex) {
-            String message = ex.getMessage();
+        } catch (DexException e) {
+            throw e;
+        } catch (Throwable t) {
+            String message = t.getMessage();
             if (message == null) {
-                message = ex.getClass().getCanonicalName();
+                message = t.getClass().getCanonicalName();
             }
             message = String.format(Messages.Dalvik_Error_s, message);
-            AdtPlugin.printErrorToConsole(mProject, message);
-            BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING,
-                    message, IMarker.SEVERITY_ERROR);
-            if ((ex instanceof NoClassDefFoundError)
-                    || (ex instanceof NoSuchMethodError)) {
-                AdtPlugin.printErrorToConsole(mProject, Messages.Incompatible_VM_Warning,
-                        Messages.Requires_1_5_Error);
-            }
-            return false;
+
+            throw new DexException(message, t);
         }
-
-        return true;
     }
-
 
     /**
      * Executes aapt. If any error happen, files or the project will be marked.
@@ -414,11 +498,12 @@ public class PostCompilerHelper {
      * resources.)
      * @param versionCode optional version code to insert in the manifest during packaging. If <=0
      * then no value is inserted
-     * @return true if success, false otherwise.
+     * @throws AaptExecException
+     * @throws AaptResultException
      */
-    private boolean executeAapt(String osManifestPath,
+    private void executeAapt(String osManifestPath,
             List<String> osResPaths, String osAssetsPath, String osOutFilePath,
-            String configFilter, int versionCode) {
+            String configFilter, int versionCode) throws AaptExecException, AaptResultException {
         IAndroidTarget target = Sdk.getCurrent().getTarget(mProject);
 
         // Create the command line.
@@ -434,6 +519,10 @@ public class PostCompilerHelper {
         // to activate the auto-add-overlay
         if (osResPaths.size() > 1) {
             commandArray.add("--auto-add-overlay"); //$NON-NLS-1$
+        }
+
+        if (mDebugMode) {
+            commandArray.add("--debug-mode"); //$NON-NLS-1$
         }
 
         if (versionCode > 0) {
@@ -489,48 +578,24 @@ public class PostCompilerHelper {
             // get the output and return code from the process
             execError = BaseBuilder.grabProcessOutput(mProject, process, results);
 
-            // attempt to parse the error output
-            boolean parsingError = AaptParser.parseOutput(results, mProject);
-
-            // if we couldn't parse the output we display it in the console.
-            if (parsingError) {
-                if (execError != 0) {
-                    AdtPlugin.printErrorToConsole(mProject, results.toArray());
-                } else {
-                    AdtPlugin.printBuildToConsole(BuildVerbosity.ALWAYS, mProject,
-                            results.toArray());
-                }
-            }
-
-            // We need to abort if the exec failed.
             if (execError != 0) {
-                // if the exec failed, and we couldn't parse the error output (and therefore
-                // not all files that should have been marked, were marked), we put a generic
-                // marker on the project and abort.
-                if (parsingError) {
-                    BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING,
-                            Messages.Unparsed_AAPT_Errors,
-                            IMarker.SEVERITY_ERROR);
+                throw new AaptResultException(execError,
+                        results.toArray(new String[results.size()]));
+            } else if (mVerbose) {
+                for (String resultString : results) {
+                    mOutStream.println(resultString);
                 }
-
-                // abort if exec failed.
-                return false;
             }
-        } catch (IOException e1) {
+
+
+        } catch (IOException e) {
             String msg = String.format(Messages.AAPT_Exec_Error, command[0]);
-            BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING, msg,
-                    IMarker.SEVERITY_ERROR);
-            return false;
+            throw new AaptExecException(msg, e);
         } catch (InterruptedException e) {
             String msg = String.format(Messages.AAPT_Exec_Error, command[0]);
-            BaseProjectHelper.markResource(mProject, AndroidConstants.MARKER_PACKAGING, msg,
-                    IMarker.SEVERITY_ERROR);
-            return false;
+            throw new AaptExecException(msg, e);
         }
-
-        return true;
     }
-
 
     /**
      * Writes the standard resources of a project and its referenced projects
@@ -600,7 +665,7 @@ public class PostCompilerHelper {
      * Returns an array of external jar files used by the project.
      * @return an array of OS-specific absolute file paths
      */
-    private final String[] getExternalJars() {
+    private final String[] getExternalJars(ResourceMarker resMarker) {
         // get a java project from it
         IJavaProject javaProject = JavaCore.create(mProject);
 
@@ -637,13 +702,13 @@ public class PostCompilerHelper {
                             } else {
                                 String message = String.format( Messages.Couldnt_Locate_s_Error,
                                         path);
-                                AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
-                                        mProject, message);
+                                // always output to the console
+                                mOutStream.println(message);
 
-                                // Also put a warning marker on the project
-                                BaseProjectHelper.markResource(mProject,
-                                        AndroidConstants.MARKER_PACKAGING, message,
-                                        IMarker.SEVERITY_WARNING);
+                                // put a marker
+                                if (resMarker != null) {
+                                    resMarker.setWarning(mProject, message);
+                                }
                             }
                         }
                     }

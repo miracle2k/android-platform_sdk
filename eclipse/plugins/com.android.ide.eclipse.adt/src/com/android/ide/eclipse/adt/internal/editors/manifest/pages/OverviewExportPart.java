@@ -21,11 +21,15 @@ import com.android.ide.eclipse.adt.internal.editors.ui.SectionHelper.ManifestSec
 import com.android.ide.eclipse.adt.internal.project.ExportHelper;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.events.HyperlinkAdapter;
 import org.eclipse.ui.forms.events.HyperlinkEvent;
 import org.eclipse.ui.forms.widgets.FormText;
@@ -40,7 +44,8 @@ final class OverviewExportPart extends ManifestSectionPart {
 
     private final OverviewPage mOverviewPage;
 
-    public OverviewExportPart(OverviewPage overviewPage, Composite body, FormToolkit toolkit, ManifestEditor editor) {
+    public OverviewExportPart(OverviewPage overviewPage, final Composite body, FormToolkit toolkit,
+            ManifestEditor editor) {
         super(body, toolkit, Section.TWISTIE | Section.EXPANDED, true /* description */);
         mOverviewPage = overviewPage;
         Section section = getSection();
@@ -84,10 +89,15 @@ final class OverviewExportPart extends ManifestSectionPart {
                     if (project != null) {
                         if ("manual".equals(e.data)) { //$NON-NLS-1$
                             // now we can export an unsigned apk for the project.
-                            ExportHelper.exportProject(project);
+                            ExportHelper.exportUnsignedReleaseApk(project);
                         } else {
                             // call the export wizard
-                            ExportHelper.startExportWizard(project);
+                            StructuredSelection selection = new StructuredSelection(project);
+
+                            ExportWizard wizard = new ExportWizard();
+                            wizard.init(PlatformUI.getWorkbench(), selection);
+                            WizardDialog dialog = new WizardDialog(body.getShell(), wizard);
+                            dialog.open();
                         }
                     }
                 }
