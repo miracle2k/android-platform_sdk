@@ -115,10 +115,7 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
         new Thread() {
             @Override
             public void run() {
-                if (director.acquireBridge()) {
-                    director.startListenForDevices();
-                    director.populateDeviceSelectionModel();
-                }
+                initDirector(director);
             }
         }.start();
     }
@@ -167,13 +164,21 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
                 new Thread() {
                     @Override
                     public void run() {
-                        HierarchyViewerDirector.getDirector().initDebugBridge();
-                        HierarchyViewerDirector.getDirector().startListenForDevices();
-                        HierarchyViewerDirector.getDirector().populateDeviceSelectionModel();
+                        initDirector(HierarchyViewerDirector.getDirector());
                     }
                 }.start();
             }
         }
+    }
+
+    private static boolean initDirector(HierarchyViewerDirector director) {
+        if (director.acquireBridge()) {
+            director.startListenForDevices();
+            director.populateDeviceSelectionModel();
+            return true;
+        }
+
+        return false;
     }
 
     /**
