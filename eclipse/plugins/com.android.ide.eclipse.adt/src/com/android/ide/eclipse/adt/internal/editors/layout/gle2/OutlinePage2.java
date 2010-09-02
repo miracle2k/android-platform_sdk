@@ -417,12 +417,10 @@ public class OutlinePage2 extends ContentOutlinePage
         mMenuManager.add(new DelegateAction(prefix + ActionFactory.DELETE.getId()));
         mMenuManager.add(new DelegateAction(prefix + ActionFactory.SELECT_ALL.getId()));
 
-        getControl().setMenu(mMenuManager.createContextMenu(getControl()));
-
         mMenuManager.addMenuListener(new IMenuListener() {
             public void menuAboutToShow(IMenuManager manager) {
                 // Update all actions to match their LayoutCanvas counterparts
-                for (IContributionItem contrib : mMenuManager.getItems()) {
+                for (IContributionItem contrib : manager.getItems()) {
                     if (contrib instanceof ActionContributionItem) {
                         IAction action = ((ActionContributionItem) contrib).getAction();
                         if (action instanceof DelegateAction) {
@@ -432,6 +430,10 @@ public class OutlinePage2 extends ContentOutlinePage
                 }
             }
         });
+
+        mGraphicalEditorPart.getCanvasControl().setupDynamicMenuActions(mMenuManager);
+
+        getControl().setMenu(mMenuManager.createContextMenu(getControl()));
     }
 
     /**
@@ -445,6 +447,7 @@ public class OutlinePage2 extends ContentOutlinePage
 
         public DelegateAction(String canvasActionId) {
             super(canvasActionId);
+            setId(canvasActionId);
             mCanvasActionId = canvasActionId;
         }
 
