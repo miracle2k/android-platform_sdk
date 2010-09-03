@@ -823,7 +823,7 @@ public class ConfigurationComposite extends Composite {
         if (configIndex != -1) {
             String configName = mDeviceConfigCombo.getItem(configIndex);
             FolderConfiguration currentConfig = mState.device.getFolderConfigByName(configName);
-            if (mEditedConfig.isMatchFor(currentConfig)) {
+            if (currentConfig != null && mEditedConfig.isMatchFor(currentConfig)) {
                 currentConfigIsCompatible = true; // current config is compatible
                 if (needBestMatch == false || isCurrentFileBestMatchFor(currentConfig)) {
                     needConfigChange = false;

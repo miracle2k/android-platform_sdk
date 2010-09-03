@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="PACKAGE"
+      package="com.android.tests.basicProjectWithLib"
       android:versionCode="1"
       android:versionName="1.0">
-    <application android:label="@string/app_name" ICON>
-        <activity android:name="ACTIVITY_ENTRY_NAME"
+    <application android:label="@string/app_name" android:icon="@drawable/icon">
+        <activity android:name="com.android.tests.basiclib.Main"
                   android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -12,4 +12,5 @@
             </intent-filter>
         </activity>
     </application>
+    <uses-sdk android:minSdkVersion="AOSP" />
 </manifest>

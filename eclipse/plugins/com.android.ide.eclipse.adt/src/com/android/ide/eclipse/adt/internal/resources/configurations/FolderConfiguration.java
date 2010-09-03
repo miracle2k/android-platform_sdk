@@ -518,6 +518,10 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
      * @return true if the configuration matches.
      */
     public boolean isMatchFor(FolderConfiguration referenceConfig) {
+        if (referenceConfig == null) {
+            return false;
+        }
+
         for (int i = 0 ; i < INDEX_COUNT ; i++) {
             ResourceQualifier testQualifier = mQualifiers[i];
             ResourceQualifier referenceQualifier = referenceConfig.mQualifiers[i];
