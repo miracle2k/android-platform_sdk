@@ -31,8 +31,6 @@ import java.util.Properties;
 
 final class TaskHelper {
 
-    public final static String PROP_RULES_REV = "android.ant.rules.revision";
-
     static File getSdkLocation(Project antProject) {
         // get the SDK location
         String sdkOsPath = antProject.getProperty(ProjectProperties.PROPERTY_SDK);

@@ -64,20 +64,12 @@ import javax.xml.xpath.XPathExpressionException;
  *
  */
 public final class SetupTask extends ImportTask {
-    /** current max version of the Ant rules that is supported */
-    private final static int ANT_RULES_MAX_VERSION = 3;
-
-    // legacy main rules file.
-    private final static String RULES_LEGACY_MAIN = "android_rules.xml";
-    // legacy test rules file - depends on android_rules.xml
-    private final static String RULES_LEGACY_TEST = "android_test_rules.xml";
-
     // main rules file
-    private final static String RULES_MAIN = "ant_rules_r%1$d.xml";
+    private final static String RULES_MAIN = "main_rules.xml";
     // test rules file - depends on android_rules.xml
-    private final static String RULES_TEST = "ant_test_rules_r%1$d.xml";
+    private final static String RULES_TEST = "test_rules.xml";
     // library rules file.
-    private final static String RULES_LIBRARY = "ant_lib_rules_r%1$d.xml";
+    private final static String RULES_LIBRARY = "lib_rules.xml";
 
     // ant property with the path to the android.jar
     private final static String PROPERTY_ANDROID_JAR = "android.jar";
@@ -93,24 +85,6 @@ public final class SetupTask extends ImportTask {
     private final static String PROPERTY_DX = "dx";
     // ref id to the <path> object containing all the boot classpaths.
     private final static String REF_CLASSPATH = "android.target.classpath";
-
-    /**
-     * Compatibility range for the Ant rules.
-     * The goal is to specify range of the rules that are compatible between them. For instance if
-     * a range is 10-15 and a platform indicate that it supports rev 12, but the tools have rules
-     * revision 15, then the rev 15 will be used.
-     * Compatibility is broken when a new rev of the rules relies on a new option in the external
-     * tools contained in the platform.
-     *
-     * For instance if rules 10 uses a newly introduced aapt option, then it would be considered
-     * incompatible with 9, and therefore would be the start of a new compatibility range.
-     * A platform declaring it supports 9 would not be made to use 10, as its aapt version wouldn't
-     * support it.
-     */
-    private final static int ANT_COMPATIBILITY_RANGES[][] = new int[][] {
-        new int[] { 1, 1 },
-        new int[] { 2, ANT_RULES_MAX_VERSION },
-    };
 
     private boolean mDoImport = true;
 
@@ -191,52 +165,6 @@ public final class SetupTask extends ImportTask {
         }
         System.out.println("API level: " + androidTarget.getVersion().getApiString());
 
-        // check that this version of the custom Ant task can build this target
-        int antBuildVersion = androidTarget.getProperty(SdkConstants.PROP_SDK_ANT_BUILD_REVISION,
-                1);
-        if (antBuildVersion > ANT_RULES_MAX_VERSION) {
-            antBuildVersion = ANT_RULES_MAX_VERSION;
-            System.out.println("\n\n\n"
-                    + "***********************************************************\n"
-                    + "WARNING: This platform requires Ant build rules not supported by your SDK Tools.\n"
-                    + "WARNING: Attempting to use older build rules instead, but result may not be correct.\n"
-                    + "WARNING: Please update to the newest revisions of the SDK Tools.\n"
-                    + "***********************************************************\n\n\n");
-        }
-
-        if (antBuildVersion < 2) {
-            // these older rules are obselete, and not versioned, and therefore it's hard
-            // to maintain compatibility.
-
-            // if the platform itself is obsolete, display a different warning
-            if (androidTarget.getVersion().getApiLevel() < 3 ||
-                    androidTarget.getVersion().getApiLevel() == 5 ||
-                    androidTarget.getVersion().getApiLevel() == 6) {
-                System.out.println("\n\n\n"
-                        + "***********************************************************\n"
-                        + "WARNING: This platform is obsolete and its Ant rules may not work properly.\n"
-                        + "WARNING: It is recommended to develop against a newer version of Android.\n"
-                        + "WARNING: For more information about active versions of Android see:\n"
-                        + "WARNING: http://developer.android.com/resources/dashboard/platform-versions.html\n"
-                        + "***********************************************************\n\n\n");
-            } else {
-                IAndroidTarget baseTarget =
-                    androidTarget.getParent() != null ? androidTarget.getParent() : androidTarget;
-                System.out.println(String.format("\n\n\n"
-                        + "***********************************************************\n"
-                        + "WARNING: Revision %1$d of %2$s uses obsolete Ant rules which may not work properly.\n"
-                        + "WARNING: It is recommended that you download a newer revision if available.\n"
-                        + "WARNING: For more information about updating your SDK, see:\n"
-                        + "WARNING: http://developer.android.com/sdk/adding-components.html\n"
-                        + "***********************************************************\n\n\n",
-                        baseTarget.getRevision(), baseTarget.getFullName()));
-            }
-        }
-
-        // set a property that contains the rules revision. This can be used by other custom
-        // tasks later.
-        antProject.setProperty(TaskHelper.PROP_RULES_REV, Integer.toString(antBuildVersion));
-
         // check if the project is a library
         boolean isLibrary = false;
 
@@ -247,14 +175,6 @@ public final class SetupTask extends ImportTask {
 
         if (isLibrary) {
             System.out.println("Project Type: Android Library");
-        }
-
-        // do a quick check to make sure the target supports library.
-        if (isLibrary &&
-                androidTarget.getProperty(SdkConstants.PROP_SDK_SUPPORT_LIBRARY, false) == false) {
-            throw new BuildException(String.format(
-                    "Project target '%1$s' does not support building libraries.",
-                    androidTarget.getFullName()));
         }
 
         // look for referenced libraries.
@@ -303,23 +223,10 @@ public final class SetupTask extends ImportTask {
 
         // Now the import section. This is only executed if the task actually has to import a file.
         if (mDoImport) {
-            // check if there's a more recent version of the rules in the tools folder.
-            int toolsRulesRev = getAntRulesFromTools(antBuildVersion);
-
-            File rulesFolder;
-            if (toolsRulesRev == -1) {
-                // no more recent Ant rules from the tools, folder. Find them inside the platform.
-                // find the folder containing the file to import
-                int folderID = antBuildVersion == 1 ? IAndroidTarget.TEMPLATES : IAndroidTarget.ANT;
-                String rulesOSPath = androidTarget.getPath(folderID);
-                rulesFolder = new File(rulesOSPath);
-            } else {
-                // in this case we import the rules from the ant folder in the tools.
-                rulesFolder = new File(new File(sdkOsPath, SdkConstants.FD_TOOLS),
-                        SdkConstants.FD_ANT);
-                // the new rev is:
-                antBuildVersion = toolsRulesRev;
-            }
+            // check the ant folder exists in the tools folder of the SDK.
+            File rulesFolder = new File(
+                    new File(sdkOsPath, SdkConstants.FD_TOOLS),
+                    SdkConstants.FD_ANT);
 
             // make sure the file exists.
             if (rulesFolder.isDirectory() == false) {
@@ -327,15 +234,9 @@ public final class SetupTask extends ImportTask {
                         rulesFolder.getAbsolutePath()));
             }
 
-            String importedRulesFileName;
-            if (antBuildVersion == 1) {
-                // legacy mode
-                importedRulesFileName = isTestProject ? RULES_LEGACY_TEST : RULES_LEGACY_MAIN;
-            } else {
-                importedRulesFileName = String.format(
-                        isLibrary ? RULES_LIBRARY : isTestProject ? RULES_TEST : RULES_MAIN,
-                        antBuildVersion);
-            }
+            // name of the rules files to import based on the type of project
+            String importedRulesFileName =
+                    isLibrary ? RULES_LIBRARY : isTestProject ? RULES_TEST : RULES_MAIN;
 
             // now check the rules file exists.
             File rules = new File(rulesFolder, importedRulesFileName);
@@ -362,21 +263,6 @@ public final class SetupTask extends ImportTask {
             // and import
             super.execute();
         }
-    }
-
-    /**
-     * Returns the revision number of a newer but still compatible Ant rules available in the
-     * tools folder of the SDK, or -1 if none is found.
-     * @param rulesRev the revision of the rules file on which compatibility is based.
-     */
-    private int getAntRulesFromTools(int rulesRev) {
-        for (int[] range : ANT_COMPATIBILITY_RANGES) {
-            if (range[0] <= rulesRev && rulesRev <= range[1]) {
-                return range[1];
-            }
-        }
-
-        return -1;
     }
 
     /**
@@ -486,66 +372,64 @@ public final class SetupTask extends ImportTask {
 
         ArrayList<File> libraries = getProjectLibraries(antProject);
 
-        final int libCount = libraries.size();
-        if (libCount > 0 && androidTarget.getProperty(SdkConstants.PROP_SDK_SUPPORT_LIBRARY,
-                false) == false) {
-            throw new BuildException(String.format(
-                    "The build system for this project target (%1$s) does not support libraries",
-                    androidTarget.getFullName()));
-        }
+        if (libraries.size() > 0) {
+            System.out.println("------------------\nOrdered libraries:");
 
-        System.out.println("------------------\nOrdered libraries:");
+            for (File library : libraries) {
+                System.out.println(library.getAbsolutePath());
 
-        for (File library : libraries) {
-            System.out.println(library.getAbsolutePath());
+                // get the source path. default is src but can be overriden by the property
+                // "source.dir" in build.properties.
+                PathElement element = sourcePath.createPathElement();
+                ProjectProperties prop = ProjectProperties.load(new FolderWrapper(library),
+                        PropertyType.BUILD);
 
-            // get the source path. default is src but can be overriden by the property
-            // "source.dir" in build.properties.
-            PathElement element = sourcePath.createPathElement();
-            ProjectProperties prop = ProjectProperties.load(new FolderWrapper(library),
-                    PropertyType.BUILD);
+                String sourceDir = SdkConstants.FD_SOURCES;
+                if (prop != null) {
+                    String value = prop.getProperty(ProjectProperties.PROPERTY_BUILD_SOURCE_DIR);
+                    if (value != null) {
+                        sourceDir = value;
+                    }
+                }
 
-            String sourceDir = SdkConstants.FD_SOURCES;
-            if (prop != null) {
-                String value = prop.getProperty(ProjectProperties.PROPERTY_BUILD_SOURCE_DIR);
-                if (value != null) {
-                    sourceDir = value;
+                String path = library.getAbsolutePath();
+
+                element.setPath(path + "/" + sourceDir);
+
+                // get the res path. Always $PROJECT/res
+                element = resPath.createPathElement();
+                element.setPath(path + "/" + SdkConstants.FD_RESOURCES);
+
+                // get the libs path. Always $PROJECT/libs
+                element = libsPath.createPathElement();
+                element.setPath(path + "/" + SdkConstants.FD_NATIVE_LIBS);
+
+                // get the jars from it too
+                File libsFolder = new File(library, SdkConstants.FD_NATIVE_LIBS);
+                File[] jarFiles = libsFolder.listFiles(filter);
+                if (jarFiles != null) {
+                    for (File jarFile : jarFiles) {
+                        element = jarsPath.createPathElement();
+                        element.setPath(jarFile.getAbsolutePath());
+                    }
+                }
+
+                // get the package from the manifest.
+                FileWrapper manifest = new FileWrapper(library,
+                        SdkConstants.FN_ANDROID_MANIFEST_XML);
+
+                try {
+                    String value = AndroidManifest.getPackage(manifest);
+                    if (value != null) { // aapt will complain if it's missing.
+                        sb.append(';');
+                        sb.append(value);
+                    }
+                } catch (Exception e) {
+                    throw new BuildException(e);
                 }
             }
-
-            String path = library.getAbsolutePath();
-
-            element.setPath(path + "/" + sourceDir);
-
-            // get the res path. Always $PROJECT/res
-            element = resPath.createPathElement();
-            element.setPath(path + "/" + SdkConstants.FD_RESOURCES);
-
-            // get the libs path. Always $PROJECT/libs
-            element = libsPath.createPathElement();
-            element.setPath(path + "/" + SdkConstants.FD_NATIVE_LIBS);
-
-            // get the jars from it too
-            File libsFolder = new File(library, SdkConstants.FD_NATIVE_LIBS);
-            File[] jarFiles = libsFolder.listFiles(filter);
-            if (jarFiles != null) {
-                for (File jarFile : jarFiles) {
-                    element = jarsPath.createPathElement();
-                    element.setPath(jarFile.getAbsolutePath());
-                }
-            }
-
-            // get the package from the manifest.
-            FileWrapper manifest = new FileWrapper(library, SdkConstants.FN_ANDROID_MANIFEST_XML);
-            try {
-                String value = AndroidManifest.getPackage(manifest);
-                if (value != null) { // aapt will complain if it's missing.
-                    sb.append(';');
-                    sb.append(value);
-                }
-            } catch (Exception e) {
-                throw new BuildException(e);
-            }
+        } else {
+            System.out.println("No library dependencies.\n");
         }
 
         System.out.println("------------------\n");

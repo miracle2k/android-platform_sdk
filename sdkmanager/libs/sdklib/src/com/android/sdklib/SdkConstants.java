@@ -309,10 +309,6 @@ public final class SdkConstants {
     /** Skin default **/
     public final static String SKIN_DEFAULT = "default";
 
-    /** SDK property: support for library */
-    public final static String PROP_SDK_SUPPORT_LIBRARY = "sdk.build.support.library"; //$NON-NLS-1$
-    /** SDK property: ant build revision */
-    public final static String PROP_SDK_ANT_BUILD_REVISION = "sdk.ant.build.revision"; //$NON-NLS-1$
     /** SDK property: ant templates revision */
     public final static String PROP_SDK_ANT_TEMPLATES_REVISION = "sdk.ant.templates.revision"; //$NON-NLS-1$
 
