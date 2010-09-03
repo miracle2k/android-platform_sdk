@@ -126,6 +126,16 @@ public class InstrumentationResultParserTest extends TestCase {
     }
 
     /**
+     * Test parsing and conversion of time output that contains extra chars.
+     */
+    public void testTimeParsing_bracket() {
+        StringBuilder output = createSuccessTest();
+        output.append("Time: 0.001)");
+        injectTestString(output.toString());
+        assertEquals(1, mTestResult.mTestTime);
+    }
+
+    /**
      * Test basic parsing of a test run failure.
      */
     public void testRunFailed() {
