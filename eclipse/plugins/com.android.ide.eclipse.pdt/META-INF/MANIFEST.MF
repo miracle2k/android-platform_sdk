@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Pdt
+Bundle-SymbolicName: com.android.ide.eclipse.pdt;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: The Android Open Source Project
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ com.android.ide.eclipse.ddms
+Bundle-Activator: com.android.ide.eclipse.pdt.PdtPlugin
+Bundle-ActivationPolicy: lazy

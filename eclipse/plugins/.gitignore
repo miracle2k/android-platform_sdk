@@ -1,6 +1,4 @@
-com.android.ide.eclipse.adt/bin
-com.android.ide.eclipse.ddms/bin
-com.android.ide.eclipse.tests/bin
+*/bin
 
 com.android.ide.eclipse.tests/unittests/com/android/ddmlib
 com.android.ide.eclipse.tests/unittests/com/android/sdklib
