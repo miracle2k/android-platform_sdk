@@ -112,19 +112,19 @@ class SdkCommandLine extends CommandLineProcessor {
                 "Updates an Android Virtual Device to match the folders of a new SDK." },
 
             { VERB_CREATE, OBJECT_PROJECT,
-                "Creates a new Android Project." },
+                "Creates a new Android project." },
             { VERB_UPDATE, OBJECT_PROJECT,
-                "Updates an Android Project (must have an AndroidManifest.xml)." },
+                "Updates an Android project (must already have an AndroidManifest.xml)." },
 
             { VERB_CREATE, OBJECT_TEST_PROJECT,
-                "Creates a new Android Test Project." },
+                "Creates a new Android project for a test package." },
             { VERB_UPDATE, OBJECT_TEST_PROJECT,
-                "Updates an Android Test Project (must have an AndroidManifest.xml)." },
+                "Updates the Android project for a test package (must already have an AndroidManifest.xml)." },
 
             { VERB_CREATE, OBJECT_LIB_PROJECT,
-                "Creates a new Android Library Project." },
+                "Creates a new Android library project." },
             { VERB_UPDATE, OBJECT_LIB_PROJECT,
-                "Updates an Android Library Project (must have an AndroidManifest.xml)." },
+                "Updates an Android library project (must already have an AndroidManifest.xml)." },
 /*
  * disabled until the feature is officially supported.
             { VERB_CREATE, OBJECT_EXPORT_PROJECT,
@@ -148,22 +148,22 @@ class SdkCommandLine extends CommandLineProcessor {
 
         define(Mode.STRING, false,
                 VERB_CREATE, OBJECT_AVD, "p", KEY_PATH,
-                "Location path of the directory where the new AVD will be created", null);
+                "Directory where the new AVD will be created", null);
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_AVD, "n", KEY_NAME,
                 "Name of the new AVD", null);
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_AVD, "t", KEY_TARGET_ID,
-                "Target id of the new AVD", null);
+                "Target ID (API level) of the new AVD", null);
         define(Mode.STRING, false,
                 VERB_CREATE, OBJECT_AVD, "s", KEY_SKIN,
-                "Skin of the new AVD", null);
+                "Skin for the new AVD", null);
         define(Mode.STRING, false,
                 VERB_CREATE, OBJECT_AVD, "c", KEY_SDCARD,
                 "Path to a shared SD card image, or size of a new sdcard for the new AVD", null);
         define(Mode.BOOLEAN, false,
                 VERB_CREATE, OBJECT_AVD, "f", KEY_FORCE,
-                "Force creation (override an existing AVD)", false);
+                "Forces creation (overwrites an existing AVD)", false);
 
         // --- delete avd ---
 
@@ -178,10 +178,10 @@ class SdkCommandLine extends CommandLineProcessor {
                 "Name of the AVD to move or rename", null);
         define(Mode.STRING, false,
                 VERB_MOVE, OBJECT_AVD, "r", KEY_RENAME,
-                "New name of the AVD to rename", null);
+                "New name of the AVD", null);
         define(Mode.STRING, false,
                 VERB_MOVE, OBJECT_AVD, "p", KEY_PATH,
-                "New location path of the directory where to move the AVD", null);
+                "New path to the directory for the AVD", null);
 
         // --- update avd ---
 
@@ -193,25 +193,25 @@ class SdkCommandLine extends CommandLineProcessor {
 
         define(Mode.BOOLEAN, false,
                 VERB_UPDATE, OBJECT_SDK, "u", KEY_NO_UI,
-                "Update from command-line, without any UI", false);
+                "Updates from command-line, without any UI", false);
 
         define(Mode.BOOLEAN, false,
                 VERB_UPDATE, OBJECT_SDK, "s", KEY_NO_HTTPS,
-                "Use HTTP instead of the default HTTPS for downloads", false);
+                "Uses HTTP instead of the default HTTPS for downloads", false);
 
         define(Mode.BOOLEAN, false,
                 VERB_UPDATE, OBJECT_SDK, "f", KEY_FORCE,
-                "Force replacing things that have been modified (samples, adb)", false);
+                "Forces replacing things that have been modified (samples, adb)", false);
 
         define(Mode.STRING, false,
                 VERB_UPDATE, OBJECT_SDK, "t", KEY_FILTER,
-                "A coma-separated list of " + Arrays.toString(SdkRepository.NODES) +
+                "Comma-separated list of " + Arrays.toString(SdkRepository.NODES) +
                 " to limit update to specified types of packages",
                 null);
 
         define(Mode.BOOLEAN, false,
                 VERB_UPDATE, OBJECT_SDK, "o", KEY_OBSOLETE,
-                "Install obsolete packages",
+                "Installs obsolete packages",
                 false);
 
         define(Mode.BOOLEAN, false,
@@ -231,16 +231,16 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_PROJECT,
                 "p", KEY_PATH,
-                "Location path of new project", null);
+                "The new project's directory", null);
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_PROJECT, "t", KEY_TARGET_ID,
-                "Target id of the new project", null);
+                "Target ID (API level) of the new project", null);
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_PROJECT, "k", KEY_PACKAGE,
-                "Package name", null);
+                "Android package name for the application", null);
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_PROJECT, "a", KEY_ACTIVITY,
-                "Activity name", null);
+                "Name of the default Activity that is created", null);
         define(Mode.STRING, false,
                 VERB_CREATE, OBJECT_PROJECT, "n", KEY_NAME,
                 "Project name", null);
@@ -250,29 +250,29 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_TEST_PROJECT,
                 "p", KEY_PATH,
-                "Location path of new project", null);
+                "The new project's directory", null);
         define(Mode.STRING, false,
                 VERB_CREATE, OBJECT_TEST_PROJECT, "n", KEY_NAME,
                 "Project name", null);
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_TEST_PROJECT, "m", KEY_MAIN_PROJECT,
-                "Location path of the project to test, relative to the new project", null);
+                "Path to directory of the app under test, relative to the test project directory", null);
 
         // --- create lib-project ---
 
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_LIB_PROJECT,
                 "p", KEY_PATH,
-                "Location path of new project", null);
+                "The new project's directory", null);
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_LIB_PROJECT, "t", KEY_TARGET_ID,
-                "Target id of the new project", null);
+                "Target ID (API level) of the new project", null);
         define(Mode.STRING, false,
                 VERB_CREATE, OBJECT_LIB_PROJECT, "n", KEY_NAME,
                 "Project name", null);
         define(Mode.STRING, true,
                 VERB_CREATE, OBJECT_LIB_PROJECT, "k", KEY_PACKAGE,
-                "Package name", null);
+                "Android package name for the library", null);
 
         // --- create export-project ---
 /*
@@ -294,11 +294,11 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.STRING, true,
                 VERB_UPDATE, OBJECT_PROJECT,
                 "p", KEY_PATH,
-                "Location path of the project", null);
+                "The project's directory", null);
         define(Mode.STRING, false,
                 VERB_UPDATE, OBJECT_PROJECT,
                 "t", KEY_TARGET_ID,
-                "Target id to set for the project", null);
+                "Target ID (API leve) to set for the project", null);
         define(Mode.STRING, false,
                 VERB_UPDATE, OBJECT_PROJECT,
                 "n", KEY_NAME,
@@ -306,33 +306,33 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.BOOLEAN, false,
                 VERB_UPDATE, OBJECT_PROJECT,
                 "s", KEY_SUBPROJECTS,
-                "Also update any projects in sub-folders, such as test projects.", false);
+                "Also updates any projects in sub-folders, such as test projects.", false);
         define(Mode.STRING, false,
                 VERB_UPDATE, OBJECT_PROJECT,
                 "l", KEY_LIBRARY,
-                "Location path of an Android Library to add, relative to the main project", null);
+                "Directory of an Android library to add, relative to this project's directory", null);
 
         // --- update test project ---
 
         define(Mode.STRING, true,
                 VERB_UPDATE, OBJECT_TEST_PROJECT,
                 "p", KEY_PATH,
-                "Location path of the project", null);
+                "The project's directory", null);
         define(Mode.STRING, true,
                 VERB_UPDATE, OBJECT_TEST_PROJECT,
                 "m", KEY_MAIN_PROJECT,
-                "Location path of the project to test, relative to the new project", null);
+                "Path to directory of the app under test, relative to the test project directory", null);
 
         // --- update lib project ---
 
         define(Mode.STRING, true,
                 VERB_UPDATE, OBJECT_LIB_PROJECT,
                 "p", KEY_PATH,
-                "Location path of the project", null);
+                "The project's directory", null);
         define(Mode.STRING, false,
                 VERB_UPDATE, OBJECT_LIB_PROJECT,
                 "t", KEY_TARGET_ID,
-                "Target id to set for the project", null);
+                "Target ID (API level) to set for the project", null);
 
         // --- update export project ---
 /*
