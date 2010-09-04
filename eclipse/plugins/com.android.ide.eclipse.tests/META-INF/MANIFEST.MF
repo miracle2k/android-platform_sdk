@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Android Plugin Tests
 Bundle-SymbolicName: com.android.ide.eclipse.tests
-Bundle-Version: 0.9.8.qualifier
+Bundle-Version: 8.0.0.qualifier
 Bundle-Vendor: The Android Open Source Project
 Fragment-Host: com.android.ide.eclipse.adt;bundle-version="0.9.8"
 Require-Bundle: org.junit
