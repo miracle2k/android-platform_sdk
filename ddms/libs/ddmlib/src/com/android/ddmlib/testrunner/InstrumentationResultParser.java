@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Parses the 'raw output mode' results of an instrumentation test run from shell and informs a
@@ -254,7 +256,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
             mTestRunFinished = true;
             // just ignore the remaining data on this line
         } else if (line.startsWith(Prefixes.TIME_REPORT)) {
-            parseTime(line, Prefixes.TIME_REPORT.length());
+            parseTime(line);
         } else {
             if (mCurrentValue != null) {
                 // this is a value that has wrapped to next line.
@@ -475,13 +477,20 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     /**
      * Parses out and store the elapsed time.
      */
-    private void parseTime(String line, int startPos) {
-        String timeString = line.substring(startPos);
-        try {
-            float timeSeconds = Float.parseFloat(timeString);
-            mTestTime = (long) (timeSeconds * 1000);
-        } catch (NumberFormatException e) {
-            Log.e(LOG_TAG, "Unexpected time format " + timeString);
+    private void parseTime(String line) {
+        final Pattern timePattern = Pattern.compile(String.format("%s\\s*([\\d\\.]+)",
+                Prefixes.TIME_REPORT));
+        Matcher timeMatcher = timePattern.matcher(line);
+        if (timeMatcher.find()) {
+            String timeString = timeMatcher.group(1);
+            try {
+                float timeSeconds = Float.parseFloat(timeString);
+                mTestTime = (long) (timeSeconds * 1000);
+            } catch (NumberFormatException e) {
+                Log.w(LOG_TAG, String.format("Unexpected time format %s", line));
+            }
+        } else {
+            Log.w(LOG_TAG, String.format("Unexpected time format %s", line));
         }
     }
 
