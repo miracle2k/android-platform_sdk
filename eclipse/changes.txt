@@ -1,3 +1,11 @@
+8.0.0
+- New version number scheme following the SDK Tools revision number.
+- Support for true debug build. No need to change the value of debuggable in
+  the Android Manifest.
+  Incremental build will automatically insert debuggable==true while using
+  the "export signed/unsigned application package" will not.
+
+
 0.9.8:
 - New Action "Rename Application Package" (under the "Android Tools" contextual menu) will do a full application package refatoring.
 - Fixed issue with library project names containing characters that aren't compatible with Eclipse path variable. The link between the main project and the library would fail to create.
