@@ -431,7 +431,7 @@ public class OutlinePage2 extends ContentOutlinePage
             }
         });
 
-        mGraphicalEditorPart.getCanvasControl().setupDynamicMenuActions(mMenuManager);
+        new DynamicContextMenu(mGraphicalEditorPart.getCanvasControl(), mMenuManager);
 
         getControl().setMenu(mMenuManager.createContextMenu(getControl()));
     }
