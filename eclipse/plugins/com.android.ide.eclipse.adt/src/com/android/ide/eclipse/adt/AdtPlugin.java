@@ -43,7 +43,6 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
-import com.android.ide.eclipse.hierarchyviewer.HierarchyViewerPlugin;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdkstats.SdkStatsService;
@@ -232,7 +231,6 @@ public class AdtPlugin extends AbstractUIPlugin {
 
                     // finally restart adb, in case it's a different version
                     DdmsPlugin.setAdb(getOsAbsoluteAdb(), true /* startAdb */);
-                    HierarchyViewerPlugin.setAdb(getOsAbsoluteAdb(), true /* startAdb */);
 
                     // get the SDK location and build id.
                     if (checkSdkLocationAndId()) {
@@ -249,13 +247,6 @@ public class AdtPlugin extends AbstractUIPlugin {
 
         // check the location of SDK
         final boolean isSdkLocationValid = checkSdkLocationAndId();
-
-        // start the DdmsPlugin by setting the adb location, only if it is set already.
-        String osSdkLocation = AdtPrefs.getPrefs().getOsSdkFolder();
-        if (osSdkLocation.length() > 0) {
-            DdmsPlugin.setAdb(getOsAbsoluteAdb(), true);
-            HierarchyViewerPlugin.setAdb(getOsAbsoluteAdb(), true);
-        }
 
         // and give it the debug launcher for android projects
         DdmsPlugin.setRunningAppDebugLauncher(new DdmsPlugin.IDebugLauncher() {

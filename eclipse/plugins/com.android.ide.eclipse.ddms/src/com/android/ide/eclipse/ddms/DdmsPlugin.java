@@ -30,9 +30,19 @@ import com.android.ddmuilib.DevicePanel.IUiSelectionListener;
 import com.android.ide.eclipse.ddms.preferences.PreferenceInitializer;
 import com.android.ide.eclipse.ddms.views.DeviceView;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtension;
+import org.eclipse.core.runtime.IExtensionPoint;
+import org.eclipse.core.runtime.IExtensionRegistry;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Preferences;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.Preferences.IPropertyChangeListener;
 import org.eclipse.core.runtime.Preferences.PropertyChangeEvent;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.SWTException;
@@ -61,8 +71,6 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
     // The plug-in ID
     public static final String PLUGIN_ID = "com.android.ide.eclipse.ddms"; // $NON-NLS-1$
 
-    private static final String ADB_LOCATION = PLUGIN_ID + ".adb"; // $NON-NLS-1$
-
     /** The singleton instance */
     private static DdmsPlugin sPlugin;
 
@@ -87,8 +95,6 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
     private final ArrayList<ISelectionListener> mListeners = new ArrayList<ISelectionListener>();
 
     private Color mRed;
-
-    private boolean mDdmlibInitialized;
 
     /**
      * Interface to provide debugger launcher for running apps.
@@ -218,23 +224,47 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
             }
         });
 
-        // read the adb location from the prefs to attempt to start it properly without
-        // having to wait for ADT to start
-        final boolean adbValid = setAdbLocation(eclipseStore.getString(ADB_LOCATION));
-
         // start it in a thread to return from start() asap.
-        new Thread() {
+        new Job("ADB location resolution") {
             @Override
-            public void run() {
-                // init ddmlib if needed
-                getDefault().initDdmlib();
+            protected IStatus run(IProgressMonitor monitor) {
+                // set the preferences.
+                PreferenceInitializer.setupPreferences();
 
-                // create and start the first bridge
-                if (adbValid) {
-                    AndroidDebugBridge.createBridge(sAdbLocation, true /* forceNewBridge */);
+                // init the lib
+                AndroidDebugBridge.init(true /* debugger support */);
+
+                // get the adb location from an implementation of the ADB Locator extension point.
+                IExtensionRegistry extensionRegistry = Platform.getExtensionRegistry();
+                IExtensionPoint extensionPoint = extensionRegistry.getExtensionPoint(
+                        "com.android.ide.eclipse.ddms.adbLocator"); //$NON-NLS-1$
+                IConfigurationElement[] configElements = extensionPoint.getConfigurationElements();
+                if (configElements.length > 0) {
+                    // only use the first one, ignore the others.
+                    IConfigurationElement configElement = configElements[0];
+
+                    // instantiate the clas
+                    try {
+                        Object obj = configElement.createExecutableExtension("class"); //$NON-NLS-1$
+                        if (obj instanceof IAdbLocator) {
+                            String adbLocation = ((IAdbLocator) obj).getAdbLocation();
+                            if (adbLocation != null) {
+                                if (setAdbLocation(adbLocation)) {
+                                    AndroidDebugBridge.createBridge(sAdbLocation,
+                                            true /* forceNewBridge */);
+                                }
+
+                            }
+                        }
+                    } catch (CoreException e) {
+                        return e.getStatus();
+                    }
                 }
+
+                return Status.OK_STATUS;
             }
-        }.start();
+
+        }.schedule();
     }
 
     public static Display getDisplay() {
@@ -314,17 +344,12 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
     public static void setAdb(String adb, boolean startAdb) {
         if (adb != null) {
             if (setAdbLocation(adb)) {
-                // store the location for future ddms only start.
-                sPlugin.getPreferenceStore().setValue(ADB_LOCATION, sAdbLocation);
 
                 // starts the server in a thread in case this is blocking.
                 if (startAdb) {
                     new Thread() {
                         @Override
                         public void run() {
-                            // init ddmlib if needed
-                            getDefault().initDdmlib();
-
                             // create and start the bridge
                             AndroidDebugBridge.createBridge(sAdbLocation,
                                     false /* forceNewBridge */);
@@ -332,18 +357,6 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
                     }.start();
                 }
             }
-        }
-    }
-
-    private synchronized void initDdmlib() {
-        if (mDdmlibInitialized == false) {
-            // set the preferences.
-            PreferenceInitializer.setupPreferences();
-
-            // init the lib
-            AndroidDebugBridge.init(true /* debugger support */);
-
-            mDdmlibInitialized = true;
         }
     }
 
