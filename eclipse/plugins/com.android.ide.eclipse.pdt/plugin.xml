@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="com.android.ide.eclipse.pdt.internal.preferences.PrefPage"
+            id="com.android.ide.eclipse.preferences.main"
+            name="Android"/>
+   </extension>
+   <extension
+         point="com.android.ide.eclipse.ddms.adbLocator">
+      <locator
+            class="com.android.ide.eclipse.pdt.AdbLocator">
+      </locator>
+   </extension>
+
+</plugin>

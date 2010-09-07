@@ -142,7 +142,6 @@ This Agreement is governed by the laws of the State of New York and the intellec
       <import plugin="org.eclipse.ltk.core.refactoring"/>
       <import plugin="org.eclipse.ltk.ui.refactoring"/>
       <import plugin="org.eclipse.core.expressions"/>
-      <import plugin="com.android.ide.eclipse.hierarchyviewer"/>
    </requires>
 
    <plugin
