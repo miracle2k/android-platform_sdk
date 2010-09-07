@@ -42,6 +42,8 @@ import com.android.ide.eclipse.ddms.preferences.PreferenceInitializer;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -56,8 +58,12 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.WorkbenchException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.ViewPart;
 
@@ -228,6 +234,24 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
 
             IFileStore fileStore =  EFS.getLocalFileSystem().getStore(new Path(tempPath));
             if (!fileStore.fetchInfo().isDirectory() && fileStore.fetchInfo().exists()) {
+                // before we open the file in an editor window, we make sure the current
+                // workbench page has an editor area (typically the ddms perspective doesn't).
+                IWorkbench workbench = PlatformUI.getWorkbench();
+                IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
+                IWorkbenchPage page = window.getActivePage();
+                if (page.isEditorAreaVisible() == false) {
+                    IAdaptable input;
+                    if (page != null)
+                        input= page.getInput();
+                    else
+                        input= ResourcesPlugin.getWorkspace().getRoot();
+                    try {
+                        workbench.showPerspective("org.eclipse.debug.ui.DebugPerspective",
+                                window, input);
+                    } catch (WorkbenchException e) {
+                    }
+                }
+
                 IDE.openEditorOnFileStore(
                         getSite().getWorkbenchWindow().getActivePage(),
                         fileStore);
