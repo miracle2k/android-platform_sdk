@@ -16,15 +16,24 @@
 
 package com.android.ide.eclipse.adt;
 
-import com.android.ide.eclipse.ddms.IAdbLocator;
+import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
+import com.android.ide.eclipse.ddms.ISourceRevealer;
+
+import org.eclipse.core.resources.IProject;
 
 /**
- * Implementation of the com.android.ide.ddms.adbLocator extension point.
+ * Implementation of the com.android.ide.ddms.sourceRevealer extension point.
  *
  */
-public class AdbLocator implements IAdbLocator {
+public class SourceRevealer implements ISourceRevealer {
 
-    public String getAdbLocation() {
-        return AdtPlugin.getOsAbsoluteAdb();
+    public boolean reveal(String applicationName, String className, int line) {
+        IProject project = ProjectHelper.findAndroidProjectByAppName(applicationName);
+        if (project != null) {
+            return BaseProjectHelper.revealSource(project, className, line);
+        }
+
+        return false;
     }
 }

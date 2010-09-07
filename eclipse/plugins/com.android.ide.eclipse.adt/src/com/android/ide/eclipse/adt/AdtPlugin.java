@@ -26,7 +26,6 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.menu.MenuEditor;
 import com.android.ide.eclipse.adt.internal.editors.resources.ResourcesEditor;
 import com.android.ide.eclipse.adt.internal.editors.xml.XmlEditor;
-import com.android.ide.eclipse.adt.internal.launch.AndroidLaunchController;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
@@ -246,50 +245,6 @@ public class AdtPlugin extends AbstractUIPlugin {
 
         // check the location of SDK
         final boolean isSdkLocationValid = checkSdkLocationAndId();
-
-        // and give it the debug launcher for android projects
-        DdmsPlugin.setRunningAppDebugLauncher(new DdmsPlugin.IDebugLauncher() {
-            public boolean debug(String appName, int port) {
-                // search for an android project matching the process name
-                IProject project = ProjectHelper.findAndroidProjectByAppName(appName);
-                if (project != null) {
-                    AndroidLaunchController.debugRunningApp(project, port);
-                    return true;
-                } else {
-                    // check to see if there's a platform project defined by an env var.
-                    String var = System.getenv("ANDROID_PLATFORM_PROJECT"); //$NON-NLS-1$
-                    if (var != null && var.length() > 0) {
-                        boolean auto = "AUTO".equals(var); //$NON-NLS-1$
-
-                        // Get the list of project for the current workspace
-                        IWorkspace workspace = ResourcesPlugin.getWorkspace();
-                        IProject[] projects = workspace.getRoot().getProjects();
-
-                        // look for a project that matches the env var or take the first
-                        // one if in automatic mode.
-                        for (IProject p : projects) {
-                            if (p.isOpen()) {
-                                if (auto || p.getName().equals(var)) {
-                                    AndroidLaunchController.debugRunningApp(p, port);
-                                    return true;
-                                }
-                            }
-                        }
-
-                    }
-                    return false;
-                }
-            }
-        });
-
-        StackTracePanel.setSourceRevealer(new ISourceRevealer() {
-            public void reveal(String applicationName, String className, int line) {
-                IProject project = ProjectHelper.findAndroidProjectByAppName(applicationName);
-                if (project != null) {
-                    BaseProjectHelper.revealSource(project, className, line);
-                }
-            }
-        });
 
         // initialize editors
         startEditors();

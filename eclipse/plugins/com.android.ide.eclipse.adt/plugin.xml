@@ -771,4 +771,16 @@
              class="com.android.ide.eclipse.adt.AdbLocator">
        </locator>
     </extension>
+    <extension
+          point="com.android.ide.eclipse.ddms.debuggerConnector">
+       <connector
+             class="com.android.ide.eclipse.adt.DebuggerConnector">
+       </connector>
+    </extension>
+    <extension
+          point="com.android.ide.eclipse.ddms.sourceRevealer">
+       <revealer
+             class="com.android.ide.eclipse.adt.SourceRevealer">
+       </revealer>
+    </extension>
 </plugin>
