@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
+import com.android.ide.eclipse.adt.annotations.Nullable;
+
 import groovy.lang.Closure;
 
 import java.util.Map;
@@ -162,6 +164,7 @@ public abstract class MenuAction {
          * An optional group id, to place the action in a given sub-menu.
          * @null This value can be null.
          */
+        @Nullable
         private final String mGroupId;
 
         /**
@@ -201,6 +204,7 @@ public abstract class MenuAction {
          * Returns the optional id of an existing group or null
          * @null This value can be null.
          */
+        @Nullable
         public String getGroupId() {
             return mGroupId;
         }

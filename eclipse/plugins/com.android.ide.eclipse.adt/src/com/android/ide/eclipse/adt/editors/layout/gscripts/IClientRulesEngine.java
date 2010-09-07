@@ -17,6 +17,10 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
+import com.android.ide.eclipse.adt.annotations.Nullable;
+
+import groovy.lang.Closure;
+
 
 
 /**
@@ -51,5 +55,24 @@ public interface IClientRulesEngine {
      *   is fast and will return the same rule instance.
      */
     IViewRule loadRule(String fqcn);
+
+    /**
+     * Displays the given message string in an alert dialog with an "OK" button.
+     */
+    void displayAlert(String message);
+
+    /**
+     * Display a simple input alert dialog with an OK and Cancel buttons.
+     *
+     * @param message The message to display in the alert dialog.
+     * @param value The initial value to display in the input field. Can be null.
+     * @param filter An optional closure acting as a filter. It receives the current
+     *   string as input. It must return an error string (possibly empty) or false if the
+     *   validation fails. Otherwise it should return true or null if validation succeeds.
+     * @return Null if canceled by the user. Otherwise the possibly-empty input string.
+     * @null Return value is null if dialog was canceled by the user.
+     */
+    @Nullable
+    String displayInput(String message, @Nullable String value, @Nullable Closure filter);
 }
 
