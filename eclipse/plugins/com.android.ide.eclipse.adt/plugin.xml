@@ -765,4 +765,10 @@
             id="com.android.ide.eclipse.adt.AndroidJUnitPropertyTester">
       </propertyTester>
    </extension>
+    <extension
+          point="com.android.ide.eclipse.ddms.adbLocator">
+       <locator
+             class="com.android.ide.eclipse.adt.AdbLocator">
+       </locator>
+    </extension>
 </plugin>

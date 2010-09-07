@@ -21,13 +21,12 @@ import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.internal.build.DebugKeyProvider;
 import com.android.sdklib.internal.build.DebugKeyProvider.KeytoolException;
 
-import org.eclipse.core.runtime.Preferences.PropertyChangeEvent;
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.util.PropertyChangeEvent;
 
 import java.io.File;
 
-@SuppressWarnings("deprecation")
 public final class AdtPrefs extends AbstractPreferenceInitializer {
     public final static String PREFS_SDK_DIR = AdtPlugin.PLUGIN_ID + ".sdk"; //$NON-NLS-1$
 

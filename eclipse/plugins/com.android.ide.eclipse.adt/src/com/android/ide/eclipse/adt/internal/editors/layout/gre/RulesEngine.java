@@ -49,6 +49,10 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.jface.dialogs.IInputValidator;
+import org.eclipse.jface.dialogs.InputDialog;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.window.Window;
 
 import groovy.lang.Closure;
 import groovy.lang.ExpandoMetaClass;
@@ -68,11 +72,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
-/* TODO:
- * - create a logger object and pass it around.
- *
- */
 
 /**
  * The rule engine manages the groovy rules files and interacts with them.
@@ -813,6 +812,46 @@ public class RulesEngine {
 
         public IViewRule loadRule(String fqcn) {
             return RulesEngine.this.loadRule(fqcn, fqcn);
+        }
+
+        public void displayAlert(String message) {
+            MessageDialog.openInformation(
+                    AdtPlugin.getDisplay().getActiveShell(),
+                    mFqcn,  // title
+                    message);
+        }
+
+        public String displayInput(String message, String value, final Closure filter) {
+            IInputValidator validator = null;
+            if (filter != null) {
+                validator = new IInputValidator() {
+                    public String isValid(String newText) {
+                        Object result = RulesEngine.this.callClosure(filter, newText);
+
+                        if (result instanceof String) {
+                            return (String) result;
+
+                        } else if (Boolean.FALSE.equals(result)) {
+                            // Returns an empty string to indicate an undescribed error
+                            return "";  //$NON-NLS-1$
+                        }
+
+                        // Return null to indicate success of validation
+                        return null;
+                    }
+                };
+            }
+
+            InputDialog d = new InputDialog(
+                        AdtPlugin.getDisplay().getActiveShell(),
+                        mFqcn,  // title
+                        message,
+                        value == null ? "" : value, //$NON-NLS-1$
+                        validator);
+            if (d.open() == Window.OK) {
+                return d.getValue();
+            }
+            return null;
         }
     }
 

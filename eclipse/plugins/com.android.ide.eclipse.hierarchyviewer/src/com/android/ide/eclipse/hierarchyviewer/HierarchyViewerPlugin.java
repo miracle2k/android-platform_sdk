@@ -16,7 +16,9 @@
 
 package com.android.ide.eclipse.hierarchyviewer;
 
+import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.AndroidDebugBridge.IDebugBridgeChangeListener;
 import com.android.ddmlib.Log.ILogOutput;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.hierarchyviewerlib.HierarchyViewerDirector;
@@ -111,11 +113,23 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
         });
 
         final HierarchyViewerDirector director = HierarchyViewerPluginDirector.createDirector();
+        director.startListenForDevices();
 
+        // make the director receive change in ADB.
+        AndroidDebugBridge.addDebugBridgeChangeListener(new IDebugBridgeChangeListener() {
+            public void bridgeChanged(AndroidDebugBridge bridge) {
+                director.acquireBridge(bridge);
+            }
+        });
+
+        // get the current ADB if any
+        director.acquireBridge(AndroidDebugBridge.getBridge());
+
+        // populate the UI with current devices (if any) in a thread
         new Thread() {
             @Override
             public void run() {
-                initDirector(director);
+                director.populateDeviceSelectionModel();
             }
         }.start();
     }
@@ -146,39 +160,6 @@ public class HierarchyViewerPlugin extends AbstractUIPlugin {
      */
     public static HierarchyViewerPlugin getPlugin() {
         return sPlugin;
-    }
-
-    /**
-     * Set the location of the adb executable and optionally starts adb
-     *
-     * @param adb location of adb
-     * @param startAdb flag to start adb
-     */
-    public static void setAdb(String adb, boolean startAdb) {
-        if (adb != null) {
-            // store the location for future ddms only start.
-            sPlugin.getPreferenceStore().setValue(ADB_LOCATION, adb);
-
-            // starts the server in a thread in case this is blocking.
-            if (startAdb) {
-                new Thread() {
-                    @Override
-                    public void run() {
-                        initDirector(HierarchyViewerDirector.getDirector());
-                    }
-                }.start();
-            }
-        }
-    }
-
-    private static boolean initDirector(HierarchyViewerDirector director) {
-        if (director.acquireBridge()) {
-            director.startListenForDevices();
-            director.populateDeviceSelectionModel();
-            return true;
-        }
-
-        return false;
     }
 
     /**

@@ -90,11 +90,11 @@ public abstract class HierarchyViewerDirector implements IDeviceChangeListener,
     }
 
     /**
-     * Init the DeviceBridge with an existing {@link AndroidDebugBridge}. This loops until
-     * a bridge exists or a timeout is reached.
+     * Init the DeviceBridge with an existing {@link AndroidDebugBridge}.
+     * @param bridge the bridge object to use
      */
-    public boolean acquireBridge() {
-        return DeviceBridge.acquireBridge();
+    public void acquireBridge(AndroidDebugBridge bridge) {
+        DeviceBridge.acquireBridge(bridge);
     }
 
     /**

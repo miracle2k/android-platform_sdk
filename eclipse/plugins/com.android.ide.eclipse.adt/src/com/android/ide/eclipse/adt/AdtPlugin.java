@@ -43,7 +43,6 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
-import com.android.ide.eclipse.hierarchyviewer.HierarchyViewerPlugin;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdkstats.SdkStatsService;
@@ -58,18 +57,18 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Preferences;
 import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.core.runtime.Preferences.IPropertyChangeListener;
-import org.eclipse.core.runtime.Preferences.PropertyChangeEvent;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
@@ -109,7 +108,6 @@ import java.util.List;
 /**
  * The activator class controls the plug-in life cycle
  */
-@SuppressWarnings("deprecation")
 public class AdtPlugin extends AbstractUIPlugin {
     /** The plug-in ID */
     public static final String PLUGIN_ID = "com.android.ide.eclipse.adt"; //$NON-NLS-1$
@@ -218,11 +216,11 @@ public class AdtPlugin extends AbstractUIPlugin {
         });
 
         // get the eclipse store
-        AdtPrefs.init(getPreferenceStore());
+        IPreferenceStore eclipseStore = getPreferenceStore();
+        AdtPrefs.init(eclipseStore);
 
         // set the listener for the preference change
-        Preferences prefs = getPluginPreferences();
-        prefs.addPropertyChangeListener(new IPropertyChangeListener() {
+        eclipseStore.addPropertyChangeListener(new IPropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent event) {
                 // load the new preferences
                 AdtPrefs.getPrefs().loadValues(event);
@@ -232,7 +230,6 @@ public class AdtPlugin extends AbstractUIPlugin {
 
                     // finally restart adb, in case it's a different version
                     DdmsPlugin.setAdb(getOsAbsoluteAdb(), true /* startAdb */);
-                    HierarchyViewerPlugin.setAdb(getOsAbsoluteAdb(), true /* startAdb */);
 
                     // get the SDK location and build id.
                     if (checkSdkLocationAndId()) {
@@ -249,13 +246,6 @@ public class AdtPlugin extends AbstractUIPlugin {
 
         // check the location of SDK
         final boolean isSdkLocationValid = checkSdkLocationAndId();
-
-        // start the DdmsPlugin by setting the adb location, only if it is set already.
-        String osSdkLocation = AdtPrefs.getPrefs().getOsSdkFolder();
-        if (osSdkLocation.length() > 0) {
-            DdmsPlugin.setAdb(getOsAbsoluteAdb(), true);
-            HierarchyViewerPlugin.setAdb(getOsAbsoluteAdb(), true);
-        }
 
         // and give it the debug launcher for android projects
         DdmsPlugin.setRunningAppDebugLauncher(new DdmsPlugin.IDebugLauncher() {

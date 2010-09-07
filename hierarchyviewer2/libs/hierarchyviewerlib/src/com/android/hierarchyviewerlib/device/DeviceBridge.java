@@ -81,27 +81,11 @@ public class DeviceBridge {
     }
 
     /**
-     * Init the DeviceBridge with an existing {@link AndroidDebugBridge}. This loops until
-     * a bridge exists or a timeout is reached.
+     * Init the DeviceBridge with an existing {@link AndroidDebugBridge}.
+     * @param bridge the bridge object to use
      */
-    public static boolean acquireBridge() {
-        int count = 10;
-        do {
-            sBridge = AndroidDebugBridge.getBridge();
-            if (sBridge == null) {
-                try {
-                    Thread.sleep(500);
-                    count--;
-                    if (count == 0) {
-                        return false;
-                    }
-                } catch (InterruptedException e) {
-                    // pass
-                }
-            }
-        } while (sBridge == null);
-
-        return true;
+    public static void acquireBridge(AndroidDebugBridge bridge) {
+        sBridge = bridge;
     }
 
     /**
