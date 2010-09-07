@@ -1,5 +1,14 @@
 Change log for Android SDK Tools.
 
+Revision 8:
+- New SDK component: platform-tools. This makes all platform use the same
+  latest version of aapt/aidl/dx.
+- Support for true debug build. No need to change the value of debuggable in
+  the Android Manifest.
+  "ant debug" will automatically insert debuggable==true, while "ant release"
+  will not.
+
+
 Revision 7:
 - Support for Ant rules provided by the Tools components (override the one in
   the platform component)
