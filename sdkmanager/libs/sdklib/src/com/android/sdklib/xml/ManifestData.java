@@ -722,7 +722,11 @@ public final class ManifestData {
             mProcesses = new TreeSet<String>();
         }
 
-        mProcesses.add(processName);
+        if (processName.startsWith(":")) {
+            mProcesses.add(mPackage + processName);
+        } else {
+            mProcesses.add(processName);
+        }
     }
 
 }
