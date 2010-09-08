@@ -442,11 +442,11 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     /**
      * Returns the native {@link CanvasSelection} list.
      *
-     * @return An immutable list of {@link CanvasSelection}
+     * @return An immutable list of {@link CanvasSelection}. Can be empty but not null.
      * @see #getSelection() {@link #getSelection()} to retrieve a {@link TreeViewer}
      *                      compatible {@link ISelection}.
      */
-    /* package */ List<CanvasSelection> getCanvasSelection() {
+    /* package */ List<CanvasSelection> getCanvasSelections() {
         if (mUnmodifiableSelection == null) {
             mUnmodifiableSelection = Collections.unmodifiableList(mSelections);
         }

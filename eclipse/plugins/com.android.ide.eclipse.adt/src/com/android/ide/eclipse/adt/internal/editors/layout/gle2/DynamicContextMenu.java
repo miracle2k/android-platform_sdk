@@ -208,7 +208,7 @@ import java.util.regex.Pattern;
             final TreeMap<String, ArrayList<MenuAction>> outActionsMap,
             final TreeMap<String, MenuAction.Group> outGroupsMap) {
         int maxMenuSelection = 0;
-        for (CanvasSelection selection : mCanvas.getCanvasSelection()) {
+        for (CanvasSelection selection : mCanvas.getCanvasSelections()) {
             List<MenuAction> viewActions = null;
             if (selection != null) {
                 CanvasViewInfo vi = selection.getViewInfo();
@@ -244,7 +244,7 @@ import java.util.regex.Pattern;
 
                 // All the actions for the same id should have be equal
                 if (!actions.isEmpty()) {
-                    if (action.equals(actions.get(0))) {
+                    if (!action.equals(actions.get(0))) {
                         // TODO Log verbose error for invalid type mismatch.
                         continue;
                     }
