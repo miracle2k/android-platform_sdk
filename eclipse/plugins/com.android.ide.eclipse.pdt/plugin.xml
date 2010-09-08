@@ -11,8 +11,20 @@
    <extension
          point="com.android.ide.eclipse.ddms.adbLocator">
       <locator
-            class="com.android.ide.eclipse.pdt.AdbLocator">
+            class="com.android.ide.eclipse.pdt.internal.AdbLocator">
       </locator>
+   </extension>
+   <extension
+         point="com.android.ide.eclipse.ddms.debuggerConnector">
+      <connector
+            class="com.android.ide.eclipse.pdt.internal.DebuggerConnector">
+      </connector>
+   </extension>
+   <extension
+         point="com.android.ide.eclipse.ddms.sourceRevealer">
+      <revealer
+            class="com.android.ide.eclipse.pdt.internal.SourceRevealer">
+      </revealer>
    </extension>
 
 </plugin>

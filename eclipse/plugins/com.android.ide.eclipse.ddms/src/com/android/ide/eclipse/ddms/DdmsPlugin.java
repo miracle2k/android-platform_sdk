@@ -261,16 +261,20 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
                     IAdbLocator[] locators = instantiateAdbLocators(elements);
 
                     for (IAdbLocator locator : locators) {
-                        String adbLocation = locator.getAdbLocation();
-                        if (adbLocation != null) {
-                            // checks if the location is valid.
-                            if (setAdbLocation(adbLocation)) {
-                                AndroidDebugBridge.createBridge(sAdbLocation,
-                                        true /* forceNewBridge */);
+                        try {
+                            String adbLocation = locator.getAdbLocation();
+                            if (adbLocation != null) {
+                                // checks if the location is valid.
+                                if (setAdbLocation(adbLocation)) {
+                                    AndroidDebugBridge.createBridge(sAdbLocation,
+                                            true /* forceNewBridge */);
 
-                                // no need to look at the other locators.
-                                break;
+                                    // no need to look at the other locators.
+                                    break;
+                                }
                             }
+                        } catch (Throwable t) {
+                            // ignore, we'll just not use this implementation.
                         }
                     }
 
@@ -711,8 +715,12 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
         // loop on all source revealer till one succeeds
         if (mSourceRevealers != null) {
             for (ISourceRevealer revealer : mSourceRevealers) {
-                if (revealer.reveal(applicationName, className, line)) {
-                    break;
+                try {
+                    if (revealer.reveal(applicationName, className, line)) {
+                        break;
+                    }
+                } catch (Throwable t) {
+                    // ignore, we'll just not use this implementation.
                 }
             }
         }
