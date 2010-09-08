@@ -77,6 +77,7 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
     private static String sToolsFolder;
     private static String sHprofConverter;
 
+    private boolean mHasDebuggerConnectors;
     /** debugger connectors for already running apps.
      * Initialized from an extension point.
      */
@@ -221,50 +222,84 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
         // set the preferences.
         PreferenceInitializer.setupPreferences();
 
-        // init the lib
-        AndroidDebugBridge.init(true /* debugger support */);
-
-        // get the available adb locators
-        final IAdbLocator[] locators = findAdbLocators();
-
-        // Find the location of ADB.
-        // Because the running the locators will initialize their plug-in, we do this in a job
-        // to make sure that the init of the DDMS plug-in is finished. Otherwise, if another
-        // plug-in uses DDMS classes in their start() method, this would fail since DDMS would not
-        // be loaded yet.
-        // The job is scheduled at the end of the
-        Job adbLocatorJob = new Job("ADB Location resolution") {
-            @Override
-            protected IStatus run(IProgressMonitor monitor) {
-                for (IAdbLocator locator : locators) {
-                    String adbLocation = locator.getAdbLocation();
-                    if (adbLocation != null) {
-                        // checks if the location is valid.
-                        if (setAdbLocation(adbLocation)) {
-                            AndroidDebugBridge.createBridge(sAdbLocation,
-                                    true /* forceNewBridge */);
-
-                            // no need to look at the other locators.
-                            break;
-                        }
-                    }
-                }
-                return Status.OK_STATUS;
-            }
-        };
-
-        // get the available debugger connectors
-        mDebuggerConnectors = findDebuggerConnectors();
-
-        // get the available source revealer
-        mSourceRevealers = findSourceRevealers();
         // this class is set as the main source revealer and will look at all the implementations
         // of the extension point. see #reveal(String, String, int)
         StackTracePanel.setSourceRevealer(this);
 
-        // finish the method with the schedule of the adbLocator job since it must run after
-        // this method ends.
-        adbLocatorJob.schedule();
+        /*
+         * Load the extension point implementations.
+         * The first step is to load the IConfigurationElement representing the implementations.
+         * The 2nd step is to use these objects to instantiate the implementation classes.
+         *
+         * Because the 2nd step will trigger loading the plug-ins providing the implementations,
+         * and those plug-ins could access DDMS classes (like ADT), this 2nd step should be done
+         * in a Job to ensure that DDMS is loaded, so that the other plug-ins can load.
+         *
+         * Both steps could be done in the 2nd step but some of DDMS UI rely on knowing if there
+         * is an implementation or not (DeviceView), so we do the first steps in start() and, in
+         * some case, record it.
+         *
+         */
+
+        // get the IConfigurationElement for the debuggerConnector right away.
+        final IConfigurationElement[] dcce = findConfigElements(
+                "com.android.ide.eclipse.ddms.debuggerConnector"); //$NON-NLS-1$
+        mHasDebuggerConnectors = dcce.length > 0;
+
+        // get the other configElements and instantiante them in a Job.
+        new Job("DDMS post-create init") {
+            @Override
+            protected IStatus run(IProgressMonitor monitor) {
+                try {
+                    // init the lib
+                    AndroidDebugBridge.init(true /* debugger support */);
+
+                    // get the available adb locators
+                    IConfigurationElement[] elements = findConfigElements(
+                            "com.android.ide.eclipse.ddms.adbLocator"); //$NON-NLS-1$
+
+                    IAdbLocator[] locators = instantiateAdbLocators(elements);
+
+                    for (IAdbLocator locator : locators) {
+                        String adbLocation = locator.getAdbLocation();
+                        if (adbLocation != null) {
+                            // checks if the location is valid.
+                            if (setAdbLocation(adbLocation)) {
+                                AndroidDebugBridge.createBridge(sAdbLocation,
+                                        true /* forceNewBridge */);
+
+                                // no need to look at the other locators.
+                                break;
+                            }
+                        }
+                    }
+
+                    // get the available debugger connectors
+                    mDebuggerConnectors = instantiateDebuggerConnectors(dcce);
+
+                    // get the available source revealers
+                    elements = findConfigElements("com.android.ide.eclipse.ddms.sourceRevealer"); //$NON-NLS-1$
+                    mSourceRevealers = instantiateSourceRevealers(elements);
+
+                    return Status.OK_STATUS;
+                } catch (CoreException e) {
+                    return e.getStatus();
+                }
+            }
+        }.schedule();
+    }
+
+    private IConfigurationElement[] findConfigElements(String name) {
+
+        // get the adb location from an implementation of the ADB Locator extension point.
+        IExtensionRegistry extensionRegistry = Platform.getExtensionRegistry();
+        IExtensionPoint extensionPoint = extensionRegistry.getExtensionPoint(name);
+        if (extensionPoint != null) {
+            return extensionPoint.getConfigurationElements();
+        }
+
+        // shouldn't happen or it means the plug-in is broken.
+        return new IConfigurationElement[0];
     }
 
     /**
@@ -272,14 +307,10 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
      *
      * @return an array of all locators found, or an empty array if none were found.
      */
-    private IAdbLocator[] findAdbLocators() throws CoreException {
+    private IAdbLocator[] instantiateAdbLocators(IConfigurationElement[] configElements)
+            throws CoreException {
         ArrayList<IAdbLocator> list = new ArrayList<IAdbLocator>();
 
-        // get the adb location from an implementation of the ADB Locator extension point.
-        IExtensionRegistry extensionRegistry = Platform.getExtensionRegistry();
-        IExtensionPoint extensionPoint = extensionRegistry.getExtensionPoint(
-                "com.android.ide.eclipse.ddms.adbLocator"); //$NON-NLS-1$
-        IConfigurationElement[] configElements = extensionPoint.getConfigurationElements();
         if (configElements.length > 0) {
             // only use the first one, ignore the others.
             IConfigurationElement configElement = configElements[0];
@@ -299,14 +330,10 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
      *
      * @return an array of all locators found, or an empty array if none were found.
      */
-    private IDebuggerConnector[] findDebuggerConnectors() throws CoreException {
+    private IDebuggerConnector[] instantiateDebuggerConnectors(
+            IConfigurationElement[] configElements) throws CoreException {
         ArrayList<IDebuggerConnector> list = new ArrayList<IDebuggerConnector>();
 
-        // get the adb location from an implementation of the ADB Locator extension point.
-        IExtensionRegistry extensionRegistry = Platform.getExtensionRegistry();
-        IExtensionPoint extensionPoint = extensionRegistry.getExtensionPoint(
-                "com.android.ide.eclipse.ddms.debuggerConnector"); //$NON-NLS-1$
-        IConfigurationElement[] configElements = extensionPoint.getConfigurationElements();
         if (configElements.length > 0) {
             // only use the first one, ignore the others.
             IConfigurationElement configElement = configElements[0];
@@ -326,14 +353,10 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
      *
      * @return an array of all locators found, or an empty array if none were found.
      */
-    private ISourceRevealer[] findSourceRevealers() throws CoreException {
+    private ISourceRevealer[] instantiateSourceRevealers(IConfigurationElement[] configElements)
+            throws CoreException {
         ArrayList<ISourceRevealer> list = new ArrayList<ISourceRevealer>();
 
-        // get the adb location from an implementation of the ADB Locator extension point.
-        IExtensionRegistry extensionRegistry = Platform.getExtensionRegistry();
-        IExtensionPoint extensionPoint = extensionRegistry.getExtensionPoint(
-                "com.android.ide.eclipse.ddms.sourceRevealer"); //$NON-NLS-1$
-        IConfigurationElement[] configElements = extensionPoint.getConfigurationElements();
         if (configElements.length > 0) {
             // only use the first one, ignore the others.
             IConfigurationElement configElement = configElements[0];
@@ -441,6 +464,24 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
         }
     }
 
+    /**
+     * Returns whether there are implementations of the debuggerConnectors extension point.
+     * <p/>
+     * This is guaranteed to return the correct value as soon as the plug-in is loaded.
+     */
+    public boolean hasDebuggerConnectors() {
+        return mHasDebuggerConnectors;
+    }
+
+    /**
+     * Returns the implementations of {@link IDebuggerConnector}.
+     * <p/>
+     * There may be a small amount of time right after the plug-in load where this can return
+     * null even if there are implementation.
+     * <p/>
+     * Since the use of the implementation likely require user input, the UI can use
+     * {@link #hasDebuggerConnectors()} to know if there are implementations before they are loaded.
+     */
     public IDebuggerConnector[] getDebuggerConnectors() {
         return mDebuggerConnectors;
     }
@@ -668,9 +709,11 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
      */
     public void reveal(String applicationName, String className, int line) {
         // loop on all source revealer till one succeeds
-        for (ISourceRevealer revealer : mSourceRevealers) {
-            if (revealer.reveal(applicationName, className, line)) {
-                break;
+        if (mSourceRevealers != null) {
+            for (ISourceRevealer revealer : mSourceRevealers) {
+                if (revealer.reveal(applicationName, className, line)) {
+                    break;
+                }
             }
         }
     }
