@@ -305,10 +305,17 @@ public final class BaseProjectHelper {
      * @param project
      * @param className
      * @param line
+     * @return true if the source was revealed
      */
-    public static void revealSource(IProject project, String className, int line) {
-        // in case the type is enclosed, we need to replace the $ with .
-        className = className.replaceAll("\\$", "\\."); //$NON-NLS-1$ //$NON-NLS2$
+    public static boolean revealSource(IProject project, String className, int line) {
+        // Inner classes are pointless: All we need is the enclosing type to find the file, and the
+        // line number.
+        // Since the anonymous ones will cause IJavaProject#findType to fail, we remove
+        // all of them.
+        int pos = className.indexOf('$');
+        if (pos != -1) {
+            className = className.substring(0, pos);
+        }
 
         // get the java project
         IJavaProject javaProject = JavaCore.create(project);
@@ -342,11 +349,15 @@ public final class BaseProjectHelper {
                     // select and reveal the line.
                     textEditor.selectAndReveal(lineInfo.getOffset(), lineInfo.getLength());
                 }
+
+                return true;
             }
         } catch (JavaModelException e) {
         } catch (PartInitException e) {
         } catch (BadLocationException e) {
         }
+
+        return false;
     }
 
     /**

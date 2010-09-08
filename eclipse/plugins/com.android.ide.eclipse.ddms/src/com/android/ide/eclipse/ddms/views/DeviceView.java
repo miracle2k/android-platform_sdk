@@ -37,11 +37,13 @@ import com.android.ddmuilib.SyncProgressHelper.SyncRunnable;
 import com.android.ddmuilib.handler.BaseFileHandler;
 import com.android.ddmuilib.handler.MethodProfilingHandler;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
-import com.android.ide.eclipse.ddms.DdmsPlugin.IDebugLauncher;
+import com.android.ide.eclipse.ddms.IDebuggerConnector;
 import com.android.ide.eclipse.ddms.preferences.PreferenceInitializer;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -56,8 +58,12 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.WorkbenchException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.ViewPart;
 
@@ -85,7 +91,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
     private Action mDebugAction;
     private Action mHprofAction;
     private Action mTracingAction;
-    private IDebugLauncher mDebugLauncher;
+    private IDebuggerConnector[] mDebuggerConnectors;
 
     private ImageDescriptor mTracingStartImage;
     private ImageDescriptor mTracingStopImage;
@@ -228,6 +234,24 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
 
             IFileStore fileStore =  EFS.getLocalFileSystem().getStore(new Path(tempPath));
             if (!fileStore.fetchInfo().isDirectory() && fileStore.fetchInfo().exists()) {
+                // before we open the file in an editor window, we make sure the current
+                // workbench page has an editor area (typically the ddms perspective doesn't).
+                IWorkbench workbench = PlatformUI.getWorkbench();
+                IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
+                IWorkbenchPage page = window.getActivePage();
+                if (page.isEditorAreaVisible() == false) {
+                    IAdaptable input;
+                    if (page != null)
+                        input= page.getInput();
+                    else
+                        input= ResourcesPlugin.getWorkspace().getRoot();
+                    try {
+                        workbench.showPerspective("org.eclipse.debug.ui.DebugPerspective",
+                                window, input);
+                    } catch (WorkbenchException e) {
+                    }
+                }
+
                 IDE.openEditorOnFileStore(
                         getSite().getWorkbenchWindow().getActivePage(),
                         fileStore);
@@ -244,20 +268,6 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
 
     public static DeviceView getInstance() {
         return sThis;
-    }
-
-    /**
-     * Sets the {@link IDebugLauncher}.
-     * @param debugLauncher
-     */
-    public void setDebugLauncher(DdmsPlugin.IDebugLauncher debugLauncher) {
-        mDebugLauncher = debugLauncher;
-        if (mDebugAction != null && mDeviceList != null) {
-            Client currentClient = mDeviceList.getSelectedClient();
-            if (currentClient != null) {
-                mDebugAction.setEnabled(true);
-            }
-        }
     }
 
     @Override
@@ -377,12 +387,12 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
         mTracingAction.setImageDescriptor(mTracingStartImage);
 
         // check if there's already a debug launcher set up in the plugin class
-        mDebugLauncher = DdmsPlugin.getRunningAppDebugLauncher();
+        mDebuggerConnectors = DdmsPlugin.getDefault().getDebuggerConnectors();
 
         mDebugAction = new Action("Debug Process") {
             @Override
             public void run() {
-                if (mDebugLauncher != null) {
+                if (mDebuggerConnectors.length != 0) {
                     Client currentClient = mDeviceList.getSelectedClient();
                     if (currentClient != null) {
                         ClientData clientData = currentClient.getClientData();
@@ -408,18 +418,23 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
                         // get the name of the client
                         String packageName = clientData.getClientDescription();
                         if (packageName != null) {
-                            if (mDebugLauncher.debug(packageName,
-                                    currentClient.getDebuggerListenPort()) == false) {
 
-                                // if we get to this point, then we failed to find a project
-                                // that matched the application to debug
-                                Display display = DdmsPlugin.getDisplay();
-                                Shell shell = display.getActiveShell();
-                                MessageDialog.openError(shell, "Process Debug",
-                                        String.format(
-                                                "No opened project found for %1$s. Debug session failed!",
-                                                packageName));
+                            // try all connectors till one returns true.
+                            for (IDebuggerConnector connector : mDebuggerConnectors) {
+                                if (connector.connectDebugger(packageName,
+                                    currentClient.getDebuggerListenPort())) {
+                                    return;
+                                }
                             }
+
+                            // if we get to this point, then we failed to find a project
+                            // that matched the application to debug
+                            Display display = DdmsPlugin.getDisplay();
+                            Shell shell = display.getActiveShell();
+                            MessageDialog.openError(shell, "Process Debug",
+                                    String.format(
+                                            "No opened project found for %1$s. Debug session failed!",
+                                            packageName));
                         }
                     }
                 }
@@ -427,7 +442,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
         };
         mDebugAction.setToolTipText("Debug the selected process, provided its source project is present and opened in the workspace.");
         mDebugAction.setImageDescriptor(loader.loadDescriptor("debug-attach.png")); //$NON-NLS-1$
-        if (mDebugLauncher == null) {
+        if (mDebuggerConnectors.length == 0) {
             mDebugAction.setEnabled(false);
         }
 
@@ -462,7 +477,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
                 selectedClient.setAsSelectedClient();
             }
 
-            mDebugAction.setEnabled(mDebugLauncher != null);
+            mDebugAction.setEnabled(mDebuggerConnectors.length != 0);
             mKillAppAction.setEnabled(true);
             mGcAction.setEnabled(true);
 
