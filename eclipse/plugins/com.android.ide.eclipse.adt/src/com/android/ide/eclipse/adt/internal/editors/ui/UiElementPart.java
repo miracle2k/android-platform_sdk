@@ -267,7 +267,7 @@ public class UiElementPart extends ManifestSectionPart {
     @Override
     public void commit(boolean onSave) {
         if (mUiElementNode != null) {
-            mEditor.editXmlModel(new Runnable() {
+            mEditor.wrapEditXmlModel(new Runnable() {
                 public void run() {
                     for (UiAttributeNode ui_attr : mUiElementNode.getUiAttributes()) {
                         ui_attr.commit();

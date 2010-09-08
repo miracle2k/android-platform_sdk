@@ -140,6 +140,13 @@ public class RulesEngine {
     }
 
     /**
+     * Returns the {@link IProject} on which the {@link RulesEngine} was created.
+     */
+    public IProject getProject() {
+        return mProject;
+    }
+
+    /**
      * Called by the owner of the {@link RulesEngine} when it is going to be disposed.
      * This frees some resources, such as the project's folder monitor.
      */

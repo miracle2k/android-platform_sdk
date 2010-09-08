@@ -1256,7 +1256,7 @@ public class UiElementNode implements IPropertySource {
      * Note that the caller MUST ensure that modifying the underlying XML model is
      * safe and must take care of marking the model as dirty if necessary.
      *
-     * @see AndroidXmlEditor#editXmlModel(Runnable)
+     * @see AndroidXmlEditor#wrapEditXmlModel(Runnable)
      *
      * @param uiAttr The attribute node to commit. Must be a child of this UiElementNode.
      * @param newValue The new value to set.
@@ -1302,7 +1302,7 @@ public class UiElementNode implements IPropertySource {
      * Note that the caller MUST ensure that modifying the underlying XML model is
      * safe and must take care of marking the model as dirty if necessary.
      *
-     * @see AndroidXmlEditor#editXmlModel(Runnable)
+     * @see AndroidXmlEditor#wrapEditXmlModel(Runnable)
      *
      * @return True if one or more values were actually modified or removed,
      *         false if nothing changed.
@@ -1662,7 +1662,7 @@ public class UiElementNode implements IPropertySource {
 
             final UiAttributeNode fAttribute = attribute;
             AndroidXmlEditor editor = getEditor();
-            editor.editXmlModel(new Runnable() {
+            editor.wrapEditXmlModel(new Runnable() {
                 public void run() {
                     commitAttributeToXml(fAttribute, newValue);
                 }
