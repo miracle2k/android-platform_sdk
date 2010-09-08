@@ -442,11 +442,11 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     /**
      * Returns the native {@link CanvasSelection} list.
      *
-     * @return An immutable list of {@link CanvasSelection}
+     * @return An immutable list of {@link CanvasSelection}. Can be empty but not null.
      * @see #getSelection() {@link #getSelection()} to retrieve a {@link TreeViewer}
      *                      compatible {@link ISelection}.
      */
-    /* package */ List<CanvasSelection> getCanvasSelection() {
+    /* package */ List<CanvasSelection> getCanvasSelections() {
         if (mUnmodifiableSelection == null) {
             mUnmodifiableSelection = Collections.unmodifiableList(mSelections);
         }
@@ -1059,6 +1059,14 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * pointed at (i.e. click on an object then alt-click to cycle).
      */
     private void onMouseUp(MouseEvent e) {
+
+        // Only perform selection when mouse button 1 is used.
+        // This prevents right-click from also changing the selection, since it's
+        // used to display a context menu that depends on the current selection.
+        if (e.button != 1) {
+            return;
+        }
+
         boolean isShift = (e.stateMask & SWT.SHIFT) != 0;
         boolean isAlt   = (e.stateMask & SWT.ALT)   != 0;
 
