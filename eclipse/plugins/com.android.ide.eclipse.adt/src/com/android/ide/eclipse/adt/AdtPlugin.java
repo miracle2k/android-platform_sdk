@@ -16,8 +16,6 @@
 
 package com.android.ide.eclipse.adt;
 
-import com.android.ddmuilib.StackTracePanel;
-import com.android.ddmuilib.StackTracePanel.ISourceRevealer;
 import com.android.ddmuilib.console.DdmConsole;
 import com.android.ddmuilib.console.IDdmConsole;
 import com.android.ide.eclipse.adt.internal.VersionCheck;
