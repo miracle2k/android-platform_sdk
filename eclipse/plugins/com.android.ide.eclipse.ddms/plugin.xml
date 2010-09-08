@@ -2,6 +2,9 @@
 <?eclipse version="3.2"?>
 <plugin>
    <extension-point id="adbLocator" name="ADB Locator" schema="schema/adbLocator.exsd"/>
+   <extension-point id="debuggerConnector" name="Debugger Connector" schema="schema/debuggerConnector.exsd"/>
+   <extension-point id="sourceRevealer" name="Source Revealer" schema="schema/sourceRevealer.exsd"/>
+
    <extension
          point="org.eclipse.ui.views">
       <category

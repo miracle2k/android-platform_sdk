@@ -3,14 +3,16 @@
 <schema targetNamespace="com.android.ide.eclipse.ddms" xmlns="http://www.w3.org/2001/XMLSchema">
 <annotation>
       <appInfo>
-         <meta.schema plugin="com.android.ide.eclipse.ddms" id="adbLocator" name="ADB Locator"/>
+         <meta.schema plugin="com.android.ide.eclipse.ddms" id="debuggerConnector" name="Debugger Connector"/>
       </appInfo>
       <documentation>
-         Extension Point to provide the location of adb to DDMS.
+         Extension Point to provide a way to connect a debugger to a VM running on a connected device.
+
+The goal of the extension is to identify which project in the workspace matches the running application to properly setup a launch configuration.
       </documentation>
    </annotation>
 
-   <element name="locator">
+   <element name="connector">
       <complexType>
          <attribute name="class" type="string" use="required">
             <annotation>
@@ -18,7 +20,7 @@
                   
                </documentation>
                <appInfo>
-                  <meta.attribute kind="java" basedOn=":com.android.ide.eclipse.ddms.IAdbLocator"/>
+                  <meta.attribute kind="java" basedOn=":com.android.ide.eclipse.ddms.IDebuggerConnector"/>
                </appInfo>
             </annotation>
          </attribute>
@@ -33,7 +35,7 @@
       </annotation>
       <complexType>
          <sequence>
-            <element ref="locator"/>
+            <element ref="connector"/>
          </sequence>
          <attribute name="point" type="string" use="required">
             <annotation>
@@ -76,9 +78,7 @@
          <meta.section type="examples"/>
       </appInfo>
       <documentation>
-         &lt;extension point=&quot;com.android.ide.eclipse.ddms.adbLocator&quot;&gt;
-    &lt;locator class=&quot;com.android.ide.eclipse.adt.AdbLocator&quot;/&gt;
-&lt;/extension&gt;
+         [Enter extension point usage example here.]
       </documentation>
    </annotation>
 
@@ -87,7 +87,7 @@
          <meta.section type="apiinfo"/>
       </appInfo>
       <documentation>
-         The class must implement com.android.ide.ddms.IAdbLocator.
+         The class must implement com.android.ide.ddms.IDebuggerConnector.
       </documentation>
    </annotation>
 
