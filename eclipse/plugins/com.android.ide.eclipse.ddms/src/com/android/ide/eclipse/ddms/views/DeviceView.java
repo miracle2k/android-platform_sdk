@@ -91,7 +91,6 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
     private Action mDebugAction;
     private Action mHprofAction;
     private Action mTracingAction;
-    private IDebuggerConnector[] mDebuggerConnectors;
 
     private ImageDescriptor mTracingStartImage;
     private ImageDescriptor mTracingStopImage;
@@ -386,13 +385,10 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
         mTracingStopImage = loader.loadDescriptor(DevicePanel.ICON_TRACING_STOP);
         mTracingAction.setImageDescriptor(mTracingStartImage);
 
-        // check if there's already a debug launcher set up in the plugin class
-        mDebuggerConnectors = DdmsPlugin.getDefault().getDebuggerConnectors();
-
         mDebugAction = new Action("Debug Process") {
             @Override
             public void run() {
-                if (mDebuggerConnectors.length != 0) {
+                if (DdmsPlugin.getDefault().hasDebuggerConnectors()) {
                     Client currentClient = mDeviceList.getSelectedClient();
                     if (currentClient != null) {
                         ClientData clientData = currentClient.getClientData();
@@ -420,10 +416,15 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
                         if (packageName != null) {
 
                             // try all connectors till one returns true.
-                            for (IDebuggerConnector connector : mDebuggerConnectors) {
-                                if (connector.connectDebugger(packageName,
-                                    currentClient.getDebuggerListenPort())) {
-                                    return;
+                            IDebuggerConnector[] connectors =
+                                    DdmsPlugin.getDefault().getDebuggerConnectors();
+
+                            if (connectors != null) {
+                                for (IDebuggerConnector connector : connectors) {
+                                    if (connector.connectDebugger(packageName,
+                                        currentClient.getDebuggerListenPort())) {
+                                        return;
+                                    }
                                 }
                             }
 
@@ -442,9 +443,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
         };
         mDebugAction.setToolTipText("Debug the selected process, provided its source project is present and opened in the workspace.");
         mDebugAction.setImageDescriptor(loader.loadDescriptor("debug-attach.png")); //$NON-NLS-1$
-        if (mDebuggerConnectors.length == 0) {
-            mDebugAction.setEnabled(false);
-        }
+        mDebugAction.setEnabled(DdmsPlugin.getDefault().hasDebuggerConnectors());
 
         placeActions();
 
@@ -477,7 +476,7 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
                 selectedClient.setAsSelectedClient();
             }
 
-            mDebugAction.setEnabled(mDebuggerConnectors.length != 0);
+            mDebugAction.setEnabled(DdmsPlugin.getDefault().hasDebuggerConnectors());
             mKillAppAction.setEnabled(true);
             mGcAction.setEnabled(true);
 
