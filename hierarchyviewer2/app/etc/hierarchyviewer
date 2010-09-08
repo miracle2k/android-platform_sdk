@@ -103,4 +103,4 @@ fi
 
 # need to use "java.ext.dirs" because "-jar" causes classpath to be ignored
 # might need more memory, e.g. -Xmx128M
-exec "$javaCmd" -Xmx5126M $os_opts $java_debug -Dcom.android.hierarchyviewer.bindir="$progdir" -classpath "$jarpath:$swtpath/swt.jar" com.android.hierarchyviewer.HierarchyViewerApplication "$@"
+exec "$javaCmd" -Xmx512M $os_opts $java_debug -Dcom.android.hierarchyviewer.bindir="$progdir" -classpath "$jarpath:$swtpath/swt.jar" com.android.hierarchyviewer.HierarchyViewerApplication "$@"
