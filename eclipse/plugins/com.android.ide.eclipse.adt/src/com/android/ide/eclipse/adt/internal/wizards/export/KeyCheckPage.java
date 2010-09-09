@@ -17,10 +17,7 @@
 package com.android.ide.eclipse.adt.internal.wizards.export;
 
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
-import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.wizards.export.ExportWizard.ExportWizardPage;
-import com.android.sdklib.internal.project.ApkSettings;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.swt.SWT;
@@ -54,10 +51,6 @@ import java.security.KeyStore.PrivateKeyEntry;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
 
 /**
  * Final page of the wizard that checks the key and ask for the ouput location.
@@ -71,8 +64,6 @@ final class KeyCheckPage extends ExportWizardPage {
     private boolean mFatalSigningError;
     private FormText mDetailText;
     private ScrolledComposite mScrolledComposite;
-
-    private ApkSettings mApkSettings;
 
     private String mKeyDetails;
     private String mDestinationDetails;
@@ -151,17 +142,11 @@ final class KeyCheckPage extends ExportWizardPage {
         if ((mProjectDataChanged & DATA_PROJECT) != 0) {
             // reset the destination from the content of the project
             IProject project = mWizard.getProject();
-            ProjectState state = Sdk.getProjectState(project);
-            if (state != null) {
-                mApkSettings = state.getApkSettings();
-            }
 
             String destination = ProjectHelper.loadStringProperty(project,
                     ExportWizard.PROPERTY_DESTINATION);
-            String filename = ProjectHelper.loadStringProperty(project,
-                    ExportWizard.PROPERTY_FILENAME);
-            if (destination != null && filename != null) {
-                mDestination.setText(destination + File.separator + filename);
+            if (destination != null) {
+                mDestination.setText(destination);
             }
         }
 
@@ -322,43 +307,14 @@ final class KeyCheckPage extends ExportWizardPage {
                 return;
             }
 
-            // display the list of files that will actually be created
-            Map<String, String[]> apkFileMap = getApkFileMap(file);
-
-            // display them
-            boolean fileExists = false;
-            StringBuilder sb = new StringBuilder(String.format(
-                    "<p>This will create the following files:</p>"));
-
-            Set<Entry<String, String[]>> set = apkFileMap.entrySet();
-            for (Entry<String, String[]> entry : set) {
-                String[] apkArray = entry.getValue();
-                String filename = apkArray[ExportWizard.APK_FILE_DEST];
-                File f = new File(parentFolder, filename);
-                if (f.isFile()) {
-                    fileExists = true;
-                    sb.append(String.format("<li>%1$s (WARNING: already exists)</li>", filename));
-                } else if (f.isDirectory()) {
-                    setErrorMessage(String.format("%1$s is a directory.", filename));
-                    // reset canFinish in the wizard.
-                    mWizard.resetDestination();
-                    setPageComplete(false);
-                    return;
-                } else {
-                    sb.append(String.format("<li>%1$s</li>", filename));
-                }
+            if (file.isFile()) {
+                mDestinationDetails = "<li>WARNING: destination file already exists</li>";
+                setMessage("Destination file already exists.", WARNING);
             }
-
-            mDestinationDetails = sb.toString();
 
             // no error, set the destination in the wizard.
-            mWizard.setDestination(parentFolder, apkFileMap);
+            mWizard.setDestination(file);
             setPageComplete(true);
-
-            // However, we should also test if the file already exists.
-            if (fileExists) {
-                setMessage("A destination file already exists.", WARNING);
-            }
 
             updateDetailText();
         } else if (forceDetailUpdate) {
@@ -396,29 +352,6 @@ final class KeyCheckPage extends ExportWizardPage {
         mDetailText.getParent().layout();
 
         updateScrolling();
-    }
-
-    /**
-     * Creates the list of destination filenames based on the content of the destination field
-     * and the list of APK configurations for the project.
-     *
-     * @param file File name from the destination field
-     * @return A list of destination filenames based <code>file</code> and the list of APK
-     *         configurations for the project.
-     */
-    private Map<String, String[]> getApkFileMap(File file) {
-        String filename = file.getName();
-
-        HashMap<String, String[]> map = new HashMap<String, String[]>();
-
-        // add the default APK filename
-        String[] apkArray = new String[ExportWizard.APK_COUNT];
-        apkArray[ExportWizard.APK_FILE_SOURCE] = ProjectHelper.getApkFilename(
-                mWizard.getProject(), null /*config*/);
-        apkArray[ExportWizard.APK_FILE_DEST] = filename;
-        map.put(null, apkArray);
-
-        return map;
     }
 
     @Override
