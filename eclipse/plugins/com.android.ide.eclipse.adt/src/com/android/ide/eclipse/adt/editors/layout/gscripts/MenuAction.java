@@ -157,9 +157,9 @@ public abstract class MenuAction {
         /**
          * A closure executed when the action is selected in the context menu.
          *
-         * @see #getAction() for details on the closure parameters.
+         * @see #getClosure() for details on the closure parameters.
          */
-        private final Closure mAction;
+        private final Closure mClosure;
         /**
          * An optional group id, to place the action in a given sub-menu.
          * @null This value can be null.
@@ -174,13 +174,13 @@ public abstract class MenuAction {
          * @param title The title of the action. Must not be null.
          * @param groupId The optional group id, to place the action in a given sub-menu.
          *                Can be null.
-         * @param action The closure executed when the action is selected. Must not be null.
-         *               See {@link #getAction()} for the closure parameters.
+         * @param closure The closure executed when the action is selected. Must not be null.
+         *               See {@link #getClosure()} for the closure parameters.
          */
-        private Action(String id, String title, String groupId, Closure action) {
+        private Action(String id, String title, String groupId, Closure closure) {
             super(id, title);
             mGroupId = groupId;
-            mAction = action;
+            mClosure = closure;
         }
 
         /**
@@ -196,8 +196,8 @@ public abstract class MenuAction {
          *      useful; however for flags it allows one to add or remove items to the flag's
          *      choices.
          */
-        public Closure getAction() {
-            return mAction;
+        public Closure getClosure() {
+            return mClosure;
         }
 
         /**
@@ -250,10 +250,10 @@ public abstract class MenuAction {
          * @param id The unique id of the action. Cannot be null.
          * @param title The UI-visible title of the context menu item. Cannot be null.
          * @param isChecked Whether the context menu item has a check mark.
-         * @param action A closure to execute when the context menu item is selected.
+         * @param closure A closure to execute when the context menu item is selected.
          */
-        public Toggle(String id, String title, boolean isChecked, Closure action) {
-            this(id, title, isChecked, null /*group-id*/, action);
+        public Toggle(String id, String title, boolean isChecked, Closure closure) {
+            this(id, title, isChecked, null /*group-id*/, closure);
         }
 
         /**
@@ -264,10 +264,10 @@ public abstract class MenuAction {
          * @param isChecked Whether the context menu item has a check mark.
          * @param groupId The optional group id, to place the action in a given sub-menu.
          *                Can be null.
-         * @param action A closure to execute when the context menu item is selected.
+         * @param closure A closure to execute when the context menu item is selected.
          */
-        public Toggle(String id, String title, boolean isChecked, String groupId, Closure action) {
-            super(id, title, groupId, action);
+        public Toggle(String id, String title, boolean isChecked, String groupId, Closure closure) {
+            super(id, title, groupId, closure);
             mIsChecked = isChecked;
         }
 
@@ -337,13 +337,13 @@ public abstract class MenuAction {
          * @param current The id(s) of the current choice(s) that will be check marked.
          *                Can be null. Can be an id not present in the choices map.
          *                There can be more than one id separated by {@link #CHOICE_SEP}.
-         * @param action A closure to execute when the context menu item is selected.
+         * @param closure A closure to execute when the context menu item is selected.
          */
         public Choices(String id, String title,
                 Map<String, String> choices,
                 String current,
-                Closure action) {
-            this(id, title, choices, current, null /*group-id*/, action);
+                Closure closure) {
+            this(id, title, choices, current, null /*group-id*/, closure);
         }
 
         /**
@@ -357,14 +357,14 @@ public abstract class MenuAction {
          *                There can be more than one id separated by {@link #CHOICE_SEP}.
          * @param groupId The optional group id, to place the action in a given sub-menu.
          *                Can be null.
-         * @param action A closure to execute when the context menu item is selected.
+         * @param closure A closure to execute when the context menu item is selected.
          */
         public Choices(String id, String title,
                 Map<String, String> choices,
                 String current,
                 String groupId,
-                Closure action) {
-            super(id, title, groupId, action);
+                Closure closure) {
+            super(id, title, groupId, closure);
             mChoices = choices;
             mCurrent = current;
         }

@@ -165,26 +165,17 @@ public class NodeProxy implements INode {
     public void editXml(String undoName, final Closure c) {
         final AndroidXmlEditor editor = mNode.getEditor();
 
-        if (editor.isEditXmlModelPending()) {
-            throw new RuntimeException("Error: calls to INode.editXml cannot be nested!");
-        }
-
         if (editor instanceof LayoutEditor) {
-            // Create an undo wrapper, which takes a runnable
-            ((LayoutEditor) editor).wrapUndoRecording(
+            // Create an undo edit XML wrapper, which takes a runnable
+            ((LayoutEditor) editor).wrapUndoEditXmlModel(
                     undoName,
                     new Runnable() {
                         public void run() {
-                            // Create an edit-XML wrapper, which takes a runnable
-                            editor.editXmlModel(new Runnable() {
-                                public void run() {
-                                    // Here editor.isEditXmlModelPending returns true and it
-                                    // is safe to edit the model using any method from INode.
+                            // Here editor.isEditXmlModelPending returns true and it
+                            // is safe to edit the model using any method from INode.
 
-                                    // Finally execute the closure that will act on the XML
-                                    c.call(NodeProxy.this);
-                                }
-                            });
+                            // Finally execute the closure that will act on the XML
+                            c.call(NodeProxy.this);
                         }
                     });
         }

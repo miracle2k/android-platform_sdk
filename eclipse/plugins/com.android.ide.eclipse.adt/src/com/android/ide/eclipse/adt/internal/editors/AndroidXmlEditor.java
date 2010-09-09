@@ -106,8 +106,12 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
     /** flag set during page creation */
     private boolean mIsCreatingPage = false;
 
-    /** flag indicating we're inside {@link #editXmlModel(Runnable)}. */
-    private boolean mIsEditXmlModelPending;
+    /**
+     * Flag indicating we're inside {@link #wrapEditXmlModel(Runnable)}.
+     * This is a counter, which allows us to nest the edit XML calls.
+     * There is no pending operation when the counter is at zero.
+     */
+    private int mIsEditXmlModelPending;
 
     /**
      * Creates a form editor.
@@ -634,7 +638,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * Callers <em>must</em> call model.releaseFromEdit() when done, typically
      * in a try..finally clause. Because of this, it is highly recommended
      * to <b>NOT</b> use this method directly and instead use the wrapper
-     * {@link #editXmlModel(Runnable)} which executes a runnable into a
+     * {@link #wrapEditXmlModel(Runnable)} which executes a runnable into a
      * properly configured model and then performs whatever cleanup is necessary.
      *
      * @return The model for the XML document or null if cannot be obtained from the editor
@@ -662,30 +666,93 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * <p/>
      * The method is synchronous. As soon as the {@link IStructuredModel#changedModel()} method
      * is called, XML model listeners will be triggered.
+     * <p/>
+     * Calls can be nested: only the first outer call will actually start and close the edit
+     * session.
+     * <p/>
+     * This method is <em>not synchronized</em> and is not thread safe.
+     * Callers must be using it from the the main UI thread.
      *
-     * @param edit_action Something that will change the XML.
+     * @param editAction Something that will change the XML.
      */
-    public final void editXmlModel(Runnable edit_action) {
-        IStructuredModel model = getModelForEdit();
+    public final void wrapEditXmlModel(Runnable editAction) {
+        IStructuredModel model = null;
         try {
-            model.aboutToChangeModel();
-            mIsEditXmlModelPending = true;
-            edit_action.run();
+            if (mIsEditXmlModelPending == 0) {
+                try {
+                    model = getModelForEdit();
+                    model.aboutToChangeModel();
+                } catch (Throwable t) {
+                    // This is never supposed to happen unless we suddenly don't have a model.
+                    // If it does, we don't want to even try to modify anyway.
+                    AdtPlugin.log(t, "XML Editor failed to get model to edit");  //$NON-NLS-1$
+                    return;
+                }
+            }
+            mIsEditXmlModelPending++;
+            editAction.run();
         } finally {
-            // Notify the model we're done modifying it. This must *always* be executed.
-            mIsEditXmlModelPending = false;
-            model.changedModel();
-            model.releaseFromEdit();
+            mIsEditXmlModelPending--;
+            if (model != null) {
+                // Notify the model we're done modifying it. This must *always* be executed.
+                model.changedModel();
+                model.releaseFromEdit();
+
+                if (mIsEditXmlModelPending < 0) {
+                    AdtPlugin.log(IStatus.ERROR,
+                            "wrapEditXmlModel finished with invalid nested counter==%d", //$NON-NLS-1$
+                            mIsEditXmlModelPending);
+                    mIsEditXmlModelPending = 0;
+                }
+            }
         }
     }
 
     /**
-     * Returns true when the runnable of {@link #editXmlModel(Runnable)} is currently
+     * Creates an "undo recording" session by calling the undoableAction runnable
+     * using {@link #beginUndoRecording(String)} and {@link #endUndoRecording()}.
+     * <p/>
+     * This also automatically starts an edit XML session, as if
+     * {@link #wrapEditXmlModel(Runnable)} had been called.
+     * <p>
+     * You can nest several calls to {@link #wrapUndoEditXmlModel(String, Runnable)}, only one
+     * recording session will be created.
+     *
+     * @param label The label for the undo operation. Can be null. Ideally we should really try
+     *              to put something meaningful if possible.
+     */
+    public void wrapUndoEditXmlModel(String label, Runnable undoableAction) {
+        boolean recording = false;
+        try {
+            recording = beginUndoRecording(label);
+
+            if (!recording) {
+                // This can only happen if we don't have an underlying model to edit
+                // or it's not a structured document, which in this context is
+                // highly unlikely. Abort the operation in this case.
+                AdtPlugin.logAndPrintError(
+                    null, //exception,
+                    getProject() != null ? getProject().getName() : "XML Editor", //$NON-NLS-1$ //tag
+                    "Action '%s' failed: could not start an undo session, document might be corrupt.", //$NON-NLS-1$
+                    label);
+                return;
+            }
+
+            wrapEditXmlModel(undoableAction);
+        } finally {
+            if (recording) {
+                endUndoRecording();
+            }
+        }
+    }
+
+    /**
+     * Returns true when the runnable of {@link #wrapEditXmlModel(Runnable)} is currently
      * being executed. This means it is safe to actually edit the XML model returned
      * by {@link #getModelForEdit()}.
      */
     public boolean isEditXmlModelPending() {
-        return mIsEditXmlModelPending;
+        return mIsEditXmlModelPending > 0;
     }
 
     /**
@@ -696,6 +763,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * <p/>
      * beginUndoRecording/endUndoRecording calls can be nested (inner calls are ignored, only one
      * undo operation is recorded.)
+     * To guarantee that, only access this via {@link #wrapUndoEditXmlModel(String, Runnable)}.
      *
      * @param label The label for the undo operation. Can be null but we should really try to put
      *              something meaningful if possible.
@@ -722,6 +790,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * <p/>
      * This is the counterpart call to {@link #beginUndoRecording(String)} and should only be
      * used if the initial call returned true.
+     * To guarantee that, only access this via {@link #wrapUndoEditXmlModel(String, Runnable)}.
      */
     private final void endUndoRecording() {
         IStructuredDocument document = getStructuredDocument();
@@ -732,28 +801,6 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
                 if (model != null) {
                     model.endRecording(this);
                 }
-            }
-        }
-    }
-
-    /**
-     * Creates an "undo recording" session by calling the undoableAction runnable
-     * using {@link #beginUndoRecording(String)} and {@link #endUndoRecording()}.
-     * <p>
-     * You can nest several calls to {@link #wrapUndoRecording(String, Runnable)}, only one
-     * recording session will be created.
-     *
-     * @param label The label for the undo operation. Can be null. Ideally we should really try
-     *              to put something meaningful if possible.
-     */
-    public void wrapUndoRecording(String label, Runnable undoableAction) {
-        boolean recording = false;
-        try {
-            recording = beginUndoRecording(label);
-            undoableAction.run();
-        } finally {
-            if (recording) {
-                endUndoRecording();
             }
         }
     }

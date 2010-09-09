@@ -72,7 +72,7 @@ public class ElementCreateCommand extends Command {
         if (uiParent != null) {
             final AndroidXmlEditor editor = uiParent.getEditor();
             if (editor instanceof LayoutEditor) {
-                ((LayoutEditor) editor).wrapUndoRecording(
+                ((LayoutEditor) editor).wrapUndoEditXmlModel(
                         String.format("Create %1$s", mDescriptor.getXmlLocalName()),
                         new Runnable() {
                     public void run() {
