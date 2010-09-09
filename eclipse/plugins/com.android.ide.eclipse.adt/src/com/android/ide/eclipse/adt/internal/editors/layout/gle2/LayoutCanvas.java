@@ -1504,17 +1504,12 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                 // Remove from source. Since we know the selection, we'll simply
                 // create a cut operation on the existing drag selection.
 
-                // Create an undo wrapper, which takes a runnable
-                mLayoutEditor.wrapUndoRecording(
+                // Create an undo edit XML wrapper, which takes a runnable
+                mLayoutEditor.wrapUndoEditXmlModel(
                         "Remove drag'n'drop source elements",
                         new Runnable() {
                             public void run() {
-                                // Create an edit-XML wrapper, which takes a runnable
-                                mLayoutEditor.editXmlModel(new Runnable() {
-                                    public void run() {
-                                        deleteSelection("Remove", mDragSelection);
-                                    }
-                                });
+                                deleteSelection("Remove", mDragSelection);
                             }
                         });
             }
@@ -1820,7 +1815,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
         // Fill the menu manager with the static & dynamic actions
         setupStaticMenuActions(mMenuManager);
-        new DynamicContextMenu(this, mMenuManager);
+        new DynamicContextMenu(mLayoutEditor, this, mMenuManager);
         Menu menu = mMenuManager.createContextMenu(this);
         setMenu(menu);
     }
@@ -1979,21 +1974,17 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         // the elements. An update XML model event should happen when the model gets released
         // which will trigger a recompute of the layout, thus reloading the model thus
         // resetting the selection.
-        mLayoutEditor.wrapUndoRecording(title, new Runnable() {
+        mLayoutEditor.wrapUndoEditXmlModel(title, new Runnable() {
             public void run() {
-                mLayoutEditor.editXmlModel(new Runnable() {
-                    public void run() {
-                        for (CanvasSelection cs : selection) {
-                            CanvasViewInfo vi = cs.getViewInfo();
-                            if (vi != null) {
-                                UiViewElementNode ui = vi.getUiViewKey();
-                                if (ui != null) {
-                                    ui.deleteXmlNode();
-                                }
-                            }
+                for (CanvasSelection cs : selection) {
+                    CanvasViewInfo vi = cs.getViewInfo();
+                    if (vi != null) {
+                        UiViewElementNode ui = vi.getUiViewKey();
+                        if (ui != null) {
+                            ui.deleteXmlNode();
                         }
                     }
-                });
+                }
             }
         });
     }
@@ -2067,76 +2058,72 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         }
         title = String.format("Paste root %1$s in document", title);
 
-        mLayoutEditor.wrapUndoRecording(title, new Runnable() {
+        mLayoutEditor.wrapUndoEditXmlModel(title, new Runnable() {
             public void run() {
-                mLayoutEditor.editXmlModel(new Runnable() {
-                    public void run() {
-                        UiElementNode uiNew = uiDoc.appendNewUiChild(viewDesc);
+                UiElementNode uiNew = uiDoc.appendNewUiChild(viewDesc);
 
-                        // A root node requires the Android XMLNS
-                        uiNew.setAttributeValue(
-                                "android",
-                                XmlnsAttributeDescriptor.XMLNS_URI,
-                                SdkConstants.NS_RESOURCES,
-                                true /*override*/);
+                // A root node requires the Android XMLNS
+                uiNew.setAttributeValue(
+                        "android",
+                        XmlnsAttributeDescriptor.XMLNS_URI,
+                        SdkConstants.NS_RESOURCES,
+                        true /*override*/);
 
-                        // Copy all the attributes from the pasted element
-                        for (IDragAttribute attr : pastedElement.getAttributes()) {
-                            uiNew.setAttributeValue(
-                                    attr.getName(),
-                                    attr.getUri(),
-                                    attr.getValue(),
-                                    true /*override*/);
-                        }
+                // Copy all the attributes from the pasted element
+                for (IDragAttribute attr : pastedElement.getAttributes()) {
+                    uiNew.setAttributeValue(
+                            attr.getName(),
+                            attr.getUri(),
+                            attr.getValue(),
+                            true /*override*/);
+                }
 
-                        // Adjust the attributes, adding the default layout_width/height
-                        // only if they are not present (the original element should have
-                        // them though.)
-                        DescriptorsUtils.setDefaultLayoutAttributes(uiNew, false /*updateLayout*/);
+                // Adjust the attributes, adding the default layout_width/height
+                // only if they are not present (the original element should have
+                // them though.)
+                DescriptorsUtils.setDefaultLayoutAttributes(uiNew, false /*updateLayout*/);
 
-                        uiNew.createXmlNode();
+                uiNew.createXmlNode();
 
-                        // Now process all children
-                        for (IDragElement childElement : pastedElement.getInnerElements()) {
-                            addChild(uiNew, childElement);
-                        }
-                    }
+                // Now process all children
+                for (IDragElement childElement : pastedElement.getInnerElements()) {
+                    addChild(uiNew, childElement);
+                }
+            }
 
-                    private void addChild(UiElementNode uiParent, IDragElement childElement) {
-                        String childFqcn = childElement.getFqcn();
-                        final ViewElementDescriptor childDesc =
-                            mLayoutEditor.getFqcnViewDescritor(childFqcn);
-                        if (childDesc == null) {
-                            // TODO this could happen if pasting a custom view
-                            debugPrintf("Failed to paste element, unknown FQCN %1$s", childFqcn);
-                            return;
-                        }
+            private void addChild(UiElementNode uiParent, IDragElement childElement) {
+                String childFqcn = childElement.getFqcn();
+                final ViewElementDescriptor childDesc =
+                    mLayoutEditor.getFqcnViewDescritor(childFqcn);
+                if (childDesc == null) {
+                    // TODO this could happen if pasting a custom view
+                    debugPrintf("Failed to paste element, unknown FQCN %1$s", childFqcn);
+                    return;
+                }
 
-                        UiElementNode uiChild = uiParent.appendNewUiChild(childDesc);
+                UiElementNode uiChild = uiParent.appendNewUiChild(childDesc);
 
-                        // Copy all the attributes from the pasted element
-                        for (IDragAttribute attr : childElement.getAttributes()) {
-                            uiChild.setAttributeValue(
-                                    attr.getName(),
-                                    attr.getUri(),
-                                    attr.getValue(),
-                                    true /*override*/);
-                        }
+                // Copy all the attributes from the pasted element
+                for (IDragAttribute attr : childElement.getAttributes()) {
+                    uiChild.setAttributeValue(
+                            attr.getName(),
+                            attr.getUri(),
+                            attr.getValue(),
+                            true /*override*/);
+                }
 
-                        // Adjust the attributes, adding the default layout_width/height
-                        // only if they are not present (the original element should have
-                        // them though.)
-                        DescriptorsUtils.setDefaultLayoutAttributes(
-                                uiChild, false /*updateLayout*/);
+                // Adjust the attributes, adding the default layout_width/height
+                // only if they are not present (the original element should have
+                // them though.)
+                DescriptorsUtils.setDefaultLayoutAttributes(
+                        uiChild, false /*updateLayout*/);
 
-                        uiChild.createXmlNode();
+                uiChild.createXmlNode();
 
-                        // Now process all grand children
-                        for (IDragElement grandChildElement : childElement.getInnerElements()) {
-                            addChild(uiChild, grandChildElement);
-                        }
-                    }
-                });
+                // Now process all grand children
+                for (IDragElement grandChildElement : childElement.getInnerElements()) {
+                    addChild(uiChild, grandChildElement);
+                }
             }
         });
     }
@@ -2178,25 +2165,21 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         }
         title = String.format("Create root %1$s in document", title);
 
-        mLayoutEditor.wrapUndoRecording(title, new Runnable() {
+        mLayoutEditor.wrapUndoEditXmlModel(title, new Runnable() {
             public void run() {
-                mLayoutEditor.editXmlModel(new Runnable() {
-                    public void run() {
-                        UiElementNode uiNew = uiDoc.appendNewUiChild(viewDesc);
+                UiElementNode uiNew = uiDoc.appendNewUiChild(viewDesc);
 
-                        // A root node requires the Android XMLNS
-                        uiNew.setAttributeValue(
-                                "android",
-                                XmlnsAttributeDescriptor.XMLNS_URI,
-                                SdkConstants.NS_RESOURCES,
-                                true /*override*/);
+                // A root node requires the Android XMLNS
+                uiNew.setAttributeValue(
+                        "android",
+                        XmlnsAttributeDescriptor.XMLNS_URI,
+                        SdkConstants.NS_RESOURCES,
+                        true /*override*/);
 
-                        // Adjust the attributes
-                        DescriptorsUtils.setDefaultLayoutAttributes(uiNew, false /*updateLayout*/);
+                // Adjust the attributes
+                DescriptorsUtils.setDefaultLayoutAttributes(uiNew, false /*updateLayout*/);
 
-                        uiNew.createXmlNode();
-                    }
-                });
+                uiNew.createXmlNode();
             }
         });
     }

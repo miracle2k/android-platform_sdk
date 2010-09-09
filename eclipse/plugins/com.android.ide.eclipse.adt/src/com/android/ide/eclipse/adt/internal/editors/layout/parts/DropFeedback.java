@@ -219,7 +219,7 @@ class DropFeedback {
         if (where == null) {
             return;
         }
-        uiNode.getEditor().editXmlModel(new Runnable() {
+        uiNode.getEditor().wrapEditXmlModel(new Runnable() {
             public void run() {
                 uiNode.setAttributeValue(
                         LayoutConstants.ATTR_LAYOUT_X,
@@ -270,7 +270,7 @@ class DropFeedback {
         final UiElementEditPart anchorPart = info.targetParts[info.anchorIndex];  // can be null
         final int direction = info.direction;
 
-        uiNode.getEditor().editXmlModel(new Runnable() {
+        uiNode.getEditor().wrapEditXmlModel(new Runnable() {
             public void run() {
                 HashMap<String, String> map = new HashMap<String, String>();
 

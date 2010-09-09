@@ -16,8 +16,10 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.MenuAction;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 
@@ -38,9 +40,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 
@@ -57,10 +59,15 @@ import java.util.regex.Pattern;
  */
 /* package */ class DynamicContextMenu {
 
+    /** The XML layout editor that contains the canvas that uses this menu. */
+    private final LayoutEditor mEditor;
+
+    /** The layout canvas that displays this context menu. */
     private final LayoutCanvas mCanvas;
 
     /** The root menu manager of the context menu. */
     private final MenuManager mMenuManager;
+
 
     /**
      * Creates a new helper responsible for adding and managing the dynamic menu items
@@ -72,7 +79,8 @@ import java.util.regex.Pattern;
      * @param rootMenu The root of the context menu displayed. In practice this may be the
      *   context menu manager of the {@link LayoutCanvas} or the one from {@link OutlinePage2}.
      */
-    public DynamicContextMenu(LayoutCanvas canvas, MenuManager rootMenu) {
+    public DynamicContextMenu(LayoutEditor editor, LayoutCanvas canvas, MenuManager rootMenu) {
+        mEditor = editor;
         mCanvas = canvas;
         mMenuManager = rootMenu;
 
@@ -159,23 +167,25 @@ import java.util.regex.Pattern;
                 continue;
             }
 
-            final MenuAction.Action action = (MenuAction.Action) actions.get(0);
+            // Arbitrarily select the first action, as all the actions with the same id
+            // should have the same constant attributes such as id and title.
+            final MenuAction.Action firstAction = (MenuAction.Action) actions.get(0);
 
             IContributionItem contrib = null;
 
-            if (action instanceof MenuAction.Toggle) {
-                contrib = createDynamicMenuToggle((MenuAction.Toggle) action, actionsMap);
+            if (firstAction instanceof MenuAction.Toggle) {
+                contrib = createDynamicMenuToggle((MenuAction.Toggle) firstAction, actionsMap);
 
-            } else if (action instanceof MenuAction.Choices) {
-                Map<String, String> choiceMap = ((MenuAction.Choices) action).getChoices();
+            } else if (firstAction instanceof MenuAction.Choices) {
+                Map<String, String> choiceMap = ((MenuAction.Choices) firstAction).getChoices();
                 if (choiceMap != null && !choiceMap.isEmpty()) {
                     contrib = createDynamicChoices(
-                            (MenuAction.Choices)action, choiceMap, actionsMap);
+                            (MenuAction.Choices)firstAction, choiceMap, actionsMap);
                 }
             }
 
             if (contrib != null) {
-                MenuManager groupMenu = menuGroups.get(action.getGroupId());
+                MenuManager groupMenu = menuGroups.get(firstAction.getGroupId());
                 if (groupMenu != null) {
                     groupMenu.add(contrib);
                 } else {
@@ -288,36 +298,59 @@ import java.util.regex.Pattern;
      * <p/>
      * Toggles are represented by a checked menu item.
      *
-     * @param action The toggle action to convert to a menu item.
+     * @param firstAction The toggle action to convert to a menu item. In the case of a
+     *   multiple selection, this is the first of many similar actions.
      * @param actionsMap Map of all contributed actions.
      * @return a new {@link IContributionItem} to add to the context menu
      */
     private IContributionItem createDynamicMenuToggle(
-            final MenuAction.Toggle action,
+            final MenuAction.Toggle firstAction,
             final TreeMap<String, ArrayList<MenuAction>> actionsMap) {
 
         final RulesEngine gre = mCanvas.getRulesEngine();
-        final boolean isChecked = action.isChecked();
-        Action a = new Action(action.getTitle(), IAction.AS_CHECK_BOX) {
+        final boolean isChecked = firstAction.isChecked();
+
+        Action a = new Action(firstAction.getTitle(), IAction.AS_CHECK_BOX) {
             @Override
             public void run() {
-                // Invoke the closures of all the actions using the same action-id
-                for (MenuAction a2 : actionsMap.get(action.getId())) {
-                    if (a2 instanceof MenuAction.Action) {
-                        Closure c = ((MenuAction.Action) a2).getAction();
-                        if (c != null) {
-                            gre.callClosure(
-                                    ((MenuAction.Action) a2).getAction(),
-                                    // Closure parameters are action, valueId, newValue
-                                    action,
-                                    null, // no valueId for a toggle
-                                    !isChecked);
+                final List<MenuAction> actions = actionsMap.get(firstAction.getId());
+                if (actions == null || actions.isEmpty()) {
+                    return;
+                }
+
+                String label = String.format("Toggle attribute %s", actions.get(0).getTitle());
+                if (actions.size() > 1) {
+                    label += String.format(" (%d elements)", actions.size());
+                }
+
+                if (mEditor.isEditXmlModelPending()) {
+                    // This should not be happening.
+                    logError("Action '%s' failed: XML changes pending, document might be corrupt.", //$NON-NLS-1$
+                             label);
+                    return;
+                }
+
+                mEditor.wrapUndoEditXmlModel(label, new Runnable() {
+                    public void run() {
+                        // Invoke the closures of all the actions using the same action-id
+                        for (MenuAction a2 : actions) {
+                            if (a2 instanceof MenuAction.Action) {
+                                Closure c = ((MenuAction.Action) a2).getClosure();
+                                if (c != null) {
+                                    gre.callClosure(
+                                            ((MenuAction.Action) a2).getClosure(),
+                                            // Closure parameters are action, valueId, newValue
+                                            a2,
+                                            null, // no valueId for a toggle
+                                            !isChecked);
+                                }
+                            }
                         }
                     }
-                }
+                });
             }
         };
-        a.setId(action.getId());
+        a.setId(firstAction.getId());
         a.setChecked(isChecked);
 
         return new ActionContributionItem(a);
@@ -329,24 +362,25 @@ import java.util.regex.Pattern;
      * <p/>
      * Multiple-choices are represented by a sub-menu containing checked items.
      *
-     * @param action The choices action to convert to a menu item.
+     * @param firstAction The choices action to convert to a menu item. In the case of a
+     *   multiple selection, this is the first of many similar actions.
      * @param actionsMap Map of all contributed actions.
      * @return a new {@link IContributionItem} to add to the context menu
      */
     private IContributionItem createDynamicChoices(
-            final MenuAction.Choices action,
+            final MenuAction.Choices firstAction,
             Map<String, String> choiceMap,
             final TreeMap<String, ArrayList<MenuAction>> actionsMap) {
 
         final RulesEngine gre = mCanvas.getRulesEngine();
-        MenuManager submenu = new MenuManager(action.getTitle(), action.getId());
+        MenuManager submenu = new MenuManager(firstAction.getTitle(), firstAction.getId());
 
         // Convert to a tree map as needed so that keys be naturally ordered.
         if (!(choiceMap instanceof TreeMap<?, ?>)) {
             choiceMap = new TreeMap<String, String>(choiceMap);
         }
 
-        String current = action.getCurrent();
+        String current = firstAction.getCurrent();
         Set<String> currents = null;
         if (current.indexOf(MenuAction.Choices.CHOICE_SEP) >= 0) {
             currents = new HashSet<String>(
@@ -375,24 +409,53 @@ import java.util.regex.Pattern;
             Action a = new Action(title, IAction.AS_CHECK_BOX) {
                 @Override
                 public void run() {
-                    // Invoke the closures of all the actions using the same action-id
-                    for (MenuAction a2 : actionsMap.get(action.getId())) {
-                        if (a2 instanceof MenuAction.Action) {
-                            gre.callClosure(
-                                    ((MenuAction.Action) a2).getAction(),
-                                    // Closure parameters are action, valueId, newValue
-                                    action,
-                                    key,
-                                    !isChecked);
-                        }
+                    final List<MenuAction> actions = actionsMap.get(firstAction.getId());
+                    if (actions == null || actions.isEmpty()) {
+                        return;
                     }
+
+                    String label = String.format("Change attribute %s", actions.get(0).getTitle());
+                    if (actions.size() > 1) {
+                        label += String.format(" (%d elements)", actions.size());
+                    }
+
+                    if (mEditor.isEditXmlModelPending()) {
+                        // This should not be happening.
+                        logError("Action '%s' failed: XML changes pending, document might be corrupt.", //$NON-NLS-1$
+                                 label);
+                        return;
+                    }
+
+                    mEditor.wrapUndoEditXmlModel(label, new Runnable() {
+                        public void run() {
+                            // Invoke the closures of all the actions using the same action-id
+                            for (MenuAction a2 : actions) {
+                                if (a2 instanceof MenuAction.Action) {
+                                    gre.callClosure(
+                                            ((MenuAction.Action) a2).getClosure(),
+                                            // Closure parameters are action, valueId, newValue
+                                            a2,
+                                            key,
+                                            !isChecked);
+                                }
+                            }
+                        }
+                    });
                 }
             };
-            a.setId(String.format("%s_%s", action.getId(), key));     //$NON-NLS-1$
+            a.setId(String.format("%s_%s", firstAction.getId(), key));     //$NON-NLS-1$
             a.setChecked(isChecked);
             submenu.add(a);
         }
 
         return submenu;
     }
+
+    private void logError(String format, Object...args) {
+        AdtPlugin.logAndPrintError(
+                null, // exception
+                mCanvas.getRulesEngine().getProject().getName(), // tag
+                format, args);
+    }
+
 }

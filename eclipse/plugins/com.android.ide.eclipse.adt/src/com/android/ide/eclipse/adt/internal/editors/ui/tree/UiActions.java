@@ -155,7 +155,7 @@ public abstract class UiActions implements ICommitXml {
                         : "Remove element from Android XML",
                 String.format("Do you really want to remove %1$s?", sb.toString()))) {
             commitPendingXmlChanges();
-            getRootNode().getEditor().editXmlModel(new Runnable() {
+            getRootNode().getEditor().wrapEditXmlModel(new Runnable() {
                 public void run() {
                     UiElementNode previous = null;
                     UiElementNode parent = null;
@@ -205,7 +205,7 @@ public abstract class UiActions implements ICommitXml {
             }
     
             commitPendingXmlChanges();
-            getRootNode().getEditor().editXmlModel(new Runnable() {
+            getRootNode().getEditor().wrapEditXmlModel(new Runnable() {
                 public void run() {
                     Node xml_node = node.getXmlNode();
                     if (xml_node != null) {
@@ -285,7 +285,7 @@ public abstract class UiActions implements ICommitXml {
             }
     
             commitPendingXmlChanges();
-            getRootNode().getEditor().editXmlModel(new Runnable() {
+            getRootNode().getEditor().wrapEditXmlModel(new Runnable() {
                 public void run() {
                     Node xml_node = node.getXmlNode();
                     if (xml_node != null) {
@@ -374,7 +374,7 @@ public abstract class UiActions implements ICommitXml {
         final UiElementNode uiNew = uiParent.insertNewUiChild(index, descriptor);
         UiElementNode rootNode = getRootNode();
 
-        rootNode.getEditor().editXmlModel(new Runnable() {
+        rootNode.getEditor().wrapEditXmlModel(new Runnable() {
             public void run() {
                 DescriptorsUtils.setDefaultLayoutAttributes(uiNew, updateLayout);
                 Node xmlNode = uiNew.createXmlNode();
