@@ -30,5 +30,9 @@
          Tests for the other Android plugins
       </description>
    </category-def>
-   <category-def name="platform" label="Platform Tools"/>
+   <category-def name="platform" label="Platform Tools">
+      <description>
+         Features that add Android support to Eclipse for platform developers.
+      </description>
+   </category-def>
 </site>
