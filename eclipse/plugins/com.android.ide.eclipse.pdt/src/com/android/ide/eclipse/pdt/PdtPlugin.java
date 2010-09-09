@@ -59,7 +59,10 @@ public class PdtPlugin extends AbstractUIPlugin {
         });
     }
 
-    public static String getAdbLocation() {
+    /**
+     * Returns the location of the dev tree or <code>null</code> if unknown.
+     */
+    public static String getDevTree() {
         // this always return a store, even a temp one if an error occurred.
         IPreferenceStore store = sPlugin.getPreferenceStore();
 
@@ -69,6 +72,15 @@ public class PdtPlugin extends AbstractUIPlugin {
         if (devTree.length() == 0) {
             devTree = System.getenv("ANDROID_BUILD_TOP"); //$NON-NLS-1$
         }
+
+        return devTree;
+    }
+
+    /**
+     * Returns the location of adb or <code>null</code> if unknown.
+     */
+    public static String getAdbLocation() {
+        String devTree = getDevTree();
 
         if (devTree != null && devTree.length() > 0) {
             return devTree + "/out/host/" + currentPlatform() + "/bin/adb"; //$NON-NLS-1$ //$NON-NLS-2$

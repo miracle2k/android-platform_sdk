@@ -21,43 +21,20 @@ import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.ddms.IDebuggerConnector;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.ResourcesPlugin;
 
 /**
  * Implementation of the com.android.ide.ddms.debuggerConnector extension point.
  */
 public class DebuggerConnector implements IDebuggerConnector {
 
-    public boolean connectDebugger(String appName, int port) {
+    public boolean connectDebugger(String appName, int appPort, int selectedPort) {
         // search for an android project matching the process name
         IProject project = ProjectHelper.findAndroidProjectByAppName(appName);
         if (project != null) {
-            AndroidLaunchController.debugRunningApp(project, port);
+            AndroidLaunchController.debugRunningApp(project, appPort);
             return true;
-        } else {
-            // check to see if there's a platform project defined by an env var.
-            String var = System.getenv("ANDROID_PLATFORM_PROJECT"); //$NON-NLS-1$
-            if (var != null && var.length() > 0) {
-                boolean auto = "AUTO".equals(var); //$NON-NLS-1$
-
-                // Get the list of project for the current workspace
-                IWorkspace workspace = ResourcesPlugin.getWorkspace();
-                IProject[] projects = workspace.getRoot().getProjects();
-
-                // look for a project that matches the env var or take the first
-                // one if in automatic mode.
-                for (IProject p : projects) {
-                    if (p.isOpen()) {
-                        if (auto || p.getName().equals(var)) {
-                            AndroidLaunchController.debugRunningApp(p, port);
-                            return true;
-                        }
-                    }
-                }
-
-            }
-            return false;
         }
+
+        return false;
     }
 }

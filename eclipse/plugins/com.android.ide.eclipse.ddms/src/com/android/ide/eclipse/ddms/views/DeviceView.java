@@ -20,6 +20,7 @@ package com.android.ide.eclipse.ddms.views;
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.Client;
 import com.android.ddmlib.ClientData;
+import com.android.ddmlib.DdmPreferences;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.SyncException;
 import com.android.ddmlib.SyncService;
@@ -421,9 +422,14 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
 
                             if (connectors != null) {
                                 for (IDebuggerConnector connector : connectors) {
-                                    if (connector.connectDebugger(packageName,
-                                        currentClient.getDebuggerListenPort())) {
-                                        return;
+                                    try {
+                                        if (connector.connectDebugger(packageName,
+                                            currentClient.getDebuggerListenPort(),
+                                            DdmPreferences.getSelectedDebugPort())) {
+                                            return;
+                                        }
+                                    } catch (Throwable t) {
+                                        // ignore, we'll just not use this implementation
                                     }
                                 }
                             }

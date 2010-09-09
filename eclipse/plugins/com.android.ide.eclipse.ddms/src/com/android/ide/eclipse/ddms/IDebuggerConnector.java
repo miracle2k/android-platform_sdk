@@ -29,9 +29,10 @@ public interface IDebuggerConnector {
      * "selected" port can also be used if needed.
      * @param appName the name of the application. Usually the application's package but this
      * can be different if the component was setup to run in it's own process.
-     * @param port the preferred connection port.
+     * @param appPort the preferred connection port.
+     * @param selectedPort the port value for the selected application
      * @return true if success.
      */
-    boolean connectDebugger(String appName, int port);
+    boolean connectDebugger(String appName, int appPort, int selectedPort);
 
 }
