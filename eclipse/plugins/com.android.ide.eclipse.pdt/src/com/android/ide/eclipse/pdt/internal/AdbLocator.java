@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.pdt;
+package com.android.ide.eclipse.pdt.internal;
 
 import com.android.ide.eclipse.ddms.IAdbLocator;
+import com.android.ide.eclipse.pdt.PdtPlugin;
 
 /**
- * {@link IAdbLocator} implementation.
+ * Implementation of the com.android.ide.ddms.adbLocator extension point.
  */
 public class AdbLocator implements IAdbLocator {
 
     public String getAdbLocation() {
         return PdtPlugin.getAdbLocation();
-
-    };
+    }
 }
