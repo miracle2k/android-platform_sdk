@@ -5,10 +5,10 @@
    </description>
    <feature url="features/com.android.ide.eclipse.adt_8.0.0.qualifier.jar" id="com.android.ide.eclipse.adt" version="8.0.0.qualifier">
       <category name="developer"/>
-      <category name="platform"/>
    </feature>
    <feature url="features/com.android.ide.eclipse.ddms_8.0.0.qualifier.jar" id="com.android.ide.eclipse.ddms" version="8.0.0.qualifier">
       <category name="developer"/>
+      <category name="platform"/>
    </feature>
    <feature url="features/com.android.ide.eclipse.hierarchyviewer_8.0.0.qualifier.jar" id="com.android.ide.eclipse.hierarchyviewer" version="8.0.0.qualifier">
       <category name="developer"/>
