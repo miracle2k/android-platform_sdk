@@ -126,6 +126,16 @@ public class GCWrapper implements IGraphics {
         return mFontHeight;
     }
 
+    public IColor getForeground() {
+        Color c = getGc().getForeground();
+        return new ColorWrapper(c);
+    }
+
+    public IColor getBackground() {
+        Color c = getGc().getBackground();
+        return new ColorWrapper(c);
+    }
+
     public void setForeground(IColor color) {
         checkGC();
         getGc().setForeground(((ColorWrapper) color).getColor());

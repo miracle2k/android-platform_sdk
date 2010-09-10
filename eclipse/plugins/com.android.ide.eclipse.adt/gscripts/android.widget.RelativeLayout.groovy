@@ -109,6 +109,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                   "zones": null,    // Valid "anchor" zones for the current child
                                     // of type list(map(rect:Rect, attr:[String]))
                   "curr":  null,    // map: Current zone
+                  "rejected": null, // rejected target (Rect bounds)
                   "movedIds": movedIds,
                   "cachedLinkIds": [:]
                 ],
@@ -131,6 +132,8 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
             // We're not capturing anymore since we got outside of the capture bounds
             feedback.captureArea = null;
+            feedback.requestPaint = false;
+            data.rejected = null;
 
             // Find the current direct children under the cursor
             def childNode = null;
@@ -140,16 +143,14 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                 def bc = child.getBounds();
                 if (bc.contains(p)) {
 
-                    // TODO visually indicate this target node has been rejected,
-                    // e.g. by drawing a semi-transp rect on it or drawing a red cross at
-                    // the cursor point.
-
                     // If we're doing a move operation within the same canvas, we can't
                     // attach the moved object to one belonging to the selection since
                     // it will disappear after the move.
                     if (feedback.sameCanvas && !feedback.isCopy) {
                         for (element in elements) {
                             if (bc == element.getBounds()) {
+                                data.rejected = bc;
+                                feedback.requestPaint = true;
                                 continue nextChild;
                             }
                         }
@@ -160,6 +161,8 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                     // indirectly based on the element being moved.
                     if (!feedback.isCopy) {
                         if (searchRelativeIds(child, data.movedIds, data.cachedLinkIds)) {
+                            data.rejected = bc;
+                            feedback.requestPaint = true;
                             continue nextChild;
                         }
                     }
@@ -198,7 +201,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                     feedback.captureArea = zone.rect;
                 }
 
-                feedback.requestPaint = (area != feedback.captureArea);
+                feedback.requestPaint |= (area != feedback.captureArea);
             }
         }
 
@@ -520,6 +523,15 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                     drawElement(gc, element, offsetX, offsetY);
                 }
             }
+        }
+
+        if (data.rejected) {
+            def br = data.rejected;
+            gc.setForeground(gc.registerColor(0x000000FF));
+            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+            gc.setLineWidth(4);
+            gc.drawLine(br.x, br.y       , br.x + br.w, br.y + br.h);
+            gc.drawLine(br.x, br.y + br.h, br.x + br.w, br.y       );
         }
     }
 

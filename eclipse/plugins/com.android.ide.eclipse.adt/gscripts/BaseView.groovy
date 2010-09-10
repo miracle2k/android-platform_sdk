@@ -315,6 +315,12 @@ public class BaseView implements IViewRule {
 
         gc.setLineWidth(1);
         gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
+        def olgBg = gc.getBackground();
+        gc.setBackground(gc.getForeground());
+        gc.setAlpha(64);
+        gc.fillRect(r);
+        gc.setBackground(olgBg);
+        gc.setAlpha(255);
         gc.drawRect(r);
 
         if (displayName == null || isMultipleSelection) {
