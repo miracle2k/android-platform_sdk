@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.configuration;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.DockModeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
@@ -38,7 +37,6 @@ import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IStyleResourceValue;
@@ -107,7 +105,6 @@ public class ConfigurationComposite extends Composite {
     private final static int LOCALE_LANG = 0;
     private final static int LOCALE_REGION = 1;
 
-    private Button mClippingButton;
     private Label mCurrentLayoutLabel;
 
     private Combo mDeviceCombo;
@@ -126,12 +123,6 @@ public class ConfigurationComposite extends Composite {
 
     private final ArrayList<ResourceQualifier[] > mLocaleList =
         new ArrayList<ResourceQualifier[]>();
-
-    /**
-     * clipping value. If true, the rendering is limited to the screensize. This is the default
-     * value
-     */
-    private boolean mClipping = true;
 
     private final ConfigState mState = new ConfigState();
 
@@ -164,7 +155,6 @@ public class ConfigurationComposite extends Composite {
         void onConfigurationChange();
         void onThemeChange();
         void onCreate();
-        void onClippingChange();
 
         ProjectResources getProjectResources();
         ProjectResources getFrameworkResources();
@@ -285,11 +275,11 @@ public class ConfigurationComposite extends Composite {
     }
 
     /**
-     * Interface implemented by the part which owns a {@link ConfigurationComposite}
-     * to define and handle custom toggle buttons in the button bar. Each toggle is
+     * Abstract class implemented by the part which owns a {@link ConfigurationComposite}
+     * to define and handle custom buttons in the button bar. Each button is
      * implemented using a button, with a callback when the button is selected.
      */
-    public static abstract class CustomToggle {
+    public static abstract class CustomButton {
 
         /** The UI label of the toggle. Can be null if the image exists. */
         private final String mUiLabel;
@@ -300,66 +290,140 @@ public class ConfigurationComposite extends Composite {
         /** The tooltip for the toggle. Can be null. */
         private final String mUiTooltip;
 
+        /** Whether the button is a toggle */
+        private final boolean mIsToggle;
+        /** The default value of the toggle. */
+        private final boolean mDefaultValue;
+
         /**
-         * Initializes a new {@link CustomToggle}. The values set here will be used
-         * later to create the actual toggle.
-         *
-         * @param uiLabel   The UI label of the toggle. Can be null if the image exists.
-         * @param image     The image to use for this toggle. Can be null if the label exists.
-         * @param uiTooltip The tooltip for the toggle. Can be null.
+         * the SWT button.
          */
-        public CustomToggle(
+        private Button mButton;
+
+
+        /**
+         * Initializes a new {@link CustomButton}. The values set here will be used
+         * later to create the actual button.
+         *
+         * @param uiLabel      The UI label of the button. Can be null if the image exists.
+         * @param image        The image to use for this button. Can be null if the label exists.
+         * @param uiTooltip    The tooltip for the button. Can be null.
+         * @param isToggle     Whether the button is a toggle button.
+         * @param defaultValue The default value of the toggle if <var>isToggle</var> is true.
+         */
+        public CustomButton(
                 String uiLabel,
                 Image image,
-                String uiTooltip) {
+                String uiTooltip,
+                boolean isToggle,
+                boolean defaultValue) {
             mUiLabel = uiLabel;
             mImage = image;
             mUiTooltip = uiTooltip;
+            mIsToggle = isToggle;
+            mDefaultValue = defaultValue;
         }
 
-        /** Called by the {@link ConfigurationComposite} when the button is selected. */
+        /**
+         * Initializes a new {@link CustomButton} that is <b>not</b> a toggle.
+         * The values set here will be used later to create the actual button.
+         *
+         * @param uiLabel      The UI label of the button. Can be null if the image exists.
+         * @param image        The image to use for this button. Can be null if the label exists.
+         * @param uiTooltip    The tooltip for the button. Can be null.
+         */
+        public CustomButton(
+                String uiLabel,
+                Image image,
+                String uiTooltip) {
+            this(uiLabel, image, uiTooltip, false, false);
+        }
+
+
+        /**
+         * Called by the {@link ConfigurationComposite} when the button is selected
+         * @param newState the state of the button if the button is a toggle.
+         */
         public abstract void onSelected(boolean newState);
 
-        private void createToggle(Composite parent) {
-            final Button b = new Button(parent, SWT.TOGGLE | SWT.FLAT);
+        private void createButton(Composite parent) {
+            int style = SWT.FLAT;
+            if (mIsToggle) {
+                style |= SWT.TOGGLE;
+            }
+            mButton = new Button(parent, style);
 
             if (mUiTooltip != null) {
-                b.setToolTipText(mUiTooltip);
+                mButton.setToolTipText(mUiTooltip);
             }
             if (mImage != null) {
-                b.setImage(mImage);
+                mButton.setImage(mImage);
             }
             if (mUiLabel != null) {
-                b.setText(mUiLabel);
+                mButton.setText(mUiLabel);
             }
 
-            b.addSelectionListener(new SelectionAdapter() {
+            if (mIsToggle && mDefaultValue) {
+                mButton.setSelection(true);
+            }
+
+            mButton.addSelectionListener(new SelectionAdapter() {
                 @Override
                 public void widgetSelected(SelectionEvent e) {
-                    onSelected(b.getSelection());
+                    onSelected(mButton.getSelection());
                 }
             });
+        }
+
+        public void setEnabled(boolean enabledState) {
+            if (mButton != null) {
+                mButton.setEnabled(enabledState);
+            }
+        }
+
+        public void setToolTipText(String text) {
+            if (mButton != null) {
+                mButton.setToolTipText(text);
+            }
+        }
+
+        public void setSelection(boolean selected) {
+            if (mButton != null) {
+                mButton.setSelection(selected);
+            }
+        }
+
+        public boolean getSelection() {
+            if (mButton != null) {
+                return mButton.getSelection();
+            }
+
+            return mDefaultValue;
         }
     }
 
     /**
      * Creates a new {@link ConfigurationComposite} and adds it to the parent.
      *
+     * The method also receives custom buttons to set into the configuration composite. The list
+     * is organized as an array of arrays. Each array represents a group of buttons thematically
+     * grouped together.
+     *
      * @param listener An {@link IConfigListener} that gets and sets configuration properties.
      *          Mandatory, cannot be null.
-     * @param customToggles An array of {@link CustomToggle} to define extra toggles button
-     *          to display at the top of the composite. Can be empty or null.
+     * @param customButtons An array of array of {@link CustomButton} to define extra action/toggle
+     *          buttons to display at the top of the composite. Can be empty or null.
      * @param parent The parent composite.
      * @param style The style of this composite.
      */
     public ConfigurationComposite(IConfigListener listener,
-            CustomToggle[] customToggles,
+            CustomButton[][] customButtons,
             Composite parent, int style) {
         super(parent, style);
         mListener = listener;
 
-        if (customToggles == null) {
-            customToggles = new CustomToggle[0];
+        if (customButtons == null) {
+            customButtons = new CustomButton[0][0];
         }
 
         GridLayout gl;
@@ -368,7 +432,7 @@ public class ConfigurationComposite extends Composite {
 
         // ---- First line: custom buttons, clipping button, editing config display.
         Composite labelParent = new Composite(this, SWT.NONE);
-        labelParent.setLayout(gl = new GridLayout(3 + customToggles.length, false));
+        labelParent.setLayout(gl = new GridLayout(2 + customButtons.length, false));
         gl.marginWidth = gl.marginHeight = 0;
         labelParent.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
         gd.horizontalSpan = cols;
@@ -378,20 +442,20 @@ public class ConfigurationComposite extends Composite {
         mCurrentLayoutLabel.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
         gd.widthHint = 50;
 
-        for (CustomToggle toggle : customToggles) {
-            toggle.createToggle(labelParent);
-        }
+        for (CustomButton[] buttons : customButtons) {
+            if (buttons.length == 1) {
+                buttons[0].createButton(labelParent);
+            } else if (buttons.length > 1) {
+                Composite buttonParent = new Composite(labelParent, SWT.NONE);
+                buttonParent.setLayout(gl = new GridLayout(buttons.length, false));
+                gl.marginWidth = gl.marginHeight = 0;
+                gl.horizontalSpacing = 1;
+                for (CustomButton button : buttons) {
+                    button.createButton(buttonParent);
+                }
 
-        mClippingButton = new Button(labelParent, SWT.TOGGLE | SWT.FLAT);
-        mClippingButton.setSelection(mClipping);
-        mClippingButton.setToolTipText("Toggles screen clipping on/off");
-        mClippingButton.setImage(IconFactory.getInstance().getIcon("clipping")); //$NON-NLS-1$
-        mClippingButton.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                onClippingChange();
             }
-        });
+        }
 
         // ---- 2nd line: device/config/locale/theme Combos, create button.
 
@@ -624,7 +688,9 @@ public class ConfigurationComposite extends Composite {
      * @see #storeState()
      * @see #onSdkLoaded(IAndroidTarget)
      */
-    public void onXmlModelLoaded() {
+    public AndroidTargetData onXmlModelLoaded() {
+        AndroidTargetData targetData = null;
+
         // only attempt to do anything if the SDK and targets are loaded.
         LoadStatus sdkStatus = AdtPlugin.getDefault().getSdkLoadStatus();
         if (sdkStatus == LoadStatus.LOADED) {
@@ -657,12 +723,7 @@ public class ConfigurationComposite extends Composite {
                     mEditedConfig = resFolder.getConfiguration();
                 }
 
-                // update the clipping state
-                AndroidTargetData targetData = Sdk.getCurrent().getTargetData(mTarget);
-                if (targetData != null) {
-                    LayoutBridge bridge = targetData.getLayoutBridge();
-                    setClippingSupport(bridge.apiLevel >= 4);
-                }
+                targetData = Sdk.getCurrent().getTargetData(mTarget);
 
                 // get the file stored state
                 boolean loadedConfigData = false;
@@ -710,6 +771,8 @@ public class ConfigurationComposite extends Composite {
             mDisableUpdates--;
             mFirstXmlModelChange  = false;
         }
+
+        return targetData;
     }
 
     /**
@@ -1261,21 +1324,6 @@ public class ConfigurationComposite extends Composite {
         return mThemeCombo.getSelectionIndex() >= mPlatformThemeCount;
     }
 
-    public boolean getClipping() {
-        return mClipping;
-    }
-
-    private void setClippingSupport(boolean b) {
-        mClippingButton.setEnabled(b);
-        if (b) {
-            mClippingButton.setToolTipText("Toggles screen clipping on/off");
-        } else {
-            mClipping = true;
-            mClippingButton.setSelection(true);
-            mClippingButton.setToolTipText("Non clipped rendering is not supported");
-        }
-    }
-
     /**
      * Loads the list of {@link LayoutDevice} and inits the UI with it.
      */
@@ -1632,13 +1680,6 @@ public class ConfigurationComposite extends Composite {
             if (mListener != null) {
                 mListener.onThemeChange();
             }
-        }
-    }
-
-    private void onClippingChange() {
-        mClipping = mClippingButton.getSelection();
-        if (mListener != null) {
-            mListener.onClippingChange();
         }
     }
 

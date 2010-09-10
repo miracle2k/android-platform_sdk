@@ -526,10 +526,12 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         return mHScale.getScale();
     }
 
-    /* package */ void setScale(double scale) {
+    /* package */ void setScale(double scale, boolean redraw) {
         mHScale.setScale(scale);
         mVScale.setScale(scale);
-        redraw();
+        if (redraw) {
+            redraw();
+        }
     }
 
     /**

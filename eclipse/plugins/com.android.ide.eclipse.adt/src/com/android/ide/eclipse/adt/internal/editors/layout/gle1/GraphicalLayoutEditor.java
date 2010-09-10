@@ -30,7 +30,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.C
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ILayoutReloadListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
-import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomToggle;
+import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomButton;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.ElementCreateCommand;
@@ -238,32 +238,38 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
         // create the top part for the configuration control
 
-        CustomToggle[] toggles = new CustomToggle[] {
-                new CustomToggle(
-                        null, //text
-                        IconFactory.getInstance().getIcon("explode"),
-                        "Displays extra margins in the layout."
-                        ) {
-                    @Override
-                    public void onSelected(boolean newState) {
-                        mUseExplodeMode = newState;
-                        recomputeLayout();
-                    }
-                },
-                new CustomToggle(
-                        null, //text
-                        IconFactory.getInstance().getIcon("outline"),
-                        "Shows the outline of all views in the layout."
-                        ) {
-                    @Override
-                    public void onSelected(boolean newState) {
-                        mUseOutlineMode = newState;
-                        recomputeLayout();
+        CustomButton[][] customButtons = new CustomButton[][] {
+                new CustomButton[] {
+                    new CustomButton(
+                            null, //text
+                            IconFactory.getInstance().getIcon("explode"),
+                            "Displays extra margins in the layout.",
+                            true /*toggle*/,
+                            false /*defaultValue*/
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            mUseExplodeMode = newState;
+                            recomputeLayout();
+                        }
+                    },
+                    new CustomButton(
+                            null, //text
+                            IconFactory.getInstance().getIcon("outline"),
+                            "Shows the outline of all views in the layout.",
+                            true /*toggle*/,
+                            false /*defaultValue*/
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            mUseOutlineMode = newState;
+                            recomputeLayout();
+                        }
                     }
                 }
         };
 
-        mConfigComposite = new ConfigurationComposite(this, toggles, parent, SWT.NONE);
+        mConfigComposite = new ConfigurationComposite(this, customButtons, parent, SWT.NONE);
 
         // create a new composite that will contain the standard editor controls.
         Composite editorParent = new Composite(parent, SWT.NONE);
@@ -873,11 +879,6 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
         recomputeLayout();
     }
 
-    public void onClippingChange() {
-        recomputeLayout();
-    }
-
-
     public void onCreate() {
         LayoutCreatorDialog dialog = new LayoutCreatorDialog(mParent.getShell(),
                 mEditedFile.getName(), mConfigComposite.getCurrentConfig());
@@ -1041,7 +1042,7 @@ public class GraphicalLayoutEditor extends GraphicalEditorWithPalette
 
                             ILayoutResult result = computeLayout(bridge, parser,
                                     iProject /* projectKey */,
-                                    width, height, !mConfigComposite.getClipping(),
+                                    width, height, false /*renderFullSize*/,
                                     density, xdpi, ydpi,
                                     theme, isProjectTheme,
                                     configuredProjectRes, frameworkResources, mProjectCallback,
