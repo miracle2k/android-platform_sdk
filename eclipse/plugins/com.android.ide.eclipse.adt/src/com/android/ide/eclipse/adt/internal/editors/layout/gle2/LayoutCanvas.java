@@ -1060,18 +1060,34 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      */
     private void onMouseUp(MouseEvent e) {
 
-        // Only perform selection when mouse button 1 is used.
-        // This prevents right-click from also changing the selection, since it's
-        // used to display a context menu that depends on the current selection.
-        if (e.button != 1) {
-            return;
-        }
-
         boolean isShift = (e.stateMask & SWT.SHIFT) != 0;
         boolean isAlt   = (e.stateMask & SWT.ALT)   != 0;
 
         int x = mHScale.inverseTranslate(e.x);
         int y = mVScale.inverseTranslate(e.y);
+
+        if (e.button == 3) {
+            // Right click button is used to display a context menu.
+            // If there's an existing selection and the click is anywhere in this selection
+            // and there are no modifiers being used, we don't want to change the selection.
+            // Otherwise we select the item under the cursor.
+
+            if (!isAlt && !isShift) {
+                for (CanvasSelection cs : mSelections) {
+                    if (cs.getRect().contains(x, y)) {
+                        // The cursor is inside the selection. Don't change anything.
+                        return;
+                    }
+                }
+            }
+
+        } else if (e.button != 1) {
+            // Click was done with something else than the left button for normal selection
+            // or the right button for context menu.
+            // We don't use mouse button 2 yet (middle mouse, or scroll wheel?) for
+            // anything, so let's not change the selection.
+            return;
+        }
 
         CanvasViewInfo vi = findViewInfoAt(x, y);
 
@@ -1413,10 +1429,10 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
         /**
          * The current selection being dragged.
-         * This may be a subset of the canvas selection.
+         * This may be a subset of the canvas selection due to the "sanitize" pass.
          * Can be empty but never null.
          */
-        final ArrayList<CanvasSelection> mDragSelection = new ArrayList<CanvasSelection>();
+        private final ArrayList<CanvasSelection> mDragSelection = new ArrayList<CanvasSelection>();
         private SimpleElement[] mDragElements;
 
         /**
@@ -1431,8 +1447,8 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             // We need a selection (simple or multiple) to do any transfer.
             // If there's a selection *and* the cursor is over this selection, use all the
             // currently selected elements.
-            // If there is no selection or the cursor is not over a selected element, drag
-            // the element under the cursor.
+            // If there is no selection or the cursor is not over a selected element, *change*
+            // the selection to match the element under the cursor and use that.
             // If nothing can be selected, abort the drag operation.
 
             mDragSelection.clear();
@@ -1442,21 +1458,28 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                 int x = mHScale.inverseTranslate(e.x);
                 int y = mVScale.inverseTranslate(e.y);
 
+                boolean insideSelection = false;
+
                 for (CanvasSelection cs : mSelections) {
                     if (cs.getRect().contains(x, y)) {
-                        mDragSelection.addAll(mSelections);
+                        insideSelection = true;
                         break;
                     }
                 }
 
-                if (mDragSelection.isEmpty()) {
-                    // There is no selected element under the cursor.
-                    // We'll now try to find another element.
-
+                if (!insideSelection) {
                     CanvasViewInfo vi = findViewInfoAt(x, y);
                     if (vi != null) {
-                        mDragSelection.add(new CanvasSelection(vi, mRulesEngine, mNodeFactory));
+                        selectSingle(vi);
+                        insideSelection = true;
                     }
+                }
+
+                if (insideSelection) {
+                    // We should now have a proper selection that matches the cursor.
+                    // Let's use this one. We make a copy of it since the "sanitize" pass
+                    // below might remove some of the selected objects.
+                    mDragSelection.addAll(mSelections);
                 }
             }
 
