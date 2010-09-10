@@ -139,6 +139,8 @@ public final class ExportHelper {
                     null); //resourceMarker
 
             // success!
+        } catch (CoreException e) {
+            throw e;
         } catch (Exception e) {
            //?
         }
