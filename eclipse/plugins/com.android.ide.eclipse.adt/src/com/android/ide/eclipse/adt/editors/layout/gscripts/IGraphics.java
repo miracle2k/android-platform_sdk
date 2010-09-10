@@ -43,6 +43,18 @@ public interface IGraphics {
     int getFontHeight();
 
     /**
+     * Returns the current foreground color.
+     * The foreground color is used for drawing operations including when text is drawn.
+     */
+    IColor getForeground();
+
+    /**
+     * Returns the current background color.
+     * The background color is used for fill operations.
+     */
+    IColor getBackground();
+
+    /**
      * Sets the foreground color. The foreground color is used
      * for drawing operations including when text is drawn.
      */
