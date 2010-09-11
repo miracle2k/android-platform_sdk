@@ -221,6 +221,8 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             feedback.requestPaint = true;
         }
 
+        feedback.invalidTarget = (currZone == null);
+
         return feedback;
     }
 
