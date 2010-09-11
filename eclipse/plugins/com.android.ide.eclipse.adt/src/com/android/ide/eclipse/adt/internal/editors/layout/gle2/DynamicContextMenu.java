@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.MenuAction;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
@@ -35,14 +36,11 @@ import org.eclipse.jface.action.Separator;
 import groovy.lang.Closure;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeMap;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 
@@ -373,6 +371,7 @@ import java.util.regex.Pattern;
             final TreeMap<String, ArrayList<MenuAction>> actionsMap) {
 
         final RulesEngine gre = mCanvas.getRulesEngine();
+        IconFactory factory = IconFactory.getInstance();
         MenuManager submenu = new MenuManager(firstAction.getTitle(), firstAction.getId());
 
         // Convert to a tree map as needed so that keys be naturally ordered.
@@ -380,14 +379,7 @@ import java.util.regex.Pattern;
             choiceMap = new TreeMap<String, String>(choiceMap);
         }
 
-        String current = firstAction.getCurrent();
-        Set<String> currents = null;
-        if (current.indexOf(MenuAction.Choices.CHOICE_SEP) >= 0) {
-            currents = new HashSet<String>(
-                    Arrays.asList(current.split(
-                            Pattern.quote(MenuAction.Choices.CHOICE_SEP))));
-            current = null;
-        }
+        String sepPattern = Pattern.quote(MenuAction.Choices.CHOICE_SEP);
 
         for (Entry<String, String> entry : choiceMap.entrySet() ) {
             final String key = entry.getKey();
@@ -402,26 +394,65 @@ import java.util.regex.Pattern;
                 continue;
             }
 
-            final boolean isChecked =
-                (currents != null && currents.contains(key)) ||
-                key.equals(current);
+            final List<MenuAction> actions = actionsMap.get(firstAction.getId());
+
+            if (actions == null || actions.isEmpty()) {
+                continue;
+            }
+
+            // Are all actions for this id checked, unchecked, or in a mixed state?
+            int numOff = 0;
+            int numOn = 0;
+            for (MenuAction a2 : actions) {
+                MenuAction.Choices choice = (MenuAction.Choices) a2;
+                String current = choice.getCurrent();
+                boolean found = false;
+
+                if (current.indexOf(MenuAction.Choices.CHOICE_SEP) >= 0) {
+                    // current choice has a separator, so it's a flag with multiple values
+                    // selected. Compare keys with the split values.
+                    if (current.indexOf(key) >= 0) {
+                        for(String value : current.split(sepPattern)) {
+                            if (key.equals(value)) {
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    // current choice has no separator, simply compare to the key
+                    found = key.equals(current);
+                }
+
+                if (found) {
+                    numOn++;
+                } else {
+                    numOff++;
+                }
+            }
+
+            // We consider the item to be checked if all actions are all checked.
+            // This means a mixed item will be first toggled from off to on by all the closures.
+            final boolean isChecked = numOff == 0 && numOn > 0;
+            boolean isMixed = numOff > 0 && numOn > 0;
+
+            if (isMixed) {
+                title += String.format(" (%1$d/%2$d)", numOn, numOff + numOn);
+            }
 
             Action a = new Action(title, IAction.AS_CHECK_BOX) {
                 @Override
                 public void run() {
-                    final List<MenuAction> actions = actionsMap.get(firstAction.getId());
-                    if (actions == null || actions.isEmpty()) {
-                        return;
-                    }
 
-                    String label = String.format("Change attribute %s", actions.get(0).getTitle());
+                    String label =
+                        String.format("Change attribute %1$s", actions.get(0).getTitle());
                     if (actions.size() > 1) {
-                        label += String.format(" (%d elements)", actions.size());
+                        label += String.format(" (%1$d elements)", actions.size());
                     }
 
                     if (mEditor.isEditXmlModelPending()) {
                         // This should not be happening.
-                        logError("Action '%s' failed: XML changes pending, document might be corrupt.", //$NON-NLS-1$
+                        logError("Action '%1$s' failed: XML changes pending, document might be corrupt.", //$NON-NLS-1$
                                  label);
                         return;
                     }
@@ -443,8 +474,12 @@ import java.util.regex.Pattern;
                     });
                 }
             };
-            a.setId(String.format("%s_%s", firstAction.getId(), key));     //$NON-NLS-1$
+            a.setId(String.format("%1$s_%2$s", firstAction.getId(), key));          //$NON-NLS-1$
             a.setChecked(isChecked);
+            if (isMixed) {
+                a.setImageDescriptor(factory.getImageDescriptor("match_multiple")); //$NON-NLS-1$
+            }
+
             submenu.add(a);
         }
 

@@ -236,6 +236,9 @@ public abstract class MenuAction {
     /**
      * A toggle is a simple on/off action, displayed as an item in a context menu
      * with a check mark if the item is checked.
+     * <p/>
+     * Two toggles are equal if they have the same id, title and group-id.
+     * It is expected for the checked state and action closure to be different.
      */
     public static class Toggle extends Action {
         /**
@@ -303,6 +306,9 @@ public abstract class MenuAction {
      * Implementation detail: empty choices will not be displayed in the context menu.
      * <p/>
      * Choice items are sorted by their id, using String's natural sorting order.
+     * <p/>
+     * Two multiple choices are equal if they have the same id, title, group-id and choices.
+     * It is expected for the current state and action closure to be different.
      */
     public static class Choices extends Action {
 
