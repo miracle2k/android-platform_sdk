@@ -169,4 +169,27 @@ public class AllocationInfo implements IStackTraceInfo {
 
         return null;
     }
+
+    public boolean filter(String filter, boolean fullTrace) {
+        if (mAllocatedClass.toLowerCase().contains(filter)) {
+            return true;
+        }
+
+        if (mStackTrace.length > 0) {
+            // check the top of the stack trace always
+            final int length = fullTrace ? mStackTrace.length : 1;
+
+            for (int i = 0 ; i < length ; i++) {
+                if (mStackTrace[i].getClassName().toLowerCase().contains(filter)) {
+                    return true;
+                }
+
+                if (mStackTrace[i].getMethodName().toLowerCase().contains(filter)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

@@ -35,6 +35,8 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
@@ -46,6 +48,7 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -54,7 +57,9 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Sash;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.Text;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -84,11 +89,13 @@ public class AllocationPanel extends TablePanel {
     private Table mStackTraceTable;
     private Button mEnableButton;
     private Button mRequestButton;
+    private Button mTraceFilterCheck;
 
     private final AllocationSorter mSorter = new AllocationSorter();
     private TableColumn mSortColumn;
     private Image mSortUpImg;
     private Image mSortDownImg;
+    private String mFilterText = null;
 
     /**
      * Content Provider to display the allocations of a client.
@@ -100,6 +107,9 @@ public class AllocationPanel extends TablePanel {
             if (inputElement instanceof Client) {
                 AllocationInfo[] allocs = ((Client)inputElement).getClientData().getAllocations();
                 if (allocs != null) {
+                    if (mFilterText != null && mFilterText.length() > 0) {
+                        allocs = getFilteredAllocations(allocs, mFilterText);
+                    }
                     Arrays.sort(allocs, mSorter);
                     return allocs;
                 }
@@ -184,7 +194,7 @@ public class AllocationPanel extends TablePanel {
 
         // table above the sash
         Composite topParent = new Composite(mAllocationBase, SWT.NONE);
-        topParent.setLayout(new GridLayout(2, false));
+        topParent.setLayout(new GridLayout(6, false));
 
         mEnableButton = new Button(topParent, SWT.PUSH);
         mEnableButton.addSelectionListener(new SelectionAdapter() {
@@ -212,10 +222,36 @@ public class AllocationPanel extends TablePanel {
 
         setUpButtons(false /* enabled */, AllocationTrackingStatus.OFF);
 
-        mAllocationTable = new Table(topParent, SWT.MULTI | SWT.FULL_SELECTION);
         GridData gridData;
+
+        Composite spacer = new Composite(topParent, SWT.NONE);
+        spacer.setLayoutData(gridData = new GridData(GridData.FILL_HORIZONTAL));
+
+        new Label(topParent, SWT.NONE).setText("Filter:");
+
+        final Text filterText = new Text(topParent, SWT.BORDER);
+        filterText.setLayoutData(gridData = new GridData(GridData.FILL_HORIZONTAL));
+        gridData.widthHint = 200;
+
+        filterText.addModifyListener(new ModifyListener() {
+            public void modifyText(ModifyEvent arg0) {
+                mFilterText  = filterText.getText().trim();
+                mAllocationViewer.refresh();
+            }
+        });
+
+        mTraceFilterCheck = new Button(topParent, SWT.CHECK);
+        mTraceFilterCheck.setText("Inc. trace");
+        mTraceFilterCheck.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent arg0) {
+                mAllocationViewer.refresh();
+            }
+        });
+
+        mAllocationTable = new Table(topParent, SWT.MULTI | SWT.FULL_SELECTION);
         mAllocationTable.setLayoutData(gridData = new GridData(GridData.FILL_BOTH));
-        gridData.horizontalSpan = 2;
+        gridData.horizontalSpan = 6;
         mAllocationTable.setHeaderVisible(true);
         mAllocationTable.setLinesVisible(true);
 
@@ -572,5 +608,22 @@ public class AllocationPanel extends TablePanel {
         mAllocationTable.setRedraw(true);
         mAllocationViewer.refresh();
     }
+
+    private AllocationInfo[] getFilteredAllocations(AllocationInfo[] allocations,
+            String filterText) {
+        ArrayList<AllocationInfo> results = new ArrayList<AllocationInfo>();
+
+        filterText = filterText.toLowerCase();
+        boolean fullTrace = mTraceFilterCheck.getSelection();
+
+        for (AllocationInfo info : allocations) {
+            if (info.filter(filterText, fullTrace)) {
+                results.add(info);
+            }
+        }
+
+        return results.toArray(new AllocationInfo[results.size()]);
+    }
+
 }
 
