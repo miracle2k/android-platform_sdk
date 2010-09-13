@@ -221,6 +221,11 @@ import java.util.Arrays;
             mCurrentView = mLeaveView;
         }
 
+        if (mFeedback != null && mFeedback.invalidTarget) {
+            // The script said we can't drop here.
+            event.detail = DND.DROP_NONE;
+        }
+
         if (mLeaveTargetNode == null || event.detail == DND.DROP_NONE) {
             clearDropInfo();
         }
@@ -292,6 +297,7 @@ import java.util.Arrays;
             df.isCopy = event.detail == DND.DROP_COPY;
         }
         df.sameCanvas = mCanvas == mGlobalDragInfo.getSourceCanvas();
+        df.invalidTarget = false;
     }
 
     /**
@@ -300,8 +306,8 @@ import java.util.Arrays;
      */
     public void paintFeedback(GCWrapper gCWrapper) {
         if (mTargetNode != null && mFeedback != null && mFeedback.requestPaint) {
-            mFeedback.requestPaint = false;
             mCanvas.getRulesEngine().callDropFeedbackPaint(gCWrapper, mTargetNode, mFeedback);
+            mFeedback.requestPaint = false;
         }
     }
 
@@ -428,17 +434,15 @@ import java.util.Arrays;
                     }
                 }
 
-                if (df != null && targetNode != mTargetNode) {
+                if (df == null) {
+                    // Provide visual feedback that we are refusing the drop
+                    event.detail = DND.DROP_NONE;
+                    clearDropInfo();
+
+                } else if (targetNode != mTargetNode) {
                     // We found a new target node for the drag'n'drop.
                     // Release the previous one, if any.
                     callDropLeave();
-
-                    // If we previously provided visual feedback that we were refusing
-                    // the drop, we now need to change it to mean we're accepting it.
-                    if (event.detail == DND.DROP_NONE) {
-                        event.detail = DND.DROP_DEFAULT;
-                        recomputeDragType(event);
-                    }
 
                     // And assign the new one
                     mTargetNode = targetNode;
@@ -446,11 +450,6 @@ import java.util.Arrays;
 
                     // We don't need onDropMove in this case
                     isMove = false;
-
-                } else if (df == null) {
-                    // Provide visual feedback that we are refusing the drop
-                    event.detail = DND.DROP_NONE;
-                    clearDropInfo();
                 }
             }
 
@@ -464,11 +463,27 @@ import java.util.Arrays;
             updateDropFeedback(mFeedback, event);
             DropFeedback df = mCanvas.getRulesEngine().callOnDropMove(
                     mTargetNode, mCurrentDragElements, mFeedback, p2);
+
             if (df == null) {
                 // The target is no longer interested in the drop move.
+                event.detail = DND.DROP_NONE;
                 callDropLeave();
+
             } else if (df != mFeedback) {
                 mFeedback = df;
+            }
+        }
+
+        if (mFeedback != null) {
+            if (event.detail == DND.DROP_NONE && !mFeedback.invalidTarget) {
+                // If we previously provided visual feedback that we were refusing
+                // the drop, we now need to change it to mean we're accepting it.
+                event.detail = DND.DROP_DEFAULT;
+                recomputeDragType(event);
+
+            } else if (mFeedback.invalidTarget) {
+                // Provide visual feedback that we are refusing the drop
+                event.detail = DND.DROP_NONE;
             }
         }
 
