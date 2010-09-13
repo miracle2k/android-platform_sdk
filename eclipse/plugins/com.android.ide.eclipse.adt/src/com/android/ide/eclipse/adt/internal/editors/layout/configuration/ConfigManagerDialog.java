@@ -49,7 +49,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 
 import java.util.List;
-import java.util.Map.Entry;
 
 /**
  * Dialog to view the layout devices with action button to create/edit/delete/copy layout devices
@@ -85,15 +84,15 @@ public class ConfigManagerDialog extends GridDialog {
      */
     private static class DeviceSelection {
         public DeviceSelection(DeviceType type, LayoutDevice device,
-                Entry<String, FolderConfiguration> entry) {
+                DeviceConfig config) {
             this.type = type;
             this.device = device;
-            this.entry = entry;
+            this.config = config;
         }
 
         final DeviceType type;
         final LayoutDevice device;
-        final Entry<String, FolderConfiguration> entry;
+        final DeviceConfig config;
     }
 
     private final LayoutDeviceManager mManager;
@@ -290,9 +289,9 @@ public class ConfigManagerDialog extends GridDialog {
                     dlg.setXDpi(selection.device.getXDpi());
                     dlg.setYDpi(selection.device.getYDpi());
                 }
-                if (selection.entry != null) {
-                    dlg.setConfigName(selection.entry.getKey());
-                    dlg.setConfig(selection.entry.getValue());
+                if (selection.config != null) {
+                    dlg.setConfigName(selection.config.getName());
+                    dlg.setConfig(selection.config.getConfig());
                 }
 
                 if (dlg.open() == Window.OK) {
@@ -337,8 +336,8 @@ public class ConfigManagerDialog extends GridDialog {
                 dlg.setDeviceName(selection.device.getName());
                 dlg.setXDpi(selection.device.getXDpi());
                 dlg.setYDpi(selection.device.getYDpi());
-                dlg.setConfigName(selection.entry.getKey());
-                dlg.setConfig(selection.entry.getValue());
+                dlg.setConfigName(selection.config.getName());
+                dlg.setConfig(selection.config.getConfig());
 
                 if (dlg.open() == Window.OK) {
                     String deviceName = dlg.getDeviceName();
@@ -352,7 +351,7 @@ public class ConfigManagerDialog extends GridDialog {
                             dlg.getXDpi(), dlg.getYDpi());
 
                     // and add/replace the config
-                    mManager.replaceUserConfiguration(d, selection.entry.getKey(), configName,
+                    mManager.replaceUserConfiguration(d, selection.config.getName(), configName,
                             config);
 
                     mTreeViewer.refresh();
@@ -373,7 +372,7 @@ public class ConfigManagerDialog extends GridDialog {
                 // if so the target device is a new device.
                 LayoutDevice targetDevice = selection.device;
                 if (selection.type == DeviceType.DEFAULT || selection.type == DeviceType.ADDON ||
-                        selection.entry == null) {
+                        selection.config == null) {
                     // create a new device
                     targetDevice = mManager.addUserDevice(
                             selection.device.getName() + " Copy", // new name
@@ -384,7 +383,7 @@ public class ConfigManagerDialog extends GridDialog {
                 String newConfigName = null; // name of the single new config. used for the select.
 
                 // are we copying the full device?
-                if (selection.entry == null) {
+                if (selection.config == null) {
                     // get the config from the origin device
                     List<DeviceConfig> configs = selection.device.getConfigs();
 
@@ -403,11 +402,11 @@ public class ConfigManagerDialog extends GridDialog {
                     // only copy the config. target device is not the same as the selection, don't
                     // change the config name as we already changed the name of the device.
                     newConfigName = (selection.device != targetDevice) ?
-                            selection.entry.getKey() : selection.entry.getKey() + " Copy";
+                            selection.config.getName() : selection.config.getName() + " Copy";
 
                     // copy of the config
                     FolderConfiguration copy = new FolderConfiguration();
-                    copy.set(selection.entry.getValue());
+                    copy.set(selection.config.getConfig());
 
                     // and create the config
                     mManager.addUserConfiguration(targetDevice, newConfigName, copy);
@@ -427,8 +426,8 @@ public class ConfigManagerDialog extends GridDialog {
             public void widgetSelected(SelectionEvent e) {
                 DeviceSelection selection = getSelection();
 
-                if (selection.entry != null) {
-                    mManager.removeUserConfiguration(selection.device, selection.entry.getKey());
+                if (selection.config != null) {
+                    mManager.removeUserConfiguration(selection.device, selection.config.getName());
                 } else if (selection.device != null) {
                     mManager.removeUserDevice(selection.device);
                 }
@@ -437,7 +436,7 @@ public class ConfigManagerDialog extends GridDialog {
 
                 // either select the device (if we removed a entry, or the top custom node if
                 // we removed a device)
-                select(selection.entry != null ? selection.device : null, null);
+                select(selection.config != null ? selection.device : null, null);
             }
         });
 
@@ -473,17 +472,17 @@ public class ConfigManagerDialog extends GridDialog {
 
         DeviceType type = (DeviceType)pathSelection.getFirstSegment();
         LayoutDevice device = null;
-        Entry<String, FolderConfiguration> entry = null;
+        DeviceConfig config = null;
         switch (pathSelection.getSegmentCount()) {
             case 2: // layout device is selected
                 device = (LayoutDevice)pathSelection.getLastSegment();
                 break;
             case 3: // config is selected
                 device = (LayoutDevice)pathSelection.getSegment(1);
-                entry = (Entry<String, FolderConfiguration>)pathSelection.getLastSegment();
+                config = (DeviceConfig)pathSelection.getLastSegment();
         }
 
-        return new DeviceSelection(type, device, entry);
+        return new DeviceSelection(type, device, config);
     }
 
     /**
@@ -508,7 +507,7 @@ public class ConfigManagerDialog extends GridDialog {
                     break;
                 case CUSTOM:
                     mNewButton.setEnabled(true); // always true to create new devices.
-                    mEditButton.setEnabled(selection.entry != null); // only edit config for now
+                    mEditButton.setEnabled(selection.config != null); // only edit config for now
 
                     boolean enabled = selection.device != null; // need at least selected device
                     mDeleteButton.setEnabled(enabled);          // for delete and copy buttons
