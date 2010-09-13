@@ -25,15 +25,10 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.IUnknownDescript
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.CustomViewDescriptorService;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.layout.gle1.GraphicalLayoutEditor;
-import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiContentOutlinePage;
-import com.android.ide.eclipse.adt.internal.editors.layout.gle1.UiPropertySheetPage;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.OutlinePage2;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.PropertySheetPage2;
-import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiActions;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
-import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
@@ -43,7 +38,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.gef.ui.parts.TreeViewer;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -74,17 +68,10 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
 
     private IGraphicalLayoutEditor mGraphicalEditor;
     private int mGraphicalEditorIndex;
-    /**
-     * Implementation of the {@link IContentOutlinePage} for this editor.
-     * @deprecated Used for backward compatibility with GLE1.
-     */
-    private UiContentOutlinePage mOutlineForGle1;
     /** Implementation of the {@link IContentOutlinePage} for this editor */
     private IContentOutlinePage mOutline;
     /** Custom implementation of {@link IPropertySheetPage} for this editor */
     private IPropertySheetPage mPropertyPage;
-
-    private UiEditorActions mUiEditorActions;
 
     private final HashMap<String, ElementDescriptor> mUnknownDescriptorMap =
         new HashMap<String, ElementDescriptor>();
@@ -182,15 +169,8 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
                 // the user, or through a configuration change in the configuration selector.)
                 if (mGraphicalEditor == null) {
 
-                    String useGle1 = System.getenv("USE_GLE1");     //$NON-NLS-1$
-
-                    if (useGle1 != null && !useGle1.equals("0")) {  //$NON-NLS-1$
-                        // If USE_GLE1 exists and is non-zero, use the old GLE v1
-                        mGraphicalEditor = new GraphicalLayoutEditor(this);
-                    } else {
-                        // Otherwise we now default to the new GLE v2
-                        mGraphicalEditor = new GraphicalEditorPart(this);
-                    }
+                    // Instantiate GLE v2
+                    mGraphicalEditor = new GraphicalEditorPart(this);
 
                     mGraphicalEditorIndex = addPage(mGraphicalEditor, getEditorInput());
                     setPageText(mGraphicalEditorIndex, mGraphicalEditor.getTitle());
@@ -217,19 +197,11 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     protected void postCreatePages() {
         super.postCreatePages();
 
-        // This is called after the createFormPages() and createTextPage() methods have
-        // been called. Usually we select the first page (e.g. the GLE here) but right
-        // now we're going to temporarily select the last page (the XML text editor) if
-        // GLE1 is being used. That's because GLE1 is mostly useless and being deprecated.
-        //
-        // Note that this sets the default page. Eventually a default page might be
+        // Optional: set the default page. Eventually a default page might be
         // restored by selectDefaultPage() later based on the last page used by the user.
-        //
-        // TODO revert this once GLE2 becomes useful and is the default.
-
-        if (mGraphicalEditor instanceof GraphicalLayoutEditor) {
-            setActivePage(getPageCount() - 1);
-        }
+        // For example, to make the last page the default one (rather than the first page),
+        // un-comment this line:
+        //   setActivePage(getPageCount() - 1);
     }
 
     /* (non-java doc)
@@ -281,11 +253,6 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         // re-create or reload the pages with the default page shown as the previous active page.
         createAndroidPages();
         selectDefaultPage(Integer.toString(currentPage));
-
-        // update the GLE1 outline. The GLE2 outline doesn't need this call anymore.
-        if (mOutlineForGle1 != null) {
-            mOutlineForGle1.reloadModel();
-        }
     }
 
     /**
@@ -306,11 +273,6 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         if (mGraphicalEditor != null) {
             mGraphicalEditor.onXmlModelChanged();
         }
-
-        // update the GLE1 outline. The GLE2 outline doesn't need this call anymore.
-        if (mOutlineForGle1 != null) {
-            mOutlineForGle1.reloadModel();
-        }
     }
 
     /**
@@ -324,16 +286,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         // gets stuck in the XML outline.
         if (IContentOutlinePage.class == adapter && mGraphicalEditor != null) {
 
-            if (mOutline == null && mGraphicalEditor instanceof GraphicalLayoutEditor) {
-                // Create the GLE1 outline. We need to keep a specific reference to it in order
-                // to call its reloadModel() method. The GLE2 outline no longer relies on this
-                // and can be casted to the base interface.
-                mOutlineForGle1 = new UiContentOutlinePage(
-                        (GraphicalLayoutEditor) mGraphicalEditor,
-                        new TreeViewer());
-                mOutline = mOutlineForGle1;
-
-            } else if (mOutline == null && mGraphicalEditor instanceof GraphicalEditorPart) {
+            if (mOutline == null && mGraphicalEditor instanceof GraphicalEditorPart) {
                 mOutline = new OutlinePage2((GraphicalEditorPart) mGraphicalEditor);
             }
 
@@ -341,10 +294,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         }
 
         if (IPropertySheetPage.class == adapter && mGraphicalEditor != null) {
-            if (mPropertyPage == null && mGraphicalEditor instanceof GraphicalLayoutEditor) {
-                mPropertyPage = new UiPropertySheetPage();
-
-            } else if (mPropertyPage == null && mGraphicalEditor instanceof GraphicalEditorPart) {
+            if (mPropertyPage == null && mGraphicalEditor instanceof GraphicalEditorPart) {
                 mPropertyPage = new PropertySheetPage2();
             }
 
@@ -407,32 +357,6 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
          */
         //EclipseUiHelper.showView(EclipseUiHelper.CONTENT_OUTLINE_VIEW_ID, false /* activate */);
         //EclipseUiHelper.showView(EclipseUiHelper.PROPERTY_SHEET_VIEW_ID, false /* activate */);
-    }
-
-    public class UiEditorActions extends UiActions {
-
-        @Override
-        protected UiDocumentNode getRootNode() {
-            return mUiRootNode;
-        }
-
-        // Select the new item
-        @Override
-        protected void selectUiNode(UiElementNode uiNodeToSelect) {
-            mGraphicalEditor.selectModel(uiNodeToSelect);
-        }
-
-        @Override
-        public void commitPendingXmlChanges() {
-            // Pass. There is nothing to commit before the XML is changed here.
-        }
-    }
-
-    public UiEditorActions getUiEditorActions() {
-        if (mUiEditorActions == null) {
-            mUiEditorActions = new UiEditorActions();
-        }
-        return mUiEditorActions;
     }
 
     // ---- Local Methods ----
@@ -568,10 +492,6 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
             mUiRootNode.loadFromXmlNode(document);
         } else {
             mUiRootNode.reloadFromXmlNode(mUiRootNode.getXmlDocument());
-        }
-
-        if (mOutlineForGle1 != null) {
-            mOutlineForGle1.reloadModel();
         }
 
         if (mGraphicalEditor != null) {
