@@ -22,13 +22,14 @@ import java.util.Comparator;
  * Holds an Allocation information.
  */
 public class AllocationInfo implements IStackTraceInfo {
-    private String mAllocatedClass;
-    private int mAllocationSize;
-    private short mThreadId;
-    private StackTraceElement[] mStackTrace;
+    private final String mAllocatedClass;
+    private final int mAllocNumber;
+    private final int mAllocationSize;
+    private final short mThreadId;
+    private final StackTraceElement[] mStackTrace;
 
     public static enum SortMode {
-        SIZE, CLASS, THREAD, IN_CLASS, IN_METHOD;
+        NUMBER, SIZE, CLASS, THREAD, IN_CLASS, IN_METHOD;
     }
 
     public final static class AllocationSorter implements Comparator<AllocationInfo> {
@@ -58,6 +59,9 @@ public class AllocationInfo implements IStackTraceInfo {
         public int compare(AllocationInfo o1, AllocationInfo o2) {
             int diff = 0;
             switch (mSortMode) {
+                case NUMBER:
+                    diff = o1.mAllocNumber - o2.mAllocNumber;
+                    break;
                 case SIZE:
                     // pass, since diff is init with 0, we'll use SIZE compare below
                     // as a back up anyway.
@@ -113,12 +117,21 @@ public class AllocationInfo implements IStackTraceInfo {
     /*
      * Simple constructor.
      */
-    AllocationInfo(String allocatedClass, int allocationSize,
+    AllocationInfo(int allocNumber, String allocatedClass, int allocationSize,
         short threadId, StackTraceElement[] stackTrace) {
+        mAllocNumber = allocNumber;
         mAllocatedClass = allocatedClass;
         mAllocationSize = allocationSize;
         mThreadId = threadId;
         mStackTrace = stackTrace;
+    }
+
+    /**
+     * Returns the allocation number. Allocations are numbered as they happen with the most
+     * recent one having the highest number
+     */
+    public int getAllocNumber() {
+        return mAllocNumber;
     }
 
     /**
