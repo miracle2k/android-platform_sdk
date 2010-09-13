@@ -195,6 +195,14 @@ public class ApkBuilderTask extends Task {
             throw new BuildException("missing attribute 'apkFilepath'");
         }
 
+        if (mResourceFile == null) {
+            throw new BuildException("missing attribute 'resourcefile'");
+        }
+
+        if (mOutFolder == null) {
+            throw new BuildException("missing attribute 'outfolder'");
+        }
+
         // check dexPath is only one file.
         File dexFile = null;
         if (mHasCode) {
