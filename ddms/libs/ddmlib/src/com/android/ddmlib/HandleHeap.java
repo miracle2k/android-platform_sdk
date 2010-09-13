@@ -512,6 +512,7 @@ final class HandleHeap extends ChunkHandler {
         data.position(messageHdrLen);
 
         ArrayList<AllocationInfo> list = new ArrayList<AllocationInfo>(numEntries);
+        int allocNumber = numEntries; // order value for the entry. This is sent in reverse order.
         for (int i = 0; i < numEntries; i++) {
             int totalSize;
             int threadId, classNameIndex, stackDepth;
@@ -552,7 +553,7 @@ final class HandleHeap extends ChunkHandler {
                     data.get();
             }
 
-            list.add(new AllocationInfo(classNames[classNameIndex],
+            list.add(new AllocationInfo(allocNumber--, classNames[classNameIndex],
                 totalSize, (short) threadId, steArray));
         }
 

@@ -67,6 +67,7 @@ import java.util.Arrays;
  */
 public class AllocationPanel extends TablePanel {
 
+    private final static String PREFS_ALLOC_COL_NUMBER = "allocPanel.Col00"; //$NON-NLS-1$
     private final static String PREFS_ALLOC_COL_SIZE = "allocPanel.Col0"; //$NON-NLS-1$
     private final static String PREFS_ALLOC_COL_CLASS = "allocPanel.Col1"; //$NON-NLS-1$
     private final static String PREFS_ALLOC_COL_THREAD = "allocPanel.Col2"; //$NON-NLS-1$
@@ -142,14 +143,16 @@ public class AllocationPanel extends TablePanel {
                 AllocationInfo alloc = (AllocationInfo)element;
                 switch (columnIndex) {
                     case 0:
-                        return Integer.toString(alloc.getSize());
+                        return Integer.toString(alloc.getAllocNumber());
                     case 1:
-                        return alloc.getAllocatedClass();
+                        return Integer.toString(alloc.getSize());
                     case 2:
-                        return Short.toString(alloc.getThreadId());
+                        return alloc.getAllocatedClass();
                     case 3:
-                        return alloc.getFirstTraceClassName();
+                        return Short.toString(alloc.getThreadId());
                     case 4:
+                        return alloc.getFirstTraceClassName();
+                    case 5:
                         return alloc.getFirstTraceMethodName();
                 }
             }
@@ -254,6 +257,19 @@ public class AllocationPanel extends TablePanel {
         gridData.horizontalSpan = 6;
         mAllocationTable.setHeaderVisible(true);
         mAllocationTable.setLinesVisible(true);
+
+        final TableColumn numberCol = TableHelper.createTableColumn(
+                mAllocationTable,
+                "Alloc Order",
+                SWT.RIGHT,
+                "Alloc Order", //$NON-NLS-1$
+                PREFS_ALLOC_COL_NUMBER, store);
+        numberCol.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent arg0) {
+                setSortColumn(numberCol, SortMode.NUMBER);
+            }
+        });
 
         final TableColumn sizeCol = TableHelper.createTableColumn(
                 mAllocationTable,
