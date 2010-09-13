@@ -28,7 +28,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.C
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ILayoutReloadListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
-import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomToggle;
+import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomButton;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.parts.ElementCreateCommand;
@@ -193,6 +193,12 @@ public class GraphicalEditorPart extends EditorPart
 
     private boolean mUseExplodeMode;
 
+    private CustomButton mZoomRealSizeButton;
+    private CustomButton mZoomOutButton;
+    private CustomButton mZoomResetButton;
+    private CustomButton mZoomInButton;
+
+    private CustomButton mClippingButton;
 
     public GraphicalEditorPart(LayoutEditor layoutEditor) {
         mLayoutEditor = layoutEditor;
@@ -236,53 +242,97 @@ public class GraphicalEditorPart extends EditorPart
         gl.marginHeight = gl.marginWidth = 0;
 
         // create the top part for the configuration control
-
-        CustomToggle[] toggles = new CustomToggle[] {
-                new CustomToggle(
-                        "-",
-                        null, //image
-                        "Canvas zoom out."
-                        ) {
-                    @Override
-                    public void onSelected(boolean newState) {
-                        rescale(-1);
-                    }
+        CustomButton[][] customButtons = new CustomButton[][] {
+                new CustomButton[] {
+                    mZoomRealSizeButton = new CustomButton(
+                            "*",
+                            null, //image
+                            "Emulate real size",
+                            true /*isToggle*/,
+                            false /*defaultValue*/
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            mZoomOutButton.setEnabled(!newState);
+                            mZoomResetButton.setEnabled(!newState);
+                            mZoomInButton.setEnabled(!newState);
+                            rescaleToReal(newState);
+                        }
+                    },
+                    mZoomOutButton = new CustomButton(
+                            "-",
+                            null, //image
+                            "Canvas zoom out."
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            rescale(-1);
+                        }
+                    },
+                    mZoomResetButton = new CustomButton(
+                            "100%",
+                            null, //image
+                            "Reset Canvas to 100%"
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            resetScale();
+                        }
+                    },
+                    mZoomInButton = new CustomButton(
+                            "+",
+                            null, //image
+                            "Canvas zoom in."
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            rescale(+1);
+                        }
+                    },
                 },
-                new CustomToggle(
-                        "+",
-                        null, //image
-                        "Canvas zoom in."
-                        ) {
-                    @Override
-                    public void onSelected(boolean newState) {
-                        rescale(+1);
-                    }
-                },
-                new CustomToggle(
-                        null, //text
-                        IconFactory.getInstance().getIcon("explode"),
-                        "Displays extra margins in the layout."
-                        ) {
-                    @Override
-                    public void onSelected(boolean newState) {
-                        mUseExplodeMode = newState;
-                        recomputeLayout();
-                    }
-                },
-                new CustomToggle(
-                        null, //text
-                        IconFactory.getInstance().getIcon("outline"),
-                        "Shows the of all views in the layout."
-                        ) {
-                    @Override
-                    public void onSelected(boolean newState) {
-                        mCanvasViewer.getCanvas().setShowOutline(newState);
+                new CustomButton[] {
+                    new CustomButton(
+                            null, //text
+                            IconFactory.getInstance().getIcon("explode"), //$NON-NLS-1$
+                            "Displays extra margins in the layout.",
+                            true /*toggle*/,
+                            false /*defaultValue*/
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            mUseExplodeMode = newState;
+                            recomputeLayout();
+                        }
+                    },
+                    new CustomButton(
+                            null, //text
+                            IconFactory.getInstance().getIcon("outline"), //$NON-NLS-1$
+                            "Shows the outline of all views in the layout.",
+                            true /*toggle*/,
+                            false /*defaultValue*/
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            mCanvasViewer.getCanvas().setShowOutline(newState);
+                        }
+                    },
+                    mClippingButton =  new CustomButton(
+                            null, //text
+                            IconFactory.getInstance().getIcon("clipping"), //$NON-NLS-1$
+                            "Toggles screen clipping on/off",
+                            true /*toggle*/,
+                            true /*defaultValue*/
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            recomputeLayout();
+                        }
                     }
                 }
         };
 
         mConfigListener = new ConfigListener();
-        mConfigComposite = new ConfigurationComposite(mConfigListener, toggles, parent, SWT.BORDER);
+        mConfigComposite = new ConfigurationComposite(mConfigListener, customButtons, parent, SWT.BORDER);
 
         mSashPalette = new SashForm(parent, SWT.HORIZONTAL);
         mSashPalette.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -337,8 +387,34 @@ public class GraphicalEditorPart extends EditorPart
             s = s / 2;
         }
 
-        mCanvasViewer.getCanvas().setScale(s);
+        mCanvasViewer.getCanvas().setScale(s, true /*redraw*/);
 
+    }
+
+    /**
+     * Reset the canvas scale to 100%
+     */
+    private void resetScale() {
+        mCanvasViewer.getCanvas().setScale(1, true /*redraw*/);
+    }
+
+    private void rescaleToReal(boolean real) {
+        if (real) {
+            computeAndSetRealScale(true /*redraw*/);
+        } else {
+            // reset the scale to 100%
+            mCanvasViewer.getCanvas().setScale(1, true /*redraw*/);
+        }
+    }
+
+    private void computeAndSetRealScale(boolean redraw) {
+        // compute average dpi of X and Y
+        float dpi = (mConfigComposite.getXDpi() + mConfigComposite.getYDpi()) / 2.f;
+
+        // get the monitor dpi
+        float monitor = 110f;
+
+        mCanvasViewer.getCanvas().setScale(monitor / dpi, redraw);
     }
 
 
@@ -446,10 +522,6 @@ public class GraphicalEditorPart extends EditorPart
             // Store the state in the current file
             mConfigComposite.storeState();
 
-            recomputeLayout();
-        }
-
-        public void onClippingChange() {
             recomputeLayout();
         }
 
@@ -812,8 +884,23 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     public void onTargetChange() {
-        mConfigComposite.onXmlModelLoaded();
+        AndroidTargetData targetData = mConfigComposite.onXmlModelLoaded();
+        if (targetData != null) {
+            LayoutBridge bridge = targetData.getLayoutBridge();
+            setClippingSupport(bridge.apiLevel >= 4);
+        }
+
         mConfigListener.onConfigurationChange();
+    }
+
+    private void setClippingSupport(boolean b) {
+        mClippingButton.setEnabled(b);
+        if (b) {
+            mClippingButton.setToolTipText("Toggles screen clipping on/off");
+        } else {
+            mClippingButton.setSelection(true);
+            mClippingButton.setToolTipText("Non clipped rendering is not supported");
+        }
     }
 
     public void onSdkChange() {
@@ -980,6 +1067,11 @@ public class GraphicalEditorPart extends EditorPart
                 LayoutBridge bridge = data.getLayoutBridge();
 
                 if (bridge.bridge != null) { // bridge can never be null.
+                    // if drawing in real size, (re)set the scaling factor.
+                    if (mZoomRealSizeButton.getSelection()) {
+                        computeAndSetRealScale(false /*redraw*/);
+                    }
+
                     renderWithBridge(iProject, model, bridge);
                 } else {
                     // SDK is loaded but not the layout library!
@@ -1098,7 +1190,7 @@ public class GraphicalEditorPart extends EditorPart
 
         ILayoutResult result = computeLayout(bridge, parser,
                 iProject /* projectKey */,
-                width, height, !mConfigComposite.getClipping(),
+                width, height, !mClippingButton.getSelection(),
                 density, xdpi, ydpi,
                 theme, isProjectTheme,
                 configuredProjectRes, frameworkResources, mProjectCallback,
