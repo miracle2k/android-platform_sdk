@@ -19,7 +19,6 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.gef.ui.parts.SelectionSynchronizer;
 import org.eclipse.ui.IEditorPart;
 
 /**
@@ -72,12 +71,6 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
      * Responds to a page change that made the Graphical editor page the deactivated page
      */
     abstract void deactivated();
-
-    /**
-     * Returns the selection synchronizer object.
-     * The synchronizer can be used to sync the selection of 2 or more EditPartViewers.
-     */
-    abstract public SelectionSynchronizer getSelectionSynchronizer();
 
     abstract void reloadPalette();
 
