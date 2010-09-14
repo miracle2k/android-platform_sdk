@@ -64,7 +64,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.draw2d.geometry.Rectangle;
-import org.eclipse.gef.ui.parts.SelectionSynchronizer;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -926,11 +925,6 @@ public class GraphicalEditorPart extends EditorPart
 
     public UiDocumentNode getModel() {
         return mLayoutEditor.getUiRootNode();
-    }
-
-    public SelectionSynchronizer getSelectionSynchronizer() {
-        // TODO Auto-generated method stub
-        return null;
     }
 
     /**
