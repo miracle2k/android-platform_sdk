@@ -411,6 +411,15 @@
       </classpathContainerInitializer>
    </extension>
    <extension
+                point="org.eclipse.jdt.ui.classpathContainerPage">
+    <classpathContainerPage
+      name="Android Classpath Container"
+      class="com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerPage"
+      id="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK">
+    </classpathContainerPage>
+   </extension>
+
+   <extension
          point="org.eclipse.ui.exportWizards">
       <category
             id="com.android.ide.eclipse.wizards.category"
@@ -681,10 +690,18 @@
             modes="run,debug"
             name="Android JUnit Test"
             public="true"
-            sourceLocatorId="org.eclipse.jdt.launching.sourceLocator.JavaSourceLookupDirector"
+            sourceLocatorId="com.android.ide.eclipse.adt.internal.sourcelookup.AdtSourceLookupDirector"
             sourcePathComputerId="org.eclipse.jdt.launching.sourceLookup.javaSourcePathComputer">
       </launchConfigurationType>
    </extension>
+   <extension point="org.eclipse.debug.core.sourceLocators">
+     <sourceLocator
+       id="com.android.ide.eclipse.adt.internal.sourcelookup.AdtSourceLookupDirector"
+       class="com.android.ide.eclipse.adt.internal.sourcelookup.AdtSourceLookupDirector"
+       name="%sourceLocator.name">
+     </sourceLocator>
+   </extension>
+
    <extension
          point="org.eclipse.debug.ui.launchConfigurationTypeImages">
       <launchConfigurationTypeImage
