@@ -31,7 +31,6 @@ import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutC
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomButton;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
-import com.android.ide.eclipse.adt.internal.editors.layout.parts.ElementCreateCommand;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
@@ -1286,28 +1285,6 @@ public class GraphicalEditorPart extends EditorPart
         if (mPalette != null) {
             mPalette.reloadPalette(mLayoutEditor.getTargetData());
         }
-    }
-
-    /**
-     * Used by LayoutEditor.UiEditorActions.selectUiNode to select a new UI Node
-     * created by {@link ElementCreateCommand#execute()}.
-     *
-     * @param uiNodeModel The {@link UiElementNode} to select.
-     */
-    public void selectModel(UiElementNode uiNodeModel) {
-
-        // TODO this method was useful for GLE1. We may not need it anymore now.
-
-//        GraphicalViewer viewer = getGraphicalViewer();
-//
-//        // Give focus to the graphical viewer (in case the outline has it)
-//        viewer.getControl().forceFocus();
-//
-//        Object editPart = viewer.getEditPartRegistry().get(uiNodeModel);
-//
-//        if (editPart instanceof EditPart) {
-//            viewer.select((EditPart)editPart);
-//        }
     }
 
     private class ReloadListener implements ILayoutReloadListener {
