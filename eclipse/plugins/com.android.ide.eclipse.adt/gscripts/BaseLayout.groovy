@@ -283,7 +283,7 @@ public class BaseLayout extends BaseView {
         for (attr in oldElement.getAttributes()) {
             String uri = attr.getUri();
             String name = attr.getName();
-            String value = attr.getValue();
+            def value = attr.getValue();  // Note: must be typeless. See comment below in filter()
 
             if (uri == ANDROID_URI) {
                 if (name == ATTR_ID) {
@@ -304,6 +304,9 @@ public class BaseLayout extends BaseView {
             }
 
             if (filter != null) {
+                // Note: value must be declared as a "def" because filter() might return
+                // different types, e.g. either a string, null or a boolean false and
+                // we need to avoid false being cast to "false".
                 value = filter(uri, name, value);
             }
             if (value != null && value != false && value != "") {
