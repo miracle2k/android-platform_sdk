@@ -1253,7 +1253,10 @@ public final class Sdk  {
         // - removing all unsupported characters.
         // - append the hashcode of the original name. This should help reduce collisions.
         String validName = name.replaceAll("[^0-9a-zA-Z]+", "_"); //$NON-NLS-1$ //$NON-NLS-2$
-        return "_android_" + validName + "_" + Integer.toString(name.hashCode()) ;  //$NON-NLS-1$ //$NON-NLS-2$
+
+        //ensure the valid is not negative as - is not a valid char
+        long hash = (long)name.hashCode() & 0x00000000ffffffffL;
+        return "_android_" + validName + "_" + Long.toString(hash, 16) ;  //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     /**
