@@ -36,11 +36,12 @@ public interface ITestRunListener {
 
     /** 
      * Reports the start of a test run.
-     * 
+     *
+     * @param runName the test run name
      * @param testCount total number of tests in test run
      */
-    public void testRunStarted(int testCount);
-    
+    public void testRunStarted(String runName, int testCount);
+
     /**
      * Reports end of test run.
      * 
