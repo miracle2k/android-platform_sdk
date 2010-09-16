@@ -1241,7 +1241,19 @@ public final class Sdk  {
      * @param name the name of the library project.
      */
     private String getLibraryVariableName(String name) {
-        return "_android_" + name.replaceAll("-", "_"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        /*
+         * From the javadoc of IPathVariableManager:
+         * A path variable is a pair of non-null elements (name,value) where name is a
+         * case-sensitive string (containing only letters, digits and the underscore character,
+         * and not starting with a digit), and value is an absolute IPath object.
+         */
+
+        // the variable name is made by:
+        // - prepending _android_ (this ensure there's no digit at the start)
+        // - removing all unsupported characters.
+        // - append the hashcode of the original name. This should help reduce collisions.
+        String validName = name.replaceAll("[^0-9a-zA-Z]+", "_"); //$NON-NLS-1$ //$NON-NLS-2$
+        return "_android_" + validName + "_" + Integer.toString(name.hashCode()) ;  //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     /**
