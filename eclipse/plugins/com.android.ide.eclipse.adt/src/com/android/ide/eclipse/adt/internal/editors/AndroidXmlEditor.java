@@ -56,7 +56,6 @@ import org.eclipse.ui.forms.events.HyperlinkEvent;
 import org.eclipse.ui.forms.events.IHyperlinkListener;
 import org.eclipse.ui.forms.widgets.FormText;
 import org.eclipse.ui.internal.browser.WorkbenchBrowserSupport;
-import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.part.WorkbenchPart;
 import org.eclipse.wst.sse.core.StructuredModelManager;
@@ -249,9 +248,8 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      */
     protected void selectDefaultPage(String defaultPageId) {
         if (defaultPageId == null) {
-            if (getEditorInput() instanceof IFileEditorInput) {
-                IFile file = ((IFileEditorInput) getEditorInput()).getFile();
-
+            IFile file = getInputFile();
+            if (file != null) {
                 QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID,
                         getClass().getSimpleName() + PREF_CURRENT_PAGE);
                 String pageId;
@@ -323,9 +321,8 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
             return;
         }
 
-        if (getEditorInput() instanceof IFileEditorInput) {
-            IFile file = ((IFileEditorInput) getEditorInput()).getFile();
-
+        IFile file = getInputFile();
+        if (file != null) {
             QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID,
                     getClass().getSimpleName() + PREF_CURRENT_PAGE);
             try {
@@ -345,21 +342,19 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      */
     public void resourceChanged(final IResourceChangeEvent event) {
         if (event.getType() == IResourceChangeEvent.PRE_CLOSE) {
-            Display.getDefault().asyncExec(new Runnable() {
-                public void run() {
-                    IWorkbenchPage[] pages = getSite().getWorkbenchWindow()
-                            .getPages();
-                    for (int i = 0; i < pages.length; i++) {
-                        if (((FileEditorInput)mTextEditor.getEditorInput())
-                                .getFile().getProject().equals(
-                                        event.getResource())) {
-                            IEditorPart editorPart = pages[i].findEditor(mTextEditor
-                                    .getEditorInput());
+            IFile file = getInputFile();
+            if (file != null && file.getProject().equals(event.getResource())) {
+                final IEditorInput input = getEditorInput();
+                Display.getDefault().asyncExec(new Runnable() {
+                    public void run() {
+                        IWorkbenchPage[] pages = getSite().getWorkbenchWindow().getPages();
+                        for (int i = 0; i < pages.length; i++) {
+                            IEditorPart editorPart = pages[i].findEditor(input);
                             pages[i].closeEditor(editorPart, true);
                         }
                     }
-                }
-            });
+                });
+            }
         }
     }
 
@@ -375,6 +370,21 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
         if (!(editorInput instanceof IFileEditorInput))
             throw new PartInitException("Invalid Input: Must be IFileEditorInput");
         super.init(site, editorInput);
+    }
+
+    /**
+     * Returns the {@link IFile} matching the editor's input or null.
+     * <p/>
+     * By construction, the editor input has to be an {@link IFileEditorInput} so it must
+     * have an associated {@link IFile}. Null can only be returned if this editor has no
+     * input somehow.
+     */
+    public IFile getInputFile() {
+        IEditorInput input = getEditorInput();
+        if (input instanceof IFileEditorInput) {
+            return ((IFileEditorInput) input).getFile();
+        }
+        return null;
     }
 
     /**
@@ -626,6 +636,11 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
         if (document != null) {
             IModelManager mm = StructuredModelManager.getModelManager();
             if (mm != null) {
+                // TODO simplify this by not using the internal IStructuredDocument.
+                // Instead we can now use mm.getModelForRead(getFile()).
+                // However we must first check that SSE for Eclipse 3.3 or 3.4 has this
+                // method. IIRC 3.3 didn't have it.
+
                 return mm.getModelForRead(document);
             }
         }
@@ -636,18 +651,25 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * Returns a version of the model that has been shared for edit.
      * <p/>
      * Callers <em>must</em> call model.releaseFromEdit() when done, typically
-     * in a try..finally clause. Because of this, it is highly recommended
-     * to <b>NOT</b> use this method directly and instead use the wrapper
+     * in a try..finally clause.
+     * <p/>
+     * Because of this, it is mandatory to use the wrapper
      * {@link #wrapEditXmlModel(Runnable)} which executes a runnable into a
      * properly configured model and then performs whatever cleanup is necessary.
      *
      * @return The model for the XML document or null if cannot be obtained from the editor
      */
-    public final IStructuredModel getModelForEdit() {
+    private IStructuredModel getModelForEdit() {
+
         IStructuredDocument document = getStructuredDocument();
         if (document != null) {
             IModelManager mm = StructuredModelManager.getModelManager();
             if (mm != null) {
+                // TODO simplify this by not using the internal IStructuredDocument.
+                // Instead we can now use mm.getModelForRead(getFile()).
+                // However we must first check that SSE for Eclipse 3.3 or 3.4 has this
+                // method. IIRC 3.3 didn't have it.
+
                 return mm.getModelForEdit(document);
             }
         }
@@ -700,7 +722,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
 
                 if (mIsEditXmlModelPending < 0) {
                     AdtPlugin.log(IStatus.ERROR,
-                            "wrapEditXmlModel finished with invalid nested counter==%d", //$NON-NLS-1$
+                            "wrapEditXmlModel finished with invalid nested counter==%1$d", //$NON-NLS-1$
                             mIsEditXmlModelPending);
                     mIsEditXmlModelPending = 0;
                 }
@@ -770,16 +792,14 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * @return True if the undo recording actually started, false if any kind of error occured.
      *         {@link #endUndoRecording()} should only be called if True is returned.
      */
-    private final boolean beginUndoRecording(String label) {
-        IStructuredDocument document = getStructuredDocument();
-        if (document != null) {
-            IModelManager mm = StructuredModelManager.getModelManager();
-            if (mm != null) {
-                IStructuredModel model = mm.getModelForEdit(document);
-                if (model != null) {
-                    model.beginRecording(this, label);
-                    return true;
-                }
+    private boolean beginUndoRecording(String label) {
+        IStructuredModel model = getModelForEdit();
+        if (model != null) {
+            try {
+                model.beginRecording(this, label);
+                return true;
+            } finally {
+                model.releaseFromEdit();
             }
         }
         return false;
@@ -792,15 +812,13 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * used if the initial call returned true.
      * To guarantee that, only access this via {@link #wrapUndoEditXmlModel(String, Runnable)}.
      */
-    private final void endUndoRecording() {
-        IStructuredDocument document = getStructuredDocument();
-        if (document != null) {
-            IModelManager mm = StructuredModelManager.getModelManager();
-            if (mm != null) {
-                IStructuredModel model = mm.getModelForEdit(document);
-                if (model != null) {
-                    model.endRecording(this);
-                }
+    private void endUndoRecording() {
+        IStructuredModel model = getModelForEdit();
+        if (model != null) {
+            try {
+                model.endRecording(this);
+            } finally {
+                model.releaseFromEdit();
             }
         }
     }
@@ -825,16 +843,9 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * Returns the {@link IProject} for the edited file.
      */
     public IProject getProject() {
-        if (mTextEditor != null) {
-            IEditorInput input = mTextEditor.getEditorInput();
-            if (input instanceof FileEditorInput) {
-                FileEditorInput fileInput = (FileEditorInput)input;
-                IFile inputFile = fileInput.getFile();
-
-                if (inputFile != null) {
-                    return inputFile.getProject();
-                }
-            }
+        IFile file = getInputFile();
+        if (file != null) {
+            return file.getProject();
         }
 
         return null;
