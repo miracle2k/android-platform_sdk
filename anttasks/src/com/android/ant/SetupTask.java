@@ -71,21 +71,6 @@ public final class SetupTask extends ImportTask {
     // library rules file.
     private final static String RULES_LIBRARY = "lib_rules.xml";
 
-    // ant property with the path to the android.jar
-    private final static String PROPERTY_ANDROID_JAR = "android.jar";
-
-    // ant property with the path to the framework.jar
-    private final static String PROPERTY_ANDROID_AIDL = "android.aidl";
-
-    // ant property with the path to the aapt tool
-    private final static String PROPERTY_AAPT = "aapt";
-    // ant property with the path to the aidl tool
-    private final static String PROPERTY_AIDL = "aidl";
-    // ant property with the path to the dx tool
-    private final static String PROPERTY_DX = "dx";
-    // ref id to the <path> object containing all the boot classpaths.
-    private final static String REF_CLASSPATH = "android.target.classpath";
-
     private boolean mDoImport = true;
 
     @Override
@@ -112,7 +97,7 @@ public final class SetupTask extends ImportTask {
 
         boolean isTestProject = false;
 
-        if (antProject.getProperty("tested.project.dir") != null) {
+        if (antProject.getProperty(AntConstants.PROP_TESTED_PROJECT_DIR) != null) {
             isTestProject = true;
         }
 
@@ -185,14 +170,14 @@ public final class SetupTask extends ImportTask {
 
         // sets up the properties to find android.jar/framework.aidl/target tools
         String androidJar = androidTarget.getPath(IAndroidTarget.ANDROID_JAR);
-        antProject.setProperty(PROPERTY_ANDROID_JAR, androidJar);
+        antProject.setProperty(AntConstants.PROP_ANDROID_JAR, androidJar);
 
         String androidAidl = androidTarget.getPath(IAndroidTarget.ANDROID_AIDL);
-        antProject.setProperty(PROPERTY_ANDROID_AIDL, androidAidl);
+        antProject.setProperty(AntConstants.PROP_ANDROID_AIDL, androidAidl);
 
-        antProject.setProperty(PROPERTY_AAPT, androidTarget.getPath(IAndroidTarget.AAPT));
-        antProject.setProperty(PROPERTY_AIDL, androidTarget.getPath(IAndroidTarget.AIDL));
-        antProject.setProperty(PROPERTY_DX, androidTarget.getPath(IAndroidTarget.DX));
+        antProject.setProperty(AntConstants.PROP_AAPT, androidTarget.getPath(IAndroidTarget.AAPT));
+        antProject.setProperty(AntConstants.PROP_AIDL, androidTarget.getPath(IAndroidTarget.AIDL));
+        antProject.setProperty(AntConstants.PROP_DX, androidTarget.getPath(IAndroidTarget.DX));
 
         // sets up the boot classpath
 
@@ -219,7 +204,7 @@ public final class SetupTask extends ImportTask {
         }
 
         // finally sets the path in the project with a reference
-        antProject.addReference(REF_CLASSPATH, bootclasspath);
+        antProject.addReference(AntConstants.PROP_CLASSPATH_REF, bootclasspath);
 
         // Now the import section. This is only executed if the task actually has to import a file.
         if (mDoImport) {
@@ -436,14 +421,14 @@ public final class SetupTask extends ImportTask {
 
         // even with no libraries, always setup these so that various tasks in Ant don't complain
         // (the task themselves can handle a ref to an empty Path)
-        antProject.addReference("android.libraries.src", sourcePath);
-        antProject.addReference("android.libraries.jars", jarsPath);
-        antProject.addReference("android.libraries.libs", libsPath);
+        antProject.addReference(AntConstants.PROP_PROJECT_LIBS_SRC_REF, sourcePath);
+        antProject.addReference(AntConstants.PROP_PROJECT_LIBS_JARS_REF, jarsPath);
+        antProject.addReference(AntConstants.PROP_PROJECT_LIBS_LIBS_REF, libsPath);
 
         // the rest is done only if there's a library.
         if (sourcePath.list().length > 0) {
-            antProject.addReference("android.libraries.res", resPath);
-            antProject.setProperty("android.libraries.package", sb.toString());
+            antProject.addReference(AntConstants.PROP_PROJECT_LIBS_RES_REF, resPath);
+            antProject.setProperty(AntConstants.PROP_PROJECT_LIBS_PKG, sb.toString());
         }
     }
 
