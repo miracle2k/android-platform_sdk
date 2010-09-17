@@ -41,7 +41,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.part.FileEditorInput;
+import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -198,8 +198,15 @@ public final class ManifestEditor extends AndroidXmlEditor {
     }
 
     private void onDescriptorsChanged() {
-        Node node = getManifestXmlNode(getXmlDocument(getModelForRead()));
-        mUiManifestNode.reloadFromXmlNode(node);
+        IStructuredModel model = getModelForRead();
+        if (model != null) {
+            try {
+                Node node = getManifestXmlNode(getXmlDocument(model));
+                mUiManifestNode.reloadFromXmlNode(node);
+            } finally {
+                model.releaseFromRead();
+            }
+        }
 
         if (mOverviewPage != null) {
             mOverviewPage.refreshUiApplicationNode();
@@ -234,7 +241,8 @@ public final class ManifestEditor extends AndroidXmlEditor {
                 }
             };
 
-            GlobalProjectMonitor.getMonitor().addFileListener(mMarkerMonitor, IResourceDelta.CHANGED);
+            GlobalProjectMonitor.getMonitor().addFileListener(
+                    mMarkerMonitor, IResourceDelta.CHANGED);
         }
     }
 
@@ -246,17 +254,17 @@ public final class ManifestEditor extends AndroidXmlEditor {
     private void updateFromExistingMarkers(IFile inputFile) {
         try {
             // get the markers for the file
-            IMarker[] markers = inputFile.findMarkers(AndroidConstants.MARKER_ANDROID, true,
-                    IResource.DEPTH_ZERO);
+            IMarker[] markers = inputFile.findMarkers(
+                    AndroidConstants.MARKER_ANDROID, true, IResource.DEPTH_ZERO);
 
             AndroidManifestDescriptors desc = getManifestDescriptors();
             if (desc != null) {
                 ElementDescriptor appElement = desc.getApplicationElement();
 
-                if (appElement != null) {
-                    UiElementNode app_ui_node = mUiManifestNode.findUiChildNode(
+                if (appElement != null && mUiManifestNode != null) {
+                    UiElementNode appUiNode = mUiManifestNode.findUiChildNode(
                             appElement.getXmlName());
-                    List<UiElementNode> children = app_ui_node.getUiChildren();
+                    List<UiElementNode> children = appUiNode.getUiChildren();
 
                     for (IMarker marker : markers) {
                         processMarker(marker, children, IResourceDelta.ADDED);
@@ -377,18 +385,5 @@ public final class ManifestEditor extends AndroidXmlEditor {
             mUiManifestNode = desc.createUiNode();
             mUiManifestNode.setEditor(this);
         }
-    }
-
-    /**
-     * Returns the {@link IFile} being edited, or <code>null</code> if it couldn't be computed.
-     */
-    private IFile getInputFile() {
-        IEditorInput input = getEditorInput();
-        if (input instanceof FileEditorInput) {
-            FileEditorInput fileInput = (FileEditorInput) input;
-            return fileInput.getFile();
-        }
-
-        return null;
     }
 }

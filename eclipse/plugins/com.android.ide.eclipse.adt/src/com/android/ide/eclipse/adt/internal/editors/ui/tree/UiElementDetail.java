@@ -73,13 +73,13 @@ class UiElementDetail implements IDetailsPage {
     private IManagedForm mManagedForm;
 
     private final UiTreeBlock mTree;
-    
+
     public UiElementDetail(UiTreeBlock tree) {
         mTree = tree;
         mMasterPart = mTree.getMasterPart();
         mManagedForm = mMasterPart.getManagedForm();
     }
-    
+
     /* (non-java doc)
      * Initializes the part.
      */
@@ -117,25 +117,21 @@ class UiElementDetail implements IDetailsPage {
      * Instructs it to commit the new (modified) data back into the model.
      */
     public void commit(boolean onSave) {
-        
-        IStructuredModel model = mTree.getEditor().getModelForEdit();
-        try {
-            // Notify the model we're about to change data...
-            model.aboutToChangeModel();
 
-            if (mCurrentUiElementNode != null) {
-                mCurrentUiElementNode.commit();
+        mTree.getEditor().wrapEditXmlModel(new Runnable() {
+            public void run() {
+                try {
+                    if (mCurrentUiElementNode != null) {
+                        mCurrentUiElementNode.commit();
+                    }
+
+                    // Finally reset the dirty flag if everything was saved properly
+                    mIsDirty = false;
+                } catch (Exception e) {
+                    AdtPlugin.log(e, "Detail node failed to commit XML attribute!"); //$NON-NLS-1$
+                }
             }
-            
-            // Finally reset the dirty flag if everything was saved properly
-            mIsDirty = false;
-        } catch (Exception e) {
-            AdtPlugin.log(e, "Detail node failed to commit XML attribute!"); //$NON-NLS-1$
-        } finally {
-            // Notify the model we're done modifying it. This must *always* be executed.
-            model.changedModel();
-            model.releaseFromEdit();
-        }
+        });
     }
 
     public void dispose() {
@@ -183,7 +179,7 @@ class UiElementDetail implements IDetailsPage {
 
     /**
      * Creates a TableWrapLayout in the DetailsPage, which in turns contains a Section.
-     * 
+     *
      * All the UI should be created in a layout which parent is the mSection itself.
      * The hierarchy is:
      * <pre>
@@ -194,7 +190,7 @@ class UiElementDetail implements IDetailsPage {
      *       + Labels/Forms/etc... [*]
      * </pre>
      * Both items marked with [*] are created by the derived classes to fit their needs.
-     * 
+     *
      * @param parent Parent of the mSection (from createContents)
      * @return The new Section
      */
@@ -215,7 +211,7 @@ class UiElementDetail implements IDetailsPage {
      * <p/>
      * This is called by the constructor.
      * Derived classes can override this if necessary.
-     * 
+     *
      * @param managedForm The managed form
      */
     private void createUiAttributeControls(
@@ -258,7 +254,7 @@ class UiElementDetail implements IDetailsPage {
             mCurrentTable = masterTable;
 
             mCurrentUiElementNode = ui_node;
-                
+
             if (elem_desc.getTooltip() != null) {
                 String tooltip;
                 if (Sdk.getCurrent() != null &&
@@ -285,7 +281,7 @@ class UiElementDetail implements IDetailsPage {
                             "Malformed javadoc, rejected by FormText for node %1$s: '%2$s'", //$NON-NLS-1$
                             ui_node.getDescriptor().getXmlName(),
                             tooltip);
-                    
+
                     // Fallback to a pure text tooltip, no fancy HTML
                     tooltip = DescriptorsUtils.formatTooltip(elem_desc.getTooltip());
                     Label label = SectionHelper.createLabel(masterTable, toolkit,
@@ -294,7 +290,7 @@ class UiElementDetail implements IDetailsPage {
             }
 
             Composite table = useSubsections ? null : masterTable;
-            
+
             for (AttributeDescriptor attr_desc : attr_desc_list) {
                 if (attr_desc instanceof XmlnsAttributeDescriptor) {
                     // Do not show hidden attributes
@@ -318,7 +314,7 @@ class UiElementDetail implements IDetailsPage {
 
                 if (ui_attr != null) {
                     ui_attr.createUiControl(table, managedForm);
-                    
+
                     if (ui_attr.getCurrentValue() != null &&
                             ui_attr.getCurrentValue().length() > 0) {
                         ((Section) table.getParent()).setExpanded(true);
@@ -339,7 +335,7 @@ class UiElementDetail implements IDetailsPage {
                     "Unknown XML Attributes");
             unknownTable.getParent().setVisible(false); // set section to not visible
             final HashSet<UiAttributeNode> reference = new HashSet<UiAttributeNode>();
-            
+
             final IUiUpdateListener updateListener = new IUiUpdateListener() {
                 public void uiElementNodeUpdated(UiElementNode ui_node, UiUpdateState state) {
                     if (state == UiUpdateState.ATTR_UPDATED) {
@@ -349,16 +345,16 @@ class UiElementDetail implements IDetailsPage {
                 }
             };
             ui_node.addUpdateListener(updateListener);
-            
+
             // remove the listener when the UI is disposed
             unknownTable.addDisposeListener(new DisposeListener() {
                 public void widgetDisposed(DisposeEvent e) {
                     ui_node.removeUpdateListener(updateListener);
                 }
             });
-            
+
             updateUnknownAttributesSection(ui_node, unknownTable, managedForm, reference);
-            
+
             mMasterSection.getParent().pack(true /* changed */);
         }
     }
@@ -369,7 +365,7 @@ class UiElementDetail implements IDetailsPage {
      */
     private Composite createSubSectionTable(FormToolkit toolkit,
             Composite masterTable, String title) {
-        
+
         // The Section composite seems to ignore colspan when assigned a TableWrapData so
         // if the parent is a table with more than one column an extra table with one column
         // is inserted to respect colspan.
@@ -381,7 +377,7 @@ class UiElementDetail implements IDetailsPage {
             twd.colspan = parentNumCol;
             masterTable.setLayoutData(twd);
         }
-        
+
         Composite table;
         Section section = toolkit.createSection(masterTable,
                 Section.TITLE_BAR | Section.TWISTIE);
@@ -449,28 +445,28 @@ class UiElementDetail implements IDetailsPage {
         if (has_differences) {
             needs_reflow = true;
             reference.clear();
-            
+
             // Remove all children of the table
             for (Control c : unknownTable.getChildren()) {
                 c.dispose();
             }
-    
+
             // Recreate all attributes UI
             for (UiAttributeNode ui_attr : ui_attrs) {
                 reference.add(ui_attr);
                 ui_attr.createUiControl(unknownTable, managedForm);
-    
+
                 if (ui_attr.getCurrentValue() != null && ui_attr.getCurrentValue().length() > 0) {
                     section.setExpanded(true);
                 }
             }
         }
-        
+
         if (needs_reflow) {
             reflowMasterSection();
         }
     }
-    
+
     /**
      * Marks the part dirty. Called as a result of user interaction with the widgets in the
      * section.

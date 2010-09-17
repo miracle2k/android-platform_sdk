@@ -318,6 +318,20 @@ public abstract class AndroidTextEditor extends FormEditor implements IResourceC
     }
 
     /**
+     * Returns the {@link IFile} matching the editor's input or null.
+     * <p/>
+     * By construction, the editor input has to be an {@link IFileEditorInput} so it must
+     * have an associated {@link IFile}. Null can only be returned if this editor has no
+     * input somehow.
+     */
+    public IFile getFile() {
+        if (getEditorInput() instanceof IFileEditorInput) {
+            return ((IFileEditorInput) getEditorInput()).getFile();
+        }
+        return null;
+    }
+
+    /**
      * Removes attached listeners.
      *
      * @see WorkbenchPart
