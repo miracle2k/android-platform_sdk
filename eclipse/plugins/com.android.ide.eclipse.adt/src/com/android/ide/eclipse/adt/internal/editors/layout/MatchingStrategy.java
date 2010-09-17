@@ -37,11 +37,11 @@ public class MatchingStrategy implements IEditorMatchingStrategy {
         // first check that the file being opened is a layout file.
         if (input instanceof FileEditorInput) {
             FileEditorInput fileInput = (FileEditorInput)input;
-            
+
             // get the IFile object and check it's in one of the layout folders.
             IFile iFile = fileInput.getFile();
             ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(iFile);
-            
+
             // if it's a layout, we know check the name of the fileInput against the name of the
             // file being currently edited by the editor since those are independent of the config.
             if (resFolder != null && resFolder.getType() == ResourceFolderType.LAYOUT) {
@@ -50,7 +50,7 @@ public class MatchingStrategy implements IEditorMatchingStrategy {
                     if (editorInput instanceof FileEditorInput) {
                         FileEditorInput editorFileInput = (FileEditorInput)editorInput;
                         IFile editorIFile = editorFileInput.getFile();
-                        
+
                         return editorIFile.getProject().equals(iFile.getProject())
                             && editorIFile.getName().equals(iFile.getName());
                     }

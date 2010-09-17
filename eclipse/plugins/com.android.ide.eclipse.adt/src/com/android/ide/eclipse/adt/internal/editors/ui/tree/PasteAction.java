@@ -27,7 +27,6 @@ import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocumentRegion;
@@ -63,61 +62,65 @@ public class PasteAction extends Action {
     @Override
     public void run() {
         super.run();
-        
+
         final String data = (String) mClipboard.getContents(TextTransfer.getInstance());
         if (data != null) {
-            IStructuredModel model = mEditor.getModelForEdit();
-            try {
-                IStructuredDocument sse_doc = mEditor.getStructuredDocument();
-                if (sse_doc != null) {
-                    if (mUiNode.getDescriptor().hasChildren()) {
-                        // This UI Node can have children. The new XML is
-                        // inserted as the first child.
-                        
-                        if (mUiNode.getUiChildren().size() > 0) {
-                            // There's already at least one child, so insert right before it.
-                            Node xml_node = mUiNode.getUiChildren().get(0).getXmlNode();
-                            if (xml_node instanceof IndexedRegion) { // implies xml_node != null
-                                IndexedRegion region = (IndexedRegion) xml_node;
-                                sse_doc.replace(region.getStartOffset(), 0, data);
-                                return; // we're done, no need to try the other cases
-                            }                                
-                        }
-                        
-                        // If there's no first XML node child. Create one by
-                        // inserting at the end of the *start* tag.
-                        Node xml_node = mUiNode.getXmlNode();
-                        if (xml_node instanceof NodeContainer) {
-                            NodeContainer container = (NodeContainer) xml_node;
-                            IStructuredDocumentRegion start_tag =
-                                container.getStartStructuredDocumentRegion();
-                            if (start_tag != null) {
-                                sse_doc.replace(start_tag.getEndOffset(), 0, data);
-                                return; // we're done, no need to try the other case
+            mEditor.wrapEditXmlModel(new Runnable() {
+                public void run() {
+                    try {
+                        IStructuredDocument sse_doc = mEditor.getStructuredDocument();
+                        if (sse_doc != null) {
+                            if (mUiNode.getDescriptor().hasChildren()) {
+                                // This UI Node can have children. The new XML is
+                                // inserted as the first child.
+
+                                if (mUiNode.getUiChildren().size() > 0) {
+                                    // There's already at least one child,
+                                    // so insert right before it.
+                                    Node xml_node = mUiNode.getUiChildren().get(0).getXmlNode();
+
+                                    if (xml_node instanceof IndexedRegion) {
+                                        IndexedRegion region = (IndexedRegion) xml_node;
+                                        sse_doc.replace(region.getStartOffset(), 0, data);
+                                        return; // we're done, no need to try the other cases
+                                    }
+                                }
+
+                                // If there's no first XML node child. Create one by
+                                // inserting at the end of the *start* tag.
+                                Node xml_node = mUiNode.getXmlNode();
+                                if (xml_node instanceof NodeContainer) {
+                                    NodeContainer container = (NodeContainer) xml_node;
+                                    IStructuredDocumentRegion start_tag =
+                                        container.getStartStructuredDocumentRegion();
+                                    if (start_tag != null) {
+                                        sse_doc.replace(start_tag.getEndOffset(), 0, data);
+                                        return; // we're done, no need to try the other case
+                                    }
+                                }
+                            }
+
+                            // This UI Node doesn't accept children. The new XML is inserted as the
+                            // next sibling. This also serves as a fallback if all the previous
+                            // attempts failed. However, this is not possible if the current node
+                            // has for parent a document -- an XML document can only have one root,
+                            // with no siblings.
+                            if (!(mUiNode.getUiParent() instanceof UiDocumentNode)) {
+                                Node xml_node = mUiNode.getXmlNode();
+                                if (xml_node instanceof IndexedRegion) {
+                                    IndexedRegion region = (IndexedRegion) xml_node;
+                                    sse_doc.replace(region.getEndOffset(), 0, data);
+                                }
                             }
                         }
-                    }
-                    
-                    // This UI Node doesn't accept children. The new XML is inserted as the
-                    // next sibling. This also serves as a fallback if all the previous
-                    // attempts failed. However, this is not possible if the current node
-                    // has for parent a document -- an XML document can only have one root,
-                    // with no siblings.
-                    if (!(mUiNode.getUiParent() instanceof UiDocumentNode)) {
-                        Node xml_node = mUiNode.getXmlNode();
-                        if (xml_node instanceof IndexedRegion) {
-                            IndexedRegion region = (IndexedRegion) xml_node;
-                            sse_doc.replace(region.getEndOffset(), 0, data);
-                        }
+
+                    } catch (BadLocationException e) {
+                        AdtPlugin.log(e,
+                                "ParseAction failed for UI Node %2$s, content '%1$s'", //$NON-NLS-1$
+                                mUiNode.getBreadcrumbTrailDescription(true), data);
                     }
                 }
-
-            } catch (BadLocationException e) {
-                AdtPlugin.log(e, "ParseAction failed for UI Node %2$s, content '%1$s'", //$NON-NLS-1$
-                        mUiNode.getBreadcrumbTrailDescription(true), data);
-            } finally {
-                model.releaseFromEdit();
-            }
+            });
         }
     }
 }
