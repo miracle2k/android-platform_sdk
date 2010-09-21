@@ -190,14 +190,7 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
      */
     private class TestRunListener implements ITestRunListener {
 
-        /* (non-Javadoc)
-         * @see com.android.ddmlib.testrunner.ITestRunListener#testEnded(com.android.ddmlib.testrunner.TestIdentifier)
-         */
-        public void testEnded(TestIdentifier test) {
-            mExecution.getListener().notifyTestEnded(new TestCaseReference(test));
-        }
-
-        public void testEnded(TestIdentifier test, Map<String, String> testMetrics) {
+        public void testEnded(TestIdentifier test, Map<String, String> ignoredTestMetrics) {
             mExecution.getListener().notifyTestEnded(new TestCaseReference(test));
         }
 
@@ -236,7 +229,7 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
         /* (non-Javadoc)
          * @see com.android.ddmlib.testrunner.ITestRunListener#testRunStarted(int)
          */
-        public void testRunStarted(int testCount) {
+        public void testRunStarted(String runName, int testCount) {
             // ignore
         }
 

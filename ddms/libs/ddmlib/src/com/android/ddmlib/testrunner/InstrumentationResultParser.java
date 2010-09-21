@@ -127,6 +127,9 @@ public class InstrumentationResultParser extends MultiLineReceiver {
         }
     }
 
+    /** the name to provide to {@link ITestRunListener#testRunStarted(String, int)} */
+    private final String mTestRunName;
+
     /** Stores the status values for the test result currently being parsed */
     private TestResult mCurrentTestResult = null;
 
@@ -183,18 +186,24 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     /**
      * Creates the InstrumentationResultParser.
      *
+     * @param runName the test run name to provide to
+     *            {@link ITestRunListener#testRunStarted(String, int)}
      * @param listeners informed of test results as the tests are executing
      */
-    public InstrumentationResultParser(Collection<ITestRunListener> listeners) {
+    public InstrumentationResultParser(String runName, Collection<ITestRunListener> listeners) {
+        mTestRunName = runName;
         mTestListeners = new ArrayList<ITestRunListener>(listeners);
     }
 
     /**
      * Creates the InstrumentationResultParser for a single listener.
      *
+     * @param runName the test run name to provide to
+     *            {@link ITestRunListener#testRunStarted(String, int)}
      * @param listener informed of test results as the tests are executing
      */
-    public InstrumentationResultParser(ITestRunListener listener) {
+    public InstrumentationResultParser(String runName, ITestRunListener listener) {
+        mTestRunName = runName;
         mTestListeners = new ArrayList<ITestRunListener>(1);
         mTestListeners.add(listener);
     }
@@ -455,7 +464,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
         // if start test run not reported yet
         if (!mTestStartReported && testInfo.mNumTests != null) {
             for (ITestRunListener listener : mTestListeners) {
-                listener.testRunStarted(testInfo.mNumTests);
+                listener.testRunStarted(mTestRunName, testInfo.mNumTests);
             }
             mNumTestsExpected = testInfo.mNumTests;
             mTestStartReported = true;
@@ -539,7 +548,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
                 if (!mTestStartReported) {
                     // test run wasn't started, but it finished successfully. Must be a run with
                     // no tests
-                    listener.testRunStarted(0);
+                    listener.testRunStarted(mTestRunName, 0);
                 }
                 listener.testRunEnded(mTestTime, mInstrumentationResultBundle);
             }
