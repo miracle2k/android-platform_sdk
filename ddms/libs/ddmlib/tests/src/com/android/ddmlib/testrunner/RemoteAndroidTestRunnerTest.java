@@ -305,7 +305,7 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
             // ignore
         }
 
-        public void testRunStarted(int testCount) {
+        public void testRunStarted(String runName, int testCount) {
             // ignore
         }
 

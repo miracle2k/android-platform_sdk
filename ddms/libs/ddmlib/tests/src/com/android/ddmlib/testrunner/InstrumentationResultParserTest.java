@@ -32,6 +32,7 @@ public class InstrumentationResultParserTest extends TestCase {
     private VerifyingTestResult mTestResult;
 
     // static dummy test names to use for validation
+    private static final String RUN_NAME = "foo";
     private static final String CLASS_NAME = "com.test.FooTest";
     private static final String TEST_NAME = "testFoo";
     private static final String STACK_TRACE = "java.lang.AssertionFailedException";
@@ -50,7 +51,7 @@ public class InstrumentationResultParserTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         mTestResult = new VerifyingTestResult();
-        mParser = new InstrumentationResultParser(mTestResult);
+        mParser = new InstrumentationResultParser(RUN_NAME, mTestResult);
     }
 
     /**
@@ -344,6 +345,7 @@ public class InstrumentationResultParserTest extends TestCase {
     }
 
     private void assertCommonAttributes() {
+        assertEquals(RUN_NAME, mTestResult.mTestRunName);
         assertEquals(CLASS_NAME, mTestResult.mSuiteName);
         assertEquals(1, mTestResult.mTestCount);
         assertEquals(TEST_NAME, mTestResult.mTestName);
@@ -354,6 +356,7 @@ public class InstrumentationResultParserTest extends TestCase {
      */
     private class VerifyingTestResult implements ITestRunListener {
 
+        String mTestRunName;
         String mSuiteName;
         int mTestCount;
         int mNumTestsRun;
@@ -395,7 +398,8 @@ public class InstrumentationResultParserTest extends TestCase {
             mResultBundle = resultBundle;
         }
 
-        public void testRunStarted(int testCount) {
+        public void testRunStarted(String runName, int testCount) {
+            mTestRunName = runName;
             mTestCount = testCount;
         }
 

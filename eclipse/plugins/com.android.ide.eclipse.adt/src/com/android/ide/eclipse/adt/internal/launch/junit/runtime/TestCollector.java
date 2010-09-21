@@ -41,13 +41,6 @@ class TestCollector implements ITestRunListener {
         mTestTree = new HashMap<String, TestSuiteReference>();
     }
 
-    /* (non-Javadoc)
-     * @see com.android.ddmlib.testrunner.ITestRunListener#testEnded(com.android.ddmlib.testrunner.TestIdentifier)
-     */
-    public void testEnded(TestIdentifier test) {
-        // ignore
-    }
-
     public void testEnded(TestIdentifier test, Map<String, String> testMetrics) {
         // ignore
     }
@@ -76,7 +69,7 @@ class TestCollector implements ITestRunListener {
     /* (non-Javadoc)
      * @see com.android.ddmlib.testrunner.ITestRunListener#testRunStarted(int)
      */
-    public void testRunStarted(int testCount) {
+    public void testRunStarted(String ignoredRunName, int testCount) {
         mTotalTestCount = testCount;
     }
 
