@@ -1,3 +1,6 @@
+0.9.9:
+- Fix bug where ADT would delete the source folder of projects imported from version control.
+
 0.9.8:
 - New Action "Rename Application Package" (under the "Android Tools" contextual menu) will do a full application package refatoring.
 - Fixed issue with library project names containing characters that aren't compatible with Eclipse path variable. The link between the main project and the library would fail to create.
