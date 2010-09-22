@@ -368,21 +368,34 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
         removeDerivedResources(rootResource, false, monitor);
     }
 
+    /**
+     * delete a resource and its children. returns true if the root resource was deleted. All
+     * sub-folders *will* be deleted if they were emptied (not if they started empty).
+     * @param rootResource the root resource
+     * @param deleteRoot whether to delete the root folder.
+     * @param monitor a progress monitor.
+     * @throws CoreException
+     */
     private void removeDerivedResources(IResource rootResource, boolean deleteRoot,
-            IProgressMonitor monitor)
-            throws CoreException {
+            IProgressMonitor monitor) throws CoreException {
         if (rootResource.exists()) {
+            // if it's a folder, delete derived member.
             if (rootResource.getType() == IResource.FOLDER) {
                 IFolder folder = (IFolder)rootResource;
                 IResource[] members = folder.members();
+                boolean wasNotEmpty = members.length > 0;
                 for (IResource member : members) {
                     removeDerivedResources(member, true /*deleteRoot*/, monitor);
                 }
-            } else if (rootResource.isDerived()) {
-                rootResource.getLocation().toFile().delete();
+
+                // if the folder had content that is now all removed, delete the folder.
+                if (deleteRoot && wasNotEmpty && folder.members().length == 0) {
+                    rootResource.getLocation().toFile().delete();
+                }
             }
 
-            if (deleteRoot) {
+            // if the root resource is derived, delete it.
+            if (rootResource.isDerived()) {
                 rootResource.getLocation().toFile().delete();
             }
         }
