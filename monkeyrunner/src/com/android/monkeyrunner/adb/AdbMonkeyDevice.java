@@ -51,7 +51,8 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     private static final Logger LOG = Logger.getLogger(AdbMonkeyDevice.class.getName());
 
     private static final String[] ZERO_LENGTH_STRING_ARRAY = new String[0];
-    private static final long MANAGER_CREATE_TIMEOUT_MS = 5 * 1000; // 5 seconds
+    private static final long MANAGER_CREATE_TIMEOUT_MS = 30 * 1000; // 30 seconds
+    private static final long MANAGER_CREATE_WAIT_TIME_MS = 1000; // wait 1 second
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -149,6 +150,12 @@ public class AdbMonkeyDevice extends MonkeyDevice {
             if (diff > MANAGER_CREATE_TIMEOUT_MS) {
                 LOG.severe("Timeout while trying to create monkey mananger");
                 return null;
+            }
+
+            try {
+                Thread.sleep(MANAGER_CREATE_WAIT_TIME_MS);
+            } catch (InterruptedException e) {
+                LOG.log(Level.SEVERE, "Unable to sleep", e);
             }
 
             Socket monkeySocket;

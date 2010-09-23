@@ -69,7 +69,8 @@ public class AdbBackend implements MonkeyRunnerBackend {
     public MonkeyDevice waitForConnection(long timeoutMs, String deviceIdRegex) {
         do {
             IDevice device = findAttacedDevice(deviceIdRegex);
-            if (device != null) {
+            // Only return the device when it is online
+            if (device != null && device.getState() == IDevice.DeviceState.ONLINE) {
                 AdbMonkeyDevice amd = new AdbMonkeyDevice(device);
                 devices.add(amd);
                 return amd;
