@@ -4,7 +4,10 @@
   the Android Manifest.
   Incremental build will automatically insert debuggable==true while using
   the "export signed/unsigned application package" will not.
+- Don't recompile the whole workspace on launch.
 
+0.9.9:
+- Fix bug where ADT would delete the source folder of projects imported from version control.
 
 0.9.8:
 - New Action "Rename Application Package" (under the "Android Tools" contextual menu) will do a full application package refatoring.
