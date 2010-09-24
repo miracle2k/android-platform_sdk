@@ -335,8 +335,10 @@ public final class SdkManager {
 
                 // Ant properties
                 FileWrapper sdkPropFile = new FileWrapper(platformFolder, SdkConstants.FN_SDK_PROP);
-                Map<String, String> antProp = ProjectProperties.parsePropertyFile(
-                        sdkPropFile, log);
+                Map<String, String> antProp = null;
+                if (sdkPropFile.isFile()) { // obsolete platforms don't have this.
+                    antProp = ProjectProperties.parsePropertyFile(sdkPropFile, log);
+                }
 
                 if (antProp != null) {
                     map.putAll(antProp);
