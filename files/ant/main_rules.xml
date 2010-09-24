@@ -174,20 +174,24 @@
     <!-- Configurable macro, which allows to pass as parameters output directory,
          output dex filename and external libraries to dex (optional) -->
     <macrodef name="dex-helper">
-       <element name="external-libs" optional="yes" />
-       <element name="extra-parameters" optional="yes" />
-       <sequential>
-         <echo>Converting compiled files and external libraries into ${intermediate.dex.file}...</echo>
-         <apply executable="${dx}" failonerror="true" parallel="true">
-             <arg value="--dex" />
-             <arg value="--output=${intermediate.dex.file}" />
-             <extra-parameters />
-             <arg line="${verbose.option}" />
-             <arg path="${out.dex.input.absolute.dir}" />
-             <path refid="jar.libs.ref" />
-             <external-libs />
-         </apply>
-       </sequential>
+        <element name="external-libs" optional="yes" />
+        <element name="extra-parameters" optional="yes" />
+        <sequential>
+            <!-- sets the input for dex. If a pre-dex task sets it to something else
+                 this has no effect -->
+            <property name="out.dex.input.absolute.dir" value="${out.classes.absolute.dir}" />
+
+            <echo>Converting compiled files and external libraries into ${intermediate.dex.file}...</echo>
+            <apply executable="${dx}" failonerror="true" parallel="true">
+                <arg value="--dex" />
+                <arg value="--output=${intermediate.dex.file}" />
+                <extra-parameters />
+                <arg line="${verbose.option}" />
+                <arg path="${out.dex.input.absolute.dir}" />
+                <path refid="jar.libs.ref" />
+                <external-libs />
+            </apply>
+        </sequential>
     </macrodef>
 
     <!-- This is macro that enable passing variable list of external jar files to ApkBuilder
@@ -358,12 +362,13 @@
          your build.xml and it'll be called instead of this one. -->
     <target name="-post-compile"/>
 
-    <target name="-pre-dex" unless="do.not.compile">
+    <target name="-obfuscate" unless="do.not.compile">
         <if condition="${proguard.enabled}">
             <then>
                 <property name="obfuscate.absolute.dir" location="${out.absolute.dir}/proguard" />
                 <property name="preobfuscate.jar.file" value="${obfuscate.absolute.dir}/original.jar" />
                 <property name="obfuscated.jar.file" value="${obfuscate.absolute.dir}/obfuscated.jar" />
+                <!-- input for dex will be proguard's output -->
                 <property name="out.dex.input.absolute.dir" value="${obfuscated.jar.file}" />
 
                 <!-- Add Proguard Tasks -->
@@ -401,14 +406,11 @@
                     -printmapping ${obfuscate.absolute.dir}/mapping.txt
                 </proguard>
             </then>
-            <else>
-                <property name="out.dex.input.absolute.dir" value="${out.classes.absolute.dir}" />
-            </else>
         </if>
     </target>
 
     <!-- Converts this project's .class files into .dex files -->
-    <target name="-dex" depends="compile, -post-compile, -pre-dex"
+    <target name="-dex" depends="compile, -post-compile, -obfuscate"
             unless="do.not.compile">
         <if condition="${manifest.hasCode}">
             <then>
@@ -461,7 +463,12 @@
        </subant>
     </target>
 
-    <target name="-set-debug-mode">
+    <target name="-debug-obfuscation-check">
+        <!-- proguard is never enabled in debug mode -->
+        <property name="proguard.enabled" value="false"/>
+    </target>
+
+    <target name="-set-debug-mode" depends="-debug-obfuscation-check">
         <!-- property only set in debug mode.
              Useful for if/unless attributes in target node
              when using Ant before 1.8 -->
@@ -469,10 +476,6 @@
 
         <!-- whether the build is a debug build. always set. -->
         <property name="build.debug" value="true" />
-
-        <!-- dex input file: in debug mode, no proguard, input
-             is always the out class folder -->
-        <property name="proguard.enabled" value="false"/>
     </target>
 
     <!-- Builds debug output package, provided all the necessary files are already dexed -->
@@ -503,7 +506,13 @@
         <echo>and run zipalign from the Android SDK tools.</echo>
     </target>
 
-    <target name="-set-release-mode">
+    <target name="-release-obfuscation-check">
+        <condition property="proguard.enabled" value="true" else="false">
+            <isset property="proguard.config" />
+        </condition>
+    </target>
+
+    <target name="-set-release-mode" depends="-release-obfuscation-check">
         <!-- property only set in release mode.
              Useful for if/unless attributes in target node
              when using Ant before 1.8 -->
@@ -511,18 +520,6 @@
 
         <!-- whether the build is a debug build. always set. -->
         <property name="build.debug" value="false" />
-
-        <!-- dex input file: in release mode, it's dependent on whether
-             proguard is used. -->
-        <if isset="proguard.config">
-            <then>
-                 <property name="proguard.enabled" value="true"/>
-            </then>
-            <else>
-                 <property name="proguard.enabled" value="false"/>
-                 <property name="out.dex.input.absolute.dir" value="${out.classes.absolute.dir}" />
-            </else>
-        </if>
     </target>
 
     <!-- This runs -package-release and -release-nosign first and then runs
