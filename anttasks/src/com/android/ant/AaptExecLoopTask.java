@@ -259,10 +259,10 @@ public final class AaptExecLoopTask extends Task {
         // if the parameters indicate generation of the R class, check if
         // more R classes need to be created for libraries.
         if (mRFolder != null && new File(mRFolder).isDirectory()) {
-            String libPkgProp = taskProject.getProperty("android.libraries.package");
+            String libPkgProp = taskProject.getProperty(AntConstants.PROP_PROJECT_LIBS_PKG);
             if (libPkgProp != null) {
                 // get the main package to compare in case the libraries use the same
-                String mainPackage = taskProject.getProperty("manifest.package");
+                String mainPackage = taskProject.getProperty(AntConstants.PROP_MANIFEST_PACKAGE);
 
                 String[] libPkgs = libPkgProp.split(";");
                 for (String libPkg : libPkgs) {
@@ -354,8 +354,8 @@ public final class AaptExecLoopTask extends Task {
         }
 
         // if the project contains libraries, force auto-add-overlay
-        Object libSrc = taskProject.getReference("android.libraries.res");
-        if (libSrc != null) {
+        Object libResRef = taskProject.getReference(AntConstants.PROP_PROJECT_LIBS_RES_REF);
+        if (libResRef != null) {
             task.createArg().setValue("--auto-add-overlay");
         }
 
@@ -385,9 +385,8 @@ public final class AaptExecLoopTask extends Task {
         }
 
         // add other resources coming from library project
-        Object libPath = taskProject.getReference("android.libraries.res");
-        if (libPath instanceof Path) {
-            for (String path : ((Path)libPath).list()) {
+        if (libResRef instanceof Path) {
+            for (String path : ((Path)libResRef).list()) {
                 // This may not exists, and aapt doesn't like it, so we check first.
                 File res = new File(path);
                 if (res.isDirectory()) {

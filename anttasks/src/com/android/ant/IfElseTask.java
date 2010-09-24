@@ -17,14 +17,25 @@
 package com.android.ant;
 
 import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.Sequential;
+import org.apache.tools.ant.taskdefs.condition.IsSet;
 
 /**
  * If (condition) then: {@link Sequential} else: {@link Sequential}.
  *
  * In XML:
- * <if condition="${some.condition}">
+ * <if condition="${prop with a boolean value}">
+ *     <then>
+ *     </then>
+ *     <else>
+ *     </else>
+ * </if>
+ *
+ * or
+ *
+ * <if isset="propertyname">
  *     <then>
  *     </then>
  *     <else>
@@ -52,7 +63,27 @@ public class IfElseTask extends Task {
      * Sets the condition value
      */
     public void setCondition(boolean condition) {
+        if (mConditionIsSet) {
+            throw new BuildException("Cannot use both condition and isset attribute");
+        }
+
         mCondition = condition;
+        mConditionIsSet = true;
+    }
+
+    public void setIsset(String name) {
+        if (mConditionIsSet) {
+            throw new BuildException("Cannot use both condition and isset attribute");
+        }
+
+        Project antProject = getProject();
+
+        // use Isset to ensure the implementation is correct
+        IsSet isSet = new IsSet();
+        isSet.setProject(antProject);
+        isSet.setProperty(name);
+
+        mCondition = isSet.eval();
         mConditionIsSet = true;
     }
 
@@ -75,7 +106,7 @@ public class IfElseTask extends Task {
     @Override
     public void execute() throws BuildException {
         if (mConditionIsSet == false) {
-            throw new BuildException("Condition has not been set.");
+            throw new BuildException("condition or isset attribute is missing");
         }
 
         // need at least one.

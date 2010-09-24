@@ -60,8 +60,14 @@
     <property name="asset.absolute.dir" location="${asset.dir}" />
 
     <!-- Directory for the third party java libraries -->
-    <property name="external.libs.dir" value="libs" />
-    <property name="external.libs.absolute.dir" location="${external.libs.dir}" />
+    <property name="jar.libs.dir" value="libs" />
+    <property name="jar.libs.absolute.dir" location="${jar.libs.dir}" />
+    <!-- create a path with all the jar files, from the main project and the
+         libraries -->
+    <path id="jar.libs.ref">
+        <fileset dir="${jar.libs.absolute.dir}" includes="*.jar" />
+        <path refid="project.libraries.jars" />
+    </path>
 
     <!-- Directory for the native libraries -->
     <property name="native.libs.dir" value="libs" />
@@ -72,7 +78,6 @@
     <property name="out.absolute.dir" location="${out.dir}" />
     <property name="out.classes.dir" value="${out.absolute.dir}/classes" />
     <property name="out.classes.absolute.dir" location="${out.classes.dir}" />
-    <property name="out.dex.input.absolute.dir" value="${out.classes.absolute.dir}" />
 
     <!-- Intermediate files -->
     <property name="dex.file.name" value="classes.dex" />
@@ -169,21 +174,24 @@
     <!-- Configurable macro, which allows to pass as parameters output directory,
          output dex filename and external libraries to dex (optional) -->
     <macrodef name="dex-helper">
-       <element name="external-libs" optional="yes" />
-       <element name="extra-parameters" optional="yes" />
-       <sequential>
-         <echo>Converting compiled files and external libraries into ${intermediate.dex.file}...</echo>
-         <apply executable="${dx}" failonerror="true" parallel="true">
-             <arg value="--dex" />
-             <arg value="--output=${intermediate.dex.file}" />
-             <extra-parameters />
-             <arg line="${verbose.option}" />
-             <arg path="${out.dex.input.absolute.dir}" />
-             <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
-             <path refid="android.libraries.jars" />
-             <external-libs />
-         </apply>
-       </sequential>
+        <element name="external-libs" optional="yes" />
+        <element name="extra-parameters" optional="yes" />
+        <sequential>
+            <!-- sets the input for dex. If a pre-dex task sets it to something else
+                 this has no effect -->
+            <property name="out.dex.input.absolute.dir" value="${out.classes.absolute.dir}" />
+
+            <echo>Converting compiled files and external libraries into ${intermediate.dex.file}...</echo>
+            <apply executable="${dx}" failonerror="true" parallel="true">
+                <arg value="--dex" />
+                <arg value="--output=${intermediate.dex.file}" />
+                <extra-parameters />
+                <arg line="${verbose.option}" />
+                <arg path="${out.dex.input.absolute.dir}" />
+                <path refid="jar.libs.ref" />
+                <external-libs />
+            </apply>
+        </sequential>
     </macrodef>
 
     <!-- This is macro that enable passing variable list of external jar files to ApkBuilder
@@ -209,11 +217,11 @@
                     hascode="${manifest.hasCode}">
                 <dex path="${intermediate.dex.file}"/>
                 <sourcefolder path="${source.absolute.dir}"/>
-                <sourcefolder refid="android.libraries.src"/>
-                <jarfolder path="${external.libs.absolute.dir}" />
-                <jarfolder refid="android.libraries.libs" />
+                <sourcefolder refid="project.libraries.src"/>
+                <jarfolder path="${jar.libs.absolute.dir}" />
+                <jarfolder refid="project.libraries.libs" />
                 <nativefolder path="${native.libs.absolute.dir}" />
-                <nativefolder refid="android.libraries.libs" />
+                <nativefolder refid="project.libraries.libs" />
                 <extra-jars/>
             </apkbuilder>
         </sequential>
@@ -256,7 +264,7 @@
     <target name="-dirs">
         <echo>Creating output directories if needed...</echo>
         <mkdir dir="${resource.absolute.dir}" />
-        <mkdir dir="${external.libs.absolute.dir}" />
+        <mkdir dir="${jar.libs.absolute.dir}" />
         <mkdir dir="${out.absolute.dir}" />
         <if condition="${manifest.hasCode}">
             <then>
@@ -298,7 +306,7 @@
                 <aidl executable="${aidl}" framework="${android.aidl}"
                         genFolder="${gen.absolute.dir}">
                     <source path="${source.absolute.dir}"/>
-                    <source refid="android.libraries.src"/>
+                    <source refid="project.libraries.src"/>
                 </aidl>
             </then>
             <else>
@@ -325,7 +333,7 @@
                 </condition>
                 <condition property="extensible.libs.classpath"
                         value="${tested.project.absolute.dir}/libs"
-                        else="./libs">
+                        else="${jar.libs.dir}">
                     <isset property="tested.project.absolute.dir" />
                 </condition>
                 <javac encoding="${java.encoding}"
@@ -335,12 +343,11 @@
                         bootclasspathref="android.target.classpath"
                         verbose="${verbose}"
                         classpath="${extensible.classpath}"
-                        classpathref="android.libraries.jars">
+                        classpathref="jar.libs.ref">
                     <src path="${source.absolute.dir}" />
                     <src path="${gen.absolute.dir}" />
-                    <src refid="android.libraries.src" />
+                    <src refid="project.libraries.src" />
                     <classpath>
-                        <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
                         <fileset dir="${extensible.libs.classpath}" includes="*.jar" />
                     </classpath>
                 </javac>
@@ -355,8 +362,55 @@
          your build.xml and it'll be called instead of this one. -->
     <target name="-post-compile"/>
 
+    <target name="-obfuscate" unless="do.not.compile">
+        <if condition="${proguard.enabled}">
+            <then>
+                <property name="obfuscate.absolute.dir" location="${out.absolute.dir}/proguard" />
+                <property name="preobfuscate.jar.file" value="${obfuscate.absolute.dir}/original.jar" />
+                <property name="obfuscated.jar.file" value="${obfuscate.absolute.dir}/obfuscated.jar" />
+                <!-- input for dex will be proguard's output -->
+                <property name="out.dex.input.absolute.dir" value="${obfuscated.jar.file}" />
+
+                <!-- Add Proguard Tasks -->
+                <property name="proguard.jar" location="${android.tools.dir}/proguard/lib/proguard.jar" />
+                <taskdef name="proguard" classname="proguard.ant.ProGuardTask" classpath="${proguard.jar}" />
+
+                <!-- Set the android classpath Path object into a single property. It'll be
+                     all the jar files separated by a platform path-separator.
+                -->
+                <property name="android.libraryjars" refid="android.target.classpath"/>
+                <!-- Build a path object with all the jar files that must be obfuscated.
+                     This include the project compiled source code and any 3rd party jar
+                     files. -->
+                <path id="project.jars.ref">
+                    <pathelement location="${preobfuscate.jar.file}" />
+                    <path refid="jar.libs.ref" />
+                </path>
+                <!-- Set the project jar files Path object into a single property. It'll be
+                     all the jar files separated by a platform path-separator.
+                -->
+                <property name="project.jars" refid="project.jars.ref" />
+
+                <mkdir dir="${obfuscate.absolute.dir}" />
+                <delete file="${preobfuscate.jar.file}"/>
+                <delete file="${obfuscated.jar.file}"/>
+                <jar basedir="${out.classes.dir}" destfile="${preobfuscate.jar.file}" />
+                <proguard>
+                    @${proguard.config}
+                    -injars ${project.jars}
+                    -outjars ${obfuscated.jar.file}
+                    -libraryjars ${android.libraryjars}
+                    -dump ${obfuscate.absolute.dir}/dump.txt
+                    -printseeds ${obfuscate.absolute.dir}/seeds.txt
+                    -printusage ${obfuscate.absolute.dir}/usage.txt
+                    -printmapping ${obfuscate.absolute.dir}/mapping.txt
+                </proguard>
+            </then>
+        </if>
+    </target>
+
     <!-- Converts this project's .class files into .dex files -->
-    <target name="-dex" depends="compile, -post-compile"
+    <target name="-dex" depends="compile, -post-compile, -obfuscate"
             unless="do.not.compile">
         <if condition="${manifest.hasCode}">
             <then>
@@ -409,7 +463,12 @@
        </subant>
     </target>
 
-    <target name="-set-debug-mode">
+    <target name="-debug-obfuscation-check">
+        <!-- proguard is never enabled in debug mode -->
+        <property name="proguard.enabled" value="false"/>
+    </target>
+
+    <target name="-set-debug-mode" depends="-debug-obfuscation-check">
         <!-- property only set in debug mode.
              Useful for if/unless attributes in target node
              when using Ant before 1.8 -->
@@ -447,7 +506,13 @@
         <echo>and run zipalign from the Android SDK tools.</echo>
     </target>
 
-    <target name="-set-release-mode">
+    <target name="-release-obfuscation-check">
+        <condition property="proguard.enabled" value="true" else="false">
+            <isset property="proguard.config" />
+        </condition>
+    </target>
+
+    <target name="-set-release-mode" depends="-release-obfuscation-check">
         <!-- property only set in release mode.
              Useful for if/unless attributes in target node
              when using Ant before 1.8 -->

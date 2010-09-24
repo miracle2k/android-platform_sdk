@@ -117,7 +117,7 @@ public class MultiApkExportTask extends Task {
                 mXPathFactory = XPathFactory.newInstance();
 
                 File exportProjectOutput = new File(
-                        getValidatedProperty(antProject, "out.absolute.dir"));
+                        getValidatedProperty(antProject, AntConstants.PROP_OUT_ABS_DIR));
 
                 // if there's no error, and we can sign, prompt for the passwords.
                 String keyStorePassword = null;
@@ -127,21 +127,23 @@ public class MultiApkExportTask extends Task {
 
                     Input input = new Input();
                     input.setProject(antProject);
-                    input.setAddproperty("key.store.password");
+                    input.setAddproperty(AntConstants.PROP_KEY_STORE_PASSWORD);
                     input.setMessage(String.format("Please enter keystore password (store: %1$s):",
                             keyStore));
                     input.execute();
 
                     input = new Input();
                     input.setProject(antProject);
-                    input.setAddproperty("key.alias.password");
+                    input.setAddproperty(AntConstants.PROP_KEY_ALIAS_PASSWORD);
                     input.setMessage(String.format("Please enter password for alias '%1$s':",
                             keyAlias));
                     input.execute();
 
                     // and now read the property so that they can be set into the sub ant task.
-                    keyStorePassword = getValidatedProperty(antProject, "key.store.password");
-                    keyAliasPassword = getValidatedProperty(antProject, "key.alias.password");
+                    keyStorePassword = getValidatedProperty(antProject,
+                            AntConstants.PROP_KEY_STORE_PASSWORD);
+                    keyAliasPassword = getValidatedProperty(antProject,
+                            AntConstants.PROP_KEY_ALIAS_PASSWORD);
                 }
 
                 for (ApkData apk : apks) {
