@@ -28,11 +28,10 @@ import com.android.sdklib.xml.ManifestData.Activity;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
@@ -140,6 +139,10 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
             androidLaunch.stopLaunch();
             return;
         }
+
+        // make sure the project is built. This is a synchronous call which returns when the
+        // build is done.
+        project.build(IncrementalProjectBuilder.INCREMENTAL_BUILD, monitor);
 
         // check if the project has errors, and abort in this case.
         if (ProjectHelper.hasError(project, true)) {
@@ -323,18 +326,10 @@ public class LaunchConfigDelegate extends LaunchConfigurationDelegate {
     @Override
     public boolean buildForLaunch(ILaunchConfiguration configuration,
             String mode, IProgressMonitor monitor) throws CoreException {
-
-        // need to check we have everything
-        IProject project = getProject(configuration);
-
-        if (project != null) {
-            // force an incremental build to be sure the resources will
-            // be updated if they were not saved before the launch was launched.
-            return true;
-        }
-
-        throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
-                        1 /* code, unused */, "Can't find the project!", null /* exception */));
+        // if this returns true, this forces a full workspace rebuild which is not
+        // what we want.
+        // Instead in the #launch method, we'll rebuild only the launching project.
+        return false;
     }
 
     /**
