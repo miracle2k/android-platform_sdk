@@ -111,6 +111,11 @@
     <property name="aapt.resource.filter" value="" />
     <property name="filter.abi" value="" />
 
+    <!-- compilation options -->
+    <property name="java.encoding" value="ascii" />
+    <property name="java.target" value="1.5" />
+    <property name="java.source" value="1.5" />
+
     <!-- Verbosity -->
     <property name="verbose" value="false" />
     <!-- This is needed by emma as it uses multilevel verbosity instead of simple 'true' or 'false'
@@ -323,7 +328,9 @@
                         else="./libs">
                     <isset property="tested.project.absolute.dir" />
                 </condition>
-                <javac encoding="ascii" target="1.5" debug="true" extdirs=""
+                <javac encoding="${java.encoding}"
+                        source="${java.source}" target="${java.target}"
+                        debug="true" extdirs=""
                         destdir="${out.classes.absolute.dir}"
                         bootclasspathref="android.target.classpath"
                         verbose="${verbose}"

@@ -7,6 +7,8 @@ Revision 8:
   the Android Manifest.
   "ant debug" will automatically insert debuggable==true, while "ant release"
   will not.
+- new overridable Ant javac properties: java.encoding, java.source, and java.target
+  (default to "ascii", "1.5" and "1.5")
 
 
 Revision 7:
