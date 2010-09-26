@@ -195,6 +195,8 @@ public class LogPanel extends SelectionDependentPanel {
 
     private ITableFocusListener mGlobalListener;
 
+    private LogCatViewInterface mLogCatViewInterface = null;
+
     /** message data, separated from content for multi line messages */
     protected static class LogMessage {
         public LogMessageInfo data;
@@ -313,6 +315,12 @@ public class LogPanel extends SelectionDependentPanel {
 
     }
 
+    /**
+     * Interface implemented by the LogCatView in Eclipse for particular action on double-click.
+     */
+    public interface LogCatViewInterface {
+        public void onDoubleClick();
+    }
 
     /**
      * Create the log view with some default parameters
@@ -910,6 +918,14 @@ public class LogPanel extends SelectionDependentPanel {
 
             // create the ui, first the table
             final Table t = new Table(top, SWT.MULTI | SWT.FULL_SELECTION);
+            t.addSelectionListener(new SelectionAdapter() {
+                @Override
+                public void widgetDefaultSelected(SelectionEvent e) {
+                    if (mLogCatViewInterface != null) {
+                        mLogCatViewInterface.onDoubleClick();
+                    }
+                }
+            });
 
             if (mDisplayFont != null) {
                 t.setFont(mDisplayFont);
@@ -1580,5 +1596,9 @@ public class LogPanel extends SelectionDependentPanel {
                 return msg.msg;
         }
         return null;
+    }
+
+    public void setLogCatViewInterface(LogCatViewInterface i) {
+        mLogCatViewInterface = i;
     }
 }

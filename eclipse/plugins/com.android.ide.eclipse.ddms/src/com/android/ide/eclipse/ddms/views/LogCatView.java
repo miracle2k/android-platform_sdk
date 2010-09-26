@@ -22,6 +22,7 @@ import com.android.ddmuilib.logcat.LogColors;
 import com.android.ddmuilib.logcat.LogFilter;
 import com.android.ddmuilib.logcat.LogPanel;
 import com.android.ddmuilib.logcat.LogPanel.ILogFilterStorageManager;
+import com.android.ddmuilib.logcat.LogPanel.LogCatViewInterface;
 import com.android.ide.eclipse.ddms.CommonAction;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.ide.eclipse.ddms.preferences.PreferenceInitializer;
@@ -42,6 +43,7 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.Separator;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
@@ -66,7 +68,7 @@ import java.util.regex.Pattern;
  * The log cat view displays log output from the current device selection.
  *
  */
-public final class LogCatView extends SelectionDependentViewPart {
+public final class LogCatView extends SelectionDependentViewPart implements LogCatViewInterface {
 
     public static final String ID =
         "com.android.ide.eclipse.ddms.views.LogCatView"; // $NON-NLS-1$
@@ -85,6 +87,11 @@ public final class LogCatView extends SelectionDependentViewPart {
     private static final String PREFS_FILTERS =
         DdmsPlugin.PLUGIN_ID + ".logcat.filters"; // $NON-NLS-1$
 
+    public static final String CHOICE_METHOD_DECLARATION =
+        DdmsPlugin.PLUGIN_ID + ".logcat.MethodDeclaration"; // $NON-NLS-1$
+    public static final String CHOICE_ERROR_LINE =
+        DdmsPlugin.PLUGIN_ID + ".logcat.ErrorLine"; // $NON-NLS-1$
+
     private static LogCatView sThis;
     private LogPanel mLogPanel;
 
@@ -92,7 +99,8 @@ public final class LogCatView extends SelectionDependentViewPart {
     private CommonAction mDeleteFilterAction;
     private CommonAction mEditFilterAction;
     private CommonAction mExportAction;
-    private CommonAction gotoLineAction;
+    private CommonAction mGotoMethodDeclarationAction;
+    private CommonAction mGotoErrorLineAction;
 
     private CommonAction[] mLogLevelActions;
     private String[] mLogLevelIcons = {
@@ -148,6 +156,59 @@ public final class LogCatView extends SelectionDependentViewPart {
 
         public boolean requiresDefaultFilter() {
             return true;
+        }
+    }
+
+    /**
+     * This class defines what to do with the search match returned by a double-click or by the
+     * Go to Problem action.
+     */
+    private class LogCatViewSearchRequestor extends SearchRequestor {
+
+        private boolean mFoundFirstMatch = false;
+        private String mChoice;
+        private int mLineNumber;
+
+        public LogCatViewSearchRequestor(String choice, int lineNumber) {
+            super();
+            mChoice = choice;
+            mLineNumber = lineNumber;
+        }
+
+        IMarker createMarkerFromSearchMatch(IFile file, SearchMatch match) {
+            IMarker marker = null;
+            try {
+                if (CHOICE_METHOD_DECLARATION.equals(mChoice)) {
+                    HashMap<String, Object> map = new HashMap<String, Object>();
+                    map.put(IMarker.CHAR_START, new Integer(match.getOffset()));
+                    map.put(IMarker.CHAR_END, new Integer(match.getOffset()
+                            + match.getLength()));
+                    marker = file.createMarker(IMarker.TEXT);
+                    marker.setAttributes(map);
+                } else if (CHOICE_ERROR_LINE.equals(mChoice)) {
+                    marker = file.createMarker(IMarker.TEXT);
+                    marker.setAttribute(IMarker.LINE_NUMBER, mLineNumber);
+                }
+            } catch (CoreException e) {
+                Status s = new Status(Status.ERROR, DdmsPlugin.PLUGIN_ID, e.getMessage(), e);
+                DdmsPlugin.getDefault().getLog().log(s);
+            }
+            return marker;
+        }
+
+        @Override
+        public void acceptSearchMatch(SearchMatch match) throws CoreException {
+            if (match.getResource() instanceof IFile && !mFoundFirstMatch) {
+                mFoundFirstMatch = true;
+                IFile matched_file = (IFile) match.getResource();
+                IMarker marker = createMarkerFromSearchMatch(matched_file, match);
+                // There should only be one exact match,
+                // so we go immediately to that one.
+                if (marker != null) {
+                    switchPerspective();
+                    openFile(matched_file, marker);
+                }
+            }
         }
     }
 
@@ -226,10 +287,17 @@ public final class LogCatView extends SelectionDependentViewPart {
         mExportAction.setToolTipText("Export Selection As Text...");
         mExportAction.setImageDescriptor(loader.loadDescriptor("save.png")); // $NON-NLS-1$
 
-        gotoLineAction = new CommonAction("Go to Problem") {
+        mGotoMethodDeclarationAction = new CommonAction("Go to Problem (method declaration)") {
             @Override
             public void run() {
-                goToErrorLine();
+                goToErrorLine(CHOICE_METHOD_DECLARATION);
+            }
+        };
+
+        mGotoErrorLineAction = new CommonAction("Go to Problem (error line)") {
+            @Override
+            public void run() {
+                goToErrorLine(CHOICE_ERROR_LINE);
             }
         };
 
@@ -270,6 +338,7 @@ public final class LogCatView extends SelectionDependentViewPart {
 
         // now create the log view
         mLogPanel = new LogPanel(colors, new FilterStorage(), LogPanel.FILTER_MANUAL);
+        mLogPanel.setLogCatViewInterface(this);
         mLogPanel.setActions(mDeleteFilterAction, mEditFilterAction, mLogLevelActions);
 
         // get the font
@@ -335,7 +404,8 @@ public final class LogCatView extends SelectionDependentViewPart {
         menuManager.add(mClearAction);
         menuManager.add(new Separator());
         menuManager.add(mExportAction);
-        menuManager.add(gotoLineAction);
+        menuManager.add(mGotoMethodDeclarationAction);
+        menuManager.add(mGotoErrorLineAction);
 
         // and then in the toolbar
         IToolBarManager toolBarManager = actionBars.getToolBarManager();
@@ -348,22 +418,6 @@ public final class LogCatView extends SelectionDependentViewPart {
         toolBarManager.add(mDeleteFilterAction);
         toolBarManager.add(new Separator());
         toolBarManager.add(mClearAction);
-    }
-
-    IMarker createMarkerFromSearchMatch(IFile file, SearchMatch match) {
-        HashMap<String, Object> map = new HashMap<String, Object>();
-        map.put(IMarker.CHAR_START, new Integer(match.getOffset()));
-        map.put(IMarker.CHAR_END, new Integer(match.getOffset()
-                + match.getLength()));
-        IMarker marker = null;
-        try {
-            marker = file.createMarker(IMarker.TEXT);
-            marker.setAttributes(map);
-        } catch (CoreException e) {
-            Status s = new Status(Status.ERROR, DdmsPlugin.PLUGIN_ID, e.getMessage(), e);
-            DdmsPlugin.getDefault().getLog().log(s);
-        }
-        return marker;
     }
 
     void openFile(IFile file, IMarker marker) {
@@ -396,57 +450,53 @@ public final class LogCatView extends SelectionDependentViewPart {
     }
 
     void goToErrorLine() {
+        IPreferenceStore store = DdmsPlugin.getDefault().getPreferenceStore();
+        String value = store.getString(PreferenceInitializer.ATTR_LOGCAT_GOTO_PROBLEM);
+        goToErrorLine(value);
+    }
+
+    void goToErrorLine(String choice) {
         try {
             String msg = mLogPanel.getSelectedErrorLineMessage();
             if (msg != null) {
-                String error_line_matcher_string = "\\s*at\\ (.*)\\((.*\\.java)\\:(\\d+)\\)";
+                String error_line_matcher_string = "\\s*at\\ (.*)\\((.*)\\.java\\:(\\d+)\\)";
                 Matcher error_line_matcher = Pattern.compile(
                         error_line_matcher_string).matcher(msg);
 
                 if (error_line_matcher.find()) {
-                    String class_name = error_line_matcher.group(1);
+                    String class_name_method = error_line_matcher.group(1);
 
                     // TODO: Search currently only matches the class declaration (using
                     // IJavaSearchConstants.DECLARATIONS). We may want to jump to the
                     // "reference" of the class instead (IJavaSearchConstants.REFERENCES)
                     // using the filename and line number to disambiguate the search results.
-//                  String filename = error_line_matcher.group(2);
-//                  int line_number = Integer.parseInt(error_line_matcher.group(3));
+                    String class_name_line = error_line_matcher.group(2);
+                    int line_number = Integer.parseInt(error_line_matcher.group(3));
 
                     SearchEngine se = new SearchEngine();
-                    se.search(SearchPattern.createPattern(class_name,
-                            IJavaSearchConstants.METHOD,
-                            IJavaSearchConstants.DECLARATIONS,
-                            SearchPattern.R_EXACT_MATCH
-                                    | SearchPattern.R_CASE_SENSITIVE),
-                            new SearchParticipant[] { SearchEngine
-                                    .getDefaultSearchParticipant() },
+                    if (CHOICE_ERROR_LINE.equals(choice)) {
+                        se.search(SearchPattern.createPattern(class_name_line,
+                                IJavaSearchConstants.CLASS,
+                                IJavaSearchConstants.DECLARATIONS,
+                                SearchPattern.R_EXACT_MATCH
+                                | SearchPattern.R_CASE_SENSITIVE),
+                                new SearchParticipant[] { SearchEngine
+                            .getDefaultSearchParticipant() },
                             SearchEngine.createWorkspaceScope(),
-                            new SearchRequestor() {
-                                boolean found_first_match = false;
-
-                                @Override
-                                public void acceptSearchMatch(
-                                        SearchMatch match)
-                                        throws CoreException {
-
-                                    if (match.getResource() instanceof IFile
-                                            && !found_first_match) {
-                                        found_first_match = true;
-
-                                        IFile matched_file = (IFile) match
-                                                .getResource();
-                                        IMarker marker = createMarkerFromSearchMatch(
-                                                matched_file, match);
-
-                                        // There should only be one exact match,
-                                        // so we go immediately to that one.
-                                        switchPerspective();
-                                        openFile(matched_file, marker);
-                                    }
-                                }
-                            }, new NullProgressMonitor());
-
+                            new LogCatViewSearchRequestor(CHOICE_ERROR_LINE, line_number),
+                            new NullProgressMonitor());
+                    } else if (CHOICE_METHOD_DECLARATION.equals(choice)) {
+                        se.search(SearchPattern.createPattern(class_name_method,
+                                IJavaSearchConstants.METHOD,
+                                IJavaSearchConstants.DECLARATIONS,
+                                SearchPattern.R_EXACT_MATCH
+                                | SearchPattern.R_CASE_SENSITIVE),
+                                new SearchParticipant[] { SearchEngine
+                            .getDefaultSearchParticipant() },
+                            SearchEngine.createWorkspaceScope(),
+                            new LogCatViewSearchRequestor(CHOICE_METHOD_DECLARATION, 0),
+                            new NullProgressMonitor());
+                    }
                 }
             }
         } catch (Exception e) {
@@ -454,5 +504,9 @@ public final class LogCatView extends SelectionDependentViewPart {
             DdmsPlugin.getDefault().getLog().log(s);
         }
     }
- }
+
+    public void onDoubleClick() {
+        goToErrorLine();
+    }
+}
 
