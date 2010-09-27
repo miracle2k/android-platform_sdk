@@ -362,6 +362,23 @@
          your build.xml and it'll be called instead of this one. -->
     <target name="-post-compile"/>
 
+    <!-- Obfuscate target
+        This is only active in release builds when proguard.config is defined
+        in default.properties.
+
+        To replace Proguard with a different obfuscation engine:
+        Override the following targets in your build.xml, before the call to <setup>
+            -release-obfuscation-check
+                Check whether obfuscation should happen, and put the result in a property.
+            -debug-obfuscation-check
+                Obfuscation should not happen. Set the same property to false.
+            -obfuscate
+                ** Make sure unless="do.not.compile" is used in the target definition **
+                check if the property set in -debug/release-obfuscation-check is set to true.
+                If true:
+                    Perform obfuscation
+                    Set property out.dex.input.absolute.dir to be the output of the obfuscation
+    -->
     <target name="-obfuscate" unless="do.not.compile">
         <if condition="${proguard.enabled}">
             <then>
