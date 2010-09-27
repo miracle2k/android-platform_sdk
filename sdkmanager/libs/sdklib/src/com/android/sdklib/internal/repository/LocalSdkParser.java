@@ -91,6 +91,13 @@ public class LocalSdkParser {
             visited.add(dir);
         }
 
+        dir = new File(osSdkRoot, SdkConstants.FD_PLATFORM_TOOLS);
+        pkg = scanPlatformTools(dir, log);
+        if (pkg != null) {
+            packages.add(pkg);
+            visited.add(dir);
+        }
+
         File samplesRoot = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
 
         // for platforms, add-ons and samples, rely on the SdkManager parser
@@ -229,18 +236,17 @@ public class LocalSdkParser {
         Properties props = parseProperties(new File(toolFolder, SdkConstants.FN_SOURCE_PROP));
 
         // We're not going to check that all tools are present. At the very least
-        // we should expect to find adb, android and an emulator adapted to the current OS.
+        // we should expect to find android and an emulator adapted to the current OS.
         Set<String> names = new HashSet<String>();
         for (File file : toolFolder.listFiles()) {
             names.add(file.getName());
         }
-        if (!names.contains(SdkConstants.FN_ADB) ||
-                !names.contains(SdkConstants.androidCmdName()) ||
+        if (!names.contains(SdkConstants.androidCmdName()) ||
                 !names.contains(SdkConstants.FN_EMULATOR)) {
             return null;
         }
 
-        // Create are package. use the properties if we found any.
+        // Create our package. use the properties if we found any.
         try {
             ToolPackage pkg = new ToolPackage(
                     null,                       //source
@@ -252,6 +258,49 @@ public class LocalSdkParser {
                     Os.getCurrentOs(),          //archiveOs
                     Arch.getCurrentArch(),      //archiveArch
                     toolFolder.getPath()        //archiveOsPath
+                    );
+
+            return pkg;
+        } catch (Exception e) {
+            log.error(e, null);
+        }
+        return null;
+    }
+
+    /**
+     * Try to find a platform-tools package at the given location.
+     * Returns null if not found.
+     */
+    private Package scanPlatformTools(File platformToolsFolder, ISdkLog log) {
+        // Can we find some properties?
+        Properties props = parseProperties(new File(platformToolsFolder,
+                SdkConstants.FN_SOURCE_PROP));
+
+        // We're not going to check that all tools are present. At the very least
+        // we should expect to find adb, aidl, aapt and dx (adapted to the current OS).
+        Set<String> names = new HashSet<String>();
+        for (File file : platformToolsFolder.listFiles()) {
+            names.add(file.getName());
+        }
+        if (!names.contains(SdkConstants.FN_ADB) ||
+                !names.contains(SdkConstants.FN_AAPT) ||
+                !names.contains(SdkConstants.FN_AIDL) ||
+                !names.contains(SdkConstants.FN_DX)) {
+            return null;
+        }
+
+        // Create our package. use the properties if we found any.
+        try {
+            PlatformToolPackage pkg = new PlatformToolPackage(
+                    null,                           //source
+                    props,                          //properties
+                    0,                              //revision
+                    null,                           //license
+                    "Platform Tools",               //description
+                    null,                           //descUrl
+                    Os.getCurrentOs(),              //archiveOs
+                    Arch.getCurrentArch(),          //archiveArch
+                    platformToolsFolder.getPath()   //archiveOsPath
                     );
 
             return pkg;
