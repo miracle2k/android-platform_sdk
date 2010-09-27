@@ -310,7 +310,7 @@ public class AdtPlugin extends AbstractUIPlugin {
 
     /** Returns the adb path relative to the sdk folder */
     public static String getOsRelativeAdb() {
-        return SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_ADB;
+        return SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER + SdkConstants.FN_ADB;
     }
 
     /** Returns the zipalign path relative to the sdk folder */

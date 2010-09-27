@@ -50,7 +50,8 @@ public class AdbWrapper {
         if (!osSdkPath.endsWith(File.separator)) {
             osSdkPath += File.separator;
         }
-        mAdbOsLocation = osSdkPath + SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_ADB;
+        mAdbOsLocation = osSdkPath + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER
+                + SdkConstants.FN_ADB;
     }
 
     private void display(String format, Object...args) {

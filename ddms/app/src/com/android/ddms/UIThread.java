@@ -455,9 +455,18 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
         ClientData.setMethodProfilingHandler(new MethodProfilingHandler(shell));
 
         // [try to] ensure ADB is running
+        // in the new SDK, adb is in the platform-tools, but when run from the command line
+        // in the Android source tree, then adb is next to ddms.
         String adbLocation;
         if (ddmsParentLocation != null && ddmsParentLocation.length() != 0) {
-            adbLocation = ddmsParentLocation + File.separator + "adb"; //$NON-NLS-1$
+            // check if there's a platform-tools folder
+            File platformTools = new File(new File(ddmsParentLocation).getParent(),
+                    "platform-tools");  //$NON-NLS-1$
+            if (platformTools.isDirectory()) {
+                adbLocation = platformTools.getAbsolutePath() + File.separator + "adb"; //$NON-NLS-1$
+            } else {
+                adbLocation = ddmsParentLocation + File.separator + "adb"; //$NON-NLS-1$
+            }
         } else {
             adbLocation = "adb"; //$NON-NLS-1$
         }
