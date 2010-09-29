@@ -18,24 +18,29 @@ package com.android.ddmlib.testrunner;
 
 import com.android.ddmlib.testrunner.ITestRunListener.TestFailure;
 
+import org.easymock.Capture;
+import org.easymock.EasyMock;
+
 import junit.framework.TestCase;
 
+import java.util.Collections;
 import java.util.Map;
 
-
 /**
- * Tests InstrumentationResultParser.
+ * Unit tests for {@link @InstrumentationResultParser}.
  */
+@SuppressWarnings("unchecked")
 public class InstrumentationResultParserTest extends TestCase {
 
     private InstrumentationResultParser mParser;
-    private VerifyingTestResult mTestResult;
+    private ITestRunListener mMockListener;
 
     // static dummy test names to use for validation
     private static final String RUN_NAME = "foo";
     private static final String CLASS_NAME = "com.test.FooTest";
     private static final String TEST_NAME = "testFoo";
     private static final String STACK_TRACE = "java.lang.AssertionFailedException";
+    private static final TestIdentifier TEST_ID = new TestIdentifier(CLASS_NAME, TEST_NAME);
 
     /**
      * @param name - test name
@@ -50,96 +55,109 @@ public class InstrumentationResultParserTest extends TestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mTestResult = new VerifyingTestResult();
-        mParser = new InstrumentationResultParser(RUN_NAME, mTestResult);
+        // use a strict mock to verify order of method calls
+        mMockListener = EasyMock.createStrictMock(ITestRunListener.class);
+        mParser = new InstrumentationResultParser(RUN_NAME, mMockListener);
     }
 
     /**
-     * Tests that the test run started and test start events is sent on first
-     * bundle received.
+     * Tests parsing empty output.
      */
-    public void testTestStarted() {
-        StringBuilder output = buildCommonResult();
-        addStartCode(output);
+    public void testParse_empty() {
+        mMockListener.testRunStarted(RUN_NAME, 0);
+        mMockListener.testRunFailed(InstrumentationResultParser.NO_TEST_RESULTS_MSG);
+        mMockListener.testRunEnded(0, Collections.EMPTY_MAP);
 
-        injectTestString(output.toString());
-        assertCommonAttributes();
+        injectAndVerifyTestString("");
     }
 
     /**
-     * Tests basic parsing of a single successful test execution.
+     * Tests parsing output for a successful test run with no tests.
      */
-    public void testTestSuccess() {
+    public void testParse_noTests() {
+        StringBuilder output = new StringBuilder();
+        addLine(output, "INSTRUMENTATION_RESULT: stream=");
+        addLine(output, "Test results for InstrumentationTestRunner=");
+        addLine(output, "Time: 0.001");
+        addLine(output, "OK (0 tests)");
+        addLine(output, "INSTRUMENTATION_CODE: -1");
+
+        mMockListener.testRunStarted(RUN_NAME, 0);
+        mMockListener.testRunEnded(1, Collections.EMPTY_MAP);
+
+        injectAndVerifyTestString(output.toString());
+    }
+
+    /**
+     * Tests parsing output for a single successful test execution.
+     */
+    public void testParse_singleTest() {
         StringBuilder output = createSuccessTest();
 
-        injectTestString(output.toString());
-        assertCommonAttributes();
-        assertEquals(1, mTestResult.mNumTestsRun);
-        assertEquals(null, mTestResult.mTestStatus);
+        mMockListener.testRunStarted(RUN_NAME, 1);
+        mMockListener.testStarted(TEST_ID);
+        mMockListener.testEnded(TEST_ID, Collections.EMPTY_MAP);
+        mMockListener.testRunEnded(0, Collections.EMPTY_MAP);
+
+        injectAndVerifyTestString(output.toString());
     }
 
     /**
-     * Tests basic parsing of a successful test execution with metrics.
+     * Tests parsing output for a successful test execution with metrics.
      */
-    public void testTestSuccessMetrics() {
+    public void testParse_testMetrics() {
         StringBuilder output = buildCommonResult();
 
         addStatusKey(output, "randomKey", "randomValue");
-        assertNotNull(mTestResult.mTestMetrics);
-        assertEquals("randomValue", mTestResult.mTestMetrics.get("randomKey"));
-    }
-
-    /**
-     * Create instrumentation output for a successful single test case execution.
-     */
-    private StringBuilder createSuccessTest() {
-        StringBuilder output = buildCommonResult();
         addSuccessCode(output);
-        return output;
+
+        final Capture<Map<String, String>> captureMetrics = new Capture<Map<String, String>>();
+        mMockListener.testRunStarted(RUN_NAME, 1);
+        mMockListener.testStarted(TEST_ID);
+        mMockListener.testEnded(EasyMock.eq(TEST_ID), EasyMock.capture(captureMetrics));
+        mMockListener.testRunEnded(0, Collections.EMPTY_MAP);
+
+        injectAndVerifyTestString(output.toString());
+
+        assertEquals("randomValue", captureMetrics.getValue().get("randomKey"));
     }
 
     /**
-     * Test basic parsing of failed test case.
+     * Test parsing output for a test failure.
      */
-    public void testTestFailed() {
+    public void testParse_testFailed() {
         StringBuilder output = buildCommonResult();
-        addStartCode(output);
-        addCommonStatus(output);
         addStackTrace(output);
         addFailureCode(output);
 
-        injectTestString(output.toString());
-        assertCommonAttributes();
+        mMockListener.testRunStarted(RUN_NAME, 1);
+        mMockListener.testStarted(TEST_ID);
+        mMockListener.testFailed(TestFailure.FAILURE, TEST_ID, STACK_TRACE);
+        mMockListener.testEnded(TEST_ID, Collections.EMPTY_MAP);
+        mMockListener.testRunEnded(0, Collections.EMPTY_MAP);
 
-        assertEquals(1, mTestResult.mNumTestsRun);
-        assertEquals(ITestRunListener.TestFailure.FAILURE, mTestResult.mTestStatus);
-        assertEquals(STACK_TRACE, mTestResult.mTrace);
-    }
-
-    /**
-     * Test basic parsing and conversion of time from output.
-     */
-    public void testTimeParsing() {
-        StringBuilder output = createSuccessTest();
-        output.append("Time: 4.9");
-        injectTestString(output.toString());
-        assertEquals(4900, mTestResult.mTestTime);
+        injectAndVerifyTestString(output.toString());
     }
 
     /**
      * Test parsing and conversion of time output that contains extra chars.
      */
-    public void testTimeParsing_bracket() {
+    public void testParse_timeBracket() {
         StringBuilder output = createSuccessTest();
         output.append("Time: 0.001)");
-        injectTestString(output.toString());
-        assertEquals(1, mTestResult.mTestTime);
+
+        mMockListener.testRunStarted(RUN_NAME, 1);
+        mMockListener.testStarted(TEST_ID);
+        mMockListener.testEnded(TEST_ID, Collections.EMPTY_MAP);
+        mMockListener.testRunEnded(1, Collections.EMPTY_MAP);
+
+        injectAndVerifyTestString(output.toString());
     }
 
     /**
-     * Test basic parsing of a test run failure.
+     * Test parsing output for a test run failure.
      */
-    public void testRunFailed() {
+    public void testParse_runFailed() {
         StringBuilder output = new StringBuilder();
         final String errorMessage = "Unable to find instrumentation info";
         addStatusKey(output, "Error", errorMessage);
@@ -147,16 +165,20 @@ public class InstrumentationResultParserTest extends TestCase {
         output.append("INSTRUMENTATION_FAILED: com.dummy/android.test.InstrumentationTestRunner");
         addLineBreak(output);
 
-        injectTestString(output.toString());
+        mMockListener.testRunStarted(RUN_NAME, 0);
+        mMockListener.testRunFailed(errorMessage);
+        mMockListener.testRunEnded(0, Collections.EMPTY_MAP);
 
-        assertEquals(errorMessage, mTestResult.mRunFailedMessage);
+        injectAndVerifyTestString(output.toString());
     }
 
     /**
-     * Test parsing of a test run failure, where an instrumentation component failed to load
+     * Test parsing output for a test run failure, where an instrumentation component failed to
+     * load.
+     * <p/>
      * Parsing input takes the from of INSTRUMENTATION_RESULT: fff
      */
-    public void testRunFailedResult() {
+    public void testParse_failedResult() {
         StringBuilder output = new StringBuilder();
         final String errorMessage = "Unable to instantiate instrumentation";
         output.append("INSTRUMENTATION_RESULT: shortMsg=");
@@ -165,32 +187,40 @@ public class InstrumentationResultParserTest extends TestCase {
         output.append("INSTRUMENTATION_CODE: 0");
         addLineBreak(output);
 
-        injectTestString(output.toString());
+        mMockListener.testRunStarted(RUN_NAME, 0);
+        mMockListener.testRunFailed(errorMessage);
+        mMockListener.testRunEnded(0, Collections.EMPTY_MAP);
 
-        assertEquals(errorMessage, mTestResult.mRunFailedMessage);
+        injectAndVerifyTestString(output.toString());
     }
 
     /**
-     * Test parsing of a test run that did not complete. This can occur if device spontaneously
-     * reboots, or if test method could not be found
+     * Test parsing output for a test run that did not complete.
+     * <p/>
+     * This can occur if device spontaneously reboots, or if test method could not be found.
      */
-    public void testRunIncomplete() {
+    public void testParse_incomplete() {
         StringBuilder output = new StringBuilder();
         // add a start test sequence, but without an end test sequence
         addCommonStatus(output);
         addStartCode(output);
 
-        injectTestString(output.toString());
+        mMockListener.testRunStarted(RUN_NAME, 1);
+        mMockListener.testStarted(TEST_ID);
+        mMockListener.testFailed(EasyMock.eq(TestFailure.ERROR), EasyMock.eq(TEST_ID),
+                EasyMock.startsWith(InstrumentationResultParser.INCOMPLETE_TEST_ERR_MSG_PREFIX));
+        mMockListener.testEnded(TEST_ID, Collections.EMPTY_MAP);
+        mMockListener.testRunFailed(EasyMock.startsWith(
+                InstrumentationResultParser.INCOMPLETE_RUN_ERR_MSG_PREFIX));
+        mMockListener.testRunEnded(0, Collections.EMPTY_MAP);
 
-        assertTrue(mTestResult.mRunFailedMessage.startsWith("Test run incomplete."));
-        // ensure test is marked as failed
-        assertEquals(TestFailure.ERROR, mTestResult.mTestStatus);
+        injectAndVerifyTestString(output.toString());
     }
 
     /**
-     * Test parsing of a test run that did not start due to incorrect syntax supplied to am.
+     * Test parsing output for a test run that did not start due to incorrect syntax supplied to am.
      */
-    public void testRunAmFailed() {
+    public void testParse_amFailed() {
         StringBuilder output = new StringBuilder();
         addLine(output, "usage: am [subcommand] [options]");
         addLine(output, "start an Activity: am start [-D] [-W] <INTENT>");
@@ -199,49 +229,36 @@ public class InstrumentationResultParserTest extends TestCase {
         addLine(output, "start a Service: am startservice <INTENT>");
         addLine(output, "Error: Bad component name: wfsdafddfasasdf");
 
-        injectTestString(output.toString());
+        mMockListener.testRunStarted(RUN_NAME, 0);
+        mMockListener.testRunFailed(InstrumentationResultParser.NO_TEST_RESULTS_MSG);
+        mMockListener.testRunEnded(0, Collections.EMPTY_MAP);
 
-        assertEquals(InstrumentationResultParser.NO_TEST_RESULTS_MSG,
-                mTestResult.mRunFailedMessage);
+        injectAndVerifyTestString(output.toString());
     }
 
     /**
-     * Test parsing of a test run that has no tests.
+     * Test parsing output for a test run that produces INSTRUMENTATION_RESULT output.
      * <p/>
-     * Expect run to be reported as success.
+     * This mimics launch performance test output.
      */
-    public void testRunNoResults() {
-        StringBuilder output = new StringBuilder();
-        addLine(output, "INSTRUMENTATION_RESULT: stream=");
-        addLine(output, "Test results for InstrumentationTestRunner=");
-        addLine(output, "Time: 0.001");
-        addLine(output, "OK (0 tests)");
-        addLine(output, "INSTRUMENTATION_CODE: -1");
-
-        injectTestString(output.toString());
-
-        assertEquals(0, mTestResult.mTestCount);
-        assertNull(mTestResult.mRunFailedMessage);
-        assertEquals(1, mTestResult.mTestTime);
-        assertFalse(mTestResult.mStopped);
-    }
-
-    /**
-     * Test parsing of a test run that produces INSTRUMENTATION_RESULT output. This mimics launch
-     * performance test output.
-     */
-    public void testRunWithInstrumentationResults() {
+    public void testParse_instrumentationResults() {
         StringBuilder output = new StringBuilder();
         addResultKey(output, "other_pss", "2390");
         addResultKey(output, "java_allocated", "2539");
         addResultKey(output, "foo", "bar");
+        addResultKey(output, "stream", "should not be captured");
         addLine(output, "INSTRUMENTATION_CODE: -1");
 
-        injectTestString(output.toString());
+        Capture<Map<String, String>> captureMetrics = new Capture<Map<String, String>>();
+        mMockListener.testRunStarted(RUN_NAME, 0);
+        mMockListener.testRunEnded(EasyMock.anyLong(), EasyMock.capture(captureMetrics));
 
-        assertEquals("2390", mTestResult.mResultBundle.get("other_pss"));
-        assertEquals("2539", mTestResult.mResultBundle.get("java_allocated"));
-        assertEquals("bar", mTestResult.mResultBundle.get("foo"));
+        injectAndVerifyTestString(output.toString());
+
+        assertEquals("2390", captureMetrics.getValue().get("other_pss"));
+        assertEquals("2539", captureMetrics.getValue().get("java_allocated"));
+        assertEquals("bar", captureMetrics.getValue().get("foo"));
+        assertEquals(3, captureMetrics.getValue().size());
     }
 
     /**
@@ -254,6 +271,15 @@ public class InstrumentationResultParserTest extends TestCase {
         addStartCode(output);
         // add end test bundle, without status
         addCommonStatus(output);
+        return output;
+    }
+
+    /**
+     * Create instrumentation output for a successful single test case execution.
+     */
+    private StringBuilder createSuccessTest() {
+        StringBuilder output = buildCommonResult();
+        addSuccessCode(output);
         return output;
     }
 
@@ -334,87 +360,15 @@ public class InstrumentationResultParserTest extends TestCase {
     }
 
     /**
-     * inject a test string into the result parser.
+     * Inject a test string into the result parser, and verify the mock listener.
      *
-     * @param result
+     * @param result the string to inject into parser under test.
      */
-    private void injectTestString(String result) {
+    private void injectAndVerifyTestString(String result) {
+        EasyMock.replay(mMockListener);
         byte[] data = result.getBytes();
         mParser.addOutput(data, 0, data.length);
         mParser.flush();
-    }
-
-    private void assertCommonAttributes() {
-        assertEquals(RUN_NAME, mTestResult.mTestRunName);
-        assertEquals(CLASS_NAME, mTestResult.mSuiteName);
-        assertEquals(1, mTestResult.mTestCount);
-        assertEquals(TEST_NAME, mTestResult.mTestName);
-    }
-
-    /**
-     * A specialized test listener that stores a single test events.
-     */
-    private class VerifyingTestResult implements ITestRunListener {
-
-        String mTestRunName;
-        String mSuiteName;
-        int mTestCount;
-        int mNumTestsRun;
-        String mTestName;
-        long mTestTime;
-        TestFailure mTestStatus;
-        String mTrace;
-        boolean mStopped;
-        /** stores the error message provided to testRunFailed */
-        String mRunFailedMessage;
-        Map<String, String> mResultBundle = null;
-        Map<String, String> mTestMetrics = null;
-
-        VerifyingTestResult() {
-            mNumTestsRun = 0;
-            mTestStatus = null;
-            mStopped = false;
-            mRunFailedMessage = null;
-            mResultBundle = null;
-        }
-
-        public void testEnded(TestIdentifier test, Map<String, String> testMetrics) {
-            mNumTestsRun++;
-            mTestMetrics = testMetrics;
-            assertEquals("Unexpected class name", mSuiteName, test.getClassName());
-            assertEquals("Unexpected test ended", mTestName, test.getTestName());
-
-        }
-
-        public void testFailed(TestFailure status, TestIdentifier test, String trace) {
-            mTestStatus = status;
-            mTrace = trace;
-            assertEquals("Unexpected class name", mSuiteName, test.getClassName());
-            assertEquals("Unexpected test ended", mTestName, test.getTestName());
-        }
-
-        public void testRunEnded(long elapsedTime, Map<String, String> resultBundle) {
-            mTestTime = elapsedTime;
-            mResultBundle = resultBundle;
-        }
-
-        public void testRunStarted(String runName, int testCount) {
-            mTestRunName = runName;
-            mTestCount = testCount;
-        }
-
-        public void testRunStopped(long elapsedTime) {
-            mTestTime = elapsedTime;
-            mStopped = true;
-        }
-
-        public void testStarted(TestIdentifier test) {
-            mSuiteName = test.getClassName();
-            mTestName = test.getTestName();
-        }
-
-        public void testRunFailed(String errorMessage) {
-            mRunFailedMessage = errorMessage;
-        }
+        EasyMock.verify(mMockListener);
     }
 }
