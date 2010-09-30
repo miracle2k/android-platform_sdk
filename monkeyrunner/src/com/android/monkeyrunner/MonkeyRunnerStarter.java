@@ -79,13 +79,17 @@ public class MonkeyRunnerStarter {
     }
 
     private int run() {
+        // This system property gets set by the included starter script
+        String monkeyRunnerPath = System.getProperty("com.android.monkeyrunner.bindir") +
+            File.separator + "monkeyrunner";
+
         MonkeyRunner.setBackend(backend);
         Map<String, Predicate<PythonInterpreter>> plugins = handlePlugins();
         if (options.getScriptFile() == null) {
-            ScriptRunner.console();
+            ScriptRunner.console(monkeyRunnerPath);
             return 0;
         } else {
-            int error = ScriptRunner.run(options.getScriptFile().getAbsolutePath(),
+            int error = ScriptRunner.run(monkeyRunnerPath, options.getScriptFile().getAbsolutePath(),
                     options.getArguments(), plugins);
             backend.shutdown();
             MonkeyRunner.setBackend(null);
@@ -193,6 +197,7 @@ public class MonkeyRunnerStarter {
         if (options == null) {
             return;
         }
+
 
         MonkeyRunnerStarter runner = new MonkeyRunnerStarter(options);
         int error = runner.run();

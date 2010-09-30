@@ -68,8 +68,9 @@ public class ScriptRunner {
      * @param plugins a list of plugins to load.
      * @return the error code from running the script.
      */
-    public static int run(String scriptfilename, Collection<String> args,
-            Map<String, Predicate<PythonInterpreter>> plugins) {
+    public static int run(String executablePath, String scriptfilename,
+            Collection<String> args, Map<String,
+            Predicate<PythonInterpreter>> plugins) {
         // Add the current directory of the script to the python.path search path.
         File f = new File(scriptfilename);
 
@@ -84,7 +85,7 @@ public class ScriptRunner {
             argv[x++] = arg;
         }
 
-        initPython(classpath, argv);
+        initPython(executablePath, classpath, argv);
 
         PythonInterpreter python = new PythonInterpreter();
 
@@ -119,18 +120,20 @@ public class ScriptRunner {
         return 0;
     }
 
-    public static void runString(String script) {
-        initPython();
+    public static void runString(String executablePath, String script) {
+        initPython(executablePath);
         PythonInterpreter python = new PythonInterpreter();
         python.exec(script);
     }
 
-    public static Map<String, PyObject> runStringAndGet(String script, String... names) {
-        return runStringAndGet(script, Arrays.asList(names));
+    public static Map<String, PyObject> runStringAndGet(String executablePath,
+            String script, String... names) {
+        return runStringAndGet(executablePath, script, Arrays.asList(names));
     }
 
-    public static Map<String, PyObject> runStringAndGet(String script, Collection<String> names) {
-        initPython();
+    public static Map<String, PyObject> runStringAndGet(String executablePath,
+            String script, Collection<String> names) {
+        initPython(executablePath);
         final PythonInterpreter python = new PythonInterpreter();
         python.exec(script);
 
@@ -141,13 +144,13 @@ public class ScriptRunner {
         return builder.build();
     }
 
-    private static void initPython() {
+    private static void initPython(String executablePath) {
         List<String> arg = Collections.emptyList();
-        initPython(arg, new String[] {""});
+        initPython(executablePath, arg, new String[] {""});
     }
 
-    private static void initPython(Collection<String> pythonPath,
-            String[] argv) {
+    private static void initPython(String executablePath,
+            Collection<String> pythonPath, String[] argv) {
         Properties props = new Properties();
 
         // Build up the python.path
@@ -163,14 +166,17 @@ public class ScriptRunner {
         // Choose one of error,warning,message,comment,debug
         props.setProperty("python.verbose", "error");
 
+        // This needs to be set for sys.executable to function properly
+        props.setProperty("python.executable", executablePath);
+
         PythonInterpreter.initialize(System.getProperties(), props, argv);
     }
 
     /**
      * Start an interactive python interpreter.
      */
-    public static void console() {
-        initPython();
+    public static void console(String executablePath) {
+        initPython(executablePath);
         InteractiveConsole python = new JLineConsole();
         python.interact();
     }
