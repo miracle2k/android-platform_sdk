@@ -27,8 +27,6 @@ import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.graphics.Image;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
@@ -64,27 +62,6 @@ public final class DescriptorsUtils {
     private static final String BREAK = "$break"; //$NON-NLS-1$
 
     /**
-     * The {@link ITextAttributeCreator} interface is used by the appendAttribute() method
-     * to provide a way for caller to override the kind of {@link TextAttributeDescriptor}
-     * created for a give XML attribute name.
-     */
-    public interface ITextAttributeCreator {
-        /**
-         * Creates a new {@link TextAttributeDescriptor} instance for the given XML name,
-         * UI name and tooltip.
-         *
-         * @param xmlName The XML attribute name.
-         * @param uiName The UI attribute name.
-         * @param nsUri The URI of the attribute. Can be null if attribute has no namespace.
-         *              See {@link SdkConstants#NS_RESOURCES} for a common value.
-         * @param tooltip An optional tooltip.
-         * @return A new {@link TextAttributeDescriptor} (or derived) instance.
-         */
-        public TextAttributeDescriptor create(String xmlName, String uiName, String nsUri,
-                String tooltip);
-    }
-
-    /**
      * Add all {@link AttributeInfo} to the the array of {@link AttributeDescriptor}.
      *
      * @param attributes The list of {@link AttributeDescriptor} to append to
@@ -96,15 +73,13 @@ public final class DescriptorsUtils {
      * @param requiredAttributes An optional set of attributes to mark as "required" (i.e. append
      *        a "*" to their UI name as a hint for the user.) If not null, must contains
      *        entries in the form "elem-name/attr-name". Elem-name can be "*".
-     * @param overrides A map [attribute name => TextAttributeDescriptor creator]. A creator
-     *        can either by a Class<? extends TextAttributeDescriptor> or an instance of
-     *        {@link ITextAttributeCreator} that instantiates the right TextAttributeDescriptor.
+     * @param overrides A map [attribute name => ITextAttributeCreator creator].
      */
     public static void appendAttributes(ArrayList<AttributeDescriptor> attributes,
             String elementXmlName,
             String nsUri, AttributeInfo[] infos,
             Set<String> requiredAttributes,
-            Map<String, Object> overrides) {
+            Map<String, ITextAttributeCreator> overrides) {
         for (AttributeInfo info : infos) {
             boolean required = false;
             if (requiredAttributes != null) {
@@ -129,15 +104,13 @@ public final class DescriptorsUtils {
      *              See {@link SdkConstants#NS_RESOURCES} for a common value.
      * @param required True if the attribute is to be marked as "required" (i.e. append
      *        a "*" to its UI name as a hint for the user.)
-     * @param overrides A map [attribute name => TextAttributeDescriptor creator]. A creator
-     *        can either by a Class<? extends TextAttributeDescriptor> or an instance of
-     *        {@link ITextAttributeCreator} that instantiates the right TextAttributeDescriptor.
+     * @param overrides A map [attribute name => ITextAttributeCreator creator].
      */
     public static void appendAttribute(ArrayList<AttributeDescriptor> attributes,
             String elementXmlName,
             String nsUri,
             AttributeInfo info, boolean required,
-            Map<String, Object> overrides) {
+            Map<String, ITextAttributeCreator> overrides) {
         AttributeDescriptor attr = null;
 
         String xmlLocalName = info.getName();
@@ -195,8 +168,9 @@ public final class DescriptorsUtils {
             sb.append("]"); //$NON-NLS-1$
 
             if (required) {
-                sb.append(".@@* ");          //$NON-NLS-1$ @@ inserts a break.
-                sb.append("Required.");
+                // Note: this string is split in 2 to make it translatable.
+                sb.append(".@@");          //$NON-NLS-1$ @@ inserts a break and is not translatable
+                sb.append("* Required.");
             }
 
             // The extra space at the end makes the tooltip more readable on Windows.
@@ -207,7 +181,11 @@ public final class DescriptorsUtils {
 
             // Create a specialized attribute if we can
             if (overrides != null) {
-                for (Entry<String, Object> entry: overrides.entrySet()) {
+                for (Entry<String, ITextAttributeCreator> entry: overrides.entrySet()) {
+                    // The override key can have the following formats:
+                    //   */xmlLocalName
+                    //   element/xmlLocalName
+                    //   element1,element2,...,elementN/xmlLocalName
                     String key = entry.getKey();
                     String elements[] = key.split("/");          //$NON-NLS-1$
                     String overrideAttrLocalName = null;
@@ -241,35 +219,9 @@ public final class DescriptorsUtils {
                         continue;
                     }
 
-                    Object override = entry.getValue();
-                    if (override instanceof Class<?>) {
-                        try {
-                            // The override is instance of the class to create, which must
-                            // have a constructor compatible with TextAttributeDescriptor.
-                            @SuppressWarnings("unchecked") //$NON-NLS-1$
-                            Class<? extends TextAttributeDescriptor> clazz =
-                                (Class<? extends TextAttributeDescriptor>) override;
-                            Constructor<? extends TextAttributeDescriptor> cons;
-                                cons = clazz.getConstructor(new Class<?>[] {
-                                        String.class, String.class, String.class, String.class } );
-                            attr = cons.newInstance(
-                                    new Object[] { xmlLocalName, uiName, nsUri, tooltip });
-                        } catch (SecurityException e) {
-                            // ignore
-                        } catch (NoSuchMethodException e) {
-                            // ignore
-                        } catch (IllegalArgumentException e) {
-                            // ignore
-                        } catch (InstantiationException e) {
-                            // ignore
-                        } catch (IllegalAccessException e) {
-                            // ignore
-                        } catch (InvocationTargetException e) {
-                            // ignore
-                        }
-                    } else if (override instanceof ITextAttributeCreator) {
-                        attr = ((ITextAttributeCreator) override).create(
-                                xmlLocalName, uiName, nsUri, tooltip);
+                    ITextAttributeCreator override = entry.getValue();
+                    if (override != null) {
+                        attr = override.create(xmlLocalName, uiName, nsUri, tooltip, info);
                     }
                 }
             } // if overrides
