@@ -34,6 +34,17 @@ public class ListAttributeDescriptor extends TextAttributeDescriptor {
     private String[] mValues = null;
 
     /**
+     * Used by {@link DescriptorsUtils} to create instances of this descriptor.
+     */
+    public static final ITextAttributeCreator CREATOR = new ITextAttributeCreator() {
+        public TextAttributeDescriptor create(String xmlLocalName,
+                String uiName, String nsUri, String tooltip,
+                IAttributeInfo attrInfo) {
+            return new ListAttributeDescriptor(xmlLocalName, uiName, nsUri, tooltip, attrInfo);
+        }
+    };
+
+    /**
      * Creates a new {@link ListAttributeDescriptor}.
      * <p/>
      * If <code>attrInfo</code> is not null and has non-null enum values, these will be
