@@ -68,6 +68,12 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
     public final static String ATTR_LOGCAT_GOTO_PROBLEM =
         DdmsPlugin.PLUGIN_ID + ".logcatGoToProblem"; //$NON-NLS-1$
 
+    public final static String ATTR_USE_ADBHOST =
+        DdmsPlugin.PLUGIN_ID + ".useAdbHost"; //$NON-NLS-1$
+
+    public final static String ATTR_ADBHOST_VALUE =
+        DdmsPlugin.PLUGIN_ID + ".adbHostValue"; //$NON-NLS-1$
+
     /*
      * (non-Javadoc)
      *
@@ -101,6 +107,8 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
         store.setDefault(ATTR_TIME_OUT, DdmPreferences.DEFAULT_TIMEOUT);
 
         store.setDefault(ATTR_LOGCAT_GOTO_PROBLEM, LogCatView.CHOICE_ERROR_LINE);
+        store.setDefault(ATTR_USE_ADBHOST, DdmPreferences.DEFAULT_USE_ADBHOST);
+        store.setDefault(ATTR_ADBHOST_VALUE, DdmPreferences.DEFAULT_ADBHOST_VALUE);
     }
 
     /**
@@ -116,5 +124,7 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
         DdmPreferences.setInitialHeapUpdate(store.getBoolean(ATTR_DEFAULT_HEAP_UPDATE));
         DdmUiPreferences.setThreadRefreshInterval(store.getInt(ATTR_THREAD_INTERVAL));
         DdmPreferences.setTimeOut(store.getInt(ATTR_TIME_OUT));
+        DdmPreferences.setUseAdbHost(store.getBoolean(ATTR_USE_ADBHOST));
+        DdmPreferences.setAdbHostValue(store.getString(ATTR_ADBHOST_VALUE));
     }
 }
