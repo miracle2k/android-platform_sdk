@@ -287,7 +287,8 @@ public final class ExportWizard extends Wizard implements IExportWizard {
                 }
 
                 // export the signed apk.
-                ExportHelper.export(mProject, apkExportFile, mPrivateKey, mCertificate, monitor);
+                ExportHelper.exportReleaseApk(mProject, apkExportFile,
+                        mPrivateKey, mCertificate, monitor);
 
                 // align if we can
                 if (runZipAlign) {

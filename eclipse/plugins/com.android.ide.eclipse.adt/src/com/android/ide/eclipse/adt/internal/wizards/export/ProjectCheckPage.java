@@ -198,7 +198,9 @@ final class ProjectCheckPage extends ExportWizardPage {
 
                     if (debuggable != null && debuggable == Boolean.TRUE) {
                         addWarning(mErrorComposite,
-                                "The manifest 'debuggable' attribute is set to true.\nYou should set it to false for applications that you release to the public.");
+                                "The manifest 'debuggable' attribute is set to true.\n" +
+                                "You should set it to false for applications that you release to the public.\n\n" +
+                                "Applications with debuggable=true are compiled in debug mode always.");
                     }
 
                     // check for mapview stuff
