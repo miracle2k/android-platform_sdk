@@ -103,6 +103,31 @@ public final class AndroidManifest {
     }
 
     /**
+     * Returns whether the manifest is set to make the application debuggable.
+     *
+     * If the give manifest does not contain the debuggable attribute then the application
+     * is considered to not be debuggable.
+     *
+     * @param manifestFile the manifest to parse.
+     * @return true if the application is debuggable.
+     * @throws XPathExpressionException
+     * @throws StreamException If any error happens when reading the manifest.
+     */
+    public static boolean getDebuggable(IAbstractFile manifestFile)
+            throws XPathExpressionException, StreamException {
+        XPath xPath = AndroidXPathFactory.newXPath();
+
+        String value = xPath.evaluate(
+                "/"  + NODE_MANIFEST +
+                "/"  + NODE_APPLICATION +
+                "/@" + ATTRIBUTE_DEBUGGABLE,
+                new InputSource(manifestFile.getContents()));
+
+        // default is not debuggable, which is the same behavior as parseBoolean
+        return Boolean.parseBoolean(value);
+    }
+
+    /**
      * Returns the value of the versionCode attribute or -1 if the value is not set.
      * @param manifestFile the manifest file to read the attribute from.
      * @return the integer value or -1 if not set.
