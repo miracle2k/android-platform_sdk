@@ -233,7 +233,33 @@ public class RemoteAndroidTestRunner implements IRemoteAndroidTestRunner  {
         // TODO: allow run name to be configurable
         mParser = new InstrumentationResultParser(mPackageName, listeners);
 
-        mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser, mMaxTimeToOutputResponse);
+        try {
+            mRemoteDevice.executeShellCommand(runCaseCommandStr, mParser, mMaxTimeToOutputResponse);
+        } catch (IOException e) {
+            Log.w(LOG_TAG, String.format("IOException %s when running tests %s on %s",
+                    e.toString(), getPackageName(), mRemoteDevice.getSerialNumber()));
+            // rely on parser to communicate results to listeners
+            mParser.handleTestRunFailed(e.toString());
+            throw e;
+        } catch (ShellCommandUnresponsiveException e) {
+            Log.w(LOG_TAG, String.format(
+                    "ShellCommandUnresponsiveException %s when running tests %s on %s",
+                    e.toString(), getPackageName(), mRemoteDevice.getSerialNumber()));
+            mParser.handleTestRunFailed(e.toString());
+            throw e;
+        } catch (TimeoutException e) {
+            Log.w(LOG_TAG, String.format(
+                    "TimeoutException when running tests %s on %s", getPackageName(),
+                    mRemoteDevice.getSerialNumber()));
+            mParser.handleTestRunFailed(e.toString());
+            throw e;
+        } catch (AdbCommandRejectedException e) {
+            Log.w(LOG_TAG, String.format(
+                    "AdbCommandRejectedException %s when running tests %s on %s",
+                    e.toString(), getPackageName(), mRemoteDevice.getSerialNumber()));
+            mParser.handleTestRunFailed(e.toString());
+            throw e;
+        }
     }
 
     /**
