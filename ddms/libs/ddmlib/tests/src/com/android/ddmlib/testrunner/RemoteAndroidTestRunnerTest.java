@@ -16,30 +16,24 @@
 
 package com.android.ddmlib.testrunner;
 
-import com.android.ddmlib.AdbCommandRejectedException;
-import com.android.ddmlib.Client;
-import com.android.ddmlib.FileListingService;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
-import com.android.ddmlib.InstallException;
-import com.android.ddmlib.RawImage;
-import com.android.ddmlib.ShellCommandUnresponsiveException;
-import com.android.ddmlib.SyncService;
-import com.android.ddmlib.TimeoutException;
-import com.android.ddmlib.log.LogReceiver;
+
+import org.easymock.EasyMock;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.Collections;
 
 import junit.framework.TestCase;
 
 /**
- * Tests RemoteAndroidTestRunner.
+ * Unit tests for {@link RemoteAndroidTestRunner}.
  */
 public class RemoteAndroidTestRunnerTest extends TestCase {
 
     private RemoteAndroidTestRunner mRunner;
-    private MockDevice mMockDevice;
+    private IDevice mMockDevice;
+    private ITestRunListener mMockListener;
 
     private static final String TEST_PACKAGE = "com.test";
     private static final String TEST_RUNNER = "com.test.InstrumentationTestRunner";
@@ -49,272 +43,96 @@ public class RemoteAndroidTestRunnerTest extends TestCase {
      */
     @Override
     protected void setUp() throws Exception {
-        mMockDevice = new MockDevice();
+        mMockDevice = EasyMock.createMock(IDevice.class);
+        EasyMock.expect(mMockDevice.getSerialNumber()).andStubReturn("serial");
+        mMockListener = EasyMock.createNiceMock(ITestRunListener.class);
         mRunner = new RemoteAndroidTestRunner(TEST_PACKAGE, TEST_RUNNER, mMockDevice);
     }
 
     /**
      * Test the basic case building of the instrumentation runner command with no arguments.
-     * @throws ShellCommandUnresponsiveException
-     * @throws AdbCommandRejectedException
-     * @throws TimeoutException
      */
-    public void testRun() throws IOException, TimeoutException, AdbCommandRejectedException,
-            ShellCommandUnresponsiveException {
-        mRunner.run(new EmptyListener());
-        assertStringsEquals(String.format("am instrument -w -r %s/%s", TEST_PACKAGE, TEST_RUNNER),
-                mMockDevice.getLastShellCommand());
+    public void testRun() throws Exception {
+        String expectedCmd = EasyMock.eq(String.format("am instrument -w -r  %s/%s", TEST_PACKAGE,
+                TEST_RUNNER));
+        runAndVerify(expectedCmd);
     }
 
     /**
      * Test the building of the instrumentation runner command with log set.
-     * @throws ShellCommandUnresponsiveException
-     * @throws AdbCommandRejectedException
-     * @throws TimeoutException
      */
-    public void testRunWithLog() throws IOException, TimeoutException, AdbCommandRejectedException,
-            ShellCommandUnresponsiveException {
+    public void testRun_withLog() throws Exception {
         mRunner.setLogOnly(true);
-        mRunner.run(new EmptyListener());
-        assertStringsEquals(String.format("am instrument -w -r -e log true %s/%s", TEST_PACKAGE,
-                TEST_RUNNER), mMockDevice.getLastShellCommand());
+        String expectedCmd = EasyMock.contains("-e log true");
+        runAndVerify(expectedCmd);
     }
 
     /**
      * Test the building of the instrumentation runner command with method set.
-     * @throws ShellCommandUnresponsiveException
-     * @throws AdbCommandRejectedException
-     * @throws TimeoutException
      */
-    public void testRunWithMethod() throws IOException, TimeoutException,
-            AdbCommandRejectedException, ShellCommandUnresponsiveException {
+    public void testRun_withMethod() throws Exception {
         final String className = "FooTest";
         final String testName = "fooTest";
         mRunner.setMethodName(className, testName);
-        mRunner.run(new EmptyListener());
-        assertStringsEquals(String.format("am instrument -w -r -e class %s#%s %s/%s", className,
-                testName, TEST_PACKAGE, TEST_RUNNER), mMockDevice.getLastShellCommand());
+        String expectedCmd = EasyMock.contains(String.format("-e class %s#%s", className,
+                testName));
+        runAndVerify(expectedCmd);
     }
 
     /**
      * Test the building of the instrumentation runner command with test package set.
-     * @throws ShellCommandUnresponsiveException
-     * @throws AdbCommandRejectedException
-     * @throws TimeoutException
      */
-    public void testRunWithPackage() throws IOException, TimeoutException,
-            AdbCommandRejectedException, ShellCommandUnresponsiveException {
+    public void testRun_withPackage() throws Exception {
         final String packageName = "foo.test";
         mRunner.setTestPackageName(packageName);
-        mRunner.run(new EmptyListener());
-        assertStringsEquals(String.format("am instrument -w -r -e package %s %s/%s", packageName,
-                TEST_PACKAGE, TEST_RUNNER), mMockDevice.getLastShellCommand());
+        String expectedCmd = EasyMock.contains(String.format("-e package %s", packageName));
+        runAndVerify(expectedCmd);
     }
 
     /**
      * Test the building of the instrumentation runner command with extra argument added.
-     * @throws ShellCommandUnresponsiveException
-     * @throws AdbCommandRejectedException
-     * @throws TimeoutException
      */
-    public void testRunWithAddInstrumentationArg() throws IOException, TimeoutException,
-            AdbCommandRejectedException, ShellCommandUnresponsiveException {
+    public void testRun_withAddInstrumentationArg() throws Exception {
         final String extraArgName = "blah";
         final String extraArgValue = "blahValue";
         mRunner.addInstrumentationArg(extraArgName, extraArgValue);
-        mRunner.run(new EmptyListener());
-        assertStringsEquals(String.format("am instrument -w -r -e %s %s %s/%s", extraArgName,
-                extraArgValue, TEST_PACKAGE, TEST_RUNNER), mMockDevice.getLastShellCommand());
+        String expectedCmd = EasyMock.contains(String.format("-e %s %s", extraArgName,
+                extraArgValue));
+        runAndVerify(expectedCmd);
     }
 
     /**
-     * Assert two strings are equal ignoring whitespace.
+     * Test run when the device throws a IOException
      */
-    private void assertStringsEquals(String str1, String str2) {
-        String strippedStr1 = str1.replaceAll(" ", "");
-        String strippedStr2 = str2.replaceAll(" ", "");
-        assertEquals(strippedStr1, strippedStr2);
+    @SuppressWarnings("unchecked")
+    public void testRun_ioException() throws Exception {
+        mMockDevice.executeShellCommand((String)EasyMock.anyObject(), (IShellOutputReceiver)
+                EasyMock.anyObject(), EasyMock.eq(0));
+        EasyMock.expectLastCall().andThrow(new IOException());
+        // verify that the listeners run started, run failure, and run ended methods are called
+        mMockListener.testRunStarted(TEST_PACKAGE, 0);
+        mMockListener.testRunFailed((String)EasyMock.anyObject());
+        mMockListener.testRunEnded(EasyMock.anyLong(), EasyMock.eq(Collections.EMPTY_MAP));
+
+        EasyMock.replay(mMockDevice, mMockListener);
+        try {
+            mRunner.run(mMockListener);
+            fail("IOException not thrown");
+        } catch (IOException e) {
+            // expected
+        }
+        EasyMock.verify(mMockDevice, mMockListener);
     }
 
     /**
-     * A dummy device that does nothing except store the provided executed shell command for
-     * later retrieval.
+     * Calls {@link RemoteAndroidTestRunner#run(ITestRunListener...)} and verifies the given
+     * <var>expectedCmd</var> pattern was received by the mock device.
      */
-    private static class MockDevice implements IDevice {
-
-        private String mLastShellCommand;
-
-        /**
-         * Stores the provided command for later retrieval from getLastShellCommand.
-         */
-        public void executeShellCommand(String command,
-                IShellOutputReceiver receiver) throws IOException {
-            mLastShellCommand = command;
-        }
-
-        /**
-         * Stores the provided command for later retrieval from getLastShellCommand.
-         */
-        public void executeShellCommand(String command,
-                IShellOutputReceiver receiver, int timeout) throws IOException {
-            mLastShellCommand = command;
-        }
-
-        /**
-         * Get the last command provided to executeShellCommand.
-         */
-        public String getLastShellCommand() {
-            return mLastShellCommand;
-        }
-
-        public void createForward(int localPort, int remotePort) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Client getClient(String applicationName) {
-            throw new UnsupportedOperationException();
-        }
-
-        public String getClientName(int pid) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Client[] getClients() {
-            throw new UnsupportedOperationException();
-        }
-
-        public FileListingService getFileListingService() {
-            throw new UnsupportedOperationException();
-        }
-
-        public Map<String, String> getProperties() {
-            throw new UnsupportedOperationException();
-        }
-
-        public String getProperty(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        public int getPropertyCount() {
-            throw new UnsupportedOperationException();
-        }
-
-        public String getMountPoint(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        public RawImage getScreenshot() throws IOException {
-            throw new UnsupportedOperationException();
-        }
-
-        public String getSerialNumber() {
-            return "fakeserial";
-        }
-
-        public DeviceState getState() {
-            throw new UnsupportedOperationException();
-        }
-
-        public SyncService getSyncService() {
-            throw new UnsupportedOperationException();
-        }
-
-        public boolean hasClients() {
-            throw new UnsupportedOperationException();
-        }
-
-        public boolean isBootLoader() {
-            throw new UnsupportedOperationException();
-        }
-
-        public boolean isEmulator() {
-            throw new UnsupportedOperationException();
-        }
-
-        public boolean isOffline() {
-            throw new UnsupportedOperationException();
-        }
-
-        public boolean isOnline() {
-            throw new UnsupportedOperationException();
-        }
-
-        public void removeForward(int localPort, int remotePort) {
-            throw new UnsupportedOperationException();
-        }
-
-        public void runEventLogService(LogReceiver receiver) throws IOException {
-            throw new UnsupportedOperationException();
-        }
-
-        public void runLogService(String logname, LogReceiver receiver) throws IOException {
-            throw new UnsupportedOperationException();
-        }
-
-        public String getAvdName() {
-            return "";
-        }
-
-        public String installPackage(String packageFilePath, boolean reinstall)
-                throws InstallException {
-            throw new UnsupportedOperationException();
-        }
-
-        public String uninstallPackage(String packageName) throws InstallException {
-            throw new UnsupportedOperationException();
-        }
-
-        public String installRemotePackage(String remoteFilePath, boolean reinstall)
-                throws InstallException {
-            throw new UnsupportedOperationException();
-        }
-
-        public void removeRemotePackage(String remoteFilePath)
-                throws InstallException {
-            throw new UnsupportedOperationException();
-        }
-
-        public String syncPackageToDevice(String localFilePath)
-                throws IOException {
-            throw new UnsupportedOperationException();
-        }
-
-        public void reboot(String into) throws IOException {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    /**
-     * An empty implementation of ITestRunListener.
-     */
-    private static class EmptyListener implements ITestRunListener {
-
-        public void testEnded(TestIdentifier test, Map<String, String> testMetrics) {
-            // ignore
-        }
-
-        public void testFailed(TestFailure status, TestIdentifier test, String trace) {
-            // ignore
-        }
-
-        public void testRunEnded(long elapsedTime, Map<String, String> resultBundle) {
-            // ignore
-        }
-
-        public void testRunFailed(String errorMessage) {
-            // ignore
-        }
-
-        public void testRunStarted(String runName, int testCount) {
-            // ignore
-        }
-
-        public void testRunStopped(long elapsedTime) {
-            // ignore
-        }
-
-        public void testStarted(TestIdentifier test) {
-            // ignore
-        }
+    private void runAndVerify(String expectedCmd) throws Exception {
+        mMockDevice.executeShellCommand(expectedCmd, (IShellOutputReceiver)
+                EasyMock.anyObject(), EasyMock.eq(0));
+        EasyMock.replay(mMockDevice);
+        mRunner.run(mMockListener);
+        EasyMock.verify(mMockDevice);
     }
 }

@@ -39,7 +39,8 @@ public class ApkBuilderTask extends Task {
     private String mApkFilepath;
     private String mResourceFile;
     private boolean mVerbose = false;
-    private boolean mDebug = false;
+    private boolean mDebugPackaging = false;
+    private boolean mDebugSigning = false;
     private boolean mHasCode = true;
     private String mAbiFilter = null;
 
@@ -89,7 +90,26 @@ public class ApkBuilderTask extends Task {
      * @param debug the debug mode value.
      */
     public void setDebug(boolean debug) {
-        mDebug = debug;
+        System.out.println("WARNNG: Using deprecated 'debug' attribute in ApkBuilderTask." +
+        "Use 'debugpackaging' and 'debugsigning' instead.");
+        mDebugPackaging = debug;
+        mDebugSigning = debug;
+    }
+
+    /**
+     * Sets the value of the "debugpackaging" attribute.
+     * @param debug the debug mode value.
+     */
+    public void setDebugpackaging(boolean debug) {
+        mDebugPackaging = debug;
+    }
+
+    /**
+     * Sets the value of the "debugsigning" attribute.
+     * @param debug the debug mode value.
+     */
+    public void setDebugsigning(boolean debug) {
+        mDebugSigning = debug;
     }
 
     /**
@@ -216,7 +236,7 @@ public class ApkBuilderTask extends Task {
         }
 
         try {
-            if (mDebug) {
+            if (mDebugSigning) {
                 System.out.println(String.format(
                         "Creating %s and signing it with a debug key...", outputFile.getName()));
             } else {
@@ -228,9 +248,9 @@ public class ApkBuilderTask extends Task {
                     outputFile,
                     new File(mOutFolder, mResourceFile),
                     dexFile,
-                    mDebug ? ApkBuilder.getDebugKeystore() : null,
+                    mDebugSigning ? ApkBuilder.getDebugKeystore() : null,
                     mVerbose ? System.out : null);
-            apkBuilder.setDebugMode(mDebug);
+            apkBuilder.setDebugMode(mDebugPackaging);
 
 
             // add the content of the zip files.

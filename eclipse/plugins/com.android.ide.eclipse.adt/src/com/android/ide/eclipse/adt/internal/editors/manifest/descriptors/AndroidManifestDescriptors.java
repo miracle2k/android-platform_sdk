@@ -23,12 +23,12 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescrip
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvider;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.ITextAttributeCreator;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ListAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ReferenceAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.IStatus;
@@ -177,32 +177,24 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
         // The key for each override is "element1,element2,.../attr-xml-local-name" or
         // "*/attr-xml-local-name" to match the attribute in any element.
 
-        Map<String, Object> overrides = new HashMap<String, Object>();
+        Map<String, ITextAttributeCreator> overrides = new HashMap<String, ITextAttributeCreator>();
 
-        overrides.put("*/icon", new DescriptorsUtils.ITextAttributeCreator() { //$NON-NLS-1$
-            public TextAttributeDescriptor create(String xmlName, String uiName, String nsUri,
-                    String tooltip) {
-                return new ReferenceAttributeDescriptor(
-                        ResourceType.DRAWABLE,
-                        xmlName, uiName, nsUri,
-                        tooltip,
-                        new AttributeInfo(xmlName, new Format[] { Format.REFERENCE }) );
-            }
-        });
+        overrides.put("*/icon",             ReferenceAttributeDescriptor.CREATOR);  //$NON-NLS-1$
 
-        overrides.put("*/theme",         ThemeAttributeDescriptor.class);   //$NON-NLS-1$
-        overrides.put("*/permission",    ListAttributeDescriptor.class);    //$NON-NLS-1$
-        overrides.put("*/targetPackage", ManifestPkgAttrDescriptor.class);  //$NON-NLS-1$
+        overrides.put("*/theme",            ThemeAttributeDescriptor.CREATOR);      //$NON-NLS-1$
+        overrides.put("*/permission",       ListAttributeDescriptor.CREATOR);       //$NON-NLS-1$
+        overrides.put("*/targetPackage",    ManifestPkgAttrDescriptor.CREATOR);     //$NON-NLS-1$
 
-        overrides.put("uses-library/name", ListAttributeDescriptor.class);       //$NON-NLS-1$
+        overrides.put("uses-library/name",  ListAttributeDescriptor.CREATOR);       //$NON-NLS-1$
+        overrides.put("action,category,uses-permission/" + ANDROID_NAME_ATTR,       //$NON-NLS-1$
+                                            ListAttributeDescriptor.CREATOR);
 
-        overrides.put("action,category,uses-permission/" + ANDROID_NAME_ATTR,    //$NON-NLS-1$
-                      ListAttributeDescriptor.class);
-        overrides.put("application/" + ANDROID_NAME_ATTR, ApplicationAttributeDescriptor.class);  //$NON-NLS-1$
+        overrides.put("application/" + ANDROID_NAME_ATTR,                           //$NON-NLS-1$
+                                            ApplicationAttributeDescriptor.CREATOR);
 
         overrideClassName(overrides, "activity", SdkConstants.CLASS_ACTIVITY);           //$NON-NLS-1$
         overrideClassName(overrides, "receiver", SdkConstants.CLASS_BROADCASTRECEIVER);  //$NON-NLS-1$
-        overrideClassName(overrides, "service", SdkConstants.CLASS_SERVICE);             //$NON-NLS-1$
+        overrideClassName(overrides, "service",  SdkConstants.CLASS_SERVICE);            //$NON-NLS-1$
         overrideClassName(overrides, "provider", SdkConstants.CLASS_CONTENTPROVIDER);    //$NON-NLS-1$
         overrideClassName(overrides, "instrumentation", SdkConstants.CLASS_INSTRUMENTATION);    //$NON-NLS-1$
 
@@ -238,16 +230,19 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
      * Sets up an attribute override for ANDROID_NAME_ATTR using a ClassAttributeDescriptor
      * with the specified class name.
      */
-    private static void overrideClassName(Map<String, Object> overrides,
-            String elementName, final String className) {
+    private static void overrideClassName(
+            Map<String, ITextAttributeCreator> overrides,
+            String elementName,
+            final String className) {
         overrides.put(elementName + "/" + ANDROID_NAME_ATTR,
-                new DescriptorsUtils.ITextAttributeCreator() {
+                new ITextAttributeCreator() {
             public TextAttributeDescriptor create(String xmlName, String uiName, String nsUri,
-                    String tooltip) {
+                    String tooltip, IAttributeInfo attrInfo) {
                 uiName += "*";  //$NON-NLS-1$
 
-                IAttributeInfo attrInfo = new AttributeInfo(xmlName,
-                        new Format[] { Format.STRING } );
+                if (attrInfo == null) {
+                    attrInfo = new AttributeInfo(xmlName, new Format[] { Format.STRING } );
+                }
 
                 if (SdkConstants.CLASS_ACTIVITY.equals(className)) {
                     return new ClassAttributeDescriptor(
@@ -367,7 +362,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
      */
     private void inflateElement(
             Map<String, DeclareStyleableInfo> styleMap,
-            Map<String, Object> overrides,
+            Map<String, ITextAttributeCreator> overrides,
             Set<String> requiredAttributes,
             HashMap<String, ElementDescriptor> existingElementDescs,
             ElementDescriptor elemDesc,
@@ -376,8 +371,12 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
         assert styleName != null;
         assert styleMap != null;
 
+        if (styleMap == null) {
+            return;
+        }
+
         // define attributes
-        DeclareStyleableInfo style = styleMap != null ? styleMap.get(styleName) : null;
+        DeclareStyleableInfo style = styleMap.get(styleName);
         if (style != null) {
             ArrayList<AttributeDescriptor> attrDescs = new ArrayList<AttributeDescriptor>();
             DescriptorsUtils.appendAttributes(attrDescs,

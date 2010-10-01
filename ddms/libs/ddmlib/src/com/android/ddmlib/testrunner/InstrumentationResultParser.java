@@ -23,7 +23,9 @@ import com.android.ddmlib.MultiLineReceiver;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -72,6 +74,21 @@ public class InstrumentationResultParser extends MultiLineReceiver {
         private static final String NUMTESTS = "numtests";
         private static final String ERROR = "Error";
         private static final String SHORTMSG = "shortMsg";
+    }
+
+    /** The set of expected status keys. Used to filter which keys should be stored as metrics */
+    private static final Set<String> KNOWN_KEYS = new HashSet<String>();
+    static {
+        KNOWN_KEYS.add(StatusKeys.TEST);
+        KNOWN_KEYS.add(StatusKeys.CLASS);
+        KNOWN_KEYS.add(StatusKeys.STACK);
+        KNOWN_KEYS.add(StatusKeys.NUMTESTS);
+        KNOWN_KEYS.add(StatusKeys.ERROR);
+        KNOWN_KEYS.add(StatusKeys.SHORTMSG);
+        // unused, but regularly occurring status keys.
+        KNOWN_KEYS.add("stream");
+        KNOWN_KEYS.add("id");
+        KNOWN_KEYS.add("current");
     }
 
     /** Test result status codes. */
@@ -183,6 +200,12 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     /** Error message supplied when no parseable test results are received from test run. */
     static final String NO_TEST_RESULTS_MSG = "No test results";
 
+    /** Error message supplied when a test start bundle is parsed, but not the test end bundle. */
+    static final String INCOMPLETE_TEST_ERR_MSG_PREFIX = "Incomplete";
+
+    /** Error message supplied when the test run is incomplete. */
+    static final String INCOMPLETE_RUN_ERR_MSG_PREFIX = "Test run incomplete";
+
     /**
      * Creates the InstrumentationResultParser.
      *
@@ -284,8 +307,9 @@ public class InstrumentationResultParser extends MultiLineReceiver {
         if (mCurrentKey != null && mCurrentValue != null) {
             String statusValue = mCurrentValue.toString();
             if (mInInstrumentationResultKey) {
-                mInstrumentationResultBundle.put(mCurrentKey, statusValue);
-                if (mCurrentKey.equals(StatusKeys.SHORTMSG)) {
+                if (!KNOWN_KEYS.contains(mCurrentKey)) {
+                    mInstrumentationResultBundle.put(mCurrentKey, statusValue);
+                } else if (mCurrentKey.equals(StatusKeys.SHORTMSG)) {
                     // test run must have failed
                     handleTestRunFailed(statusValue);
                 }
@@ -308,7 +332,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
                     handleTestRunFailed(statusValue);
                 } else if (mCurrentKey.equals(StatusKeys.STACK)) {
                     testInfo.mStackTrace = statusValue;
-                } else {
+                } else if (!KNOWN_KEYS.contains(mCurrentKey)) {
                     // Not one of the recognized key/value pairs, so dump it in mTestMetrics
                     mTestMetrics.put(mCurrentKey, statusValue);
                 }
@@ -506,7 +530,7 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     /**
      * Process a instrumentation run failure
      */
-    private void handleTestRunFailed(String errorMsg) {
+    void handleTestRunFailed(String errorMsg) {
         errorMsg = (errorMsg == null ? "Unknown error" : errorMsg);
         Log.i(LOG_TAG, String.format("test run failed %s", errorMsg));
         if (mLastTestResult != null &&
@@ -519,13 +543,19 @@ public class InstrumentationResultParser extends MultiLineReceiver {
                     mLastTestResult.mTestName);
             for (ITestRunListener listener : mTestListeners) {
                 listener.testFailed(ITestRunListener.TestFailure.ERROR, testId,
-                    String.format("Incomplete: %s", errorMsg));
+                    String.format("%s: %s", INCOMPLETE_TEST_ERR_MSG_PREFIX, errorMsg));
                 listener.testEnded(testId, getAndResetTestMetrics());
             }
         }
         for (ITestRunListener listener : mTestListeners) {
+            if (!mTestStartReported) {
+                // test run wasn't started - must have crashed before it started
+                listener.testRunStarted(mTestRunName, 0);
+            }
             listener.testRunFailed(errorMsg);
+            listener.testRunEnded(mTestTime, mInstrumentationResultBundle);
         }
+        mTestStartReported = true;
         mTestRunFailReported = true;
     }
 
@@ -540,8 +570,8 @@ public class InstrumentationResultParser extends MultiLineReceiver {
             handleTestRunFailed(NO_TEST_RESULTS_MSG);
         } else if (!mTestRunFailReported && mNumTestsExpected > mNumTestsRun) {
             final String message =
-                String.format("Test run incomplete. Expected %d tests, received %d",
-                        mNumTestsExpected, mNumTestsRun);
+                String.format("%s. Expected %d tests, received %d",
+                        INCOMPLETE_RUN_ERR_MSG_PREFIX, mNumTestsExpected, mNumTestsRun);
             handleTestRunFailed(message);
         } else {
             for (ITestRunListener listener : mTestListeners) {

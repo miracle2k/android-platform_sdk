@@ -211,7 +211,8 @@
                     outfolder="${out.absolute.dir}"
                     resourcefile="${resource.package.file.name}"
                     apkfilepath="@{output.filepath}"
-                    debug="${build.debug}"
+                    debugpackaging="${build.packaging.debug}"
+                    debugsigning="${build.signing.debug}"
                     abifilter="${filter.abi}"
                     verbose="${verbose}"
                     hascode="${manifest.hasCode}">
@@ -449,7 +450,7 @@
         <aapt executable="${aapt}"
                 command="package"
                 versioncode="${version.code}"
-                debug="${build.debug}"
+                debug="${build.packaging.debug}"
                 manifest="AndroidManifest.xml"
                 assets="${asset.absolute.dir}"
                 androidjar="${android.jar}"
@@ -492,7 +493,11 @@
         <property name="build.mode.debug" value="true"/>
 
         <!-- whether the build is a debug build. always set. -->
-        <property name="build.debug" value="true" />
+        <property name="build.packaging.debug" value="true" />
+
+        <!-- signing mode: debug -->
+        <property name="build.signing.debug" value="true" />
+
     </target>
 
     <!-- Builds debug output package, provided all the necessary files are already dexed -->
@@ -525,25 +530,44 @@
 
     <target name="-release-obfuscation-check">
         <condition property="proguard.enabled" value="true" else="false">
-            <isset property="proguard.config" />
+            <and>
+                <isset property="build.mode.release" />
+                <isset property="proguard.config" />
+            </and>
         </condition>
     </target>
 
-    <target name="-set-release-mode" depends="-release-obfuscation-check">
-        <!-- property only set in release mode.
-             Useful for if/unless attributes in target node
-             when using Ant before 1.8 -->
-        <property name="build.mode.release" value="true"/>
+    <target name="-set-release-mode">
+        <!-- release mode is only valid if the manifest does not explicitly
+             set debuggable to true. default is false.
+             We actually store build.packaging.debug, not build.release -->
+        <xpath input="AndroidManifest.xml" expression="/manifest/application/@android:debuggable"
+                output="build.packaging.debug" default="false"/>
 
-        <!-- whether the build is a debug build. always set. -->
-        <property name="build.debug" value="false" />
+        <!-- signing mode: release -->
+        <property name="build.signing.debug" value="false" />
+
+        <if condition="${build.packaging.debug}">
+            <then>
+                <echo>*************************************************</echo>
+                <echo>****  Android Manifest has debuggable=true   ****</echo>
+                <echo>**** Doing DEBUG packaging with RELEASE keys ****</echo>
+                <echo>*************************************************</echo>
+            </then>
+            <else>
+                <!-- property only set in release mode.
+                     Useful for if/unless attributes in target node
+                     when using Ant before 1.8 -->
+                <property name="build.mode.release" value="true"/>
+            </else>
+        </if>
     </target>
 
     <!-- This runs -package-release and -release-nosign first and then runs
          only if release-sign is true (set in -release-check,
          called by -release-no-sign)-->
     <target name="release"
-                depends="-set-release-mode, -package-release, -release-prompt-for-password, -release-nosign"
+                depends="-set-release-mode, -release-obfuscation-check, -package-release, -release-prompt-for-password, -release-nosign"
                 if="has.keystore"
                 description="Builds the application. The generated apk file must be signed before
                             it is published.">

@@ -52,8 +52,12 @@ public class TextAttributeDescriptor extends AttributeDescriptor implements IPro
      * @param tooltip A non-empty tooltip string or null
      * @param attrInfo The {@link IAttributeInfo} of this attribute. Can't be null.
      */
-    public TextAttributeDescriptor(String xmlLocalName, String uiName,
-            String nsUri, String tooltip, IAttributeInfo attrInfo) {
+    public TextAttributeDescriptor(
+            String xmlLocalName,
+            String uiName,
+            String nsUri,
+            String tooltip,
+            IAttributeInfo attrInfo) {
         super(xmlLocalName, nsUri, attrInfo);
         mUiName = uiName;
         mTooltip = (tooltip != null && tooltip.length() > 0) ? tooltip : null;

@@ -22,10 +22,14 @@ import com.android.ide.eclipse.adt.AndroidPrintStream;
 import com.android.ide.eclipse.adt.internal.build.BuildHelper;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.xml.AndroidManifest;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -48,7 +52,7 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
 /**
- * Export helper for project.
+ * Export helper to export release version of APKs.
  */
 public final class ExportHelper {
 
@@ -60,7 +64,7 @@ public final class ExportHelper {
      * @param certificate the certificate used for signing. Can be null.
      * @param monitor
      */
-    public static void export(IProject project, File outputFile, PrivateKey key,
+    public static void exportReleaseApk(IProject project, File outputFile, PrivateKey key,
             X509Certificate certificate, IProgressMonitor monitor) throws CoreException {
 
         // the export, takes the output of the precompiler & Java builders so it's
@@ -75,6 +79,17 @@ public final class ExportHelper {
         }
 
         try {
+            // check if the manifest declares debuggable as true. While this is a release build,
+            // debuggable in the manifest will override this and generate a debug build
+            IResource manifestResource = project.findMember(SdkConstants.FN_ANDROID_MANIFEST_XML);
+            if (manifestResource.getType() != IResource.FILE) {
+                new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                        String.format("%1$s missing.", SdkConstants.FN_ANDROID_MANIFEST_XML)));
+            }
+
+            IFileWrapper manifestFile = new IFileWrapper((IFile) manifestResource);
+            boolean debugMode = AndroidManifest.getDebuggable(manifestFile);
+
             AndroidPrintStream fakeStream = new AndroidPrintStream(null, null, new OutputStream() {
                 @Override
                 public void write(int b) throws IOException {
@@ -84,7 +99,7 @@ public final class ExportHelper {
 
             BuildHelper helper = new BuildHelper(project,
                     fakeStream, fakeStream,
-                    false /*debugMode*/, false /*verbose*/);
+                    debugMode, false /*verbose*/);
 
             // get the list of library projects
             ProjectState projectState = Sdk.getProjectState(project);
@@ -186,7 +201,7 @@ public final class ExportHelper {
                     @Override
                     protected IStatus run(IProgressMonitor monitor) {
                         try {
-                            export(project,
+                            exportReleaseApk(project,
                                     new File(saveLocation),
                                     null, //key
                                     null, //certificate
