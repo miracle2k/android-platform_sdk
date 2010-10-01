@@ -20,6 +20,7 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(call all-java-files-under, src)
 
 LOCAL_MODULE := ddmlib-tests
+LOCAL_MODULE_TAGS := optional
 
 LOCAL_JAVA_LIBRARIES := ddmlib junit easymock
 
