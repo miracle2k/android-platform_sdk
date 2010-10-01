@@ -74,6 +74,10 @@ public class AndroidConstants {
     public final static String EXT_AIDL = "aidl"; //$NON-NLS-1$
     /** Extension of native libraries, i.e. "so" */
     public final static String EXT_NATIVE_LIB = "so"; //$NON-NLS-1$
+    /** Extension of dex files, i.e. "dex" */
+    public final static String EXT_DEX = "dex"; //$NON-NLS-1$
+    /** Extension for temporary resource files, ie "ap_ */
+    public final static String EXT_RES = "ap_"; //$NON-NLS-1$
 
     private final static String DOT = "."; //$NON-NLS-1$
 
@@ -89,6 +93,10 @@ public class AndroidConstants {
     public final static String DOT_JAR = DOT + EXT_JAR;
     /** Dot-Extension of aidl files, i.e. ".aidl" */
     public final static String DOT_AIDL = DOT + EXT_AIDL;
+    /** Dot-Extension of dex files, i.e. ".dex" */
+    public final static String DOT_DEX = DOT + EXT_DEX;
+    /** Dot-Extension for temporary resource files, ie "ap_ */
+    public final static String DOT_RES = DOT + EXT_RES;
 
     /** Name of the android sources directory */
     public static final String FD_ANDROID_SOURCES = "sources"; //$NON-NLS-1$

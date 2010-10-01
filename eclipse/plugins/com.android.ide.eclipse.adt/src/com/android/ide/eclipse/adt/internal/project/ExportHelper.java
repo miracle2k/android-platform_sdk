@@ -25,6 +25,7 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
+import com.android.sdklib.internal.project.ProjectProperties;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -45,16 +46,23 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 
 /**
  * Export helper to export release version of APKs.
  */
 public final class ExportHelper {
+
+    private final static String TEMP_PREFIX = "android_";  //$NON-NLS-1$
 
     /**
      * Exports a release version of the application created by the given project.
@@ -69,7 +77,7 @@ public final class ExportHelper {
 
         // the export, takes the output of the precompiler & Java builders so it's
         // important to call build in case the auto-build option of the workspace is disabled.
-        project.build(IncrementalProjectBuilder.INCREMENTAL_BUILD, monitor);
+       project.build(IncrementalProjectBuilder.INCREMENTAL_BUILD, monitor);
 
         // if either key or certificate is null, ensure the other is null.
         if (key == null) {
@@ -109,7 +117,8 @@ public final class ExportHelper {
 
             // tmp file for the packaged resource file. To not disturb the incremental builders
             // output, all intermediary files are created in tmp files.
-            File resourceFile = File.createTempFile("android_", ".ap_");
+            File resourceFile = File.createTempFile(TEMP_PREFIX, AndroidConstants.DOT_RES);
+            resourceFile.deleteOnExit();
 
             // package the resources.
             helper.packageResources(
@@ -123,21 +132,69 @@ public final class ExportHelper {
             // Step 2. Convert the byte code to Dalvik bytecode
 
             // tmp file for the packaged resource file.
-            File dexFile = File.createTempFile("android_", ".dex");
+            File dexFile = File.createTempFile(TEMP_PREFIX, AndroidConstants.DOT_DEX);
+            dexFile.deleteOnExit();
 
-            IFolder outputFolder = BaseProjectHelper.getOutputFolder(project);
+            ProjectState state = Sdk.getProjectState(project);
+            String proguardConfig = state.getProperties().getProperty(
+                    ProjectProperties.PROPERTY_PROGUARD_CONFIG);
+
+            boolean runProguard = false;
+            File proguardConfigFile = null;
+            if (proguardConfig != null && proguardConfig.length() > 0) {
+                proguardConfigFile = new File(proguardConfig);
+                if (proguardConfigFile.isAbsolute() == false) {
+                    proguardConfigFile = new File(project.getLocation().toFile(), proguardConfig);
+                }
+                runProguard = proguardConfigFile.isFile();
+            }
+
+            String[] dxInput;
+
+            if (runProguard) {
+                // the output of the main project (and any java-only project dependency)
+                String[] projectOutputs = helper.getProjectOutputs();
+
+                // create a jar from the output of these projects
+                File inputJar = File.createTempFile(TEMP_PREFIX, AndroidConstants.DOT_JAR);
+                inputJar.deleteOnExit();
+
+                JarOutputStream jos = new JarOutputStream(new FileOutputStream(inputJar));
+                for (String po : projectOutputs) {
+                    File root = new File(po);
+                    if (root.exists()) {
+                        addFileToJar(jos, root, root);
+                    }
+                }
+                jos.close();
+
+                // get the other jar files
+                String[] jarFiles = helper.getCompiledCodePaths(false /*includeProjectOutputs*/,
+                        null /*resourceMarker*/);
+
+                // destination file for proguard
+                File obfuscatedJar = File.createTempFile(TEMP_PREFIX, AndroidConstants.DOT_JAR);
+                obfuscatedJar.deleteOnExit();
+
+                // run proguard
+                helper.runProguard(proguardConfigFile, inputJar, jarFiles, obfuscatedJar,
+                        new File(project.getLocation().toFile(), SdkConstants.FD_PROGUARD));
+
+                // dx input is proguard's output
+                dxInput = new String[] { inputJar/*obfuscatedJar*/.getAbsolutePath() };
+            } else {
+                // no proguard, simply get all the compiled code path: project output(s) +
+                // jar file(s)
+                dxInput = helper.getCompiledCodePaths(true /*includeProjectOutputs*/,
+                        null /*resourceMarker*/);
+            }
 
             IJavaProject javaProject = JavaCore.create(project);
             IProject[] javaProjects = ProjectHelper.getReferencedProjects(project);
             IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(
                     javaProjects);
 
-            helper.executeDx(
-                    javaProject,
-                    outputFolder.getLocation().toOSString(),
-                    dexFile.getAbsolutePath(),
-                    referencedJavaProjects,
-                    null /*resourceMarker*/);
+            helper.executeDx(javaProject, dxInput, dexFile.getAbsolutePath());
 
             // Step 3. Final package
 
@@ -157,7 +214,8 @@ public final class ExportHelper {
         } catch (CoreException e) {
             throw e;
         } catch (Exception e) {
-           //?
+            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                    "Failed to export application", e));
         }
     }
 
@@ -218,17 +276,62 @@ public final class ExportHelper {
 
                             return Status.OK_STATUS;
                         } catch (CoreException e) {
+                            AdtPlugin.displayError("Android IDE Plug-in", String.format(
+                                    "Error exporting application:\n\n%1$s", e.getMessage()));
                             return e.getStatus();
                         }
                     }
                 }.schedule();
-
-
             }
         } else {
             MessageDialog.openError(shell, "Android IDE Plug-in",
                     String.format("Failed to export %1$s: Could not get project output location",
                             project.getName()));
+        }
+    }
+
+    /**
+     * Adds a file to a jar file.
+     * The <var>rootDirectory</var> dictates the path of the file inside the jar file. It must be
+     * a parent of <var>file</var>.
+     * @param jar the jar to add the file to
+     * @param file the file to add
+     * @param rootDirectory the rootDirectory.
+     * @throws IOException
+     */
+    private static void addFileToJar(JarOutputStream jar, File file, File rootDirectory)
+            throws IOException {
+        if (file.isDirectory()) {
+            for (File child: file.listFiles()) {
+                addFileToJar(jar, child, rootDirectory);
+            }
+
+        } else if (file.isFile()) {
+            // check the extension
+            String name = file.getName();
+            if (name.toLowerCase().endsWith(AndroidConstants.DOT_CLASS) == false) {
+                return;
+            }
+
+            String rootPath = rootDirectory.getAbsolutePath();
+            String path = file.getAbsolutePath();
+            path = path.substring(rootPath.length()).replace("\\", "/"); //$NON-NLS-1$ //$NON-NLS-2$
+            if (path.charAt(0) == '/') {
+                path = path.substring(1);
+            }
+
+            JarEntry entry = new JarEntry(path);
+            entry.setTime(file.lastModified());
+            jar.putNextEntry(entry);
+
+            // put the content of the file.
+            byte[] buffer = new byte[1024];
+            int count;
+            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
+            while ((count = bis.read(buffer)) != -1) {
+                jar.write(buffer, 0, count);
+            }
+            jar.closeEntry();
         }
     }
 }

@@ -132,6 +132,10 @@ public final class SdkConstants {
     public final static String FN_DEXDUMP = (CURRENT_PLATFORM == PLATFORM_WINDOWS) ?
             "dexdump.exe" : "dexdump"; //$NON-NLS-1$ //$NON-NLS-2$
 
+    /** zipalign executable (with extension for the current OS)  */
+    public final static String FN_PROGUARD = (CURRENT_PLATFORM == PLATFORM_WINDOWS) ?
+            "proguard.bat" : "proguard.sh"; //$NON-NLS-1$ //$NON-NLS-2$
+
     /** properties file for SDK Updater packages */
     public final static String FN_SOURCE_PROP = "source.properties"; //$NON-NLS-1$
     /** properties file for content hash of installed packages */
@@ -179,6 +183,8 @@ public final class SdkConstants {
     public final static String FD_XML = "xml"; //$NON-NLS-1$
     /** Default raw resource folder name, i.e. "raw" */
     public final static String FD_RAW = "raw"; //$NON-NLS-1$
+    /** proguard output folder for mapping, etc.. files */
+    public final static String FD_PROGUARD = "proguard"; //$NON-NLS-1$
 
     /* Folder Names for the Android SDK */
 
@@ -241,10 +247,15 @@ public final class SdkConstants {
      *  This is an OS path, ending with a separator. */
     public final static String OS_SDK_PLATFORM_TOOLS_FOLDER = FD_PLATFORM_TOOLS + File.separator;
 
-    /** Path of the Platform tools Llib directory relative to the sdk folder.
+    /** Path of the Platform tools Lib directory relative to the sdk folder.
      *  This is an OS path, ending with a separator. */
     public final static String OS_SDK_PLATFORM_TOOLS_LIB_FOLDER =
             OS_SDK_PLATFORM_TOOLS_FOLDER + FD_LIB + File.separator;
+
+    /** Path of the bin folder of proguard folder relative to the sdk folder.
+     *  This is an OS path, ending with a separator. */
+    public final static String OS_SDK_TOOLS_PROGUARD_BIN_FOLDER =
+        SdkConstants.OS_SDK_TOOLS_FOLDER + "proguard" + File.separator + "bin" + File.separator; //$NON-NLS-1$ //$NON-NLS-2$
 
     /* Folder paths relative to a platform or add-on folder */
 

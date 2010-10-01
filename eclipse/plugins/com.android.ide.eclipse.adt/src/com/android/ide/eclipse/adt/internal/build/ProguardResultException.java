@@ -20,10 +20,10 @@ package com.android.ide.eclipse.adt.internal.build;
  * Exception thrown when aapt reports an error in the resources.
  *
  */
-public final class AaptResultException extends ExecResultException {
+public final class ProguardResultException extends ExecResultException {
     private static final long serialVersionUID = 1L;
 
-    AaptResultException(int errorCode, String[] output) {
+    ProguardResultException(int errorCode, String[] output) {
         super(errorCode, output);
     }
 }

@@ -17,13 +17,31 @@
 package com.android.ide.eclipse.adt.internal.build;
 
 /**
- * Exception thrown when aapt reports an error in the resources.
+ * Base exception class containing the error code and output of an external tool failed exec.
  *
  */
-public final class AaptResultException extends ExecResultException {
+class ExecResultException extends Exception {
     private static final long serialVersionUID = 1L;
 
-    AaptResultException(int errorCode, String[] output) {
-        super(errorCode, output);
+    private final int mErrorCode;
+    private final String[] mOutput;
+
+    protected ExecResultException(int errorCode, String[] output) {
+        mErrorCode = errorCode;
+        mOutput = output;
+    }
+
+    /**
+     * Returns the full output of aapt.
+     */
+    public String[] getOutput() {
+        return mOutput;
+    }
+
+    /**
+     * Returns the aapt return code.
+     */
+    public int getErrorCode() {
+        return mErrorCode;
     }
 }
