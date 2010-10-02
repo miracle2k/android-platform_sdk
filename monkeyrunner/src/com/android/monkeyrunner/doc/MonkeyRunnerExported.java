@@ -27,7 +27,8 @@ import java.lang.annotation.Target;
  * these methods in the scripting environment.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE })
+@Target({ ElementType.METHOD, ElementType.CONSTRUCTOR,
+          ElementType.TYPE, ElementType.FIELD })
 public @interface MonkeyRunnerExported {
     /**
      * A documentation string for this method.

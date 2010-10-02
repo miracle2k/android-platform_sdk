@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.android.monkeyrunner.doc.MonkeyRunnerExported;
 
 import org.python.core.ArgParser;
+import org.python.core.ClassDictInit;
 import org.python.core.PyInteger;
 import org.python.core.PyObject;
 import org.python.core.PyTuple;
@@ -39,7 +40,12 @@ import javax.imageio.stream.ImageOutputStream;
 /**
  * Jython object to encapsulate images that have been taken.
  */
-public abstract class MonkeyImage {
+@MonkeyRunnerExported(doc = "An image")
+public abstract class MonkeyImage extends PyObject implements ClassDictInit {
+    public static void classDictInit(PyObject dict) {
+        JythonUtils.convertDocAnnotationsForClass(MonkeyImage.class, dict);
+    }
+
     /**
      * Convert the MonkeyImage into a BufferedImage.
      *

@@ -22,6 +22,7 @@ import com.google.common.collect.Collections2;
 import com.android.monkeyrunner.doc.MonkeyRunnerExported;
 
 import org.python.core.ArgParser;
+import org.python.core.ClassDictInit;
 import org.python.core.PyException;
 import org.python.core.PyObject;
 
@@ -34,9 +35,14 @@ import javax.swing.JOptionPane;
 /**
  * This is the main interface class into the jython bindings.
  */
-public class MonkeyRunner {
+@MonkeyRunnerExported(doc = "Main entry point for MonkeyRunner")
+public class MonkeyRunner extends PyObject implements ClassDictInit {
     private static final Logger LOG = Logger.getLogger(MonkeyRunner.class.getCanonicalName());
     private static MonkeyRunnerBackend backend;
+
+    public static void classDictInit(PyObject dict) {
+        JythonUtils.convertDocAnnotationsForClass(MonkeyRunner.class, dict);
+    }
 
     /**
      * Set the backend MonkeyRunner is using.
