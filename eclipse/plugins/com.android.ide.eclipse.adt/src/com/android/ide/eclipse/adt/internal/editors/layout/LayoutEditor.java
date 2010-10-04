@@ -545,7 +545,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
      * the requested FQCN.
      *
      * @param fqcn The target View FQCN to find.
-     * @param descriptors A list of cildren descriptors to iterate through.
+     * @param descriptors A list of children descriptors to iterate through.
      * @param visited A set we use to remember which descriptors have already been visited,
      *  necessary since the view descriptor hierarchy is cyclic.
      * @return Either a matching {@link ViewElementDescriptor} or null.

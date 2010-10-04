@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.eclipse.adt.editors.layout.gscripts.DrawingStyle;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IColor;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
@@ -27,8 +28,11 @@ import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.FontMetrics;
 import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.RGB;
 
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Wraps an SWT {@link GC} into an {@link IGraphics} interface so that {@link IViewRule} objects
@@ -63,6 +67,13 @@ public class GCWrapper implements IGraphics {
     /** A map of registered colors. All these colors must be disposed at the end. */
     private final HashMap<Integer, ColorWrapper> mColorMap = new HashMap<Integer, ColorWrapper>();
 
+    /**
+     * A map of the {@link SwtDrawingStyle} colors that we have actually used
+     * (to be disposed)
+     */
+    private final Map<DrawingStyle, Color> mStyleColorMap = new EnumMap<DrawingStyle, Color>(
+            DrawingStyle.class);
+
     /** The cached pixel height of the default current font. */
     private int mFontHeight = 0;
 
@@ -96,6 +107,11 @@ public class GCWrapper implements IGraphics {
             c.getColor().dispose();
         }
         mColorMap.clear();
+
+        for (Color c : mStyleColorMap.values()) {
+            c.dispose();
+        }
+        mStyleColorMap.clear();
     }
 
     //-------------
@@ -134,6 +150,10 @@ public class GCWrapper implements IGraphics {
     public IColor getBackground() {
         Color c = getGc().getBackground();
         return new ColorWrapper(c);
+    }
+
+    public int getAlpha() {
+        return getGc().getAlpha();
     }
 
     public void setForeground(IColor color) {
@@ -308,5 +328,49 @@ public class GCWrapper implements IGraphics {
 
     public void drawString(String string, Point topLeft) {
         drawString(string, topLeft.x, topLeft.y);
+    }
+
+    // Styles
+
+    public void useStyle(DrawingStyle style) {
+        checkGC();
+
+        // Look up the specific SWT style which defines the actual
+        // colors and attributes to be used for the logical drawing style.
+        SwtDrawingStyle swtStyle = SwtDrawingStyle.of(style);
+        RGB fg = swtStyle.getForeground();
+        if (fg != null) {
+            Color color = getStyleColor(style, fg);
+            mGc.setForeground(color);
+        }
+        RGB bg = swtStyle.getBackground();
+        if (bg != null) {
+            Color color = getStyleColor(style, bg);
+            mGc.setBackground(color);
+        }
+        mGc.setLineWidth(swtStyle.getLineWidth());
+        mGc.setLineStyle(swtStyle.getLineStyle());
+        mGc.setAlpha(swtStyle.getAlpha());
+    }
+
+    /**
+     * Get the SWT color to use for the given style, using the provided color
+     * description if we haven't seen this color yet. The color will also be
+     * placed in the {@link #mStyleColorMap} such that it can be disposed of at
+     * cleanup time.
+     *
+     * @param style The drawing style for which we want a color
+     * @param defaultColorDesc The RGB values to initialize the color to if we
+     *            haven't seen this color before
+     * @return The color object
+     */
+    private Color getStyleColor(DrawingStyle style, RGB defaultColorDesc) {
+        Color color = mStyleColorMap.get(style);
+        if (color == null) {
+            color = new Color(getGc().getDevice(), defaultColorDesc);
+            mStyleColorMap.put(style, color);
+        }
+
+        return color;
     }
 }

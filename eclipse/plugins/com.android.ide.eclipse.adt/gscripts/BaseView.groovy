@@ -313,14 +313,9 @@ public class BaseView implements IViewRule {
             return;
         }
 
-        gc.setLineWidth(1);
-        gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-        def olgBg = gc.getBackground();
-        gc.setBackground(gc.getForeground());
-        gc.setAlpha(64);
+        gc.useStyle(DrawingStyle.SELECTION_FILL);
         gc.fillRect(r);
-        gc.setBackground(olgBg);
-        gc.setAlpha(255);
+        gc.useStyle(DrawingStyle.SELECTION_BORDER);
         gc.drawRect(r);
 
         if (displayName == null || isMultipleSelection) {
@@ -340,8 +335,7 @@ public class BaseView implements IViewRule {
         Rect rc = childNode.getBounds();
 
         if (rp.isValid() && rc.isValid()) {
-            gc.setLineWidth(1);
-            gc.setLineStyle(IGraphics.LineStyle.LINE_DOT);
+            gc.useStyle(DrawingStyle.ANCHOR);
 
             // top line
             int m = rc.x + rc.w / 2;
