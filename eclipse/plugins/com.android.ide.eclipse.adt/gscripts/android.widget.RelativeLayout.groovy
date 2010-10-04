@@ -437,15 +437,10 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             return;
         }
 
-        def color = gc.registerColor(0x00FF9900);
-        gc.setForeground(color);
-
-        gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-        gc.setLineWidth(2);
+        gc.useStyle(DrawingStyle.DROP_RECIPIENT);
         gc.drawRect(b);
 
-        gc.setLineStyle(IGraphics.LineStyle.LINE_DOT);
-        gc.setLineWidth(1);
+        gc.useStyle(DrawingStyle.DROP_ZONE);
 
         def data = feedback.userData;
 
@@ -456,8 +451,8 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         }
 
         if (data.curr) {
+            gc.useStyle(DrawingStyle.DROP_ZONE_ACTIVE);
             gc.setAlpha(200);
-            gc.setBackground(color);
             gc.fillRect(data.curr.rect);
             gc.setAlpha(255);
 
@@ -476,9 +471,6 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                 gc.drawString(s, x, y);
                 y += h;
             }
-
-            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-            gc.setLineWidth(2);
 
             def mark = data.curr.get("mark");
             if (mark) {
@@ -529,9 +521,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
         if (data.rejected) {
             def br = data.rejected;
-            gc.setForeground(gc.registerColor(0x000000FF));
-            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-            gc.setLineWidth(4);
+            gc.useStyle(DrawingStyle.INVALID);
             gc.drawLine(br.x, br.y       , br.x + br.w, br.y + br.h);
             gc.drawLine(br.x, br.y + br.h, br.x + br.w, br.y       );
         }

@@ -27,13 +27,90 @@ package com.android.ide.eclipse.adt.editors.layout.gscripts;
 public interface IGraphics {
 
     /**
-     * Registers a color using 0x00rrggbb where each component is
-     * 0..0xFF.
+     * Draws a line between 2 points, using the current foreground color and
+     * alpha.
+     */
+    void drawLine(int x1, int y1, int x2, int y2);
+
+    /**
+     * Draws a line between 2 points, using the current foreground color and
+     * alpha.
+     */
+    void drawLine(Point p1, Point p2);
+
+    /**
+     * Draws a rectangle outline between 2 points, using the current foreground
+     * color and alpha.
+     */
+    void drawRect(int x1, int y1, int x2, int y2);
+
+    /**
+     * Draws a rectangle outline between 2 points, using the current foreground
+     * color and alpha.
+     */
+    void drawRect(Point p1, Point p2);
+
+    /**
+     * Draws a rectangle outline between 2 points, using the current foreground
+     * color and alpha.
+     */
+    void drawRect(Rect r);
+
+    /**
+     * Fills a rectangle outline between 2 points, using the current background
+     * color and alpha.
+     */
+    void fillRect(int x1, int y1, int x2, int y2);
+
+    /**
+     * Fills a rectangle outline between 2 points, using the current background
+     * color and alpha.
+     */
+    void fillRect(Point p1, Point p2);
+
+    /**
+     * Fills a rectangle outline between 2 points, using the current background
+     * color and alpha.
+     */
+    void fillRect(Rect r);
+
+    /**
+     * Draws the given string, using the current foreground color. No tab
+     * expansion or carriage return processing will be performed.
+     *
+     * @param string the string to be drawn.
+     * @param x the x coordinate of the top left corner of the text.
+     * @param y the y coordinate of the top left corner of the text.
+     */
+    void drawString(String string, int x, int y);
+
+    /**
+     * Draws the given string, using the current foreground color. No tab
+     * expansion or carriage return processing will be performed.
+     *
+     * @param string the string to be drawn.
+     * @param topLeft the top left corner of the text.
+     */
+    void drawString(String string, Point topLeft);
+
+    /**
+     * Set up the graphics context to use the given style for subsequent drawing
+     * operations.
+     *
+     * @param style The drawing style to be used. May not be null.
+     */
+    void useStyle(DrawingStyle style);
+
+    /**
+     * Registers a color using 0x00rrggbb where each component is 0..0xFF.
      * <p/>
      * Transparency is handled separately using {@link #setAlpha(int)}.
      * <p/>
-     * If the same color is registered twice, the same object will
-     * be returned.
+     * If the same color is registered twice, the same object will be returned.
+     * <p/>
+     * NOTE: It's preferable to use {@link #useStyle(DrawingStyle)} if possible
+     * to ensure that your colors work properly across multiple current and
+     * future themes.
      */
     IColor registerColor(int rgb);
 
@@ -49,22 +126,30 @@ public interface IGraphics {
     IColor getForeground();
 
     /**
-     * Returns the current background color.
-     * The background color is used for fill operations.
-     */
-    IColor getBackground();
-
-    /**
-     * Sets the foreground color. The foreground color is used
-     * for drawing operations including when text is drawn.
+     * Sets the foreground color. The foreground color is used for drawing
+     * operations including when text is drawn.
      */
     void setForeground(IColor color);
 
     /**
-     * Sets the background color. The background color is used
-     * for fill operations.
+     * Returns the current background color. The background color is used for
+     * fill operations.
+     */
+    IColor getBackground();
+
+    /**
+     * Sets the background color. The background color is used for fill
+     * operations.
      */
     void setBackground(IColor color);
+
+    /**
+     * Returns the current alpha value (varies between 0 for transparent and 255
+     * for opaque).
+     * 
+     * @return The current alpha value in use
+     */
+    int getAlpha();
 
     /**
      * Sets the receiver's alpha value which must be
@@ -104,66 +189,4 @@ public interface IGraphics {
      * The operation is ignored if <var>width</var> is less than 1.
      */
     void setLineWidth(int width);
-
-    /**
-     * Draws a line between 2 points, using the current foreground
-     * color and alpha.
-     */
-    void drawLine(int x1, int y1, int x2, int y2);
-    /**
-     * Draws a line between 2 points, using the current foreground
-     * color and alpha.
-     */
-    void drawLine(Point p1, Point p2);
-
-    /**
-     * Draws a rectangle outline between 2 points, using the current
-     * foreground color and alpha.
-     */
-    void drawRect(int x1, int y1, int x2, int y2);
-    /**
-     * Draws a rectangle outline between 2 points, using the current
-     * foreground color and alpha.
-     */
-    void drawRect(Point p1, Point p2);
-    /**
-     * Draws a rectangle outline between 2 points, using the current
-     * foreground color and alpha.
-     */
-    void drawRect(Rect r);
-
-    /**
-     * Fills a rectangle outline between 2 points, using the current
-     * background color and alpha.
-     */
-    void fillRect(int x1, int y1, int x2, int y2);
-    /**
-     * Fills a rectangle outline between 2 points, using the current
-     * background color and alpha.
-     */
-    void fillRect(Point p1, Point p2);
-    /**
-     * Fills a rectangle outline between 2 points, using the current
-     * background color and alpha.
-     */
-    void fillRect(Rect r);
-
-    /**
-     * Draws the given string, using the current foreground color.
-     * No tab expansion or carriage return processing will be performed.
-     *
-     * @param string the string to be drawn.
-     * @param x the x coordinate of the top left corner of the text.
-     * @param y the y coordinate of the top left corner of the text.
-     */
-    void drawString(String string, int x, int y);
-
-    /**
-     * Draws the given string, using the current foreground color.
-     * No tab expansion or carriage return processing will be performed.
-     *
-     * @param string the string to be drawn.
-     * @param topLeft the top left corner of the text.
-     */
-    void drawString(String string, Point topLeft);
 }

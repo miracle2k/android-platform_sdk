@@ -119,11 +119,10 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         }
 
         // Highlight the receiver
-        gc.setForeground(gc.registerColor(0x00FFFF00));
-        gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-        gc.setLineWidth(2);
+        gc.useStyle(DrawingStyle.DROP_RECIPIENT);
         gc.drawRect(b);
 
+        gc.useStyle(DrawingStyle.DROP_ZONE);
         gc.setLineStyle(IGraphics.LineStyle.LINE_DOT);
         gc.setLineWidth(1);
 
@@ -145,6 +144,8 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         def currY = feedback.userData.currY;
 
         if (currX != null && currY != null) {
+            gc.useStyle(DrawingStyle.DROP_ZONE_ACTIVE);
+
             int x = currX;
             int y = currY;
 
@@ -278,7 +279,5 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
                 addInnerElements(newChild, element, idMap);
             }
         }
-
-
     }
 }

@@ -287,9 +287,9 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         mGCWrapper = new GCWrapper(mHScale, mVScale);
 
         Display d = getDisplay();
-        mSelectionFgColor = d.getSystemColor(SWT.COLOR_RED);
-        mHoverFgColor     = new Color(d, 0xFF, 0x99, 0x00); // orange
-        mOutlineColor     = d.getSystemColor(SWT.COLOR_GREEN);
+        mSelectionFgColor = new Color(d, SwtDrawingStyle.SELECTION_BORDER.getForeground());
+        mHoverFgColor     = new Color(d, SwtDrawingStyle.HOVER.getForeground());
+        mOutlineColor     = new Color(d, SwtDrawingStyle.OUTLINE.getForeground());
 
         mFont = d.getSystemFont();
 
@@ -962,13 +962,13 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
             if (mShowOutline && mLastValidViewInfoRoot != null) {
                 gc.setForeground(mOutlineColor);
-                gc.setLineStyle(SWT.LINE_DOT);
+                gc.setLineStyle(SwtDrawingStyle.OUTLINE.getLineStyle());
                 drawOutline(gc, mLastValidViewInfoRoot);
             }
 
             if (mHoverRect != null) {
                 gc.setForeground(mHoverFgColor);
-                gc.setLineStyle(SWT.LINE_DOT);
+                gc.setLineStyle(SwtDrawingStyle.HOVER.getLineStyle());
 
                 int x = mHScale.translate(mHoverRect.x);
                 int y = mVScale.translate(mHoverRect.y);
