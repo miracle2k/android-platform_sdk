@@ -565,10 +565,19 @@ public class InstrumentationResultParser extends MultiLineReceiver {
     @Override
     public void done() {
         super.done();
-        if (!mTestRunFailReported && !mTestStartReported && !mTestRunFinished) {
+        if (!mTestRunFailReported) {
+            handleOutputDone();
+        }
+    }
+
+    /**
+     * Handles the end of the adb session when a test run failure has not been reported yet
+     */
+    private void handleOutputDone() {
+        if (!mTestStartReported && !mTestRunFinished) {
             // no results
             handleTestRunFailed(NO_TEST_RESULTS_MSG);
-        } else if (!mTestRunFailReported && mNumTestsExpected > mNumTestsRun) {
+        } else if (mNumTestsExpected > mNumTestsRun) {
             final String message =
                 String.format("%s. Expected %d tests, received %d",
                         INCOMPLETE_RUN_ERR_MSG_PREFIX, mNumTestsExpected, mNumTestsRun);
