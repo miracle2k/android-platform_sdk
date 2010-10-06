@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
+import java.util.List;
+
 /**
  * Represents a graphical context that rules can use to draw on the canvas.
  * <p/>
@@ -94,6 +96,21 @@ public interface IGraphics {
     void drawString(String string, Point topLeft);
 
     /**
+     * Draw the given strings, using the current stroke color and alpha for the
+     * text, and the current fill color and alpha for a rectangle behind the
+     * bounding box fitting all the lines of text. Each subsequent string is
+     * drawn on consecutive lines below the previous string.
+     *
+     * @param x The left edge to start each string at
+     * @param y The top position of the first string; subsequent strings are
+     *            painted on lines below
+     * @param strings An array of labels to be displayed (should not be null).
+     *            The actual String used is the {@link Object#toString()} value
+     *            of each list item.
+     */
+    void drawBoxedStrings(int x, int y, List<?> strings);
+
+    /**
      * Set up the graphics context to use the given style for subsequent drawing
      * operations.
      *
@@ -158,10 +175,8 @@ public interface IGraphics {
      * This operation requires the operating system's advanced
      * graphics subsystem which may not be available on some
      * platforms.
-     *
-     * @return False if the GC doesn't support alpha.
      */
-    boolean setAlpha(int alpha);
+    void setAlpha(int alpha);
 
     /**
      * A line style for {@link IGraphics#setLineStyle(LineStyle)}.

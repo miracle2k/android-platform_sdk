@@ -51,9 +51,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
         }
 
         // Highlight the receiver
-        gc.setForeground(gc.registerColor(0x00FFFF00));
-        gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-        gc.setLineWidth(2);
+        gc.useStyle(DrawingStyle.DROP_RECIPIENT);
         gc.drawRect(b);
 
         // Get the drop point
@@ -74,15 +72,23 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
             // the drop point.
             int offsetX = x - be.x;
             int offsetY = y - be.y;
+            gc.useStyle(DrawingStyle.DROP_PREVIEW);
             elements.each {
                 drawElement(gc, it, offsetX, offsetY);
             }
         } else {
             // We don't have bounds for new elements. In this case
-            // just draw a mark at the drop point.
-            gc.drawLine(x - 10, y - 10, x + 10, y + 10);
-            gc.drawLine(x + 10, y - 10, x - 10, y + 10);
-            gc.drawOval(x - 10, y - 10, x + 10, y + 10);
+            // just draw cross hairs to the drop point.
+            gc.useStyle(DrawingStyle.GUIDELINE);
+            gc.drawLine(x, b.y, x, b.y + b.h);
+            gc.drawLine(b.x, y, b.x + b.w, y);
+
+            // Use preview lines to indicate the bottom quadrant as well (to indicate
+            // that you are looking at the top left position of the drop, not the center
+            // for example)
+            gc.useStyle(DrawingStyle.DROP_PREVIEW);
+            gc.drawLine(x, y, b.x + b.w, y);
+            gc.drawLine(x, y, x, b.y + b.h);
         }
     }
 

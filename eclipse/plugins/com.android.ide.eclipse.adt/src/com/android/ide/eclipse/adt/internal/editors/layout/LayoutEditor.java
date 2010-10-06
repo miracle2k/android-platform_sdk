@@ -278,7 +278,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     /**
      * Returns the custom IContentOutlinePage or IPropertySheetPage when asked for it.
      */
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     @Override
     public Object getAdapter(Class adapter) {
         // for the outline, force it to come from the Graphical Editor.

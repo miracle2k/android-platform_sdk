@@ -48,9 +48,7 @@ public class AndroidWidgetFrameLayoutRule extends BaseLayout {
             return;
         }
 
-        gc.setForeground(gc.registerColor(0x00FFFF00));
-        gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-        gc.setLineWidth(2);
+        gc.useStyle(DrawingStyle.DROP_RECIPIENT);
         gc.drawRect(b);
 
         // Get the drop point
@@ -71,6 +69,7 @@ public class AndroidWidgetFrameLayoutRule extends BaseLayout {
             // the drop point.
             int offsetX = x - be.x;
             int offsetY = y - be.y;
+            gc.useStyle(DrawingStyle.DROP_PREVIEW);
             elements.each {
                 drawElement(gc, it, offsetX, offsetY);
             }

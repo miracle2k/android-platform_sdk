@@ -313,9 +313,8 @@ public class BaseView implements IViewRule {
             return;
         }
 
-        gc.useStyle(DrawingStyle.SELECTION_FILL);
+        gc.useStyle(DrawingStyle.SELECTION);
         gc.fillRect(r);
-        gc.useStyle(DrawingStyle.SELECTION_BORDER);
         gc.drawRect(r);
 
         if (displayName == null || isMultipleSelection) {
@@ -327,7 +326,9 @@ public class BaseView implements IViewRule {
         if (ys < 0) {
             ys = r.y + r.h;
         }
-        gc.drawString(displayName, xs, ys);
+        gc.useStyle(DrawingStyle.HELP);
+        gc.drawBoxedStrings(xs, ys, [displayName]);
+
     }
 
     public void onChildSelected(IGraphics gc, INode parentNode, INode childNode) {

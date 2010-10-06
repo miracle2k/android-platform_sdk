@@ -80,12 +80,24 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         targetNode.getChildren().each {
             def bc = it.getBounds();
             if (bc.isValid()) {
-                // add an insertion point between the last point and the start of this child
-                int v = isVertical ? bc.y : bc.x;
-                v = (last + v) / 2;
-                indexes.add( [v, pos++] );
+                // First see if this node looks like it's the same as one of the *dragged* bounds
+                boolean isDragged = false;
+                for (element in elements) {
+                    // This tries to determine if an INode corresponds to an IDragElement, by
+                    // comparing their bounds.
+                    if (bc == element.getBounds()) {
+                        isDragged = true;
+                    }
+                }
 
-                last = isVertical ? (bc.y + bc.h) : (bc.x + bc.w);
+                if (!isDragged) {
+                    // add an insertion point between the last point and the start of this child
+                    int v = isVertical ? bc.y : bc.x;
+                    v = (last + v) / 2;
+                    indexes.add( [v, pos++] );
+
+                    last = isVertical ? (bc.y + bc.h) : (bc.x + bc.w);
+                }
             }
         }
 
@@ -123,8 +135,6 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         gc.drawRect(b);
 
         gc.useStyle(DrawingStyle.DROP_ZONE);
-        gc.setLineStyle(IGraphics.LineStyle.LINE_DOT);
-        gc.setLineWidth(1);
 
         def indexes = feedback.userData.indexes;
         boolean isVertical = feedback.userData.isVertical;
@@ -149,17 +159,26 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
             int x = currX;
             int y = currY;
 
-            // Draw a mark at the drop point.
-            gc.setLineStyle(IGraphics.LineStyle.LINE_SOLID);
-            gc.setLineWidth(2);
-
-            gc.drawLine(x - 10, y - 10, x + 10, y + 10);
-            gc.drawLine(x + 10, y - 10, x - 10, y + 10);
-            gc.drawOval(x - 10, y - 10, x + 10, y + 10);
-
             Rect be = elements[0].getBounds();
 
-            if (be.isValid()) {
+            // Draw a mark at the drop point.
+            if (!be.isValid()) {
+                // We don't have valid bounds; this typically means we are dragging a new
+                // View from the palette whose bounds are unknown, so we simply show a single
+                // dividing line in the center of the position between the children
+                gc.useStyle(DrawingStyle.DROP_PREVIEW);
+                if (feedback.userData.width != null) {
+                    int width = feedback.userData.width;
+                    int fromX = x - width / 2;
+                    int toX = x + width / 2;
+                    gc.drawLine(fromX, y, toX, y);
+                } else if (feedback.userData.height != null) {
+                    int height = (int)feedback.userData.height;
+                    int fromY = y - height / 2;
+                    int toY = y + height / 2;
+                    gc.drawLine(x, fromY, x, toY);
+                }
+            } else {
                 // At least the first element has a bound. Draw rectangles
                 // for all dropped elements with valid bounds, offset at
                 // the drop point.
@@ -172,11 +191,16 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
                 if (pb.isValid()) {
                     if (isVertical) {
                         offsetX = b.x - pb.x;
+                        // Place the -center- of the bounds at child boundary!
+                        offsetY -= be.h / 2;
                     } else {
                         offsetY = b.y - pb.y;
+                        // Place the -center- of the bounds at child boundary!
+                        offsetX -= be.w / 2;
                     }
                 }
 
+                gc.useStyle(DrawingStyle.DROP_PREVIEW);
                 for (element in elements) {
                     drawElement(gc, element, offsetX, offsetY);
                 }
@@ -221,9 +245,11 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
             if (isVertical) {
                 data.currX = b.x + b.w / 2;
                 data.currY = bestIndex;
+                data.width = b.w;
             } else {
                 data.currX = bestIndex;
                 data.currY = b.y + b.h / 2;
+                data.height = b.h;
             }
 
             data.insertPos = bestPos;
