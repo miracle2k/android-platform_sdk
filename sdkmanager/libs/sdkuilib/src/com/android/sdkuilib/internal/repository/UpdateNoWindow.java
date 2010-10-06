@@ -21,7 +21,7 @@ import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.ITask;
 import com.android.sdklib.internal.repository.ITaskFactory;
 import com.android.sdklib.internal.repository.ITaskMonitor;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 import java.util.ArrayList;
 
@@ -87,7 +87,7 @@ public class UpdateNoWindow {
     /**
      * Performs the actual update.
      *
-     * @param pkgFilter A list of {@link SdkRepository#NODES} to limit the type of packages
+     * @param pkgFilter A list of {@link SdkRepoConstants#NODES} to limit the type of packages
      *   we can update. A null or empty list means to update everything possible.
      * @param includeObsoletes True to also list and install obsolete packages.
      * @param dryMode True to check what would be updated/installed but do not actually

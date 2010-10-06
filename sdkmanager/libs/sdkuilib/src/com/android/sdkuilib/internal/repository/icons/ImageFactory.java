@@ -18,7 +18,7 @@ package com.android.sdkuilib.internal.repository.icons;
 
 import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.RepoSource;
+import com.android.sdklib.internal.repository.SdkSource;
 import com.android.sdkuilib.internal.repository.RepoSourcesAdapter;
 
 import org.eclipse.swt.SWTException;
@@ -79,7 +79,7 @@ public class ImageFactory {
     /**
      * Loads and returns the appropriate image for a given package, archive or source object.
      *
-     * @param object A {@link RepoSource} or {@link Package} or {@link Archive}.
+     * @param object A {@link SdkSource} or {@link Package} or {@link Archive}.
      * @return A new or existing {@link Image}. The caller must NOT dispose the image (the
      *  image will disposed by {@link #dispose()}). The returned image can be null if the
      *  expected file is missing.
@@ -97,7 +97,7 @@ public class ImageFactory {
             return getImageByName(name);
         }
 
-        if (object instanceof RepoSource) {
+        if (object instanceof SdkSource) {
             return getImageByName("source_icon16.png");                         //$NON-NLS-1$
 
         } else if (object instanceof RepoSourcesAdapter.RepoSourceError) {

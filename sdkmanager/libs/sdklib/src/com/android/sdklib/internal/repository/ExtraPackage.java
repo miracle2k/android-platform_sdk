@@ -20,7 +20,7 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 import org.w3c.dom.Node;
 
@@ -53,15 +53,20 @@ public class ExtraPackage extends MinToolsPackage
 
     /**
      * Creates a new tool package from the attributes and elements of the given XML node.
-     * <p/>
      * This constructor should throw an exception if the package cannot be created.
+     *
+     * @param source The {@link SdkSource} where this is loaded from.
+     * @param packageNode The XML element being parsed.
+     * @param nsUri The namespace URI of the originating XML document, to be able to deal with
+     *          parameters that vary according to the originating XML schema.
+     * @param licenses The licenses loaded from the XML originating document.
      */
-    ExtraPackage(RepoSource source, Node packageNode, Map<String,String> licenses) {
-        super(source, packageNode, licenses);
+    ExtraPackage(SdkSource source, Node packageNode, String nsUri, Map<String,String> licenses) {
+        super(source, packageNode, nsUri, licenses);
 
-        mPath = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_PATH);
+        mPath = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_PATH);
 
-        mMinApiLevel = XmlParserUtils.getXmlInt(packageNode, SdkRepository.NODE_MIN_API_LEVEL,
+        mMinApiLevel = XmlParserUtils.getXmlInt(packageNode, SdkRepoConstants.NODE_MIN_API_LEVEL,
                 MIN_API_LEVEL_NOT_SPECIFIED);
     }
 
@@ -72,7 +77,7 @@ public class ExtraPackage extends MinToolsPackage
      * <p/>
      * By design, this creates a package with one and only one archive.
      */
-    ExtraPackage(RepoSource source,
+    ExtraPackage(SdkSource source,
             Properties props,
             String path,
             int revision,

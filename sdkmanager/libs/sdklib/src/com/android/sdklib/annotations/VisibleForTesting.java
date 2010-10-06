@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.annotations;
+package com.android.sdklib.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -26,10 +26,7 @@ import java.lang.annotation.RetentionPolicy;
  * The <code>visibility</code> argument can be used to specific what the original
  * visibility should have been if it had not been made public or package-private for testing.
  * The default is to consider the element private.
- *
- * @deprecated TODO use the version moved into sdklib instead
  */
-@Deprecated
 @Retention(RetentionPolicy.SOURCE)
 public @interface VisibleForTesting {
     /**

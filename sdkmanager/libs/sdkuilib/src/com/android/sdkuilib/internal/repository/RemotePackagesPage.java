@@ -20,7 +20,8 @@ package com.android.sdkuilib.internal.repository;
 import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.IDescription;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.RepoSource;
+import com.android.sdklib.internal.repository.SdkAddonSource;
+import com.android.sdklib.internal.repository.SdkSource;
 import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
 
 import org.eclipse.jface.dialogs.IInputValidator;
@@ -260,7 +261,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
             (ITreeContentProvider) mTreeViewerSources.getContentProvider();
 
         // When selecting, we want to only select compatible archives.
-        if (elem instanceof RepoSource) {
+        if (elem instanceof SdkSource) {
             mTreeViewerSources.setExpandedState(elem, true);
             for (Object pkg : provider.getChildren(elem)) {
                 mTreeViewerSources.setChecked(pkg, true);
@@ -328,7 +329,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
 
     private void onAddSiteSelected() {
 
-        final RepoSource[] knowSources = mUpdaterData.getSources().getSources();
+        final SdkSource[] knowSources = mUpdaterData.getSources().getSources();
         String title = "Add Add-on Site URL";
 
         String msg =
@@ -358,7 +359,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
                 // Reject URLs that are already in the source list.
                 // URLs are generally case-insensitive (except for file:// where it all depends
                 // on the current OS so we'll ignore this case.)
-                for (RepoSource s : knowSources) {
+                for (SdkSource s : knowSources) {
                     if (newText.equalsIgnoreCase(s.getUrl())) {
                         return "Error : This site is already listed.";
                     }
@@ -370,7 +371,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
 
         if (dlg.open() == Window.OK) {
             String url = dlg.getValue();
-            mUpdaterData.getSources().add(new RepoSource(url, true /*userSource*/));
+            mUpdaterData.getSources().add(new SdkAddonSource(url, true /*userSource*/));
             onRefreshSelected();
         }
     }
@@ -381,8 +382,8 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         ISelection sel = mTreeViewerSources.getSelection();
         if (mUpdaterData != null && sel instanceof ITreeSelection) {
             for (Object c : ((ITreeSelection) sel).toList()) {
-                if (c instanceof RepoSource && ((RepoSource) c).isUserSource()) {
-                    RepoSource source = (RepoSource) c;
+                if (c instanceof SdkSource && ((SdkSource) c).isUserSource()) {
+                    SdkSource source = (SdkSource) c;
 
                     String title = "Delete Add-on Site?";
 
@@ -437,8 +438,8 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         ISelection sel = mTreeViewerSources.getSelection();
         if (sel instanceof ITreeSelection) {
             for (Object c : ((ITreeSelection) sel).toList()) {
-                if (c instanceof RepoSource &&
-                        ((RepoSource) c).isUserSource()) {
+                if (c instanceof SdkSource &&
+                        ((SdkSource) c).isUserSource()) {
                     hasSelectedUserSource = true;
                     break;
                 }

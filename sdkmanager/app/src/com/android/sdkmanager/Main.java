@@ -32,7 +32,7 @@ import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectCreator.OutputLevel;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.io.FileWrapper;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 import com.android.sdklib.xml.AndroidXPathFactory;
 import com.android.sdkmanager.internal.repository.AboutPage;
 import com.android.sdkmanager.internal.repository.SettingsPage;
@@ -332,7 +332,7 @@ public class Main {
                     t = t.trim();
                     if (t.length() > 0) {
                         boolean found = false;
-                        for (String t2 : SdkRepository.NODES) {
+                        for (String t2 : SdkRepoConstants.NODES) {
                             if (t2.equals(t)) {
                                 pkgFilter.add(t2);
                                 found = true;
@@ -343,7 +343,7 @@ public class Main {
                             errorAndExit(
                                 "Unknown package filter type '%1$s'.\nAccepted values are: %2$s",
                                 t,
-                                Arrays.toString(SdkRepository.NODES));
+                                Arrays.toString(SdkRepoConstants.NODES));
                             return;
                         }
                     }

@@ -28,10 +28,13 @@ import com.android.sdklib.internal.repository.ITaskFactory;
 import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.LocalSdkParser;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.RepoSource;
-import com.android.sdklib.internal.repository.RepoSources;
+import com.android.sdklib.internal.repository.SdkAddonSource;
+import com.android.sdklib.internal.repository.SdkRepoSource;
+import com.android.sdklib.internal.repository.SdkSource;
+import com.android.sdklib.internal.repository.SdkSources;
 import com.android.sdklib.internal.repository.ToolPackage;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkAddonConstants;
+import com.android.sdklib.repository.SdkRepoConstants;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
 
@@ -61,7 +64,7 @@ class UpdaterData {
     private AvdManager mAvdManager;
 
     private final LocalSdkParser mLocalSdkParser = new LocalSdkParser();
-    private final RepoSources mSources = new RepoSources();
+    private final SdkSources mSources = new SdkSources();
 
     private final LocalSdkAdapter mLocalSdkAdapter = new LocalSdkAdapter(this);
     private final RepoSourcesAdapter mSourcesAdapter = new RepoSourcesAdapter(this);
@@ -113,7 +116,7 @@ class UpdaterData {
         return mUserCanChangeSdkRoot;
     }
 
-    public RepoSources getSources() {
+    public SdkSources getSources() {
         return mSources;
     }
 
@@ -288,8 +291,9 @@ class UpdaterData {
      * - and finally the extra user repo URLs from the environment.
      */
     public void setupDefaultSources() {
-        RepoSources sources = getSources();
-        sources.add(new RepoSource(SdkRepository.URL_GOOGLE_SDK_REPO_SITE, false /*userSource*/));
+        SdkSources sources = getSources();
+        sources.add(new SdkRepoSource(SdkRepoConstants.URL_GOOGLE_SDK_SITE));
+        sources.add(new SdkAddonSource(SdkAddonConstants.URL_GOOGLE_SDK_SITE, false /*userSource*/));
 
         // SDK_UPDATER_URLS is a semicolon-separated list of URLs that can be used to
         // seed the SDK Updater list for full repositories.
@@ -298,7 +302,11 @@ class UpdaterData {
             String[] urls = str.split(";");
             for (String url : urls) {
                 if (url != null && url.length() > 0) {
-                    RepoSource s = new RepoSource(url, false /*userSource*/);
+                    SdkSource s = new SdkRepoSource(url);
+                    if (!sources.hasSource(s)) {
+                        sources.add(s);
+                    }
+                    s = new SdkAddonSource(url, false /*userSource*/);
                     if (!sources.hasSource(s)) {
                         sources.add(s);
                     }
@@ -317,7 +325,7 @@ class UpdaterData {
             String[] urls = str.split(";");
             for (String url : urls) {
                 if (url != null && url.length() > 0) {
-                    RepoSource s = new RepoSource(url, true /*userSource*/);
+                    SdkSource s = new SdkAddonSource(url, true /*userSource*/);
                     if (!sources.hasSource(s)) {
                         sources.add(s);
                     }
@@ -628,7 +636,7 @@ class UpdaterData {
      * This version is intended to run without a GUI and
      * only outputs to the current {@link ISdkLog}.
      *
-     * @param pkgFilter A list of {@link SdkRepository#NODES} to limit the type of packages
+     * @param pkgFilter A list of {@link SdkRepoConstants#NODES} to limit the type of packages
      *   we can update. A null or empty list means to update everything possible.
      * @param includeObsoletes True to also list and install obsolete packages.
      * @param dryMode True to check what would be updated/installed but do not actually
@@ -664,7 +672,7 @@ class UpdaterData {
             // Automatically find the classes matching the node names
             ClassLoader classLoader = getClass().getClassLoader();
             String basePackage = Package.class.getPackage().getName();
-            for (String node : SdkRepository.NODES) {
+            for (String node : SdkRepoConstants.NODES) {
                 // Capitalize the name
                 String name = node.substring(0, 1).toUpperCase() + node.substring(1);
 
@@ -700,7 +708,7 @@ class UpdaterData {
                 }
             }
 
-            if (SdkRepository.NODES.length != pkgMap.size()) {
+            if (SdkRepoConstants.NODES.length != pkgMap.size()) {
                 // Sanity check in case we forget to update this node array.
                 // We don't cancel the operation though.
                 mSdkLog.printf(
@@ -783,9 +791,9 @@ class UpdaterData {
 
         mTaskFactory.start("Refresh Sources", new ITask() {
             public void run(ITaskMonitor monitor) {
-                RepoSource[] sources = mSources.getSources();
+                SdkSource[] sources = mSources.getSources();
                 monitor.setProgressMax(sources.length);
-                for (RepoSource source : sources) {
+                for (SdkSource source : sources) {
                     if (forceFetching ||
                             source.getPackages() != null ||
                             source.getFetchError() != null) {
