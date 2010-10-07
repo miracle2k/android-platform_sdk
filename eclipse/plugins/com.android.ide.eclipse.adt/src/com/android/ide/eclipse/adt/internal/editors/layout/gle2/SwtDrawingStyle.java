@@ -27,122 +27,136 @@ import org.eclipse.swt.graphics.RGB;
  * class which defines the drawing styles but does not introduce any specific
  * SWT values to the API clients.
  * <p>
- * TODO: This class should eventually pick up theme preferences.
+ * TODO: This class should eventually be replaced by a scheme where the color
+ * constants are instead coming from the theme.
  */
 public enum SwtDrawingStyle {
     /**
-     * The style used for the border of a selected view
+     * The style definition corresponding to {@link DrawingStyle#SELECTION}
      */
-    SELECTION_BORDER(new RGB(0xFF, 0x00, 0x00), null, 1, SWT.LINE_SOLID, 255),
+    SELECTION(new RGB(0x00, 0x99, 0xFF), 255, new RGB(0x00, 0x99, 0xFF), 64, 2, SWT.LINE_DASH),
 
     /**
-     * The style used for the interior of a selected view
+     * The style definition corresponding to {@link DrawingStyle#GUIDELINE}
      */
-    SELECTION_FILL(null, new RGB(0xFF, 0x00, 0x00), 1, SWT.LINE_SOLID, 64),
+    GUIDELINE(new RGB(0x00, 0xFF, 0x00), 255, SWT.LINE_DOT),
 
     /**
-     * The style used for hovered views (e.g. when the mouse is directly on top
-     * of the view)
+     * The style definition corresponding to {@link DrawingStyle#HOVER}
      */
-    HOVER(new RGB(0xFF, 0x99, 0x00), null, 1, SWT.LINE_DOT, 255),
+    HOVER(null, 0, new RGB(0xFF, 0xFF, 0xFF), 64, 1, SWT.LINE_DOT),
 
     /**
-     * The style used to draw anchors (lines to the other views the given view
-     * is anchored to)
+     * The style definition corresponding to {@link DrawingStyle#ANCHOR}
      */
-    ANCHOR(new RGB(0xFF, 0x00, 0x00), null, 1, SWT.LINE_SOLID, 255),
+    ANCHOR(new RGB(0x00, 0x99, 0xFF), 96, SWT.LINE_SOLID),
 
     /**
-     * The style used to draw outlines (the structure of views)
+     * The style definition corresponding to {@link DrawingStyle#OUTLINE}
      */
-    OUTLINE(new RGB(0x00, 0xFF, 0x00), null, 1, SWT.LINE_DOT, 255),
+    OUTLINE(new RGB(0x88, 0xFF, 0x88), 160, SWT.LINE_SOLID),
 
     /**
-     * The style used to draw the recipient/target View of a drop. This is
-     * typically going to be the bounding-box of the view into which you are
-     * adding a new child.
+     * The style definition corresponding to {@link DrawingStyle#DROP_RECIPIENT}
      */
-    DROP_RECIPIENT(new RGB(0xFF, 0x99, 0x00), new RGB(0xFF, 0x99, 0x00), 1, SWT.LINE_SOLID, 255),
+    DROP_RECIPIENT(new RGB(0xFF, 0x99, 0x00), 255, new RGB(0xFF, 0x99, 0x00), 160, 1,
+            SWT.LINE_SOLID),
 
     /**
-     * The style used to draw a potential drop area <b>within</b> a
-     * {@link #DROP_RECIPIENT}. For example, if you are dragging into a view
-     * with a LinearLayout, the {@link #DROP_RECIPIENT} will be the view itself,
-     * whereas each possible insert position between two children will be a
-     * {@link #DROP_ZONE}. If the mouse is over a {@link #DROP_ZONE} it should
-     * be drawn using the style {@link #DROP_ZONE_ACTIVE}.
+     * The style definition corresponding to {@link DrawingStyle#DROP_ZONE}
      */
-    DROP_ZONE(new RGB(0xFF, 0x99, 0x00), new RGB(0xFF, 0x99, 0x00), 1, SWT.LINE_DOT, 255),
+    DROP_ZONE(new RGB(0x00, 0xAA, 0x00), 220, new RGB(0x55, 0xAA, 0x00), 200, 1, SWT.LINE_SOLID),
 
     /**
-     * The style used to draw a currently active drop zone within a drop
-     * recipient. See the documentation for {@link #DROP_ZONE} for details on
-     * the distinction between {@link #DROP_RECIPIENT}, {@link #DROP_ZONE} and
-     * {@link #DROP_ZONE_ACTIVE}.
+     * The style definition corresponding to
+     * {@link DrawingStyle#DROP_ZONE_ACTIVE}
      */
-    DROP_ZONE_ACTIVE(new RGB(0xFF, 0x99, 0x00), new RGB(0xFF, 0x99, 0x00), 1, SWT.LINE_SOLID, 255),
+    DROP_ZONE_ACTIVE(new RGB(0x00, 0xAA, 0x00), 220, new RGB(0x00, 0xAA, 0x00), 128, 2,
+            SWT.LINE_SOLID),
 
     /**
-     * The style used to raw illegal/error/invalid markers
+     * The style definition corresponding to {@link DrawingStyle#DROP_PREVIEW}
      */
-    INVALID(new RGB(0x00, 0x00, 0xFF), null, 3, SWT.LINE_SOLID, 255),
+    DROP_PREVIEW(new RGB(0xFF, 0x99, 0x00), 255, null, 0, 2, SWT.LINE_CUSTOM),
 
     /**
-     * A style used for unspecified purposes; can be used by a client to have
-     * yet another color that is domain specific; using this color constant
-     * rather than your own hardcoded value means that you will be guaranteed to
-     * pick up a color that is themed properly and will look decent with the
-     * rest of the colors
+     * The style definition corresponding to {@link DrawingStyle#HELP}
      */
-    CUSTOM1(new RGB(0xFF, 0x00, 0xFF), null, 1, SWT.LINE_SOLID, 255),
+    HELP(new RGB(0xFF, 0xFF, 0xFF), 255, new RGB(0x00, 0x00, 0x00), 128, 1, SWT.LINE_SOLID),
 
     /**
-     * A second styled used for unspecified purposes; see {@link #CUSTOM1} for
-     * details.
+     * The style definition corresponding to {@link DrawingStyle#INVALID}
      */
-    CUSTOM2(new RGB(0x00, 0xFF, 0xFF), null, 1, SWT.LINE_DOT, 255);
+    INVALID(new RGB(0xFF, 0xFF, 0xFF), 255, new RGB(0xFF, 0x00, 0x00), 150, 2, SWT.LINE_SOLID),
+
+    /**
+     * The style definition corresponding to {@link DrawingStyle#CUSTOM1}
+     */
+    CUSTOM1(new RGB(0xFF, 0x00, 0xFF), 255, null, 0, 1, SWT.LINE_SOLID),
+
+    /**
+     * The style definition corresponding to {@link DrawingStyle#CUSTOM2}
+     */
+    CUSTOM2(new RGB(0x00, 0xFF, 0xFF), 255, null, 0, 1, SWT.LINE_DOT);
 
     /**
      * Construct a new style value with the given foreground, background, width,
      * linestyle and transparency.
      *
-     * @param fg A color descriptor for the foreground color, or null if no
+     * @param stroke A color descriptor for the foreground color, or null if no
      *            foreground color should be set
-     * @param bg A color descriptor for the background color, or null if no
+     * @param fill A color descriptor for the background color, or null if no
      *            foreground color should be set
-     * @param width The line width, in pixels, or 0 if no line width should be
-     *            set
+     * @param lineWidth The line width, in pixels, or 0 if no line width should
+     *            be set
      * @param lineStyle The SWT line style - such as {@link SWT#LINE_SOLID}.
-     * @param alpha The alpha value, an integer in the range 0 to 255 where 0 is
-     *            fully transparent and 255 is fully opaque.
+     * @param strokeAlpha The alpha value of the stroke, an integer in the range 0 to 255
+     *            where 0 is fully transparent and 255 is fully opaque.
+     * @param fillAlpha The alpha value of the fill, an integer in the range 0 to 255
+     *            where 0 is fully transparent and 255 is fully opaque.
      */
-    private SwtDrawingStyle(RGB fg, RGB bg, int width, int lineStyle, int alpha) {
-        mFg = fg;
-        mBg = bg;
-        mWidth = width;
+    private SwtDrawingStyle(RGB stroke, int strokeAlpha, RGB fill, int fillAlpha, int lineWidth,
+            int lineStyle) {
+        mStroke = stroke;
+        mFill = fill;
+        mLineWidth = lineWidth;
         mLineStyle = lineStyle;
-        mAlpha = alpha;
+        mStrokeAlpha = strokeAlpha;
+        mFillAlpha = fillAlpha;
     }
 
     /**
-     * Return the foreground RGB color description to be used for this style, or
-     * null if none
+     * Convenience constructor for typical drawing styles, which do not specify
+     * a fill and use a standard thickness line
+     *
+     * @param stroke Stroke color to be used (e.g. for the border/foreground)
+     * @param strokeAlpha Transparency to use for the stroke; 0 is transparent
+     *            and 255 is fully opaque.
+     * @param lineStyle The SWT line style - such as {@link SWT#LINE_SOLID}.
      */
-    public RGB getForeground() {
-        return mFg;
+    private SwtDrawingStyle(RGB stroke, int strokeAlpha, int lineStyle) {
+        this(stroke, strokeAlpha, null, 255, 1, lineStyle);
     }
 
     /**
-     * Return the background RGB color description to be used for this style, or
-     * null if none
+     * Return the stroke/foreground/border RGB color description to be used for
+     * this style, or null if none
      */
-    public RGB getBackground() {
-        return mBg;
+    public RGB getStrokeColor() {
+        return mStroke;
+    }
+
+    /**
+     * Return the fill/background/interior RGB color description to be used for
+     * this style, or null if none
+     */
+    public RGB getFillColor() {
+        return mFill;
     }
 
     /** Return the line width to be used for this style */
     public int getLineWidth() {
-        return mWidth;
+        return mLineWidth;
     }
 
     /** Return the SWT line style to be used for this style */
@@ -150,9 +164,20 @@ public enum SwtDrawingStyle {
         return mLineStyle;
     }
 
-    /** Return the alpha value (in the range 0,255) to be used for this style */
-    public int getAlpha() {
-        return mAlpha;
+    /**
+     * Return the stroke alpha value (in the range 0,255) to be used for this
+     * style
+     */
+    public int getStrokeAlpha() {
+        return mStrokeAlpha;
+    }
+
+    /**
+     * Return the fill alpha value (in the range 0,255) to be used for this
+     * style
+     */
+    public int getFillAlpha() {
+        return mFillAlpha;
     }
 
     /**
@@ -161,10 +186,10 @@ public enum SwtDrawingStyle {
      */
     public static SwtDrawingStyle of(DrawingStyle style) {
         switch (style) {
-            case SELECTION_BORDER:
-                return SELECTION_BORDER;
-            case SELECTION_FILL:
-                return SELECTION_FILL;
+            case SELECTION:
+                return SELECTION;
+            case GUIDELINE:
+                return GUIDELINE;
             case HOVER:
                 return HOVER;
             case ANCHOR:
@@ -177,6 +202,10 @@ public enum SwtDrawingStyle {
                 return DROP_ZONE_ACTIVE;
             case DROP_RECIPIENT:
                 return DROP_RECIPIENT;
+            case DROP_PREVIEW:
+                return DROP_PREVIEW;
+            case HELP:
+                return HELP;
             case INVALID:
                 return INVALID;
             case CUSTOM1:
@@ -190,13 +219,21 @@ public enum SwtDrawingStyle {
         }
     }
 
-    private final RGB mFg;
+    /** RGB description of the stroke/foreground/border color */
+    private final RGB mStroke;
 
-    private final RGB mBg;
+    /** RGB description of the fill/foreground/interior color */
+    private final RGB mFill;
 
-    private final int mWidth;
+    /** Pixel thickness of the stroke/border */
+    private final int mLineWidth;
 
+    /** SWT line style of the border/stroke */
     private final int mLineStyle;
 
-    private final int mAlpha;
+    /** Alpha (in the range 0-255) of the stroke/border */
+    private final int mStrokeAlpha;
+
+    /** Alpha (in the range 0-255) of the fill/interior */
+    private final int mFillAlpha;
 }

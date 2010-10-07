@@ -208,9 +208,12 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     private Rectangle mHoverRect;
 
     /** Hover border color. Must be disposed, it's NOT a system color. */
-    private Color mHoverFgColor;
+    private Color mHoverStrokeColor;
 
-    /** Outline color. Do not dispose, it's a system color. */
+    /** Hover fill color. Must be disposed, it's NOT a system color. */
+    private Color mHoverFillColor;
+
+    /** Outline color. Must be disposed, it's NOT a system color. */
     private Color mOutlineColor;
 
     /**
@@ -287,9 +290,14 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         mGCWrapper = new GCWrapper(mHScale, mVScale);
 
         Display d = getDisplay();
-        mSelectionFgColor = new Color(d, SwtDrawingStyle.SELECTION_BORDER.getForeground());
-        mHoverFgColor     = new Color(d, SwtDrawingStyle.HOVER.getForeground());
-        mOutlineColor     = new Color(d, SwtDrawingStyle.OUTLINE.getForeground());
+        mSelectionFgColor = new Color(d, SwtDrawingStyle.SELECTION.getStrokeColor());
+        if (SwtDrawingStyle.HOVER.getStrokeColor() != null) {
+            mHoverStrokeColor = new Color(d, SwtDrawingStyle.HOVER.getStrokeColor());
+        }
+        if (SwtDrawingStyle.HOVER.getFillColor() != null) {
+            mHoverFillColor = new Color(d, SwtDrawingStyle.HOVER.getFillColor());
+        }
+        mOutlineColor = new Color(d, SwtDrawingStyle.OUTLINE.getStrokeColor());
 
         mFont = d.getSystemFont();
 
@@ -358,9 +366,19 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             mOutlinePage = null;
         }
 
-        if (mHoverFgColor != null) {
-            mHoverFgColor.dispose();
-            mHoverFgColor = null;
+        if (mOutlineColor != null) {
+            mOutlineColor.dispose();
+            mOutlineColor = null;
+        }
+
+        if (mHoverStrokeColor != null) {
+            mHoverStrokeColor.dispose();
+            mHoverStrokeColor = null;
+        }
+
+        if (mHoverFillColor != null) {
+            mHoverFillColor.dispose();
+            mHoverFillColor = null;
         }
 
         if (mDropTarget != null) {
@@ -963,19 +981,33 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
             if (mShowOutline && mLastValidViewInfoRoot != null) {
                 gc.setForeground(mOutlineColor);
                 gc.setLineStyle(SwtDrawingStyle.OUTLINE.getLineStyle());
+                int oldAlpha = gc.getAlpha();
+                gc.setAlpha(SwtDrawingStyle.OUTLINE.getStrokeAlpha());
                 drawOutline(gc, mLastValidViewInfoRoot);
+                gc.setAlpha(oldAlpha);
             }
 
             if (mHoverRect != null) {
-                gc.setForeground(mHoverFgColor);
-                gc.setLineStyle(SwtDrawingStyle.HOVER.getLineStyle());
-
                 int x = mHScale.translate(mHoverRect.x);
                 int y = mVScale.translate(mHoverRect.y);
                 int w = mHScale.scale(mHoverRect.width);
                 int h = mVScale.scale(mHoverRect.height);
 
-                gc.drawRectangle(x, y, w, h);
+                if (mHoverStrokeColor != null) {
+                    int oldAlpha = gc.getAlpha();
+                    gc.setForeground(mHoverStrokeColor);
+                    gc.setLineStyle(SwtDrawingStyle.HOVER.getLineStyle());
+                    gc.setAlpha(SwtDrawingStyle.HOVER.getStrokeAlpha());
+                    gc.drawRectangle(x, y, w, h);
+                    gc.setAlpha(oldAlpha);
+                }
+
+                if (mHoverFillColor != null) {
+                    int oldAlpha = gc.getAlpha();
+                    gc.setAlpha(SwtDrawingStyle.HOVER.getFillAlpha());
+                    gc.fillRectangle(x, y, w, h);
+                    gc.setAlpha(oldAlpha);
+                }
             }
 
             int n = mSelections.size();
@@ -1011,7 +1043,12 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         int w = mHScale.scale(r.width);
         int h = mVScale.scale(r.height);
 
-        gc.drawRectangle(x, y, w, h);
+        // Add +1 to the width and +1 to the height such that when you have a
+        // series of boxes (in say a LinearLayout), instead of the bottom of one
+        // box and the top of the next box being -adjacent-, they -overlap-.
+        // This makes the outline nicer visually since you don't get
+        // "double thickness" lines for all adjacent boxes.
+        gc.drawRectangle(x, y, w + 1, h + 1);
 
         for (CanvasViewInfo vi : info.getChildren()) {
             drawOutline(gc, vi);

@@ -23,14 +23,15 @@ package com.android.ide.eclipse.adt.editors.layout.gscripts;
  */
 public enum DrawingStyle {
     /**
-     * The style used for the border of a selected view
+     * The style used to draw the selected views
      */
-    SELECTION_BORDER,
+    SELECTION,
 
     /**
-     * The style used for the interior of a selected view
+     * The style used to draw guidelines - overlay lines which indicate
+     * significant geometric positions.
      */
-    SELECTION_FILL,
+    GUIDELINE,
 
     /**
      * The style used for hovered views (e.g. when the mouse is directly on top
@@ -73,6 +74,17 @@ public enum DrawingStyle {
      * {@link #DROP_ZONE_ACTIVE}.
      */
     DROP_ZONE_ACTIVE,
+
+    /**
+     * The style used to draw a preview of where a dropped view would appear if
+     * it were to be dropped at a given location.
+     */
+    DROP_PREVIEW,
+
+    /**
+     * The style used to draw help/hint text.
+     */
+    HELP,
 
     /**
      * The style used to raw illegal/error/invalid markers
