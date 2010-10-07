@@ -32,6 +32,7 @@ import org.eclipse.swt.graphics.RGB;
 
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,6 +49,11 @@ public class GCWrapper implements IGraphics {
      * to null when not in the context of a paint.
      */
     private GC mGc;
+
+    /**
+     * Current style being used for drawing.
+     */
+    private SwtDrawingStyle mCurrentStyle = SwtDrawingStyle.INVALID;
 
     /**
      * Implementation of IColor wrapping an SWT color.
@@ -68,10 +74,17 @@ public class GCWrapper implements IGraphics {
     private final HashMap<Integer, ColorWrapper> mColorMap = new HashMap<Integer, ColorWrapper>();
 
     /**
-     * A map of the {@link SwtDrawingStyle} colors that we have actually used
-     * (to be disposed)
+     * A map of the {@link SwtDrawingStyle} stroke colors that we have actually
+     * used (to be disposed)
      */
-    private final Map<DrawingStyle, Color> mStyleColorMap = new EnumMap<DrawingStyle, Color>(
+    private final Map<DrawingStyle, Color> mStyleStrokeMap = new EnumMap<DrawingStyle, Color>(
+            DrawingStyle.class);
+
+    /**
+     * A map of the {@link SwtDrawingStyle} fill colors that we have actually
+     * used (to be disposed)
+     */
+    private final Map<DrawingStyle, Color> mStyleFillMap = new EnumMap<DrawingStyle, Color>(
             DrawingStyle.class);
 
     /** The cached pixel height of the default current font. */
@@ -108,10 +121,15 @@ public class GCWrapper implements IGraphics {
         }
         mColorMap.clear();
 
-        for (Color c : mStyleColorMap.values()) {
+        for (Color c : mStyleStrokeMap.values()) {
             c.dispose();
         }
-        mStyleColorMap.clear();
+        mStyleStrokeMap.clear();
+
+        for (Color c : mStyleFillMap.values()) {
+            c.dispose();
+        }
+        mStyleFillMap.clear();
     }
 
     //-------------
@@ -166,13 +184,13 @@ public class GCWrapper implements IGraphics {
         getGc().setBackground(((ColorWrapper) color).getColor());
     }
 
-    public boolean setAlpha(int alpha) {
+    public void setAlpha(int alpha) {
         checkGC();
         try {
             getGc().setAlpha(alpha);
-            return true;
         } catch (SWTException e) {
-            return false;
+            // This means that we cannot set the alpha on this platform; this is
+            // an acceptable no-op.
         }
     }
 
@@ -213,6 +231,7 @@ public class GCWrapper implements IGraphics {
 
     public void drawLine(int x1, int y1, int x2, int y2) {
         checkGC();
+        useStrokeAlpha();
         x1 = mHScale.translate(x1);
         y1 = mVScale.translate(y1);
         x2 = mHScale.translate(x2);
@@ -228,6 +247,7 @@ public class GCWrapper implements IGraphics {
 
     public void drawRect(int x1, int y1, int x2, int y2) {
         checkGC();
+        useStrokeAlpha();
         int x = mHScale.translate(x1);
         int y = mVScale.translate(y1);
         int w = mHScale.scale(x2 - x1);
@@ -241,6 +261,7 @@ public class GCWrapper implements IGraphics {
 
     public void drawRect(Rect r) {
         checkGC();
+        useStrokeAlpha();
         int x = mHScale.translate(r.x);
         int y = mVScale.translate(r.y);
         int w = mHScale.scale(r.w);
@@ -250,6 +271,7 @@ public class GCWrapper implements IGraphics {
 
     public void fillRect(int x1, int y1, int x2, int y2) {
         checkGC();
+        useFillAlpha();
         int x = mHScale.translate(x1);
         int y = mVScale.translate(y1);
         int w = mHScale.scale(x2 - x1);
@@ -263,6 +285,7 @@ public class GCWrapper implements IGraphics {
 
     public void fillRect(Rect r) {
         checkGC();
+        useFillAlpha();
         int x = mHScale.translate(r.x);
         int y = mVScale.translate(r.y);
         int w = mHScale.scale(r.w);
@@ -274,6 +297,7 @@ public class GCWrapper implements IGraphics {
 
     public void drawOval(int x1, int y1, int x2, int y2) {
         checkGC();
+        useStrokeAlpha();
         int x = mHScale.translate(x1);
         int y = mVScale.translate(y1);
         int w = mHScale.scale(x2 - x1);
@@ -287,6 +311,7 @@ public class GCWrapper implements IGraphics {
 
     public void drawOval(Rect r) {
         checkGC();
+        useStrokeAlpha();
         int x = mHScale.translate(r.x);
         int y = mVScale.translate(r.y);
         int w = mHScale.scale(r.w);
@@ -296,6 +321,7 @@ public class GCWrapper implements IGraphics {
 
     public void fillOval(int x1, int y1, int x2, int y2) {
         checkGC();
+        useFillAlpha();
         int x = mHScale.translate(x1);
         int y = mVScale.translate(y1);
         int w = mHScale.scale(x2 - x1);
@@ -309,6 +335,7 @@ public class GCWrapper implements IGraphics {
 
     public void fillOval(Rect r) {
         checkGC();
+        useFillAlpha();
         int x = mHScale.translate(r.x);
         int y = mVScale.translate(r.y);
         int w = mHScale.scale(r.w);
@@ -321,9 +348,46 @@ public class GCWrapper implements IGraphics {
 
     public void drawString(String string, int x, int y) {
         checkGC();
+        useStrokeAlpha();
         x = mHScale.translate(x);
         y = mVScale.translate(y);
+        // Background fill of text is not useful because it does not
+        // use the alpha; we instead supply a separate method (drawBoxedStrings) which
+        // first paints a semi-transparent mask for the text to sit on
+        // top of (this ensures that the text is readable regardless of
+        // colors of the pixels below the text)
         getGc().drawString(string, x, y, true /*isTransparent*/);
+    }
+
+    public void drawBoxedStrings(int x, int y, List<?> strings) {
+        checkGC();
+
+        x = mHScale.translate(x);
+        y = mVScale.translate(y);
+
+        // Compute bounds of the box by adding up the sum of the text heights
+        // and the max of the text widths
+        int width = 0;
+        int height = 0;
+        int lineHeight = getGc().getFontMetrics().getHeight();
+        for (Object s : strings) {
+            org.eclipse.swt.graphics.Point extent = getGc().stringExtent(s.toString());
+            height += extent.y;
+            width = Math.max(width, extent.x);
+        }
+
+        // Paint a box below the text
+        int padding = 2;
+        useFillAlpha();
+        getGc().fillRectangle(x - padding, y - padding, width + 2 * padding, height + 2 * padding);
+
+        // Finally draw strings on top
+        useStrokeAlpha();
+        int lineY = y;
+        for (Object s : strings) {
+            getGc().drawString(s.toString(), x, lineY, true /* isTransparent */);
+            lineY += lineHeight;
+        }
     }
 
     public void drawString(String string, Point topLeft) {
@@ -338,37 +402,84 @@ public class GCWrapper implements IGraphics {
         // Look up the specific SWT style which defines the actual
         // colors and attributes to be used for the logical drawing style.
         SwtDrawingStyle swtStyle = SwtDrawingStyle.of(style);
-        RGB fg = swtStyle.getForeground();
-        if (fg != null) {
-            Color color = getStyleColor(style, fg);
+        RGB stroke = swtStyle.getStrokeColor();
+        if (stroke != null) {
+            Color color = getStrokeColor(style, stroke);
             mGc.setForeground(color);
         }
-        RGB bg = swtStyle.getBackground();
-        if (bg != null) {
-            Color color = getStyleColor(style, bg);
+        RGB fill = swtStyle.getFillColor();
+        if (fill != null) {
+            Color color = getFillColor(style, fill);
             mGc.setBackground(color);
         }
         mGc.setLineWidth(swtStyle.getLineWidth());
         mGc.setLineStyle(swtStyle.getLineStyle());
-        mGc.setAlpha(swtStyle.getAlpha());
+        if (swtStyle.getLineStyle() == SWT.LINE_CUSTOM) {
+            mGc.setLineDash(new int[] {
+                    8, 4
+            });
+        }
+        mCurrentStyle = swtStyle;
+    }
+
+    /** Use the stroke alpha for subsequent drawing operations */
+    private void useStrokeAlpha() {
+        mGc.setAlpha(mCurrentStyle.getStrokeAlpha());
+    }
+
+    /** Use the fill alpha for subsequent drawing operations */
+    private void useFillAlpha() {
+        mGc.setAlpha(mCurrentStyle.getFillAlpha());
     }
 
     /**
-     * Get the SWT color to use for the given style, using the provided color
-     * description if we haven't seen this color yet. The color will also be
-     * placed in the {@link #mStyleColorMap} such that it can be disposed of at
-     * cleanup time.
+     * Get the SWT stroke color (foreground/border) to use for the given style,
+     * using the provided color description if we haven't seen this color yet.
+     * The color will also be placed in the {@link #mStyleStrokeMap} such that
+     * it can be disposed of at cleanup time.
      *
      * @param style The drawing style for which we want a color
      * @param defaultColorDesc The RGB values to initialize the color to if we
      *            haven't seen this color before
      * @return The color object
      */
-    private Color getStyleColor(DrawingStyle style, RGB defaultColorDesc) {
-        Color color = mStyleColorMap.get(style);
+    private Color getStrokeColor(DrawingStyle style, RGB defaultColorDesc) {
+        return getStyleColor(style, defaultColorDesc, mStyleStrokeMap);
+    }
+
+    /**
+     * Get the SWT fill (background/interior) color to use for the given style,
+     * using the provided color description if we haven't seen this color yet.
+     * The color will also be placed in the {@link #mStyleStrokeMap} such that
+     * it can be disposed of at cleanup time.
+     *
+     * @param style The drawing style for which we want a color
+     * @param defaultColorDesc The RGB values to initialize the color to if we
+     *            haven't seen this color before
+     * @return The color object
+     */
+    private Color getFillColor(DrawingStyle style, RGB defaultColorDesc) {
+        return getStyleColor(style, defaultColorDesc, mStyleFillMap);
+    }
+
+    /**
+     * Get the SWT color to use for the given style, using the provided color
+     * description if we haven't seen this color yet. The color will also be
+     * placed in the map referenced by the map parameter such that it can be
+     * disposed of at cleanup time.
+     *
+     * @param style The drawing style for which we want a color
+     * @param defaultColorDesc The RGB values to initialize the color to if we
+     *            haven't seen this color before
+     * @param map The color map to use
+     * @return The color object
+     */
+    private Color getStyleColor(DrawingStyle style, RGB defaultColorDesc,
+            Map<DrawingStyle, Color> map) {
+        Color color = map.get(style);
         if (color == null) {
             color = new Color(getGc().getDevice(), defaultColorDesc);
-            mStyleColorMap.put(style, color);
+            map.put(style, color);
         }
 
         return color;

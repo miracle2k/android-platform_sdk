@@ -74,14 +74,11 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         addAttr("centerVertical");
 
         if (infos) {
-            gc.setForeground(gc.registerColor(0x00222222));
+            gc.useStyle(DrawingStyle.HELP);
             int x = b.x + 10;
             int y = b.y + b.h + 10;
             int h = gc.getFontHeight();
-            infos.each {
-                y += h;
-                gc.drawString(it, x, y);
-            }
+            gc.drawBoxedStrings(x, y, infos);
         }
     }
 
@@ -452,9 +449,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
         if (data.curr) {
             gc.useStyle(DrawingStyle.DROP_ZONE_ACTIVE);
-            gc.setAlpha(200);
             gc.fillRect(data.curr.rect);
-            gc.setAlpha(255);
 
             def r = feedback.captureArea;
             int x = r.x + 5;
@@ -466,11 +461,13 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                 id = data.child.getStringAttr(ANDROID_URI, ATTR_ID);
             }
 
-            for (s in data.curr.attr) {
-                if (id) s = "$s=$id";
-                gc.drawString(s, x, y);
-                y += h;
+            // Print constraints (with id appended if applicable)
+            gc.useStyle(DrawingStyle.HELP);
+            def strings = []
+            data.curr.attr.each {
+               strings << id ? it + "=" + id : it;
             }
+            gc.drawBoxedStrings(x, y, strings);
 
             def mark = data.curr.get("mark");
             if (mark) {
@@ -511,7 +508,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                     offsetX -= be.w;
                 }
 
-                gc.setForeground(gc.registerColor(0x00FFFF00));
+                gc.useStyle(DrawingStyle.DROP_PREVIEW);
 
                 for (element in elements) {
                     drawElement(gc, element, offsetX, offsetY);
@@ -522,6 +519,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         if (data.rejected) {
             def br = data.rejected;
             gc.useStyle(DrawingStyle.INVALID);
+            gc.fillRect(br);
             gc.drawLine(br.x, br.y       , br.x + br.w, br.y + br.h);
             gc.drawLine(br.x, br.y + br.h, br.x + br.w, br.y       );
         }
