@@ -323,6 +323,11 @@ public class AdtPlugin extends AbstractUIPlugin {
         return SdkConstants.OS_SDK_TOOLS_FOLDER + SdkConstants.FN_EMULATOR;
     }
 
+    /** Returns the adb path relative to the sdk folder */
+    public static String getOsRelativeProguard() {
+        return SdkConstants.OS_SDK_TOOLS_PROGUARD_BIN_FOLDER + SdkConstants.FN_PROGUARD;
+    }
+
     /** Returns the absolute adb path */
     public static String getOsAbsoluteAdb() {
         return getOsSdkFolder() + getOsRelativeAdb();
@@ -342,6 +347,11 @@ public class AdtPlugin extends AbstractUIPlugin {
     /** Returns the absolute emulator path */
     public static String getOsAbsoluteEmulator() {
         return getOsSdkFolder() + getOsRelativeEmulator();
+    }
+
+    /** Returns the absolute proguard path */
+    public static String getOsAbsoluteProguard() {
+        return getOsSdkFolder() + getOsRelativeProguard();
     }
 
     /**

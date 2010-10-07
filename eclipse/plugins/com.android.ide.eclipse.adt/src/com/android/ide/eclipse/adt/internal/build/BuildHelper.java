@@ -22,11 +22,13 @@ import com.android.ide.eclipse.adt.AndroidPrintStream;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 import com.android.sdklib.build.ApkBuilder;
 import com.android.sdklib.build.ApkCreationException;
 import com.android.sdklib.build.DuplicateFileException;
@@ -344,19 +346,154 @@ public class BuildHelper {
         }
     }
 
+    public String[] getProjectOutputs() throws CoreException {
+        IFolder outputFolder = BaseProjectHelper.getOutputFolder(mProject);
+
+        // get the list of referenced projects output to add
+        IProject[] javaProjects = ProjectHelper.getReferencedProjects(mProject);
+        IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(javaProjects);
+        String[] projectOutputs = getProjectOutputs(referencedJavaProjects);
+
+        String[] outputs = new String[1 + projectOutputs.length];
+
+        outputs[0] = outputFolder.getLocation().toOSString();
+
+        return outputs;
+    }
+
+    /**
+     * Returns an array for all the compiled code for the project. This can include the
+     * code compiled by Eclipse for the main project and dependencies (Java only projects), as well
+     * as external jars used by the project or its library.
+     *
+     * This array of paths is compatible with the input for dx and can be passed as is to
+     * {@link #executeDx(IJavaProject, String[], String)}.
+     *
+     * @param resMarker
+     * @return a array (never empty) containing paths to compiled code.
+     * @throws CoreException
+     */
+    public String[] getCompiledCodePaths(boolean includeProjectOutputs, ResourceMarker resMarker)
+            throws CoreException {
+
+        // get the list of libraries to include with the source code
+        String[] libraries = getExternalJars(resMarker);
+
+        int startIndex = 0;
+
+        String[] compiledPaths;
+
+        if (includeProjectOutputs) {
+            String[] projectOutputs = getProjectOutputs();
+
+            compiledPaths = new String[libraries.length + projectOutputs.length];
+
+            System.arraycopy(projectOutputs, 0, compiledPaths, 0, projectOutputs.length);
+            startIndex = projectOutputs.length;
+        } else {
+            compiledPaths = new String[libraries.length];
+        }
+
+        System.arraycopy(libraries, 0, compiledPaths, startIndex, libraries.length);
+
+        return compiledPaths;
+    }
+
+    public void runProguard(File proguardConfig, File inputJar, String[] jarFiles,
+            File obfuscatedJar, File logOutput) throws ProguardResultException,
+            ProguardExecException {
+        IAndroidTarget target = Sdk.getCurrent().getTarget(mProject);
+
+        // prepare the command line for proguard
+        List<String> command = new ArrayList<String>();
+        command.add(AdtPlugin.getOsAbsoluteProguard());
+
+        command.add("@" + proguardConfig.getAbsolutePath()); //$NON-NLS-1$
+
+        command.add("-injars"); //$NON-NLS-1$
+        StringBuilder sb = new StringBuilder(inputJar.getAbsolutePath());
+        for (String jarFile : jarFiles) {
+            sb.append(File.pathSeparatorChar);
+            sb.append(jarFile);
+        }
+        command.add(sb.toString());
+
+        command.add("-outjars"); //$NON-NLS-1$
+        command.add(obfuscatedJar.getAbsolutePath());
+
+        command.add("-libraryjars"); //$NON-NLS-1$
+        sb = new StringBuilder(target.getPath(IAndroidTarget.ANDROID_JAR));
+        IOptionalLibrary[] libraries = target.getOptionalLibraries();
+        if (libraries != null) {
+            for (IOptionalLibrary lib : libraries) {
+                sb.append(File.pathSeparatorChar);
+                sb.append(lib.getJarPath());
+            }
+        }
+        command.add(sb.toString());
+
+        if (logOutput != null) {
+            if (logOutput.isDirectory() == false) {
+                logOutput.mkdirs();
+            }
+
+            command.add("-dump");                                              //$NON-NLS-1$
+            command.add(new File(logOutput, "dump.txt").getAbsolutePath());    //$NON-NLS-1$
+
+            command.add("-printseeds");                                        //$NON-NLS-1$
+            command.add(new File(logOutput, "seeds.txt").getAbsolutePath());   //$NON-NLS-1$
+
+            command.add("-printusage");                                        //$NON-NLS-1$
+            command.add(new File(logOutput, "usage.txt").getAbsolutePath());   //$NON-NLS-1$
+
+            command.add("-printmapping");                                      //$NON-NLS-1$
+            command.add(new File(logOutput, "mapping.txt").getAbsolutePath()); //$NON-NLS-1$
+        }
+
+        String commandArray[] = command.toArray(new String[command.size()]);
+
+        // launch
+        int execError = 1;
+        try {
+            // launch the command line process
+            Process process = Runtime.getRuntime().exec(commandArray);
+
+            // list to store each line of stderr
+            ArrayList<String> results = new ArrayList<String>();
+
+            // get the output and return code from the process
+            execError = grabProcessOutput(mProject, process, results);
+
+            if (execError != 0) {
+                throw new ProguardResultException(execError,
+                        results.toArray(new String[results.size()]));
+            } else if (mVerbose) {
+                for (String resultString : results) {
+                    mOutStream.println(resultString);
+                }
+            }
+
+        } catch (IOException e) {
+            String msg = String.format(Messages.Proguard_Exec_Error, commandArray[0]);
+            throw new ProguardExecException(msg, e);
+        } catch (InterruptedException e) {
+            String msg = String.format(Messages.Proguard_Exec_Error, commandArray[0]);
+            throw new ProguardExecException(msg, e);
+        }
+    }
+
+
     /**
      * Execute the Dx tool for dalvik code conversion.
      * @param javaProject The java project
-     * @param osBinPath the path to the output folder of the project
+     * @param inputPath the path to the main input of dex
      * @param osOutFilePath the path of the dex file to create.
-     * @param referencedJavaProjects the list of referenced projects for this project.
      *
      * @throws CoreException
      * @throws DexException
      */
-    public void executeDx(IJavaProject javaProject, String osBinPath, String osOutFilePath,
-            IJavaProject[] referencedJavaProjects, ResourceMarker resMarker) throws CoreException,
-            DexException {
+    public void executeDx(IJavaProject javaProject, String[] inputPaths, String osOutFilePath)
+            throws CoreException, DexException {
 
         IAndroidTarget target = Sdk.getCurrent().getTarget(mProject);
         AndroidTargetData targetData = Sdk.getCurrent().getTargetData(target);
@@ -374,28 +511,12 @@ public class BuildHelper {
         }
 
         try {
-            // get the list of libraries to include with the source code
-            String[] libraries = getExternalJars(resMarker);
-
-            // get the list of referenced projects output to add
-            String[] projectOutputs = getProjectOutputs(referencedJavaProjects);
-
-            String[] fileNames = new String[1 + projectOutputs.length + libraries.length];
-
-            // first this project output
-            fileNames[0] = osBinPath;
-
-            // then other project output
-            System.arraycopy(projectOutputs, 0, fileNames, 1, projectOutputs.length);
-
-            // then external jars.
-            System.arraycopy(libraries, 0, fileNames, 1 + projectOutputs.length, libraries.length);
-
             // set a temporary prefix on the print streams.
             mOutStream.setPrefix(CONSOLE_PREFIX_DX);
             mErrStream.setPrefix(CONSOLE_PREFIX_DX);
 
-            int res = wrapper.run(osOutFilePath, fileNames,
+            int res = wrapper.run(osOutFilePath,
+                    inputPaths,
                     mVerbose,
                     mOutStream, mErrStream);
 
@@ -796,6 +917,4 @@ public class BuildHelper {
         // get the return code from the process
         return process.waitFor();
     }
-
-
 }

@@ -127,6 +127,9 @@ public class Messages extends NLS {
     public static String Unparsed_AIDL_Errors;
 
     public static String Xml_Error;
+
+    public static String Proguard_Exec_Error;
+
     static {
         // initialize resource bundle
         NLS.initializeMessages(BUNDLE_NAME, Messages.class);

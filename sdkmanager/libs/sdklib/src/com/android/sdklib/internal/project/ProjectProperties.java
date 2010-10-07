@@ -60,6 +60,8 @@ public class ProjectProperties {
     public final static String PROPERTY_LIB_REF = "android.library.reference.";
     private final static String PROPERTY_LIB_REF_REGEX = "android.library.reference.\\d+";
 
+    public final static String PROPERTY_PROGUARD_CONFIG = "proguard.config";
+
     public final static String PROPERTY_SDK = "sdk.dir";
     // LEGACY - compatibility with 1.6 and before
     public final static String PROPERTY_SDK_LEGACY = "sdk-location";
@@ -88,7 +90,7 @@ public class ProjectProperties {
             }),
         DEFAULT(SdkConstants.FN_DEFAULT_PROPERTIES, DEFAULT_HEADER, new String[] {
                 PROPERTY_TARGET, PROPERTY_LIBRARY, PROPERTY_LIB_REF_REGEX,
-                PROPERTY_KEY_STORE, PROPERTY_KEY_ALIAS
+                PROPERTY_KEY_STORE, PROPERTY_KEY_ALIAS, PROPERTY_PROGUARD_CONFIG
             }),
         LOCAL(SdkConstants.FN_LOCAL_PROPERTIES, LOCAL_HEADER, new String[] {
                 PROPERTY_SDK

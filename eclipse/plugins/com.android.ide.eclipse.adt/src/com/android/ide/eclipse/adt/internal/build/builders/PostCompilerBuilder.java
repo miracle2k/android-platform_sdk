@@ -487,9 +487,11 @@ public class PostCompilerBuilder extends BaseBuilder {
                 // then we check if we need to package the .class into classes.dex
                 if (mConvertToDex) {
                     try {
-                        helper.executeDx(javaProject, osBinPath, osBinPath + File.separator +
-                                SdkConstants.FN_APK_CLASSES_DEX, referencedJavaProjects,
-                                mResourceMarker);
+                        String[] dxInputPaths = helper.getCompiledCodePaths(
+                                true /*includeProjectOutputs*/, mResourceMarker);
+
+                        helper.executeDx(javaProject, dxInputPaths, osBinPath + File.separator +
+                                SdkConstants.FN_APK_CLASSES_DEX);
                     } catch (DexException e) {
                         String message = e.getMessage();
 
