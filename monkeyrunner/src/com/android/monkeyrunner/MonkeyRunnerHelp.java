@@ -19,6 +19,7 @@ import com.google.clearsilver.jsilver.JSilver;
 import com.google.clearsilver.jsilver.data.Data;
 import com.google.clearsilver.jsilver.resourceloader.ClassLoaderResourceLoader;
 import com.google.clearsilver.jsilver.resourceloader.ResourceLoader;
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
@@ -32,6 +33,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -237,5 +239,36 @@ public final class MonkeyRunnerHelp {
         }
 
         return hdf;
+    }
+
+    public static Collection<String> getAllDocumentedClasses() {
+        Set<Field> fields = Sets.newTreeSet(MEMBER_SORTER);
+        Set<Method> methods = Sets.newTreeSet(MEMBER_SORTER);
+        Set<Constructor<?>> constructors = Sets.newTreeSet(MEMBER_SORTER);
+        Set<Class<?>> classes = Sets.newTreeSet(CLASS_SORTER);
+        getAllExportedClasses(fields, methods, constructors, classes);
+
+        // The classes object only captures classes that are specifically exporter, which isn't
+        // good enough.  So go through all the fields, methods, etc. and collect those classes as
+        // as well
+        Set<Class<?>> allClasses = Sets.newHashSet();
+        allClasses.addAll(classes);
+        for (Field f : fields) {
+            allClasses.add(f.getDeclaringClass());
+        }
+        for (Method m : methods) {
+            allClasses.add(m.getDeclaringClass());
+        }
+        for (Constructor<?> constructor : constructors) {
+            allClasses.add(constructor.getDeclaringClass());
+        }
+
+        // And transform that collection into a list of simple names.
+        return Collections2.transform(allClasses, new Function<Class<?>, String>() {
+            @Override
+            public String apply(Class<?> clz) {
+                return clz.getName();
+            }
+        });
     }
 }
