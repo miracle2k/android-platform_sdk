@@ -16,31 +16,33 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
-import groovy.lang.Closure;
-
 /**
  * Structure returned by onDropEnter/Move and passed to over onDropXyz methods.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  */
 public class DropFeedback {
     /**
      * User data that the rule can use in any way it wants to carry state from one
      * operation to another.
      * <p/>
-     * Filled and owned by the groovy view rule.
+     * Filled and owned by the view rule.
      */
     public Object userData;
 
     /**
-     * If true the next screen update will invoke the paint closure.
+     * If true the next screen update will invoke the paint callback.
      * <p/>
-     * Filled by the groovy view rule to request a paint, and reset by the canvas
-     * after the paint occurred.
+     * Filled by the view rule to request a paint, and reset by the canvas after
+     * the paint occurred.
      */
     public boolean requestPaint;
 
     /**
      * Set to false by the engine when entering a new view target.
-     * The groovy view rule should set this to true if the current view target is not
+     * The view rule should set this to true if the current view target is not
      * a valid drop zone.
      * <p/>
      * When set to true, the onDropped() method will not be called if the user releases
@@ -58,16 +60,11 @@ public class DropFeedback {
     public boolean invalidTarget;
 
     /**
-     * Closure invoked by the canvas to paint the feedback.
+     * Painter invoked by the canvas to paint the feedback.
+     * Filled by the view rule, called by the engine.
      * <p/>
-     * The closure will receive 3 arguments: <br/>
-     * - The {@link IGraphics} context to use for painting. Must not be cached. <br/>
-     * - The {@link INode} target node last used in a onDropEnter or onDropMove call. <br/>
-     * - The {@link DropFeedback} returned by the last onDropEnter or onDropMove call. <br/>
-     * <p/>
-     * Filled by the groovy view rule, called by the engine.
      */
-    public Closure paintClosure;
+    public IFeedbackPainter painter;
 
     /**
      * When set to a non-null valid rectangle, this informs the engine that a drag'n'drop
@@ -76,7 +73,7 @@ public class DropFeedback {
      * When the mouse is captured, drop events will keep going to the rule that started the
      * capture and the current INode proxy will not change.
      * <p/>
-     * Filled by the groovy view rule, read by the engine.
+     * Filled by the view rule, read by the engine.
      */
     public Rect captureArea;
 
@@ -85,7 +82,7 @@ public class DropFeedback {
      * When false the operation is a move and <em>after</em> a successful drop the source
      * elements will be deleted.
      * <p/>
-     * Filled by the engine, read by groovy view rule.
+     * Filled by the engine, read by view rule.
      */
     public boolean isCopy;
 
@@ -93,18 +90,21 @@ public class DropFeedback {
      * Set to true when the drag'n'drop starts and ends in the same canvas of the
      * same Eclipse instance.
      * <p/>
-     * Filled by the engine, read by groovy view rule.
+     * Filled by the engine, read by view rule.
      */
     public boolean sameCanvas;
 
     /**
-     * Initializes the drop feedback with the given user data and paint closure.
-     * A paint is requested if the paint closure is non-null.
+     * Initializes the drop feedback with the given user data and paint
+     * callback. A paint is requested if the paint callback is non-null.
+     *
+     * @param userData Data stored for later retrieval by the client
+     * @param painter A callback invoked to paint the drop feedback
      */
-    public DropFeedback(Object userData, Closure paintClosure) {
+    public DropFeedback(Object userData, IFeedbackPainter painter) {
         this.userData = userData;
-        this.paintClosure = paintClosure;
-        this.requestPaint = paintClosure != null;
+        this.painter = painter;
+        this.requestPaint = painter != null;
         this.captureArea = null;
     }
 }

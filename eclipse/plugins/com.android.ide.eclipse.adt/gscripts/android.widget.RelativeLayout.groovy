@@ -113,7 +113,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
                 { gc, node, feedback ->
                     // Paint closure for the RelativeLayout just defers to the method below
                     drawRelativeDropFeedback(gc, node, elements, feedback);
-                });
+                } as IFeedbackPainter);
     }
 
     DropFeedback onDropMove(INode targetNode,
@@ -546,7 +546,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         // if this is a copy or from a different canvas.
         def idMap = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
 
-        targetNode.editXml("Add elements to RelativeLayout") {
+        targetNode.editXml("Add elements to RelativeLayout", {
 
             // Now write the new elements.
             for (element in elements) {
@@ -585,7 +585,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
                 addInnerElements(newChild, element, idMap);
             }
-        }
+        } as INodeHandler)
     }
 
 

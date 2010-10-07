@@ -18,8 +18,6 @@ package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 import com.android.sdklib.annotations.Nullable;
 
-import groovy.lang.Closure;
-
 import java.util.Map;
 
 /**
@@ -45,6 +43,10 @@ import java.util.Map;
  * <p/>
  * The {@link MenuAction} is abstract. Users should instantiate either {@link Toggle},
  * {@link Choices} or {@link Group} instead. These classes are immutable.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  */
 public abstract class MenuAction {
 
@@ -152,14 +154,11 @@ public abstract class MenuAction {
      */
     public static abstract class Action extends MenuAction {
 
-
-
         /**
-         * A closure executed when the action is selected in the context menu.
-         *
-         * @see #getClosure() for details on the closure parameters.
+         * A callback executed when the action is selected in the context menu.
          */
-        private final Closure mClosure;
+        private final IMenuCallback mCallback;
+
         /**
          * An optional group id, to place the action in a given sub-menu.
          * @null This value can be null.
@@ -168,36 +167,27 @@ public abstract class MenuAction {
         private final String mGroupId;
 
         /**
-         * Constructs a new base {@link MenuAction} with its ID, title and action closure.
+         * Constructs a new base {@link MenuAction} with its ID, title and action callback.
          *
          * @param id The unique ID of the action. Must not be null.
          * @param title The title of the action. Must not be null.
          * @param groupId The optional group id, to place the action in a given sub-menu.
          *                Can be null.
-         * @param closure The closure executed when the action is selected. Must not be null.
-         *               See {@link #getClosure()} for the closure parameters.
+         * @param callback The callback executed when the action is selected.
+         *            Must not be null.
          */
-        private Action(String id, String title, String groupId, Closure closure) {
+        private Action(String id, String title, String groupId, IMenuCallback callback) {
             super(id, title);
             mGroupId = groupId;
-            mClosure = closure;
+            mCallback = callback;
         }
 
         /**
-         * Returns the closure executed when the action is selected in the context menu.
-         * Cannot be null.
-         * <p/>
-         * The closure takes the following parameters: <br/>
-         * - {@link MenuAction} <code>action</code>: the MenuAction being applied. <br/>
-         * - {@link String} <code>valueId</code>: for a Choices action, the string id of the
-         *      selected choice. <br/>
-         * - {@link Boolean} <code>newValue</code>: for a toggle or for a flag, true if
-         *      the item is being checked, false if being unchecked. For enums this is not
-         *      useful; however for flags it allows one to add or remove items to the flag's
-         *      choices.
+         * Returns the callback executed when the action is selected in the
+         * context menu. Cannot be null.
          */
-        public Closure getClosure() {
-            return mClosure;
+        public IMenuCallback getCallback() {
+            return mCallback;
         }
 
         /**
@@ -238,7 +228,7 @@ public abstract class MenuAction {
      * with a check mark if the item is checked.
      * <p/>
      * Two toggles are equal if they have the same id, title and group-id.
-     * It is expected for the checked state and action closure to be different.
+     * It is expected for the checked state and action callback to be different.
      */
     public static class Toggle extends Action {
         /**
@@ -253,10 +243,11 @@ public abstract class MenuAction {
          * @param id The unique id of the action. Cannot be null.
          * @param title The UI-visible title of the context menu item. Cannot be null.
          * @param isChecked Whether the context menu item has a check mark.
-         * @param closure A closure to execute when the context menu item is selected.
+         * @param callback A callback to execute when the context menu item is
+         *            selected.
          */
-        public Toggle(String id, String title, boolean isChecked, Closure closure) {
-            this(id, title, isChecked, null /*group-id*/, closure);
+        public Toggle(String id, String title, boolean isChecked, IMenuCallback callback) {
+            this(id, title, isChecked, null /* group-id */, callback);
         }
 
         /**
@@ -267,10 +258,12 @@ public abstract class MenuAction {
          * @param isChecked Whether the context menu item has a check mark.
          * @param groupId The optional group id, to place the action in a given sub-menu.
          *                Can be null.
-         * @param closure A closure to execute when the context menu item is selected.
+         * @param callback A callback to execute when the context menu item is
+         *            selected.
          */
-        public Toggle(String id, String title, boolean isChecked, String groupId, Closure closure) {
-            super(id, title, groupId, closure);
+        public Toggle(String id, String title, boolean isChecked, String groupId,
+                IMenuCallback callback) {
+            super(id, title, groupId, callback);
             mIsChecked = isChecked;
         }
 
@@ -283,7 +276,7 @@ public abstract class MenuAction {
 
         /**
          * Two toggles are equal if they have the same id, title and group-id.
-         * It is acceptable for the checked state and action closure to be different.
+         * It is acceptable for the checked state and action callback to be different.
          */
         @Override
         public boolean equals(Object obj) {
@@ -308,7 +301,7 @@ public abstract class MenuAction {
      * Choice items are sorted by their id, using String's natural sorting order.
      * <p/>
      * Two multiple choices are equal if they have the same id, title, group-id and choices.
-     * It is expected for the current state and action closure to be different.
+     * It is expected for the current state and action callback to be different.
      */
     public static class Choices extends Action {
 
@@ -343,13 +336,14 @@ public abstract class MenuAction {
          * @param current The id(s) of the current choice(s) that will be check marked.
          *                Can be null. Can be an id not present in the choices map.
          *                There can be more than one id separated by {@link #CHOICE_SEP}.
-         * @param closure A closure to execute when the context menu item is selected.
+         * @param callback A callback to execute when the context menu item is
+         *            selected.
          */
         public Choices(String id, String title,
                 Map<String, String> choices,
                 String current,
-                Closure closure) {
-            this(id, title, choices, current, null /*group-id*/, closure);
+                IMenuCallback callback) {
+            this(id, title, choices, current, null /* group-id */, callback);
         }
 
         /**
@@ -363,14 +357,15 @@ public abstract class MenuAction {
          *                There can be more than one id separated by {@link #CHOICE_SEP}.
          * @param groupId The optional group id, to place the action in a given sub-menu.
          *                Can be null.
-         * @param closure A closure to execute when the context menu item is selected.
+         * @param callback A callback to execute when the context menu item is
+         *            selected.
          */
         public Choices(String id, String title,
                 Map<String, String> choices,
                 String current,
                 String groupId,
-                Closure closure) {
-            super(id, title, groupId, closure);
+                IMenuCallback callback) {
+            super(id, title, groupId, callback);
             mChoices = choices;
             mCurrent = current;
         }
@@ -393,7 +388,7 @@ public abstract class MenuAction {
 
         /**
          * Two multiple choices are equal if they have the same id, title, group-id and choices.
-         * It is acceptable for the current state and action closure to be different.
+         * It is acceptable for the current state and action callback to be different.
          */
         @Override
         public boolean equals(Object obj) {

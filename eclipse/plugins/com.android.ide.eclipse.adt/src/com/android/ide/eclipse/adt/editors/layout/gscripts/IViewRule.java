@@ -38,6 +38,10 @@ import java.util.Map;
  * <p/>
  * When rules are instantiated, a property "_rules_engine" is dynamically added which references
  * the {@link IClientRulesEngine} created for this rule.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  */
 public interface IViewRule {
 
@@ -81,7 +85,7 @@ public interface IViewRule {
     /**
      * Invoked by the Rules Engine to retrieve a set of actions to customize
      * the context menu displayed for this view. The result is not cached and the
-     * method is invoked everytime the context menu is about to be shown.
+     * method is invoked every time the context menu is about to be shown.
      * <p/>
      * Most rules should consider returning <code>super.getContextMenu(node)</code>
      * and appending their own custom menu actions, if any.

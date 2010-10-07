@@ -40,11 +40,11 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
             def node = selectedNode;
 
             if (actionId == "_orientation") {
-                node.editXml("Change LinearLayout " + ATTR_ORIENTATION) {
+                node.editXml("Change LinearLayout " + ATTR_ORIENTATION, {
                     node.setAttribute(ANDROID_URI, ATTR_ORIENTATION, valueId);
-                }
+                } as INodeHandler)
             }
-        }
+        } as IMenuCallback
 
         return super.getContextMenu(selectedNode) +
                [ new MenuAction.Choices("_orientation", "Orientation",
@@ -118,7 +118,7 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
             // This is called by the canvas when a draw is needed.
 
             drawFeedback(gc, node, elements, feedback);
-        });
+        } as IFeedbackPainter);
     }
 
     void drawFeedback(IGraphics gc,
@@ -275,7 +275,7 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         // if this is a copy or from a different canvas.
         def idMap = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
 
-        targetNode.editXml("Add elements to LinearLayout") {
+        targetNode.editXml("Add elements to LinearLayout", {
 
             // Now write the new elements.
             for (element in elements) {
@@ -304,6 +304,6 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
                 addInnerElements(newChild, element, idMap);
             }
-        }
+        } as INodeHandler)
     }
 }

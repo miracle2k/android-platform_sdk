@@ -23,6 +23,7 @@ import com.android.ide.eclipse.adt.editors.layout.gscripts.IClientRulesEngine;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IValidator;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.MenuAction;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
@@ -54,7 +55,6 @@ import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
 
-import groovy.lang.Closure;
 import groovy.lang.ExpandoMetaClass;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyCodeSource;
@@ -165,30 +165,6 @@ public class RulesEngine {
     public void preloadAndroidView() {
         loadRule(SdkConstants.CLASS_VIEW, SdkConstants.CLASS_VIEW);
     }
-
-    /**
-     * A convenience function that invokes {@link Closure#call(Object[])} with the
-     * parameters given to the method.
-     * Any exception thrown by the closure invocation is trapped and logged.
-     *
-     * @param closure The closure to invoke
-     * @param params The parameters for the closure, conveniently wrapped as an
-     *               <code>Object[]</code>
-     * @return The optional return value from the closure call or null.
-     */
-    public Object callClosure(Closure closure, Object...params) {
-        try {
-            return closure.call(params);
-
-        } catch (Exception e) {
-            logError("invokeClosure %s failed: %s",
-                    closure.getClass().getSimpleName(),
-                    e.toString());
-        }
-
-        return null;
-    }
-
 
     /**
      * Invokes {@link IViewRule#getDisplayName()} on the rule matching the specified element.
@@ -391,11 +367,11 @@ public class RulesEngine {
     public void callDropFeedbackPaint(IGraphics gc,
             NodeProxy targetNode,
             DropFeedback feedback) {
-        if (gc != null && feedback != null && feedback.paintClosure != null) {
+        if (gc != null && feedback != null && feedback.painter != null) {
             try {
-                feedback.paintClosure.call(new Object[] { gc, targetNode, feedback });
+                feedback.painter.paint(gc, targetNode, feedback);
             } catch (Exception e) {
-                logError("DropFeedback.paintClosure failed: %s",
+                logError("DropFeedback.painter failed: %s",
                         e.toString());
             }
         }
@@ -712,7 +688,14 @@ public class RulesEngine {
         return null;
     }
 
-    private void logError(String format, Object...params) {
+    /**
+     * Logs an error to the console.
+     *
+     * @param format A format string following the format specified by
+     *            {@link String#format}
+     * @param params An optional set of parameters to the format string
+     */
+    public void logError(String format, Object...params) {
         String s = String.format(format, params);
         AdtPlugin.printErrorToConsole(mProject, s);
     }
@@ -828,23 +811,18 @@ public class RulesEngine {
                     message);
         }
 
-        public String displayInput(String message, String value, final Closure filter) {
+        public String displayInput(String message, String value, final IValidator filter) {
             IInputValidator validator = null;
             if (filter != null) {
                 validator = new IInputValidator() {
                     public String isValid(String newText) {
-                        Object result = RulesEngine.this.callClosure(filter, newText);
-
-                        if (result instanceof String) {
-                            return (String) result;
-
-                        } else if (Boolean.FALSE.equals(result)) {
-                            // Returns an empty string to indicate an undescribed error
-                            return "";  //$NON-NLS-1$
+                        // IValidator has the same interface as SWT's IInputValidator
+                        try {
+                            return filter.validate(newText);
+                        } catch (Exception e) {
+                            logError("Custom validator failed: %s", e.toString());
+                            return ""; //$NON-NLS-1$
                         }
-
-                        // Return null to indicate success of validation
-                        return null;
                     }
                 };
             }

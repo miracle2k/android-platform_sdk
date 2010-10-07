@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeHandler;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
@@ -36,8 +37,6 @@ import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import org.eclipse.swt.graphics.Rectangle;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
-
-import groovy.lang.Closure;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -162,7 +161,7 @@ public class NodeProxy implements INode {
 
     // ---- XML Editing ---
 
-    public void editXml(String undoName, final Closure c) {
+    public void editXml(String undoName, final INodeHandler c) {
         final AndroidXmlEditor editor = mNode.getEditor();
 
         if (editor instanceof LayoutEditor) {
@@ -175,7 +174,7 @@ public class NodeProxy implements INode {
                             // is safe to edit the model using any method from INode.
 
                             // Finally execute the closure that will act on the XML
-                            c.call(NodeProxy.this);
+                            c.handle(NodeProxy.this);
                         }
                     });
         }

@@ -17,12 +17,23 @@
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 /**
- * A color, to be used with {@link IGraphics} draw operations.
+ * An IValidator can validate strings and return custom messages if validation
+ * fails.
  * <p>
  * <b>NOTE: This is not a public or final API; if you rely on this be prepared
  * to adjust your code for the next tools release.</b>
  * </p>
  */
-public interface IColor {
-    // pass
+public interface IValidator {
+    /**
+     * Validates the given input string, and return null if the text is valid,
+     * and otherwise return a description for why the text is invalid. Returning
+     * an empty String ("") is acceptable (but should only be done when it is
+     * obvious to the user why the String is not valid.)
+     *
+     * @param text The input string to be validated
+     * @return Null if the text is valid, and otherwise a description (possibly
+     *         empty) for why the text is not valid.
+     */
+    String validate(String text);
 }

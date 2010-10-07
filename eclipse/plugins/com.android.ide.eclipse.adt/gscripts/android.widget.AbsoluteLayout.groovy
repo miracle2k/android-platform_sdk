@@ -38,7 +38,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
                 // This is called by the canvas when a draw is needed.
 
                 drawFeedback(gc, node, elements, feedback);
-            });
+            } as IFeedbackPainter);
     }
 
     void drawFeedback(IGraphics gc,
@@ -124,7 +124,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
         // if this is a copy or from a different canvas.
         def idMap = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
 
-        targetNode.editXml("Add elements to AbsoluteLayout") {
+        targetNode.editXml("Add elements to AbsoluteLayout", {
 
             boolean first = true;
             Point offset = null;
@@ -166,7 +166,7 @@ public class AndroidWidgetAbsoluteLayoutRule extends BaseLayout {
 
                 addInnerElements(newChild, element, idMap);
             }
-        }
+        } as INodeHandler)
     }
 
 }

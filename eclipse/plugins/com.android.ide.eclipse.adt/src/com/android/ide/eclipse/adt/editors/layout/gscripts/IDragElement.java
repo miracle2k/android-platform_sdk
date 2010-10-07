@@ -16,12 +16,15 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
-
 /**
  * Represents an XML element with a name, attributes and inner elements.
  * <p/>
  * The semantic of the element name is to be a fully qualified class name of a View to inflate.
  * The element name is not expected to have a namespace.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  */
 public interface IDragElement {
 
