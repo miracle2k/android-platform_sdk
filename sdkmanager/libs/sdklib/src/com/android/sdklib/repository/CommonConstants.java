@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,65 +17,14 @@
 package com.android.sdklib.repository;
 
 
-import java.io.InputStream;
 
 /**
- * Public constants for the sdk-repository XML Schema.
+ * Public constants common to the sdk-repository and sdk-addon XML Schemas.
  */
-public class SdkRepository {
+public class CommonConstants {
 
-    /** The URL of the official Google sdk-repository site. */
-    public static final String URL_GOOGLE_SDK_REPO_SITE =
-        "https://dl-ssl.google.com/android/repository/";                        //$NON-NLS-1$
-
-    public static final String URL_DEFAULT_XML_FILE = "repository.xml";         //$NON-NLS-1$
-
-    /** The base of our XML namespace. */
-    private static final String NS_SDK_REPOSITORY_BASE =
-        "http://schemas.android.com/sdk/android/repository/";                   //$NON-NLS-1$
-
-    /** The pattern of our XML namespace. Matcher's group(1) is the schema version (integer). */
-    public static final String NS_SDK_REPOSITORY_PATTERN =
-        NS_SDK_REPOSITORY_BASE + "([1-9][0-9]*)";        //$NON-NLS-1$
-
-    /** The latest version of the sdk-repository XML Schema.
-     *  Valid version numbers are between 1 and this number, included. */
-    public static final int NS_LATEST_VERSION = 3;
-
-    /** The XML namespace of the latest sdk-repository XML. */
-    public static final String NS_SDK_REPOSITORY = getSchemaUri(NS_LATEST_VERSION);
-
-    /** The root sdk-repository element */
-    public static final String NODE_SDK_REPOSITORY = "sdk-repository";        //$NON-NLS-1$
-
-    /** A platform package. */
-    public static final String NODE_PLATFORM        = "platform";             //$NON-NLS-1$
-    /** An add-on package. */
-    public static final String NODE_ADD_ON          = "add-on";               //$NON-NLS-1$
-    /** A tool package. */
-    public static final String NODE_TOOL            = "tool";                 //$NON-NLS-1$
-    /** A platform-tool package. */
-    public static final String NODE_PLATFORM_TOOL   = "platform-tool";        //$NON-NLS-1$
-    /** A doc package. */
-    public static final String NODE_DOC             = "doc";                  //$NON-NLS-1$
-    /** A sample package. */
-    public static final String NODE_SAMPLE          = "sample";               //$NON-NLS-1$
     /** An extra package. */
     public static final String NODE_EXTRA           = "extra";                //$NON-NLS-1$
-
-    /**
-     * List of possible nodes in a repository XML. Used to populate options automatically
-     * in the no-GUI mode.
-     */
-    public static final String[] NODES = {
-        NODE_PLATFORM,
-        NODE_ADD_ON,
-        NODE_TOOL,
-        NODE_PLATFORM_TOOL,
-        NODE_DOC,
-        NODE_SAMPLE,
-        NODE_EXTRA
-    };
 
     /** The license definition. */
     public static final String NODE_LICENSE       = "license";                  //$NON-NLS-1$
@@ -150,24 +99,4 @@ public class SdkRepository {
     /** Length of a string representing a SHA1 checksum; always 40 characters long. */
     public static final int SHA1_CHECKSUM_LEN = 40;
 
-
-    /**
-     * Returns a stream to the requested repository XML Schema.
-     *
-     * @param version Between 1 and {@link #NS_LATEST_VERSION}, included.
-     * @return An {@link InputStream} object for the local XSD file or
-     *         null if there is no schema for the requested version.
-     */
-    public static InputStream getXsdStream(int version) {
-        String filename = String.format("sdk-repository-%d.xsd", version);      //$NON-NLS-1$
-        return SdkRepository.class.getResourceAsStream(filename);
-    }
-
-    /**
-     * Returns the URI of the SDK Repository schema for the given version number.
-     * @param version Between 1 and {@link #NS_LATEST_VERSION} included.
-     */
-    public static String getSchemaUri(int version) {
-        return String.format(NS_SDK_REPOSITORY_BASE + "%d", version);           //$NON-NLS-1$
-    }
 }

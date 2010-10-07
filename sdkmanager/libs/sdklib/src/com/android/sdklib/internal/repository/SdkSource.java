@@ -16,12 +16,14 @@
 
 package com.android.sdklib.internal.repository;
 
-import com.android.sdklib.internal.repository.Archive.Arch;
-import com.android.sdklib.internal.repository.Archive.Os;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.annotations.Nullable;
+import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.annotations.VisibleForTesting.Visibility;
+import com.android.sdklib.repository.CommonConstants;
+import com.android.sdklib.repository.SdkAddonConstants;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
@@ -50,11 +52,11 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 
 /**
- * An sdk-repository source, i.e. a download site.
+ * An sdk-addon or sdk-repository source, i.e. a download site.
  * It may be a full repository or an add-on only repository.
  * A repository describes one or {@link Package}s available for download.
  */
-public class RepoSource implements IDescription {
+public abstract class SdkSource implements IDescription {
 
     private String mUrl;
     private final boolean mUserSource;
@@ -69,14 +71,14 @@ public class RepoSource implements IDescription {
      *            repository.xml filename will be appended automatically.
      * @param userSource True if this a user source (add-ons & packages only.)
      */
-    public RepoSource(String url, boolean userSource) {
+    public SdkSource(String url, boolean userSource) {
 
         // if the URL ends with a /, it must be "directory" resource,
         // in which case we automatically add the default file that will
         // looked for. This way it will be obvious to the user which
         // resource we are actually trying to fetch.
         if (url.endsWith("/")) {  //$NON-NLS-1$
-            url += SdkRepository.URL_DEFAULT_XML_FILE;
+            url += getUrlDefaultXmlFile();
         }
 
         mUrl = url;
@@ -85,12 +87,52 @@ public class RepoSource implements IDescription {
     }
 
     /**
+     * Returns true if this is an addon source.
+     * We only load addons and extras from these sources.
+     */
+    public abstract boolean isAddonSource();
+
+    /** Returns SdkRepoConstants.URL_DEFAULT_XML_FILE or SdkAddonConstants.URL_DEFAULT_XML_FILE */
+    protected abstract String getUrlDefaultXmlFile();
+
+    /** Returns SdkRepoConstants.NS_LATEST_VERSION or SdkAddonConstants.NS_LATEST_VERSION. */
+    protected abstract int getNsLatestVersion();
+
+    /** Returns SdkRepoConstants.NS_URI or SdkAddonConstants.NS_URI. */
+    protected abstract String getNsUri();
+
+    /** Returns SdkRepoConstants.NS_PATTERN or SdkAddonConstants.NS_PATTERN. */
+    protected abstract String getNsPattern();
+
+    /** Returns SdkRepoConstants.getSchemaUri() or SdkAddonConstants.getSchemaUri(). */
+    protected abstract String getSchemaUri(int version);
+
+    /* Returns SdkRepoConstants.NODE_SDK_REPOSITORY or SdkAddonConstants.NODE_SDK_ADDON. */
+    protected abstract String getRootElementName();
+
+    /** Returns SdkRepoConstants.getXsdStream() or SdkAddonConstants.getXsdStream(). */
+    protected abstract InputStream getXsdStream(int version);
+
+    /**
+     * In case we fail to load an XML, examine the XML to see if it matches a <b>future</b>
+     * schema that as at least a <code>tools</code> node that we could load to update the
+     * SDK Manager.
+     *
+     * @param xml The input XML stream. Can be null.
+     * @return Null on failure, otherwise returns an XML DOM with just the tools we
+     *   need to update this SDK Manager.
+     * @null Can return null on failure.
+     */
+    protected abstract Document findAlternateToolsXml(@Nullable InputStream xml)
+        throws IOException;
+
+    /**
      * Two repo source are equal if they have the same userSource flag and the same URL.
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof RepoSource) {
-            RepoSource rs = (RepoSource) obj;
+        if (obj instanceof SdkSource) {
+            SdkSource rs = (SdkSource) obj;
             return  rs.isUserSource() == this.isUserSource() && rs.getUrl().equals(this.getUrl());
         }
         return false;
@@ -101,13 +143,12 @@ public class RepoSource implements IDescription {
         return mUrl.hashCode() ^ Boolean.valueOf(mUserSource).hashCode();
     }
 
-    /** Returns true if this is a user source. We only load addon and extra packages
-     * from a user source and ignore the rest. */
+    /** Returns true if this is a user source. */
     public boolean isUserSource() {
         return mUserSource;
     }
 
-    /** Returns the URL of the repository.xml file for this source. */
+    /** Returns the URL of the XML file for this source. */
     public String getUrl() {
         return mUrl;
     }
@@ -173,11 +214,11 @@ public class RepoSource implements IDescription {
 
         // If the original URL can't be fetched and the URL doesn't explicitly end with
         // our filename, make another tentative after changing the URL.
-        if (xml == null && !url.endsWith(SdkRepository.URL_DEFAULT_XML_FILE)) {
+        if (xml == null && !url.endsWith(getUrlDefaultXmlFile())) {
             if (!url.endsWith("/")) {       //$NON-NLS-1$
                 url += "/";                 //$NON-NLS-1$
             }
-            url += SdkRepository.URL_DEFAULT_XML_FILE;
+            url += getUrlDefaultXmlFile();
 
             xml = fetchUrl(url, exception);
             usingAlternateUrl = true;
@@ -190,7 +231,7 @@ public class RepoSource implements IDescription {
                 // Explore the XML to find the potential XML schema version
                 int version = getXmlSchemaVersion(xml);
 
-                if (version >= 1 && version <= SdkRepository.NS_LATEST_VERSION) {
+                if (version >= 1 && version <= getNsLatestVersion()) {
                     // This should be a version we can handle. Try to validate it
                     // and report any error as invalid XML syntax,
 
@@ -216,15 +257,19 @@ public class RepoSource implements IDescription {
                         // what looks like a suitable root element with a suitable XMLNS
                         // so it must be a genuine error of an XML not conforming to the schema.
                     }
-                } else if (version > SdkRepository.NS_LATEST_VERSION) {
+                } else if (version > getNsLatestVersion()) {
                     // The schema used is more recent than what is supported by this tool.
                     // Tell the user to upgrade, pointing him to the right version of the tool
                     // package.
 
-                    validatedDoc = findAlternateToolsXml(xml);
+                    try {
+                        validatedDoc = findAlternateToolsXml(xml);
+                    } catch (IOException e) {
+                        // Failed, will be handled below.
+                    }
                     if (validatedDoc != null) {
                         validationError[0] = null;  // remove error from XML validation
-                        validatedUri = SdkRepository.NS_SDK_REPOSITORY;
+                        validatedUri = getNsUri();
                         usingAlternateXml = true;
                     }
 
@@ -237,11 +282,11 @@ public class RepoSource implements IDescription {
                     // If we haven't already tried the alternate URL, let's do it now.
                     // We don't capture any fetch exception that happen during the second
                     // fetch in order to avoid hidding any previous fetch errors.
-                    if (!url.endsWith(SdkRepository.URL_DEFAULT_XML_FILE)) {
+                    if (!url.endsWith(getUrlDefaultXmlFile())) {
                         if (!url.endsWith("/")) {       //$NON-NLS-1$
                             url += "/";                 //$NON-NLS-1$
                         }
-                        url += SdkRepository.URL_DEFAULT_XML_FILE;
+                        url += getUrlDefaultXmlFile();
 
                         xml = fetchUrl(url, null /*outException*/);
 
@@ -412,10 +457,11 @@ public class RepoSource implements IDescription {
     /**
      * Validates this XML against one of the requested SDK Repository schemas.
      * If the XML was correctly validated, returns the schema that worked.
-     * If it doesn't validate, returns null and store the error in outError[0].
+     * If it doesn't validate, returns null and stores the error in outError[0].
      * If we can't find a validator, returns null and set validatorFound[0] to false.
      */
-    private String validateXml(InputStream xml, String url, int version,
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected String validateXml(InputStream xml, String url, int version,
             String[] outError, Boolean[] validatorFound) {
 
         if (xml == null) {
@@ -446,7 +492,7 @@ public class RepoSource implements IDescription {
 
             // Validation throws a bunch of possible Exceptions on failure.
             validator.validate(new StreamSource(xml));
-            return SdkRepository.getSchemaUri(version);
+            return getSchemaUri(version);
 
         } catch (SAXParseException e) {
             outError[0] = String.format(
@@ -458,7 +504,7 @@ public class RepoSource implements IDescription {
 
         } catch (Exception e) {
             outError[0] = String.format(
-                    "XML verification failed for %1$s.\nError: %4$s",
+                    "XML verification failed for %1$s.\nError: %2$s",
                     url,
                     e.toString());
         }
@@ -470,10 +516,11 @@ public class RepoSource implements IDescription {
      * at the end of the xmlns:sdk="http://schemas.android.com/sdk/android/repository/$N"
      * declaration.
      *
-     * @return 1..{@link SdkRepository#NS_LATEST_VERSION} for a valid schema version
+     * @return 1..{@link SdkRepoConstants#NS_LATEST_VERSION} for a valid schema version
      *         or 0 if no schema could be found.
      */
-    private int getXmlSchemaVersion(InputStream xml) {
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected int getXmlSchemaVersion(InputStream xml) {
         if (xml == null) {
             return 0;
         }
@@ -520,7 +567,7 @@ public class RepoSource implements IDescription {
         //
         // Note that we don't have namespace support enabled, we just do it manually.
 
-        Pattern nsPattern = Pattern.compile(SdkRepository.NS_SDK_REPOSITORY_PATTERN);
+        Pattern nsPattern = Pattern.compile(getNsPattern());
 
         String prefix = null;
         for (Node child = doc.getFirstChild(); child != null; child = child.getNextSibling()) {
@@ -532,7 +579,7 @@ public class RepoSource implements IDescription {
                     prefix = name.substring(0, pos);
                     name = name.substring(pos + 1);
                 }
-                if (SdkRepository.NODE_SDK_REPOSITORY.equals(name)) {
+                if (getRootElementName().equals(name)) {
                     NamedNodeMap attrs = child.getAttributes();
                     String xmlns = "xmlns";                                         //$NON-NLS-1$
                     if (prefix != null) {
@@ -561,285 +608,14 @@ public class RepoSource implements IDescription {
     }
 
     /**
-     * The purpose of this method is to support forward evolution of our schema.
-     * <p/>
-     * At this point, we know that xml does not point to any schema that this version of
-     * the tool know how to process, so it's not one of the possible 1..N versions of our
-     * XSD schema.
-     * <p/>
-     * We thus try to interpret the byte stream as a possible XML stream. It may not be
-     * one at all in the first place. If it looks anything line an XML schema, we try to
-     * find its &lt;tool&gt; elements. If we find any, we recreate a suitable document
-     * that conforms to what we expect from our XSD schema with only those elements.
-     * To be valid, the &lt;tool&gt; element must have at least one &lt;archive&gt;
-     * compatible with this platform.
-     *
-     * If we don't find anything suitable, we drop the whole thing.
-     *
-     * @param xml The input XML stream. Can be null.
-     * @return Either a new XML document conforming to our schema with at least one &lt;tool&gt;
-     *         element or null.
-     */
-    protected Document findAlternateToolsXml(InputStream xml) {
-        // Note: protected for unit-test access
-
-        if (xml == null) {
-            return null;
-        }
-
-        // Reset the stream if it supports that operation.
-        // At runtime we use a ByteArrayInputStream which can be reset; however for unit tests
-        // we use a FileInputStream that doesn't support resetting and is read-once.
-        try {
-            xml.reset();
-        } catch (IOException e1) {
-            // ignore if not supported
-        }
-
-        // Get an XML document
-
-        Document oldDoc = null;
-        Document newDoc = null;
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setIgnoringComments(false);
-            factory.setValidating(false);
-
-            // Parse the old document using a non namespace aware builder
-            factory.setNamespaceAware(false);
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            oldDoc = builder.parse(xml);
-
-            // Prepare a new document using a namespace aware builder
-            factory.setNamespaceAware(true);
-            builder = factory.newDocumentBuilder();
-            newDoc = builder.newDocument();
-
-        } catch (Exception e) {
-            // Failed to get builder factor
-            // Failed to create XML document builder
-            // Failed to parse XML document
-            // Failed to read XML document
-        }
-
-        if (oldDoc == null || newDoc == null) {
-            return null;
-        }
-
-
-        // Check the root element is an XML with at least the following properties:
-        // <sdk:sdk-repository
-        //    xmlns:sdk="http://schemas.android.com/sdk/android/repository/$N">
-        //
-        // Note that we don't have namespace support enabled, we just do it manually.
-
-        Pattern nsPattern = Pattern.compile(SdkRepository.NS_SDK_REPOSITORY_PATTERN);
-
-        Node oldRoot = null;
-        String prefix = null;
-        for (Node child = oldDoc.getFirstChild(); child != null; child = child.getNextSibling()) {
-            if (child.getNodeType() == Node.ELEMENT_NODE) {
-                prefix = null;
-                String name = child.getNodeName();
-                int pos = name.indexOf(':');
-                if (pos > 0 && pos < name.length() - 1) {
-                    prefix = name.substring(0, pos);
-                    name = name.substring(pos + 1);
-                }
-                if (SdkRepository.NODE_SDK_REPOSITORY.equals(name)) {
-                    NamedNodeMap attrs = child.getAttributes();
-                    String xmlns = "xmlns";                                         //$NON-NLS-1$
-                    if (prefix != null) {
-                        xmlns += ":" + prefix;                                      //$NON-NLS-1$
-                    }
-                    Node attr = attrs.getNamedItem(xmlns);
-                    if (attr != null) {
-                        String uri = attr.getNodeValue();
-                        if (uri != null && nsPattern.matcher(uri).matches()) {
-                            oldRoot = child;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // we must have found the root node, and it must have an XML namespace prefix.
-        if (oldRoot == null || prefix == null || prefix.length() == 0) {
-            return null;
-        }
-
-        final String ns = SdkRepository.NS_SDK_REPOSITORY;
-        Element newRoot = newDoc.createElementNS(ns, SdkRepository.NODE_SDK_REPOSITORY);
-        newRoot.setPrefix(prefix);
-        newDoc.appendChild(newRoot);
-        int numTool = 0;
-
-        // Find an inner <tool> node and extract its required parameters
-
-        Node tool = null;
-        while ((tool = findChild(oldRoot, tool, prefix, SdkRepository.NODE_TOOL)) != null) {
-            // To be valid, the tool element must have:
-            // - a <revision> element with a number
-            // - an optional <uses-license> node, which we'll skip right now.
-            //   (if we add it later, we must find the license declaration element too)
-            // - an <archives> element with one or more <archive> elements inside
-            // - one of the <archive> elements must have an "os" and "arch" attributes
-            //   compatible with the current platform. Only keep the first such element found.
-            // - the <archive> element must contain a <size>, a <checksum> and a <url>.
-
-            try {
-                Node revision = findChild(tool, null, prefix, SdkRepository.NODE_REVISION);
-                Node archives = findChild(tool, null, prefix, SdkRepository.NODE_ARCHIVES);
-
-                if (revision == null || archives == null) {
-                    continue;
-                }
-
-                int rev = 0;
-                try {
-                    String content = revision.getTextContent();
-                    content = content.trim();
-                    rev = Integer.parseInt(content);
-                    if (rev < 1) {
-                        continue;
-                    }
-                } catch (NumberFormatException ignore) {
-                    continue;
-                }
-
-                Element newTool = newDoc.createElementNS(ns, SdkRepository.NODE_TOOL);
-                newTool.setPrefix(prefix);
-                appendChild(newTool, ns, prefix,
-                        SdkRepository.NODE_REVISION, Integer.toString(rev));
-                Element newArchives = appendChild(newTool, ns, prefix,
-                                                  SdkRepository.NODE_ARCHIVES, null);
-                int numArchives = 0;
-
-                Node archive = null;
-                while ((archive = findChild(archives,
-                                            archive,
-                                            prefix,
-                                            SdkRepository.NODE_ARCHIVE)) != null) {
-                    try {
-                        Os os = (Os) XmlParserUtils.getEnumAttribute(archive,
-                                SdkRepository.ATTR_OS,
-                                Os.values(),
-                                null /*default*/);
-                        Arch arch = (Arch) XmlParserUtils.getEnumAttribute(archive,
-                                SdkRepository.ATTR_ARCH,
-                                Arch.values(),
-                                Arch.ANY);
-                        if (os == null || !os.isCompatible() ||
-                                arch == null || !arch.isCompatible()) {
-                            continue;
-                        }
-
-                        Node node = findChild(archive, null, prefix, SdkRepository.NODE_URL);
-                        String url = node == null ? null : node.getTextContent().trim();
-                        if (url == null || url.length() == 0) {
-                            continue;
-                        }
-
-                        node = findChild(archive, null, prefix, SdkRepository.NODE_SIZE);
-                        long size = 0;
-                        try {
-                            size = Long.parseLong(node.getTextContent());
-                        } catch (Exception e) {
-                            // pass
-                        }
-                        if (size < 1) {
-                            continue;
-                        }
-
-                        node = findChild(archive, null, prefix, SdkRepository.NODE_CHECKSUM);
-                        // double check that the checksum element contains a type=sha1 attribute
-                        if (node == null) {
-                            continue;
-                        }
-                        NamedNodeMap attrs = node.getAttributes();
-                        Node typeNode = attrs.getNamedItem(SdkRepository.ATTR_TYPE);
-                        if (typeNode == null ||
-                                !SdkRepository.ATTR_TYPE.equals(typeNode.getNodeName()) ||
-                                !SdkRepository.SHA1_TYPE.equals(typeNode.getNodeValue())) {
-                            continue;
-                        }
-                        String sha1 = node == null ? null : node.getTextContent().trim();
-                        if (sha1 == null || sha1.length() != SdkRepository.SHA1_CHECKSUM_LEN) {
-                            continue;
-                        }
-
-                        // Use that archive for the new tool element
-                        Element ar = appendChild(newArchives, ns, prefix,
-                                                 SdkRepository.NODE_ARCHIVE, null);
-                        ar.setAttributeNS(ns, SdkRepository.ATTR_OS, os.getXmlName());
-                        ar.setAttributeNS(ns, SdkRepository.ATTR_ARCH, arch.getXmlName());
-
-                        appendChild(ar, ns, prefix, SdkRepository.NODE_URL, url);
-                        appendChild(ar, ns, prefix, SdkRepository.NODE_SIZE, Long.toString(size));
-                        Element cs = appendChild(ar, ns, prefix, SdkRepository.NODE_CHECKSUM, sha1);
-                        cs.setAttributeNS(ns, SdkRepository.ATTR_TYPE, SdkRepository.SHA1_TYPE);
-
-                        numArchives++;
-
-                    } catch (Exception ignore1) {
-                        // pass
-                    }
-                } // while <archive>
-
-                if (numArchives > 0) {
-                    newRoot.appendChild(newTool);
-                    numTool++;
-                }
-            } catch (Exception ignore2) {
-                // pass
-            }
-        } // while <tool>
-
-        return numTool > 0 ? newDoc : null;
-    }
-
-    /**
-     * Helper method used by {@link #findAlternateToolsXml(InputStream)} to find a given
-     * element child in a root XML node.
-     */
-    private Node findChild(Node rootNode, Node after, String prefix, String nodeName) {
-        nodeName = prefix + ":" + nodeName;
-        Node child = after == null ? rootNode.getFirstChild() : after.getNextSibling();
-        for(; child != null; child = child.getNextSibling()) {
-            if (child.getNodeType() == Node.ELEMENT_NODE && nodeName.equals(child.getNodeName())) {
-                return child;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Helper method used by {@link #findAlternateToolsXml(InputStream)} to create a new
-     * XML element into a parent element.
-     */
-    private Element appendChild(Element rootNode, String namespaceUri,
-            String prefix, String nodeName,
-            String nodeValue) {
-        Element node = rootNode.getOwnerDocument().createElementNS(namespaceUri, nodeName);
-        node.setPrefix(prefix);
-        if (nodeValue != null) {
-            node.setTextContent(nodeValue);
-        }
-        rootNode.appendChild(node);
-        return node;
-    }
-
-
-    /**
      * Helper method that returns a validator for our XSD, or null if the current Java
      * implementation can't process XSD schemas.
      *
      * @param version The version of the XML Schema.
-     *        See {@link SdkRepository#getXsdStream(int)}
+     *        See {@link SdkRepoConstants#getXsdStream(int)}
      */
     private Validator getValidator(int version) throws SAXException {
-        InputStream xsdStream = SdkRepository.getXsdStream(version);
+        InputStream xsdStream = getXsdStream(version);
         SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
 
         if (factory == null) {
@@ -864,7 +640,7 @@ public class RepoSource implements IDescription {
 
         assert doc != null;
 
-        Node root = getFirstChild(doc, nsUri, SdkRepository.NODE_SDK_REPOSITORY);
+        Node root = getFirstChild(doc, nsUri, getRootElementName());
         if (root != null) {
 
             ArrayList<Package> packages = new ArrayList<Package>();
@@ -876,8 +652,8 @@ public class RepoSource implements IDescription {
                  child = child.getNextSibling()) {
                 if (child.getNodeType() == Node.ELEMENT_NODE &&
                         nsUri.equals(child.getNamespaceURI()) &&
-                        child.getLocalName().equals(SdkRepository.NODE_LICENSE)) {
-                    Node id = child.getAttributes().getNamedItem(SdkRepository.ATTR_ID);
+                        child.getLocalName().equals(CommonConstants.NODE_LICENSE)) {
+                    Node id = child.getAttributes().getNamedItem(CommonConstants.ATTR_ID);
                     if (id != null) {
                         licenses.put(id.getNodeValue(), child.getTextContent());
                     }
@@ -896,25 +672,25 @@ public class RepoSource implements IDescription {
                     try {
                         // We can load addon and extra packages from all sources, either
                         // internal or user sources.
-                        if (SdkRepository.NODE_ADD_ON.equals(name)) {
-                            p = new AddonPackage(this, child, licenses);
+                        if (SdkAddonConstants.NODE_ADD_ON.equals(name)) {
+                            p = new AddonPackage(this, child, nsUri, licenses);
 
-                        } else if (SdkRepository.NODE_EXTRA.equals(name)) {
-                            p = new ExtraPackage(this, child, licenses);
+                        } else if (CommonConstants.NODE_EXTRA.equals(name)) {
+                            p = new ExtraPackage(this, child, nsUri, licenses);
 
                         } else if (!mUserSource) {
                             // We only load platform, doc and tool packages from internal
                             // sources, never from user sources.
-                            if (SdkRepository.NODE_PLATFORM.equals(name)) {
-                                p = new PlatformPackage(this, child, licenses);
-                            } else if (SdkRepository.NODE_DOC.equals(name)) {
-                                p = new DocPackage(this, child, licenses);
-                            } else if (SdkRepository.NODE_TOOL.equals(name)) {
-                                p = new ToolPackage(this, child, licenses);
-                            } else if (SdkRepository.NODE_PLATFORM_TOOL.equals(name)) {
-                                p = new PlatformToolPackage(this, child, licenses);
-                            } else if (SdkRepository.NODE_SAMPLE.equals(name)) {
-                                p = new SamplePackage(this, child, licenses);
+                            if (SdkRepoConstants.NODE_PLATFORM.equals(name)) {
+                                p = new PlatformPackage(this, child, nsUri, licenses);
+                            } else if (SdkRepoConstants.NODE_DOC.equals(name)) {
+                                p = new DocPackage(this, child, nsUri, licenses);
+                            } else if (SdkRepoConstants.NODE_TOOL.equals(name)) {
+                                p = new ToolPackage(this, child, nsUri, licenses);
+                            } else if (SdkRepoConstants.NODE_PLATFORM_TOOL.equals(name)) {
+                                p = new PlatformToolPackage(this, child, nsUri, licenses);
+                            } else if (SdkRepoConstants.NODE_SAMPLE.equals(name)) {
+                                p = new SamplePackage(this, child, nsUri, licenses);
                             }
                         }
 
@@ -924,6 +700,8 @@ public class RepoSource implements IDescription {
                         }
                     } catch (Exception e) {
                         // Ignore invalid packages
+                        monitor.setResult("Ignoring invalid %1$s element: %2$s",
+                                name, e.toString());
                     }
                 }
             }
@@ -962,7 +740,8 @@ public class RepoSource implements IDescription {
      *
      * On error, returns null and prints a (hopefully) useful message on the monitor.
      */
-    private Document getDocument(ByteArrayInputStream xml, ITaskMonitor monitor) {
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected Document getDocument(InputStream xml, ITaskMonitor monitor) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setIgnoringComments(true);

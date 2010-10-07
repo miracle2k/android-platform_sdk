@@ -112,7 +112,7 @@ public class SdkRepositoryTest extends TestCase {
 
     /** Helper method that returns a validator for our XSD */
     private Validator getValidator(int version, CaptureErrorHandler handler) throws SAXException {
-        InputStream xsdStream = SdkRepository.getXsdStream(version);
+        InputStream xsdStream = SdkRepoConstants.getXsdStream(version);
         SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         Schema schema = factory.newSchema(new StreamSource(xsdStream));
         Validator validator = schema.newValidator();
@@ -177,7 +177,7 @@ public class SdkRepositoryTest extends TestCase {
         Source source = new StreamSource(new StringReader(document));
 
         CaptureErrorHandler handler = new CaptureErrorHandler();
-        Validator validator = getValidator(SdkRepository.NS_LATEST_VERSION, handler);
+        Validator validator = getValidator(SdkRepoConstants.NS_LATEST_VERSION, handler);
 
         try {
             validator.validate(source);
@@ -193,7 +193,7 @@ public class SdkRepositoryTest extends TestCase {
 
     private static String OPEN_TAG =
         "<r:sdk-repository xmlns:r=\"http://schemas.android.com/sdk/android/repository/" +
-        Integer.toString(SdkRepository.NS_LATEST_VERSION) +
+        Integer.toString(SdkRepoConstants.NS_LATEST_VERSION) +
         "\">";
 
     private static String CLOSE_TAG = "</r:sdk-repository>";
@@ -207,7 +207,7 @@ public class SdkRepositoryTest extends TestCase {
         Source source = new StreamSource(new StringReader(document));
 
         CaptureErrorHandler handler = new CaptureErrorHandler();
-        Validator validator = getValidator(SdkRepository.NS_LATEST_VERSION, handler);
+        Validator validator = getValidator(SdkRepoConstants.NS_LATEST_VERSION, handler);
         validator.validate(source);
         handler.verify();
     }
@@ -222,7 +222,7 @@ public class SdkRepositoryTest extends TestCase {
         Source source = new StreamSource(new StringReader(document));
 
         // don't capture the validator errors, we want it to fail and catch the exception
-        Validator validator = getValidator(SdkRepository.NS_LATEST_VERSION, null);
+        Validator validator = getValidator(SdkRepoConstants.NS_LATEST_VERSION, null);
         try {
             validator.validate(source);
         } catch (SAXParseException e) {
@@ -244,7 +244,7 @@ public class SdkRepositoryTest extends TestCase {
         Source source = new StreamSource(new StringReader(document));
 
         // don't capture the validator errors, we want it to fail and catch the exception
-        Validator validator = getValidator(SdkRepository.NS_LATEST_VERSION, null);
+        Validator validator = getValidator(SdkRepoConstants.NS_LATEST_VERSION, null);
         try {
             validator.validate(source);
         } catch (SAXParseException e) {
@@ -266,7 +266,7 @@ public class SdkRepositoryTest extends TestCase {
         Source source = new StreamSource(new StringReader(document));
 
         // don't capture the validator errors, we want it to fail and catch the exception
-        Validator validator = getValidator(SdkRepository.NS_LATEST_VERSION, null);
+        Validator validator = getValidator(SdkRepoConstants.NS_LATEST_VERSION, null);
         try {
             validator.validate(source);
         } catch (SAXParseException e) {
@@ -294,7 +294,7 @@ public class SdkRepositoryTest extends TestCase {
         Source source = new StreamSource(new StringReader(document));
 
         // don't capture the validator errors, we want it to fail and catch the exception
-        Validator validator = getValidator(SdkRepository.NS_LATEST_VERSION, null);
+        Validator validator = getValidator(SdkRepoConstants.NS_LATEST_VERSION, null);
         try {
             validator.validate(source);
         } catch (SAXParseException e) {
@@ -320,7 +320,7 @@ public class SdkRepositoryTest extends TestCase {
         Source source = new StreamSource(new StringReader(document));
 
         // don't capture the validator errors, we want it to fail and catch the exception
-        Validator validator = getValidator(SdkRepository.NS_LATEST_VERSION, null);
+        Validator validator = getValidator(SdkRepoConstants.NS_LATEST_VERSION, null);
         try {
             validator.validate(source);
         } catch (SAXParseException e) {

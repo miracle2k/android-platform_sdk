@@ -42,7 +42,7 @@ import java.util.Properties;
  * A package has some attributes (revision, description) and a list of archives
  * which represent the downloadable bits.
  * <p/>
- * Packages are offered by a {@link RepoSource} (a download site).
+ * Packages are offered by a {@link SdkSource} (a download site).
  */
 public class Archive implements IDescription {
 
@@ -434,7 +434,7 @@ public class Archive implements IDescription {
                 && !link.startsWith("ftp://")) {                 //$NON-NLS-1$
             // Make the URL absolute by prepending the source
             Package pkg = getParentPackage();
-            RepoSource src = pkg.getParentSource();
+            SdkSource src = pkg.getParentSource();
             if (src == null) {
                 monitor.setResult("Internal error: no source for archive %1$s", name);
                 return null;

@@ -18,7 +18,7 @@ package com.android.sdkmanager;
 
 import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkManager;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 import java.util.Arrays;
 
@@ -207,7 +207,7 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.STRING, false,
                 VERB_UPDATE, OBJECT_SDK, "t", KEY_FILTER,
                 "A filter that limits the update to the specified types of packages in the form of\n" +
-                "                a comma-separated list of " + Arrays.toString(SdkRepository.NODES),
+                "                a comma-separated list of " + Arrays.toString(SdkRepoConstants.NODES),
                 null);
 
         define(Mode.BOOLEAN, false,

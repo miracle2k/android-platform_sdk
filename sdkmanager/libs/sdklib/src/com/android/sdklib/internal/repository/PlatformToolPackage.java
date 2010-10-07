@@ -34,11 +34,17 @@ public class PlatformToolPackage extends Package {
 
     /**
      * Creates a new platform-tool package from the attributes and elements of the given XML node.
-     * <p/>
      * This constructor should throw an exception if the package cannot be created.
+     *
+     * @param source The {@link SdkSource} where this is loaded from.
+     * @param packageNode The XML element being parsed.
+     * @param nsUri The namespace URI of the originating XML document, to be able to deal with
+     *          parameters that vary according to the originating XML schema.
+     * @param licenses The licenses loaded from the XML originating document.
      */
-    PlatformToolPackage(RepoSource source, Node packageNode, Map<String,String> licenses) {
-        super(source, packageNode, licenses);
+    PlatformToolPackage(SdkSource source, Node packageNode,
+            String nsUri, Map<String,String> licenses) {
+        super(source, packageNode, nsUri, licenses);
     }
 
     /**
@@ -49,7 +55,7 @@ public class PlatformToolPackage extends Package {
      * By design, this creates a package with one and only one archive.
      */
     PlatformToolPackage(
-            RepoSource source,
+            SdkSource source,
             Properties props,
             int revision,
             String license,

@@ -23,7 +23,7 @@ import com.android.sdklib.SdkManager;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 import org.w3c.dom.Node;
 
@@ -68,21 +68,26 @@ public class AddonPackage extends Package
 
     /**
      * Creates a new add-on package from the attributes and elements of the given XML node.
-     * <p/>
      * This constructor should throw an exception if the package cannot be created.
+     *
+     * @param source The {@link SdkSource} where this is loaded from.
+     * @param packageNode The XML element being parsed.
+     * @param nsUri The namespace URI of the originating XML document, to be able to deal with
+     *          parameters that vary according to the originating XML schema.
+     * @param licenses The licenses loaded from the XML originating document.
      */
-    AddonPackage(RepoSource source, Node packageNode, Map<String,String> licenses) {
-        super(source, packageNode, licenses);
-        mVendor   = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_VENDOR);
-        mName     = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_NAME);
-        int apiLevel = XmlParserUtils.getXmlInt   (packageNode, SdkRepository.NODE_API_LEVEL, 0);
-        String codeName = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_CODENAME);
+    AddonPackage(SdkSource source, Node packageNode, String nsUri, Map<String,String> licenses) {
+        super(source, packageNode, nsUri, licenses);
+        mVendor   = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_VENDOR);
+        mName     = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_NAME);
+        int apiLevel = XmlParserUtils.getXmlInt   (packageNode, SdkRepoConstants.NODE_API_LEVEL, 0);
+        String codeName = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_CODENAME);
         if (codeName.length() == 0) {
             codeName = null;
         }
         mVersion = new AndroidVersion(apiLevel, codeName);
 
-        mLibs = parseLibs(XmlParserUtils.getFirstChild(packageNode, SdkRepository.NODE_LIBS));
+        mLibs = parseLibs(XmlParserUtils.getFirstChild(packageNode, SdkRepoConstants.NODE_LIBS));
     }
 
     /**
@@ -151,7 +156,7 @@ public class AddonPackage extends Package
 
                 if (child.getNodeType() == Node.ELEMENT_NODE &&
                         nsUri.equals(child.getNamespaceURI()) &&
-                        SdkRepository.NODE_LIB.equals(child.getLocalName())) {
+                        SdkRepoConstants.NODE_LIB.equals(child.getLocalName())) {
                     libs.add(parseLib(child));
                 }
             }
@@ -164,8 +169,8 @@ public class AddonPackage extends Package
      * Parses a <lib> element from a <libs> container.
      */
     private Lib parseLib(Node libNode) {
-        return new Lib(XmlParserUtils.getXmlString(libNode, SdkRepository.NODE_NAME),
-                       XmlParserUtils.getXmlString(libNode, SdkRepository.NODE_DESCRIPTION));
+        return new Lib(XmlParserUtils.getXmlString(libNode, SdkRepoConstants.NODE_NAME),
+                       XmlParserUtils.getXmlString(libNode, SdkRepoConstants.NODE_DESCRIPTION));
     }
 
     /** Returns the vendor, a string, for add-on packages. */

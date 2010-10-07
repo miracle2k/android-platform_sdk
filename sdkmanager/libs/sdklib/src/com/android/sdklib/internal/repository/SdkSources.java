@@ -29,9 +29,9 @@ import java.util.Iterator;
 import java.util.Properties;
 
 /**
- * A list of sdk-repository sources.
+ * A list of sdk-repository and sdk-addon sources.
  */
-public class RepoSources {
+public class SdkSources {
 
     private static final String KEY_COUNT = "count";
 
@@ -39,30 +39,30 @@ public class RepoSources {
 
     private static final String SRC_FILENAME = "repositories.cfg"; //$NON-NLS-1$
 
-    private ArrayList<RepoSource> mSources = new ArrayList<RepoSource>();
+    private ArrayList<SdkSource> mSources = new ArrayList<SdkSource>();
 
-    public RepoSources() {
+    public SdkSources() {
     }
 
     /**
      * Adds a new source to the Sources list.
      */
-    public void add(RepoSource source) {
+    public void add(SdkSource source) {
         mSources.add(source);
     }
 
     /**
      * Removes a source from the Sources list.
      */
-    public void remove(RepoSource source) {
+    public void remove(SdkSource source) {
         mSources.remove(source);
     }
 
     /**
      * Returns the sources list array. This is never null.
      */
-    public RepoSource[] getSources() {
-        return mSources.toArray(new RepoSource[mSources.size()]);
+    public SdkSource[] getSources() {
+        return mSources.toArray(new SdkSource[mSources.size()]);
     }
 
     /**
@@ -72,8 +72,8 @@ public class RepoSources {
     public void loadUserSources(ISdkLog log) {
 
         // Remove all existing user sources
-        for (Iterator<RepoSource> it = mSources.iterator(); it.hasNext(); ) {
-            RepoSource s = it.next();
+        for (Iterator<SdkSource> it = mSources.iterator(); it.hasNext(); ) {
+            SdkSource s = it.next();
             if (s.isUserSource()) {
                 it.remove();
             }
@@ -95,7 +95,7 @@ public class RepoSources {
                 for (int i = 0; i < count; i++) {
                     String url = props.getProperty(String.format("%s%02d", KEY_SRC, i));  //$NON-NLS-1$
                     if (url != null) {
-                        RepoSource s = new RepoSource(url, true /*userSource*/);
+                        SdkSource s = new SdkAddonSource(url, true /*userSource*/);
                         if (!hasSource(s)) {
                             mSources.add(s);
                         }
@@ -127,8 +127,8 @@ public class RepoSources {
      * <p/>
      * The search is O(N), which should be acceptable on the expectedly small source list.
      */
-    public boolean hasSource(RepoSource source) {
-        for (RepoSource s : mSources) {
+    public boolean hasSource(SdkSource source) {
+        for (SdkSource s : mSources) {
             if (s.equals(source)) {
                 return true;
             }
@@ -151,7 +151,7 @@ public class RepoSources {
             Properties props = new Properties();
 
             int count = 0;
-            for (RepoSource s : mSources) {
+            for (SdkSource s : mSources) {
                 if (s.isUserSource()) {
                     count++;
                     props.setProperty(String.format("%s%02d", KEY_SRC, count), s.getUrl());  //$NON-NLS-1$

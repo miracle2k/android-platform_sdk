@@ -16,7 +16,7 @@
 
 package com.android.sdklib.internal.repository;
 
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 /**
  * Interface used to decorate a {@link Package} that has a dependency
@@ -30,7 +30,7 @@ public interface IMinPlatformToolsDependency {
 
     /**
      * The value of {@link #getMinPlatformToolsRevision()} when the
-     * {@link SdkRepository#NODE_MIN_PLATFORM_TOOLS_REV} was not specified in the XML source.
+     * {@link SdkRepoConstants#NODE_MIN_PLATFORM_TOOLS_REV} was not specified in the XML source.
      * Since this is a required attribute in the XML schema, it can only happen when dealing
      * with an invalid repository XML.
      */
