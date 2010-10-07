@@ -278,6 +278,13 @@ public class LocalSdkParser {
 
         // We're not going to check that all tools are present. At the very least
         // we should expect to find adb, aidl, aapt and dx (adapted to the current OS).
+
+        if (platformToolsFolder.listFiles() == null) {
+            // ListFiles is null if the directory doesn't even exist.
+            // Not going to find anything in there...
+            return null;
+        }
+
         Set<String> names = new HashSet<String>();
         for (File file : platformToolsFolder.listFiles()) {
             names.add(file.getName());

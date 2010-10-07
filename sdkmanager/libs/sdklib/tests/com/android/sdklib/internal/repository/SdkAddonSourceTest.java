@@ -16,28 +16,44 @@
 
 package com.android.sdklib.internal.repository;
 
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkAddonConstants;
 
 import org.w3c.dom.Document;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 import junit.framework.TestCase;
 
 /**
- * Tests for {@link RepoSource}
+ * Tests for {@link SdkAddonSource}
  */
-public class RepoSourceTest extends TestCase {
+public class SdkAddonSourceTest extends TestCase {
 
     private static class MockMonitor implements ITaskMonitor {
+
+        String mCapturedResults = "";
+        String mCapturedDescriptions = "";
+
+        public String getCapturedResults() {
+            return mCapturedResults;
+        }
+
+        public String getCapturedDescriptions() {
+            return mCapturedDescriptions;
+        }
+
         public void setResult(String resultFormat, Object... args) {
+            mCapturedResults += String.format(resultFormat, args) + "\n";
         }
 
         public void setProgressMax(int max) {
         }
 
         public void setDescription(String descriptionFormat, Object... args) {
+            mCapturedDescriptions += String.format(descriptionFormat, args) + "\n";
         }
 
         public boolean isCancelRequested() {
@@ -64,9 +80,9 @@ public class RepoSourceTest extends TestCase {
      * An internal helper class to give us visibility to the protected members we want
      * to test.
      */
-    private static class MockRepoSource extends RepoSource {
-        public MockRepoSource() {
-            super("fake-url", false /*userSource*/);
+    private static class MockSdkAddonSource extends SdkAddonSource {
+        public MockSdkAddonSource() {
+            super("fake-url", true /*userSource*/);
         }
 
         public Document _findAlternateToolsXml(InputStream xml) {
@@ -76,15 +92,29 @@ public class RepoSourceTest extends TestCase {
         public boolean _parsePackages(Document doc, String nsUri, ITaskMonitor monitor) {
             return super.parsePackages(doc, nsUri, monitor);
         }
+
+        public int _getXmlSchemaVersion(InputStream xml) {
+            return super.getXmlSchemaVersion(xml);
+        }
+
+        public String _validateXml(InputStream xml, String url, int version,
+                                   String[] outError, Boolean[] validatorFound) {
+            return super.validateXml(xml, url, version, outError, validatorFound);
+        }
+
+        public Document _getDocument(InputStream xml, ITaskMonitor monitor) {
+            return super.getDocument(xml, monitor);
+        }
+
     }
 
-    private MockRepoSource mSource;
+    private MockSdkAddonSource mSource;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
 
-        mSource = new MockRepoSource();
+        mSource = new MockSdkAddonSource();
     }
 
     @Override
@@ -94,7 +124,7 @@ public class RepoSourceTest extends TestCase {
         mSource = null;
     }
 
-    public void testFindAlternateToolsXml_Errors() {
+    public void testFindAlternateToolsXml_Errors() throws Exception {
         // Support null as input
         Document result = mSource._findAlternateToolsXml(null);
         assertNull(result);
@@ -142,22 +172,94 @@ public class RepoSourceTest extends TestCase {
         assertNull(result);
     }
 
-    public void testFindAlternateToolsXml_1() {
-        InputStream xmlStream = this.getClass().getResourceAsStream(
-                    "/com/android/sdklib/testdata/repository_sample_1.xml");
+    /**
+     * Validate that findAlternateToolsXml doesn't work for addon even
+     * when trying to load a valid addon xml.
+     */
+    public void testFindAlternateToolsXml_1() throws Exception {
+        InputStream xmlStream = getTestResource("/com/android/sdklib/testdata/addon_sample_1.xml");
 
         Document result = mSource._findAlternateToolsXml(xmlStream);
-        assertNotNull(result);
-        assertTrue(mSource._parsePackages(result,
-                SdkRepository.NS_SDK_REPOSITORY, new MockMonitor()));
+        assertNull(result);
+    }
 
-        // check the packages we found... we expected to find 2 tool packages with 1 archive each.
+    /**
+     * Validate we can still load a valid addon schema version 1
+     */
+    public void testLoadOldXml_1() throws Exception {
+        InputStream xmlStream = getTestResource("/com/android/sdklib/testdata/addon_sample_1.xml");
+
+        // guess the version from the XML document
+        int version = mSource._getXmlSchemaVersion(xmlStream);
+        assertEquals(1, version);
+
+        Boolean[] validatorFound = new Boolean[] { Boolean.FALSE };
+        String[] validationError = new String[] { null };
+        String url = "not-a-valid-url://" + SdkAddonConstants.URL_DEFAULT_XML_FILE;
+
+        String uri = mSource._validateXml(xmlStream, url, version, validationError, validatorFound);
+        assertEquals(Boolean.TRUE, validatorFound[0]);
+        assertEquals(null, validationError[0]);
+        assertEquals(SdkAddonConstants.getSchemaUri(1), uri);
+
+        // Validation was successful, load the document
+        MockMonitor monitor = new MockMonitor();
+        Document doc = mSource._getDocument(xmlStream, monitor);
+        assertNotNull(doc);
+
+        // Get the packages
+        assertTrue(mSource._parsePackages(doc, uri, monitor));
+
+        assertEquals("Found My First add-on by John Doe, Android API 1, revision 1\n" +
+                     "Found My Second add-on by John Deer, Android API 2, revision 42\n" +
+                     "Found This add-on has no libraries by Joe Bar, Android API 4, revision 3\n" +
+                     "Found Usb Driver package, revision 43 (Obsolete)\n" +
+                     "Found Extra Api Dep package, revision 2 (Obsolete)\n",
+                monitor.getCapturedDescriptions());
+        assertEquals("", monitor.getCapturedResults());
+
+        // check the packages we found... we expected to find 11 packages with each at least
+        // one archive.
         Package[] pkgs = mSource.getPackages();
-        assertEquals(2, pkgs.length);
+        assertEquals(5, pkgs.length);
         for (Package p : pkgs) {
-            assertEquals(ToolPackage.class, p.getClass());
-            assertEquals(1, p.getArchives().length);
+            assertTrue(p.getArchives().length >= 1);
         }
     }
 
+    /**
+     * Returns an SdkLib file resource as a {@link ByteArrayInputStream},
+     * which has the advantage that we can use {@link InputStream#reset()} on it
+     * at any time to read it multiple times.
+     * <p/>
+     * The default for getResourceAsStream() is to return a {@link FileInputStream} that
+     * does not support reset(), yet we need it in the tested code.
+     *
+     * @throws IOException if some I/O read fails
+     */
+    private ByteArrayInputStream getTestResource(String filename) throws IOException {
+        InputStream xmlStream = this.getClass().getResourceAsStream(filename);
+
+        try {
+            byte[] data = new byte[8192];
+            int offset = 0;
+            int n;
+
+            while ((n = xmlStream.read(data, offset, data.length - offset)) != -1) {
+                offset += n;
+
+                if (offset == data.length) {
+                    byte[] newData = new byte[offset + 8192];
+                    System.arraycopy(data, 0, newData, 0, offset);
+                    data = newData;
+                }
+            }
+
+            return new ByteArrayInputStream(data, 0, offset);
+        } finally {
+            if (xmlStream != null) {
+                xmlStream.close();
+            }
+        }
+    }
 }

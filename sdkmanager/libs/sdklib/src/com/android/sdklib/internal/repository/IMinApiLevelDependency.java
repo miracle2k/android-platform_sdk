@@ -16,7 +16,7 @@
 
 package com.android.sdklib.internal.repository;
 
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 /**
  * Interface used to decorate a {@link Package} that has a dependency
@@ -28,7 +28,7 @@ import com.android.sdklib.repository.SdkRepository;
 public interface IMinApiLevelDependency {
 
     /**
-     * The value of {@link #getMinApiLevel()} when the {@link SdkRepository#NODE_MIN_API_LEVEL}
+     * The value of {@link #getMinApiLevel()} when the {@link SdkRepoConstants#NODE_MIN_API_LEVEL}
      * was not specified in the XML source.
      */
     public static final int MIN_API_LEVEL_NOT_SPECIFIED = 0;

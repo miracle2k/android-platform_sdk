@@ -18,7 +18,7 @@ package com.android.sdklib.internal.repository;
 
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 import org.w3c.dom.Node;
 
@@ -40,13 +40,19 @@ public abstract class MinToolsPackage extends Package implements IMinToolsDepend
 
     /**
      * Creates a new package from the attributes and elements of the given XML node.
-     * <p/>
      * This constructor should throw an exception if the package cannot be created.
+     *
+     * @param source The {@link SdkSource} where this is loaded from.
+     * @param packageNode The XML element being parsed.
+     * @param nsUri The namespace URI of the originating XML document, to be able to deal with
+     *          parameters that vary according to the originating XML schema.
+     * @param licenses The licenses loaded from the XML originating document.
      */
-    MinToolsPackage(RepoSource source, Node packageNode, Map<String,String> licenses) {
-        super(source, packageNode, licenses);
+    MinToolsPackage(SdkSource source, Node packageNode, String nsUri, Map<String,String> licenses) {
+        super(source, packageNode, nsUri, licenses);
 
-        mMinToolsRevision = XmlParserUtils.getXmlInt(packageNode, SdkRepository.NODE_MIN_TOOLS_REV,
+        mMinToolsRevision = XmlParserUtils.getXmlInt(packageNode,
+                SdkRepoConstants.NODE_MIN_TOOLS_REV,
                 MIN_TOOLS_REV_NOT_SPECIFIED);
     }
 
@@ -60,7 +66,7 @@ public abstract class MinToolsPackage extends Package implements IMinToolsDepend
      * By design, this creates a package with one and only one archive.
      */
     public MinToolsPackage(
-            RepoSource source,
+            SdkSource source,
             Properties props,
             int revision,
             String license,

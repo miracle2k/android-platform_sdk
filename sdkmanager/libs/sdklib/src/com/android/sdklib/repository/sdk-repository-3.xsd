@@ -46,6 +46,7 @@
               and platform-specific tools are installed in $SDK/platform-tools
             - There's a new element <min-platform-tools-rev> in <tool>. The tool package now
               requires that at least some minimal version of <platform-tool> be installed.
+            - It removes the <addon> repository type, which is now in its own XML Schema.
     -->
 
     <xsd:element name="sdk-repository" type="sr3:repositoryType" />
@@ -58,7 +59,6 @@
         </xsd:annotation>
         <xsd:choice minOccurs="0" maxOccurs="unbounded">
             <xsd:element name="platform"        type="sr3:platformType"     />
-            <xsd:element name="add-on"          type="sr3:addonType"        />
             <xsd:element name="tool"            type="sr3:toolType"         />
             <xsd:element name="platform-tool"   type="sr3:platformToolType" />
             <xsd:element name="doc"             type="sr3:docType"          />
@@ -105,65 +105,6 @@
             <!-- An optional element indicating the package is obsolete.
                  The string content is however currently not defined and ignored. -->
             <xsd:element name="obsolete"  type="xsd:string" minOccurs="0" />
-        </xsd:all>
-    </xsd:complexType>
-
-
-    <!-- The definition of an SDK Add-on package. -->
-
-    <xsd:complexType name="addonType">
-        <xsd:annotation>
-            <xsd:documentation>An SDK add-on package.</xsd:documentation>
-        </xsd:annotation>
-        <xsd:all>
-            <!-- The name of the add-on. -->
-            <xsd:element name="name"      type="xsd:normalizedString" />
-            <!-- The vendor of the add-on. -->
-            <xsd:element name="vendor"    type="xsd:normalizedString" />
-            <!-- The Android API Level for the add-on. An int > 0. -->
-            <xsd:element name="api-level" type="xsd:positiveInteger"  />
-            <!-- The optional codename for this add-on, if it's a preview. -->
-            <xsd:element name="codename"  type="xsd:string" minOccurs="0" />
-
-            <!-- The revision, an int > 0, incremented each time a new
-                 package is generated. -->
-            <xsd:element name="revision"     type="xsd:positiveInteger" />
-            <!-- The optional license of this package. If present, users will have
-                 to agree to it before downloading. -->
-            <xsd:element name="uses-license" type="sr3:usesLicenseType" minOccurs="0" />
-            <!-- The optional description of this package. -->
-            <xsd:element name="description"  type="xsd:string"      minOccurs="0" />
-            <!-- The optional description URL of this package -->
-            <xsd:element name="desc-url"     type="xsd:token"       minOccurs="0" />
-            <!-- The optional release note for this package. -->
-            <xsd:element name="release-note" type="xsd:string"      minOccurs="0" />
-            <!-- The optional release note URL of this package -->
-            <xsd:element name="release-url"  type="xsd:token"       minOccurs="0" />
-            <!-- A list of file archives for this package. -->
-            <xsd:element name="archives"     type="sr3:archivesType" />
-
-            <!-- An optional element indicating the package is obsolete.
-                 The string content is however currently not defined and ignored. -->
-            <xsd:element name="obsolete"  type="xsd:string" minOccurs="0" />
-
-            <!-- An add-on can declare 0 or more libraries. -->
-
-            <xsd:element name="libs">
-                <xsd:complexType>
-                    <xsd:sequence minOccurs="0" maxOccurs="unbounded">
-                        <xsd:element name="lib">
-                            <xsd:complexType>
-                                <xsd:all>
-                                    <!-- The name of the library. -->
-                                    <xsd:element name="name" type="xsd:normalizedString" />
-                                    <!-- The optional description of this add-on library. -->
-                                    <xsd:element name="description" type="xsd:string" minOccurs="0" />
-                                </xsd:all>
-                            </xsd:complexType>
-                        </xsd:element>
-                    </xsd:sequence>
-                </xsd:complexType>
-            </xsd:element>
         </xsd:all>
     </xsd:complexType>
 
@@ -319,8 +260,8 @@
                 An SDK extra package. This kind of package is for "free"
                 content and specifies in which fixed root directory it must be
                 installed.
-                The paths "add-ons", "platforms", "tools" and "docs" are
-                reserved and cannot be used.
+                Path names matching existing package types here (e.g. "add-ons",
+                "platforms", "tools", "docs", etc.) are reserved and cannot be used.
             </xsd:documentation>
         </xsd:annotation>
         <xsd:all>

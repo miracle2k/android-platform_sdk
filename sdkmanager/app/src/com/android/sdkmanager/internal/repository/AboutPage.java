@@ -19,7 +19,7 @@ package com.android.sdkmanager.internal.repository;
 
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 import com.android.sdkmanager.*;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
@@ -70,7 +70,7 @@ public class AboutPage extends Composite {
                 "Repository XML Schema #%2$d\n" +
                 "Copyright (C) 2009-2010 The Android Open Source Project.",
                 getRevision(),
-                SdkRepository.NS_LATEST_VERSION));
+                SdkRepoConstants.NS_LATEST_VERSION));
     }
 
     @Override

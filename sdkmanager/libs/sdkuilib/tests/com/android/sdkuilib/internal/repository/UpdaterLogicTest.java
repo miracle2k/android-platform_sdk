@@ -22,7 +22,7 @@ import com.android.sdklib.internal.repository.MockPlatformPackage;
 import com.android.sdklib.internal.repository.MockPlatformToolPackage;
 import com.android.sdklib.internal.repository.MockToolPackage;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.RepoSource;
+import com.android.sdklib.internal.repository.SdkSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,7 +40,7 @@ public class UpdaterLogicTest extends TestCase {
 
         @Override
         protected void fetchRemotePackages(ArrayList<Package> remotePkgs,
-                RepoSource[] remoteSources) {
+                SdkSource[] remoteSources) {
             // Ignore remoteSources and instead uses the remotePackages list given to the
             // constructor.
             if (mRemotePackages != null) {
@@ -71,7 +71,7 @@ public class UpdaterLogicTest extends TestCase {
         Package[] localPkgs = { p1, a1 };
         ArchiveInfo[] locals = mul.createLocalArchives(localPkgs);
 
-        RepoSource[] sources = null;
+        SdkSource[] sources = null;
 
         // a2 now depends on a "fake" archive info with no newArchive that wraps the missing
         // underlying platform.
@@ -114,7 +114,7 @@ public class UpdaterLogicTest extends TestCase {
         Package[] localPkgs = { t1, pt1 };
         ArchiveInfo[] locals = mul.createLocalArchives(localPkgs);
 
-        RepoSource[] sources = null;
+        SdkSource[] sources = null;
 
         // p2 now depends on a "fake" archive info with no newArchive that wraps the missing
         // underlying tool
@@ -155,7 +155,7 @@ public class UpdaterLogicTest extends TestCase {
         Package[] localPkgs = { t1 };
         ArchiveInfo[] locals = mul.createLocalArchives(localPkgs);
 
-        RepoSource[] sources = null;
+        SdkSource[] sources = null;
 
         // p2 now depends on a "fake" archive info with no newArchive that wraps the missing
         // underlying tool

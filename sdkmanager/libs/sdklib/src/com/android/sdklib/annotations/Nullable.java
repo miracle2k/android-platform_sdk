@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.annotations;
+package com.android.sdklib.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,10 +29,7 @@ import java.lang.annotation.RetentionPolicy;
  * When decorating a method, this denotes the method might legitimately return null.
  * <p/>
  * This is a marker annotation and it has no specific attributes.
- *
- * @deprecated TODO use the version moved into sdklib instead
  */
-@Deprecated
 @Retention(RetentionPolicy.SOURCE)
 public @interface Nullable {
 }

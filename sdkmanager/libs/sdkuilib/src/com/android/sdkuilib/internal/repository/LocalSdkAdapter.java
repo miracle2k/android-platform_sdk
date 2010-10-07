@@ -18,7 +18,7 @@ package com.android.sdkuilib.internal.repository;
 
 import com.android.sdklib.internal.repository.IDescription;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.RepoSource;
+import com.android.sdklib.internal.repository.SdkSource;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 
 import org.eclipse.jface.viewers.IContentProvider;
@@ -90,7 +90,7 @@ class LocalSdkAdapter  {
         /**
          * Called to collect the root elements for the given input.
          * The input here is a {@link LocalSdkAdapter} object, this returns an array
-         * of {@link RepoSource}.
+         * of {@link SdkSource}.
          */
         public Object[] getElements(Object inputElement) {
             if (inputElement == LocalSdkAdapter.this) {

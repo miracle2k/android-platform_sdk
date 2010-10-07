@@ -21,7 +21,7 @@ import com.android.sdklib.internal.repository.IDescription;
 import com.android.sdklib.internal.repository.ITask;
 import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.RepoSource;
+import com.android.sdklib.internal.repository.SdkSource;
 import com.android.sdklib.internal.repository.Package.UpdateInfo;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 
@@ -50,9 +50,9 @@ public class RepoSourcesAdapter {
      */
     public static class RepoSourceError implements IDescription {
 
-        private final RepoSource mSource;
+        private final SdkSource mSource;
 
-        public RepoSourceError(RepoSource source) {
+        public RepoSourceError(SdkSource source) {
             mSource = source;
         }
 
@@ -72,10 +72,10 @@ public class RepoSourcesAdapter {
      */
     public static class RepoSourceEmpty implements IDescription {
 
-        private final RepoSource mSource;
+        private final SdkSource mSource;
         private final boolean mEmptyBecauseOfUpdateOnly;
 
-        public RepoSourceEmpty(RepoSource source, boolean emptyBecauseOfUpdateOnly) {
+        public RepoSourceEmpty(SdkSource source, boolean emptyBecauseOfUpdateOnly) {
             mSource = source;
             mEmptyBecauseOfUpdateOnly = emptyBecauseOfUpdateOnly;
         }
@@ -150,7 +150,7 @@ public class RepoSourcesAdapter {
         /**
          * Called to collect the root elements for the given input.
          * The input here is a {@link RepoSourcesAdapter} object, this returns an array
-         * of {@link RepoSource}.
+         * of {@link SdkSource}.
          */
         public Object[] getElements(Object inputElement) {
             return getChildren(inputElement);
@@ -160,16 +160,16 @@ public class RepoSourcesAdapter {
          * Get the children of the given parent. This is requested on-demand as
          * nodes are expanded.
          *
-         * For a {@link RepoSourcesAdapter} object, returns an array of {@link RepoSource}s.
-         * For a {@link RepoSource}, returns an array of {@link Package}s.
+         * For a {@link RepoSourcesAdapter} object, returns an array of {@link SdkSource}s.
+         * For a {@link SdkSource}, returns an array of {@link Package}s.
          * For a {@link Package}, returns an array of {@link Archive}s.
          */
         public Object[] getChildren(Object parentElement) {
             if (parentElement == RepoSourcesAdapter.this) {
                 return mUpdaterData.getSources().getSources();
 
-            } else if (parentElement instanceof RepoSource) {
-                return getRepoSourceChildren((RepoSource) parentElement);
+            } else if (parentElement instanceof SdkSource) {
+                return getRepoSourceChildren((SdkSource) parentElement);
 
             } else if (parentElement instanceof Package) {
                 return getPackageChildren((Package) parentElement);
@@ -183,7 +183,7 @@ public class RepoSourcesAdapter {
          * only update packages. If the list is empty, returns a specific empty node. If there's
          * an error, returns a specific error node.
          */
-        private Object[] getRepoSourceChildren(final RepoSource source) {
+        private Object[] getRepoSourceChildren(final SdkSource source) {
             Package[] packages = source.getPackages();
 
             if (packages == null && source.getFetchError() == null) {
@@ -250,11 +250,11 @@ public class RepoSourcesAdapter {
 
         /**
          * Returns the parent of a given element.
-         * The input {@link RepoSourcesAdapter} is the parent of all {@link RepoSource} elements.
+         * The input {@link RepoSourcesAdapter} is the parent of all {@link SdkSource} elements.
          */
         public Object getParent(Object element) {
 
-            if (element instanceof RepoSource) {
+            if (element instanceof SdkSource) {
                 return RepoSourcesAdapter.this;
 
             } else if (element instanceof Package) {
@@ -269,11 +269,11 @@ public class RepoSourcesAdapter {
         /**
          * Returns true if a given element has children, which is used to display a
          * "+/expand" box next to the tree node.
-         * All {@link RepoSource} and {@link Package} are expandable, whether they actually
+         * All {@link SdkSource} and {@link Package} are expandable, whether they actually
          * have any children or not.
          */
         public boolean hasChildren(Object element) {
-            return element instanceof RepoSource || element instanceof Package;
+            return element instanceof SdkSource || element instanceof Package;
         }
     }
 

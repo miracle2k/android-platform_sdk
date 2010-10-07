@@ -20,7 +20,7 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 import org.w3c.dom.Node;
 
@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Represents a tool XML node in an SDK repository.
@@ -47,21 +49,44 @@ public class ToolPackage extends Package implements IMinPlatformToolsDependency 
 
     /**
      * Creates a new tool package from the attributes and elements of the given XML node.
-     * <p/>
      * This constructor should throw an exception if the package cannot be created.
+     *
+     * @param source The {@link SdkSource} where this is loaded from.
+     * @param packageNode The XML element being parsed.
+     * @param nsUri The namespace URI of the originating XML document, to be able to deal with
+     *          parameters that vary according to the originating XML schema.
+     * @param licenses The licenses loaded from the XML originating document.
      */
-    ToolPackage(RepoSource source, Node packageNode, Map<String,String> licenses) {
-        super(source, packageNode, licenses);
+    ToolPackage(SdkSource source, Node packageNode, String nsUri, Map<String,String> licenses) {
+        super(source, packageNode, nsUri, licenses);
 
         mMinPlatformToolsRevision = XmlParserUtils.getXmlInt(
                 packageNode,
-                SdkRepository.NODE_MIN_PLATFORM_TOOLS_REV,
+                SdkRepoConstants.NODE_MIN_PLATFORM_TOOLS_REV,
                 MIN_PLATFORM_TOOLS_REV_INVALID);
         if (mMinPlatformToolsRevision == MIN_PLATFORM_TOOLS_REV_INVALID) {
-            throw new IllegalArgumentException(
-                    String.format("Missing %1$s element in %2$s package",
-                            SdkRepository.NODE_MIN_PLATFORM_TOOLS_REV,
-                            SdkRepository.NODE_PLATFORM_TOOL));
+            // This revision number is mandatory starting with sdk-repository-3.xsd
+            // and did not exist before. Complain if the URI has level >= 3.
+
+            boolean needRevision = false;
+
+            Pattern nsPattern = Pattern.compile(SdkRepoConstants.NS_PATTERN);
+            Matcher m = nsPattern.matcher(nsUri);
+            if (m.matches()) {
+                String version = m.group(1);
+                try {
+                    needRevision = Integer.parseInt(version) >= 3;
+                } catch (NumberFormatException e) {
+                    // ignore. needRevision defaults to false
+                }
+            }
+
+            if (needRevision) {
+                throw new IllegalArgumentException(
+                        String.format("Missing %1$s element in %2$s package",
+                                SdkRepoConstants.NODE_MIN_PLATFORM_TOOLS_REV,
+                                SdkRepoConstants.NODE_PLATFORM_TOOL));
+            }
         }
     }
 
@@ -73,7 +98,7 @@ public class ToolPackage extends Package implements IMinPlatformToolsDependency 
      * By design, this creates a package with one and only one archive.
      */
     ToolPackage(
-            RepoSource source,
+            SdkSource source,
             Properties props,
             int revision,
             String license,

@@ -20,7 +20,7 @@ import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
-import com.android.sdklib.repository.SdkRepository;
+import com.android.sdklib.repository.SdkRepoConstants;
 
 import org.w3c.dom.Node;
 
@@ -36,7 +36,7 @@ import java.util.Properties;
  * A package has some attributes (revision, description) and a list of archives
  * which represent the downloadable bits.
  * <p/>
- * Packages are contained by a {@link RepoSource} (a download site).
+ * Packages are contained by a {@link SdkSource} (a download site).
  * <p/>
  * Derived classes must implement the {@link IDescription} methods.
  */
@@ -60,7 +60,7 @@ public abstract class Package implements IDescription, Comparable<Package> {
     private final String mReleaseNote;
     private final String mReleaseUrl;
     private final Archive[] mArchives;
-    private final RepoSource mSource;
+    private final SdkSource mSource;
 
     /**
      * Enum for the result of {@link Package#canBeUpdatedBy(Package)}. This used so that we can
@@ -79,22 +79,27 @@ public abstract class Package implements IDescription, Comparable<Package> {
 
     /**
      * Creates a new package from the attributes and elements of the given XML node.
-     * <p/>
      * This constructor should throw an exception if the package cannot be created.
+     *
+     * @param source The {@link SdkSource} where this is loaded from.
+     * @param packageNode The XML element being parsed.
+     * @param nsUri The namespace URI of the originating XML document, to be able to deal with
+     *          parameters that vary according to the originating XML schema.
+     * @param licenses The licenses loaded from the XML originating document.
      */
-    Package(RepoSource source, Node packageNode, Map<String,String> licenses) {
+    Package(SdkSource source, Node packageNode, String nsUri, Map<String,String> licenses) {
         mSource = source;
-        mRevision    = XmlParserUtils.getXmlInt   (packageNode, SdkRepository.NODE_REVISION, 0);
-        mDescription = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_DESCRIPTION);
-        mDescUrl     = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_DESC_URL);
-        mReleaseNote = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_RELEASE_NOTE);
-        mReleaseUrl  = XmlParserUtils.getXmlString(packageNode, SdkRepository.NODE_RELEASE_URL);
+        mRevision    = XmlParserUtils.getXmlInt   (packageNode, SdkRepoConstants.NODE_REVISION, 0);
+        mDescription = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_DESCRIPTION);
+        mDescUrl     = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_DESC_URL);
+        mReleaseNote = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_RELEASE_NOTE);
+        mReleaseUrl  = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_RELEASE_URL);
         mObsolete    = XmlParserUtils.getOptionalXmlString(
-                                                   packageNode, SdkRepository.NODE_OBSOLETE);
+                                                   packageNode, SdkRepoConstants.NODE_OBSOLETE);
 
         mLicense  = parseLicense(packageNode, licenses);
         mArchives = parseArchives(XmlParserUtils.getFirstChild(
-                                  packageNode, SdkRepository.NODE_ARCHIVES));
+                                  packageNode, SdkRepoConstants.NODE_ARCHIVES));
     }
 
     /**
@@ -107,7 +112,7 @@ public abstract class Package implements IDescription, Comparable<Package> {
      * By design, this creates a package with one and only one archive.
      */
     public Package(
-            RepoSource source,
+            SdkSource source,
             Properties props,
             int revision,
             String license,
@@ -139,7 +144,11 @@ public abstract class Package implements IDescription, Comparable<Package> {
         if (props != null && source == null && srcUrl != null) {
             boolean isUser = Boolean.parseBoolean(props.getProperty(PROP_USER_SOURCE,
                                                                     Boolean.TRUE.toString()));
-            source = new RepoSource(srcUrl, isUser);
+            if (isUser || (this instanceof AddonPackage)) {
+                source = new SdkAddonSource(srcUrl, isUser);
+            } else {
+                source = new SdkRepoSource(srcUrl);
+            }
         }
         mSource = source;
 
@@ -202,9 +211,9 @@ public abstract class Package implements IDescription, Comparable<Package> {
      */
     private String parseLicense(Node packageNode, Map<String, String> licenses) {
         Node usesLicense = XmlParserUtils.getFirstChild(
-                                            packageNode, SdkRepository.NODE_USES_LICENSE);
+                                            packageNode, SdkRepoConstants.NODE_USES_LICENSE);
         if (usesLicense != null) {
-            Node ref = usesLicense.getAttributes().getNamedItem(SdkRepository.ATTR_REF);
+            Node ref = usesLicense.getAttributes().getNamedItem(SdkRepoConstants.ATTR_REF);
             if (ref != null) {
                 String licenseRef = ref.getNodeValue();
                 return licenses.get(licenseRef);
@@ -227,7 +236,7 @@ public abstract class Package implements IDescription, Comparable<Package> {
 
                 if (child.getNodeType() == Node.ELEMENT_NODE &&
                         nsUri.equals(child.getNamespaceURI()) &&
-                        SdkRepository.NODE_ARCHIVE.equals(child.getLocalName())) {
+                        SdkRepoConstants.NODE_ARCHIVE.equals(child.getLocalName())) {
                     archives.add(parseArchive(child));
                 }
             }
@@ -242,13 +251,13 @@ public abstract class Package implements IDescription, Comparable<Package> {
     private Archive parseArchive(Node archiveNode) {
         Archive a = new Archive(
                     this,
-                    (Os)   XmlParserUtils.getEnumAttribute(archiveNode, SdkRepository.ATTR_OS,
+                    (Os)   XmlParserUtils.getEnumAttribute(archiveNode, SdkRepoConstants.ATTR_OS,
                             Os.values(), null),
-                    (Arch) XmlParserUtils.getEnumAttribute(archiveNode, SdkRepository.ATTR_ARCH,
+                    (Arch) XmlParserUtils.getEnumAttribute(archiveNode, SdkRepoConstants.ATTR_ARCH,
                             Arch.values(), Arch.ANY),
-                    XmlParserUtils.getXmlString(archiveNode, SdkRepository.NODE_URL),
-                    XmlParserUtils.getXmlLong  (archiveNode, SdkRepository.NODE_SIZE, 0),
-                    XmlParserUtils.getXmlString(archiveNode, SdkRepository.NODE_CHECKSUM)
+                    XmlParserUtils.getXmlString(archiveNode, SdkRepoConstants.NODE_URL),
+                    XmlParserUtils.getXmlLong  (archiveNode, SdkRepoConstants.NODE_SIZE, 0),
+                    XmlParserUtils.getXmlString(archiveNode, SdkRepoConstants.NODE_CHECKSUM)
                 );
 
         return a;
@@ -257,7 +266,7 @@ public abstract class Package implements IDescription, Comparable<Package> {
     /**
      * Returns the source that created (and owns) this package. Can be null.
      */
-    public RepoSource getParentSource() {
+    public SdkSource getParentSource() {
         return mSource;
     }
 

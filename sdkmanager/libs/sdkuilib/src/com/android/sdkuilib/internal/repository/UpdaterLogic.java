@@ -30,8 +30,8 @@ import com.android.sdklib.internal.repository.MinToolsPackage;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.PlatformPackage;
 import com.android.sdklib.internal.repository.PlatformToolPackage;
-import com.android.sdklib.internal.repository.RepoSource;
-import com.android.sdklib.internal.repository.RepoSources;
+import com.android.sdklib.internal.repository.SdkSource;
+import com.android.sdklib.internal.repository.SdkSources;
 import com.android.sdklib.internal.repository.SamplePackage;
 import com.android.sdklib.internal.repository.ToolPackage;
 import com.android.sdklib.internal.repository.Package.UpdateInfo;
@@ -58,13 +58,13 @@ class UpdaterLogic {
      */
     public ArrayList<ArchiveInfo> computeUpdates(
             Collection<Archive> selectedArchives,
-            RepoSources sources,
+            SdkSources sources,
             Package[] localPkgs,
             boolean includeObsoletes) {
 
         ArrayList<ArchiveInfo> archives = new ArrayList<ArchiveInfo>();
         ArrayList<Package> remotePkgs = new ArrayList<Package>();
-        RepoSource[] remoteSources = sources.getSources();
+        SdkSource[] remoteSources = sources.getSources();
 
         // Create ArchiveInfos out of local (installed) packages.
         ArchiveInfo[] localArchives = createLocalArchives(localPkgs);
@@ -96,7 +96,7 @@ class UpdaterLogic {
      */
     public void addNewPlatforms(
             ArrayList<ArchiveInfo> archives,
-            RepoSources sources,
+            SdkSources sources,
             Package[] localPkgs,
             boolean includeObsoletes) {
 
@@ -137,7 +137,7 @@ class UpdaterLogic {
             }
         }
 
-        RepoSource[] remoteSources = sources.getSources();
+        SdkSource[] remoteSources = sources.getSources();
         ArrayList<Package> remotePkgs = new ArrayList<Package>();
         fetchRemotePackages(remotePkgs, remoteSources);
 
@@ -248,7 +248,7 @@ class UpdaterLogic {
     private Collection<Archive> findUpdates(
             ArchiveInfo[] localArchives,
             ArrayList<Package> remotePkgs,
-            RepoSource[] remoteSources,
+            SdkSource[] remoteSources,
             boolean includeObsoletes) {
         ArrayList<Archive> updates = new ArrayList<Archive>();
 
@@ -285,7 +285,7 @@ class UpdaterLogic {
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
-            RepoSource[] remoteSources,
+            SdkSource[] remoteSources,
             ArchiveInfo[] localArchives,
             boolean automated) {
         Package p = archive.getParentPackage();
@@ -351,7 +351,7 @@ class UpdaterLogic {
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
-            RepoSource[] remoteSources,
+            SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
 
         // Current dependencies can be:
@@ -440,7 +440,7 @@ class UpdaterLogic {
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
-            RepoSource[] remoteSources,
+            SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
         // This is the requirement to match.
         int rev = pkg.getMinToolsRevision();
@@ -538,7 +538,7 @@ class UpdaterLogic {
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
-            RepoSource[] remoteSources,
+            SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
         // This is the requirement to match.
         int rev = pkg.getMinPlatformToolsRevision();
@@ -637,7 +637,7 @@ class UpdaterLogic {
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
-            RepoSource[] remoteSources,
+            SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
         // This is the requirement to match.
         AndroidVersion v = pkg.getVersion();
@@ -736,7 +736,7 @@ class UpdaterLogic {
             ArrayList<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
             ArrayList<Package> remotePkgs,
-            RepoSource[] remoteSources,
+            SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
 
         int api = pkg.getMinApiLevel();
@@ -840,12 +840,12 @@ class UpdaterLogic {
     }
 
     /** Fetch all remote packages only if really needed. */
-    protected void fetchRemotePackages(ArrayList<Package> remotePkgs, RepoSource[] remoteSources) {
+    protected void fetchRemotePackages(ArrayList<Package> remotePkgs, SdkSource[] remoteSources) {
         if (remotePkgs.size() > 0) {
             return;
         }
 
-        for (RepoSource remoteSrc : remoteSources) {
+        for (SdkSource remoteSrc : remoteSources) {
             Package[] pkgs = remoteSrc.getPackages();
             if (pkgs != null) {
                 nextPackage: for (Package pkg : pkgs) {
