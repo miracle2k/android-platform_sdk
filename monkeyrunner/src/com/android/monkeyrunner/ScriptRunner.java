@@ -17,12 +17,16 @@ package com.android.monkeyrunner;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.Lists;
 
 import org.python.core.Py;
 import org.python.core.PyException;
+import org.python.core.PyJavaPackage;
+import org.python.core.PyList;
 import org.python.core.PyObject;
+import org.python.core.PyString;
+import org.python.core.PySystemState;
 import org.python.util.InteractiveConsole;
 import org.python.util.JLineConsole;
 import org.python.util.PythonInterpreter;
@@ -105,6 +109,8 @@ public class ScriptRunner {
 
         // Bind __name__ to __main__ so mains will run
         python.set("__name__", "__main__");
+        // Also find __file__
+        python.set("__file__", scriptfilename);
 
         try {
           python.execfile(scriptfilename);
@@ -170,6 +176,12 @@ public class ScriptRunner {
         props.setProperty("python.executable", executablePath);
 
         PythonInterpreter.initialize(System.getProperties(), props, argv);
+
+        String frameworkDir = System.getProperty("java.ext.dirs");
+        File monkeyRunnerJar = new File(frameworkDir, "monkeyrunner.jar");
+        if (monkeyRunnerJar.canRead()) {
+            PySystemState.packageManager.addJar(monkeyRunnerJar.getAbsolutePath(), false);
+        }
     }
 
     /**
