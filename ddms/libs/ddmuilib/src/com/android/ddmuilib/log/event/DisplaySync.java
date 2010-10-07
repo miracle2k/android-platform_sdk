@@ -19,6 +19,7 @@ package com.android.ddmuilib.log.event;
 import com.android.ddmlib.log.EventContainer;
 import com.android.ddmlib.log.EventLogParser;
 import com.android.ddmlib.log.InvalidTypeException;
+
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.jfree.chart.labels.CustomXYToolTipGenerator;
@@ -78,7 +79,11 @@ public class DisplaySync extends SyncCommon {
 
         XYBarRenderer br = new XYBarRenderer();
         mDatasetsSync = new TimePeriodValues[NUM_AUTHS];
-        mTooltipsSync = new List[NUM_AUTHS];
+
+        @SuppressWarnings("unchecked")
+        List<String> mTooltipsSyncTmp[] = new List[NUM_AUTHS];
+        mTooltipsSync = mTooltipsSyncTmp;
+
         mTooltipGenerators = new CustomXYToolTipGenerator[NUM_AUTHS];
 
         TimePeriodValuesCollection tpvc = new TimePeriodValuesCollection();
@@ -129,7 +134,7 @@ public class DisplaySync extends SyncCommon {
             if (event.mTag == EVENT_TICKLE) {
                 int auth = getAuth(event.getValueAsString(0));
                 if (auth >= 0) {
-                    long msec = (long)event.sec * 1000L + (event.nsec / 1000000L);
+                    long msec = event.sec * 1000L + (event.nsec / 1000000L);
                     mDatasetsSyncTickle[auth].addOrUpdate(new FixedMillisecond(msec), -1);
                 }
             }
@@ -282,7 +287,7 @@ public class DisplaySync extends SyncCommon {
         mTooltipsSync[auth].add(getTextFromDetails(auth, details, syncSource));
         mTooltipGenerators[auth].addToolTipSeries(mTooltipsSync[auth]);
         if (details.indexOf('x') >= 0 || details.indexOf('X') >= 0) {
-            long msec = (long)event.sec * 1000L + (event.nsec / 1000000L);
+            long msec = event.sec * 1000L + (event.nsec / 1000000L);
             mDatasetError.addOrUpdate(new FixedMillisecond(msec), -1);
         }
     }

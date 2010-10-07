@@ -24,7 +24,6 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
-import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -839,7 +838,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
 
     private static void rebindClasspathEntries(IJavaModel model, IPath containerPath)
             throws JavaModelException {
-        ArrayList affectedProjects = new ArrayList();
+        ArrayList<IJavaProject> affectedProjects = new ArrayList<IJavaProject>();
 
         IJavaProject[] projects = model.getJavaProjects();
         for (int i = 0; i < projects.length; i++) {
@@ -854,7 +853,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
             }
         }
         if (!affectedProjects.isEmpty()) {
-            IJavaProject[] affected = (IJavaProject[]) affectedProjects
+            IJavaProject[] affected = affectedProjects
                     .toArray(new IJavaProject[affectedProjects.size()]);
             updateProjects(affected);
         }

@@ -19,6 +19,7 @@ package com.android.ddmuilib.log.event;
 import com.android.ddmlib.log.EventContainer;
 import com.android.ddmlib.log.EventLogParser;
 import com.android.ddmlib.log.InvalidTypeException;
+
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.jfree.chart.labels.CustomXYToolTipGenerator;
@@ -35,7 +36,8 @@ import java.util.List;
 public class DisplaySyncPerf extends SyncCommon {
 
     CustomXYToolTipGenerator mTooltipGenerator;
-    List mTooltips[];
+
+    List<String> mTooltips[];
 
     // The series number for each graphed item.
     // sync authorities are 0-3
@@ -125,7 +127,10 @@ public class DisplaySyncPerf extends SyncCommon {
         XYPlot xyPlot = mChart.getXYPlot();
         xyPlot.getRangeAxis().setVisible(false);
         mTooltipGenerator = new CustomXYToolTipGenerator();
-        mTooltips = new List[NUM_SERIES];
+
+        @SuppressWarnings("unchecked")
+        List<String>[] mTooltipsTmp = new List[NUM_SERIES];
+        mTooltips = mTooltipsTmp;
 
         XYBarRenderer br = new XYBarRenderer();
         br.setUseYInterval(true);
@@ -158,7 +163,7 @@ public class DisplaySyncPerf extends SyncCommon {
             if (event.mTag == EVENT_DB_OPERATION) {
                 // 52000 db_operation (name|3),(op_type|1|5),(time|2|3)
                 String tip = event.getValueAsString(0);
-                long endTime = (long) event.sec * 1000L + (event.nsec / 1000000L);
+                long endTime = event.sec * 1000L + (event.nsec / 1000000L);
                 int opType = Integer.parseInt(event.getValueAsString(1));
                 long duration = Long.parseLong(event.getValueAsString(2));
 
@@ -175,7 +180,7 @@ public class DisplaySyncPerf extends SyncCommon {
                 // 52001 http_stats (useragent|3),(response|2|3),(processing|2|3),(tx|1|2),(rx|1|2)
                 String tip = event.getValueAsString(0) + ", tx:" + event.getValueAsString(3) +
                         ", rx: " + event.getValueAsString(4);
-                long endTime = (long) event.sec * 1000L + (event.nsec / 1000000L);
+                long endTime = event.sec * 1000L + (event.nsec / 1000000L);
                 long netEndTime = endTime - Long.parseLong(event.getValueAsString(2));
                 long netStartTime = netEndTime - Long.parseLong(event.getValueAsString(1));
                 mDatasets[HTTP_NETWORK].add(new SimpleTimePeriod(netStartTime, netEndTime),
