@@ -4,7 +4,10 @@
   the Android Manifest.
   Incremental build will automatically insert debuggable==true while using
   the "export signed/unsigned application package" will not.
-- Don't recompile the whole workspace on launch.
+  If debuggable=true is set, then release builds will actually do a debug build.
+- Automatic Proguard support in release builds. Only need to have a proguard.config
+  property in default.properties that points to a proguard config file.
+- Android launch configurations don't recompile the whole workspace on launch anymore.
 
 0.9.9:
 - Fix bug where ADT would delete the source folder of projects imported from version control.

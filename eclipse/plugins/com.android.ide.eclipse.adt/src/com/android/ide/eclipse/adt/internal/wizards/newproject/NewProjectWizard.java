@@ -62,6 +62,7 @@ import org.eclipse.ui.actions.WorkspaceModifyOperation;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -672,6 +673,13 @@ public class NewProjectWizard extends Wizard implements INewWizard {
                 addStringDictionaryFile(project, dictionary, monitor);
             }
 
+            // add the default proguard config
+            File libFolder = new File((String) parameters.get(PARAM_SDK_TOOLS_DIR),
+                    SdkConstants.FD_LIB);
+            addLocalFile(project,
+                    new File(libFolder, SdkConstants.FN_PROGUARD_CFG),
+                    monitor);
+
             // Set output location
             javaProject.setOutputLocation(project.getFolder(BIN_DIRECTORY).getFullPath(),
                     monitor);
@@ -1021,6 +1029,22 @@ public class NewProjectWizard extends Wizard implements INewWizard {
             } else {
                 dictionary.put(STRING_HELLO_WORLD, "Hello World!");
             }
+        }
+    }
+
+    /**
+     * Adds a file to the root of the project
+     * @param project the project to add the file to.
+     * @param source the file to add. It'll keep the same filename once copied into the project.
+     * @throws FileNotFoundException
+     * @throws CoreException
+     */
+    private void addLocalFile(IProject project, File source, IProgressMonitor monitor)
+            throws FileNotFoundException, CoreException {
+        IFile dest = project.getFile(source.getName());
+        if (dest.exists() == false) {
+            FileInputStream stream = new FileInputStream(source);
+            dest.create(stream, false /* force */, new SubProgressMonitor(monitor, 10));
         }
     }
 
