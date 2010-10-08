@@ -1,12 +1,15 @@
 Change log for Android SDK Tools.
 
 Revision 8:
-- New SDK component: platform-tools. This makes all platform use the same
+- New SDK component: platform-tools. This makes all platforms use the same
   latest version of aapt/aidl/dx.
 - Support for true debug build. No need to change the value of debuggable in
   the Android Manifest.
   "ant debug" will automatically insert debuggable==true, while "ant release"
   will not.
+  If debuggable=true is set, then "ant release" will actually do a debug build.
+- Automatic Proguard support in release builds. Only need to have a proguard.config
+  property in default.properties that points to a proguard config file.
 - new overridable Ant javac properties: java.encoding, java.source, and java.target
   (default to "ascii", "1.5" and "1.5")
 

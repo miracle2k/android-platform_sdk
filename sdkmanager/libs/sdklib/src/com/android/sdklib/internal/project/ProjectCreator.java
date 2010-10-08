@@ -170,6 +170,7 @@ public class ProjectCreator {
      * @param pathToMainProject if non-null the project will be setup to test a main project
      * located at the given path.
      */
+    @SuppressWarnings("deprecation")
     public void createProject(String folderPath, String projectName,
             String packageName, String activityEntry, IAndroidTarget target, boolean library,
             String pathToMainProject) {
@@ -317,7 +318,7 @@ public class ProjectCreator {
                         : "java_file.template";
                 String activityFileName = activityClassName + ".java";
 
-                installTemplate(javaTemplate, new File(sourceFolder, activityFileName),
+                installTargetTemplate(javaTemplate, new File(sourceFolder, activityFileName),
                         keywords, target);
             } else {
                 // we should at least create 'src'
@@ -332,11 +333,11 @@ public class ProjectCreator {
             if (isTestProject == false) {
                 /* Make res files only for non test projects */
                 File valueFolder = createDirs(resourceFolder, SdkConstants.FD_VALUES);
-                installTemplate("strings.template", new File(valueFolder, "strings.xml"),
+                installTargetTemplate("strings.template", new File(valueFolder, "strings.xml"),
                         keywords, target);
 
                 File layoutFolder = createDirs(resourceFolder, SdkConstants.FD_LAYOUT);
-                installTemplate("layout.template", new File(layoutFolder, "main.xml"),
+                installTargetTemplate("layout.template", new File(layoutFolder, "main.xml"),
                         keywords, target);
 
                 // create the icons
@@ -353,13 +354,18 @@ public class ProjectCreator {
                 manifestTemplate = "AndroidManifest.tests.template";
             }
 
-            installTemplate(manifestTemplate,
+            installTargetTemplate(manifestTemplate,
                     new File(projectFolder, SdkConstants.FN_ANDROID_MANIFEST_XML),
                     keywords, target);
 
             installTemplate("build.template",
                     new File(projectFolder, SdkConstants.FN_BUILD_XML),
                     keywords);
+
+            // install the proguard config file.
+            installTemplate(SdkConstants.FN_PROGUARD_CFG,
+                    new File(projectFolder, SdkConstants.FN_PROGUARD_CFG),
+                    null /*keywords*/);
         } catch (Exception e) {
             mLog.error(e, null);
         }
@@ -476,12 +482,17 @@ public class ProjectCreator {
         // get the parent File.
         File projectFolder = androidManifest.getParentFile();
 
+        boolean hasProguard = false;
+
         // Check there's a default.properties with a target *or* --target was specified
         IAndroidTarget originalTarget = null;
         ProjectProperties props = ProjectProperties.load(folderPath, PropertyType.DEFAULT);
         if (props != null) {
             String targetHash = props.getProperty(ProjectProperties.PROPERTY_TARGET);
             originalTarget = mSdkManager.getTargetFromHashString(targetHash);
+
+            // if the project is already setup with proguard, we won't copy the proguard config.
+            hasProguard = props.getProperty(ProjectProperties.PROPERTY_PROGUARD_CONFIG) != null;
         }
 
         if (originalTarget == null && target == null) {
@@ -649,6 +660,17 @@ public class ProjectCreator {
                 installTemplate("build.template",
                         new File(projectFolder, SdkConstants.FN_BUILD_XML),
                         keywords);
+            } catch (ProjectCreateException e) {
+                mLog.error(e, null);
+                return false;
+            }
+        }
+
+        if (hasProguard == false) {
+            try {
+                installTemplate(SdkConstants.FN_PROGUARD_CFG,
+                        new File(projectFolder, SdkConstants.FN_PROGUARD_CFG),
+                        null /*placeholderMap*/);
             } catch (ProjectCreateException e) {
                 mLog.error(e, null);
                 return false;
@@ -1035,7 +1057,7 @@ public class ProjectCreator {
      * @param target the Target of the project that will be providing the template.
      * @throws ProjectCreateException
      */
-    private void installTemplate(String templateName, File destFile,
+    private void installTargetTemplate(String templateName, File destFile,
             Map<String, String> placeholderMap, IAndroidTarget target)
             throws ProjectCreateException {
         // query the target for its template directory

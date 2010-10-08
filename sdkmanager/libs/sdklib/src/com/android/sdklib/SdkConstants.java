@@ -148,6 +148,9 @@ public final class SdkConstants {
      */
     public final static String FN_GDBSERVER = "gdbserver";
 
+    /** default proguard config file */
+    public final static String FN_PROGUARD_CFG = "proguard.cfg";
+
     /* Folder Names for Android Projects . */
 
     /** Resources folder name, i.e. "res". */
