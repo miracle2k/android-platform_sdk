@@ -687,7 +687,6 @@ class NewXmlFileCreationPage extends WizardPage {
      *
      * @param selection The selection when the wizard was initiated.
      */
-    @SuppressWarnings("null")
     private void initializeFromSelection(IStructuredSelection selection) {
         if (selection == null) {
             return;

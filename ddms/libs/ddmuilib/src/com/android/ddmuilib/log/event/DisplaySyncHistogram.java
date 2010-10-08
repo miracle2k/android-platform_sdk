@@ -18,6 +18,7 @@ package com.android.ddmuilib.log.event;
 
 import com.android.ddmlib.log.EventContainer;
 import com.android.ddmlib.log.EventLogParser;
+
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.jfree.chart.plot.XYPlot;
@@ -69,7 +70,10 @@ public class DisplaySyncHistogram extends SyncCommon {
 
         AbstractXYItemRenderer br = new XYBarRenderer();
         mDatasetsSyncHist = new TimePeriodValues[NUM_AUTHS+1];
-        mTimePeriodMap = new HashMap[NUM_AUTHS + 1];
+
+        @SuppressWarnings("unchecked")
+        Map<SimpleTimePeriod, Integer> mTimePeriodMapTmp[] = new HashMap[NUM_AUTHS + 1];
+        mTimePeriodMap = mTimePeriodMapTmp;
 
         TimePeriodValuesCollection tpvc = new TimePeriodValuesCollection();
         xyPlot.setDataset(tpvc);

@@ -620,6 +620,7 @@ public final class AndroidDebugBridge {
      * @param line The line to scan.
      * @return True if a version number was found (whether it is acceptable or not).
      */
+    @SuppressWarnings("all") // With Eclipse 3.6, replace by @SuppressWarnings("unused")
     private boolean scanVersionLine(String line) {
         if (line != null) {
             Matcher matcher = sAdbVersion.matcher(line);
