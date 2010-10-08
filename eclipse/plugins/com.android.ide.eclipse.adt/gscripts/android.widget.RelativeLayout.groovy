@@ -465,7 +465,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             gc.useStyle(DrawingStyle.HELP);
             def strings = []
             data.curr.attr.each {
-               strings << id ? it + "=" + id : it;
+               strings << (id ? it + "=" + id : it);
             }
             gc.drawBoxedStrings(x, y, strings);
 
