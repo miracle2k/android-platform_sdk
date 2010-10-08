@@ -744,11 +744,13 @@ public class AdtPlugin extends AbstractUIPlugin {
         return checkSdkLocationAndId(sdkLocation, new CheckSdkErrorHandler() {
             @Override
             public boolean handleError(String message) {
+                AdtPlugin.displayError("Android SDK Verification", message);
                 return false;
             }
 
             @Override
             public boolean handleWarning(String message) {
+                AdtPlugin.displayWarning("Android SDK Verification", message);
                 return true;
             }
         });
@@ -780,7 +782,14 @@ public class AdtPlugin extends AbstractUIPlugin {
                             SdkConstants.FD_TOOLS, osSdkLocation));
         }
 
-        // check the path to various tools we use
+        // first check the min plug-in requirement as its error message is easier to figure
+        // out for the user
+        if (VersionCheck.checkVersion(osSdkLocation, errorHandler) == false) {
+            return false;
+        }
+
+        // check the path to various tools we use to make sure nothing is missing. This is
+        // not meant to be exhaustive.
         String[] filesToCheck = new String[] {
                 osSdkLocation + getOsRelativeAdb(),
                 osSdkLocation + getOsRelativeEmulator()
@@ -791,8 +800,7 @@ public class AdtPlugin extends AbstractUIPlugin {
             }
         }
 
-        // check the SDK build id/version and the plugin version.
-        return VersionCheck.checkVersion(osSdkLocation, errorHandler);
+        return true;
     }
 
     /**

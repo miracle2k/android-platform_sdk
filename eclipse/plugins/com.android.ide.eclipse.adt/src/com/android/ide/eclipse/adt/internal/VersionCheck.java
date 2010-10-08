@@ -107,7 +107,7 @@ public final class VersionCheck {
         }
 
         if (valid == false) {
-            return errorHandler.handleWarning(
+            return errorHandler.handleError(
                     String.format(Messages.VersionCheck_Plugin_Too_Old,
                             minMajorVersion, minMinorVersion, minMicroVersion, versionString));
         }
