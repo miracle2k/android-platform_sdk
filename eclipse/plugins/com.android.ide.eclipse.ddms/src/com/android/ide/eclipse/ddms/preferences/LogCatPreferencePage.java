@@ -22,6 +22,7 @@ import com.android.ide.eclipse.ddms.views.LogCatView;
 import org.eclipse.core.runtime.Preferences;
 import org.eclipse.core.runtime.Preferences.IPropertyChangeListener;
 import org.eclipse.core.runtime.Preferences.PropertyChangeEvent;
+import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.FontFieldEditor;
 import org.eclipse.swt.SWTError;
@@ -67,6 +68,13 @@ public class LogCatPreferencePage extends FieldEditorPreferencePage implements
                 }
             }
         });
+
+        ComboFieldEditor cfe = new ComboFieldEditor(PreferenceInitializer.ATTR_LOGCAT_GOTO_PROBLEM,
+                "Double-click Action:", new String[][] {
+                    { "Go to Problem (method declaration)", LogCatView.CHOICE_METHOD_DECLARATION },
+                    { "Go to Problem (error line)", LogCatView.CHOICE_ERROR_LINE },
+                }, getFieldEditorParent());
+        addField(cfe);
     }
 
     public void init(IWorkbench workbench) {

@@ -18,6 +18,7 @@ package com.android.ide.eclipse.ddms.preferences;
 
 import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.ide.eclipse.ddms.views.DeviceView.HProfHandler;
+import com.android.ide.eclipse.ddms.views.LogCatView;
 import com.android.ddmlib.DdmPreferences;
 import com.android.ddmuilib.DdmUiPreferences;
 
@@ -64,6 +65,9 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
     public final static String ATTR_TIME_OUT =
         DdmsPlugin.PLUGIN_ID + ".timeOut"; //$NON-NLS-1$
 
+    public final static String ATTR_LOGCAT_GOTO_PROBLEM =
+        DdmsPlugin.PLUGIN_ID + ".logcatGoToProblem"; //$NON-NLS-1$
+
     /*
      * (non-Javadoc)
      *
@@ -95,6 +99,8 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
         store.setDefault(ATTR_HPROF_ACTION, HProfHandler.ACTION_OPEN);
 
         store.setDefault(ATTR_TIME_OUT, DdmPreferences.DEFAULT_TIMEOUT);
+
+        store.setDefault(ATTR_LOGCAT_GOTO_PROBLEM, LogCatView.CHOICE_ERROR_LINE);
     }
 
     /**
