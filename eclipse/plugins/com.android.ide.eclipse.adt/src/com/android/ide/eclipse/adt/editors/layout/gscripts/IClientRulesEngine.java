@@ -17,7 +17,7 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
-import com.android.ide.eclipse.adt.annotations.Nullable;
+import com.android.sdklib.annotations.Nullable;
 
 import groovy.lang.Closure;
 

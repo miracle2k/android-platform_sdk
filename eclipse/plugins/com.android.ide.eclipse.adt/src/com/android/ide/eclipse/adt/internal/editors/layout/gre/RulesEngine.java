@@ -18,8 +18,6 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.annotations.VisibleForTesting;
-import com.android.ide.eclipse.adt.annotations.VisibleForTesting.Visibility;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IClientRulesEngine;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
@@ -38,6 +36,8 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.annotations.VisibleForTesting.Visibility;
 
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.control.CompilationUnit;
