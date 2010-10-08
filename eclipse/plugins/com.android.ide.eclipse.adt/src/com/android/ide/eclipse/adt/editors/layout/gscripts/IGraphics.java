@@ -25,6 +25,10 @@ import java.util.List;
  * This means {@link IViewRule}s should not cache this object and call it at
  * just about any time, it is only valid during a call that actually receives
  * the GC wrapper.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  */
 public interface IGraphics {
 
@@ -163,7 +167,7 @@ public interface IGraphics {
     /**
      * Returns the current alpha value (varies between 0 for transparent and 255
      * for opaque).
-     * 
+     *
      * @return The current alpha value in use
      */
     int getAlpha();

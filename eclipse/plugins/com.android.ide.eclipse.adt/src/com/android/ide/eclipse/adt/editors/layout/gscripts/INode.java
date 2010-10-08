@@ -19,8 +19,6 @@ package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement.IDragAttribute;
 
-import groovy.lang.Closure;
-
 
 /**
  * Represents a view in the XML layout being edited.
@@ -34,6 +32,10 @@ import groovy.lang.Closure;
  *   rectangle that describe their position in pixels in the canvas. <br/>
  * - Nodes created by IViewRule scripts but not yet rendered have an invalid bounds rectangle
  *   since they only exist in the uncommitted XML model and not yet in the rendered View model.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  */
 public interface INode {
 
@@ -89,9 +91,9 @@ public interface INode {
      * edit-XML wrapper.
      *
      * @param undoName The UI name that will be given to the undo action.
-     * @param closure The code to execute. The closure receives this INode itself as argument.
+     * @param callback The code to execute.
      */
-    void editXml(String undoName, final Closure closure);
+    void editXml(String undoName, final INodeHandler callback);
 
     // TODO define an exception that methods below will throw if editXml() is not wrapping
     // these calls.
@@ -147,7 +149,7 @@ public interface INode {
      * Returns a given XML attribute.
      * <p/>
      * This looks up an attribute in the <em>current</em> XML source, not the in-memory model.
-     * That means that if called in the context of {@link #editXml(String, Closure)}, the value
+     * That means that if called in the context of {@link #editXml(String, INodeHandler)}, the value
      * returned here is not affected by {@link #setAttribute(String, String, String)} until
      * the editXml closure is completed and the actual XML is updated.
      *
@@ -200,7 +202,7 @@ public interface INode {
      * Returns the list of all attributes defined in the XML for this node.
      * <p/>
      * This looks up an attribute in the <em>current</em> XML source, not the in-memory model.
-     * That means that if called in the context of {@link #editXml(String, Closure)}, the value
+     * That means that if called in the context of {@link #editXml(String, INodeHandler)}, the value
      * returned here is not affected by {@link #setAttribute(String, String, String)} until
      * the editXml closure is completed and the actual XML is updated.
      * <p/>

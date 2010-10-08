@@ -20,6 +20,10 @@ package com.android.ide.eclipse.adt.editors.layout.gscripts;
  * Drawing styles are used to distinguish the visual appearance of selection,
  * hovers, anchors, etc. Each style may have different colors, line thickness,
  * dashing style, transparency, etc.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  */
 public enum DrawingStyle {
     /**

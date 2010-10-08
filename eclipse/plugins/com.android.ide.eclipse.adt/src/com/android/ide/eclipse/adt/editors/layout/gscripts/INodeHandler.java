@@ -17,12 +17,19 @@
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 /**
- * A color, to be used with {@link IGraphics} draw operations.
+ * A node handler is a callback which operates on a Node, such as for example
+ * the implementation of an XML editing operation via
+ * {@link INode#editXml(String, INodeHandler)}.
  * <p>
  * <b>NOTE: This is not a public or final API; if you rely on this be prepared
  * to adjust your code for the next tools release.</b>
  * </p>
  */
-public interface IColor {
-    // pass
+public interface INodeHandler {
+    /**
+     * Operates on the given node.
+     *
+     * @param node The node to be operated on
+     */
+    void handle(INode node);
 }

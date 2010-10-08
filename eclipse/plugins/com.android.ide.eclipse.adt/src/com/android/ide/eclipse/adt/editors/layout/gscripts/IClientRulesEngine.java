@@ -19,15 +19,15 @@ package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 import com.android.sdklib.annotations.Nullable;
 
-import groovy.lang.Closure;
-
-
-
 /**
  * A Client Rules Engine is a set of methods that {@link IViewRule}s can use to
  * access the client public API of the Rules Engine. Rules can access it via
  * the property "_rules_engine" which is dynamically added to {@link IViewRule}
  * instances on creation.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  *
  * @see IViewRule#RULES_ENGINE
  */
@@ -62,17 +62,17 @@ public interface IClientRulesEngine {
     void displayAlert(String message);
 
     /**
-     * Display a simple input alert dialog with an OK and Cancel buttons.
+     * Displays a simple input alert dialog with an OK and Cancel buttons.
      *
      * @param message The message to display in the alert dialog.
      * @param value The initial value to display in the input field. Can be null.
-     * @param filter An optional closure acting as a filter. It receives the current
-     *   string as input. It must return an error string (possibly empty) or false if the
-     *   validation fails. Otherwise it should return true or null if validation succeeds.
+     * @param filter An optional filter to validate the input. Specify null (or
+     *            a validator which always returns true) if you do not want
+     *            input validation.
      * @return Null if canceled by the user. Otherwise the possibly-empty input string.
      * @null Return value is null if dialog was canceled by the user.
      */
     @Nullable
-    String displayInput(String message, @Nullable String value, @Nullable Closure filter);
+    String displayInput(String message, @Nullable String value, @Nullable IValidator filter);
 }
 

@@ -17,12 +17,23 @@
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 /**
- * A color, to be used with {@link IGraphics} draw operations.
+ * Callback interface for {@link MenuAction}s. The callback performs the actual
+ * work of the menu.
  * <p>
  * <b>NOTE: This is not a public or final API; if you rely on this be prepared
  * to adjust your code for the next tools release.</b>
  * </p>
  */
-public interface IColor {
-    // pass
+public interface IMenuCallback {
+    /**
+     * Performs the actual work promised by the {@link MenuAction}.
+     *
+     * @param action The MenuAction being applied.
+     * @param valueId For a Choices action, the string id of the selected choice
+     * @param newValue For a toggle or for a flag, true if the item is being
+     *            checked, false if being unchecked. For enums this is not
+     *            useful; however for flags it allows one to add or remove items
+     *            to the flag's choices.
+     */
+    void action(MenuAction menuAction, String valueId, Boolean newValue);
 }

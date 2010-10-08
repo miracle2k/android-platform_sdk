@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.IMenuCallback;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.MenuAction;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
@@ -32,8 +33,6 @@ import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-
-import groovy.lang.Closure;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -305,7 +304,6 @@ import java.util.regex.Pattern;
             final MenuAction.Toggle firstAction,
             final TreeMap<String, ArrayList<MenuAction>> actionsMap) {
 
-        final RulesEngine gre = mCanvas.getRulesEngine();
         final boolean isChecked = firstAction.isChecked();
 
         Action a = new Action(firstAction.getTitle(), IAction.AS_CHECK_BOX) {
@@ -333,14 +331,14 @@ import java.util.regex.Pattern;
                         // Invoke the closures of all the actions using the same action-id
                         for (MenuAction a2 : actions) {
                             if (a2 instanceof MenuAction.Action) {
-                                Closure c = ((MenuAction.Action) a2).getClosure();
+                                IMenuCallback c = ((MenuAction.Action) a2).getCallback();
                                 if (c != null) {
-                                    gre.callClosure(
-                                            ((MenuAction.Action) a2).getClosure(),
-                                            // Closure parameters are action, valueId, newValue
-                                            a2,
-                                            null, // no valueId for a toggle
-                                            !isChecked);
+                                    try {
+                                        c.action(a2, null /* no valueId for a toggle */, !isChecked);
+                                    } catch (Exception e) {
+                                        RulesEngine gre = mCanvas.getRulesEngine();
+                                        gre.logError("XML edit operation failed: %s", e.toString());
+                                    }
                                 }
                             }
                         }
@@ -370,7 +368,6 @@ import java.util.regex.Pattern;
             Map<String, String> choiceMap,
             final TreeMap<String, ArrayList<MenuAction>> actionsMap) {
 
-        final RulesEngine gre = mCanvas.getRulesEngine();
         IconFactory factory = IconFactory.getInstance();
         MenuManager submenu = new MenuManager(firstAction.getTitle(), firstAction.getId());
 
@@ -462,12 +459,13 @@ import java.util.regex.Pattern;
                             // Invoke the closures of all the actions using the same action-id
                             for (MenuAction a2 : actions) {
                                 if (a2 instanceof MenuAction.Action) {
-                                    gre.callClosure(
-                                            ((MenuAction.Action) a2).getClosure(),
-                                            // Closure parameters are action, valueId, newValue
-                                            a2,
-                                            key,
+                                    try {
+                                        ((MenuAction.Action) a2).getCallback().action(a2, key,
                                             !isChecked);
+                                    } catch (Exception e) {
+                                        RulesEngine gre = mCanvas.getRulesEngine();
+                                        gre.logError("XML edit operation failed: %s", e.toString());
+                                    }
                                 }
                             }
                         }

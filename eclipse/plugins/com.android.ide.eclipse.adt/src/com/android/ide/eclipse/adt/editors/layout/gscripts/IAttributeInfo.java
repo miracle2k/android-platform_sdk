@@ -16,11 +16,14 @@
 
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
-
 /**
  * Information about an attribute as gathered from the attrs.xml file where
  * the attribute was declared. This must include a format (string, reference, float, etc.),
  * possible flag or enum values, whether it's deprecated and its javadoc.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  */
 public interface IAttributeInfo {
 

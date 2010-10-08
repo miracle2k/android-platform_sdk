@@ -17,12 +17,19 @@
 package com.android.ide.eclipse.adt.editors.layout.gscripts;
 
 /**
- * A color, to be used with {@link IGraphics} draw operations.
+ * A feedback painter paints drop feedback during a drag &amp; drop operation.
  * <p>
  * <b>NOTE: This is not a public or final API; if you rely on this be prepared
  * to adjust your code for the next tools release.</b>
  * </p>
  */
-public interface IColor {
-    // pass
+public interface IFeedbackPainter {
+    /**
+     * Paints feedback for the given target node into the given graphics context.
+     *
+     * @param gc The graphics context to paint into
+     * @param targetNode The node being dragged
+     * @param feedback The feedback data
+     */
+    void paint(IGraphics gc, INode targetNode, DropFeedback feedback);
 }

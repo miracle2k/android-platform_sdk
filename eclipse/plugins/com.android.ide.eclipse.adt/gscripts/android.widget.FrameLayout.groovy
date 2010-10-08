@@ -36,7 +36,7 @@ public class AndroidWidgetFrameLayoutRule extends BaseLayout {
                 // Paint closure for the FrameLayout.
 
             drawFeedback(gc, node, elements, feedback);
-        });
+        } as IFeedbackPainter);
     }
 
     void drawFeedback(IGraphics gc,
@@ -108,7 +108,7 @@ public class AndroidWidgetFrameLayoutRule extends BaseLayout {
         // if this is a copy or from a different canvas.
         def idMap = getDropIdMap(targetNode, elements, feedback.isCopy || !feedback.sameCanvas);
 
-        targetNode.editXml("Add elements to FrameLayout") {
+        targetNode.editXml("Add elements to FrameLayout", {
 
             // Now write the new elements.
             for (element in elements) {
@@ -131,6 +131,6 @@ public class AndroidWidgetFrameLayoutRule extends BaseLayout {
 
                 addInnerElements(newChild, element, idMap);
             }
-        }
+        } as INodeHandler)
     }
 }

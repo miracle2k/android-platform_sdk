@@ -26,6 +26,10 @@ import org.eclipse.swt.graphics.Rectangle;
  * By definition:
  * - right side = x + w - 1.
  * - bottom side = y + h - 1.
+ * <p>
+ * <b>NOTE: This is not a public or final API; if you rely on this be prepared
+ * to adjust your code for the next tools release.</b>
+ * </p>
  */
 public class Rect {
     public int x, y, w, h;

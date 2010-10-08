@@ -115,16 +115,16 @@ public class BaseView implements IViewRule {
             switch (actionId) {
                 case "layout_1width":
                     if (!valueId.startsWith("z")) {
-                        node.editXml("Change attribute " + ATTR_LAYOUT_WIDTH) {
+                        node.editXml("Change attribute " + ATTR_LAYOUT_WIDTH, {
                             node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, valueId);
-                        }
+                        } as INodeHandler)
                     }
                     return;
                 case "layout_2height":
                     if (!valueId.startsWith("z")) {
-                        node.editXml("Change attribute " + ATTR_LAYOUT_HEIGHT) {
+                        node.editXml("Change attribute " + ATTR_LAYOUT_HEIGHT, {
                             node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, valueId);
-                        }
+                        } as INodeHandler)
                     }
                     return;
             }
@@ -136,7 +136,7 @@ public class BaseView implements IViewRule {
                 def prop = props?.get(actionId);
 
                 if (prop) {
-                    node.editXml("Change attribute " + actionId) {
+                    node.editXml("Change attribute " + actionId, {
                         if (prop.isToggle) {
                             // case of toggle
                             String value = "";
@@ -175,10 +175,10 @@ public class BaseView implements IViewRule {
                             }
                             node.setAttribute(ANDROID_URI, actionId, value);
                         }
-                    }
+                    } as INodeHandler)
                 }
             }
-        }
+        } as IMenuCallback
 
         def list1 = [
              new MenuAction.Choices("layout_1width", "Layout Width",
