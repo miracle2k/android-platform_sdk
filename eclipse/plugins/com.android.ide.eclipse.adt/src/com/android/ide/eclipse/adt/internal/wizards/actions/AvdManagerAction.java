@@ -51,8 +51,7 @@ public class AvdManagerAction implements IWorkbenchWindowActionDelegate, IObject
             UpdaterWindow window = new UpdaterWindow(
                     AdtPlugin.getDisplay().getActiveShell(),
                     new AdtConsoleSdkLog(),
-                    sdk.getSdkLocation(),
-                    false /*userCanChangeSdkRoot*/);
+                    sdk.getSdkLocation());
             window.addListeners(new UpdaterWindow.ISdkListener() {
                 public void onSdkChange(boolean init) {
                     if (init == false) { // ignore initial load of the SDK.

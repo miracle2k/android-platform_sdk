@@ -297,8 +297,7 @@ public class Main {
             UpdaterWindow window = new UpdaterWindow(
                     null /* parentShell */,
                     errorLogger,
-                    mOsSdkFolder,
-                    false /*userCanChangeSdkRoot*/);
+                    mOsSdkFolder);
             window.registerPage("Settings", SettingsPage.class);
             window.registerPage("About", AboutPage.class);
             if (autoUpdate) {

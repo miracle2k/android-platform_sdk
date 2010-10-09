@@ -80,14 +80,10 @@ public class UpdaterWindowImpl {
      * @param parentShell Parent shell.
      * @param sdkLog Logger. Cannot be null.
      * @param osSdkRoot The OS path to the SDK root.
-     * @param userCanChangeSdkRoot If true, the window lets the user change the SDK path
-     *                             being browsed.
      */
-    public UpdaterWindowImpl(Shell parentShell, ISdkLog sdkLog, String osSdkRoot,
-            boolean userCanChangeSdkRoot) {
+    public UpdaterWindowImpl(Shell parentShell, ISdkLog sdkLog, String osSdkRoot) {
         mParentShell = parentShell;
         mUpdaterData = new UpdaterData(osSdkRoot, sdkLog);
-        mUpdaterData.setUserCanChangeSdkRoot(userCanChangeSdkRoot);
     }
 
     /**
@@ -265,9 +261,9 @@ public class UpdaterWindowImpl {
 
         setWindowImage(mAndroidSdkUpdater);
 
-        addPage(mAvdManagerPage,     "Virtual Devices");
-        addPage(mLocalPackagePage,   "Installed Packages");
-        addPage(mRemotePackagesPage, "Available Packages");
+        addPage(mAvdManagerPage,     "Virtual devices");
+        addPage(mLocalPackagePage,   "Installed packages");
+        addPage(mRemotePackagesPage, "Available packages");
         addExtraPages();
 
         int pageIndex = 0;

@@ -57,7 +57,6 @@ class UpdaterData {
 
     private final ISdkLog mSdkLog;
     private ITaskFactory mTaskFactory;
-    private boolean mUserCanChangeSdkRoot;
 
     private SdkManager mSdkManager;
     private AvdManager mAvdManager;
@@ -105,14 +104,6 @@ class UpdaterData {
 
     public ITaskFactory getTaskFactory() {
         return mTaskFactory;
-    }
-
-    public void setUserCanChangeSdkRoot(boolean userCanChangeSdkRoot) {
-        mUserCanChangeSdkRoot = userCanChangeSdkRoot;
-    }
-
-    public boolean canUserChangeSdkRoot() {
-        return mUserCanChangeSdkRoot;
     }
 
     public SdkSources getSources() {
