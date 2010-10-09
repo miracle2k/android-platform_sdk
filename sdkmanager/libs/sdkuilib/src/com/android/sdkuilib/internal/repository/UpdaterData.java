@@ -33,7 +33,6 @@ import com.android.sdklib.internal.repository.SdkRepoSource;
 import com.android.sdklib.internal.repository.SdkSource;
 import com.android.sdklib.internal.repository.SdkSources;
 import com.android.sdklib.internal.repository.ToolPackage;
-import com.android.sdklib.repository.SdkAddonConstants;
 import com.android.sdklib.repository.SdkRepoConstants;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
@@ -293,7 +292,9 @@ class UpdaterData {
     public void setupDefaultSources() {
         SdkSources sources = getSources();
         sources.add(new SdkRepoSource(SdkRepoConstants.URL_GOOGLE_SDK_SITE));
-        sources.add(new SdkAddonSource(SdkAddonConstants.URL_GOOGLE_SDK_SITE, false /*userSource*/));
+
+        // TODO load addons_list
+        //--sources.add(new SdkAddonSource(SdkAddonConstants.URL_GOOGLE_SDK_SITE, false /*userSource*/));
 
         // SDK_UPDATER_URLS is a semicolon-separated list of URLs that can be used to
         // seed the SDK Updater list for full repositories.

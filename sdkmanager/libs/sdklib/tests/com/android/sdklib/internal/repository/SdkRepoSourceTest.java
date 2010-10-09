@@ -32,50 +32,6 @@ import junit.framework.TestCase;
  */
 public class SdkRepoSourceTest extends TestCase {
 
-    private static class MockMonitor implements ITaskMonitor {
-
-        String mCapturedResults = "";
-        String mCapturedDescriptions = "";
-
-        public String getCapturedResults() {
-            return mCapturedResults;
-        }
-
-        public String getCapturedDescriptions() {
-            return mCapturedDescriptions;
-        }
-
-        public void setResult(String resultFormat, Object... args) {
-            mCapturedResults += String.format(resultFormat, args) + "\n";
-        }
-
-        public void setProgressMax(int max) {
-        }
-
-        public void setDescription(String descriptionFormat, Object... args) {
-            mCapturedDescriptions += String.format(descriptionFormat, args) + "\n";
-        }
-
-        public boolean isCancelRequested() {
-            return false;
-        }
-
-        public void incProgress(int delta) {
-        }
-
-        public int getProgress() {
-            return 0;
-        }
-
-        public boolean displayPrompt(String title, String message) {
-            return false;
-        }
-
-        public ITaskMonitor createSubMonitor(int tickCount) {
-            return null;
-        }
-    }
-
     /**
      * An internal helper class to give us visibility to the protected members we want
      * to test.

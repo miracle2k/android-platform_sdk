@@ -19,7 +19,7 @@ package com.android.sdklib.internal.repository;
 import com.android.sdklib.annotations.Nullable;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
-import com.android.sdklib.repository.CommonConstants;
+import com.android.sdklib.repository.RepoConstants;
 import com.android.sdklib.repository.SdkRepoConstants;
 
 import org.w3c.dom.Attr;
@@ -250,8 +250,8 @@ public class SdkRepoSource extends SdkSource {
 
             } else {
                 try {
-                    Node revision = findChild(element, null, prefix, CommonConstants.NODE_REVISION);
-                    Node archives = findChild(element, null, prefix, CommonConstants.NODE_ARCHIVES);
+                    Node revision = findChild(element, null, prefix, RepoConstants.NODE_REVISION);
+                    Node archives = findChild(element, null, prefix, RepoConstants.NODE_ARCHIVES);
 
                     if (revision == null || archives == null) {
                         continue;
@@ -271,7 +271,7 @@ public class SdkRepoSource extends SdkSource {
 
                     if (SdkRepoConstants.NODE_TOOL.equals(name)) {
                         Node minPTRev = findChild(element, null, prefix,
-                                CommonConstants.NODE_MIN_PLATFORM_TOOLS_REV);
+                                RepoConstants.NODE_MIN_PLATFORM_TOOLS_REV);
 
                         if (minPTRev == null) {
                             continue;
@@ -294,14 +294,14 @@ public class SdkRepoSource extends SdkSource {
                     while ((archive = findChild(archives,
                                                 archive,
                                                 prefix,
-                                                CommonConstants.NODE_ARCHIVE)) != null) {
+                                                RepoConstants.NODE_ARCHIVE)) != null) {
                         try {
                             Os os = (Os) XmlParserUtils.getEnumAttribute(archive,
-                                    CommonConstants.ATTR_OS,
+                                    RepoConstants.ATTR_OS,
                                     Os.values(),
                                     null /*default*/);
                             Arch arch = (Arch) XmlParserUtils.getEnumAttribute(archive,
-                                    CommonConstants.ATTR_ARCH,
+                                    RepoConstants.ATTR_ARCH,
                                     Arch.values(),
                                     Arch.ANY);
                             if (os == null || !os.isCompatible() ||
@@ -309,13 +309,13 @@ public class SdkRepoSource extends SdkSource {
                                 continue;
                             }
 
-                            Node node = findChild(archive, null, prefix, CommonConstants.NODE_URL);
+                            Node node = findChild(archive, null, prefix, RepoConstants.NODE_URL);
                             String url = node == null ? null : node.getTextContent().trim();
                             if (url == null || url.length() == 0) {
                                 continue;
                             }
 
-                            node = findChild(archive, null, prefix, CommonConstants.NODE_SIZE);
+                            node = findChild(archive, null, prefix, RepoConstants.NODE_SIZE);
                             long size = 0;
                             try {
                                 size = Long.parseLong(node.getTextContent());
@@ -326,21 +326,21 @@ public class SdkRepoSource extends SdkSource {
                                 continue;
                             }
 
-                            node = findChild(archive, null, prefix, CommonConstants.NODE_CHECKSUM);
+                            node = findChild(archive, null, prefix, RepoConstants.NODE_CHECKSUM);
                             // double check that the checksum element contains a type=sha1 attribute
                             if (node == null) {
                                 continue;
                             }
                             NamedNodeMap attrs = node.getAttributes();
-                            Node typeNode = attrs.getNamedItem(CommonConstants.ATTR_TYPE);
+                            Node typeNode = attrs.getNamedItem(RepoConstants.ATTR_TYPE);
                             if (typeNode == null ||
-                                    !CommonConstants.ATTR_TYPE.equals(typeNode.getNodeName()) ||
-                                    !CommonConstants.SHA1_TYPE.equals(typeNode.getNodeValue())) {
+                                    !RepoConstants.ATTR_TYPE.equals(typeNode.getNodeName()) ||
+                                    !RepoConstants.SHA1_TYPE.equals(typeNode.getNodeValue())) {
                                 continue;
                             }
                             String sha1 = node == null ? null : node.getTextContent().trim();
                             if (sha1 == null ||
-                                    sha1.length() != CommonConstants.SHA1_CHECKSUM_LEN) {
+                                    sha1.length() != RepoConstants.SHA1_CHECKSUM_LEN) {
                                 continue;
                             }
 
