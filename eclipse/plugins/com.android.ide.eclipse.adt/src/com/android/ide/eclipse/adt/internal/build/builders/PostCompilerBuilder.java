@@ -194,7 +194,7 @@ public class PostCompilerBuilder extends BaseBuilder {
         IProject project = getProject();
 
         // Clear the project of the generic markers
-        removeMarkersFromProject(project, AndroidConstants.MARKER_AAPT_COMPILE);
+        removeMarkersFromProject(project, AndroidConstants.MARKER_AAPT_PACKAGE);
         removeMarkersFromProject(project, AndroidConstants.MARKER_PACKAGING);
     }
 
