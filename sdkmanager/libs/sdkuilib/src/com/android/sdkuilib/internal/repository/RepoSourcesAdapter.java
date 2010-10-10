@@ -22,6 +22,7 @@ import com.android.sdklib.internal.repository.ITask;
 import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.SdkSource;
+import com.android.sdklib.internal.repository.SdkSourceCategory;
 import com.android.sdklib.internal.repository.Package.UpdateInfo;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 
@@ -166,7 +167,28 @@ public class RepoSourcesAdapter {
          */
         public Object[] getChildren(Object parentElement) {
             if (parentElement == RepoSourcesAdapter.this) {
-                return mUpdaterData.getSources().getSources();
+                return mUpdaterData.getSources().getCategories();
+
+            } else if (parentElement instanceof SdkSourceCategory) {
+                SdkSourceCategory cat = (SdkSourceCategory) parentElement;
+                if (cat == SdkSourceCategory.ADDONS_3RD_PARTY) {
+                    mUpdaterData.loadRemoteAddonsList();
+                }
+
+                SdkSource[] sources = mUpdaterData.getSources().getSources(cat);
+
+                if (sources.length == 1 && sources[0] != null) {
+                    // If a source has a single element and this element has the same
+                    // uiName as the category, collapse both.
+                    // Basically this is a kludge so that we don't end up with
+                    //  Android Repository > Android Repository
+                    // at the top level.
+                    if (cat.getUiName().equals(sources[0].getUiName())) {
+                        return getRepoSourceChildren(sources[0]);
+                    }
+                }
+
+                return sources;
 
             } else if (parentElement instanceof SdkSource) {
                 return getRepoSourceChildren((SdkSource) parentElement);
@@ -254,8 +276,11 @@ public class RepoSourcesAdapter {
          */
         public Object getParent(Object element) {
 
-            if (element instanceof SdkSource) {
+            if (element instanceof SdkSourceCategory) {
                 return RepoSourcesAdapter.this;
+
+            } else if (element instanceof SdkSource) {
+                return mUpdaterData.getSources().getCategory((SdkSource) element);
 
             } else if (element instanceof Package) {
                 return ((Package) element).getParentSource();
@@ -269,11 +294,14 @@ public class RepoSourcesAdapter {
         /**
          * Returns true if a given element has children, which is used to display a
          * "+/expand" box next to the tree node.
-         * All {@link SdkSource} and {@link Package} are expandable, whether they actually
-         * have any children or not.
+         * All non-terminal elements are expandable, whether they actually have any children
+         * or not. This is necessary on windows in order for the tree to display the "triangle"
+         * icon so that users can actually expand it, which will fill the node at runtime.
          */
         public boolean hasChildren(Object element) {
-            return element instanceof SdkSource || element instanceof Package;
+            return element instanceof SdkSourceCategory ||
+                   element instanceof SdkSource ||
+                   element instanceof Package;
         }
     }
 

@@ -19,6 +19,7 @@ package com.android.sdkuilib.internal.repository.icons;
 import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.SdkSource;
+import com.android.sdklib.internal.repository.SdkSourceCategory;
 import com.android.sdkuilib.internal.repository.RepoSourcesAdapter;
 
 import org.eclipse.swt.SWTException;
@@ -97,7 +98,10 @@ public class ImageFactory {
             return getImageByName(name);
         }
 
-        if (object instanceof SdkSource) {
+        if (object instanceof SdkSourceCategory) {
+            return getImageByName("source_cat_icon16.png");                     //$NON-NLS-1$
+
+        } else if (object instanceof SdkSource) {
             return getImageByName("source_icon16.png");                         //$NON-NLS-1$
 
         } else if (object instanceof RepoSourcesAdapter.RepoSourceError) {

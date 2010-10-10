@@ -22,6 +22,7 @@ import com.android.sdklib.internal.repository.IDescription;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.SdkAddonSource;
 import com.android.sdklib.internal.repository.SdkSource;
+import com.android.sdklib.internal.repository.SdkSourceCategory;
 import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
 
 import org.eclipse.jface.dialogs.IInputValidator;
@@ -189,6 +190,14 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         // Disable the check that prevents subclassing of SWT components
     }
 
+    public void onSdkChange(boolean init) {
+        RepoSourcesAdapter sources = mUpdaterData.getSourcesAdapter();
+        mTreeViewerSources.setContentProvider(sources.getContentProvider());
+        mTreeViewerSources.setLabelProvider(  sources.getLabelProvider());
+        mTreeViewerSources.setInput(sources);
+        onTreeSelected();
+    }
+
     // -- Start of internal part ----------
     // Hide everything down-below from SWT designer
     //$hide>>$
@@ -267,12 +276,17 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         ITreeContentProvider provider =
             (ITreeContentProvider) mTreeViewerSources.getContentProvider();
 
-        // When selecting, we want to only select compatible archives.
-        if (elem instanceof SdkSource) {
+        // When selecting, we want to only select compatible archives
+        // and expand the super nodes.
+        expandItem(elem, provider);
+    }
+
+    private void expandItem(Object elem, ITreeContentProvider provider) {
+        if (elem instanceof SdkSource || elem instanceof SdkSourceCategory) {
             mTreeViewerSources.setExpandedState(elem, true);
             for (Object pkg : provider.getChildren(elem)) {
                 mTreeViewerSources.setChecked(pkg, true);
-                selectCompatibleArchives(pkg, provider);
+                expandItem(pkg, provider);
             }
         } else if (elem instanceof Package) {
             selectCompatibleArchives(elem, provider);
@@ -336,7 +350,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
 
     private void onAddSiteSelected() {
 
-        final SdkSource[] knowSources = mUpdaterData.getSources().getSources();
+        final SdkSource[] knowSources = mUpdaterData.getSources().getAllSources();
         String title = "Add Add-on Site URL";
 
         String msg =
@@ -378,7 +392,9 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
 
         if (dlg.open() == Window.OK) {
             String url = dlg.getValue();
-            mUpdaterData.getSources().add(new SdkAddonSource(url, true /*userSource*/));
+            mUpdaterData.getSources().add(
+                    SdkSourceCategory.USER_ADDONS,
+                    new SdkAddonSource(url, null/*uiName*/));
             onRefreshSelected();
         }
     }
@@ -389,17 +405,20 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         ISelection sel = mTreeViewerSources.getSelection();
         if (mUpdaterData != null && sel instanceof ITreeSelection) {
             for (Object c : ((ITreeSelection) sel).toList()) {
-                if (c instanceof SdkSource && ((SdkSource) c).isUserSource()) {
+                if (c instanceof SdkSource) {
                     SdkSource source = (SdkSource) c;
 
-                    String title = "Delete Add-on Site?";
+                    if (mUpdaterData.getSources().hasSourceUrl(
+                            SdkSourceCategory.USER_ADDONS, source)) {
+                        String title = "Delete Add-on Site?";
 
-                    String msg = String.format("Are you sure you want to delete the add-on site '%1$s'?",
-                            source.getUrl());
+                        String msg = String.format("Are you sure you want to delete the add-on site '%1$s'?",
+                                source.getUrl());
 
-                    if (MessageDialog.openQuestion(getShell(), title, msg)) {
-                        mUpdaterData.getSources().remove(source);
-                        changed = true;
+                        if (MessageDialog.openQuestion(getShell(), title, msg)) {
+                            mUpdaterData.getSources().remove(source);
+                            changed = true;
+                        }
                     }
                 }
             }
@@ -416,14 +435,6 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         }
         mTreeViewerSources.refresh();
         updateButtonsState();
-    }
-
-    public void onSdkChange(boolean init) {
-        RepoSourcesAdapter sources = mUpdaterData.getSourcesAdapter();
-        mTreeViewerSources.setContentProvider(sources.getContentProvider());
-        mTreeViewerSources.setLabelProvider(  sources.getLabelProvider());
-        mTreeViewerSources.setInput(sources);
-        onTreeSelected();
     }
 
     private void updateButtonsState() {
@@ -446,7 +457,8 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         if (sel instanceof ITreeSelection) {
             for (Object c : ((ITreeSelection) sel).toList()) {
                 if (c instanceof SdkSource &&
-                        ((SdkSource) c).isUserSource()) {
+                        mUpdaterData.getSources().hasSourceUrl(
+                                SdkSourceCategory.USER_ADDONS, (SdkSource) c)) {
                     hasSelectedUserSource = true;
                     break;
                 }
