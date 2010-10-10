@@ -807,6 +807,7 @@ public final class AvdSelector {
     /**
      * Updates the enable state of the Details, Start, Delete and Update buttons.
      */
+    @SuppressWarnings("null")
     private void enableActionButtons() {
         if (mIsEnabled == false) {
             mDetailsButton.setEnabled(false);
@@ -972,8 +973,7 @@ public final class AvdSelector {
         UpdaterWindow window = new UpdaterWindow(
                 mTable.getShell(),
                 log,
-                mAvdManager.getSdkManager().getLocation(),
-                false /*userCanChangeSdkRoot*/);
+                mAvdManager.getSdkManager().getLocation());
         window.open();
         refresh(true /*reload*/); // UpdaterWindow uses its own AVD manager so this one must reload.
 
