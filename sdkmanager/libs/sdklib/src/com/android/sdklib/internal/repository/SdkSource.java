@@ -19,7 +19,7 @@ package com.android.sdklib.internal.repository;
 import com.android.sdklib.annotations.Nullable;
 import com.android.sdklib.annotations.VisibleForTesting;
 import com.android.sdklib.annotations.VisibleForTesting.Visibility;
-import com.android.sdklib.repository.CommonConstants;
+import com.android.sdklib.repository.RepoConstants;
 import com.android.sdklib.repository.SdkAddonConstants;
 import com.android.sdklib.repository.SdkRepoConstants;
 
@@ -206,7 +206,7 @@ public abstract class SdkSource implements IDescription {
         Boolean[] validatorFound = new Boolean[] { Boolean.FALSE };
         String[] validationError = new String[] { null };
         Exception[] exception = new Exception[] { null };
-        ByteArrayInputStream xml = fetchUrl(url, exception);
+        InputStream xml = fetchUrl(url, exception);
         Document validatedDoc = null;
         boolean usingAlternateXml = false;
         boolean usingAlternateUrl = false;
@@ -409,7 +409,7 @@ public abstract class SdkSource implements IDescription {
      * @param urlString The URL to load, as a string.
      * @param outException If non null, where to store any exception that happens during the fetch.
      */
-    private ByteArrayInputStream fetchUrl(String urlString, Exception[] outException) {
+    private InputStream fetchUrl(String urlString, Exception[] outException) {
         URL url;
         try {
             url = new URL(urlString);
@@ -482,13 +482,7 @@ public abstract class SdkSource implements IDescription {
             validatorFound[0] = Boolean.TRUE;
 
             // Reset the stream if it supports that operation.
-            // At runtime we use a ByteArrayInputStream which can be reset; however for unit tests
-            // we use a FileInputStream that doesn't support resetting and is read-once.
-            try {
-                xml.reset();
-            } catch (IOException e1) {
-                // ignore if not supported
-            }
+            xml.reset();
 
             // Validation throws a bunch of possible Exceptions on failure.
             validator.validate(new StreamSource(xml));
@@ -525,18 +519,11 @@ public abstract class SdkSource implements IDescription {
             return 0;
         }
 
-        // Reset the stream if it supports that operation.
-        // At runtime we use a ByteArrayInputStream which can be reset; however for unit tests
-        // we use a FileInputStream that doesn't support resetting and is read-once.
-        try {
-            xml.reset();
-        } catch (IOException e1) {
-            // ignore if not supported
-        }
-
         // Get an XML document
         Document doc = null;
         try {
+            xml.reset();
+
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setIgnoringComments(false);
             factory.setValidating(false);
@@ -551,6 +538,7 @@ public abstract class SdkSource implements IDescription {
             builder = factory.newDocumentBuilder();
 
         } catch (Exception e) {
+            // Failed to reset XML stream
             // Failed to get builder factor
             // Failed to create XML document builder
             // Failed to parse XML document
@@ -630,15 +618,12 @@ public abstract class SdkSource implements IDescription {
         return validator;
     }
 
-
     /**
      * Parse all packages defined in the SDK Repository XML and creates
      * a new mPackages array with them.
      */
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
     protected boolean parsePackages(Document doc, String nsUri, ITaskMonitor monitor) {
-        // protected for unit-test acces
-
-        assert doc != null;
 
         Node root = getFirstChild(doc, nsUri, getRootElementName());
         if (root != null) {
@@ -652,8 +637,8 @@ public abstract class SdkSource implements IDescription {
                  child = child.getNextSibling()) {
                 if (child.getNodeType() == Node.ELEMENT_NODE &&
                         nsUri.equals(child.getNamespaceURI()) &&
-                        child.getLocalName().equals(CommonConstants.NODE_LICENSE)) {
-                    Node id = child.getAttributes().getNamedItem(CommonConstants.ATTR_ID);
+                        child.getLocalName().equals(RepoConstants.NODE_LICENSE)) {
+                    Node id = child.getAttributes().getNamedItem(RepoConstants.ATTR_ID);
                     if (id != null) {
                         licenses.put(id.getNodeValue(), child.getTextContent());
                     }
@@ -675,7 +660,7 @@ public abstract class SdkSource implements IDescription {
                         if (SdkAddonConstants.NODE_ADD_ON.equals(name)) {
                             p = new AddonPackage(this, child, nsUri, licenses);
 
-                        } else if (CommonConstants.NODE_EXTRA.equals(name)) {
+                        } else if (RepoConstants.NODE_EXTRA.equals(name)) {
                             p = new ExtraPackage(this, child, nsUri, licenses);
 
                         } else if (!mUserSource) {

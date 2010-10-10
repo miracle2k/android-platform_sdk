@@ -66,6 +66,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
     private Button mRefreshButton;
     private Button mInstallSelectedButton;
     private Label mDescriptionLabel;
+    private Label mSdkLocLabel;
 
 
 
@@ -86,6 +87,12 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
     private void createContents(Composite parent) {
         parent.setLayout(new GridLayout(5, false));
 
+        mSdkLocLabel = new Label(parent, SWT.NONE);
+        mSdkLocLabel.setLayoutData(new GridData(SWT.BEGINNING, SWT.CENTER, true, false, 5, 1));
+        mSdkLocLabel.setText("SDK Location: " +
+                (mUpdaterData.getOsSdkRoot() != null ? mUpdaterData.getOsSdkRoot()
+                                                     : "<unknown>"));
+
         mTreeViewerSources = new CheckboxTreeViewer(parent, SWT.BORDER);
         mTreeViewerSources.addCheckStateListener(new ICheckStateListener() {
             public void checkStateChanged(CheckStateChangedEvent event) {
@@ -104,7 +111,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
 
         mColumnSource = new TreeColumn(mTreeSources, SWT.NONE);
         mColumnSource.setWidth(289);
-        mColumnSource.setText("Sites, Packages and Archives");
+        mColumnSource.setText("Packages available for download");
 
         mDescriptionContainer = new Group(parent, SWT.NONE);
         mDescriptionContainer.setLayout(new GridLayout(1, false));

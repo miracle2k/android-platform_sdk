@@ -39,26 +39,14 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.swt.widgets.Text;
 
 import java.io.File;
-
-/*
- * TODO list
- * - select => update desc, enable update + delete, enable home page if url
- * - home page callback
- * - update callback
- * - delete callback
- * - refresh callback
- */
 
 public class LocalPackagesPage extends Composite implements ISdkListener {
 
     private final UpdaterData mUpdaterData;
 
     private Label mSdkLocLabel;
-    private Text mSdkLocText;
-    private Button mSdkLocBrowse;
     private TableViewer mTableViewerPackages;
     private Table mTablePackages;
     private TableColumn mColumnPackages;
@@ -89,7 +77,11 @@ public class LocalPackagesPage extends Composite implements ISdkListener {
     private void createContents(Composite parent) {
         parent.setLayout(new GridLayout(3, false));
 
-        createSdkLocation(parent);
+        mSdkLocLabel = new Label(parent, SWT.NONE);
+        mSdkLocLabel.setLayoutData(new GridData(SWT.BEGINNING, SWT.CENTER, true, false, 3, 1));
+        mSdkLocLabel.setText("SDK Location: " +
+                (mUpdaterData.getOsSdkRoot() != null ? mUpdaterData.getOsSdkRoot()
+                                                     : "<unknown>"));
 
         mTableViewerPackages = new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION);
         mTablePackages = mTableViewerPackages.getTable();
@@ -104,7 +96,7 @@ public class LocalPackagesPage extends Composite implements ISdkListener {
 
         mColumnPackages = new TableColumn(mTablePackages, SWT.NONE);
         mColumnPackages.setWidth(377);
-        mColumnPackages.setText("Installed Packages");
+        mColumnPackages.setText("Installed packages");
 
         mDescriptionContainer = new Group(parent, SWT.NONE);
         mDescriptionContainer.setLayout(new GridLayout(1, false));
@@ -153,30 +145,6 @@ public class LocalPackagesPage extends Composite implements ISdkListener {
                 onRefreshSelected();  //$hide$ (hide from SWT designer)
             }
         });
-    }
-
-    private void createSdkLocation(Composite parent) {
-        mSdkLocLabel = new Label(parent, SWT.NONE);
-        mSdkLocLabel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        mSdkLocLabel.setText("SDK Location:");
-
-        // If the sdk path is not user-customizable, do not create
-        // the browse button and use horizSpan=2 on the text field.
-
-        mSdkLocText = new Text(parent, SWT.BORDER);
-        mSdkLocText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-
-        if (mUpdaterData.canUserChangeSdkRoot()) {
-            mSdkLocBrowse = new Button(parent, SWT.NONE);
-            mSdkLocBrowse.setText("Browse...");
-        } else {
-            mSdkLocText.setEditable(false);
-            ((GridData)mSdkLocText.getLayoutData()).horizontalSpan++;
-        }
-
-        if (mUpdaterData.getOsSdkRoot() != null) {
-            mSdkLocText.setText(mUpdaterData.getOsSdkRoot());
-        }
     }
 
     @Override

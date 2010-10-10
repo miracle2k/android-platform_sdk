@@ -22,11 +22,11 @@ import java.io.InputStream;
 /**
  * Public constants for the sdk-addon XML Schema.
  */
-public class SdkAddonConstants extends CommonConstants {
+public class SdkAddonConstants extends RepoConstants {
 
-    /** The URL of the official Google sdk-addon site. */
-    public static final String URL_GOOGLE_SDK_SITE =
-        "https://dl-ssl.google.com/android/repository/";                        //$NON-NLS-1$
+    /** The URL where to find the official addons list fle. */
+    public static final String URL_ADDON_LIST =
+        "https://dl-ssl.google.com/android/repository/addons_list.txt";    //$NON-NLS-1$
 
     public static final String URL_DEFAULT_XML_FILE = "addon.xml";         //$NON-NLS-1$
 
@@ -42,7 +42,7 @@ public class SdkAddonConstants extends CommonConstants {
 
     /** The latest version of the sdk-addon XML Schema.
      *  Valid version numbers are between 1 and this number, included. */
-    public static final int NS_LATEST_VERSION = 3;
+    public static final int NS_LATEST_VERSION = 1;
 
     /** The XML namespace of the latest sdk-addon XML. */
     public static final String NS_URI = getSchemaUri(NS_LATEST_VERSION);

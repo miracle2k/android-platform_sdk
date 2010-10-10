@@ -49,12 +49,9 @@ public class UpdaterWindow {
      * @param parentShell Parent shell.
      * @param sdkLog Logger. Cannot be null.
      * @param osSdkRoot The OS path to the SDK root.
-     * @param userCanChangeSdkRoot If true, the window lets the user change the SDK path
-     *                             being browsed.
      */
-    public UpdaterWindow(Shell parentShell, ISdkLog sdkLog, String osSdkRoot,
-            boolean userCanChangeSdkRoot) {
-        mWindow = new UpdaterWindowImpl(parentShell, sdkLog, osSdkRoot, userCanChangeSdkRoot);
+    public UpdaterWindow(Shell parentShell, ISdkLog sdkLog, String osSdkRoot) {
+        mWindow = new UpdaterWindowImpl(parentShell, sdkLog, osSdkRoot);
     }
 
     /**
