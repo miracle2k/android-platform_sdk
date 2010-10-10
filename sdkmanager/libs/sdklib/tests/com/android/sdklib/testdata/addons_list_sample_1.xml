@@ -15,7 +15,6 @@
  * limitations under the License.
 -->
 <sdk:sdk-addons-list
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:sdk="http://schemas.android.com/sdk/android/addons-list/1">
 
     <sdk:addon-site>

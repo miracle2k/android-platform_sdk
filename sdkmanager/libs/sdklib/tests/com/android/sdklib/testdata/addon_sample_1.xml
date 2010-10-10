@@ -15,7 +15,6 @@
  * limitations under the License.
 -->
 <sdk:sdk-addon
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:sdk="http://schemas.android.com/sdk/android/addon/1">
 
     <!-- Define a couple of licenses. These will be referenced by uses-license later. -->
