@@ -22,7 +22,7 @@ import java.io.InputStream;
 /**
  * Public constants for the sdk-repository XML Schema.
  */
-public class SdkRepoConstants extends CommonConstants {
+public class SdkRepoConstants extends RepoConstants {
 
     /** The URL of the official Google sdk-repository site. */
     public static final String URL_GOOGLE_SDK_SITE =

@@ -21,7 +21,7 @@ package com.android.sdklib.repository;
 /**
  * Public constants common to the sdk-repository and sdk-addon XML Schemas.
  */
-public class CommonConstants {
+public class RepoConstants {
 
     /** An extra package. */
     public static final String NODE_EXTRA           = "extra";                //$NON-NLS-1$
