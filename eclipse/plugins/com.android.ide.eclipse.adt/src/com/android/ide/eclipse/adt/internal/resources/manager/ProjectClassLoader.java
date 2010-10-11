@@ -220,8 +220,8 @@ public final class ProjectClassLoader extends ClassLoader {
                                 resource.getType() == IResource.FILE) {
                             local = true;
                             try {
-                                oslibraryList.add(
-                                        new File(resource.getLocation().toOSString()).toURL());
+                                oslibraryList.add(new File(resource.getLocation().toOSString())
+                                        .toURI().toURL());
                             } catch (MalformedURLException mue) {
                                 // pass
                             }
@@ -235,7 +235,7 @@ public final class ProjectClassLoader extends ClassLoader {
                             File f = new File(osFullPath);
                             if (f.exists()) {
                                 try {
-                                    oslibraryList.add(f.toURL());
+                                    oslibraryList.add(f.toURI().toURL());
                                 } catch (MalformedURLException mue) {
                                     // pass
                                 }

@@ -89,7 +89,7 @@ public abstract class TablePanel extends ClientDisplayPanel {
 
                 // now add that to the clipboard if the string has content
                 String data = sb.toString();
-                if (data != null || data.length() > 0) {
+                if (data != null && data.length() > 0) {
                     clipboard.setContents(
                             new Object[] { data },
                             new Transfer[] { TextTransfer.getInstance() });

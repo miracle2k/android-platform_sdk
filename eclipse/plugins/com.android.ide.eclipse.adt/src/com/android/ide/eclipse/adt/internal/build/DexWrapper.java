@@ -72,7 +72,7 @@ public final class DexWrapper {
                 return new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID, String.format(
                         Messages.DexWrapper_s_does_not_exists, osFilepath));
             }
-            URL url = f.toURL();
+            URL url = f.toURI().toURL();
 
             URLClassLoader loader = new URLClassLoader(new URL[] { url },
                     DexWrapper.class.getClassLoader());
