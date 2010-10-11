@@ -151,7 +151,7 @@ public class SdkAddonSourceTest extends TestCase {
 
         Boolean[] validatorFound = new Boolean[] { Boolean.FALSE };
         String[] validationError = new String[] { null };
-        String url = "not-a-valid-url://" + SdkAddonConstants.URL_DEFAULT_XML_FILE;
+        String url = "not-a-valid-url://" + SdkAddonConstants.URL_DEFAULT_FILENAME;
 
         String uri = mSource._validateXml(xmlStream, url, version, validationError, validatorFound);
         assertEquals(Boolean.TRUE, validatorFound[0]);

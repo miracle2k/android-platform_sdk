@@ -286,7 +286,7 @@ public abstract class SdkSource implements IDescription {
                 } else if (version < 1 && tryOtherUrl == 0 && !usingAlternateUrl) {
                     // This is obviously not one of our documents.
                     mFetchError = String.format(
-                            "Failed to find an XML for the repository at URL '%1$s'",
+                            "Failed to validate the XML for the repository at URL '%1$s'",
                             url);
 
                     // If we haven't already tried the alternate URL, let's do it now.
@@ -310,7 +310,7 @@ public abstract class SdkSource implements IDescription {
                     // The alternate URL is obviously not a valid XML either.
                     // We only report the error if we failed to produce one earlier.
                     mFetchError = String.format(
-                            "Failed to find an XML for the repository at URL '%1$s'",
+                            "Failed to validate the XML for the repository at URL '%1$s'",
                             url);
                 }
 
