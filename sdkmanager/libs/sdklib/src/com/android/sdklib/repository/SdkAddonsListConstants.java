@@ -28,6 +28,9 @@ public class SdkAddonsListConstants {
     public static final String URL_ADDON_LIST =
         "https://dl-ssl.google.com/android/repository/addons_list.xml";     //$NON-NLS-1$
 
+    /** The canonical URL filename for addons-list XML files. */
+    public static final String URL_DEFAULT_FILENAME = "addons_list.xml";    //$NON-NLS-1$
+
     /** The base of our sdk-addons-list XML namespace. */
     private static final String NS_BASE =
         "http://schemas.android.com/sdk/android/addons-list/";              //$NON-NLS-1$
