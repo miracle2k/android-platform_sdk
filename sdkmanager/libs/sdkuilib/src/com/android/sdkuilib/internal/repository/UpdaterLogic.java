@@ -64,7 +64,7 @@ class UpdaterLogic {
 
         ArrayList<ArchiveInfo> archives = new ArrayList<ArchiveInfo>();
         ArrayList<Package> remotePkgs = new ArrayList<Package>();
-        SdkSource[] remoteSources = sources.getSources();
+        SdkSource[] remoteSources = sources.getAllSources();
 
         // Create ArchiveInfos out of local (installed) packages.
         ArchiveInfo[] localArchives = createLocalArchives(localPkgs);
@@ -137,7 +137,7 @@ class UpdaterLogic {
             }
         }
 
-        SdkSource[] remoteSources = sources.getSources();
+        SdkSource[] remoteSources = sources.getAllSources();
         ArrayList<Package> remotePkgs = new ArrayList<Package>();
         fetchRemotePackages(remotePkgs, remoteSources);
 

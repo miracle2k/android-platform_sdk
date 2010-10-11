@@ -22,6 +22,7 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.repository.AddonPackage;
+import com.android.sdklib.internal.repository.AddonsListFetcher;
 import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.ITask;
 import com.android.sdklib.internal.repository.ITaskFactory;
@@ -31,8 +32,11 @@ import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.SdkAddonSource;
 import com.android.sdklib.internal.repository.SdkRepoSource;
 import com.android.sdklib.internal.repository.SdkSource;
+import com.android.sdklib.internal.repository.SdkSourceCategory;
 import com.android.sdklib.internal.repository.SdkSources;
 import com.android.sdklib.internal.repository.ToolPackage;
+import com.android.sdklib.internal.repository.AddonsListFetcher.Site;
+import com.android.sdklib.repository.SdkAddonsListConstants;
 import com.android.sdklib.repository.SdkRepoConstants;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
@@ -76,6 +80,14 @@ class UpdaterData {
     private Shell mWindowShell;
 
     private AndroidLocationException mAvdManagerInitError;
+
+    /**
+     * 0 = need to fetch remote addons list once..
+     * 1 = fetch succeeded, don't need to do it any more.
+     * -1= fetch failed, do it again only if the user requests a refresh
+     *     or changes the force-http setting.
+     */
+    private int mStateFetchRemoteAddonsList;
 
     /**
      * Creates a new updater data.
@@ -276,16 +288,22 @@ class UpdaterData {
     /**
      * Sets up the default sources: <br/>
      * - the default google SDK repository, <br/>
-     * - the extra repo URLs from the environment, <br/>
      * - the user sources from prefs <br/>
+     * - the extra repo URLs from the environment, <br/>
      * - and finally the extra user repo URLs from the environment.
+     * <p/>
+     * Note that the "remote add-ons" list is not loaded from here. Instead
+     * it is fetched the first time the {@link RemotePackagesPage} is displayed.
      */
     public void setupDefaultSources() {
         SdkSources sources = getSources();
-        sources.add(new SdkRepoSource(SdkRepoConstants.URL_GOOGLE_SDK_SITE));
 
-        // TODO load addons_list
-        //--sources.add(new SdkAddonSource(SdkAddonConstants.URL_GOOGLE_SDK_SITE, false /*userSource*/));
+        sources.add(SdkSourceCategory.ANDROID_REPO,
+                new SdkRepoSource(SdkRepoConstants.URL_GOOGLE_SDK_SITE,
+                                  SdkSourceCategory.ANDROID_REPO.getUiName()));
+
+        // Load user sources
+        sources.loadUserAddons(getSdkLog());
 
         // SDK_UPDATER_URLS is a semicolon-separated list of URLs that can be used to
         // seed the SDK Updater list for full repositories.
@@ -294,20 +312,13 @@ class UpdaterData {
             String[] urls = str.split(";");
             for (String url : urls) {
                 if (url != null && url.length() > 0) {
-                    SdkSource s = new SdkRepoSource(url);
-                    if (!sources.hasSource(s)) {
-                        sources.add(s);
-                    }
-                    s = new SdkAddonSource(url, false /*userSource*/);
-                    if (!sources.hasSource(s)) {
-                        sources.add(s);
+                    SdkSource s = new SdkRepoSource(url, null/*uiName*/);
+                    if (!sources.hasSourceUrl(s)) {
+                        sources.add(SdkSourceCategory.GETENV_REPOS, s);
                     }
                 }
             }
         }
-
-        // Load user sources
-        sources.loadUserSources(getSdkLog());
 
         // SDK_UPDATER_USER_URLS is a semicolon-separated list of URLs that can be used to
         // seed the SDK Updater list for user-only repositories. User sources can only provide
@@ -317,9 +328,9 @@ class UpdaterData {
             String[] urls = str.split(";");
             for (String url : urls) {
                 if (url != null && url.length() > 0) {
-                    SdkSource s = new SdkAddonSource(url, true /*userSource*/);
-                    if (!sources.hasSource(s)) {
-                        sources.add(s);
+                    SdkSource s = new SdkAddonSource(url, null/*uiName*/);
+                    if (!sources.hasSourceUrl(s)) {
+                        sources.add(SdkSourceCategory.GETENV_ADDONS, s);
                     }
                 }
             }
@@ -783,8 +794,13 @@ class UpdaterData {
 
         mTaskFactory.start("Refresh Sources", new ITask() {
             public void run(ITaskMonitor monitor) {
-                SdkSource[] sources = mSources.getSources();
-                monitor.setProgressMax(sources.length);
+
+                if (mStateFetchRemoteAddonsList <= 0) {
+                    loadRemoteAddonsListInTask(monitor);
+                }
+
+                SdkSource[] sources = mSources.getAllSources();
+                monitor.setProgressMax(monitor.getProgress() + sources.length);
                 for (SdkSource source : sources) {
                     if (forceFetching ||
                             source.getPackages() != null ||
@@ -796,4 +812,51 @@ class UpdaterData {
             }
         });
     }
+
+    /**
+     * Loads the remote add-ons list.
+     */
+    public void loadRemoteAddonsList() {
+
+        if (mStateFetchRemoteAddonsList != 0) {
+            return;
+        }
+
+        mTaskFactory.start("Load Add-ons List", new ITask() {
+            public void run(ITaskMonitor monitor) {
+                loadRemoteAddonsListInTask(monitor);
+            }
+        });
+    }
+
+    private void loadRemoteAddonsListInTask(ITaskMonitor monitor) {
+        mStateFetchRemoteAddonsList = -1;
+
+        /*
+         * This env var can be defined to override the default addons_list.xml
+         * location, useful for debugging.
+         */
+        String url = System.getenv("SDK_UPDATER_ADDONS_LIST");
+
+        if (url == null) {
+            url = SdkAddonsListConstants.URL_ADDON_LIST;
+        }
+        if (getSettingsController().getForceHttp()) {
+            url = url.replaceAll("https://", "http://");  //$NON-NLS-1$ //$NON-NLS-2$
+        }
+
+        AddonsListFetcher fetcher = new AddonsListFetcher();
+        Site[] sites = fetcher.fetch(monitor, url);
+        if (sites != null) {
+            mSources.removeAll(SdkSourceCategory.ADDONS_3RD_PARTY);
+
+            for (Site s : sites) {
+                mSources.add(SdkSourceCategory.ADDONS_3RD_PARTY,
+                             new SdkAddonSource(s.getUrl(), s.getUiName()));
+            }
+
+            mStateFetchRemoteAddonsList = 1;
+        }
+    }
+
 }

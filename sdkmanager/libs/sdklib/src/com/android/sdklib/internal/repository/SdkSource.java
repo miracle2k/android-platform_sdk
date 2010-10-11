@@ -59,19 +59,19 @@ import javax.xml.validation.Validator;
 public abstract class SdkSource implements IDescription {
 
     private String mUrl;
-    private final boolean mUserSource;
 
     private Package[] mPackages;
     private String mDescription;
     private String mFetchError;
+    private final String mUiName;
 
     /**
      * Constructs a new source for the given repository URL.
      * @param url The source URL. Cannot be null. If the URL ends with a /, the default
      *            repository.xml filename will be appended automatically.
-     * @param userSource True if this a user source (add-ons & packages only.)
+     * @param uiName The UI-visible name of the source. Can be null.
      */
-    public SdkSource(String url, boolean userSource) {
+    public SdkSource(String url, String uiName) {
 
         // if the URL ends with a /, it must be "directory" resource,
         // in which case we automatically add the default file that will
@@ -82,7 +82,7 @@ public abstract class SdkSource implements IDescription {
         }
 
         mUrl = url;
-        mUserSource = userSource;
+        mUiName = uiName;
         setDefaultDescription();
     }
 
@@ -127,25 +127,27 @@ public abstract class SdkSource implements IDescription {
         throws IOException;
 
     /**
-     * Two repo source are equal if they have the same userSource flag and the same URL.
+     * Two repo source are equal if they have the same URL.
      */
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof SdkSource) {
             SdkSource rs = (SdkSource) obj;
-            return  rs.isUserSource() == this.isUserSource() && rs.getUrl().equals(this.getUrl());
+            return  rs.getUrl().equals(this.getUrl());
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return mUrl.hashCode() ^ Boolean.valueOf(mUserSource).hashCode();
+        return mUrl.hashCode();
     }
 
-    /** Returns true if this is a user source. */
-    public boolean isUserSource() {
-        return mUserSource;
+    /**
+     * Returns the UI-visible name of the source. Can be null.
+     */
+    public String getUiName() {
+        return mUiName;
     }
 
     /** Returns the URL of the XML file for this source. */
@@ -170,10 +172,18 @@ public abstract class SdkSource implements IDescription {
     }
 
     public String getShortDescription() {
+
+        // TODO extract domain from URL and add to UiName if not present.
+
+        if (mUiName != null && mUiName.length() > 0) {
+            return mUiName;
+        }
         return mUrl;
     }
 
     public String getLongDescription() {
+        // Note: in a normal workflow, mDescription is filled by setDefaultDescription().
+        // However for packages made by unit tests or such, this can be null.
         return mDescription == null ? "" : mDescription;  //$NON-NLS-1$
     }
 
@@ -390,8 +400,16 @@ public abstract class SdkSource implements IDescription {
     }
 
     private void setDefaultDescription() {
-        if (mUserSource) {
-            mDescription = String.format("Add-on Source: %1$s", mUrl);
+        if (isAddonSource()) {
+            String desc = "";
+
+            if (mUiName != null) {
+                desc += "Add-on Provider: " + mUiName;
+                desc += "\n";
+            }
+            desc += "Add-on URL: " + mUrl;
+
+            mDescription = desc;
         } else {
             mDescription = String.format("SDK Source: %1$s", mUrl);
         }
@@ -663,7 +681,7 @@ public abstract class SdkSource implements IDescription {
                         } else if (RepoConstants.NODE_EXTRA.equals(name)) {
                             p = new ExtraPackage(this, child, nsUri, licenses);
 
-                        } else if (!mUserSource) {
+                        } else if (!isAddonSource()) {
                             // We only load platform, doc and tool packages from internal
                             // sources, never from user sources.
                             if (SdkRepoConstants.NODE_PLATFORM.equals(name)) {

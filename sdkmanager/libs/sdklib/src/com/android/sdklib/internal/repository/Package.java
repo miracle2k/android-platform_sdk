@@ -49,7 +49,6 @@ public abstract class Package implements IDescription, Comparable<Package> {
     public static final String PROP_RELEASE_NOTE = "Pkg.RelNote";      //$NON-NLS-1$
     public static final String PROP_RELEASE_URL  = "Pkg.RelNoteUrl";   //$NON-NLS-1$
     public static final String PROP_SOURCE_URL   = "Pkg.SourceUrl";    //$NON-NLS-1$
-    public static final String PROP_USER_SOURCE  = "Pkg.UserSrc";      //$NON-NLS-1$
     public static final String PROP_OBSOLETE     = "Pkg.Obsolete";     //$NON-NLS-1$
 
     private final int mRevision;
@@ -142,12 +141,10 @@ public abstract class Package implements IDescription, Comparable<Package> {
         // a package comes from.
         String srcUrl = getProperty(props, PROP_SOURCE_URL, null);
         if (props != null && source == null && srcUrl != null) {
-            boolean isUser = Boolean.parseBoolean(props.getProperty(PROP_USER_SOURCE,
-                                                                    Boolean.TRUE.toString()));
-            if (isUser || (this instanceof AddonPackage)) {
-                source = new SdkAddonSource(srcUrl, isUser);
+            if (this instanceof AddonPackage) {
+                source = new SdkAddonSource(srcUrl, null /*uiName*/);
             } else {
-                source = new SdkRepoSource(srcUrl);
+                source = new SdkRepoSource(srcUrl, null /*uiName*/);
             }
         }
         mSource = source;
@@ -200,7 +197,6 @@ public abstract class Package implements IDescription, Comparable<Package> {
 
         if (mSource != null) {
             props.setProperty(PROP_SOURCE_URL,  mSource.getUrl());
-            props.setProperty(PROP_USER_SOURCE, Boolean.toString(mSource.isUserSource()));
         }
     }
 

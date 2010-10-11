@@ -300,7 +300,7 @@ public class UpdaterWindowImpl {
      * Called by the main loop when the window has been disposed.
      */
     private void dispose() {
-        mUpdaterData.getSources().saveUserSources(mUpdaterData.getSdkLog());
+        mUpdaterData.getSources().saveUserAddons(mUpdaterData.getSdkLog());
     }
 
     // --- page switching ---

@@ -34,10 +34,10 @@ public class SdkAddonSource extends SdkSource {
      * Constructs a new source for the given repository URL.
      * @param url The source URL. Cannot be null. If the URL ends with a /, the default
      *            repository.xml filename will be appended automatically.
-     * @param userSource True if this a user source (add-ons & packages only.)
+     * @param uiName The UI-visible name of the source. Can be null.
      */
-    public SdkAddonSource(String url, boolean userSource) {
-        super(url, false);
+    public SdkAddonSource(String url, String uiName) {
+        super(url, uiName);
     }
 
     /**
