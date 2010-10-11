@@ -38,7 +38,7 @@ public class SdkAddonSourceTest extends TestCase {
      */
     private static class MockSdkAddonSource extends SdkAddonSource {
         public MockSdkAddonSource() {
-            super("fake-url", true /*userSource*/);
+            super("fake-url", null /*uiName*/);
         }
 
         public Document _findAlternateToolsXml(InputStream xml) {

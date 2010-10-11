@@ -17,6 +17,8 @@
 package com.android.sdklib.repository;
 
 
+import com.android.sdklib.internal.repository.SdkSource;
+
 import java.io.InputStream;
 
 /**
@@ -28,6 +30,8 @@ public class SdkRepoConstants extends RepoConstants {
     public static final String URL_GOOGLE_SDK_SITE =
         "https://dl-ssl.google.com/android/repository/";                        //$NON-NLS-1$
 
+    /** The default name looked for by {@link SdkSource} when trying to load an
+     * sdk-repository XML if the URL doesn't match an existing resource. */
     public static final String URL_DEFAULT_XML_FILE = "repository.xml";         //$NON-NLS-1$
 
     /** The base of our sdk-repository XML namespace. */

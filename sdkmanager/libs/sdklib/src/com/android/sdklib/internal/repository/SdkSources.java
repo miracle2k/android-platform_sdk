@@ -25,11 +25,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Properties;
+import java.util.Map.Entry;
 
 /**
- * A list of sdk-repository and sdk-addon sources.
+ * A list of sdk-repository and sdk-addon sources, sorted by {@link SdkSourceCategory}.
  */
 public class SdkSources {
 
@@ -39,7 +41,8 @@ public class SdkSources {
 
     private static final String SRC_FILENAME = "repositories.cfg"; //$NON-NLS-1$
 
-    private ArrayList<SdkSource> mSources = new ArrayList<SdkSource>();
+    private final EnumMap<SdkSourceCategory, ArrayList<SdkSource>> mSources =
+        new EnumMap<SdkSourceCategory, ArrayList<SdkSource>>(SdkSourceCategory.class);
 
     public SdkSources() {
     }
@@ -47,37 +50,171 @@ public class SdkSources {
     /**
      * Adds a new source to the Sources list.
      */
-    public void add(SdkSource source) {
-        mSources.add(source);
+    public void add(SdkSourceCategory category, SdkSource source) {
+
+        ArrayList<SdkSource> list = mSources.get(category);
+        if (list == null) {
+            list = new ArrayList<SdkSource>();
+            mSources.put(category, list);
+        }
+
+        list.add(source);
     }
 
     /**
      * Removes a source from the Sources list.
      */
     public void remove(SdkSource source) {
-        mSources.remove(source);
+        Iterator<Entry<SdkSourceCategory, ArrayList<SdkSource>>> it =
+            mSources.entrySet().iterator();
+        while (it.hasNext()) {
+            Entry<SdkSourceCategory, ArrayList<SdkSource>> entry = it.next();
+            ArrayList<SdkSource> list = entry.getValue();
+
+            if (list.remove(source)) {
+                if (list.isEmpty()) {
+                    // remove the entry since the source list became empty
+                    it.remove();
+                }
+            }
+        }
     }
 
     /**
-     * Returns the sources list array. This is never null.
+     * Removes all the sources in the given category.
      */
-    public SdkSource[] getSources() {
-        return mSources.toArray(new SdkSource[mSources.size()]);
+    public void removeAll(SdkSourceCategory category) {
+        mSources.remove(category);
+    }
+
+    /**
+     * Returns a set of all categories that must be displayed. This includes all
+     * categories that are to be always displayed as well as all categories which
+     * have at least one source.
+     * Might return a empty array, but never returns null.
+     */
+    public SdkSourceCategory[] getCategories() {
+        ArrayList<SdkSourceCategory> cats = new ArrayList<SdkSourceCategory>();
+
+        for (SdkSourceCategory cat : SdkSourceCategory.values()) {
+            if (cat.getAlwaysDisplay()) {
+                cats.add(cat);
+            } else {
+                ArrayList<SdkSource> list = mSources.get(cat);
+                if (list != null && !list.isEmpty()) {
+                    cats.add(cat);
+                }
+            }
+        }
+
+        return cats.toArray(new SdkSourceCategory[cats.size()]);
+    }
+
+    /**
+     * Returns an array of sources attached to the given category.
+     * Might return an empty array, but never returns null.
+     */
+    public SdkSource[] getSources(SdkSourceCategory category) {
+        ArrayList<SdkSource> list = mSources.get(category);
+        if (list == null) {
+            return new SdkSource[0];
+        } else {
+            return list.toArray(new SdkSource[list.size()]);
+        }
+    }
+
+    /**
+     * Returns an array of the sources across all categories. This is never null.
+     */
+    public SdkSource[] getAllSources() {
+        int n = 0;
+
+        for (ArrayList<SdkSource> list : mSources.values()) {
+            n += list.size();
+        }
+
+        SdkSource[] sources = new SdkSource[n];
+
+        int i = 0;
+        for (ArrayList<SdkSource> list : mSources.values()) {
+            for (SdkSource source : list) {
+                sources[i++] = source;
+            }
+        }
+
+        return sources;
+    }
+
+    /**
+     * Returns the category of a given source, or null if the source is unknown.
+     * <p/>
+     * Note that this method uses object identity to find a given source, and does
+     * not identify sources by their URL like {@link #hasSourceUrl(SdkSource)} does.
+     * <p/>
+     * The search is O(N), which should be acceptable on the expectedly small source list.
+     */
+    public SdkSourceCategory getCategory(SdkSource source) {
+        if (source != null) {
+            for (Entry<SdkSourceCategory, ArrayList<SdkSource>> entry : mSources.entrySet()) {
+                if (entry.getValue().contains(source)) {
+                    return entry.getKey();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns true if there's already a similar source in the sources list
+     * under any category.
+     * <p/>
+     * Important: The match is NOT done on object identity.
+     * Instead, this searches for a <em>similar</em> source, based on
+     * {@link SdkSource#equals(Object)} which compares the source URLs.
+     * <p/>
+     * The search is O(N), which should be acceptable on the expectedly small source list.
+     */
+    public boolean hasSourceUrl(SdkSource source) {
+        for (ArrayList<SdkSource> list : mSources.values()) {
+            for (SdkSource s : list) {
+                if (s.equals(source)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if there's already a similar source in the sources list
+     * under the specified category.
+     * <p/>
+     * Important: The match is NOT done on object identity.
+     * Instead, this searches for a <em>similar</em> source, based on
+     * {@link SdkSource#equals(Object)} which compares the source URLs.
+     * <p/>
+     * The search is O(N), which should be acceptable on the expectedly small source list.
+     */
+    public boolean hasSourceUrl(SdkSourceCategory category, SdkSource source) {
+        ArrayList<SdkSource> list = mSources.get(category);
+        if (list != null) {
+            for (SdkSource s : list) {
+                if (s.equals(source)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
      * Loads all user sources. This <em>replaces</em> all existing user sources
      * by the ones from the property file.
      */
-    public void loadUserSources(ISdkLog log) {
+    public void loadUserAddons(ISdkLog log) {
 
         // Remove all existing user sources
-        for (Iterator<SdkSource> it = mSources.iterator(); it.hasNext(); ) {
-            SdkSource s = it.next();
-            if (s.isUserSource()) {
-                it.remove();
-            }
-        }
+        removeAll(SdkSourceCategory.USER_ADDONS);
 
         // Load new user sources from property file
         FileInputStream fis = null;
@@ -95,9 +232,9 @@ public class SdkSources {
                 for (int i = 0; i < count; i++) {
                     String url = props.getProperty(String.format("%s%02d", KEY_SRC, i));  //$NON-NLS-1$
                     if (url != null) {
-                        SdkSource s = new SdkAddonSource(url, true /*userSource*/);
-                        if (!hasSource(s)) {
-                            mSources.add(s);
+                        SdkSource s = new SdkAddonSource(url, null/*uiName*/);
+                        if (!hasSourceUrl(s)) {
+                            add(SdkSourceCategory.USER_ADDONS, s);
                         }
                     }
                 }
@@ -123,24 +260,10 @@ public class SdkSources {
     }
 
     /**
-     * Returns true if there's already a similar source in the sources list.
-     * <p/>
-     * The search is O(N), which should be acceptable on the expectedly small source list.
-     */
-    public boolean hasSource(SdkSource source) {
-        for (SdkSource s : mSources) {
-            if (s.equals(source)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Saves all the user sources.
      * @param log Logger. Cannot be null.
      */
-    public void saveUserSources(ISdkLog log) {
+    public void saveUserAddons(ISdkLog log) {
         FileOutputStream fos = null;
         try {
             String folder = AndroidLocation.getFolder();
@@ -151,11 +274,9 @@ public class SdkSources {
             Properties props = new Properties();
 
             int count = 0;
-            for (SdkSource s : mSources) {
-                if (s.isUserSource()) {
-                    count++;
-                    props.setProperty(String.format("%s%02d", KEY_SRC, count), s.getUrl());  //$NON-NLS-1$
-                }
+            for (SdkSource s : getSources(SdkSourceCategory.USER_ADDONS)) {
+                count++;
+                props.setProperty(String.format("%s%02d", KEY_SRC, count), s.getUrl());  //$NON-NLS-1$
             }
             props.setProperty(KEY_COUNT, Integer.toString(count));
 

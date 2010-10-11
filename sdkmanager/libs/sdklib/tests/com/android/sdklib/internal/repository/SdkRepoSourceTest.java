@@ -38,7 +38,7 @@ public class SdkRepoSourceTest extends TestCase {
      */
     private static class MockSdkRepoSource extends SdkRepoSource {
         public MockSdkRepoSource() {
-            super("fake-url");
+            super("fake-url", null /*uiName*/);
         }
 
         public Document _findAlternateToolsXml(InputStream xml) throws IOException {

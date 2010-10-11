@@ -17,6 +17,8 @@
 package com.android.sdklib.repository;
 
 
+import com.android.sdklib.internal.repository.SdkSource;
+
 import java.io.InputStream;
 
 /**
@@ -24,10 +26,8 @@ import java.io.InputStream;
  */
 public class SdkAddonConstants extends RepoConstants {
 
-    /** The URL where to find the official addons list fle. */
-    public static final String URL_ADDON_LIST =
-        "https://dl-ssl.google.com/android/repository/addons_list.txt";    //$NON-NLS-1$
-
+    /** The default name looked for by {@link SdkSource} when trying to load an
+     * sdk-addon XML if the URL doesn't match an existing resource. */
     public static final String URL_DEFAULT_XML_FILE = "addon.xml";         //$NON-NLS-1$
 
     /** The base of our sdk-addon XML namespace. */

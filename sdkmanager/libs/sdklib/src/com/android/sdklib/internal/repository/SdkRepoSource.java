@@ -47,9 +47,10 @@ public class SdkRepoSource extends SdkSource {
      * Constructs a new source for the given repository URL.
      * @param url The source URL. Cannot be null. If the URL ends with a /, the default
      *            repository.xml filename will be appended automatically.
+     * @param uiName The UI-visible name of the source. Can be null.
      */
-    public SdkRepoSource(String url) {
-        super(url, false);
+    public SdkRepoSource(String url, String uiName) {
+        super(url, uiName);
     }
 
     /**
