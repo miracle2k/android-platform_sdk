@@ -542,7 +542,7 @@ public class PreCompilerBuilder extends BaseBuilder {
         removeMarkersFromProject(project, AndroidConstants.MARKER_AAPT_COMPILE);
         removeMarkersFromProject(project, AndroidConstants.MARKER_XML);
         removeMarkersFromProject(project, AndroidConstants.MARKER_AIDL);
-
+        removeMarkersFromProject(project, AndroidConstants.MARKER_ANDROID);
     }
 
     @Override
