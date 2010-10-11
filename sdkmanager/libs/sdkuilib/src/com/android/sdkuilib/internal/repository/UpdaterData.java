@@ -36,6 +36,7 @@ import com.android.sdklib.internal.repository.SdkSourceCategory;
 import com.android.sdklib.internal.repository.SdkSources;
 import com.android.sdklib.internal.repository.ToolPackage;
 import com.android.sdklib.internal.repository.AddonsListFetcher.Site;
+import com.android.sdklib.repository.SdkAddonConstants;
 import com.android.sdklib.repository.SdkAddonsListConstants;
 import com.android.sdklib.repository.SdkRepoConstants;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
@@ -305,32 +306,41 @@ class UpdaterData {
         // Load user sources
         sources.loadUserAddons(getSdkLog());
 
-        // SDK_UPDATER_URLS is a semicolon-separated list of URLs that can be used to
-        // seed the SDK Updater list for full repositories.
-        String str = System.getenv("SDK_UPDATER_URLS");
+        // SDK_TEST_URLS is a semicolon-separated list of URLs that can be used to
+        // seed the SDK Updater list for full repos and addon repositories. This is
+        // only meant as a debugging and QA testing tool and not for user usage.
+        //
+        // To be used, the URLs must either end with the / or end with the canonical
+        // filename expected for either a full repo or an add-on repo. This lets QA
+        // use URLs ending with / to cover all cases.
+        String str = System.getenv("SDK_TEST_URLS");
         if (str != null) {
             String[] urls = str.split(";");
             for (String url : urls) {
-                if (url != null && url.length() > 0) {
-                    SdkSource s = new SdkRepoSource(url, null/*uiName*/);
-                    if (!sources.hasSourceUrl(s)) {
-                        sources.add(SdkSourceCategory.GETENV_REPOS, s);
-                    }
-                }
-            }
-        }
+                if (url != null) {
+                    url = url.trim();
+                    if (url.endsWith("/") || url.endsWith(SdkRepoConstants.URL_DEFAULT_FILENAME)) {
+                        String fullUrl = url;
+                        if (fullUrl.endsWith("/")) {
+                            fullUrl += SdkRepoConstants.URL_DEFAULT_FILENAME;
+                        }
 
-        // SDK_UPDATER_USER_URLS is a semicolon-separated list of URLs that can be used to
-        // seed the SDK Updater list for user-only repositories. User sources can only provide
-        // add-ons and extra packages.
-        str = System.getenv("SDK_UPDATER_USER_URLS");
-        if (str != null) {
-            String[] urls = str.split(";");
-            for (String url : urls) {
-                if (url != null && url.length() > 0) {
-                    SdkSource s = new SdkAddonSource(url, null/*uiName*/);
-                    if (!sources.hasSourceUrl(s)) {
-                        sources.add(SdkSourceCategory.GETENV_ADDONS, s);
+                        SdkSource s = new SdkRepoSource(fullUrl, null/*uiName*/);
+                        if (!sources.hasSourceUrl(s)) {
+                            sources.add(SdkSourceCategory.GETENV_REPOS, s);
+                        }
+                    }
+
+                    if (url.endsWith("/") || url.endsWith(SdkAddonConstants.URL_DEFAULT_FILENAME)) {
+                        String fullUrl = url;
+                        if (fullUrl.endsWith("/")) {
+                            fullUrl += SdkAddonConstants.URL_DEFAULT_FILENAME;
+                        }
+
+                        SdkSource s = new SdkAddonSource(fullUrl, null/*uiName*/);
+                        if (!sources.hasSourceUrl(s)) {
+                            sources.add(SdkSourceCategory.GETENV_ADDONS, s);
+                        }
                     }
                 }
             }
@@ -832,30 +842,55 @@ class UpdaterData {
     private void loadRemoteAddonsListInTask(ITaskMonitor monitor) {
         mStateFetchRemoteAddonsList = -1;
 
-        /*
-         * This env var can be defined to override the default addons_list.xml
-         * location, useful for debugging.
-         */
-        String url = System.getenv("SDK_UPDATER_ADDONS_LIST");
+        // SDK_TEST_URLS is a semicolon-separated list of URLs that can be used to
+        // seed the SDK Updater list. This is only meant as a debugging and QA testing
+        // tool and not for user usage.
+        //
+        // To be used, the URLs must either end with the / or end with the canonical
+        // filename expected for an addon list. This lets QA use URLs ending with /
+        // to cover all cases.
+        //
+        // Since SDK_TEST_URLS can contain many such URLs, we take the first one that
+        // matches our criteria.
+        String url = System.getenv("SDK_TEST_URLS");
 
         if (url == null) {
+            // No override, use the canonical URL.
             url = SdkAddonsListConstants.URL_ADDON_LIST;
-        }
-        if (getSettingsController().getForceHttp()) {
-            url = url.replaceAll("https://", "http://");  //$NON-NLS-1$ //$NON-NLS-2$
+        } else {
+            String[] urls = url.split(";");
+            url = null;
+            for (String u : urls) {
+                u = u.trim();
+                // This is an URL that comes from the env var. We expect it to either
+                // end with a / or the canonical name, otherwise we don't use it.
+                if (u.endsWith("/")) {
+                    url = u + SdkAddonsListConstants.URL_DEFAULT_FILENAME;
+                    break;
+                } else if (u.endsWith(SdkAddonsListConstants.URL_DEFAULT_FILENAME)) {
+                    url = u;
+                    break;
+                }
+            }
         }
 
-        AddonsListFetcher fetcher = new AddonsListFetcher();
-        Site[] sites = fetcher.fetch(monitor, url);
-        if (sites != null) {
-            mSources.removeAll(SdkSourceCategory.ADDONS_3RD_PARTY);
-
-            for (Site s : sites) {
-                mSources.add(SdkSourceCategory.ADDONS_3RD_PARTY,
-                             new SdkAddonSource(s.getUrl(), s.getUiName()));
+        if (url != null) {
+            if (getSettingsController().getForceHttp()) {
+                url = url.replaceAll("https://", "http://");  //$NON-NLS-1$ //$NON-NLS-2$
             }
 
-            mStateFetchRemoteAddonsList = 1;
+            AddonsListFetcher fetcher = new AddonsListFetcher();
+            Site[] sites = fetcher.fetch(monitor, url);
+            if (sites != null) {
+                mSources.removeAll(SdkSourceCategory.ADDONS_3RD_PARTY);
+
+                for (Site s : sites) {
+                    mSources.add(SdkSourceCategory.ADDONS_3RD_PARTY,
+                                 new SdkAddonSource(s.getUrl(), s.getUiName()));
+                }
+
+                mStateFetchRemoteAddonsList = 1;
+            }
         }
     }
 
