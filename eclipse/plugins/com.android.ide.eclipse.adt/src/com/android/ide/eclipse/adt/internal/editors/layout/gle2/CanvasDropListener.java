@@ -290,7 +290,7 @@ import java.util.Arrays;
      * one of the callOnXyz methods of GRE to refresh the fields.
      *
      * @param df The current {@link DropFeedback}.
-     * @param event An optional event to determine if the current operaiton is copy or move.
+     * @param event An optional event to determine if the current operation is copy or move.
      */
     private void updateDropFeedback(DropFeedback df, DropTargetEvent event) {
         if (event != null) {
