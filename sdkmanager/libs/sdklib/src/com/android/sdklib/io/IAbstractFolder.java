@@ -16,6 +16,8 @@
 
 package com.android.sdklib.io;
 
+import java.io.File;
+
 /**
  *  A folder.
  */
@@ -44,23 +46,32 @@ public interface IAbstractFolder extends IAbstractResource {
     boolean hasFile(String name);
 
     /**
-     * returns an {@link IAbstractFile} representing a child of the current folder with the
+     * Returns an {@link IAbstractFile} representing a child of the current folder with the
      * given name. The file may not actually exist.
      * @param name the name of the file.
      */
     IAbstractFile getFile(String name);
 
     /**
-     * returns an {@link IAbstractFolder} representing a child of the current folder with the
+     * Returns an {@link IAbstractFolder} representing a child of the current folder with the
      * given name. The folder may not actually exist.
      * @param name the name of the folder.
      */
     IAbstractFolder getFolder(String name);
 
     /**
-     * returns a list of existing members in this folder.
+     * Returns a list of all existing file and directory members in this folder.
+     * The returned array can be empty but is never null.
      */
     IAbstractResource[] listMembers();
 
+    /**
+     * Returns a list of all existing file and directory members in this folder
+     * that satisfy the specified filter.
+     *
+     * @param filter A filename filter instance. Must not be null.
+     * @return An array of file names (generated using {@link File#getName()}).
+     *         The array can be empty but is never null.
+     */
     String[] list(FilenameFilter filter);
 }
