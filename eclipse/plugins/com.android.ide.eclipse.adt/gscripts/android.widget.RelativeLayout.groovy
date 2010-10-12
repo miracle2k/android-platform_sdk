@@ -302,6 +302,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
         int n  = 10;
         int n2 = n*2;
+        boolean vertical = false;
 
         Rect r = null;
         String attr = null;
@@ -309,10 +310,12 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
         if (x <= x1 + n && y >= y1 && y <= y2) {
             r = new Rect(x1 - n, y1, n2, h);
             attr = "alignParentLeft";
+            vertical = true;
 
         } else if (x >= x2 - n && y >= y1 && y <= y2) {
             r = new Rect(x2 - n, y1, n2, h);
             attr = "alignParentRight";
+            vertical = true;
 
         } else if (y <= y1 + n && x >= x1 && x <= x2) {
             r = new Rect(x1, y1 - n, w, n2);
@@ -327,7 +330,7 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
             return null;
         }
 
-        return [ "rect": r, "attr": [ attr ], "mark": r.getCenter() ];
+        return [ "rect": r, "attr": [ attr ], "mark": r.getCenter(), "vertical": vertical ];
     }
 
 
@@ -471,17 +474,21 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
             def mark = data.curr.get("mark");
             if (mark) {
-                def black = gc.registerColor(0);
-                gc.setForeground(black);
-
-                x = mark.x;
-                y = mark.y;
-                gc.drawLine(x - 10, y - 10, x + 10, y + 10);
-                gc.drawLine(x + 10, y - 10, x - 10, y + 10);
-                gc.drawOval(x - 10, y - 10, x + 10, y + 10);
-
+                gc.useStyle(DrawingStyle.DROP_PREVIEW);
+                Rect nr = data.curr.rect;
+                int nx = nr.x + nr.w / 2;
+                int ny = nr.y + nr.h / 2;
+                boolean vertical = data.curr.get("vertical");
+                if (vertical) {
+                    gc.drawLine(nx, nr.y, nx, nr.y+nr.h);
+                    x = nx;
+                    y = b.y;
+                } else {
+                    gc.drawLine(nr.x, ny, nr.x+nr.w, ny);
+                    x = b.x;
+                    y = ny;
+                }
             } else {
-
                 r = data.curr.rect;
                 x = r.x + r.w / 2;
                 y = r.y + r.h / 2;
@@ -489,30 +496,32 @@ public class AndroidWidgetRelativeLayoutRule extends BaseLayout {
 
             Rect be = elements[0].getBounds();
 
-            if (be.isValid()) {
-                // At least the first element has a bound. Draw rectangles
-                // for all dropped elements with valid bounds, offset at
-                // the drop point.
+            // Draw bound rectangles for all selected items
+            gc.useStyle(DrawingStyle.DROP_PREVIEW);
+            for (element in elements) {
+                be = element.getBounds();
+                if (!be.isValid()) {
+                    // We don't always have bounds - for example when dragging from the palette.
+                    continue;
+                }
 
                 int offsetX = x - be.x;
                 int offsetY = y - be.y;
 
                 if ("alignTop" in data.curr.attr && "alignBottom" in data.curr.attr) {
                     offsetY -= be.h / 2;
-                } else if ("above" in data.curr.attr || "alignTop" in data.curr.attr) {
+                } else if ("above" in data.curr.attr || "alignTop" in data.curr.attr ||
+                    "alignParentBottom" in data.curr.attr) {
                     offsetY -= be.h;
                 }
                 if ("alignRight" in data.curr.attr && "alignLeft" in data.curr.attr) {
                     offsetX -= be.w / 2;
-                } else if ("toLeftOf" in data.curr.attr || "alignLeft" in data.curr.attr) {
+                } else if ("toLeftOf" in data.curr.attr || "alignLeft" in data.curr.attr ||
+                    "alignParentRight" in data.curr.attr) {
                     offsetX -= be.w;
                 }
 
-                gc.useStyle(DrawingStyle.DROP_PREVIEW);
-
-                for (element in elements) {
-                    drawElement(gc, element, offsetX, offsetY);
-                }
+                drawElement(gc, element, offsetX, offsetY);
             }
         }
 
