@@ -91,7 +91,7 @@ public class FolderWrapper extends File implements IAbstractFolder {
                 File f = files[i];
                 if (f.isFile()) {
                     afiles[i] = new FileWrapper(f);
-                } else {
+                } else if (f.isDirectory()) {
                     afiles[i] = new FolderWrapper(f);
                 }
             }
