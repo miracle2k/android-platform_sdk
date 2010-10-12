@@ -333,6 +333,22 @@ public class Archive implements IDescription {
     }
 
     /**
+     * Returns the short description of the source, if not null.
+     * Otherwise returns the default Object toString result.
+     * <p/>
+     * This is mostly helpful for debugging.
+     * For UI display, use the {@link IDescription} interface.
+     */
+    @Override
+    public String toString() {
+        String s = getShortDescription();
+        if (s != null) {
+            return s;
+        }
+        return super.toString();
+    }
+
+    /**
      * Generates a short description for this archive.
      */
     public String getShortDescription() {

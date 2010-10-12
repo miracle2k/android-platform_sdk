@@ -238,8 +238,11 @@ public class LocalSdkParser {
         // We're not going to check that all tools are present. At the very least
         // we should expect to find android and an emulator adapted to the current OS.
         Set<String> names = new HashSet<String>();
-        for (File file : toolFolder.listFiles()) {
-            names.add(file.getName());
+        File[] files = toolFolder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                names.add(file.getName());
+            }
         }
         if (!names.contains(SdkConstants.androidCmdName()) ||
                 !names.contains(SdkConstants.FN_EMULATOR)) {

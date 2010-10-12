@@ -83,15 +83,17 @@ public class FolderWrapper extends File implements IAbstractFolder {
 
     public IAbstractResource[] listMembers() {
         File[] files = listFiles();
-        final int count = files.length;
+        final int count = files == null ? 0 : files.length;
         IAbstractResource[] afiles = new IAbstractResource[count];
 
-        for (int i = 0 ; i < count ; i++) {
-            File f = files[i];
-            if (f.isFile()) {
-                afiles[i] = new FileWrapper(f);
-            } else {
-                afiles[i] = new FolderWrapper(f);
+        if (files != null) {
+            for (int i = 0 ; i < count ; i++) {
+                File f = files[i];
+                if (f.isFile()) {
+                    afiles[i] = new FileWrapper(f);
+                } else {
+                    afiles[i] = new FolderWrapper(f);
+                }
             }
         }
 
@@ -135,7 +137,7 @@ public class FolderWrapper extends File implements IAbstractFolder {
 
     public String[] list(FilenameFilter filter) {
         File[] files = listFiles();
-        if (files.length > 0) {
+        if (files != null && files.length > 0) {
             ArrayList<String> list = new ArrayList<String>();
 
             for (File file : files) {

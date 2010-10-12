@@ -345,6 +345,22 @@ public abstract class Package implements IDescription, Comparable<Package> {
     }
 
     /**
+     * Returns the short description of the source, if not null.
+     * Otherwise returns the default Object toString result.
+     * <p/>
+     * This is mostly helpful for debugging.
+     * For UI display, use the {@link IDescription} interface.
+     */
+    @Override
+    public String toString() {
+        String s = getShortDescription();
+        if (s != null) {
+            return s;
+        }
+        return super.toString();
+    }
+
+    /**
      * Returns a short description for an {@link IDescription}.
      * Can be empty but not null.
      */
