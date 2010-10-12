@@ -32,7 +32,7 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
         def curr_orient = selectedNode.getStringAttr(ANDROID_URI, ATTR_ORIENTATION);
         if (!curr_orient) {
-            curr_orient = VALUE_VERTICAL;
+            curr_orient = VALUE_HORIZONTAL;
         }
 
         def onChange = { MenuAction.Action action, String valueId, Boolean newValue ->
