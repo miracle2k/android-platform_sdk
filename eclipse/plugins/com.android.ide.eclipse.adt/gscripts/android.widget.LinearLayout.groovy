@@ -102,7 +102,7 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
         }
 
         int v = isVertical ? (bn.y + bn.h) : (bn.x + bn.w);
-        v = (last + v) / 2;
+        v = indexes.isEmpty() ? last + 1 : (last + v) / 2;
         indexes.add( [v, -1] );
 
         return new DropFeedback(

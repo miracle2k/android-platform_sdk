@@ -407,6 +407,18 @@ import java.util.Arrays;
                     df = mCanvas.getRulesEngine().callOnDropEnter(targetNode,
                                                                   mCurrentDragElements);
 
+                    if (df != null) {
+                        // We should also dispatch an onDropMove() call to the initial enter
+                        // position, such that the view is notified of the position where
+                        // we are within the node immediately (before we for example attempt
+                        // to draw feedback). This is necessary since most views perform the
+                        // guideline computations in onDropMove (since only onDropMove is handed
+                        // the -position- of the mouse), and we want this computation to happen
+                        // before we ask the view to draw its feedback.
+                        df = mCanvas.getRulesEngine().callOnDropMove(targetNode,
+                                mCurrentDragElements, df, p);
+                    }
+
                     if (df != null &&
                             event.detail == DND.DROP_MOVE &&
                             mCanvas == mGlobalDragInfo.getSourceCanvas()) {
