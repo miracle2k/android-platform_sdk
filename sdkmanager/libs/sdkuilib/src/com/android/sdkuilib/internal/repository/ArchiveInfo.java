@@ -177,4 +177,22 @@ class ArchiveInfo implements IDescription {
         }
         return "";
     }
+
+    /**
+     * Returns the short description of the parent package of the new archive, if not null.
+     * Otherwise returns the default Object toString result.
+     * <p/>
+     * This is mostly helpful for debugging. For UI display, use the {@link IDescription}
+     * interface.
+     */
+    @Override
+    public String toString() {
+        if (mNewArchive != null) {
+            Package p = mNewArchive.getParentPackage();
+            if (p != null) {
+                return p.getShortDescription();
+            }
+        }
+        return super.toString();
+    }
 }

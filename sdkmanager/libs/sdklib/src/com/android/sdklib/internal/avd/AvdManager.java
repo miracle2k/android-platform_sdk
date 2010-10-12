@@ -1062,16 +1062,19 @@ public final class AvdManager {
      * @throws SecurityException like {@link File#delete()} does if file/folder is not writable.
      */
     private boolean deleteContentOf(File folder) throws SecurityException {
-        for (File f : folder.listFiles()) {
-            if (f.isDirectory()) {
-                if (deleteContentOf(f) == false) {
+        File[] files = folder.listFiles();
+        if (files != null) {
+            for (File f : files) {
+                if (f.isDirectory()) {
+                    if (deleteContentOf(f) == false) {
+                        return false;
+                    }
+                }
+                if (f.delete() == false) {
                     return false;
                 }
-            }
-            if (f.delete() == false) {
-                return false;
-            }
 
+            }
         }
 
         return true;
