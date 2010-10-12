@@ -1541,6 +1541,17 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                 }
             }
 
+            // If you are dragging a non-selected item, select it
+            if (mDragSelection.isEmpty()) {
+                int x = mHScale.inverseTranslate(e.x);
+                int y = mVScale.inverseTranslate(e.y);
+                CanvasViewInfo vi = findViewInfoAt(x, y);
+                if (vi != null) {
+                    selectSingle(vi);
+                    mDragSelection.addAll(mSelections);
+                }
+            }
+
             sanitizeSelection(mDragSelection);
 
             e.doit = !mDragSelection.isEmpty();
