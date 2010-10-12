@@ -63,22 +63,28 @@ public class AndroidWidgetFrameLayoutRule extends BaseLayout {
 
         Rect be = elements[0].getBounds();
 
+        gc.useStyle(DrawingStyle.DROP_PREVIEW);
         if (be.isValid()) {
             // At least the first element has a bound. Draw rectangles
             // for all dropped elements with valid bounds, offset at
-            // the drop point.
-            int offsetX = x - be.x;
-            int offsetY = y - be.y;
-            gc.useStyle(DrawingStyle.DROP_PREVIEW);
+            // (0,0)
             elements.each {
-                drawElement(gc, it, offsetX, offsetY);
+                Rect currBounds = it.getBounds();
+                if (currBounds.isValid()) {
+                    int offsetX = b.x - currBounds.x;
+                    int offsetY = b.y - currBounds.y;
+                    drawElement(gc, it, offsetX, offsetY);
+                }
             }
         } else {
             // We don't have bounds for new elements. In this case
-            // just draw a mark at the drop point.
-            gc.drawLine(x - 10, y - 10, x + 10, y + 10);
-            gc.drawLine(x + 10, y - 10, x - 10, y + 10);
-            gc.drawOval(x - 10, y - 10, x + 10, y + 10);
+            // just draw insert lines indicating the top left corner where
+            // the item will be placed
+
+            // +1: Place lines fully within the view (the stroke width is 2) to make
+            // it even more visually obvious
+            gc.drawLine(b.x + 1, b.y, b.x + 1, b.y + b.h);
+            gc.drawLine(b.x, b.y + 1, b.x + b.w, b.y + 1);
         }
     }
 

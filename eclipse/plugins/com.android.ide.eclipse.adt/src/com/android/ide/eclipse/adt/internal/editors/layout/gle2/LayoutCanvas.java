@@ -71,6 +71,8 @@ import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.dnd.TransferData;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -333,6 +335,23 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
             public void mouseDoubleClick(MouseEvent e) {
                 onDoubleClick(e);
+            }
+        });
+
+        addKeyListener(new KeyListener() {
+
+            public void keyPressed(KeyEvent e) {
+                // Set up backspace as an alias for the delete action within the canvas.
+                // On most Macs there is no delete key - though there IS a key labeled
+                // "Delete" and it sends a backspace key code! In short, for Macs we should
+                // treat backspace as delete, and it's harmless (and probably useful) to
+                // handle backspace for other platforms as well.
+                if (e.keyCode == SWT.BS) {
+                    mDeleteAction.run();
+                }
+            }
+
+            public void keyReleased(KeyEvent e) {
             }
         });
 
@@ -1836,7 +1855,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * Copies the action attributes form the given {@link ActionFactory}'s action to
      * our action.
      * <p/>
-     * {@link ActionFactory} provides access to the standard global actions in Ecipse.
+     * {@link ActionFactory} provides access to the standard global actions in Eclipse.
      * <p/>
      * This allows us to grab the standard labels and icons for the
      * global actions such as copy, cut, paste, delete and select-all.
