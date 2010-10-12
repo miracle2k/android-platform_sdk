@@ -182,6 +182,16 @@ public class ToolPackage extends Package implements IMinPlatformToolsDependency 
         return pkg instanceof ToolPackage;
     }
 
+    @Override
+    void saveProperties(Properties props) {
+        super.saveProperties(props);
+
+        if (getMinPlatformToolsRevision() != MIN_PLATFORM_TOOLS_REV_INVALID) {
+            props.setProperty(PROP_MIN_PLATFORM_TOOLS_REV,
+                              Integer.toString(getMinPlatformToolsRevision()));
+        }
+    }
+
     /**
      * The tool package executes tools/lib/post_tools_install[.bat|.sh]
      * {@inheritDoc}
