@@ -92,6 +92,17 @@ public final class SetupTask extends ImportTask {
             System.out.println("Android SDK Tools Revision " + toolsRevison);
         }
 
+        // detect that the platform tools is there.
+        File platformTools = new File(sdkDir, SdkConstants.FD_PLATFORM_TOOLS);
+        if (platformTools.isDirectory() == false) {
+            throw new BuildException(String.format(
+                    "SDK Platform Tools component is missing. " +
+                    "Please install it with the SDK Manager (%1$s%2$c%3$s)",
+                    SdkConstants.FD_TOOLS,
+                    File.separatorChar,
+                    SdkConstants.androidCmdName()));
+        }
+
         // get the target property value
         String targetHashString = antProject.getProperty(ProjectProperties.PROPERTY_TARGET);
 
