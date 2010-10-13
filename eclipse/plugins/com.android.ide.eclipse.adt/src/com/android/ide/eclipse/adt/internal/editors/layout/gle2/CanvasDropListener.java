@@ -246,7 +246,7 @@ import java.util.Set;
      * The data is being dropped.
      * {@inheritDoc}
      */
-    public void drop(DropTargetEvent event) {
+    public void drop(final DropTargetEvent event) {
         if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "dropped");
 
         SimpleElement[] elements = null;
@@ -279,7 +279,7 @@ import java.util.Set;
             return;
         }
 
-        Point where = mCanvas.displayToCanvasPoint(event.x, event.y);
+        final Point where = mCanvas.displayToCanvasPoint(event.x, event.y);
 
         // Record children of the target right before the drop (such that we can
         // find out after the drop which exact children were inserted)
@@ -289,10 +289,21 @@ import java.util.Set;
         }
 
         updateDropFeedback(mFeedback, event);
-        mCanvas.getRulesEngine().callOnDropped(mTargetNode,
-                elements,
-                mFeedback,
-                where);
+
+        final SimpleElement[] elementsFinal = elements;
+        String label = computeUndoLabel(mTargetNode, elements, event.detail);
+        mCanvas.getLayoutEditor().wrapUndoEditXmlModel(label, new Runnable() {
+            public void run() {
+                mCanvas.getRulesEngine().callOnDropped(mTargetNode,
+                        elementsFinal,
+                        mFeedback,
+                        where);
+                // Clean up drag if applicable
+                if (event.detail == DND.DROP_MOVE) {
+                    GlobalCanvasDragInfo.getInstance().removeSource();
+                }
+            }
+        });
 
         // Now find out which nodes were added, and look up their corresponding
         // CanvasViewInfos
@@ -342,6 +353,51 @@ import java.util.Set;
         mCanvas.selectMultiple(newChildren);
 
         return nodes.size() == newChildren.size();
+    }
+
+    /**
+     * Computes a suitable Undo label to use for a drop operation, such as
+     * "Drop Button in LinearLayout" and "Move Widgets in RelativeLayout"
+     *
+     * @param targetNode The target of the drop
+     * @param elements The dragged widgets
+     * @param detail The DnD mode, as used in {@link DropTargetEvent#detail}.
+     * @return A string suitable as an undo-label for the drop event
+     */
+    private String computeUndoLabel(NodeProxy targetNode, SimpleElement[] elements, int detail) {
+        // Decide whether it's a move or a copy; we'll label moves specifically
+        // as a move and consider everything else a "Drop"
+        String verb = (detail == DND.DROP_MOVE) ? "Move" : "Drop";
+
+        // Get the type of widget being dropped/moved, IF there is only one. If
+        // there is more than one, just reference it as "Widgets".
+        String object;
+        if (elements != null && elements.length == 1) {
+            object = getSimpleName(elements[0].getFqcn());
+        } else {
+            object = "Widgets";
+        }
+
+        String where = getSimpleName(targetNode.getFqcn());
+
+        // When we localize this: $1 is the verb (Move or Drop), $2 is the
+        // object (such as "Button"), and $3 is the place we are doing it (such
+        // as "LinearLayout").
+        return String.format("%1$s %2$s in %3$s", verb, object, where);
+    }
+
+    /**
+     * Returns simple name (basename, following last dot) of a fully qualified
+     * class name.
+     *
+     * @param fcqn The fqcn to reduce
+     * @return The base name of the fqcn
+     */
+    private String getSimpleName(String fqcn) {
+        // Note that the following works even when there is no dot, since
+        // lastIndexOf will return -1 so we get fcqn.substring(-1+1) =
+        // fcqn.substring(0) = fcqn
+        return fqcn.substring(fqcn.lastIndexOf('.') + 1);
     }
 
     /**

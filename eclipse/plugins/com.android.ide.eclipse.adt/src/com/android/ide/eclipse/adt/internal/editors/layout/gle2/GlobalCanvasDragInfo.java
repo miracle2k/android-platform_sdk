@@ -41,6 +41,7 @@ class GlobalCanvasDragInfo {
     private SimpleElement[] mCurrentElements = null;
     private CanvasSelection[] mCurrentSelection;
     private Object mSourceCanvas = null;
+    private Runnable mRemoveSourceHandler;
 
     /** Private constructor. Use {@link #getInstance()} to retrieve the singleton. */
     private GlobalCanvasDragInfo() {
@@ -52,17 +53,31 @@ class GlobalCanvasDragInfo {
         return sInstance;
     }
 
-    /** Registers the XML elements being dragged. */
-    public void startDrag(SimpleElement[] elements, CanvasSelection[] selection, Object sourceCanvas) {
+    /**
+     * Registers the XML elements being dragged.
+     *
+     * @param elements The elements being dragged
+     * @param selection The selection (which can be null, for example when the
+     *            user drags from the palette)
+     * @param sourceCanvas An object representing the source we are dragging
+     *            from (used for identity comparisons only)
+     * @param removeSourceHandler A runnable (or null) which can clean up the
+     *            source. It should only be invoked if the drag operation is a
+     *            move, not a copy.
+     */
+    public void startDrag(SimpleElement[] elements, CanvasSelection[] selection,
+            Object sourceCanvas, Runnable removeSourceHandler) {
         mCurrentElements = elements;
         mCurrentSelection = selection;
         mSourceCanvas = sourceCanvas;
+        mRemoveSourceHandler = removeSourceHandler;
     }
 
     /** Unregisters elements being dragged. */
     public void stopDrag() {
         mCurrentElements = null;
         mSourceCanvas = null;
+        mRemoveSourceHandler = null;
     }
 
     /** Returns the elements being dragged. */
@@ -86,5 +101,16 @@ class GlobalCanvasDragInfo {
      */
     public Object getSourceCanvas() {
         return mSourceCanvas;
+    }
+
+    /**
+     * Removes source of the drag. This should only be called when the drag and
+     * drop operation is a move (not a copy).
+     */
+    public void removeSource() {
+        if (mRemoveSourceHandler != null) {
+            mRemoveSourceHandler.run();
+            mRemoveSourceHandler = null;
+        }
     }
 }
