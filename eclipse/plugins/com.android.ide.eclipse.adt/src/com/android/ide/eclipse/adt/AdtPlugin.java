@@ -788,6 +788,19 @@ public class AdtPlugin extends AbstractUIPlugin {
             return false;
         }
 
+        // check that we have both the tools component and the platform-tools component.
+        String platformTools = osSdkLocation + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER;
+        if (checkFolder(platformTools) == false) {
+            return errorHandler.handleError("SDK Platform Tools component is missing!\n" +
+                    "Please use the SDK Manager to install it.");
+        }
+
+        String tools = osSdkLocation + SdkConstants.OS_SDK_TOOLS_FOLDER;
+        if (checkFolder(tools) == false) {
+            return errorHandler.handleError("SDK Tools component is missing!\n" +
+                    "Please use the SDK Manager to install it.");
+        }
+
         // check the path to various tools we use to make sure nothing is missing. This is
         // not meant to be exhaustive.
         String[] filesToCheck = new String[] {
@@ -811,6 +824,20 @@ public class AdtPlugin extends AbstractUIPlugin {
     private boolean checkFile(String osPath) {
         File file = new File(osPath);
         if (file.isFile() == false) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if a path reference a valid existing folder.
+     * @param osPath the os path to check.
+     * @return true if the folder exists and is, in fact, a folder.
+     */
+    private boolean checkFolder(String osPath) {
+        File file = new File(osPath);
+        if (file.isDirectory() == false) {
             return false;
         }
 
