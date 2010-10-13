@@ -282,6 +282,10 @@ import java.util.Arrays;
 
         clearDropInfo();
         mCanvas.redraw();
+        // Request focus: This is *necessary* when you are dragging from one canvas editor
+        // to another, because without it, the redraw does not seem to be processed (the change
+        // is invisible until you click on the target canvas to give it focus).
+        mCanvas.setFocus();
     }
 
     /**
