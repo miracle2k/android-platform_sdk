@@ -88,7 +88,14 @@ public class NodeProxy implements INode {
         mBounds.set(bounds);
     }
 
-    /* package */ UiViewElementNode getNode() {
+    /**
+     * Returns the {@link UiViewElementNode} corresponding to this
+     * {@link NodeProxy}.
+     *
+     * @return The {@link UiViewElementNode} corresponding to this
+     *         {@link NodeProxy}
+     */
+    public UiViewElementNode getNode() {
         return mNode;
     }
 

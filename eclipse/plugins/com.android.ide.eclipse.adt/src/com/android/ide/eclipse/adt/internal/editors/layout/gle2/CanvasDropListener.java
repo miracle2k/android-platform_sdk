@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
+import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
@@ -26,8 +27,14 @@ import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TransferData;
+import org.eclipse.swt.widgets.Display;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Handles drop operations on top of the canvas.
@@ -274,11 +281,40 @@ import java.util.Arrays;
 
         Point where = mCanvas.displayToCanvasPoint(event.x, event.y);
 
+        // Record children of the target right before the drop (such that we can
+        // find out after the drop which exact children were inserted)
+        Set<INode> children = new HashSet<INode>();
+        for (INode node : mTargetNode.getChildren()) {
+            children.add(node);
+        }
+
         updateDropFeedback(mFeedback, event);
         mCanvas.getRulesEngine().callOnDropped(mTargetNode,
                 elements,
                 mFeedback,
                 where);
+
+        // Now find out which nodes were added, and look up their corresponding
+        // CanvasViewInfos
+        final List<INode> added = new ArrayList<INode>();
+        for (INode node : mTargetNode.getChildren()) {
+            if (!children.contains(node)) {
+                added.add(node);
+            }
+        }
+        // Select the newly dropped nodes
+        if (!selectDropped(added)) {
+            // In some scenarios we can't find the actual view infos yet; this
+            // seems to happen when you drag from one canvas to another (see the
+            // related comment next to the setFocus() call below). In that case
+            // defer selection briefly until the view hierarchy etc is up to
+            // date.
+            Display.getDefault().asyncExec(new Runnable() {
+                public void run() {
+                    selectDropped(added);
+                }
+            });
+        }
 
         clearDropInfo();
         mCanvas.redraw();
@@ -286,6 +322,26 @@ import java.util.Arrays;
         // to another, because without it, the redraw does not seem to be processed (the change
         // is invisible until you click on the target canvas to give it focus).
         mCanvas.setFocus();
+    }
+
+    /**
+     * Selects the given list of nodes in the canvas, and returns true iff the
+     * attempt to select was successful.
+     *
+     * @param nodes The collection of nodes to be selected
+     * @return True if and only if all nodes were successfully selected
+     */
+    private boolean selectDropped(Collection<INode> nodes) {
+        final Collection<CanvasViewInfo> newChildren = new ArrayList<CanvasViewInfo>();
+        for (INode node : nodes) {
+            CanvasViewInfo viewInfo = mCanvas.findViewInfoFor(node);
+            if (viewInfo != null) {
+                newChildren.add(viewInfo);
+            }
+        }
+        mCanvas.selectMultiple(newChildren);
+
+        return nodes.size() == newChildren.size();
     }
 
     /**

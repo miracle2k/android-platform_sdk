@@ -112,6 +112,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1243,6 +1244,29 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     }
 
     /**
+     * Selects the given set of {@link CanvasViewInfo}s. This is similar to
+     * {@link #selectSingle} but allows you to make a multi-selection. Issues a
+     * {@link #redraw()}.
+     *
+     * @param viewInfos A collection of {@link CanvasViewInfo} objects to be
+     *            selected, or null or empty to clear the selection.
+     */
+    /* package */ void selectMultiple(Collection<CanvasViewInfo> viewInfos) {
+        // reset alternate selection if any
+        mAltSelection = null;
+
+        mSelections.clear();
+        if (viewInfos != null) {
+            for (CanvasViewInfo viewInfo : viewInfos) {
+                mSelections.add(new CanvasSelection(viewInfo, mRulesEngine, mNodeFactory));
+            }
+        }
+
+        fireSelectionChanged();
+        redraw();
+    }
+
+    /**
      * Deselects a view info.
      * Returns true if the object was actually selected.
      * Callers are responsible for calling redraw() and updateOulineSelection() after.
@@ -1397,6 +1421,23 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         }
 
         return outList;
+    }
+
+    /**
+     * Locates and returns the {@link CanvasViewInfo} corresponding to the given
+     * node, or null if it cannot be found.
+     *
+     * @param node The node we want to find a corresponding
+     *            {@link CanvasViewInfo} for.
+     * @return The {@link CanvasViewInfo} corresponding to the given node, or
+     *         null if no match was found.
+     */
+    /* package */ CanvasViewInfo findViewInfoFor(INode node) {
+        if (mLastValidViewInfoRoot != null && node instanceof NodeProxy) {
+            return findViewInfoKey(((NodeProxy) node).getNode(), mLastValidViewInfoRoot);
+        } else {
+            return null;
+        }
     }
 
     /**
