@@ -1519,7 +1519,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                 boolean insideSelection = false;
 
                 for (CanvasSelection cs : mSelections) {
-                    if (cs.getRect().contains(x, y)) {
+                    if (!cs.isRoot() && cs.getRect().contains(x, y)) {
                         insideSelection = true;
                         break;
                     }
@@ -1537,7 +1537,19 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                     // We should now have a proper selection that matches the cursor.
                     // Let's use this one. We make a copy of it since the "sanitize" pass
                     // below might remove some of the selected objects.
-                    mDragSelection.addAll(mSelections);
+                    if (mSelections.size() == 1) {
+                        // You are dragging just one element - this might or might not be
+                        // the root, but if it's the root that is fine since we will let you
+                        // drag the root if it is the only thing you are dragging.
+                        mDragSelection.addAll(mSelections);
+                    } else {
+                        // Only drag non-root items.
+                        for (CanvasSelection cs : mSelections) {
+                            if (!cs.isRoot()) {
+                                mDragSelection.add(cs);
+                            }
+                        }
+                    }
                 }
             }
 
