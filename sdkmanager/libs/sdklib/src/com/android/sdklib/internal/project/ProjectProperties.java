@@ -63,11 +63,8 @@ public class ProjectProperties {
     public final static String PROPERTY_PROGUARD_CONFIG = "proguard.config";
 
     public final static String PROPERTY_SDK = "sdk.dir";
-    // LEGACY - compatibility with 1.6 and before
-    public final static String PROPERTY_SDK_LEGACY = "sdk-location";
-
-    @Deprecated //This is not needed by the new Ant rules
-    public final static String PROPERTY_APP_PACKAGE = "application.package";
+    // LEGACY - Kept so that we can actually remove it from local.properties.
+    private final static String PROPERTY_SDK_LEGACY = "sdk-location";
 
     public final static String PROPERTY_SPLIT_BY_DENSITY = "split.density";
     public final static String PROPERTY_SPLIT_BY_ABI = "split.abi";
@@ -87,29 +84,40 @@ public class ProjectProperties {
     public static enum PropertyType {
         BUILD(SdkConstants.FN_BUILD_PROPERTIES, BUILD_HEADER, new String[] {
                 PROPERTY_BUILD_SOURCE_DIR, PROPERTY_BUILD_OUT_DIR
-            }),
+            }, null),
         DEFAULT(SdkConstants.FN_DEFAULT_PROPERTIES, DEFAULT_HEADER, new String[] {
                 PROPERTY_TARGET, PROPERTY_LIBRARY, PROPERTY_LIB_REF_REGEX,
                 PROPERTY_KEY_STORE, PROPERTY_KEY_ALIAS, PROPERTY_PROGUARD_CONFIG
-            }),
+            }, null),
         LOCAL(SdkConstants.FN_LOCAL_PROPERTIES, LOCAL_HEADER, new String[] {
                 PROPERTY_SDK
-            }),
+            },
+            new String[] { PROPERTY_SDK_LEGACY }),
         EXPORT(SdkConstants.FN_EXPORT_PROPERTIES, EXPORT_HEADER, new String[] {
                 PROPERTY_PACKAGE, PROPERTY_VERSIONCODE, PROPERTY_PROJECTS,
                 PROPERTY_KEY_STORE, PROPERTY_KEY_ALIAS
-            });
+            }, null);
 
         private final String mFilename;
         private final String mHeader;
         private final Set<String> mKnownProps;
+        private final Set<String> mRemovedProps;
 
-        PropertyType(String filename, String header, String[] validProps) {
+        PropertyType(String filename, String header, String[] validProps, String[] removedProps) {
             mFilename = filename;
             mHeader = header;
             HashSet<String> s = new HashSet<String>();
-            s.addAll(Arrays.asList(validProps));
+            if (validProps != null) {
+                s.addAll(Arrays.asList(validProps));
+            }
             mKnownProps = Collections.unmodifiableSet(s);
+
+            s = new HashSet<String>();
+            if (removedProps != null) {
+                s.addAll(Arrays.asList(removedProps));
+            }
+            mRemovedProps = Collections.unmodifiableSet(s);
+
         }
 
         public String getFilename() {
@@ -125,6 +133,19 @@ public class ProjectProperties {
          */
         public boolean isKnownProperty(String name) {
             for (String propRegex : mKnownProps) {
+                if (propRegex.equals(name) || Pattern.matches(propRegex, name)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * Returns whether a given property should be removed for the property type.
+         */
+        public boolean isRemovedProperty(String name) {
+            for (String propRegex : mRemovedProps) {
                 if (propRegex.equals(name) || Pattern.matches(propRegex, name)) {
                     return true;
                 }
