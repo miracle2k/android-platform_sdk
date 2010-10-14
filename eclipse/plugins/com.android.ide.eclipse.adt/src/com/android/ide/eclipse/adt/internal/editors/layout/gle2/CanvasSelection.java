@@ -68,6 +68,14 @@ import org.eclipse.swt.graphics.Rectangle;
     }
 
     /**
+     * Returns true when this selection item represents the root, the top level
+     * layout element in the editor.
+     */
+    public boolean isRoot() {
+        return mNodeProxy.getParent() == null;
+    }
+
+    /**
      * Returns the selected view info. Cannot be null.
      */
     public CanvasViewInfo getViewInfo() {
