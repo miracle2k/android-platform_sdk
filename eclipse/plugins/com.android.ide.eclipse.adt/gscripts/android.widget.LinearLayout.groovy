@@ -77,6 +77,8 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
         int last = isVertical ? bn.y : bn.x;
         int pos = 0;
+        boolean lastDragged = false;
+        int selfPos = -1;
         targetNode.getChildren().each {
             def bc = it.getBounds();
             if (bc.isValid()) {
@@ -90,26 +92,45 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
                     }
                 }
 
-                if (!isDragged) {
-                    // add an insertion point between the last point and the start of this child
+                // We don't want to insert drag positions before or after the element
+                // that is itself being dragged. However, we -do- want to insert a match
+                // position here, at the center, such that when you drag near its current
+                // position we show a match right where it's already positioned.
+                if (isDragged) {
+                    int v = isVertical ? bc.y + (bc.h / 2) : bc.x + (bc.w / 2);
+                    selfPos = pos;
+                    indexes.add( [v, pos++] );
+                } else if (lastDragged) {
+                    // Even though we don't want to insert a match below, we need to increment
+                    // the index counter such that subsequent lines know their correct
+                    // index in the child list.
+                    pos++;
+                } else {
+                    // Add an insertion point between the last point and the start of this child
                     int v = isVertical ? bc.y : bc.x;
                     v = (last + v) / 2;
                     indexes.add( [v, pos++] );
-
-                    last = isVertical ? (bc.y + bc.h) : (bc.x + bc.w);
                 }
+
+                last = isVertical ? (bc.y + bc.h) : (bc.x + bc.w);
+                lastDragged = isDragged;
             }
         }
 
-        int v = isVertical ? (bn.y + bn.h) : (bn.x + bn.w);
-        v = indexes.isEmpty() ? last + 1 : (last + v) / 2;
-        indexes.add( [v, -1] );
+        // Finally add an insert position after all the children - unless of course we happened
+        // to be dragging the last element
+        if (!lastDragged) {
+            int v = last + 1;
+            indexes.add( [v, -1] );
+        }
 
         return new DropFeedback(
           [ "isVertical": isVertical,   // boolean: True if vertical linear layout
             "indexes": indexes,         // list(tuple(0:int, 1:int)): insert points (pixels + index)
             "currX": null,              // int: Current marker X position
             "currY": null,              // int: Current marker Y position
+            "selfPos": selfPos,         // int: Position of the dragged element in this layout (or
+                                        //      -1 if the dragged element is from elsewhere)
             "insertPos": -1             // int: Current drop insert index (-1 for "at the end")
           ],
           {
@@ -138,15 +159,21 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
         def indexes = feedback.userData.indexes;
         boolean isVertical = feedback.userData.isVertical;
+        def selfPos = feedback.userData.selfPos;
 
         indexes.each {
             int i = it[0];
-            if (isVertical) {
-                // draw horizontal lines
-                gc.drawLine(b.x, i, b.x + b.w, i);
-            } else {
-                // draw vertical lines
-                gc.drawLine(i, b.y, i, b.y + b.h);
+            int pos = it[1];
+            // Don't show insert drop zones for "self"-index since that one goes
+            // right through the center of the widget rather than in a sibling position
+            if (pos != selfPos) {
+                if (isVertical) {
+                    // draw horizontal lines
+                    gc.drawLine(b.x, i, b.x + b.w, i);
+                } else {
+                    // draw vertical lines
+                    gc.drawLine(i, b.y, i, b.y + b.h);
+                }
             }
         }
 
@@ -161,11 +188,9 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
             Rect be = elements[0].getBounds();
 
-            // Draw a mark at the drop point.
-            if (!be.isValid()) {
-                // We don't have valid bounds; this typically means we are dragging a new
-                // View from the palette whose bounds are unknown, so we simply show a single
-                // dividing line in the center of the position between the children
+            // Draw a clear line at the closest drop zone (unless we're over the dragged
+            // element itself)
+            if (feedback.userData.insertPos != selfPos) {
                 gc.useStyle(DrawingStyle.DROP_PREVIEW);
                 if (feedback.userData.width != null) {
                     int width = feedback.userData.width;
@@ -178,26 +203,20 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
                     int toY = y + height / 2;
                     gc.drawLine(x, fromY, x, toY);
                 }
-            } else {
+            }
+
+            if (be.isValid()) {
                 // At least the first element has a bound. Draw rectangles
                 // for all dropped elements with valid bounds, offset at
                 // the drop point.
-
-                int offsetX = x - be.x;
-                int offsetY = y - be.y;
-
-                // If there's a parent, keep the X/Y coordinate the same relative to the parent.
-                Rect pb = elements[0].getParentBounds();
-                if (pb.isValid()) {
-                    if (isVertical) {
-                        offsetX = b.x - pb.x;
-                        // Place the -center- of the bounds at child boundary!
-                        offsetY -= be.h / 2;
-                    } else {
-                        offsetY = b.y - pb.y;
-                        // Place the -center- of the bounds at child boundary!
-                        offsetX -= be.w / 2;
-                    }
+                int offsetX;
+                int offsetY;
+                if (isVertical) {
+                    offsetX = b.x - be.x;
+                    offsetY = currY - be.y - (be.h / 2);
+                } else {
+                    offsetX = currX - be.x - (be.w / 2);
+                    offsetY = b.y - be.y;
                 }
 
                 gc.useStyle(DrawingStyle.DROP_PREVIEW);
