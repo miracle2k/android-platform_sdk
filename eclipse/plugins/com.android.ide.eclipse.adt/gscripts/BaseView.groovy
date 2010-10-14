@@ -322,9 +322,9 @@ public class BaseView implements IViewRule {
         }
 
         int xs = r.x + 2;
-        int ys = r.y - gc.getFontHeight();
+        int ys = r.y - gc.getFontHeight() - 4;
         if (ys < 0) {
-            ys = r.y + r.h;
+            ys = r.y + r.h + 3;
         }
         gc.useStyle(DrawingStyle.HELP);
         gc.drawBoxedStrings(xs, ys, [displayName]);
@@ -332,6 +332,7 @@ public class BaseView implements IViewRule {
     }
 
     public void onChildSelected(IGraphics gc, INode parentNode, INode childNode) {
+        /* Drawing anchor lines: temporarily disabled. Enable via context menu perhaps?
         Rect rp = parentNode.getBounds();
         Rect rc = childNode.getBounds();
 
@@ -349,6 +350,7 @@ public class BaseView implements IViewRule {
             // right line
             gc.drawLine(rc.x + rc.w, m, rp.x + rp.w, m);
         }
+        */
     }
 
 
