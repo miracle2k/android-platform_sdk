@@ -16,13 +16,20 @@
 
 package com.android.sdkuilib.internal.repository;
 
+import com.android.sdklib.ISdkLog;
+import com.android.sdklib.SdkManager;
+import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.repository.Archive;
+import com.android.sdklib.internal.repository.ITaskFactory;
 import com.android.sdklib.internal.repository.MockAddonPackage;
 import com.android.sdklib.internal.repository.MockPlatformPackage;
 import com.android.sdklib.internal.repository.MockPlatformToolPackage;
 import com.android.sdklib.internal.repository.MockToolPackage;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.SdkSource;
+import com.android.sdkuilib.internal.repository.icons.ImageFactory;
+
+import org.eclipse.swt.widgets.Shell;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,10 +38,43 @@ import junit.framework.TestCase;
 
 public class UpdaterLogicTest extends TestCase {
 
+    private static class NullUpdaterData implements IUpdaterData {
+
+        public AvdManager getAvdManager() {
+            return null;
+        }
+
+        public ImageFactory getImageFactory() {
+            return null;
+        }
+
+        public ISdkLog getSdkLog() {
+            return null;
+        }
+
+        public SdkManager getSdkManager() {
+            return null;
+        }
+
+        public SettingsController getSettingsController() {
+            return null;
+        }
+
+        public ITaskFactory getTaskFactory() {
+            return null;
+        }
+
+        public Shell getWindowShell() {
+            return null;
+        }
+
+    }
+
     private static class MockUpdaterLogic extends UpdaterLogic {
         private final Package[] mRemotePackages;
 
-        public MockUpdaterLogic(Package[] remotePackages) {
+        public MockUpdaterLogic(IUpdaterData updaterData, Package[] remotePackages) {
+            super(updaterData);
             mRemotePackages = remotePackages;
         }
 
@@ -55,7 +95,7 @@ public class UpdaterLogicTest extends TestCase {
      * can find the base platform for a given addon.
      */
     public void testFindAddonDependency() {
-        MockUpdaterLogic mul = new MockUpdaterLogic(null);
+        MockUpdaterLogic mul = new MockUpdaterLogic(new NullUpdaterData(), null);
 
         MockPlatformPackage p1 = new MockPlatformPackage(1, 1);
         MockPlatformPackage p2 = new MockPlatformPackage(2, 1);
@@ -97,7 +137,7 @@ public class UpdaterLogicTest extends TestCase {
      * tool package for a given platform package.
      */
     public void testFindPlatformDependency() {
-        MockUpdaterLogic mul = new MockUpdaterLogic(null);
+        MockUpdaterLogic mul = new MockUpdaterLogic(new NullUpdaterData(), null);
 
         MockPlatformToolPackage pt1 = new MockPlatformToolPackage(1);
 
@@ -140,7 +180,7 @@ public class UpdaterLogicTest extends TestCase {
      * platform-tool package for a given tool package.
      */
     public void testFindPlatformToolDependency() {
-        MockUpdaterLogic mul = new MockUpdaterLogic(null);
+        MockUpdaterLogic mul = new MockUpdaterLogic(new NullUpdaterData(), null);
 
         MockPlatformToolPackage t1 = new MockPlatformToolPackage(1);
         MockPlatformToolPackage t2 = new MockPlatformToolPackage(2);

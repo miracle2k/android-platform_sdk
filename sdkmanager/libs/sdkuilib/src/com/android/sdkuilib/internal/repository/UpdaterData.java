@@ -57,7 +57,7 @@ import java.util.Iterator;
 /**
  * Data shared between {@link UpdaterWindowImpl} and its pages.
  */
-class UpdaterData {
+class UpdaterData implements IUpdaterData {
     private String mOsSdkRoot;
 
     private final ISdkLog mSdkLog;
@@ -617,7 +617,7 @@ class UpdaterData {
             refreshSources(true);
         }
 
-        UpdaterLogic ul = new UpdaterLogic();
+        UpdaterLogic ul = new UpdaterLogic(this);
         ArrayList<ArchiveInfo> archives = ul.computeUpdates(
                 selectedArchives,
                 getSources(),
@@ -663,7 +663,7 @@ class UpdaterData {
 
         refreshSources(true);
 
-        UpdaterLogic ul = new UpdaterLogic();
+        UpdaterLogic ul = new UpdaterLogic(this);
         ArrayList<ArchiveInfo> archives = ul.computeUpdates(
                 null /*selectedArchives*/,
                 getSources(),
