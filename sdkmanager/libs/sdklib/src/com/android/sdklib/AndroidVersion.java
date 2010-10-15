@@ -239,6 +239,20 @@ public final class AndroidVersion implements Comparable<AndroidVersion> {
     }
 
     /**
+     * Returns a string with the API Level and optional codename.
+     * Useful for debugging.
+     * For display purpose, please use {@link #getApiString()} instead.
+     */
+    @Override
+    public String toString() {
+        String s = String.format("API %1$d", mApiLevel);        //$NON-NLS-1$
+        if (isPreview()) {
+            s += String.format(", %1$s preview", mCodename);    //$NON-NLS-1$
+        }
+        return s;
+    }
+
+    /**
      * Compares this object with the specified object for order. Returns a
      * negative integer, zero, or a positive integer as this object is less
      * than, equal to, or greater than the specified object.

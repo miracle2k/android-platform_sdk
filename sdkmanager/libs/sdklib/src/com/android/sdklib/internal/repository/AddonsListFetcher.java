@@ -64,7 +64,7 @@ public class AddonsListFetcher {
         private final String mUiName;
 
         private Site(String url, String uiName) {
-            mUrl = url;
+            mUrl = url.trim();
             mUiName = uiName;
         }
 
@@ -87,6 +87,9 @@ public class AddonsListFetcher {
      * @return An array of {@link Site} on success (possibly empty), or null on error.
      */
     public Site[] fetch(ITaskMonitor monitor, String url) {
+
+        url = url == null ? "" : url.trim();
+
         monitor.setProgressMax(4);
         monitor.setDescription("Fetching %1$s", url);
         monitor.incProgress(1);

@@ -26,6 +26,8 @@ import com.android.sdklib.internal.repository.IMinPlatformToolsDependency;
 import com.android.sdklib.internal.repository.IMinToolsDependency;
 import com.android.sdklib.internal.repository.IPackageVersion;
 import com.android.sdklib.internal.repository.IPlatformDependency;
+import com.android.sdklib.internal.repository.ITask;
+import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.MinToolsPackage;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.PlatformPackage;
@@ -48,6 +50,12 @@ import java.util.HashMap;
  * those that can be updated and compute dependencies too.
  */
 class UpdaterLogic {
+
+    private final IUpdaterData mUpdaterData;
+
+    public UpdaterLogic(IUpdaterData updaterData) {
+        mUpdaterData = updaterData;
+    }
 
     /**
      * Compute which packages to install by taking the user selection
@@ -951,8 +959,21 @@ class UpdaterLogic {
             return;
         }
 
-        for (SdkSource remoteSrc : remoteSources) {
+        for (final SdkSource remoteSrc : remoteSources) {
             Package[] pkgs = remoteSrc.getPackages();
+
+            if (pkgs == null) {
+                final boolean forceHttp = mUpdaterData.getSettingsController().getForceHttp();
+
+                mUpdaterData.getTaskFactory().start("Loading Source", new ITask() {
+                    public void run(ITaskMonitor monitor) {
+                        remoteSrc.load(monitor, forceHttp);
+                    }
+                });
+
+                pkgs = remoteSrc.getPackages();
+            }
+
             if (pkgs != null) {
                 nextPackage: for (Package pkg : pkgs) {
                     for (Archive a : pkg.getArchives()) {
