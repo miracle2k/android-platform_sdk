@@ -42,7 +42,6 @@ import java.util.regex.Matcher;
  * To get access to an instance, use {@link ProjectProperties#makeWorkingCopy()} or
  * {@link ProjectProperties#create(IAbstractFolder, PropertyType)}.
  */
-@SuppressWarnings("deprecation")
 public class ProjectPropertiesWorkingCopy extends ProjectProperties {
 
     private final static Map<String, String> COMMENT_MAP = new HashMap<String, String>();
@@ -56,9 +55,6 @@ public class ProjectPropertiesWorkingCopy extends ProjectProperties {
                 "# location of the SDK. This is only used by Ant\n" +
                 "# For customization when using a Version Control System, please read the\n" +
                 "# header note.\n");
-        COMMENT_MAP.put(PROPERTY_APP_PACKAGE,
-                "# The name of your application package as defined in the manifest.\n" +
-                "# Used by the 'uninstall' rule.\n");
         COMMENT_MAP.put(PROPERTY_PACKAGE,
                 "# Package of the application being exported\n");
         COMMENT_MAP.put(PROPERTY_VERSIONCODE,
@@ -159,8 +155,10 @@ public class ProjectPropertiesWorkingCopy extends ProjectProperties {
                         // record the prop
                         visitedProps.add(key);
 
-                        // check if the property still exists.
-                        if (mProperties.containsKey(key)) {
+                        // check if this property must be removed.
+                        if (mType.isRemovedProperty(key)) {
+                            value = null;
+                        } else if (mProperties.containsKey(key)) { // if the property still exists.
                             // put the new value.
                             value = mProperties.get(key);
                         } else {

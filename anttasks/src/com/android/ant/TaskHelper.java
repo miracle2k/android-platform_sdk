@@ -37,18 +37,7 @@ final class TaskHelper {
 
         // check if it's valid and exists
         if (sdkOsPath == null || sdkOsPath.length() == 0) {
-            // LEGACY support: project created with 1.6 or before may be using a different
-            // property to declare the location of the SDK. At this point, we cannot
-            // yet check which target is running so we check both always.
-            sdkOsPath = antProject.getProperty(ProjectProperties.PROPERTY_SDK_LEGACY);
-            if (sdkOsPath == null || sdkOsPath.length() == 0) {
-                throw new BuildException("SDK Location is not set.");
-            }
-        }
-
-        // Make sure the OS sdk path ends with a directory separator
-        if (sdkOsPath.length() > 0 && !sdkOsPath.endsWith(File.separator)) {
-            sdkOsPath += File.separator;
+            throw new BuildException("SDK Location is not set.");
         }
 
         File sdk = new File(sdkOsPath);
