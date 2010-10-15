@@ -39,7 +39,7 @@ import org.eclipse.swt.widgets.Shell;
  * After the dialog as returned, one can query {@link #getDensity()} to get the chosen monitor
  * pixel density.
  */
-class ResolutionChooserDialog extends GridDialog {
+public class ResolutionChooserDialog extends GridDialog {
     public final static float[] MONITOR_SIZES = new float[] {
             13.3f, 14, 15.4f, 15.6f, 17, 19, 20, 21, 24, 30,
     };
@@ -52,14 +52,14 @@ class ResolutionChooserDialog extends GridDialog {
     private int mScreenSizeIndex = -1;
     private int mMonitorIndex = 0;
 
-    ResolutionChooserDialog(Shell parentShell) {
+    public ResolutionChooserDialog(Shell parentShell) {
         super(parentShell, 2, false);
     }
 
     /**
      * Returns the pixel density of the user-chosen monitor.
      */
-    int getDensity() {
+    public int getDensity() {
         float size = MONITOR_SIZES[mScreenSizeIndex];
         Rectangle rect = mMonitors[mMonitorIndex].getBounds();
 
