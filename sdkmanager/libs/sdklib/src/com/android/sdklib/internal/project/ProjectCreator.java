@@ -170,7 +170,6 @@ public class ProjectCreator {
      * @param pathToMainProject if non-null the project will be setup to test a main project
      * located at the given path.
      */
-    @SuppressWarnings("deprecation")
     public void createProject(String folderPath, String projectName,
             String packageName, String activityEntry, IAndroidTarget target, boolean library,
             String pathToMainProject) {
@@ -204,12 +203,6 @@ public class ProjectCreator {
             // create a build.properties file with just the application package
             ProjectPropertiesWorkingCopy buildProperties = ProjectProperties.create(folderPath,
                     PropertyType.BUILD);
-
-            // only put application.package for older target where the rules file didn't.
-            // grab it through xpath
-            if (target.getVersion().getApiLevel() < 4) {
-                buildProperties.setProperty(ProjectProperties.PROPERTY_APP_PACKAGE, packageName);
-            }
 
             if (isTestProject) {
                 buildProperties.setProperty(ProjectProperties.PROPERTY_TESTED_PROJECT,

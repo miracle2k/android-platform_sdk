@@ -44,6 +44,8 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
 
     public final static String PREFS_EMU_OPTIONS = AdtPlugin.PLUGIN_ID + ".emuOptions"; //$NON-NLS-1$
 
+    public final static String PREFS_MONITOR_DENSITY = AdtPlugin.PLUGIN_ID + ".monitorDensity"; //$NON-NLS-1$
+
     /** singleton instance */
     private final static AdtPrefs sThis = new AdtPrefs();
 
@@ -58,6 +60,7 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
 
     private boolean mBuildForceResResfresh = false;
     private boolean mBuildForceErrorOnNativeLibInJar = true;
+    private float mMonitorDensity = 0.f;
 
     public static enum BuildVerbosity {
         /** Build verbosity "Always". Those messages are always displayed, even in silent mode */
@@ -132,6 +135,10 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         if (property == null || PREFS_BUILD_FORCE_ERROR_ON_NATIVELIB_IN_JAR.equals(property)) {
             mBuildForceErrorOnNativeLibInJar = mStore.getBoolean(PREFS_BUILD_RES_AUTO_REFRESH);
         }
+
+        if (property == null || PREFS_MONITOR_DENSITY.equals(property)) {
+            mMonitorDensity = mStore.getFloat(PREFS_MONITOR_DENSITY);
+        }
     }
 
     /**
@@ -154,6 +161,18 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         return mBuildForceErrorOnNativeLibInJar;
     }
 
+    public float getMonitorDensity() {
+        return mMonitorDensity;
+    }
+
+    public void setMonitorDensity(float density) {
+        mMonitorDensity = density;
+
+        // need to save this new value to the store
+        IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
+        store.setValue(PREFS_MONITOR_DENSITY, density);
+    }
+
     @Override
     public void initializeDefaultPreferences() {
         IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
@@ -164,6 +183,8 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         store.setDefault(PREFS_BUILD_VERBOSITY, BuildVerbosity.ALWAYS.name());
 
         store.setDefault(PREFS_HOME_PACKAGE, "android.process.acore"); //$NON-NLS-1$
+
+        store.setDefault(PREFS_MONITOR_DENSITY, 0.f);
 
         try {
             store.setDefault(PREFS_DEFAULT_DEBUG_KEYSTORE,

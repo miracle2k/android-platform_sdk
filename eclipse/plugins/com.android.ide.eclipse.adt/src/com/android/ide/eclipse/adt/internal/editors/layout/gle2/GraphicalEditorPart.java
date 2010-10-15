@@ -33,6 +33,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.configuration.Configu
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
@@ -52,6 +53,7 @@ import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IXmlPullParser;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -76,6 +78,7 @@ import org.eclipse.jdt.ui.wizards.NewClassWizardPage;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyleRange;
@@ -251,10 +254,13 @@ public class GraphicalEditorPart extends EditorPart
                             ) {
                         @Override
                         public void onSelected(boolean newState) {
-                            mZoomOutButton.setEnabled(!newState);
-                            mZoomResetButton.setEnabled(!newState);
-                            mZoomInButton.setEnabled(!newState);
-                            rescaleToReal(newState);
+                            if (rescaleToReal(newState)) {
+                                mZoomOutButton.setEnabled(!newState);
+                                mZoomResetButton.setEnabled(!newState);
+                                mZoomInButton.setEnabled(!newState);
+                            } else {
+                                mZoomRealSizeButton.setSelection(!newState);
+                            }
                         }
                     },
                     mZoomOutButton = new CustomButton(
@@ -396,23 +402,35 @@ public class GraphicalEditorPart extends EditorPart
         mCanvasViewer.getCanvas().setScale(1, true /*redraw*/);
     }
 
-    private void rescaleToReal(boolean real) {
+    private boolean rescaleToReal(boolean real) {
         if (real) {
-            computeAndSetRealScale(true /*redraw*/);
+            return computeAndSetRealScale(true /*redraw*/);
         } else {
             // reset the scale to 100%
             mCanvasViewer.getCanvas().setScale(1, true /*redraw*/);
+            return true;
         }
     }
 
-    private void computeAndSetRealScale(boolean redraw) {
+    private boolean computeAndSetRealScale(boolean redraw) {
         // compute average dpi of X and Y
         float dpi = (mConfigComposite.getXDpi() + mConfigComposite.getYDpi()) / 2.f;
 
         // get the monitor dpi
-        float monitor = 110f;
+        float monitor = AdtPrefs.getPrefs().getMonitorDensity();
+        if (monitor == 0.f) {
+            ResolutionChooserDialog dialog = new ResolutionChooserDialog(
+                    mConfigComposite.getShell());
+            if (dialog.open() == Window.OK) {
+                monitor = dialog.getDensity();
+                AdtPrefs.getPrefs().setMonitorDensity(monitor);
+            } else {
+                return false;
+            }
+        }
 
         mCanvasViewer.getCanvas().setScale(monitor / dpi, redraw);
+        return true;
     }
 
 
