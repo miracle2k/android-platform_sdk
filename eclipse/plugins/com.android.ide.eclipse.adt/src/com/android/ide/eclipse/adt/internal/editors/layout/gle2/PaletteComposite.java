@@ -443,7 +443,8 @@ public class PaletteComposite extends Composite {
             GlobalCanvasDragInfo.getInstance().startDrag(
                     mElements,
                     null /* selection */,
-                    null /*canvas*/);
+                    null /*canvas*/,
+                    null /* removeSource */);
         }
 
         public void dragSetData(DragSourceEvent e) {

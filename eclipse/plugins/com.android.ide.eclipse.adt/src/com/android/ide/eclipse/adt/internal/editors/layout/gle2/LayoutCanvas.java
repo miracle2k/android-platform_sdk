@@ -492,6 +492,13 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     }
 
     /**
+     * Returns the {@link LayoutEditor} associated with this canvas.
+     */
+    /* package */ LayoutEditor getLayoutEditor() {
+        return mLayoutEditor;
+    }
+
+    /**
      * Sets the result of the layout rendering. The result object indicates if the layout
      * rendering succeeded. If it did, it contains a bitmap and the objects rectangles.
      *
@@ -1613,7 +1620,13 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                 GlobalCanvasDragInfo.getInstance().startDrag(
                         mDragElements,
                         mDragSelection.toArray(new CanvasSelection[mDragSelection.size()]),
-                        LayoutCanvas.this);
+                        LayoutCanvas.this,
+                        new Runnable() {
+                            public void run() {
+                                deleteSelection("Remove", mDragSelection);
+                            }
+                        }
+                );
             }
         }
 
@@ -1645,20 +1658,6 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
          * On a successful move, remove the originating elements.
          */
         public void dragFinished(DragSourceEvent e) {
-            if (e.detail == DND.DROP_MOVE) {
-                // Remove from source. Since we know the selection, we'll simply
-                // create a cut operation on the existing drag selection.
-
-                // Create an undo edit XML wrapper, which takes a runnable
-                mLayoutEditor.wrapUndoEditXmlModel(
-                        "Remove drag'n'drop source elements",
-                        new Runnable() {
-                            public void run() {
-                                deleteSelection("Remove", mDragSelection);
-                            }
-                        });
-            }
-
             // Clear the selection
             mDragSelection.clear();
             mDragElements = null;
