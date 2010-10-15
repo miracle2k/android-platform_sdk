@@ -365,6 +365,8 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         InputDialog dlg = new InputDialog(getShell(), title, msg, null, new IInputValidator() {
             public String isValid(String newText) {
 
+                newText = newText == null ? null : newText.trim();
+
                 if (newText == null || newText.length() == 0) {
                     return "Error: URL field is empty. Please enter a URL.";
                 }
@@ -391,7 +393,7 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
         });
 
         if (dlg.open() == Window.OK) {
-            String url = dlg.getValue();
+            String url = dlg.getValue().trim();
             mUpdaterData.getSources().add(
                     SdkSourceCategory.USER_ADDONS,
                     new SdkAddonSource(url, null/*uiName*/));

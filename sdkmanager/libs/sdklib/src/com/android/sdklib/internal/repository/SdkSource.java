@@ -73,6 +73,12 @@ public abstract class SdkSource implements IDescription {
      */
     public SdkSource(String url, String uiName) {
 
+        // URLs should not be null and should not have whitespace.
+        if (url == null) {
+            url = "";
+        }
+        url = url.trim();
+
         // if the URL ends with a /, it must be "directory" resource,
         // in which case we automatically add the default file that will
         // looked for. This way it will be obvious to the user which

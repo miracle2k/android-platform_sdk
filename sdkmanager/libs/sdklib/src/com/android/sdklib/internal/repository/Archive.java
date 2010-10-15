@@ -202,7 +202,7 @@ public class Archive implements IDescription {
         mPackage = pkg;
         mOs = os;
         mArch = arch;
-        mUrl = url;
+        mUrl = url == null ? null : url.trim();
         mLocalOsPath = null;
         mSize = size;
         mChecksum = checksum;
