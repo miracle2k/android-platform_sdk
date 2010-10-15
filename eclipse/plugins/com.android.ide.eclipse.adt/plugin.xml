@@ -343,6 +343,12 @@
             id="com.android.ide.eclipse.common.preferences.UsagePreferencePage"
             name="Usage Stats">
       </page>
+      <page
+            category="com.android.ide.eclipse.preferences.main"
+            class="com.android.ide.eclipse.adt.internal.preferences.EditorsPage"
+            id="com.android.ide.eclipse.adt.preferences.EditorsPage"
+            name="Editors">
+      </page>
    </extension>
    <extension
          point="org.eclipse.core.runtime.preferences">
