@@ -34,6 +34,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -195,10 +196,18 @@ public abstract class SdkSource implements IDescription {
 
     public String getShortDescription() {
 
-        // TODO extract domain from URL and add to UiName if not present.
-
         if (mUiName != null && mUiName.length() > 0) {
-            return mUiName;
+
+            String host = "malformed URL";
+
+            try {
+                URL u = new URL(mUrl);
+                host = u.getHost();
+            } catch (MalformedURLException e) {
+            }
+
+            return String.format("%1$s (%2$s)", mUiName, host);
+
         }
         return mUrl;
     }
