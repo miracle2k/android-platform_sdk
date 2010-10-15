@@ -19,12 +19,11 @@ package com.android.ide.eclipse.ddms.preferences;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.ide.eclipse.ddms.views.LogCatView;
 
-import org.eclipse.core.runtime.Preferences;
-import org.eclipse.core.runtime.Preferences.IPropertyChangeListener;
-import org.eclipse.core.runtime.Preferences.PropertyChangeEvent;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.FontFieldEditor;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
@@ -48,8 +47,7 @@ public class LogCatPreferencePage extends FieldEditorPreferencePage implements
                 "Display Font:", getFieldEditorParent());
         addField(ffe);
 
-        Preferences prefs = DdmsPlugin.getDefault().getPluginPreferences();
-        prefs.addPropertyChangeListener(new IPropertyChangeListener() {
+        getPreferenceStore().addPropertyChangeListener(new IPropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent event) {
                 // get the name of the property that changed.
                 String property = event.getProperty();
