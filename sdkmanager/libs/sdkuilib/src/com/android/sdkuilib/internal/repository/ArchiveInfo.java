@@ -90,6 +90,7 @@ class ArchiveInfo implements IDescription {
      * archive depends upon. In other words, we can only install this archive if the
      * dependency has been successfully installed. It also means we need to install the
      * dependency first.
+     * <p/>
      * This array can be null or empty. It can't contain nulls though.
      */
     public ArchiveInfo[] getDependsOn() {
@@ -108,12 +109,21 @@ class ArchiveInfo implements IDescription {
      * Adds an {@link ArchiveInfo} for which <em>this</em> package is a dependency.
      * This means the package added here depends on this package.
      */
-    public void addDependencyFor(ArchiveInfo dependencyFor) {
+    public ArchiveInfo addDependencyFor(ArchiveInfo dependencyFor) {
         if (!mDependencyFor.contains(dependencyFor)) {
             mDependencyFor.add(dependencyFor);
         }
+
+        return this;
     }
 
+    /**
+     * Returns the list of {@link ArchiveInfo} for which <em>this</em> package is a dependency.
+     * This means the packages listed here depend on this package.
+     * <p/>
+     * Implementation detail: this is the internal mutable list. Callers should not modify it.
+     * This list can be empty but is never null.
+     */
     public Collection<ArchiveInfo> getDependenciesFor() {
         return mDependencyFor;
     }
