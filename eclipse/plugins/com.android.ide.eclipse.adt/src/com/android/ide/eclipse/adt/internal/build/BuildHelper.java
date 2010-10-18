@@ -23,7 +23,6 @@ import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
@@ -495,15 +494,9 @@ public class BuildHelper {
     public void executeDx(IJavaProject javaProject, String[] inputPaths, String osOutFilePath)
             throws CoreException, DexException {
 
-        IAndroidTarget target = Sdk.getCurrent().getTarget(mProject);
-        AndroidTargetData targetData = Sdk.getCurrent().getTargetData(target);
-        if (targetData == null) {
-            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
-                    Messages.ApkBuilder_UnableBuild_Dex_Not_loaded));
-        }
-
         // get the dex wrapper
-        DexWrapper wrapper = targetData.getDexWrapper();
+        Sdk sdk = Sdk.getCurrent();
+        DexWrapper wrapper = sdk.getDexWrapper();
 
         if (wrapper == null) {
             throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,

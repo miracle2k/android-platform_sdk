@@ -18,7 +18,6 @@ package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.build.DexWrapper;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.menu.descriptors.MenuDescriptors;
@@ -94,22 +93,9 @@ public final class AndroidTargetParser {
         try {
             SubMonitor progress = SubMonitor.convert(monitor,
                     String.format("Parsing SDK %1$s", mAndroidTarget.getName()),
-                    14);
+                    13);
 
             AndroidTargetData targetData = new AndroidTargetData(mAndroidTarget);
-
-            // load DX.
-            DexWrapper dexWrapper = new DexWrapper();
-            IStatus res = dexWrapper.loadDex(mAndroidTarget.getPath(IAndroidTarget.DX_JAR));
-            if (res != Status.OK_STATUS) {
-                return new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
-                        String.format("dx.jar loading failed for target '%1$s'",
-                                mAndroidTarget.getFullName()));
-            }
-
-            // we have loaded dx.
-            targetData.setDexWrapper(dexWrapper);
-            progress.worked(1);
 
             // parse the rest of the data.
 
