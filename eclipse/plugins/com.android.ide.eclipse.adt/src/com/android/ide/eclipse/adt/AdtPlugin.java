@@ -791,7 +791,7 @@ public class AdtPlugin extends AbstractUIPlugin {
         // check that we have both the tools component and the platform-tools component.
         String platformTools = osSdkLocation + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER;
         if (checkFolder(platformTools) == false) {
-            return errorHandler.handleError("SDK Platform Tools component is missing!\n" +
+            return errorHandler.handleWarning("SDK Platform Tools component is missing!\n" +
                     "Please use the SDK Manager to install it.");
         }
 
