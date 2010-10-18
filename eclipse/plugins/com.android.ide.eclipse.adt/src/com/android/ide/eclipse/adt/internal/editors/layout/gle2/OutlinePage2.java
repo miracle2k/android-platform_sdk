@@ -48,6 +48,8 @@ import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.DropTarget;
 import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -160,6 +162,12 @@ public class OutlinePage2 extends ContentOutlinePage
 
         // Listen to selection changes from the layout editor
         getSite().getPage().addSelectionListener(this);
+        getControl().addDisposeListener(new DisposeListener() {
+
+            public void widgetDisposed(DisposeEvent e) {
+                dispose();
+            }
+        });
     }
 
     @Override
