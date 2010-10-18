@@ -484,27 +484,17 @@ final class UpdateChooserDialog extends GridDialog {
     }
 
     /**
-     * Computes and display missing dependency.
+     * Computes and displays missing dependencies.
+     *
      * If there's a selected package, check the dependency for that one.
-     * Otherwise display the first missing dependency.
+     * Otherwise display the first missing dependency of any other package.
      */
     private void displayMissingDependency(ArchiveInfo ai) {
         String error = null;
 
         try {
             if (ai != null) {
-
-                if (!ai.isAccepted()) {
-                    // Case where this package blocks another one when not accepted
-                    for (ArchiveInfo ai2 : ai.getDependenciesFor()) {
-                        // It only matters if the blocked one is accepted
-                        if (ai2.isAccepted()) {
-                            error = String.format("Package '%1$s' depends on this one.",
-                                    ai2.getShortDescription());
-                            return;
-                        }
-                    }
-                } else {
+                if (ai.isAccepted()) {
                     // Case where this package is accepted but blocked by another non-accepted one
                     ArchiveInfo[] adeps = ai.getDependsOn();
                     if (adeps != null) {
@@ -516,13 +506,29 @@ final class UpdateChooserDialog extends GridDialog {
                             }
                         }
                     }
+                } else {
+                    // Case where this package blocks another one when not accepted
+                    for (ArchiveInfo adep : ai.getDependenciesFor()) {
+                        // It only matters if the blocked one is accepted
+                        if (adep.isAccepted()) {
+                            error = String.format("Package '%1$s' depends on this one.",
+                                    adep.getShortDescription());
+                            return;
+                        }
+                    }
                 }
             }
 
-            // If there's no selection, just find the first missing dependency of any accepted
-            // package.
+            // If there is no missing dependency on the current selection,
+            // just find the first missing dependency of any other package.
             for (ArchiveInfo ai2 : mArchives) {
+                if (ai2 == ai) {
+                    // We already processed that one above.
+                    continue;
+                }
                 if (ai2.isAccepted()) {
+                    // The user requested to install this package.
+                    // Check if all its dependencies are met.
                     ArchiveInfo[] adeps = ai2.getDependsOn();
                     if (adeps != null) {
                         for (ArchiveInfo adep : adeps) {
@@ -532,6 +538,20 @@ final class UpdateChooserDialog extends GridDialog {
                                         adep.getShortDescription());
                                 return;
                             }
+                        }
+                    }
+                } else {
+                    // The user did not request to install this package.
+                    // Check whether this package blocks another one when not accepted.
+                    for (ArchiveInfo adep : ai2.getDependenciesFor()) {
+                        // It only matters if the blocked one is accepted
+                        // or if it's a local archive that is already installed (these
+                        // are marked as implicitly accepted, so it's the same test.)
+                        if (adep.isAccepted()) {
+                            error = String.format("Package '%1$s' depends on '%2$s'",
+                                    adep.getShortDescription(),
+                                    ai2.getShortDescription());
+                            return;
                         }
                     }
                 }
@@ -676,6 +696,7 @@ final class UpdateChooserDialog extends GridDialog {
         // update state
         mLicenseAcceptAll = false;
         mTableViewPackage.refresh(ai);
+        displayMissingDependency(ai);
         updateLicenceRadios(ai);
     }
 
