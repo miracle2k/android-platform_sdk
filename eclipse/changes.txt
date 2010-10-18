@@ -7,7 +7,14 @@
   If debuggable=true is set, then release builds will actually do a debug build.
 - Automatic Proguard support in release builds. Only need to have a proguard.config
   property in default.properties that points to a proguard config file.
+- Completely rewritten Visual Layout Editor. This is very much a work in progress.
+    - full drag and drop from palette to layout for all Layout classes.
+    - Move widgets inside a Layout view, from one Layout view to another and from one layout file to another.
+    - Contextual menu with enum/flag type properties.
+    - New zoom controls.
+- New HierarchyViewer plug-in integrated in Eclipse.
 - Android launch configurations don't recompile the whole workspace on launch anymore.
+- android.jar source and javadoc location can now be configured.
 
 0.9.9:
 - Fix bug where ADT would delete the source folder of projects imported from version control.
