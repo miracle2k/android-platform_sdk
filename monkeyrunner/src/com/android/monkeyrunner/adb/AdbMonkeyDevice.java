@@ -199,12 +199,12 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected String getSystemProperty(String key) {
+    public String getSystemProperty(String key) {
         return device.getProperty(key);
     }
 
     @Override
-    protected String getProperty(String key) {
+    public String getProperty(String key) {
         try {
             return manager.getVariable(key);
         } catch (IOException e) {
@@ -214,7 +214,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected void wake() {
+    public void wake() {
         try {
             manager.wake();
         } catch (IOException e) {
@@ -231,7 +231,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected String shell(String cmd) {
+    public String shell(String cmd) {
         CommandOutputCapture capture = new CommandOutputCapture();
         try {
             device.executeShellCommand(cmd, capture);
@@ -252,7 +252,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected boolean installPackage(String path) {
+    public boolean installPackage(String path) {
         try {
             String result = device.installPackage(path, true);
             if (result != null) {
@@ -267,7 +267,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected boolean removePackage(String packageName) {
+    public boolean removePackage(String packageName) {
         try {
             String result = device.uninstallPackage(packageName);
             if (result != null) {
@@ -283,7 +283,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected void press(String keyName, TouchPressType type) {
+    public void press(String keyName, TouchPressType type) {
         try {
             switch (type) {
                 case DOWN_AND_UP:
@@ -302,7 +302,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected void type(String string) {
+    public void type(String string) {
         try {
             manager.type(string);
         } catch (IOException e) {
@@ -311,7 +311,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected void touch(int x, int y, TouchPressType type) {
+    public void touch(int x, int y, TouchPressType type) {
         try {
             switch (type) {
                 case DOWN:
@@ -330,7 +330,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected void reboot(String into) {
+    public void reboot(String into) {
         try {
             device.reboot(into);
         } catch (TimeoutException e) {
@@ -343,7 +343,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected void startActivity(String uri, String action, String data, String mimetype,
+    public void startActivity(String uri, String action, String data, String mimetype,
             Collection<String> categories, Map<String, Object> extras, String component,
             int flags) {
         List<String> intentArgs = buildIntentArgString(uri, action, data, mimetype, categories,
@@ -353,7 +353,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected void broadcastIntent(String uri, String action, String data, String mimetype,
+    public void broadcastIntent(String uri, String action, String data, String mimetype,
             Collection<String> categories, Map<String, Object> extras, String component,
             int flags) {
         List<String> intentArgs = buildIntentArgString(uri, action, data, mimetype, categories,
@@ -442,7 +442,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected Map<String, Object> instrument(String packageName, Map<String, Object> args) {
+    public Map<String, Object> instrument(String packageName, Map<String, Object> args) {
         List<String> shellCmd = Lists.newArrayList("am", "instrument", "-w", "-r", packageName);
         String result = shell(shellCmd.toArray(ZERO_LENGTH_STRING_ARRAY));
         return convertInstrumentResult(result);
@@ -490,7 +490,7 @@ public class AdbMonkeyDevice extends MonkeyDevice {
     }
 
     @Override
-    protected void drag(int startx, int starty, int endx, int endy, int steps, long ms) {
+    public void drag(int startx, int starty, int endx, int endy, int steps, long ms) {
         final long iterationTime = ms / steps;
 
         LinearInterpolator lerp = new LinearInterpolator(steps);
