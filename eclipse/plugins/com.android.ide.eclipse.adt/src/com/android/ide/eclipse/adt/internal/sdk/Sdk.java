@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.sdk;
 import com.android.ddmlib.IDevice;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.build.DexWrapper;
 import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
@@ -113,6 +114,7 @@ public final class Sdk  {
     }
 
     private final SdkManager mManager;
+    private final DexWrapper mDexWrapper;
     private final AvdManager mAvdManager;
 
     /** Map associating an {@link IAndroidTarget} to an {@link AndroidTargetData} */
@@ -228,13 +230,25 @@ public final class Sdk  {
             // get an SdkManager object for the location
             SdkManager manager = SdkManager.createManager(sdkLocation, log);
             if (manager != null) {
+                // load DX.
+                DexWrapper dexWrapper = new DexWrapper();
+                String dexLocation =
+                        sdkLocation + File.separator +
+                        SdkConstants.OS_SDK_PLATFORM_TOOLS_LIB_FOLDER + SdkConstants.FN_DX_JAR;
+                IStatus res = dexWrapper.loadDex(dexLocation);
+                if (res != Status.OK_STATUS) {
+                    log.error(null, res.getMessage());
+                    dexWrapper = null;
+                }
+
+                // create the AVD Manager
                 AvdManager avdManager = null;
                 try {
                     avdManager = new AvdManager(manager, log);
                 } catch (AndroidLocationException e) {
                     log.error(e, "Error parsing the AVDs");
                 }
-                sCurrentSdk = new Sdk(manager, avdManager);
+                sCurrentSdk = new Sdk(manager, dexWrapper, avdManager);
                 return sCurrentSdk;
             } else {
                 StringBuilder sb = new StringBuilder("Error Loading the SDK:\n");
@@ -538,6 +552,14 @@ public final class Sdk  {
     }
 
     /**
+     * Returns a {@link DexWrapper} object to be used to execute dx commands. If dx.jar was not
+     * loaded properly, then this will return <code>null</code>.
+     */
+    public DexWrapper getDexWrapper() {
+        return mDexWrapper;
+    }
+
+    /**
      * Returns the {@link AvdManager}. If the AvdManager failed to parse the AVD folder, this could
      * be <code>null</code>.
      */
@@ -599,8 +621,9 @@ public final class Sdk  {
         }
     }
 
-    private Sdk(SdkManager manager, AvdManager avdManager) {
+    private Sdk(SdkManager manager, DexWrapper dexWrapper, AvdManager avdManager) {
         mManager = manager;
+        mDexWrapper = dexWrapper;
         mAvdManager = avdManager;
 
         // listen to projects closing

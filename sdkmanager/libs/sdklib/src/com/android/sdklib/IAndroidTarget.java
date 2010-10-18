@@ -67,9 +67,13 @@ public interface IAndroidTarget extends Comparable<IAndroidTarget> {
     public final static int AAPT                = 20;
     /** OS Path to the target's version of the aidl tool. */
     public final static int AIDL                = 21;
-    /** OS Path to the target's version of the dx too. */
+    /** OS Path to the target's version of the dx too.<br>
+     * This is deprecated as dx is now in the platform tools and not in the platform. */
+    @Deprecated
     public final static int DX                  = 22;
-    /** OS Path to the target's version of the dx.jar file. */
+    /** OS Path to the target's version of the dx.jar file.<br>
+     * This is deprecated as dx.jar is now in the platform tools and not in the platform.. */
+    @Deprecated
     public final static int DX_JAR              = 23;
     /** OS Path to the "ant" folder which contains the ant build rules (ver 2 and above) */
     public final static int ANT                 = 24;

@@ -1032,6 +1032,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
                 if (mHoverFillColor != null) {
                     int oldAlpha = gc.getAlpha();
                     gc.setAlpha(SwtDrawingStyle.HOVER.getFillAlpha());
+                    gc.setBackground(mHoverFillColor);
                     gc.fillRectangle(x, y, w, h);
                     gc.setAlpha(oldAlpha);
                 }
