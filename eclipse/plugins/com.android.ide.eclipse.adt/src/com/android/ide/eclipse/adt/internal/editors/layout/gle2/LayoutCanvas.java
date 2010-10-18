@@ -196,7 +196,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
 
     /** GC wrapper given to the IViewRule methods. The GC itself is only defined in the
      *  context of {@link #onPaint(PaintEvent)}; otherwise it is null. */
-    private final GCWrapper mGCWrapper;
+    private GCWrapper mGCWrapper;
 
     /** Default font used on the canvas. Do not dispose, it's a system font. */
     private Font mFont;
@@ -249,7 +249,13 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     /** List of clients listening to selection changes. */
     private final ListenerList mSelectionListeners = new ListenerList();
 
-    /** The current Outline Page, to set its model. */
+    /**
+     * The current Outline Page, to set its model.
+     * It isn't possible to call OutlinePage2.dispose() in this.dispose().
+     * this.dispose() is called from GraphicalEditorPart.dispose(),
+     * when page's widget is already disposed.
+     * Added the DisposeListener to OutlinePage2 in order to correctly dispose this page.
+     **/
     private OutlinePage2 mOutlinePage;
 
     /** Barrier set when updating the selection to prevent from recursively
@@ -381,9 +387,9 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     public void dispose() {
         super.dispose();
 
-        if (mOutlinePage != null) {
-            mOutlinePage.setModel(null);
-            mOutlinePage = null;
+        if (mSelectionFgColor != null) {
+            mSelectionFgColor.dispose();
+            mSelectionFgColor = null;
         }
 
         if (mOutlineColor != null) {
@@ -419,6 +425,16 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         if (mClipboard != null) {
             mClipboard.dispose();
             mClipboard = null;
+        }
+
+        if (mImage != null) {
+            mImage.dispose();
+            mImage = null;
+        }
+
+        if (mGCWrapper != null) {
+            mGCWrapper.dispose();
+            mGCWrapper = null;
         }
     }
 
@@ -899,6 +915,9 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * The image *can* be null, which is the case when we are dealing with an empty document.
      */
     private void setImage(BufferedImage awtImage) {
+        if (mImage != null) {
+            mImage.dispose();
+        }
         if (awtImage == null) {
             mImage = null;
 
