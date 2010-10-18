@@ -613,9 +613,10 @@ class UpdaterData implements IUpdaterData {
     public void updateOrInstallAll_WithGUI(
             Collection<Archive> selectedArchives,
             boolean includeObsoletes) {
-        if (selectedArchives == null) {
-            refreshSources(true);
-        }
+
+        // Note: we no longer call refreshSources(true) here. This will be done
+        // automatically by computeUpdates() iif it needs to access sources to
+        // resolve missing dependencies.
 
         UpdaterLogic ul = new UpdaterLogic(this);
         ArrayList<ArchiveInfo> archives = ul.computeUpdates(

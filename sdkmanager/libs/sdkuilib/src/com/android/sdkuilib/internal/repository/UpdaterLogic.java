@@ -344,12 +344,21 @@ class UpdaterLogic {
 
             // find dependencies for the local archive and add them as needed
             // to the outArchives collection.
-            findDependency(p,
+            ArchiveInfo[] deps = findDependency(p,
                   outArchives,
                   selectedArchives,
                   remotePkgs,
                   remoteSources,
                   localArchives);
+
+            if (deps != null) {
+                // The already installed archive has a missing dependency, which we
+                // just selected for install. Make sure we remember the dependency
+                // so that we can enforce it later in the UI.
+                for (ArchiveInfo aid : deps) {
+                    aid.addDependencyFor(ai);
+                }
+            }
         }
     }
 
@@ -954,38 +963,55 @@ class UpdaterLogic {
     }
 
     /** Fetch all remote packages only if really needed. */
-    protected void fetchRemotePackages(ArrayList<Package> remotePkgs, SdkSource[] remoteSources) {
+    protected void fetchRemotePackages(
+            final ArrayList<Package> remotePkgs,
+            final SdkSource[] remoteSources) {
         if (remotePkgs.size() > 0) {
             return;
         }
 
+        // First check if there's any remote source we need to fetch.
+        // This will bring the task window, so we rather not display it unless
+        // necessary.
+        boolean needsFetch = false;
         for (final SdkSource remoteSrc : remoteSources) {
-            Package[] pkgs = remoteSrc.getPackages();
-
-            if (pkgs == null) {
-                final boolean forceHttp = mUpdaterData.getSettingsController().getForceHttp();
-
-                mUpdaterData.getTaskFactory().start("Loading Source", new ITask() {
-                    public void run(ITaskMonitor monitor) {
-                        remoteSrc.load(monitor, forceHttp);
-                    }
-                });
-
-                pkgs = remoteSrc.getPackages();
+            needsFetch = remoteSrc.getPackages() == null;
+            if (needsFetch) {
+                break;
             }
+        }
 
-            if (pkgs != null) {
-                nextPackage: for (Package pkg : pkgs) {
-                    for (Archive a : pkg.getArchives()) {
-                        // Only add a package if it contains at least one compatible archive
-                        if (a.isCompatible()) {
-                            remotePkgs.add(pkg);
-                            continue nextPackage;
+        if (!needsFetch) {
+            return;
+        }
+
+        final boolean forceHttp = mUpdaterData.getSettingsController().getForceHttp();
+
+        mUpdaterData.getTaskFactory().start("Refresh Sources", new ITask() {
+            public void run(ITaskMonitor monitor) {
+                for (SdkSource remoteSrc : remoteSources) {
+                    Package[] pkgs = remoteSrc.getPackages();
+
+                    if (pkgs == null) {
+                        remoteSrc.load(monitor, forceHttp);
+                        pkgs = remoteSrc.getPackages();
+                    }
+
+                    if (pkgs != null) {
+                        nextPackage: for (Package pkg : pkgs) {
+                            for (Archive a : pkg.getArchives()) {
+                                // Only add a package if it contains at least
+                                // one compatible archive
+                                if (a.isCompatible()) {
+                                    remotePkgs.add(pkg);
+                                    continue nextPackage;
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
+        });
     }
 
 
