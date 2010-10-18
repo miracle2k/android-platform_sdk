@@ -48,7 +48,8 @@ Require-Bundle: com.android.ide.eclipse.ddms,
  org.eclipse.core.expressions
 Eclipse-LazyStart: true
 Export-Package: com.android.ide.eclipse.adt;x-friends:="com.android.ide.eclipse.tests",
- com.android.ide.eclipse.adt.editors.layout.gscripts;x-friends:="com.android.ide.eclipse.tests",
+ com.android.ide.common.api;x-friends:="com.android.ide.eclipse.tests",
+ com.android.ide.common.layout;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.actions;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.eclipse.adt.internal.build;x-friends:="com.android.ide.eclipse.tests",

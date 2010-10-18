@@ -16,12 +16,12 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.IDragElement;
+import com.android.ide.common.api.INode;
+import com.android.ide.common.api.Point;
+import com.android.ide.common.api.Rect;
+import com.android.ide.common.api.IDragElement.IDragAttribute;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement.IDragAttribute;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
@@ -1152,6 +1152,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         int x = mHScale.inverseTranslate(e.x);
         int y = mVScale.inverseTranslate(e.y);
 
+        // test, remove me
         if (e.button == 3) {
             // Right click button is used to display a context menu.
             // If there's an existing selection and the click is anywhere in this selection

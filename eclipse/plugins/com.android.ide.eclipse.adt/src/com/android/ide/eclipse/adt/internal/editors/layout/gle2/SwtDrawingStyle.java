@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DrawingStyle;
+import com.android.ide.common.api.DrawingStyle;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.RGB;
