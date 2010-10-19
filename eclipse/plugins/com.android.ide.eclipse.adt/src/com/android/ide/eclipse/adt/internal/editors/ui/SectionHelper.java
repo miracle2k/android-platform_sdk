@@ -20,6 +20,8 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 
 import org.eclipse.jface.text.DefaultInformationControl;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseTrackListener;
 import org.eclipse.swt.graphics.Point;
@@ -40,13 +42,13 @@ import java.lang.reflect.Method;
 
 /**
  * Helper for the AndroidManifest form editor.
- * 
+ *
  * Helps create a new SectionPart with sensible default parameters,
  * create default layout or add typical widgets.
- * 
+ *
  * IMPORTANT: This is NOT a generic class. It makes a lot of assumptions on the
  * UI as used by the form editor for the AndroidManifest.
- * 
+ *
  * TODO: Consider moving to a common package.
  */
 public final class SectionHelper {
@@ -63,7 +65,7 @@ public final class SectionHelper {
          * It's up to the caller to call setText() and setDescription().
          * <p/>
          * The section style includes a description and a title bar by default.
-         * 
+         *
          * @param body The parent (e.g. FormPage body)
          * @param toolkit Form Toolkit
          */
@@ -77,7 +79,7 @@ public final class SectionHelper {
          * <p/>
          * The section style includes a description and a title bar by default.
          * You can add extra styles, like Section.TWISTIE.
-         * 
+         *
          * @param body The parent (e.g. FormPage body).
          * @param toolkit Form Toolkit.
          * @param extra_style Extra styles (on top of description and title bar).
@@ -91,12 +93,12 @@ public final class SectionHelper {
         }
 
         // Create non-static methods of helpers just for convenience
-        
+
         /**
          * Creates a new composite with a TableWrapLayout set with a given number of columns.
-         * 
+         *
          * If the parent composite is a Section, the new composite is set as a client.
-         * 
+         *
          * @param toolkit Form Toolkit
          * @param numColumns Desired number of columns.
          * @return The new composite.
@@ -108,12 +110,12 @@ public final class SectionHelper {
         /**
          * Creates a label widget.
          * If the parent layout if a TableWrapLayout, maximize it to span over all columns.
-         * 
+         *
          * @param parent The parent (e.g. composite from CreateTableLayout())
          * @param toolkit Form Toolkit
          * @param label The string for the label.
          * @param tooltip An optional tooltip for the label and text. Can be null.
-         * @return The new created label 
+         * @return The new created label
          */
         public Label createLabel(Composite parent, FormToolkit toolkit, String label,
                 String tooltip) {
@@ -122,15 +124,15 @@ public final class SectionHelper {
 
         /**
          * Creates two widgets: a label and a text field.
-         * 
+         *
          * This expects the parent composite to have a TableWrapLayout with 2 columns.
-         * 
+         *
          * @param parent The parent (e.g. composite from CreateTableLayout())
          * @param toolkit Form Toolkit
          * @param label The string for the label.
          * @param value The initial value of the text field. Can be null.
          * @param tooltip An optional tooltip for the label and text. Can be null.
-         * @return The new created Text field (the label is not returned) 
+         * @return The new created Text field (the label is not returned)
          */
         public Text createLabelAndText(Composite parent, FormToolkit toolkit, String label,
                 String value, String tooltip) {
@@ -139,9 +141,9 @@ public final class SectionHelper {
 
         /**
          * Creates a FormText widget.
-         * 
+         *
          * This expects the parent composite to have a TableWrapLayout with 2 columns.
-         * 
+         *
          * @param parent The parent (e.g. composite from CreateTableLayout())
          * @param toolkit Form Toolkit
          * @param isHtml True if the form text will contain HTML that must be interpreted as
@@ -175,16 +177,16 @@ public final class SectionHelper {
             } catch (Exception e) {
                 AdtPlugin.log(e, "Error when invoking Section.reflow");
             }
-            
+
             section.layout(true /* changed */, true /* all */);
         }
     }
-    
+
     /**
      * Creates a new composite with a TableWrapLayout set with a given number of columns.
-     * 
+     *
      * If the parent composite is a Section, the new composite is set as a client.
-     * 
+     *
      * @param composite The parent (e.g. a Section or SectionPart)
      * @param toolkit Form Toolkit
      * @param numColumns Desired number of columns.
@@ -205,9 +207,9 @@ public final class SectionHelper {
 
     /**
      * Creates a new composite with a GridLayout set with a given number of columns.
-     * 
+     *
      * If the parent composite is a Section, the new composite is set as a client.
-     * 
+     *
      * @param composite The parent (e.g. a Section or SectionPart)
      * @param toolkit Form Toolkit
      * @param numColumns Desired number of columns.
@@ -228,15 +230,15 @@ public final class SectionHelper {
 
     /**
      * Creates two widgets: a label and a text field.
-     * 
+     *
      * This expects the parent composite to have a TableWrapLayout with 2 columns.
-     * 
+     *
      * @param parent The parent (e.g. composite from CreateTableLayout())
      * @param toolkit Form Toolkit
      * @param label_text The string for the label.
      * @param value The initial value of the text field. Can be null.
      * @param tooltip An optional tooltip for the label and text. Can be null.
-     * @return The new created Text field (the label is not returned) 
+     * @return The new created Text field (the label is not returned)
      */
     static public Text createLabelAndText(Composite parent, FormToolkit toolkit, String label_text,
             String value, String tooltip) {
@@ -252,12 +254,12 @@ public final class SectionHelper {
     /**
      * Creates a label widget.
      * If the parent layout if a TableWrapLayout, maximize it to span over all columns.
-     * 
+     *
      * @param parent The parent (e.g. composite from CreateTableLayout())
      * @param toolkit Form Toolkit
      * @param label_text The string for the label.
      * @param tooltip An optional tooltip for the label and text. Can be null.
-     * @return The new created label 
+     * @return The new created label
      */
     static public Label createLabel(Composite parent, FormToolkit toolkit, String label_text,
             String tooltip) {
@@ -275,9 +277,9 @@ public final class SectionHelper {
 
     /**
      * Associates a tooltip with a control.
-     * 
+     *
      * This mirrors the behavior from org.eclipse.pde.internal.ui.editor.text.PDETextHover
-     * 
+     *
      * @param control The control to which associate the tooltip.
      * @param tooltip The tooltip string. Can use \n for multi-lines. Will not display if null.
      */
@@ -285,8 +287,8 @@ public final class SectionHelper {
         if (control == null || tooltip == null || tooltip.length() == 0) {
             return;
         }
-        
-        // Some kinds of controls already properly implement tooltip display. 
+
+        // Some kinds of controls already properly implement tooltip display.
         if (control instanceof Button) {
             control.setToolTipText(tooltip);
             return;
@@ -299,7 +301,7 @@ public final class SectionHelper {
         Point sz = ic.computeSizeHint();
         ic.setSize(sz.x, sz.y);
         ic.setVisible(false); // initially hidden
-        
+
         control.addMouseTrackListener(new MouseTrackListener() {
             public void mouseEnter(MouseEvent e) {
             }
@@ -313,13 +315,18 @@ public final class SectionHelper {
                 ic.setVisible(true);
             }
         });
+        control.addDisposeListener(new DisposeListener() {
+            public void widgetDisposed(DisposeEvent e) {
+                ic.dispose();
+            }
+        });
     }
 
     /**
      * Creates a FormText widget.
-     * 
+     *
      * This expects the parent composite to have a TableWrapLayout with 2 columns.
-     * 
+     *
      * @param parent The parent (e.g. composite from CreateTableLayout())
      * @param toolkit Form Toolkit
      * @param isHtml True if the form text will contain HTML that must be interpreted as

@@ -114,4 +114,11 @@ class LayoutCanvasViewer extends Viewer {
     public void refresh() {
         // ignore
     }
+
+    public void dispose() {
+        if (mCanvas != null) {
+            mCanvas.dispose();
+            mCanvas = null;
+        }
+    }
 }

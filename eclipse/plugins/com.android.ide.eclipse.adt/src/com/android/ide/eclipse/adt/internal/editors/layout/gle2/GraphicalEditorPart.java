@@ -449,6 +449,10 @@ public class GraphicalEditorPart extends EditorPart
             mReloadListener = null;
         }
 
+        if (mCanvasViewer != null) {
+            mCanvasViewer.dispose();
+            mCanvasViewer = null;
+        }
         super.dispose();
     }
 
