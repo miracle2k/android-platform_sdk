@@ -21,7 +21,9 @@ import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
 import com.android.monkeyrunner.MonkeyDevice;
 import com.android.monkeyrunner.MonkeyRunnerBackend;
+import com.android.sdklib.SdkConstants;
 
+import java.io.File;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,10 +41,33 @@ public class AdbBackend implements MonkeyRunnerBackend {
     private final AndroidDebugBridge bridge;
 
     public AdbBackend() {
+        // [try to] ensure ADB is running
+        String adbLocation = findAdb();
+
         AndroidDebugBridge.init(false /* debugger support */);
 
         bridge = AndroidDebugBridge.createBridge(
-                "adb", true /* forceNewBridge */);
+                adbLocation, true /* forceNewBridge */);
+    }
+
+    private String findAdb() {
+        String mrParentLocation =
+            System.getProperty("com.android.monkeyrunner.bindir"); //$NON-NLS-1$
+
+        // in the new SDK, adb is in the platform-tools, but when run from the command line
+        // in the Android source tree, then adb is next to monkeyrunner.
+        if (mrParentLocation != null && mrParentLocation.length() != 0) {
+            // check if there's a platform-tools folder
+            File platformTools = new File(new File(mrParentLocation).getParent(),
+                    SdkConstants.FD_PLATFORM_TOOLS);
+            if (platformTools.isDirectory()) {
+                return platformTools.getAbsolutePath() + File.separator + SdkConstants.FN_ADB;
+            }
+
+            return mrParentLocation + File.separator + SdkConstants.FN_ADB;
+        }
+
+        return SdkConstants.FN_ADB;
     }
 
     /**

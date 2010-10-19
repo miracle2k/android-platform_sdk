@@ -181,7 +181,7 @@ public class MonkeyRunner extends PyObject implements ClassDictInit {
      * @param title the title of the dialog box.
      * @param okTitle the title of the button.
      */
-    private static void alert(String message, String title, String okTitle) {
+    public static void alert(String message, String title, String okTitle) {
         Object[] options = { okTitle };
         JOptionPane.showOptionDialog(null, message, title, JOptionPane.DEFAULT_OPTION,
                 JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
@@ -195,7 +195,7 @@ public class MonkeyRunner extends PyObject implements ClassDictInit {
      * @param choices the list of the choices to display.
      * @return the index of the selected choice, or -1 if nothing was chosen.
      */
-    private static int choice(String message, String title, Collection<String> choices) {
+    public static int choice(String message, String title, Collection<String> choices) {
         Object[] possibleValues = choices.toArray();
         Object selectedValue = JOptionPane.showInputDialog(null, message, title,
                 JOptionPane.QUESTION_MESSAGE, null, possibleValues, possibleValues[0]);
@@ -217,7 +217,7 @@ public class MonkeyRunner extends PyObject implements ClassDictInit {
      * @param title the title of the dialog box.
      * @return the entered string, or null if cancelled
      */
-    private static String input(String message, String initialValue, String title) {
+    public static String input(String message, String initialValue, String title) {
         return (String) JOptionPane.showInputDialog(null, message, title,
                 JOptionPane.QUESTION_MESSAGE, null, null, initialValue);
     }
