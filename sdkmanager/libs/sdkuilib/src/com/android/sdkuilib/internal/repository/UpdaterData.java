@@ -35,6 +35,7 @@ import com.android.sdklib.internal.repository.SdkRepoSource;
 import com.android.sdklib.internal.repository.SdkSource;
 import com.android.sdklib.internal.repository.SdkSourceCategory;
 import com.android.sdklib.internal.repository.SdkSources;
+import com.android.sdklib.internal.repository.ToolPackage;
 import com.android.sdklib.internal.repository.AddonsListFetcher.Site;
 import com.android.sdklib.repository.SdkAddonConstants;
 import com.android.sdklib.repository.SdkAddonsListConstants;
@@ -407,6 +408,7 @@ class UpdaterData implements IUpdaterData {
                 monitor.setDescription("Preparing to install archives");
 
                 boolean installedAddon = false;
+                boolean installedTools = false;
                 boolean installedPlatformTools = false;
 
                 // Mark all current local archives as already installed.
@@ -466,6 +468,8 @@ class UpdaterData implements IUpdaterData {
                             // Check if we successfully installed a platform-tool or add-on package.
                             if (archive.getParentPackage() instanceof AddonPackage) {
                                 installedAddon = true;
+                            } else if (archive.getParentPackage() instanceof ToolPackage) {
+                                installedTools = true;
                             } else if (archive.getParentPackage() instanceof PlatformToolPackage) {
                                 installedPlatformTools = true;
                             }
@@ -521,7 +525,7 @@ class UpdaterData implements IUpdaterData {
                     askForAdbRestart(monitor);
                 }
 
-                if (installedPlatformTools) {
+                if (installedTools) {
                     notifyToolsNeedsToBeRestarted();
                 }
 
