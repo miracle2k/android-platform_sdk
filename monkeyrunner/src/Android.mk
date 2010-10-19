@@ -23,7 +23,9 @@ LOCAL_JAVA_LIBRARIES := \
 	ddmlib \
 	jython \
 	guavalib \
-	jsilver
+	jsilver \
+        sdklib
+
 LOCAL_JAVA_RESOURCE_DIRS := resources
 
 LOCAL_MODULE := monkeyrunner

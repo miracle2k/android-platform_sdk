@@ -43,4 +43,4 @@ if exist %frameworkdir%%jarfile% goto JarFileOk
 
 set jarpath=%frameworkdir%%jarfile%
 
-call %java_exe% -Xmx512m -Djava.ext.dirs=%frameworkdir% -jar %jarpath% %*
+call %java_exe% -Xmx512m -Djava.ext.dirs=%frameworkdir% -Dcom.android.monkeyrunner.bindir=..\framework -jar %jarpath% %*
