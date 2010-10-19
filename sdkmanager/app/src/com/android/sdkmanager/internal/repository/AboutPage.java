@@ -19,6 +19,7 @@ package com.android.sdkmanager.internal.repository;
 
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.repository.Package;
+import com.android.sdklib.repository.SdkAddonConstants;
 import com.android.sdklib.repository.SdkRepoConstants;
 import com.android.sdkmanager.*;
 import org.eclipse.swt.SWT;
@@ -67,9 +68,11 @@ public class AboutPage extends Composite {
         mLabel.setText(String.format(
                 "Android SDK Updater.\n" +
                 "Revision %1$s\n" +
-                "Repository XML Schema #%2$d\n" +
+                "Add-on XML Schema #%2$d\n" +
+                "Repository XML Schema #%3$d\n" +
                 "Copyright (C) 2009-2010 The Android Open Source Project.",
                 getRevision(),
+                SdkAddonConstants.NS_LATEST_VERSION,
                 SdkRepoConstants.NS_LATEST_VERSION));
     }
 
