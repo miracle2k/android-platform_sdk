@@ -718,7 +718,7 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         item = new MenuItem(fileMenu, SWT.NONE);
         item.setText("E&xit\tCtrl-Q");
-        item.setAccelerator('Q' | SWT.CONTROL);
+        item.setAccelerator('Q' | (Main.isMac() ? SWT.COMMAND : SWT.CONTROL));
         item.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -780,8 +780,13 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
 
         // create Device menu items
         final MenuItem screenShotItem = new MenuItem(deviceMenu, SWT.NONE);
+
+        // The \tCtrl-S "keybinding text" here isn't right for the Mac - but
+        // it's stripped out and replaced by the proper keyboard accelerator
+        // text (e.g. the unicode symbol for the command key + S) anyway
+        // so it's fine to leave it there for the other platforms.
         screenShotItem.setText("&Screen capture...\tCtrl-S");
-        screenShotItem.setAccelerator('S' | SWT.CONTROL);
+        screenShotItem.setAccelerator('S' | (Main.isMac() ? SWT.COMMAND : SWT.CONTROL));
         screenShotItem.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
