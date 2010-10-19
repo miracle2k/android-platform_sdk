@@ -190,7 +190,7 @@ public class AndroidWidgetLinearLayoutRule extends BaseLayout {
 
             // Draw a clear line at the closest drop zone (unless we're over the dragged
             // element itself)
-            if (feedback.userData.insertPos != selfPos) {
+            if (feedback.userData.insertPos != selfPos || selfPos == -1) {
                 gc.useStyle(DrawingStyle.DROP_PREVIEW);
                 if (feedback.userData.width != null) {
                     int width = feedback.userData.width;
