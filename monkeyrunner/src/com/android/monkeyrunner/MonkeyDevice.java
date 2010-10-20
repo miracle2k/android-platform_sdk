@@ -55,12 +55,11 @@ public abstract class MonkeyDevice extends PyObject implements ClassDictInit {
     @MonkeyRunnerExported(doc = "Sends a DOWN event, immediately followed by an UP event when used with touch() or press()")
     public static final String DOWN_AND_UP = "downAndUp";
 
-    // Visible to subclasses
-    protected enum TouchPressType {
+    public enum TouchPressType {
         DOWN, UP, DOWN_AND_UP,
     }
 
-    private static final Map<String, TouchPressType> TOUCH_NAME_TO_ENUM =
+    public static final Map<String, TouchPressType> TOUCH_NAME_TO_ENUM =
         ImmutableMap.of(MonkeyDevice.DOWN, TouchPressType.DOWN,
                 MonkeyDevice.UP, TouchPressType.UP,
                 MonkeyDevice.DOWN_AND_UP, TouchPressType.DOWN_AND_UP);
@@ -126,7 +125,7 @@ public abstract class MonkeyDevice extends PyObject implements ClassDictInit {
         // Default
         String type = MonkeyDevice.DOWN_AND_UP;
         try {
-            String tmpType = ap.getString(2);
+            String tmpType = ap.getString(1);
             if (VALID_DOWN_UP_TYPES.contains(tmpType)) {
                 type = tmpType;
             } else {
@@ -189,7 +188,7 @@ public abstract class MonkeyDevice extends PyObject implements ClassDictInit {
         // Default
         String type = MonkeyDevice.DOWN_AND_UP;
         try {
-            String tmpType = ap.getString(2);
+            String tmpType = ap.getString(1);
             if (VALID_DOWN_UP_TYPES.contains(tmpType)) {
                 type = tmpType;
             } else {
@@ -372,26 +371,26 @@ public abstract class MonkeyDevice extends PyObject implements ClassDictInit {
      *
      * @param into which bootloader to boot into.  Null means default reboot.
      */
-    protected abstract void reboot(@Nullable String into);
+    public abstract void reboot(@Nullable String into);
 
-    protected abstract String getProperty(String key);
-    protected abstract String getSystemProperty(String key);
-    protected abstract void touch(int x, int y, TouchPressType type);
-    protected abstract void press(String keyName, TouchPressType type);
-    protected abstract void drag(int startx, int starty, int endx, int endy, int steps, long ms);
-    protected abstract void type(String string);
-    protected abstract String shell(String cmd);
-    protected abstract boolean installPackage(String path);
-    protected abstract boolean removePackage(String packageName);
-    protected abstract void startActivity(@Nullable String uri, @Nullable String action,
+    public abstract String getProperty(String key);
+    public abstract String getSystemProperty(String key);
+    public abstract void touch(int x, int y, TouchPressType type);
+    public abstract void press(String keyName, TouchPressType type);
+    public abstract void drag(int startx, int starty, int endx, int endy, int steps, long ms);
+    public abstract void type(String string);
+    public abstract String shell(String cmd);
+    public abstract boolean installPackage(String path);
+    public abstract boolean removePackage(String packageName);
+    public abstract void startActivity(@Nullable String uri, @Nullable String action,
             @Nullable String data, @Nullable String mimetype,
             Collection<String> categories, Map<String, Object> extras, @Nullable String component,
             int flags);
-    protected abstract void broadcastIntent(@Nullable String uri, @Nullable String action,
+    public abstract void broadcastIntent(@Nullable String uri, @Nullable String action,
             @Nullable String data, @Nullable String mimetype,
             Collection<String> categories, Map<String, Object> extras, @Nullable String component,
             int flags);
-    protected abstract Map<String, Object> instrument(String packageName,
+    public abstract Map<String, Object> instrument(String packageName,
             Map<String, Object> args);
-    protected abstract void wake();
+    public abstract void wake();
 }
