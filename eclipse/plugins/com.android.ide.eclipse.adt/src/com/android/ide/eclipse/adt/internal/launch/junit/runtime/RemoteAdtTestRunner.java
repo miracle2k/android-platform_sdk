@@ -43,6 +43,10 @@ import java.util.Map;
 @SuppressWarnings("restriction")
 public class RemoteAdtTestRunner extends RemoteTestRunner {
 
+    private static final String DELAY_MSEC_KEY = "delay_msec";
+    /** the delay between each test execution when in collecting test info */
+    private static final String COLLECT_TEST_DELAY_MS = "15";
+
     private AndroidJUnitLaunchInfo mLaunchInfo;
     private TestExecution mExecution;
 
@@ -104,6 +108,9 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
         // set log only to first collect test case info, so Eclipse has correct test case count/
         // tree info
         runner.setLogOnly(true);
+        // add a small delay between each test. Otherwise for large test suites framework may
+        // report Binder transaction failures
+        runner.addInstrumentationArg(DELAY_MSEC_KEY, COLLECT_TEST_DELAY_MS);
         TestCollector collector = new TestCollector();
         try {
             AdtPlugin.printToConsole(mLaunchInfo.getProject(), "Collecting test information");
@@ -124,6 +131,7 @@ public class RemoteAdtTestRunner extends RemoteTestRunner {
 
             // now do real execution
             runner.setLogOnly(false);
+            runner.removeInstrumentationArg(DELAY_MSEC_KEY);
             if (mLaunchInfo.isDebugMode()) {
                 runner.setDebug(true);
             }
