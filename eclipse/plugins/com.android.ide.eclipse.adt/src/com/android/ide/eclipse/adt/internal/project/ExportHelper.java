@@ -181,7 +181,7 @@ public final class ExportHelper {
                         new File(project.getLocation().toFile(), SdkConstants.FD_PROGUARD));
 
                 // dx input is proguard's output
-                dxInput = new String[] { inputJar/*obfuscatedJar*/.getAbsolutePath() };
+                dxInput = new String[] { obfuscatedJar.getAbsolutePath() };
             } else {
                 // no proguard, simply get all the compiled code path: project output(s) +
                 // jar file(s)
