@@ -16,11 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
+import com.android.ide.common.api.IAttributeInfo;
+import com.android.ide.common.api.INode;
+import com.android.ide.common.api.INodeHandler;
+import com.android.ide.common.api.Rect;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeHandler;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;

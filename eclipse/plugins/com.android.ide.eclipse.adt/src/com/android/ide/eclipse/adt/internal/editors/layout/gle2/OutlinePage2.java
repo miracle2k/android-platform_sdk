@@ -715,7 +715,7 @@ public class OutlinePage2 extends ContentOutlinePage
 
                 LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
                 if (canvas != null) {
-                    com.android.ide.eclipse.adt.editors.layout.gscripts.Point p =
+                    com.android.ide.common.api.Point p =
                         canvas.canvasToControlPoint(x, y);
 
                     inOutXY.x = p.x;
