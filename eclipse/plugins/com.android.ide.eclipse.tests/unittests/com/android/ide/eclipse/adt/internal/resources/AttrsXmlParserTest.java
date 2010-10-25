@@ -22,7 +22,6 @@ import com.android.ide.eclipse.tests.AdtTestData;
 
 import org.w3c.dom.Document;
 
-import java.lang.reflect.Method;
 import java.util.Map;
 
 import junit.framework.TestCase;
@@ -43,10 +42,6 @@ public class AttrsXmlParserTest extends TestCase {
 
     @Override
     public void tearDown() throws Exception {
-    }
-
-    public final void testGetDocument() throws Exception {
-        assertNotNull(_getDocument());
     }
 
     public void testGetOsAttrsXmlPath() throws Exception {
@@ -122,13 +117,5 @@ public class AttrsXmlParserTest extends TestCase {
         assertEquals("deprecated-no-javadoc", attrs[3].getName());
         assertEquals("There is no other javadoc here.", attrs[3].getDeprecatedDoc());
         assertEquals("", attrs[3].getJavaDoc());
-    }
-
-    //---- access to private methods
-
-    private Document _getDocument() throws Exception {
-        Method method = AttrsXmlParser.class.getDeclaredMethod("getDocument"); //$NON-NLS-1$
-        method.setAccessible(true);
-        return (Document) method.invoke(mParser);
     }
 }
