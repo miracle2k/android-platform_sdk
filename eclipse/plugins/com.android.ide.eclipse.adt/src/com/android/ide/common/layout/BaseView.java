@@ -143,7 +143,10 @@ public class BaseView implements IViewRule {
 
         IMenuCallback onChange = new IMenuCallback() {
 
-            public void action(final MenuAction action, final String valueId, final Boolean newValue) {
+            public void action(
+                    final MenuAction action,
+                    final String valueId,
+                    final Boolean newValue) {
                 String fullActionId = action.getId();
                 boolean isProp = fullActionId.startsWith("@prop@");
                 final String actionId = isProp ? fullActionId.substring(6) : fullActionId;
@@ -460,7 +463,11 @@ public class BaseView implements IViewRule {
         // ignore
     }
 
-    public void onDropped(INode targetNode, IDragElement[] elements, DropFeedback feedback, Point p) {
+    public void onDropped(
+            INode targetNode,
+            IDragElement[] elements,
+            DropFeedback feedback,
+            Point p) {
         // ignore
     }
 
