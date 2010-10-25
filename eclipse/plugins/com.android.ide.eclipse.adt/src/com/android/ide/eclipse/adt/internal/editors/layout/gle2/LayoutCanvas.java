@@ -1152,7 +1152,6 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         int x = mHScale.inverseTranslate(e.x);
         int y = mVScale.inverseTranslate(e.y);
 
-        // test, remove me
         if (e.button == 3) {
             // Right click button is used to display a context menu.
             // If there's an existing selection and the click is anywhere in this selection

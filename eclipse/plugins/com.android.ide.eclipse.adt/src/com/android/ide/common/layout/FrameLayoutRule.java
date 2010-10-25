@@ -51,7 +51,11 @@ public class FrameLayoutRule extends BaseLayout {
         });
     }
 
-    void drawFeedback(IGraphics gc, INode targetNode, IDragElement[] elements, DropFeedback feedback) {
+    void drawFeedback(
+            IGraphics gc,
+            INode targetNode,
+            IDragElement[] elements,
+            DropFeedback feedback) {
         Rect b = targetNode.getBounds();
         if (!b.isValid()) {
             return;
