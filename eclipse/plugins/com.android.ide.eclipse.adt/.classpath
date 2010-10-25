@@ -5,7 +5,6 @@
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="lib" path="libs/androidprefs.jar" sourcepath="/AndroidPrefs"/>
 	<classpathentry kind="lib" path="libs/commons-compress-1.0.jar"/>
-	<classpathentry kind="lib" path="libs/groovy-all-1.7.0.jar" sourcepath="/GroovySrc/groovy-src-1.7.0.zip"/>
 	<classpathentry kind="lib" path="libs/kxml2-2.3.0.jar"/>
 	<classpathentry kind="lib" path="libs/layoutlib_api.jar"/>
 	<classpathentry kind="lib" path="libs/layoutlib_utils.jar"/>

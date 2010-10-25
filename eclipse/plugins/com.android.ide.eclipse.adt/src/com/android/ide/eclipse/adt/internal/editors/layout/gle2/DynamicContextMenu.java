@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 
 /**
  * Helper class that is responsible for adding and managing the dynamic menu items
- * contributed by the {@link IViewRule} groovy instances, based on the current selection
+ * contributed by the {@link IViewRule} instances, based on the current selection
  * on the {@link LayoutCanvas}.
  * <p/>
  * This class is tied to a specific {@link LayoutCanvas} instance and a root {@link MenuManager}.
@@ -68,7 +68,7 @@ import java.util.regex.Pattern;
 
     /**
      * Creates a new helper responsible for adding and managing the dynamic menu items
-     * contributed by the {@link IViewRule} groovy instances, based on the current selection
+     * contributed by the {@link IViewRule} instances, based on the current selection
      * on the {@link LayoutCanvas}.
      *
      * @param canvas The {@link LayoutCanvas} providing the selection, the node factory and
@@ -269,7 +269,7 @@ import java.util.regex.Pattern;
     }
 
     /**
-     * Returns the menu actions computed by the groovy rule associated with this view.
+     * Returns the menu actions computed by the rule associated with this view.
      */
     public List<MenuAction> getMenuActions(CanvasViewInfo vi) {
         if (vi == null) {

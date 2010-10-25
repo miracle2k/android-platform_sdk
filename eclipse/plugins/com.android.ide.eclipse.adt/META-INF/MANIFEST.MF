@@ -10,7 +10,6 @@ Bundle-ClassPath: .,
  libs/ninepatch.jar,
  libs/sdkstats.jar,
  libs/commons-compress-1.0.jar,
- libs/groovy-all-1.7.0.jar,
  libs/kxml2-2.3.0.jar,
  libs/layoutlib_api.jar,
  libs/layoutlib_utils.jar

@@ -46,7 +46,7 @@ public class NodeFactory {
 
     /**
      * Returns an {@link INode} proxy based on a given {@link UiViewElementNode} that
-     * is not yet part of the canvas, typically those created by groovy scripts
+     * is not yet part of the canvas, typically those created by layout rules
      * when generating new XML.
      */
     public NodeProxy create(UiViewElementNode uiNode) {
