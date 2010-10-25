@@ -16,17 +16,18 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
+import com.android.ide.common.api.DropFeedback;
+import com.android.ide.common.api.IClientRulesEngine;
+import com.android.ide.common.api.IDragElement;
+import com.android.ide.common.api.IGraphics;
+import com.android.ide.common.api.INode;
+import com.android.ide.common.api.IValidator;
+import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.MenuAction;
+import com.android.ide.common.api.Point;
+import com.android.ide.common.layout.ViewRule;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IClientRulesEngine;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IDragElement;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IValidator;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.MenuAction;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleElement;
@@ -544,6 +545,45 @@ public class RulesEngine {
             return rule;
         }
 
+        // Look for class via reflection first
+        try {
+            int dotIndex = realFqcn.lastIndexOf('.');
+            String baseName = realFqcn.substring(dotIndex+1);
+
+            // For now, we package view rules for the builtin Android views and
+            // widgets with the tool in a special package, so look there rather
+            // than in the same package as the widgets.
+            String packageName;
+            if (realFqcn.startsWith("android.")) { //$NON-NLS-1$
+                // This doesn't handle a case where there are name conflicts
+                // (e.g. where there are multiple different views with the same
+                // class name and only differing in package names, but that's a
+                // really bad practice in the first place, and if that situation
+                // should come up in the API we can enhance this algorithm.
+                packageName = ViewRule.class.getName();
+                packageName = packageName.substring(0, packageName.lastIndexOf('.'));
+            } else {
+                // For other (3rd party) widgets, look in the same package (though most
+                // likely not in the same jar!)
+                packageName = realFqcn.substring(0, dotIndex);
+            }
+
+            String ruleClassName = packageName + "." + //$NON-NLS-1$
+                baseName + "Rule"; //$NON-NLS-1$
+            Class<?> clz = Class.forName(ruleClassName);
+            rule = (IViewRule) clz.newInstance();
+            return initializeRule(rule, targetFqcn);
+        } catch (ClassNotFoundException ex) {
+            // Not an unexpected error - this means that there isn't a helper for this
+            // class.
+        } catch (InstantiationException e) {
+            // This is NOT an expected error: fail.
+            logError("load rule error (%s): %s", realFqcn, e.toString());
+        } catch (IllegalAccessException e) {
+            // This is NOT an expected error: fail.
+            logError("load rule error (%s): %s", realFqcn, e.toString());
+        }
+
         // Look for the file in ADT first.
         // That means a project can't redefine any of the rules we define.
         String filename = realFqcn + SCRIPT_EXT;
@@ -605,7 +645,7 @@ public class RulesEngine {
                 initializeMetaClass((GroovyObject) rule, targetFqcn);
             }
 
-            if (rule.onInitialize(targetFqcn)) {
+            if (rule.onInitialize(targetFqcn, new ClientRulesEngineImpl(targetFqcn))) {
                 // Add it to the cache and return it
                 mRulesCache.put(targetFqcn, rule);
                 return rule;

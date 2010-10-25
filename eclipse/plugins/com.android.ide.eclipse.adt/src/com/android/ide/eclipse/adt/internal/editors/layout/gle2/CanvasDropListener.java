@@ -16,11 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.DropFeedback;
+import com.android.ide.common.api.INode;
+import com.android.ide.common.api.Point;
+import com.android.ide.common.api.Rect;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DropFeedback;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 
 import org.eclipse.swt.dnd.DND;
@@ -586,8 +586,8 @@ import java.util.Set;
 
         if (isMove && mTargetNode != null && mFeedback != null) {
             // this is a move inside the same view
-            com.android.ide.eclipse.adt.editors.layout.gscripts.Point p2 =
-                new com.android.ide.eclipse.adt.editors.layout.gscripts.Point(x, y);
+            com.android.ide.common.api.Point p2 =
+                new com.android.ide.common.api.Point(x, y);
             updateDropFeedback(mFeedback, event);
             DropFeedback df = mCanvas.getRulesEngine().callOnDropMove(
                     mTargetNode, mCurrentDragElements, mFeedback, p2);

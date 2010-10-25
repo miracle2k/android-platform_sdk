@@ -16,10 +16,10 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.IMenuCallback;
+import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.MenuAction;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IMenuCallback;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.MenuAction;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;

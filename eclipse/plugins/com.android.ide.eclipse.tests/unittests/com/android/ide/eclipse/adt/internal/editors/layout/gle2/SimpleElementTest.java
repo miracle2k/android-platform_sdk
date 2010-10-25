@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
+import com.android.ide.common.api.Rect;
 
 import java.util.Arrays;
 

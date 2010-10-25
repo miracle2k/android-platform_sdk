@@ -16,12 +16,12 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DrawingStyle;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IColor;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
+import com.android.ide.common.api.DrawingStyle;
+import com.android.ide.common.api.IColor;
+import com.android.ide.common.api.IGraphics;
+import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.Point;
+import com.android.ide.common.api.Rect;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;

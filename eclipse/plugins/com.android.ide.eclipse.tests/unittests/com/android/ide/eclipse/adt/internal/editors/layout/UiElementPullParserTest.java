@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
+import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
