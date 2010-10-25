@@ -355,7 +355,8 @@ public class BaseLayout extends BaseView {
             if (value != null && value.length() > 0) {
                 newNode.setAttribute(uri, name, value);
 
-                if (uri.equals(ANDROID_URI) && name.equals(ATTR_ID) && oldId != null && !oldId.equals(value)) {
+                if (uri.equals(ANDROID_URI) && name.equals(ATTR_ID) &&
+                        oldId != null && !oldId.equals(value)) {
                     newId = value;
                 }
             }
