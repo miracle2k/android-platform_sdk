@@ -177,9 +177,22 @@
         <element name="external-libs" optional="yes" />
         <element name="extra-parameters" optional="yes" />
         <sequential>
-            <!-- sets the input for dex. If a pre-dex task sets it to something else
-                 this has no effect -->
+            <!-- sets the primary input for dex. If a pre-dex task sets it to
+                 something else this has no effect -->
             <property name="out.dex.input.absolute.dir" value="${out.classes.absolute.dir}" />
+
+            <!-- set the secondary dx input: the project (and library) jar files
+                 If a pre-dex task sets it to something else this has no effect -->
+            <if>
+                <condition>
+                    <isreference refid="out.dex.jar.input.ref" />
+                </condition>
+                <else>
+                    <path id="out.dex.jar.input.ref">
+                        <path refid="jar.libs.ref" />
+                    </path>
+                </else>
+            </if>
 
             <echo>Converting compiled files and external libraries into ${intermediate.dex.file}...</echo>
             <apply executable="${dx}" failonerror="true" parallel="true">
@@ -188,7 +201,7 @@
                 <extra-parameters />
                 <arg line="${verbose.option}" />
                 <arg path="${out.dex.input.absolute.dir}" />
-                <path refid="jar.libs.ref" />
+                <path refid="out.dex.jar.input.ref" />
                 <external-libs />
             </apply>
         </sequential>
@@ -535,6 +548,13 @@
                 <isset property="proguard.config" />
             </and>
         </condition>
+        <if condition="${proguard.enabled}">
+            <then>
+                <!-- Secondary dx input (jar files) is empty since all the
+                     jar files will be in the obfuscated jar -->
+                <path id="out.dex.jar.input.ref" />
+            </then>
+        </if>
     </target>
 
     <target name="-set-release-mode">
