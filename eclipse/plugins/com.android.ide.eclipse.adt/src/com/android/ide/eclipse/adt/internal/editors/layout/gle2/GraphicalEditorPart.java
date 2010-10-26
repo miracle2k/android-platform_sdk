@@ -462,7 +462,7 @@ public class GraphicalEditorPart extends EditorPart
      * @param xmlNode The Node whose element we want to select
      */
     public void select(Node xmlNode) {
-        mCanvasViewer.getCanvas().select(xmlNode);
+        mCanvasViewer.getCanvas().getSelectionManager().select(xmlNode);
     }
 
     /**

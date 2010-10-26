@@ -155,8 +155,11 @@ public class OutlinePage2 extends ContentOutlinePage
             }
         });
 
-        mDragSource = LayoutCanvas.createDragSource(getControl(), new DelegateDragListener());
-        mDropTarget = LayoutCanvas.createDropTarget(getControl(), new DelegateDropListener());
+        mDragSource = LayoutCanvas.createDragSource(getControl());
+        mDragSource.addDragListener(new DelegateDragListener());
+
+        mDropTarget = LayoutCanvas.createDropTarget(getControl());
+        mDropTarget.addDropListener(new DelegateDropListener());
 
         setupContextMenu();
 
@@ -716,7 +719,7 @@ public class OutlinePage2 extends ContentOutlinePage
                 LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
                 if (canvas != null) {
                     com.android.ide.common.api.Point p =
-                        canvas.canvasToControlPoint(x, y);
+                        canvas.layoutToControlPoint(x, y);
 
                     inOutXY.x = p.x;
                     inOutXY.y = p.y;

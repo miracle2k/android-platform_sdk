@@ -215,7 +215,7 @@ import java.util.regex.Pattern;
             final TreeMap<String, ArrayList<MenuAction>> outActionsMap,
             final TreeMap<String, MenuAction.Group> outGroupsMap) {
         int maxMenuSelection = 0;
-        for (CanvasSelection selection : mCanvas.getCanvasSelections()) {
+        for (CanvasSelection selection : mCanvas.getSelectionManager().getSelections()) {
             List<MenuAction> viewActions = null;
             if (selection != null) {
                 CanvasViewInfo vi = selection.getViewInfo();

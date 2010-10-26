@@ -20,6 +20,7 @@ callbacks
 checkbox
 classpath
 clipboard
+clipboards
 codebase
 codename
 codenames
@@ -56,6 +57,7 @@ instanceof
 int
 javadoc
 layoutlib
+leaky
 lifecycle
 linestyle
 linux

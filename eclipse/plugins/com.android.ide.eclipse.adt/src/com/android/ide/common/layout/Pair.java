@@ -23,6 +23,9 @@ package com.android.ide.common.layout;
  * classes using this Pair by a more dedicated data structure (so we don't have
  * to pass around generic signatures as is currently done, though at least the
  * construction is helped a bit by the {@link #of} factory method.
+ *
+ * @param <S> The type of the first value
+ * @param <T> The type of the second value
  */
 class Pair<S,T> {
     private final S mFirst;
