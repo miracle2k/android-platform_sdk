@@ -154,7 +154,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     /** The layout editor that uses this layout canvas. */
     private final LayoutEditor mLayoutEditor;
 
-    /** The Groovy Rules Engine, associated with the current project. */
+    /** The Rules Engine, associated with the current project. */
     private RulesEngine mRulesEngine;
 
     /** SWT clipboard instance. */
@@ -459,12 +459,12 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         return mLastValidViewInfoRoot == null;
     }
 
-    /** Returns the Groovy Rules Engine, associated with the current project. */
+    /** Returns the Rules Engine, associated with the current project. */
     /* package */ RulesEngine getRulesEngine() {
         return mRulesEngine;
     }
 
-    /** Sets the Groovy Rules Engine, associated with the current project. */
+    /** Sets the Rules Engine, associated with the current project. */
     /* package */ void setRulesEngine(RulesEngine rulesEngine) {
         mRulesEngine = rulesEngine;
     }
@@ -1964,7 +1964,7 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
      * copy, cut, paste and show in > explorer. This is created by
      * {@link #setupStaticMenuActions(IMenuManager)}.
      * <p/>
-     * There's also a dynamic part that is populated by the groovy rules of the
+     * There's also a dynamic part that is populated by the rules of the
      * selected elements, created by {@link DynamicContextMenu}.
      */
     private void createContextMenu() {

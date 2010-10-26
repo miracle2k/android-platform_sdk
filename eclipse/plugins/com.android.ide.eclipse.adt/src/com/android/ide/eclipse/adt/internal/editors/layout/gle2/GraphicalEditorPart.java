@@ -172,7 +172,7 @@ public class GraphicalEditorPart extends EditorPart
     /** The layout canvas displayed to the right of the sash. */
     private LayoutCanvasViewer mCanvasViewer;
 
-    /** The Groovy Rules Engine associated with this editor. It is project-specific. */
+    /** The Rules Engine associated with this editor. It is project-specific. */
     private RulesEngine mRulesEngine;
 
     /** Styled text displaying the most recent error in the error view. */
