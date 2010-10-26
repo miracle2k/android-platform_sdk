@@ -362,7 +362,7 @@ public class NodeProxy implements INode {
      * Helper methods that returns a {@link ViewElementDescriptor} for the requested FQCN.
      * Will return null if we can't find that FQCN or we lack the editor/data/descriptors info
      * (which shouldn't really happen since at this point the SDK should be fully loaded and
-     * isn't reloading, or we wouldn't be here editing XML for a groovy script.)
+     * isn't reloading, or we wouldn't be here editing XML for a layout rule.)
      */
     private ViewElementDescriptor getFqcnViewDescritor(String fqcn) {
         AndroidXmlEditor editor = mNode.getEditor();
@@ -375,7 +375,7 @@ public class NodeProxy implements INode {
 
     private void warnPrintf(String msg, Object...params) {
         AdtPlugin.printToConsole(
-                mNode == null ? "Groovy" : mNode.getDescriptor().getXmlLocalName() + ".groovy",
+                mNode == null ? "" : mNode.getDescriptor().getXmlLocalName(),
                 String.format(msg, params)
                 );
     }

@@ -61,6 +61,7 @@ public class ProjectProperties {
     private final static String PROPERTY_LIB_REF_REGEX = "android.library.reference.\\d+";
 
     public final static String PROPERTY_PROGUARD_CONFIG = "proguard.config";
+    public final static String PROPERTY_RULES_PATH = "layoutrules.jars";
 
     public final static String PROPERTY_SDK = "sdk.dir";
     // LEGACY - Kept so that we can actually remove it from local.properties.
@@ -87,7 +88,8 @@ public class ProjectProperties {
             }, null),
         DEFAULT(SdkConstants.FN_DEFAULT_PROPERTIES, DEFAULT_HEADER, new String[] {
                 PROPERTY_TARGET, PROPERTY_LIBRARY, PROPERTY_LIB_REF_REGEX,
-                PROPERTY_KEY_STORE, PROPERTY_KEY_ALIAS, PROPERTY_PROGUARD_CONFIG
+                PROPERTY_KEY_STORE, PROPERTY_KEY_ALIAS, PROPERTY_PROGUARD_CONFIG,
+                PROPERTY_RULES_PATH
             }, null),
         LOCAL(SdkConstants.FN_LOCAL_PROPERTIES, LOCAL_HEADER, new String[] {
                 PROPERTY_SDK

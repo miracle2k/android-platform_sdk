@@ -24,13 +24,12 @@ import java.util.Map;
  * An {@link IViewRule} describes the GLE rules that apply to a given Layout or View object
  * in the Graphical Layout Editor (GLE).
  * <p/>
- * Such a rule is implemented using a Groovy script located in the
- * com.android.ide.eclipse.adt.internal.editors.layout.gre package or in a
- * projects' /gscript folder for custom views.
+ * Such a rule is implemented by builtin layout helpers, or 3rd party layout rule implementations
+ * provided with or for a given 3rd party widget.
  * <p/>
- * The Groovy script must be named using the fully qualified class name of the View or Layout,
- * e.g. "android.widget.LinearLayout.groovy". If the rule engine can't find a groovy script
- * for a given element, it will use the closest matching parent (e.g. View instead of ViewGroup).
+ * A 3rd party layout rule should use the same fully qualified class name as the layout it
+ * represents, plus "Rule" as a suffix. For example, the layout rule for the
+ * LinearLayout class is LinearLayoutRule, in the same package.
  * <p/>
  * Rule instances are stateless. They are created once per View class to handle and are shared
  * across platforms or editor instances. As such, rules methods should never cache editor-specific

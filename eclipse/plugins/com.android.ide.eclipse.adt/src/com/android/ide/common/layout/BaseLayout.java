@@ -81,7 +81,7 @@ public class BaseLayout extends BaseView {
      * The default behavior for pasting in a layout with a specific child target
      * is to simulate a drop right above the top left of the given child target.
      * <p/>
-     * This method is invoked by BaseView.groovy when onPaste() is called --
+     * This method is invoked by BaseView when onPaste() is called --
      * views don't generally accept children and instead use the target node as
      * a hint to paste "before" it.
      */
