@@ -20,6 +20,8 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo.LayoutParamsInfo;
+import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.annotations.VisibleForTesting.Visibility;
 
 import org.eclipse.core.runtime.IStatus;
 import org.w3c.dom.Document;

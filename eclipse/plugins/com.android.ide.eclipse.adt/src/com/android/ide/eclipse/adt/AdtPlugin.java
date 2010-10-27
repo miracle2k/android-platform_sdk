@@ -577,7 +577,14 @@ public class AdtPlugin extends AbstractUIPlugin {
     public static void log(int severity, String format, Object ... args) {
         String message = String.format(format, args);
         Status status = new Status(severity, PLUGIN_ID, message);
-        getDefault().getLog().log(status);
+
+        if (getDefault() != null) {
+            getDefault().getLog().log(status);
+        } else {
+            // During UnitTests, we generally don't have a plugin object. It's ok
+            // to log to stdout or stderr in this case.
+            (severity < IStatus.ERROR ? System.out : System.err).println(status.toString());
+        }
     }
 
     /**
@@ -593,7 +600,14 @@ public class AdtPlugin extends AbstractUIPlugin {
     public static void log(Throwable exception, String format, Object ... args) {
         String message = String.format(format, args);
         Status status = new Status(IStatus.ERROR, PLUGIN_ID, message, exception);
-        getDefault().getLog().log(status);
+
+        if (getDefault() != null) {
+            getDefault().getLog().log(status);
+        } else {
+            // During UnitTests, we generally don't have a plugin object. It's ok
+            // to log to stderr in this case.
+            System.err.println(status.toString());
+        }
     }
 
     /**
