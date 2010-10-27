@@ -1328,7 +1328,22 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     }
 
     private void onDoubleClick(MouseEvent e) {
-        // pass, not used yet.
+        // Warp to the text editor and show the corresponding XML for the
+        // double-clicked widget
+        int x = mHScale.inverseTranslate(e.x);
+        int y = mVScale.inverseTranslate(e.y);
+        CanvasViewInfo vi = findViewInfoAt(x, y);
+        if (vi == null) {
+            return;
+        }
+
+        Node xmlNode = vi.getXmlNode();
+        if (xmlNode != null) {
+            boolean found = mLayoutEditor.show(xmlNode);
+            if (!found) {
+                getDisplay().beep();
+            }
+        }
     }
 
     /**
