@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 
 import org.eclipse.swt.SWT;
@@ -241,6 +242,13 @@ public class PaletteComposite extends Composite {
         Toggle toggle = new Toggle(group, uiName);
 
         for (ElementDescriptor desc : descriptors) {
+
+            // Exclude the <include> tag from the View palette.
+            // We don't have drop support for it right now, although someday we should.
+            if (LayoutDescriptors.VIEW_INCLUDE.equals(desc.getXmlName())) {
+                continue;
+            }
+
             Item item = new Item(group, desc);
             toggle.addItem(item);
             GridData gd = new GridData();

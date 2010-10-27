@@ -40,6 +40,13 @@ import java.util.Map.Entry;
  */
 public final class LayoutDescriptors implements IDescriptorProvider {
 
+    /**
+     * The XML name of the special &lt;include&gt; layout tag.
+     * A synthetic element with that name is created as part of the view descriptors list
+     * returned by {@link #getViewDescriptors()}.
+     */
+    public static final String VIEW_INCLUDE = "include";      //$NON-NLS-1$
+
     // Public attributes names, attributes descriptors and elements descriptors
     public static final String ID_ATTR = "id"; //$NON-NLS-1$
 
@@ -272,7 +279,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
      *   View descriptor and extract its layout attributes.
      */
     private void insertInclude(ArrayList<ElementDescriptor> knownViews) {
-        String xml_name = "include";  //$NON-NLS-1$
+        String xml_name = VIEW_INCLUDE;
 
         // Create the include custom attributes
         ArrayList<AttributeDescriptor> attributes = new ArrayList<AttributeDescriptor>();
