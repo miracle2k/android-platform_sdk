@@ -19,9 +19,8 @@ package com.android.ide.eclipse.adt.internal.resources;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
+import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo.LayoutParamsInfo;
-import com.android.sdklib.annotations.VisibleForTesting;
-import com.android.sdklib.annotations.VisibleForTesting.Visibility;
 
 import org.eclipse.core.runtime.IStatus;
 import org.w3c.dom.Document;
@@ -33,8 +32,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.Map.Entry;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -52,7 +53,8 @@ public final class AttrsXmlParser {
     private HashMap<String, AttributeInfo> mAttributeMap;
 
     /** Map of all attribute names for a given element */
-    private HashMap<String, DeclareStyleableInfo> mStyleMap;
+    private final Map<String, DeclareStyleableInfo> mStyleMap =
+        new HashMap<String, DeclareStyleableInfo>();
 
     /** Map of all (constant, value) pairs for attributes of format enum or flag.
      * E.g. for attribute name=gravity, this tells us there's an enum/flag called "center"
@@ -78,9 +80,6 @@ public final class AttrsXmlParser {
      */
     public AttrsXmlParser(String osAttrsXmlPath, AttrsXmlParser inheritableAttributes) {
         mOsAttrsXmlPath = osAttrsXmlPath;
-
-        // styles are not inheritable.
-        mStyleMap = new HashMap<String, DeclareStyleableInfo>();
 
         if (inheritableAttributes == null) {
             mAttributeMap = new HashMap<String, AttributeInfo>();
@@ -208,6 +207,9 @@ public final class AttrsXmlParser {
      * Finds all the <declare-styleable> and <attr> nodes in the top <resources> node.
      */
     private void parseResources(Node res) {
+
+        Map<String, String> unknownParents = new HashMap<String, String>();
+
         Node lastComment = null;
         for (Node node = res.getFirstChild(); node != null; node = node.getNextSibling()) {
             switch (node.getNodeType()) {
@@ -226,9 +228,12 @@ public final class AttrsXmlParser {
                         if (name != null && !mStyleMap.containsKey(name)) {
                             DeclareStyleableInfo style = parseDeclaredStyleable(name, node);
                             if (parents != null) {
-                                style.setParents(parents.split("[ ,|]"));  //$NON-NLS-1$
+                                String[] parentsArray =
+                                    parseStyleableParents(parents, mStyleMap, unknownParents);
+                                style.setParents(parentsArray);  //$NON-NLS-1$
                             }
                             mStyleMap.put(name, style);
+                            unknownParents.remove(name);
                             if (lastComment != null) {
                                 style.setJavaDoc(parseJavadoc(lastComment.getNodeValue()));
                             }
@@ -241,10 +246,101 @@ public final class AttrsXmlParser {
                 break;
             }
         }
+
+        // If we have any unknown parent, re-create synthetic styleable for them.
+        for (Entry<String, String> entry : unknownParents.entrySet()) {
+            String name = entry.getKey();
+            String parent = entry.getValue();
+
+            DeclareStyleableInfo style = new DeclareStyleableInfo(name, (AttributeInfo[])null);
+            if (parent != null) {
+                style.setParents(new String[] { parent });
+            }
+            mStyleMap.put(name, style);
+
+            // Simplify parents names. See SDK Bug 3125910.
+            // Implementation detail: that since we want to delete and add to the map,
+            // we can't just use an iterator.
+            for (String key : new ArrayList<String>(mStyleMap.keySet())) {
+                if (key.startsWith(name) && !key.equals(name)) {
+                    // We found a child which name starts with the full name of the
+                    // parent. Simplify the children name.
+                    String newName = AndroidManifestDescriptors.ANDROID_MANIFEST_STYLEABLE +
+                        key.substring(name.length());
+
+                    DeclareStyleableInfo newStyle =
+                        new DeclareStyleableInfo(newName, mStyleMap.get(key));
+                    mStyleMap.remove(key);
+                    mStyleMap.put(newName, newStyle);
+                }
+            }
+        }
     }
 
     /**
-     * Parses an <attr> node and convert it into an {@link AttributeInfo} if it is valid.
+     * Parses the "parents" attribute from a &lt;declare-styleable&gt;.
+     * <p/>
+     * The syntax is the following:
+     * <pre>
+     *   parent[.parent]* [[space|,] parent[.parent]* ]
+     * </pre>
+     * <p/>
+     * In English: </br>
+     * - There can be one or more parents, separated by whitespace or commas. </br>
+     * - Whitespace is ignored and trimmed. </br>
+     * - A parent name is actually composed of one or more identifiers joined by a dot.
+     * <p/>
+     * Styleables do not usually need to declare their parent chain (e.g. the grand-parents
+     * of a parent.) Parent names are unique, so in most cases a styleable will only declare
+     * its immediate parent.
+     * <p/>
+     * However it is possible for a styleable's parent to not exist, e.g. if you have a
+     * styleable "A" that is the root and then styleable "C" declares its parent to be "A.B".
+     * In this case we record "B" as the parent, even though it is unknown and will never be
+     * known. Any parent that is currently not in the knownParent map is thus added to the
+     * unknownParent set. The caller will remove the name from the unknownParent set when it
+     * sees a declaration for it.
+     *
+     * @param parents The parents string to parse. Must not be null or empty.
+     * @param knownParents The map of all declared styles known so far.
+     * @param unknownParents A map of all unknown parents collected here.
+     * @return The array of terminal parent names parsed from the parents string.
+     */
+    private String[] parseStyleableParents(String parents,
+            Map<String, DeclareStyleableInfo> knownParents,
+            Map<String, String> unknownParents) {
+
+        ArrayList<String> result = new ArrayList<String>();
+
+        for (String parent : parents.split("[ \t\n\r\f,|]")) {          //$NON-NLS-1$
+            parent = parent.trim();
+            if (parent.length() == 0) {
+                continue;
+            }
+            if (parent.indexOf('.') >= 0) {
+                // This is a grand-parent/parent chain. Make sure we know about the
+                // parents and only record the terminal one.
+                String last = null;
+                for (String name : parent.split("\\.")) {          //$NON-NLS-1$
+                    if (name.length() > 0) {
+                        if (!knownParents.containsKey(name)) {
+                            // Record this unknown parent and its grand parent.
+                            unknownParents.put(name, last);
+                        }
+                        last = name;
+                    }
+                }
+                parent = last;
+            }
+
+            result.add(parent);
+        }
+
+        return result.toArray(new String[result.size()]);
+    }
+
+    /**
+     * Parses an &lt;attr&gt; node and convert it into an {@link AttributeInfo} if it is valid.
      */
     private AttributeInfo parseAttr(Node attrNode, Node lastComment) {
         AttributeInfo info = null;
