@@ -24,6 +24,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.ui.views.properties.IPropertyDescriptor;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.eclipse.ui.views.properties.IPropertySource;
+import org.w3c.dom.Node;
 
 import java.util.ArrayList;
 
@@ -241,5 +242,20 @@ public class CanvasViewInfo implements IPropertySource {
         if (uiView != null) {
             ((IPropertySource) uiView).setPropertyValue(id, value);
         }
+    }
+
+    /**
+     * Returns the XML node corresponding to this info, or null if there is no
+     * such XML node.
+     *
+     * @return The XML node corresponding to this info object, or null
+     */
+    public Node getXmlNode() {
+        UiViewElementNode uiView = getUiViewKey();
+        if (uiView != null) {
+            return uiView.getXmlNode();
+        }
+
+        return null;
     }
 }
