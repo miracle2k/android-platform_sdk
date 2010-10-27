@@ -515,7 +515,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
         if (!stylesDeclared.isEmpty()) {
             sb.append("Warning, ADT/SDK Mismatch! The following elements are declared by the SDK but unknown to ADT: ");
             for (String name : stylesDeclared) {
-                name = guessXmlName(name);
+                sb.append(guessXmlName(name));
 
                 if (name != stylesDeclared.last()) {
                     sb.append(", ");    //$NON-NLS-1$
