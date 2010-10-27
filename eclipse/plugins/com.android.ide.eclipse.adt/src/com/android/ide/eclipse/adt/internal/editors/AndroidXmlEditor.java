@@ -62,10 +62,12 @@ import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelStateListener;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
+import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.sse.ui.StructuredTextEditor;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -870,6 +872,38 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
         return null;
     }
 
+    /**
+     * Shows the editor range corresponding to the given XML node. This will
+     * front the editor and select the text range.
+     *
+     * @param xmlNode The DOM node to be shown. The DOM node should be an XML
+     *            node from the existing XML model used by the structured XML
+     *            editor; it will not do attribute matching to find a
+     *            "corresponding" element in the document from some foreign DOM
+     *            tree.
+     * @return True if the node was shown.
+     */
+    @SuppressWarnings("restriction") // Yes, this method relies a lot on restricted APIs
+    public boolean show(Node xmlNode) {
+        if (xmlNode instanceof IndexedRegion) {
+            IndexedRegion region = (IndexedRegion)xmlNode;
+
+            IEditorPart textPage = getEditor(mTextPageIndex);
+            if (textPage instanceof StructuredTextEditor) {
+                StructuredTextEditor editor = (StructuredTextEditor) textPage;
+
+                setActivePage(AndroidXmlEditor.TEXT_EDITOR_ID);
+
+                // Note - we cannot use region.getLength() because that seems to
+                // always return 0.
+                int regionLength = region.getEndOffset() - region.getStartOffset();
+                editor.selectAndReveal(region.getStartOffset(), regionLength);
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /**
      * Listen to changes in the underlying XML model in the structured editor.
