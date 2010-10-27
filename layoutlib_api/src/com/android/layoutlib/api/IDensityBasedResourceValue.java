@@ -22,6 +22,7 @@ package com.android.layoutlib.api;
 public interface IDensityBasedResourceValue extends IResourceValue {
 
     public static enum Density {
+        XHIGH(320),
         HIGH(240),
         MEDIUM(160),
         LOW(120),

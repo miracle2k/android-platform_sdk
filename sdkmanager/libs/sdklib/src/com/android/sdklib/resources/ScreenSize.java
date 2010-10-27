@@ -23,7 +23,8 @@ package com.android.sdklib.resources;
 public enum ScreenSize implements ResourceEnum {
     SMALL("small", "Small", "Small Screen"), //$NON-NLS-1$
     NORMAL("normal", "Normal", "Normal Screen"), //$NON-NLS-1$
-    LARGE("large", "Large", "Large Screen"); //$NON-NLS-1$
+    LARGE("large", "Large", "Large Screen"), //$NON-NLS-1$
+    XLARGE("xlarge", "X-Large", "Extra Large Screen"); //$NON-NLS-1$
 
     private final String mValue;
     private final String mShortDisplayValue;

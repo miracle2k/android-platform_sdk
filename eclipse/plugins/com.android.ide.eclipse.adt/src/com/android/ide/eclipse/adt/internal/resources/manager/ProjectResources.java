@@ -347,8 +347,7 @@ public class ProjectResources implements IResourceRepository {
         // look for folders containing a file with the given name.
         ArrayList<ResourceFolder> matchingFolders = new ArrayList<ResourceFolder>();
 
-        // remove the folders that do not have a file with the given name, or if their config
-        // is incompatible.
+        // remove the folders that do not have a file with the given name.
         for (int i = 0 ; i < folders.size(); i++) {
             ResourceFolder folder = folders.get(i);
 

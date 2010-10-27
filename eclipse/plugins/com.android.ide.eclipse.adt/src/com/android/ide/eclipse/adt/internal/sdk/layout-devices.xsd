@@ -133,6 +133,7 @@
                         <xsd:enumeration value="small" />
                         <xsd:enumeration value="normal" />
                         <xsd:enumeration value="large" />
+                        <xsd:enumeration value="xlarge" />
                     </xsd:restriction>
                 </xsd:simpleType>
             </xsd:element>
@@ -187,6 +188,7 @@
                         <xsd:enumeration value="ldpi" />
                         <xsd:enumeration value="mdpi" />
                         <xsd:enumeration value="hdpi" />
+                        <xsd:enumeration value="xhdpi" />
                     </xsd:restriction>
                 </xsd:simpleType>
             </xsd:element>
