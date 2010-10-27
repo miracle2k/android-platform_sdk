@@ -588,7 +588,7 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
      * offset backwards that forms a potential XML element name, attribute name or
      * attribute value.
      *
-     * The part were we access the docment was extracted from
+     * The part were we access the document was extracted from
      * org.eclipse.jface.text.templatesTemplateCompletionProcessor and adapted to our needs.
      *
      * @param viewer the viewer
