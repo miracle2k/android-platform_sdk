@@ -49,7 +49,10 @@ public class DockModeQualifierTest extends TestCase {
         assertTrue(mNoneQualifier.isBetterMatchThan(mDeskQualifier, mCarQualifier));
         assertFalse(mNoneQualifier.isBetterMatchThan(mCarQualifier, mCarQualifier));
 
+        assertTrue(mDeskQualifier.isBetterMatchThan(mCarQualifier, mDeskQualifier));
         assertFalse(mDeskQualifier.isBetterMatchThan(mCarQualifier, mCarQualifier));
+
+        assertTrue(mCarQualifier.isBetterMatchThan(mDeskQualifier, mCarQualifier));
         assertFalse(mCarQualifier.isBetterMatchThan(mDeskQualifier, mDeskQualifier));
     }
 

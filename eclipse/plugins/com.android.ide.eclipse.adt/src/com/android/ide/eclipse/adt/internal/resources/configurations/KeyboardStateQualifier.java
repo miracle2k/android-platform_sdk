@@ -101,6 +101,7 @@ public final class KeyboardStateQualifier extends EnumBasedResourceQualifier {
 
         KeyboardStateQualifier compareQualifier = (KeyboardStateQualifier)compareTo;
         KeyboardStateQualifier referenceQualifier = (KeyboardStateQualifier)reference;
+
         if (referenceQualifier.mValue == KeyboardState.SOFT) { // only case where there could be a
                                                                // better qualifier
             // only return true if it's a better value.

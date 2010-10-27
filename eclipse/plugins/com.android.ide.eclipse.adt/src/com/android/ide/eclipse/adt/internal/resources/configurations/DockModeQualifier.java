@@ -95,9 +95,13 @@ public final class DockModeQualifier extends EnumBasedResourceQualifier {
 
         DockModeQualifier compareQualifier = (DockModeQualifier)compareTo;
         DockModeQualifier referenceQualifier = (DockModeQualifier)reference;
-        // if they are a perfect match, the receiver cannot be a better match.
+
         if (compareQualifier.getValue() == referenceQualifier.getValue()) {
+            // what we have is already the best possible match (exact match)
             return false;
+        } else  if (mValue == referenceQualifier.mValue) {
+            // got new exact value, this is the best!
+            return true;
         } else if (mValue == DockMode.NONE) {
             // else "none" can be a match in case there's no exact match
             return true;
