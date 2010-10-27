@@ -37,6 +37,7 @@ import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
@@ -95,7 +96,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
     public static final int TEXT_WIDTH_HINT = 50;
 
     /** Page index of the text editor (always the last page) */
-    private int mTextPageIndex;
+    protected int mTextPageIndex;
     /** The text editor */
     private StructuredTextEditor mTextEditor;
     /** Listener for the XML model from the StructuredEditor */
@@ -618,6 +619,39 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
             return (IStructuredDocument) mTextEditor.getTextViewer().getDocument();
         }
         return null;
+    }
+
+    /**
+     * Returns the XML DOM node corresponding to the given offset of the given
+     * document.
+     *
+     * @param document The document to look in
+     * @param offset The offset to look up the node for
+     * @return The node containing the offset, or null
+     */
+    @SuppressWarnings("restriction") // No replacement for restricted XML model yet
+    public static Node getNode(IDocument document, int offset) {
+        Node node = null;
+        IModelManager modelManager = StructuredModelManager.getModelManager();
+        if (modelManager == null) {
+            return null;
+        }
+        try {
+            IStructuredModel model = modelManager.getExistingModelForRead(document);
+            if (model != null) {
+                try {
+                    for (; offset >= 0 && node == null; --offset) {
+                        node = (Node) model.getIndexedRegion(offset);
+                    }
+                } finally {
+                    model.releaseFromRead();
+                }
+            }
+        } catch (Exception e) {
+            // Ignore exceptions.
+        }
+
+        return node;
     }
 
     /**

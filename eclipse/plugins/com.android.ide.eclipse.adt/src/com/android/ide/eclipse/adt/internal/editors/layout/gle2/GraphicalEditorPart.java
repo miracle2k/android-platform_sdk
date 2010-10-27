@@ -98,6 +98,7 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
+import org.w3c.dom.Node;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -454,6 +455,14 @@ public class GraphicalEditorPart extends EditorPart
             mCanvasViewer = null;
         }
         super.dispose();
+    }
+
+    /**
+     * Select the visual element corresponding to the given XML node
+     * @param xmlNode The Node whose element we want to select
+     */
+    public void select(Node xmlNode) {
+        mCanvasViewer.getCanvas().select(xmlNode);
     }
 
     /**
