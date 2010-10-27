@@ -42,6 +42,7 @@
     <property name="adb.device.arg" value="" />
 
     <property name="android.tools.dir" location="${sdk.dir}/tools" />
+    <property name="android.platform.tools.dir" location="${sdk.dir}/platform-tools" />
     <!-- Name of the application package extracted from manifest file -->
     <xpath input="AndroidManifest.xml" expression="/manifest/@package"
                 output="manifest.package" />
@@ -157,7 +158,7 @@
 
     <!-- Tools -->
     <condition property="exe" value=".exe" else=""><os family="windows" /></condition>
-    <property name="adb" location="${android.tools.dir}/adb${exe}" />
+    <property name="adb" location="${android.platform.tools.dir}/adb${exe}" />
     <property name="zipalign" location="${android.tools.dir}/zipalign${exe}" />
 
     <!-- Emma configuration -->
