@@ -508,7 +508,7 @@ class NewXmlFileCreationPage extends WizardPage {
     /**
      * Creates the project & filename fields.
      * <p/>
-     * The parent must be a GridLayout with NUM_COL colums.
+     * The parent must be a GridLayout with NUM_COL columns.
      */
     private void createProjectGroup(Composite parent) {
         int col = 0;
@@ -567,7 +567,7 @@ class NewXmlFileCreationPage extends WizardPage {
     /**
      * Creates the type field, {@link ConfigurationSelector} and the folder field.
      * <p/>
-     * The parent must be a GridLayout with NUM_COL colums.
+     * The parent must be a GridLayout with NUM_COL columns.
      */
     private void createTypeGroup(Composite parent) {
         // separator
@@ -648,7 +648,7 @@ class NewXmlFileCreationPage extends WizardPage {
     /**
      * Creates the root element combo.
      * <p/>
-     * The parent must be a GridLayout with NUM_COL colums.
+     * The parent must be a GridLayout with NUM_COL columns.
      */
     private void createRootGroup(Composite parent) {
         // separator

@@ -90,7 +90,7 @@ public class PreCompilerBuilder extends BaseBuilder {
     private static Pattern sAidlPattern1 = Pattern.compile("^(.+?):(\\d+):?\\s(.+)$"); //$NON-NLS-1$
 
     /**
-     * Data to temporarly store aidl source file information
+     * Data to temporarily store aidl source file information
      */
     static class AidlData {
         IFile aidlFile;
@@ -146,7 +146,7 @@ public class PreCompilerBuilder extends BaseBuilder {
     /**
      * Progress monitor waiting the end of the process to set a persistent value
      * in a file. This is typically used in conjunction with <code>IResource.refresh()</code>,
-     * since this call is asysnchronous, and we need to wait for it to finish for the file
+     * since this call is asynchronous, and we need to wait for it to finish for the file
      * to be known by eclipse, before we can call <code>resource.setPersistentProperty</code> on
      * a new file.
      */
@@ -658,7 +658,7 @@ public class PreCompilerBuilder extends BaseBuilder {
      * @param osResPath the OS path to the res folder for the main project
      * @param osManifestPath the OS path to the manifest of the main project
      * @param packageFolder the IFolder that will contain the generated file. Unlike
-     * <var>osOutputPath</var> this is the direct parent of the geenerated files.
+     * <var>osOutputPath</var> this is the direct parent of the generated files.
      * If <var>customJavaPackage</var> is not null, this must match the new destination triggered
      * by its value.
      * @param libResFolders the list of res folders for the library.
@@ -857,7 +857,7 @@ public class PreCompilerBuilder extends BaseBuilder {
      * created from aidl files that are now gone.
      * @param projectTarget Target of the project
      * @param sourceFolders the list of source folders, relative to the workspace.
-     * @param monitor the projess monitor
+     * @param monitor the progress monitor
      * @returns true if it did something
      * @throws CoreException
      */
@@ -950,7 +950,7 @@ public class PreCompilerBuilder extends BaseBuilder {
     }
 
     /**
-     * Returns the {@link IFile} handle to the destination file for a given aild source file
+     * Returns the {@link IFile} handle to the destination file for a given aidl source file
      * ({@link AidlData}).
      * @param aidlData the data for the aidl source file.
      * @param createFolders whether or not the parent folder of the destination should be created
@@ -1032,7 +1032,7 @@ public class PreCompilerBuilder extends BaseBuilder {
             boolean error = parseAidlOutput(results, file);
 
             // If the process failed and we couldn't parse the output
-            // we pring a message, mark the project and exit
+            // we print a message, mark the project and exit
             if (result != 0 && error == true) {
                 // display the message in the console.
                 AdtPlugin.printErrorToConsole(getProject(), results.toArray());
