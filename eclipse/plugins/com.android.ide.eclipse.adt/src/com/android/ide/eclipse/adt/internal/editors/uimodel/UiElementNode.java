@@ -341,7 +341,7 @@ public class UiElementNode implements IPropertySource {
      * Returns the {@link ElementDescriptor} for this node. This is never null.
      * <p/>
      * Do not use this to call getDescriptor().getAttributes(), instead call
-     * getAttributeDescriptors() which can be overriden by derived classes.
+     * getAttributeDescriptors() which can be overridden by derived classes.
      */
     public ElementDescriptor getDescriptor() {
         return mDescriptor;
@@ -864,7 +864,7 @@ public class UiElementNode implements IPropertySource {
      * Removes the XML node corresponding to this UI node if it exists
      * and also removes all mirrored information in this UI node (i.e. children, attributes)
      *
-     * @return The removed node or null if it didn't exist in the firtst place.
+     * @return The removed node or null if it didn't exist in the first place.
      */
     public Node deleteXmlNode() {
         if (mXmlNode == null) {
@@ -1104,7 +1104,7 @@ public class UiElementNode implements IPropertySource {
      * For each attribute declared in this {@link UiElementNode}, get
      * the corresponding XML attribute. It may not exist, in which case the
      * value will be null. We don't really know if a value has changed, so
-     * the updateValue() is called on the UI sattribute in all cases.
+     * the updateValue() is called on the UI attribute in all cases.
      *
      * @param xmlNode The XML node to mirror
      */

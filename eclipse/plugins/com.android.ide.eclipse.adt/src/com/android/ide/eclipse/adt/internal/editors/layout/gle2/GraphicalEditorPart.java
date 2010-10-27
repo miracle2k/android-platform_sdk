@@ -1385,7 +1385,7 @@ public class GraphicalEditorPart extends EditorPart
     // ---- Error handling ----
 
     /**
-     * Switches the shash to display the error label.
+     * Switches the sash to display the error label.
      *
      * @param errorFormat The new error to display if not null.
      * @param parameters String.format parameters for the error format.
@@ -1406,7 +1406,7 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     /**
-     * Switches the shash to display the error label to show a list of
+     * Switches the sash to display the error label to show a list of
      * missing classes and give options to create them.
      */
     private void displayMissingClasses(Set<String> missingClasses) {

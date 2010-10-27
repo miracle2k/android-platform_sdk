@@ -187,7 +187,7 @@ public class AdtPlugin extends AbstractUIPlugin {
         mAndroidConsoleErrorStream = mAndroidConsole.newMessageStream();
         mRed = new Color(display, 0xFF, 0x00, 0x00);
 
-        // because this can be run, in some cases, by a non ui thread, and beccause
+        // because this can be run, in some cases, by a non ui thread, and because
         // changing the console properties update the ui, we need to make this change
         // in the ui thread.
         display.asyncExec(new Runnable() {

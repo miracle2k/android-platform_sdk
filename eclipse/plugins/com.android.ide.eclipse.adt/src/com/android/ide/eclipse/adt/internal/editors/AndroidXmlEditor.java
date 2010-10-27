@@ -789,7 +789,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      *
      * @param label The label for the undo operation. Can be null but we should really try to put
      *              something meaningful if possible.
-     * @return True if the undo recording actually started, false if any kind of error occured.
+     * @return True if the undo recording actually started, false if any kind of error occurred.
      *         {@link #endUndoRecording()} should only be called if True is returned.
      */
     private boolean beginUndoRecording(String label) {
@@ -924,7 +924,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
 
         /**
          * A model has been renamed or copied (as in saveAs..). In the renamed
-         * case, the two paramenters are the same instance, and only contain the
+         * case, the two parameters are the same instance, and only contain the
          * new info for id and base location.
          * <p/>
          * This AndroidXmlEditor implementation of IModelChangedListener is empty.
