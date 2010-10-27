@@ -96,5 +96,10 @@ public abstract class ResourceFile extends Resource {
      * @param name the name of the resource.
      */
     public abstract IResourceValue getValue(ResourceType type, String name);
+
+    @Override
+    public String toString() {
+        return mFile.toString();
+    }
 }
 

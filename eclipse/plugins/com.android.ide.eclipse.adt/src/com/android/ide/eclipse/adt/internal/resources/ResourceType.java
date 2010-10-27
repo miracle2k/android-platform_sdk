@@ -44,7 +44,7 @@ public enum ResourceType {
         mDisplayName = displayName;
         mAlternateXmlNames = alternateXmlNames;
     }
-    
+
     /**
      * Returns the resource type name, as used by XML files.
      */
@@ -58,7 +58,7 @@ public enum ResourceType {
     public String getDisplayName() {
         return mDisplayName;
     }
-    
+
     /**
      * Returns the enum by its name as it appears in the XML or the R class.
      * @param name name of the resource
@@ -79,12 +79,12 @@ public enum ResourceType {
         }
         return null;
     }
-    
+
     /**
      * Returns a formatted string usable in an XML to use the specified {@link ResourceItem}.
      * @param resourceItem The resource item.
      * @param system Whether this is a system resource or a project resource.
-     * @return a string in the format @[type]/[name] 
+     * @return a string in the format @[type]/[name]
      */
     public String getXmlString(ResourceItem resourceItem, boolean system) {
         if (this == ID && resourceItem instanceof IIdResourceItem) {
@@ -96,7 +96,7 @@ public enum ResourceType {
 
         return (system?"@android:":"@") + mName + "/" + resourceItem.getName(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     }
-    
+
     /**
      * Returns an array with all the names defined by this enum.
      */
@@ -107,5 +107,10 @@ public enum ResourceType {
             names[i] = values[i].getName();
         }
         return names;
+    }
+
+    @Override
+    public String toString() {
+        return getName();
     }
 }

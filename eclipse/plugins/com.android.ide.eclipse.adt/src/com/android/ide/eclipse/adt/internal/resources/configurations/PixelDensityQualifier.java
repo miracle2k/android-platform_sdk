@@ -116,8 +116,11 @@ public final class PixelDensityQualifier extends EnumBasedResourceQualifier {
         PixelDensityQualifier compareQ = (PixelDensityQualifier)compareTo;
         PixelDensityQualifier referenceQ = (PixelDensityQualifier)reference;
 
-        if (mValue == referenceQ.mValue && compareQ.mValue != referenceQ.mValue) {
-            // got exact value, this is the best!
+        if (compareQ.mValue == referenceQ.mValue) {
+            // what we have is already the best possible match (exact match)
+            return false;
+        } else if (mValue == referenceQ.mValue) {
+            // got new exact value, this is the best!
             return true;
         } else {
             // in all case we're going to prefer the higher dpi.

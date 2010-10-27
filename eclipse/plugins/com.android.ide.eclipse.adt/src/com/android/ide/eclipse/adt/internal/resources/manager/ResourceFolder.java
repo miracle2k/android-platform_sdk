@@ -259,4 +259,9 @@ public final class ResourceFolder extends Resource {
         }
         return list;
     }
+
+    @Override
+    public String toString() {
+        return mFolder.toString();
+    }
 }
