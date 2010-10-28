@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.resources;
 
 
-import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.eclipse.tests.AdtTestData;
 
 import java.util.Arrays;
@@ -48,7 +47,7 @@ public class AttrsXmlParserManifestTest extends TestCase {
         assertEquals(mFilePath, mParser.getOsAttrsXmlPath());
     }
 
-    public final void testPreload() throws Exception {
+    private Map<String, DeclareStyleableInfo> preloadAndGetStyleables() {
         assertSame(mParser, mParser.preload());
 
         Map<String, DeclareStyleableInfo> styleableList = mParser.getDeclareStyleableList();
@@ -56,19 +55,40 @@ public class AttrsXmlParserManifestTest extends TestCase {
         if (!(styleableList instanceof TreeMap<?, ?>)) {
             styleableList = new TreeMap<String, DeclareStyleableInfo>(styleableList);
         }
+        return styleableList;
+    }
+
+    public final void testPreload() throws Exception {
+        Map<String, DeclareStyleableInfo> styleableList = preloadAndGetStyleables();
 
         assertEquals(
                 "[AndroidManifest, " +
                 "AndroidManifestActivityAlias, " +
                 "AndroidManifestApplication, " +
                 "AndroidManifestNewElement, " +
+                "AndroidManifestNewParent, " +
                 "AndroidManifestPermission" +
-                // TODO This is for the next CL:
-                //"AndroidManifestImplicitParentElement" +
-                //"AndroidManifestNewElement" +
                 "]",
                 Arrays.toString(styleableList.keySet().toArray()));
+    }
 
-        // TODO test a bit more the styleable info vlaues.
+    /**
+     * Tests that AndroidManifestNewParentNewElement got renamed to AndroidManifestNewElement
+     * and a parent named AndroidManifestNewParent was automatically created.
+     */
+    public final void testNewParent() throws Exception {
+        Map<String, DeclareStyleableInfo> styleableList = preloadAndGetStyleables();
+
+        DeclareStyleableInfo newElement = styleableList.get("AndroidManifestNewElement");
+        assertNotNull(newElement);
+        assertEquals("AndroidManifestNewElement", newElement.getStyleName());
+        assertEquals("[AndroidManifestNewParent]",
+                     Arrays.toString(newElement.getParents()));
+
+        DeclareStyleableInfo newParent = styleableList.get("AndroidManifestNewParent");
+        assertNotNull(newParent);
+        assertEquals("[AndroidManifest]",
+                     Arrays.toString(newParent.getParents()));
+
     }
 }
