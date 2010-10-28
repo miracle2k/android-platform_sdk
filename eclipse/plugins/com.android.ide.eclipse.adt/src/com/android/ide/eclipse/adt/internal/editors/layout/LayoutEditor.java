@@ -38,6 +38,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -51,6 +52,7 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -307,6 +309,21 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
 
     @Override
     protected void pageChange(int newPageIndex) {
+        if (getCurrentPage() == mTextPageIndex &&
+                newPageIndex == mGraphicalEditorIndex) {
+            // You're switching from the XML editor to the WYSIWYG editor;
+            // look at the caret position and figure out which node it corresponds to
+            // (if any) and if found, select the corresponding visual element.
+            ISourceViewer textViewer = getStructuredSourceViewer();
+            int caretOffset = textViewer.getTextWidget().getCaretOffset();
+            if (caretOffset >= 0) {
+                Node node = AndroidXmlEditor.getNode(textViewer.getDocument(), caretOffset);
+                if (node != null && mGraphicalEditor instanceof GraphicalEditorPart) {
+                    ((GraphicalEditorPart)mGraphicalEditor).select(node);
+                }
+            }
+        }
+
         super.pageChange(newPageIndex);
 
         if (mGraphicalEditor != null) {

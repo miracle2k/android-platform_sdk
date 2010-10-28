@@ -48,9 +48,6 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.wst.sse.core.StructuredModelManager;
-import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
-import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
@@ -743,23 +740,8 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
     /**
      * Returns the XML DOM node corresponding to the given offset of the given document.
      */
-    protected Node getNode(ITextViewer viewer, int offset) {
-        Node node = null;
-        try {
-            IModelManager mm = StructuredModelManager.getModelManager();
-            if (mm != null) {
-                IStructuredModel model = mm.getExistingModelForRead(viewer.getDocument());
-                if (model != null) {
-                    for(; offset >= 0 && node == null; --offset) {
-                        node = (Node) model.getIndexedRegion(offset);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // Ignore exceptions.
-        }
-
-        return node;
+    public static Node getNode(ITextViewer viewer, int offset) {
+        return AndroidXmlEditor.getNode(viewer.getDocument(), offset);
     }
 
     /**

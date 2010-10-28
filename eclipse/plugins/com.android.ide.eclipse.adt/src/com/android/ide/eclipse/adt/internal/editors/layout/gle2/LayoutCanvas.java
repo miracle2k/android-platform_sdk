@@ -1294,6 +1294,25 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
     }
 
     /**
+     * Select the visual element corresponding to the given XML node
+     * @param xmlNode The Node whose element we want to select
+     */
+    public void select(Node xmlNode) {
+        CanvasViewInfo vi = findViewInfoFor(xmlNode);
+        if (vi != null) {
+            // Select the visual element -- unless it's the root.
+            // The root element is the one whose GRAND parent
+            // is null (because the parent will be a -document-
+            // node).
+            UiViewElementNode key = vi.getUiViewKey();
+            if (key != null && key.getUiParent() != null &&
+                    key.getUiParent().getUiParent() != null) {
+                selectSingle(vi);
+            }
+        }
+    }
+
+    /**
      * Deselects a view info.
      * Returns true if the object was actually selected.
      * Callers are responsible for calling redraw() and updateOulineSelection() after.
@@ -1361,6 +1380,46 @@ class LayoutCanvas extends Canvas implements ISelectionProvider {
         // try to find a matching child
         for (CanvasViewInfo child : canvasViewInfo.getChildren()) {
             CanvasViewInfo v = findViewInfoKey(viewKey, child);
+            if (v != null) {
+                return v;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Locates and returns the {@link CanvasViewInfo} corresponding to the given
+     * node, or null if it cannot be found.
+     *
+     * @param node The node we want to find a corresponding
+     *            {@link CanvasViewInfo} for.
+     * @return The {@link CanvasViewInfo} corresponding to the given node, or
+     *         null if no match was found.
+     */
+    /* package */ CanvasViewInfo findViewInfoFor(Node node) {
+        if (mLastValidViewInfoRoot != null) {
+            return findViewInfoForNode(node, mLastValidViewInfoRoot);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Tries to find a child with the same view XML node in the view info sub-tree.
+     * Returns null if not found.
+     */
+    private CanvasViewInfo findViewInfoForNode(Node xmlNode, CanvasViewInfo canvasViewInfo) {
+        if (canvasViewInfo == null) {
+            return null;
+        }
+        if (canvasViewInfo.getXmlNode() == xmlNode) {
+            return canvasViewInfo;
+        }
+
+        // Try to find a matching child
+        for (CanvasViewInfo child : canvasViewInfo.getChildren()) {
+            CanvasViewInfo v = findViewInfoForNode(xmlNode, child);
             if (v != null) {
                 return v;
             }
