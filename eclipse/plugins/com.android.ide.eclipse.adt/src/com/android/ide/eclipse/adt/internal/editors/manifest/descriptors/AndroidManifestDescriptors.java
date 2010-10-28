@@ -53,7 +53,7 @@ import java.util.Map.Entry;
 public final class AndroidManifestDescriptors implements IDescriptorProvider {
 
     private static final String MANIFEST_NODE_NAME = "manifest";                //$NON-NLS-1$
-    private static final String ANDROID_MANIFEST_STYLEABLE = "AndroidManifest"; //$NON-NLS-1$
+    public static final String ANDROID_MANIFEST_STYLEABLE = "AndroidManifest";  //$NON-NLS-1$
 
     // Public attributes names, attributes descriptors and elements descriptors
 
@@ -345,7 +345,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
      * "Inflates" the properties of an {@link ElementDescriptor} from the styleable declaration.
      * <p/>
      * This first creates all the attributes for the given ElementDescriptor.
-     * It then finds all children of the descriptor, inflate them recursively and set them
+     * It then finds all children of the descriptor, inflates them recursively and sets them
      * as child to this ElementDescriptor.
      *
      * @param styleMap The input styleable map for manifest elements & attributes.
@@ -552,7 +552,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
         if (ANDROID_MANIFEST_STYLEABLE.equals(name)) {
             sb.append(MANIFEST_NODE_NAME);
         } else {
-            name = name.replace(ANDROID_MANIFEST_STYLEABLE, "");    //$NON-NLS-1$
+            name = name.replace(ANDROID_MANIFEST_STYLEABLE, "");                //$NON-NLS-1$
             boolean first_char = true;
             for (char c : name.toCharArray()) {
                 if (c >= 'A' && c <= 'Z') {
