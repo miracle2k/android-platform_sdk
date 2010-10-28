@@ -42,7 +42,7 @@ import java.util.Collection;
  *
  * @see ArchiveInfo#ArchiveInfo(Archive, Archive, ArchiveInfo[])
  */
-class ArchiveInfo implements IDescription {
+class ArchiveInfo implements IDescription, Comparable<ArchiveInfo> {
 
     private final Archive mNewArchive;
     private final Archive mReplaced;
@@ -205,4 +205,17 @@ class ArchiveInfo implements IDescription {
         }
         return super.toString();
     }
+
+    /**
+     * ArchiveInfos are compared using ther "new archive" ordering.
+     *
+     * @see Archive#compareTo(Archive)
+     */
+    public int compareTo(ArchiveInfo rhs) {
+        if (mNewArchive != null && rhs != null) {
+            return mNewArchive.compareTo(rhs.getNewArchive());
+        }
+        return 0;
+    }
+
 }

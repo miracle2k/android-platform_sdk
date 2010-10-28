@@ -962,7 +962,24 @@ class UpdaterLogic {
         return new MissingPlatformArchiveInfo(new AndroidVersion(api, null /*codename*/));
     }
 
-    /** Fetch all remote packages only if really needed. */
+    /**
+     * Fetch all remote packages only if really needed.
+     * <p/>
+     * This method takes a list of sources. Each source is only fetched once -- that is each
+     * source keeps the list of packages that we fetched from the remote XML file. If the list
+     * is null, it means this source has never been fetched so we'll do it once here. Otherwise
+     * we rely on the cached list of packages from this source.
+     * <p/>
+     * This method also takes a remote package list as input, which it will fill out.
+     * If a source has already been fetched, we'll add its packages to the remote package list
+     * if they are not already present. Otherwise, the source will be fetched and the packages
+     * added to the list.
+     *
+     * @param remotePkgs An in-out list of packages available from remote sources.
+     *                   This list must not be null.
+     *                   It can be empty or already contain some packages.
+     * @param remoteSources A list of available remote sources to fetch from.
+     */
     protected void fetchRemotePackages(
             final ArrayList<Package> remotePkgs,
             final SdkSource[] remoteSources) {
@@ -975,9 +992,27 @@ class UpdaterLogic {
         // necessary.
         boolean needsFetch = false;
         for (final SdkSource remoteSrc : remoteSources) {
-            needsFetch = remoteSrc.getPackages() == null;
-            if (needsFetch) {
-                break;
+            Package[] pkgs = remoteSrc.getPackages();
+            if (pkgs == null) {
+                // This source has never been fetched. We'll do it below.
+                needsFetch = true;
+            } else {
+                // This source has already been fetched and we know its package list.
+                // We still need to make sure all of its packages are present in the
+                // remotePkgs list.
+
+                nextPackage: for (Package pkg : pkgs) {
+                    for (Archive a : pkg.getArchives()) {
+                        // Only add a package if it contains at least one compatible archive
+                        // and is not already in the remote package list.
+                        if (a.isCompatible()) {
+                            if (!remotePkgs.contains(pkg)) {
+                                remotePkgs.add(pkg);
+                                continue nextPackage;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -1000,11 +1035,13 @@ class UpdaterLogic {
                     if (pkgs != null) {
                         nextPackage: for (Package pkg : pkgs) {
                             for (Archive a : pkg.getArchives()) {
-                                // Only add a package if it contains at least
-                                // one compatible archive
+                                // Only add a package if it contains at least one compatible archive
+                                // and is not already in the remote package list.
                                 if (a.isCompatible()) {
-                                    remotePkgs.add(pkg);
-                                    continue nextPackage;
+                                    if (!remotePkgs.contains(pkg)) {
+                                        remotePkgs.add(pkg);
+                                        continue nextPackage;
+                                    }
                                 }
                             }
                         }
