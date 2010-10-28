@@ -170,8 +170,8 @@
         <attr name="icon" />
     </declare-styleable>
 
-    <declare-styleable name="AndroidManifestNewElement"
-            parent="AndroidManifest.AndroidManifestImplicitParentElement">
+    <declare-styleable name="AndroidManifestNewParentNewElement"
+            parent="AndroidManifest.AndroidManifestNewParent">
         <attr name="name" />
         <attr name="label" />
         <attr name="icon" />

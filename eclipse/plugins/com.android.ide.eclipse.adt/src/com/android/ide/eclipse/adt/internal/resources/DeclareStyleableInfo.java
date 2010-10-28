@@ -44,6 +44,34 @@ public class DeclareStyleableInfo {
         mAttributes = attributes == null ? new AttributeInfo[0] : attributes;
     }
 
+    /**
+     * Creates a new {@link DeclareStyleableInfo} that has the same attributes
+     * as an existing one and only differs by name.
+     *
+     * @param styleName The name of the style. Should not be empty nor null.
+     * @param existing The existing {@link DeclareStyleableInfo} to mirror.
+     */
+    public DeclareStyleableInfo(String styleName, DeclareStyleableInfo existing) {
+        mStyleName = styleName;
+
+        mJavaDoc = existing.getJavaDoc();
+
+        String[] parents = existing.getParents();
+        if (parents != null) {
+            mParents = new String[parents.length];
+            System.arraycopy(parents, 0, mParents, 0, parents.length);
+        }
+
+        AttributeInfo[] attrs = existing.getAttributes();
+        if (attrs == null || attrs.length == 0) {
+            mAttributes = new AttributeInfo[0];
+        } else {
+            mAttributes = new AttributeInfo[attrs.length];
+            System.arraycopy(attrs, 0, mAttributes, 0, attrs.length);
+        }
+    }
+
+
     /** Returns style name */
     public String getStyleName() {
         return mStyleName;
