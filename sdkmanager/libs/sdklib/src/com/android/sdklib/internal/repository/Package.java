@@ -503,18 +503,18 @@ public abstract class Package implements IDescription, Comparable<Package> {
 
 
     /**
-     * Returns an ordering like this:
-     * - Tools.
-     * - Platform-Tools.
-     * - Docs.
-     * - Platform n preview
-     * - Platform n
-     * - Platform n-1
-     * - Samples packages.
-     * - Add-on based on n preview
-     * - Add-on based on n
-     * - Add-on based on n-1
-     * - Extra packages.
+     * Returns an ordering like this: <br/>
+     * - Tools <br/>
+     * - Platform-Tools <br/>
+     * - Docs. <br/>
+     * - Platform n preview <br/>
+     * - Platform n <br/>
+     * - Platform n-1 <br/>
+     * - Samples packages <br/>
+     * - Add-on based on n preview <br/>
+     * - Add-on based on n <br/>
+     * - Add-on based on n-1 <br/>
+     * - Extra packages <br/>
      */
     public int compareTo(Package other) {
         int s1 = this.sortingScore();

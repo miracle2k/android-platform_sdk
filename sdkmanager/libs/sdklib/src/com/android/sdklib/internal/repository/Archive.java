@@ -44,7 +44,7 @@ import java.util.Properties;
  * <p/>
  * Packages are offered by a {@link SdkSource} (a download site).
  */
-public class Archive implements IDescription {
+public class Archive implements IDescription, Comparable<Archive> {
 
     public static final int NUM_MONITOR_INC = 100;
     private static final String PROP_OS   = "Archive.Os";       //$NON-NLS-1$
@@ -1098,5 +1098,17 @@ public class Archive implements IDescription {
         Runtime.getRuntime().exec(new String[] {
            "chmod", "777", file.getAbsolutePath()
         });
+    }
+
+    /**
+     * Archives are compared using their {@link Package} ordering.
+     *
+     * @see Package#compareTo(Package)
+     */
+    public int compareTo(Archive rhs) {
+        if (mPackage != null && rhs != null) {
+            return mPackage.compareTo(rhs.getParentPackage());
+        }
+        return 0;
     }
 }

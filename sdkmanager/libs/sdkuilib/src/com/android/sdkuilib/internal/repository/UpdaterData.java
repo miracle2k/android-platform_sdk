@@ -51,6 +51,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -639,6 +640,8 @@ class UpdaterData implements IUpdaterData {
         // TODO if selectedArchives is null and archives.len==0, find if there are
         // any new platform we can suggest to install instead.
 
+        Collections.sort(archives);
+
         UpdateChooserDialog dialog = new UpdateChooserDialog(getWindowShell(), this, archives);
         dialog.open();
 
@@ -679,6 +682,8 @@ class UpdaterData implements IUpdaterData {
                 getSources(),
                 getLocalSdkParser().getPackages(),
                 includeObsoletes);
+
+        Collections.sort(archives);
 
         // Filter the selected archives to only keep the ones matching the filter
         if (pkgFilter != null && pkgFilter.size() > 0 && archives != null && archives.size() > 0) {
