@@ -24,6 +24,8 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import junit.framework.TestCase;
 
@@ -169,8 +171,8 @@ public class SdkAddonSourceTest extends TestCase {
         assertEquals("Found My First add-on by John Doe, Android API 1, revision 1\n" +
                      "Found My Second add-on by John Deer, Android API 2, revision 42\n" +
                      "Found This add-on has no libraries by Joe Bar, Android API 4, revision 3\n" +
-                     "Found Usb Driver package, revision 43 (Obsolete)\n" +
-                     "Found Extra Api Dep package, revision 2 (Obsolete)\n",
+                     "Found A Usb Driver package, revision 43 (Obsolete)\n" +
+                     "Found Android Vendor Extra Api Dep package, revision 2 (Obsolete)\n",
                 monitor.getCapturedDescriptions());
         assertEquals("", monitor.getCapturedResults());
 
@@ -181,6 +183,17 @@ public class SdkAddonSourceTest extends TestCase {
         for (Package p : pkgs) {
             assertTrue(p.getArchives().length >= 1);
         }
+
+        // Check the extra packages path
+        ArrayList<String> extraPaths = new ArrayList<String>();
+        for (Package p : pkgs) {
+            if (p instanceof ExtraPackage) {
+                extraPaths.add(((ExtraPackage) p).getPath());
+            }
+        }
+        assertEquals(
+                "[a-usb_driver, android_vendor-extra_api_dep]",
+                Arrays.toString(extraPaths.toArray()));
     }
 
     /**

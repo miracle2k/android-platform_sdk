@@ -24,6 +24,8 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import junit.framework.TestCase;
 
@@ -205,6 +207,17 @@ public class SdkRepoSourceTest extends TestCase {
         for (Package p : pkgs) {
             assertTrue(p.getArchives().length >= 1);
         }
+
+        // Check the extra packages path
+        ArrayList<String> extraPaths = new ArrayList<String>();
+        for (Package p : pkgs) {
+            if (p instanceof ExtraPackage) {
+                extraPaths.add(((ExtraPackage) p).getPath());
+            }
+        }
+        assertEquals(
+                "[usb_driver]",
+                Arrays.toString(extraPaths.toArray()));
     }
 
     /**
@@ -258,6 +271,79 @@ public class SdkRepoSourceTest extends TestCase {
         for (Package p : pkgs) {
             assertTrue(p.getArchives().length >= 1);
         }
+
+        // Check the extra packages path
+        ArrayList<String> extraPaths = new ArrayList<String>();
+        for (Package p : pkgs) {
+            if (p instanceof ExtraPackage) {
+                extraPaths.add(((ExtraPackage) p).getPath());
+            }
+        }
+        assertEquals(
+                "[usb_driver, extra_api_dep]",
+                Arrays.toString(extraPaths.toArray()));
+    }
+
+    /**
+     * Validate what we can load from repository in schema version 3
+     */
+    public void testLoadXml_3() throws Exception {
+        InputStream xmlStream = getTestResource(
+                    "/com/android/sdklib/testdata/repository_sample_3.xml");
+
+        // guess the version from the XML document
+        int version = mSource._getXmlSchemaVersion(xmlStream);
+        assertEquals(3, version);
+
+        Boolean[] validatorFound = new Boolean[] { Boolean.FALSE };
+        String[] validationError = new String[] { null };
+        String url = "not-a-valid-url://" + SdkRepoConstants.URL_DEFAULT_FILENAME;
+
+        String uri = mSource._validateXml(xmlStream, url, version, validationError, validatorFound);
+        assertEquals(Boolean.TRUE, validatorFound[0]);
+        assertEquals(null, validationError[0]);
+        assertEquals(SdkRepoConstants.getSchemaUri(3), uri);
+
+        // Validation was successful, load the document
+        MockMonitor monitor = new MockMonitor();
+        Document doc = mSource._getDocument(xmlStream, monitor);
+        assertNotNull(doc);
+
+        // Get the packages
+        assertTrue(mSource._parsePackages(doc, uri, monitor));
+
+        assertEquals("Found SDK Platform Android 1.0, API 1, revision 3\n" +
+                    "Found Documentation for Android SDK, API 1, revision 1\n" +
+                    "Found SDK Platform Android 1.1, API 2, revision 12\n" +
+                    "Found SDK Platform Android Pastry Preview, revision 3\n" +
+                    "Found Android SDK Tools, revision 1\n" +
+                    "Found Documentation for Android SDK, API 2, revision 42\n" +
+                    "Found Android SDK Tools, revision 42\n" +
+                    "Found Android SDK Platform-tools, revision 3\n" +
+                    "Found A Usb Driver package, revision 43 (Obsolete)\n" +
+                    "Found Android Vendor Extra Api Dep package, revision 2 (Obsolete)\n" +
+                    "Found Samples for SDK API 14, revision 24 (Obsolete)\n",
+                monitor.getCapturedDescriptions());
+        assertEquals("", monitor.getCapturedResults());
+
+        // check the packages we found... we expected to find 13 packages with each at least
+        // one archive.
+        Package[] pkgs = mSource.getPackages();
+        assertEquals(11, pkgs.length);
+        for (Package p : pkgs) {
+            assertTrue(p.getArchives().length >= 1);
+        }
+
+        // Check the extra packages path
+        ArrayList<String> extraPaths = new ArrayList<String>();
+        for (Package p : pkgs) {
+            if (p instanceof ExtraPackage) {
+                extraPaths.add(((ExtraPackage) p).getPath());
+            }
+        }
+        assertEquals(
+                "[a-usb_driver, android_vendor-extra_api_dep]",
+                Arrays.toString(extraPaths.toArray()));
     }
 
     /**
