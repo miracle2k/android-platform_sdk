@@ -54,6 +54,7 @@ final class PlatformTarget implements IAndroidTarget {
      * @param versionName the version name of the platform.
      * @param revision the revision of the platform component.
      */
+    @SuppressWarnings("deprecation")
     PlatformTarget(String sdkOsPath, String platformOSPath, Map<String, String> properties,
             int apiLevel, String codeName, String versionName, int revision) {
         if (platformOSPath.endsWith(File.separator) == false) {

@@ -170,6 +170,7 @@ public class LocalSdkParser {
                         ExtraPackage pkg = new ExtraPackage(
                                 null,                       //source
                                 props,                      //properties
+                                null,                       //vendor
                                 dir.getName(),              //path
                                 0,                          //revision
                                 null,                       //license
