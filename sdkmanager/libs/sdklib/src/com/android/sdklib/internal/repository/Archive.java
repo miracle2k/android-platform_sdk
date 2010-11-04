@@ -18,6 +18,7 @@ package com.android.sdklib.internal.repository;
 
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
+import com.android.sdklib.repository.RepoConstants;
 
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
@@ -1032,7 +1033,7 @@ public class Archive implements IDescription, Comparable<Archive> {
      * This folder is always at osBasePath/temp.
      */
     private File getTempFolder(String osBasePath) {
-        File baseTempFolder = new File(osBasePath, "temp");     //$NON-NLS-1$
+        File baseTempFolder = new File(osBasePath, RepoConstants.FD_TEMP);
         return baseTempFolder;
     }
 
