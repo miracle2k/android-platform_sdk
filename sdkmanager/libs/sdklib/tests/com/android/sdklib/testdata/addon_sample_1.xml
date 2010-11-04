@@ -106,6 +106,7 @@
     </sdk:add-on>
 
     <sdk:extra>
+        <sdk:vendor>a</sdk:vendor>
         <sdk:path>usb_driver</sdk:path>
         <sdk:uses-license ref="license2" />
         <sdk:revision>43</sdk:revision>
@@ -123,6 +124,7 @@
     </sdk:extra>
 
     <sdk:extra>
+        <sdk:vendor>android_vendor</sdk:vendor>
         <sdk:path>extra_api_dep</sdk:path>
         <sdk:uses-license ref="license2" />
         <sdk:revision>2</sdk:revision>

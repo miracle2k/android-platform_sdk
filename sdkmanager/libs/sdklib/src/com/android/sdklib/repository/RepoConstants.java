@@ -56,7 +56,7 @@ public class RepoConstants {
     public static final String NODE_API_LEVEL = "api-level";                    //$NON-NLS-1$
     /** The codename, a string, for platform packages. */
     public static final String NODE_CODENAME = "codename";                      //$NON-NLS-1$
-    /** The vendor, a string, for add-on packages. */
+    /** The vendor, a string, for add-on and extra packages. */
     public static final String NODE_VENDOR    = "vendor";                       //$NON-NLS-1$
     /** The name, a string, for add-on packages or for libraries. */
     public static final String NODE_NAME      = "name";                         //$NON-NLS-1$
@@ -66,8 +66,8 @@ public class RepoConstants {
     /** A lib element in a libs container. */
     public static final String NODE_LIB       = "lib";                          //$NON-NLS-1$
 
-    /** The path, a string, for extra packages. */
-    public static final String NODE_PATH = "path";                              //$NON-NLS-1$
+    /** The path segment, a string, for extra packages. */
+    public static final String NODE_PATH = "path";                                  //$NON-NLS-1$
 
     /** The archives container, for all packages. */
     public static final String NODE_ARCHIVES = "archives";                      //$NON-NLS-1$
@@ -98,5 +98,12 @@ public class RepoConstants {
 
     /** Length of a string representing a SHA1 checksum; always 40 characters long. */
     public static final int SHA1_CHECKSUM_LEN = 40;
+
+    /**
+     * Temporary folder used to hold downloads and extract archives during installation.
+     * This folder will be located in the SDK.
+     */
+    public static final String FD_TEMP = "temp";     //$NON-NLS-1$
+
 
 }

@@ -20,6 +20,7 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
+import com.android.sdklib.repository.RepoConstants;
 import com.android.sdklib.repository.SdkRepoConstants;
 
 import org.w3c.dom.Node;
@@ -35,13 +36,21 @@ public class ExtraPackage extends MinToolsPackage
     implements IMinApiLevelDependency {
 
     private static final String PROP_PATH          = "Extra.Path";         //$NON-NLS-1$
+    private static final String PROP_VENDOR        = "Extra.Vendor";       //$NON-NLS-1$
     private static final String PROP_MIN_API_LEVEL = "Extra.MinApiLevel";  //$NON-NLS-1$
 
     /**
-     * The install folder name. It must be a single-segment path.
-     * The paths "add-ons", "platforms", "tools" and "docs" are reserved and cannot be used.
+     * The vendor folder name. It must be a non-empty single-segment path.
+     * <p/>
+     * The paths "add-ons", "platforms", "platform-tools", "tools" and "docs" are reserved and
+     * cannot be used.
      * This limitation cannot be written in the XML Schema and must be enforced here by using
      * the method {@link #isPathValid()} *before* installing the package.
+     */
+    private final String mVendor;
+
+    /**
+     * The sub-folder name. It must be a non-empty single-segment path.
      */
     private final String mPath;
 
@@ -64,7 +73,8 @@ public class ExtraPackage extends MinToolsPackage
     ExtraPackage(SdkSource source, Node packageNode, String nsUri, Map<String,String> licenses) {
         super(source, packageNode, nsUri, licenses);
 
-        mPath = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_PATH);
+        mPath   = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_PATH);
+        mVendor = XmlParserUtils.getXmlString(packageNode, SdkRepoConstants.NODE_VENDOR);
 
         mMinApiLevel = XmlParserUtils.getXmlInt(packageNode, SdkRepoConstants.NODE_MIN_API_LEVEL,
                 MIN_API_LEVEL_NOT_SPECIFIED);
@@ -79,6 +89,7 @@ public class ExtraPackage extends MinToolsPackage
      */
     ExtraPackage(SdkSource source,
             Properties props,
+            String vendor,
             String path,
             int revision,
             String license,
@@ -97,8 +108,14 @@ public class ExtraPackage extends MinToolsPackage
                 archiveArch,
                 archiveOsPath);
 
+        // The vendor argument is not supposed to be empty. However this attribute did not
+        // exist prior to schema repo-v3 and tools r8, which means we need to cope with a
+        // lack of it when reading back old local repositories. In this case we allow an
+        // empty string.
+        mVendor = vendor != null ? vendor : getProperty(props, PROP_VENDOR, "");
+
         // The path argument comes before whatever could be in the properties
-        mPath = path != null ? path : getProperty(props, PROP_PATH, path);
+        mPath   = path != null ? path : getProperty(props, PROP_PATH, path);
 
         mMinApiLevel = Integer.parseInt(
             getProperty(props, PROP_MIN_API_LEVEL, Integer.toString(MIN_API_LEVEL_NOT_SPECIFIED)));
@@ -113,6 +130,9 @@ public class ExtraPackage extends MinToolsPackage
         super.saveProperties(props);
 
         props.setProperty(PROP_PATH, mPath);
+        if (mVendor != null) {
+            props.setProperty(PROP_PATH, mVendor);
+        }
 
         if (getMinApiLevel() != MIN_API_LEVEL_NOT_SPECIFIED) {
             props.setProperty(PROP_MIN_API_LEVEL, Integer.toString(getMinApiLevel()));
@@ -133,21 +153,38 @@ public class ExtraPackage extends MinToolsPackage
     public boolean isPathValid() {
         if (SdkConstants.FD_ADDONS.equals(mPath) ||
                 SdkConstants.FD_PLATFORMS.equals(mPath) ||
+                SdkConstants.FD_PLATFORM_TOOLS.equals(mPath) ||
                 SdkConstants.FD_TOOLS.equals(mPath) ||
-                SdkConstants.FD_DOCS.equals(mPath)) {
+                SdkConstants.FD_DOCS.equals(mPath) ||
+                RepoConstants.FD_TEMP.equals(mPath)) {
             return false;
         }
         return mPath != null && mPath.indexOf('/') == -1 && mPath.indexOf('\\') == -1;
     }
 
     /**
-     * The install folder name. It must be a single-segment path.
+     * The install folder name. It is a single-segment path.
+     * <p/>
      * The paths "add-ons", "platforms", "tools" and "docs" are reserved and cannot be used.
      * This limitation cannot be written in the XML Schema and must be enforced here by using
      * the method {@link #isPathValid()} *before* installing the package.
      */
     public String getPath() {
-        return mPath;
+        String path = mPath;
+
+        if (mVendor != null && mVendor.length() > 0) {
+            path = mVendor + "-" + mPath;    //$NON-NLS-1$
+        }
+
+        int h = path.hashCode();
+
+        // Sanitize the path
+        path = path.replaceAll("[^a-zA-Z0-9-]+", "_");       //$NON-NLS-1$
+        if (path.length() == 0) {
+            path = String.format("unknown_extra%08x", h);  //$NON-NLS-1$
+        }
+
+        return path;
     }
 
     /** Returns a short description for an {@link IDescription}. */

@@ -17,7 +17,7 @@
 <xsd:schema
     targetNamespace="http://schemas.android.com/sdk/android/addon/1"
     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-    xmlns:sa1="http://schemas.android.com/sdk/android/addon/1"
+    xmlns:sdk="http://schemas.android.com/sdk/android/addon/1"
     elementFormDefault="qualified"
     attributeFormDefault="unqualified"
     version="1">
@@ -35,7 +35,7 @@
            <extra> packages.
     -->
 
-    <xsd:element name="sdk-addon" type="sa1:repositoryType" />
+    <xsd:element name="sdk-addon" type="sdk:repositoryType" />
 
     <xsd:complexType name="repositoryType">
         <xsd:annotation>
@@ -44,9 +44,9 @@
             </xsd:documentation>
         </xsd:annotation>
         <xsd:choice minOccurs="0" maxOccurs="unbounded">
-            <xsd:element name="add-on"          type="sa1:addonType"        />
-            <xsd:element name="extra"           type="sa1:extraType"        />
-            <xsd:element name="license"         type="sa1:licenseType"      />
+            <xsd:element name="add-on"          type="sdk:addonType"        />
+            <xsd:element name="extra"           type="sdk:extraType"        />
+            <xsd:element name="license"         type="sdk:licenseType"      />
         </xsd:choice>
     </xsd:complexType>
 
@@ -71,7 +71,7 @@
             <xsd:element name="revision"     type="xsd:positiveInteger" />
             <!-- The optional license of this package. If present, users will have
                  to agree to it before downloading. -->
-            <xsd:element name="uses-license" type="sa1:usesLicenseType" minOccurs="0" />
+            <xsd:element name="uses-license" type="sdk:usesLicenseType" minOccurs="0" />
             <!-- The optional description of this package. -->
             <xsd:element name="description"  type="xsd:string"      minOccurs="0" />
             <!-- The optional description URL of this package -->
@@ -81,7 +81,7 @@
             <!-- The optional release note URL of this package -->
             <xsd:element name="release-url"  type="xsd:token"       minOccurs="0" />
             <!-- A list of file archives for this package. -->
-            <xsd:element name="archives"     type="sa1:archivesType" />
+            <xsd:element name="archives"     type="sdk:archivesType" />
 
             <!-- An optional element indicating the package is obsolete.
                  The string content is however currently not defined and ignored. -->
@@ -110,39 +110,33 @@
 
 
     <!-- The definition of an SDK extra package. This kind of package is for
-         "free" content and specifies in which fixed root directory it must be
-         installed.
+         "free" content. Such packages are installed in SDK/vendor/path.
     -->
 
     <xsd:complexType name="extraType" >
         <xsd:annotation>
             <xsd:documentation>
-                An SDK extra package. This kind of package is for "free"
-                content and specifies in which fixed root directory it must be
-                installed.
-                The paths "add-ons", "platforms", "tools" and "docs" are
-                reserved and cannot be used.
+                An SDK extra package. This kind of package is for "free" content.
+                Such packages are installed in SDK/vendor/path.
             </xsd:documentation>
         </xsd:annotation>
         <xsd:all>
-            <!-- The install folder name. It must be a single-segment path.
-                 The paths "add-ons", "platforms", "tools" and "docs" are
-                 reserved and cannot be used.
+
+            <!-- The install path top folder name. It must not be empty.
+                 The segments "add-ons", "docs", "platforms", "platform-tools", "temp"
+                 and "tools" are reserved and cannot be used.
             -->
-            <xsd:element name="path">
-                <xsd:simpleType>
-                    <xsd:restriction base="xsd:token">
-                        <xsd:pattern value="[^/\\]+"/>
-                    </xsd:restriction>
-                </xsd:simpleType>
-            </xsd:element>
+            <xsd:element name="vendor" type="sdk:segmentType" />
+
+            <!-- The install path sub-folder name. It must not be empty. -->
+            <xsd:element name="path" type="sdk:segmentType" />
 
             <!-- The revision, an int > 0, incremented each time a new
                  package is generated. -->
             <xsd:element name="revision"     type="xsd:positiveInteger" />
             <!-- The optional license of this package. If present, users will have
                  to agree to it before downloading. -->
-            <xsd:element name="uses-license" type="sa1:usesLicenseType" minOccurs="0" />
+            <xsd:element name="uses-license" type="sdk:usesLicenseType" minOccurs="0" />
             <!-- The optional description of this package. -->
             <xsd:element name="description"  type="xsd:string"      minOccurs="0" />
             <!-- The optional description URL of this package -->
@@ -152,7 +146,7 @@
             <!-- The optional release note URL of this package -->
             <xsd:element name="release-url"  type="xsd:token"       minOccurs="0" />
             <!-- A list of file archives for this package. -->
-            <xsd:element name="archives"     type="sa1:archivesType" />
+            <xsd:element name="archives"     type="sdk:archivesType" />
             <!-- The minimal revision of tools required by this package.
                  Optional. If present, must be an int > 0. -->
             <xsd:element name="min-tools-rev" type="xsd:positiveInteger" minOccurs="0" />
@@ -165,6 +159,21 @@
             <xsd:element name="obsolete"  type="xsd:string" minOccurs="0" />
         </xsd:all>
     </xsd:complexType>
+
+
+    <!-- The definition of a path segment used by the extra element. -->
+
+    <xsd:simpleType name="segmentType">
+        <xsd:annotation>
+            <xsd:documentation>
+                One path segment for the install path of an extra element.
+                It must be a single-segment path. It must not be empty.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:token">
+            <xsd:pattern value="[a-zA-Z0-9_]+"/>
+        </xsd:restriction>
+    </xsd:simpleType>
 
 
     <!-- The definition of a license to be referenced by the uses-license element. -->
@@ -228,7 +237,7 @@
                         <!-- The size in bytes of the archive to download. -->
                         <xsd:element name="size"     type="xsd:positiveInteger" />
                         <!-- The checksum of the archive file. -->
-                        <xsd:element name="checksum" type="sa1:checksumType" />
+                        <xsd:element name="checksum" type="sdk:checksumType" />
                         <!-- The URL is an absolute URL if it starts with http://, https://
                              or ftp://. Otherwise it is relative to the parent directory that
                              contains this repository.xml -->
@@ -278,7 +287,7 @@
             <xsd:documentation>A file checksum, currently only SHA1.</xsd:documentation>
         </xsd:annotation>
         <xsd:simpleContent>
-            <xsd:extension base="sa1:sha1Number">
+            <xsd:extension base="sdk:sha1Number">
                 <xsd:attribute name="type" type="xsd:token" fixed="sha1" />
             </xsd:extension>
         </xsd:simpleContent>
