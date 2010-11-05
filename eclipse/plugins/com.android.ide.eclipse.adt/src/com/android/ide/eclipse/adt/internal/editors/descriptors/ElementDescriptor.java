@@ -38,7 +38,7 @@ import java.util.Set;
  * an actual XML node attached. A non-mandatory UI node MUST have an XML node attached
  * and it will cease to exist when the XML node ceases to exist.
  */
-public class ElementDescriptor {
+public class ElementDescriptor implements Comparable<ElementDescriptor> {
     /** The XML element node name. Case sensitive. */
     private String mXmlName;
     /** The XML element name for the user interface, typically capitalized. */
@@ -345,4 +345,8 @@ public class ElementDescriptor {
         return new String(c).replace("-", " ");  //$NON-NLS-1$  //$NON-NLS-2$
     }
 
+    // Implements Comparable<ElementDescriptor>:
+    public int compareTo(ElementDescriptor o) {
+        return mUiName.compareToIgnoreCase(o.mUiName);
+    }
 }
