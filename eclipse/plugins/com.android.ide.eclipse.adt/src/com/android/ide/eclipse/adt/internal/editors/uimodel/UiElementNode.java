@@ -833,11 +833,20 @@ public class UiElementNode implements IPropertySource {
             xmlNextSibling = uiNextSibling.getXmlNode();
         }
 
+        // If this is the first element we are adding into a new element,
+        // we need to insert a newline at the beginning too. Unless it's already
+        // there, which is the case for the root element created for the .xml template
+        // files - but this is why we use the xml node list rather than the element
+        // count.
+        if (parentXmlNode.getChildNodes().getLength() == 0) {
+            parentXmlNode.insertBefore(doc.createTextNode("\n"), xmlNextSibling); //$NON-NLS-1$
+        }
+
         parentXmlNode.insertBefore(mXmlNode, xmlNextSibling);
 
         // Insert a separator after the tag, to make it easier to read
-        Text sep = doc.createTextNode("\n");
-        parentXmlNode.appendChild(sep);
+        Text sep = doc.createTextNode("\n"); //$NON-NLS-1$
+        parentXmlNode.insertBefore(sep, xmlNextSibling);
 
         // Set all initial attributes in the XML node if they are not empty.
         // Iterate on the descriptor list to get the desired order and then use the
@@ -881,7 +890,15 @@ public class UiElementNode implements IPropertySource {
         if (xml_parent == null) {
             xml_parent = getXmlDocument();
         }
+        Node nextSibling = old_xml_node.getNextSibling();
         old_xml_node = xml_parent.removeChild(old_xml_node);
+
+        // Remove following text node if it's just blank space, to account for
+        // the fact what we add these when we insert nodes.
+        if (nextSibling != null && nextSibling.getNodeType() == Node.TEXT_NODE
+                && nextSibling.getNodeValue().trim().length() == 0) {
+            xml_parent.removeChild(nextSibling);
+        }
 
         invokeUiUpdateListeners(UiUpdateState.DELETED);
         return old_xml_node;
@@ -1227,6 +1244,7 @@ public class UiElementNode implements IPropertySource {
      * @since GLE1
      * @deprecated Used by GLE1. Should be deprecated for GLE2.
      */
+    @Deprecated
     public void setEditData(Object data) {
         mEditData = data;
     }
