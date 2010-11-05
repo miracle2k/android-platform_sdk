@@ -166,8 +166,10 @@ public class AbsoluteLayoutRule extends BaseLayout {
                         y += be.isValid() ? be.h : 10;
                     }
 
-                    newChild.setAttribute(ANDROID_URI, "layout_x", x + "dip");
-                    newChild.setAttribute(ANDROID_URI, "layout_y", y + "dip");
+                    newChild.setAttribute(ANDROID_URI, "layout_x", //$NON-NLS-1$
+                            x + "dip"); //$NON-NLS-1$
+                    newChild.setAttribute(ANDROID_URI, "layout_y", //$NON-NLS-1$
+                            y + "dip"); //$NON-NLS-1$
 
                     addInnerElements(newChild, element, idMap);
                 }
