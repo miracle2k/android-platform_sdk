@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.preferences;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
 
+import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.StringButtonFieldEditor;
 import org.eclipse.jface.window.Window;
@@ -44,6 +45,9 @@ public class EditorsPage extends FieldEditorPreferencePage implements IWorkbench
     protected void createFieldEditors() {
         addField(new DensityFieldEditor(AdtPrefs.PREFS_MONITOR_DENSITY,
                 "Monitor Density", getFieldEditorParent()));
+        addField(new BooleanFieldEditor(AdtPrefs.PREFS_FORMAT_XML,
+                "Automatically format the XML edited by the visual layout editor",
+                getFieldEditorParent()));
     }
 
     /**
