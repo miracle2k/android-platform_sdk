@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.DropFeedback;
@@ -22,30 +21,33 @@ import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DropTargetEvent;
-import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TransferData;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.widgets.Display;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Handles drop operations on top of the canvas.
- * <p/>
- * Reference for d'n'd: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
+ * The Move gesture provides the operation for moving widgets around in the canvas.
  */
-/* package */ class CanvasDropListener implements DropTargetListener {
+public class MoveGesture extends DropGesture {
+    /** The associated {@link LayoutCanvas}. */
+    private LayoutCanvas mCanvas;
+
+    /** Overlay which paints the drag &amp; drop feedback. */
+    private MoveOverlay mOverlay;
 
     private static final boolean DEBUG = false;
-
-    private final LayoutCanvas mCanvas;
 
     /**
      * The top view right under the drag'n'drop cursor.
@@ -88,10 +90,12 @@ import java.util.Set;
      * happens next.
      */
     private NodeProxy mLeaveTargetNode;
+
     /**
      * @see #mLeaveTargetNode
      */
     private DropFeedback mLeaveFeedback;
+
     /**
      * @see #mLeaveTargetNode
      */
@@ -100,15 +104,27 @@ import java.util.Set;
     /** Singleton used to keep track of drag selection in the same Eclipse instance. */
     private final GlobalCanvasDragInfo mGlobalDragInfo;
 
-    public CanvasDropListener(LayoutCanvas canvas) {
-        mCanvas = canvas;
+    /**
+     * Constructs a new {@link MoveGesture}, tied to the given canvas.
+     *
+     * @param canvas The canvas to associate the {@link MoveGesture} with.
+     */
+    public MoveGesture(LayoutCanvas canvas) {
+        this.mCanvas = canvas;
         mGlobalDragInfo = GlobalCanvasDragInfo.getInstance();
+    }
+
+    @Override
+    public List<Overlay> createOverlays() {
+        mOverlay = new MoveOverlay();
+        return Collections.<Overlay> singletonList(mOverlay);
     }
 
     /*
      * The cursor has entered the drop target boundaries.
      * {@inheritDoc}
      */
+    @Override
     public void dragEnter(DropTargetEvent event) {
         if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "drag enter", event);
 
@@ -156,6 +172,7 @@ import java.util.Set;
      * The operation being performed has changed (e.g. modifier key).
      * {@inheritDoc}
      */
+    @Override
     public void dragOperationChanged(DropTargetEvent event) {
         if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "drag changed", event);
 
@@ -187,6 +204,7 @@ import java.util.Set;
      * The cursor has left the drop target boundaries OR data is about to be dropped.
      * {@inheritDoc}
      */
+    @Override
     public void dragLeave(DropTargetEvent event) {
         if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "drag leave");
 
@@ -206,6 +224,7 @@ import java.util.Set;
      * The cursor is moving over the drop target.
      * {@inheritDoc}
      */
+    @Override
     public void dragOver(DropTargetEvent event) {
         processDropEvent(event);
     }
@@ -215,6 +234,7 @@ import java.util.Set;
      * The drop target is given a last chance to change the nature of the drop.
      * {@inheritDoc}
      */
+    @Override
     public void dropAccept(DropTargetEvent event) {
         if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "drop accept");
 
@@ -246,6 +266,7 @@ import java.util.Set;
      * The data is being dropped.
      * {@inheritDoc}
      */
+    @Override
     public void drop(final DropTargetEvent event) {
         if (DEBUG) AdtPlugin.printErrorToConsole("DEBUG", "dropped");
 
@@ -269,7 +290,8 @@ import java.util.Set;
         }
 
         if (mTargetNode == null) {
-            if (mCanvas.isResultValid() && mCanvas.isEmptyDocument()) {
+            ViewHierarchy viewHierarchy = mCanvas.getViewHierarchy();
+            if (viewHierarchy.isValid() && viewHierarchy.isEmpty()) {
                 // There is no target node because the drop happens on an empty document.
                 // Attempt to create a root node accordingly.
                 createDocumentRoot(elements);
@@ -279,7 +301,7 @@ import java.util.Set;
             return;
         }
 
-        final Point where = mCanvas.displayToCanvasPoint(event.x, event.y);
+        final LayoutPoint canvasPoint = ControlPoint.create(mCanvas, event).toLayout();
 
         // Record children of the target right before the drop (such that we can
         // find out after the drop which exact children were inserted)
@@ -297,7 +319,7 @@ import java.util.Set;
                 mCanvas.getRulesEngine().callOnDropped(mTargetNode,
                         elementsFinal,
                         mFeedback,
-                        where);
+                        new Point(canvasPoint.x, canvasPoint.y));
                 // Clean up drag if applicable
                 if (event.detail == DND.DROP_MOVE) {
                     GlobalCanvasDragInfo.getInstance().removeSource();
@@ -345,19 +367,19 @@ import java.util.Set;
     private boolean selectDropped(Collection<INode> nodes) {
         final Collection<CanvasViewInfo> newChildren = new ArrayList<CanvasViewInfo>();
         for (INode node : nodes) {
-            CanvasViewInfo viewInfo = mCanvas.findViewInfoFor(node);
+            CanvasViewInfo viewInfo = mCanvas.getViewHierarchy().findViewInfoFor(node);
             if (viewInfo != null) {
                 newChildren.add(viewInfo);
             }
         }
-        mCanvas.selectMultiple(newChildren);
+        mCanvas.getSelectionManager().selectMultiple(newChildren);
 
         return nodes.size() == newChildren.size();
     }
 
     /**
      * Computes a suitable Undo label to use for a drop operation, such as
-     * "Drop Button in LinearLayout" and "Move Widgets in RelativeLayout"
+     * "Drop Button in LinearLayout" and "Move Widgets in RelativeLayout".
      *
      * @param targetNode The target of the drop
      * @param elements The dragged widgets
@@ -390,13 +412,13 @@ import java.util.Set;
      * Returns simple name (basename, following last dot) of a fully qualified
      * class name.
      *
-     * @param fcqn The fqcn to reduce
+     * @param fqcn The fqcn to reduce
      * @return The base name of the fqcn
      */
     private String getSimpleName(String fqcn) {
         // Note that the following works even when there is no dot, since
         // lastIndexOf will return -1 so we get fcqn.substring(-1+1) =
-        // fcqn.substring(0) = fcqn
+        // fcqn.substring(0) = fqcn
         return fqcn.substring(fqcn.lastIndexOf('.') + 1);
     }
 
@@ -414,17 +436,6 @@ import java.util.Set;
         }
         df.sameCanvas = mCanvas == mGlobalDragInfo.getSourceCanvas();
         df.invalidTarget = false;
-    }
-
-    /**
-     * Invoked by the canvas to refresh the display.
-     * @param gCWrapper The GC wrapper, never null.
-     */
-    public void paintFeedback(GCWrapper gCWrapper) {
-        if (mTargetNode != null && mFeedback != null && mFeedback.requestPaint) {
-            mCanvas.getRulesEngine().callDropFeedbackPaint(gCWrapper, mTargetNode, mFeedback);
-            mFeedback.requestPaint = false;
-        }
     }
 
     /**
@@ -466,7 +477,7 @@ import java.util.Set;
      * selected target node.
      */
     private void processDropEvent(DropTargetEvent event) {
-        if (!mCanvas.isResultValid()) {
+        if (!mCanvas.getViewHierarchy().isValid()) {
             // We don't allow drop on an invalid layout, even if we have some obsolete
             // layout info for it.
             event.detail = DND.DROP_NONE;
@@ -474,15 +485,13 @@ import java.util.Set;
             return;
         }
 
-        Point p = mCanvas.displayToCanvasPoint(event.x, event.y);
-        int x = p.x;
-        int y = p.y;
+        LayoutPoint p = ControlPoint.create(mCanvas, event).toLayout();
 
         // Is the mouse currently captured by a DropFeedback.captureArea?
         boolean isCaptured = false;
         if (mFeedback != null) {
             Rect r = mFeedback.captureArea;
-            isCaptured = r != null && r.contains(x, y);
+            isCaptured = r != null && r.contains(p.x, p.y);
         }
 
         // We can't switch views/nodes when the mouse is captured
@@ -490,7 +499,7 @@ import java.util.Set;
         if (isCaptured) {
             vi = mCurrentView;
         } else {
-            vi = mCanvas.findViewInfoAt(x, y);
+            vi = mCanvas.getViewHierarchy().findViewInfoAt(p);
         }
 
         boolean isMove = true;
@@ -532,7 +541,7 @@ import java.util.Set;
                         // the -position- of the mouse), and we want this computation to happen
                         // before we ask the view to draw its feedback.
                         df = mCanvas.getRulesEngine().callOnDropMove(targetNode,
-                                mCurrentDragElements, df, p);
+                                mCurrentDragElements, df, new Point(p.x, p.y));
                     }
 
                     if (df != null &&
@@ -587,7 +596,7 @@ import java.util.Set;
         if (isMove && mTargetNode != null && mFeedback != null) {
             // this is a move inside the same view
             com.android.ide.common.api.Point p2 =
-                new com.android.ide.common.api.Point(x, y);
+                new com.android.ide.common.api.Point(p.x, p.y);
             updateDropFeedback(mFeedback, event);
             DropFeedback df = mCanvas.getRulesEngine().callOnDropMove(
                     mTargetNode, mCurrentDragElements, mFeedback, p2);
@@ -654,5 +663,20 @@ import java.util.Set;
         String rootFqcn = elements[0].getFqcn();
 
         mCanvas.createDocumentRoot(rootFqcn);
+    }
+
+    /**
+     * An {@link Overlay} to paint the move feedback. This just delegates to the
+     * layout rules.
+     */
+    private class MoveOverlay extends Overlay {
+        @Override
+        public void paint(GC gc) {
+            if (mTargetNode != null && mFeedback != null) {
+                RulesEngine rulesEngine = mCanvas.getRulesEngine();
+                rulesEngine.callDropFeedbackPaint(mCanvas.getGcWrapper(), mTargetNode, mFeedback);
+                mFeedback.requestPaint = false;
+            }
+        }
     }
 }

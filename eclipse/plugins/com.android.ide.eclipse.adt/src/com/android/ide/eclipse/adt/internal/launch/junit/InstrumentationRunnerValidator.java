@@ -98,7 +98,7 @@ class InstrumentationRunnerValidator {
     /**
      * Return the set of instrumentation names for the Android project.
      *
-     * @return <code>null</code if error occurred parsing instrumentations, otherwise returns array
+     * @return <code>null</code> if error occurred parsing instrumentations, otherwise returns array
      * of instrumentation class names
      */
     String[] getInstrumentationNames() {

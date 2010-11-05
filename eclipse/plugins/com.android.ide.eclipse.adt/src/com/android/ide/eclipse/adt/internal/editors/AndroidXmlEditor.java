@@ -37,6 +37,7 @@ import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.swt.widgets.Display;
@@ -66,6 +67,7 @@ import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.sse.ui.StructuredTextEditor;
+import org.eclipse.wst.xml.core.internal.document.NodeContainer;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -81,6 +83,7 @@ import java.net.URL;
  * Derived classes must implement createFormPages to create the forms before the
  * source editor. This can be a no-op if desired.
  */
+@SuppressWarnings("restriction") // Uses XML model, which has no non-restricted replacement yet
 public abstract class AndroidXmlEditor extends FormEditor implements IResourceChangeListener {
 
     /** Preference name for the current page of this file */
@@ -937,6 +940,38 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
         }
 
         return false;
+    }
+
+    /**
+     * Get the XML text directly from the editor.
+     *
+     * @param xmlNode The node whose XML text we want to obtain.
+     * @return The XML representation of the {@link Node}.
+     */
+    public String getXmlText(Node xmlNode) {
+        String data = null;
+        IStructuredModel model = getModelForRead();
+        try {
+            IStructuredDocument document = getStructuredDocument();
+            if (xmlNode instanceof NodeContainer) {
+                // The easy way to get the source of an SSE XML node.
+                data = ((NodeContainer) xmlNode).getSource();
+            } else  if (xmlNode instanceof IndexedRegion && document != null) {
+                // Try harder.
+                IndexedRegion region = (IndexedRegion) xmlNode;
+                int start = region.getStartOffset();
+                int end = region.getEndOffset();
+
+                if (end > start) {
+                    data = document.get(start, end - start);
+                }
+            }
+        } catch (BadLocationException e) {
+            // the region offset was invalid. ignore.
+        } finally {
+            model.releaseFromRead();
+        }
+        return data;
     }
 
     /**

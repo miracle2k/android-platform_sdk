@@ -34,7 +34,7 @@ public enum SwtDrawingStyle {
     /**
      * The style definition corresponding to {@link DrawingStyle#SELECTION}
      */
-    SELECTION(new RGB(0x00, 0x99, 0xFF), 255, new RGB(0x00, 0x99, 0xFF), 64, 2, SWT.LINE_DASH),
+    SELECTION(new RGB(0x00, 0x99, 0xFF), 255, new RGB(0x00, 0x99, 0xFF), 64, 1, SWT.LINE_DASH),
 
     /**
      * The style definition corresponding to {@link DrawingStyle#GUIDELINE}
