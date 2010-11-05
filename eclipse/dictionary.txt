@@ -26,6 +26,8 @@ codename
 codenames
 combo
 config
+configurability
+coords
 ddms
 debuggable
 deprecated

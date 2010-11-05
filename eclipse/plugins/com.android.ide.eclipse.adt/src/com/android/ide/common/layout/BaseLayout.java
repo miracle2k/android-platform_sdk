@@ -194,7 +194,7 @@ public class BaseLayout extends BaseView {
                 String new_id = findNewId(value.getSecond(), existingIdSet);
                 value = Pair.of(new_id, value.getSecond());
                 new_map.put(id, value);
-                new_map.put(id.replaceFirst("@\\+", "@"), value);
+                new_map.put(id.replaceFirst("@\\+", "@"), value); //$NON-NLS-1$ //$NON-NLS-2$
             }
         }
 
@@ -210,7 +210,7 @@ public class BaseLayout extends BaseView {
         String name = fqcn.substring(fqcn.lastIndexOf('.') + 1);
 
         for (int i = 1; i < 1000000; i++) {
-            String id = String.format("@+id/%s%02d", name, i);
+            String id = String.format("@+id/%s%02d", name, i); //$NON-NLS-1$
             if (!existingIdSet.contains(id)) {
                 existingIdSet.add(id);
                 return id;
@@ -247,8 +247,8 @@ public class BaseLayout extends BaseView {
      * Transforms @id/name into @+id/name to treat both forms the same way.
      */
     protected String normalizeId(String id) {
-        if (id.indexOf("@+") == -1) {
-            id = id.replaceFirst("@", "@+");
+        if (id.indexOf("@+") == -1) { //$NON-NLS-1$
+            id = id.replaceFirst("@", "@+"); //$NON-NLS-1$ //$NON-NLS-2$
         }
         return id;
     }
@@ -263,27 +263,27 @@ public class BaseLayout extends BaseView {
 
     private static final String[] EXCLUDED_ATTRIBUTES = new String[] {
         // from AbsoluteLayout
-        "layout_x",
-        "layout_y",
+        "layout_x",                      //$NON-NLS-1$
+        "layout_y",                      //$NON-NLS-1$
 
         // from RelativeLayout
-        "layout_above",
-        "layout_below",
-        "layout_toLeftOf",
-        "layout_toRightOf",
-        "layout_alignBaseline",
-        "layout_alignTop",
-        "layout_alignBottom",
-        "layout_alignLeft",
-        "layout_alignRight",
-        "layout_alignParentTop",
-        "layout_alignParentBottom",
-        "layout_alignParentLeft",
-        "layout_alignParentRight",
-        "layout_alignWithParentMissing",
-        "layout_centerHorizontal",
-        "layout_centerInParent",
-        "layout_centerVertical",
+        "layout_above",                  //$NON-NLS-1$
+        "layout_below",                  //$NON-NLS-1$
+        "layout_toLeftOf",               //$NON-NLS-1$
+        "layout_toRightOf",              //$NON-NLS-1$
+        "layout_alignBaseline",          //$NON-NLS-1$
+        "layout_alignTop",               //$NON-NLS-1$
+        "layout_alignBottom",            //$NON-NLS-1$
+        "layout_alignLeft",              //$NON-NLS-1$
+        "layout_alignRight",             //$NON-NLS-1$
+        "layout_alignParentTop",         //$NON-NLS-1$
+        "layout_alignParentBottom",      //$NON-NLS-1$
+        "layout_alignParentLeft",        //$NON-NLS-1$
+        "layout_alignParentRight",       //$NON-NLS-1$
+        "layout_alignWithParentMissing", //$NON-NLS-1$
+        "layout_centerHorizontal",       //$NON-NLS-1$
+        "layout_centerInParent",         //$NON-NLS-1$
+        "layout_centerVertical",         //$NON-NLS-1$
     };
 
     /**

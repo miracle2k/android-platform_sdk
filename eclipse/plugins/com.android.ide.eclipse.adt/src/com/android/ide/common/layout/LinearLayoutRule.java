@@ -38,9 +38,9 @@ import java.util.Map;
  * classes.
  */
 public class LinearLayoutRule extends BaseLayout {
-    public static String ATTR_ORIENTATION = "orientation";
-    public static String VALUE_HORIZONTAL = "horizontal";
-    public static String VALUE_VERTICAL = "vertical";
+    public static String ATTR_ORIENTATION = "orientation"; //$NON-NLS-1$
+    public static String VALUE_HORIZONTAL = "horizontal";  //$NON-NLS-1$
+    public static String VALUE_VERTICAL = "vertical";      //$NON-NLS-1$
 
     /**
      * Add an explicit Orientation toggle to the context menu.
@@ -58,7 +58,7 @@ public class LinearLayoutRule extends BaseLayout {
                 String actionId = action.getId();
                 final INode node = selectedNode;
 
-                if (actionId.equals("_orientation")) {
+                if (actionId.equals("_orientation")) { //$NON-NLS-1$
                     node.editXml("Change LinearLayout " + ATTR_ORIENTATION, new INodeHandler() {
                         public void handle(INode n) {
                             node.setAttribute(ANDROID_URI, ATTR_ORIENTATION, valueId);
@@ -69,10 +69,10 @@ public class LinearLayoutRule extends BaseLayout {
         };
 
         return concatenate(super.getContextMenu(selectedNode),
-            new MenuAction.Choices("_orientation", "Orientation",
+            new MenuAction.Choices("_orientation", "Orientation",  //$NON-NLS-1$
                 mapify(
-                    "horizontal", "Horizontal",
-                    "vertical", "Vertical"
+                    "horizontal", "Horizontal",                    //$NON-NLS-1$
+                    "vertical", "Vertical"                         //$NON-NLS-1$
                 ),
                 curr_orient, onChange));
     }
@@ -366,7 +366,9 @@ public class LinearLayoutRule extends BaseLayout {
 
         @Override
         public String toString() {
-            return "MatchPos [distance=" + mDistance + ", position=" + mPosition + "]";
+            return "MatchPos [distance=" + mDistance //$NON-NLS-1$
+                    + ", position=" + mPosition      //$NON-NLS-1$
+                    + "]";                           //$NON-NLS-1$
         }
 
         private int getDistance() {
@@ -412,9 +414,15 @@ public class LinearLayoutRule extends BaseLayout {
 
         @Override
         public String toString() {
-            return "LinearDropData [currX=" + mCurrX + ", currY=" + mCurrY + ", height=" + mHeight
-                    + ", indexes=" + mIndexes + ", insertPos=" + mInsertPos + ", isVertical="
-                    + mVertical + ", selfPos=" + mSelfPos + ", width=" + mWidth + "]";
+            return "LinearDropData [currX=" + mCurrX //$NON-NLS-1$
+                    + ", currY=" + mCurrY //$NON-NLS-1$
+                    + ", height=" + mHeight //$NON-NLS-1$
+                    + ", indexes=" + mIndexes //$NON-NLS-1$
+                    + ", insertPos=" + mInsertPos //$NON-NLS-1$
+                    + ", isVertical=" + mVertical //$NON-NLS-1$
+                    + ", selfPos=" + mSelfPos //$NON-NLS-1$
+                    + ", width=" + mWidth //$NON-NLS-1$
+                    + "]"; //$NON-NLS-1$
         }
 
         private boolean isVertical() {
