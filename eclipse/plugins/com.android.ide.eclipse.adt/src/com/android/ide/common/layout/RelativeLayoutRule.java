@@ -59,9 +59,8 @@ public class RelativeLayoutRule extends BaseLayout {
             INode p = topParent.getParent();
             if (p == null) {
                 break;
-            } else {
-                topParent = p;
             }
+            topParent = p;
         }
 
         Rect b = topParent.getBounds();
@@ -70,23 +69,23 @@ public class RelativeLayoutRule extends BaseLayout {
         }
 
         List<String> infos = new ArrayList<String>(18);
-        addAttr("above", childNode, infos);
-        addAttr("below", childNode, infos);
-        addAttr("toLeftOf", childNode, infos);
-        addAttr("toRightOf", childNode, infos);
-        addAttr("alignBaseline", childNode, infos);
-        addAttr("alignTop", childNode, infos);
-        addAttr("alignBottom", childNode, infos);
-        addAttr("alignLeft", childNode, infos);
-        addAttr("alignRight", childNode, infos);
-        addAttr("alignParentTop", childNode, infos);
-        addAttr("alignParentBottom", childNode, infos);
-        addAttr("alignParentLeft", childNode, infos);
-        addAttr("alignParentRight", childNode, infos);
-        addAttr("alignWithParentMissing", childNode, infos);
-        addAttr("centerHorizontal", childNode, infos);
-        addAttr("centerInParent", childNode, infos);
-        addAttr("centerVertical", childNode, infos);
+        addAttr("above", childNode, infos);                   //$NON-NLS-1$
+        addAttr("below", childNode, infos);                   //$NON-NLS-1$
+        addAttr("toLeftOf", childNode, infos);                //$NON-NLS-1$
+        addAttr("toRightOf", childNode, infos);               //$NON-NLS-1$
+        addAttr("alignBaseline", childNode, infos);           //$NON-NLS-1$
+        addAttr("alignTop", childNode, infos);                //$NON-NLS-1$
+        addAttr("alignBottom", childNode, infos);             //$NON-NLS-1$
+        addAttr("alignLeft", childNode, infos);               //$NON-NLS-1$
+        addAttr("alignRight", childNode, infos);              //$NON-NLS-1$
+        addAttr("alignParentTop", childNode, infos);          //$NON-NLS-1$
+        addAttr("alignParentBottom", childNode, infos);       //$NON-NLS-1$
+        addAttr("alignParentLeft", childNode, infos);         //$NON-NLS-1$
+        addAttr("alignParentRight", childNode, infos);        //$NON-NLS-1$
+        addAttr("alignWithParentMissing", childNode, infos);  //$NON-NLS-1$
+        addAttr("centerHorizontal", childNode, infos);        //$NON-NLS-1$
+        addAttr("centerInParent", childNode, infos);          //$NON-NLS-1$
+        addAttr("centerVertical", childNode, infos);          //$NON-NLS-1$
 
         if (infos.size() > 0) {
             gc.useStyle(DrawingStyle.HELP);
@@ -97,7 +96,7 @@ public class RelativeLayoutRule extends BaseLayout {
     }
 
     private void addAttr(String propertyName, INode childNode, List<String> infos) {
-        String a = childNode.getStringAttr(ANDROID_URI, "layout_" + propertyName);
+        String a = childNode.getStringAttr(ANDROID_URI, "layout_" + propertyName); //$NON-NLS-1$
         if (a != null && a.length() > 0) {
             String s = propertyName + ": " + a;
             infos.add(s);
@@ -173,7 +172,8 @@ public class RelativeLayoutRule extends BaseLayout {
                     // position is expressed directly or indirectly based on the
                     // element being moved.
                     if (!feedback.isCopy) {
-                        if (searchRelativeIds(child, data.getMovedIds(), data.getCachedLinkIds())) {
+                        if (searchRelativeIds(child, data.getMovedIds(),
+                                data.getCachedLinkIds())) {
                             data.setRejected(bc);
                             feedback.requestPaint = true;
                             continue nextChild;
@@ -328,21 +328,21 @@ public class RelativeLayoutRule extends BaseLayout {
 
         if (x <= x1 + n && y >= y1 && y <= y2) {
             r = new Rect(x1 - n, y1, n2, h);
-            attr = "alignParentLeft";
+            attr = "alignParentLeft";              //$NON-NLS-1$
             vertical = true;
 
         } else if (x >= x2 - n && y >= y1 && y <= y2) {
             r = new Rect(x2 - n, y1, n2, h);
-            attr = "alignParentRight";
+            attr = "alignParentRight";             //$NON-NLS-1$
             vertical = true;
 
         } else if (y <= y1 + n && x >= x1 && x <= x2) {
             r = new Rect(x1, y1 - n, w, n2);
-            attr = "alignParentTop";
+            attr = "alignParentTop";               //$NON-NLS-1$
 
         } else if (y >= y2 - n && x >= x1 && x <= x2) {
             r = new Rect(x1, y2 - n, w, n2);
-            attr = "alignParentBottom";
+            attr = "alignParentBottom";            //$NON-NLS-1$
 
         } else {
             // we're nowhere near a border
@@ -393,41 +393,41 @@ public class RelativeLayoutRule extends BaseLayout {
         Rect bounds = new Rect(x1, y1, wt, ht);
 
         List<DropZone> zones = new ArrayList<DropZone>(16);
-        String a = "above";
+        String a = "above"; //$NON-NLS-1$
         int x = x1;
         int y = y1;
 
-        x = addx(w1, a, x, y, h1, zones, "toLeftOf");
-        x = addx(w2, a, x, y, h1, zones, "alignLeft");
-        x = addx(w2, a, x, y, h1, zones, "alignLeft", "alignRight");
-        x = addx(w2, a, x, y, h1, zones, "alignRight");
-        x = addx(w1, a, x, y, h1, zones, "toRightOf");
+        x = addx(w1, a, x, y, h1, zones, "toLeftOf");   //$NON-NLS-1$
+        x = addx(w2, a, x, y, h1, zones, "alignLeft");  //$NON-NLS-1$
+        x = addx(w2, a, x, y, h1, zones, "alignLeft", "alignRight"); //$NON-NLS-1$ //$NON-NLS-2$
+        x = addx(w2, a, x, y, h1, zones, "alignRight"); //$NON-NLS-1$
+        x = addx(w1, a, x, y, h1, zones, "toRightOf");  //$NON-NLS-1$
 
-        a = "below";
+        a = "below"; //$NON-NLS-1$
         x = x1;
         y = y1 + ht - h1;
 
-        x = addx(w1, a, x, y, h1, zones, "toLeftOf");
-        x = addx(w2, a, x, y, h1, zones, "alignLeft");
-        x = addx(w2, a, x, y, h1, zones, "alignLeft", "alignRight");
-        x = addx(w2, a, x, y, h1, zones, "alignRight");
-        x = addx(w1, a, x, y, h1, zones, "toRightOf");
+        x = addx(w1, a, x, y, h1, zones, "toLeftOf");    //$NON-NLS-1$
+        x = addx(w2, a, x, y, h1, zones, "alignLeft");   //$NON-NLS-1$
+        x = addx(w2, a, x, y, h1, zones, "alignLeft", "alignRight"); //$NON-NLS-1$ //$NON-NLS-2$
+        x = addx(w2, a, x, y, h1, zones, "alignRight");  //$NON-NLS-1$
+        x = addx(w1, a, x, y, h1, zones, "toRightOf");   //$NON-NLS-1$
 
-        a = "toLeftOf";
+        a = "toLeftOf"; //$NON-NLS-1$
         x = x1;
         y = y1 + h1;
 
-        y = addy(h2, a, x, y, w1, zones, "alignTop");
-        y = addy(h2, a, x, y, w1, zones, "alignTop", "alignBottom");
-        y = addy(h2, a, x, y, w1, zones, "alignBottom");
+        y = addy(h2, a, x, y, w1, zones, "alignTop");    //$NON-NLS-1$
+        y = addy(h2, a, x, y, w1, zones, "alignTop", "alignBottom"); //$NON-NLS-1$ //$NON-NLS-2$
+        y = addy(h2, a, x, y, w1, zones, "alignBottom"); //$NON-NLS-1$
 
-        a = "toRightOf";
+        a = "toRightOf"; //$NON-NLS-1$
         x = x1 + wt - w1;
         y = y1 + h1;
 
-        y = addy(h2, a, x, y, w1, zones, "alignTop");
-        y = addy(h2, a, x, y, w1, zones, "alignTop", "alignBottom");
-        y = addy(h2, a, x, y, w1, zones, "alignBottom");
+        y = addy(h2, a, x, y, w1, zones, "alignTop");    //$NON-NLS-1$
+        y = addy(h2, a, x, y, w1, zones, "alignTop", "alignBottom"); //$NON-NLS-1$ //$NON-NLS-2$
+        y = addy(h2, a, x, y, w1, zones, "alignBottom"); //$NON-NLS-1$
 
         return Pair.of(bounds, zones);
     }
@@ -533,20 +533,20 @@ public class RelativeLayoutRule extends BaseLayout {
                 int offsetX = x - be.x;
                 int offsetY = y - be.y;
 
-                if (data.getCurr().getAttr().contains("alignTop")
-                        && data.getCurr().getAttr().contains("alignBottom")) {
+                if (data.getCurr().getAttr().contains("alignTop")                    //$NON-NLS-1$
+                        && data.getCurr().getAttr().contains("alignBottom")) {       //$NON-NLS-1$
                     offsetY -= be.h / 2;
-                } else if (data.getCurr().getAttr().contains("above")
-                        || data.getCurr().getAttr().contains("alignTop")
-                        || data.getCurr().getAttr().contains("alignParentBottom")) {
+                } else if (data.getCurr().getAttr().contains("above")                //$NON-NLS-1$
+                        || data.getCurr().getAttr().contains("alignTop")             //$NON-NLS-1$
+                        || data.getCurr().getAttr().contains("alignParentBottom")) { //$NON-NLS-1$
                     offsetY -= be.h;
                 }
-                if (data.getCurr().getAttr().contains("alignRight")
-                        && data.getCurr().getAttr().contains("alignLeft")) {
+                if (data.getCurr().getAttr().contains("alignRight")                  //$NON-NLS-1$
+                        && data.getCurr().getAttr().contains("alignLeft")) {         //$NON-NLS-1$
                     offsetX -= be.w / 2;
-                } else if (data.getCurr().getAttr().contains("toLeftOft")
-                        || data.getCurr().getAttr().contains("alignLeft")
-                        || data.getCurr().getAttr().contains("alignParentRight")) {
+                } else if (data.getCurr().getAttr().contains("toLeftOft")            //$NON-NLS-1$
+                        || data.getCurr().getAttr().contains("alignLeft")            //$NON-NLS-1$
+                        || data.getCurr().getAttr().contains("alignParentRight")) {  //$NON-NLS-1$
                     offsetX -= be.w;
                 }
 
@@ -610,7 +610,7 @@ public class RelativeLayoutRule extends BaseLayout {
 
                     for (String it : data.getCurr().getAttr()) {
                         newChild.setAttribute(ANDROID_URI,
-                                "layout_" + it, id != null ? id : "true");
+                             "layout_" + it, id != null ? id : "true"); //$NON-NLS-1$ //$NON-NLS-2$
                     }
 
                     addInnerElements(newChild, element, idMap);

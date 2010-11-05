@@ -51,24 +51,25 @@ public class BaseView implements IViewRule {
      * Namespace for the Android resource XML, i.e.
      * "http://schemas.android.com/apk/res/android"
      */
-    public static String ANDROID_URI = "http://schemas.android.com/apk/res/android";
+    public static String ANDROID_URI = "http://schemas.android.com/apk/res/android"; //$NON-NLS-1$
 
     // Some common Android layout attribute names used by the view rules.
     // All these belong to the attribute namespace ANDROID_URI.
-    public static String ATTR_ID = "id";
+    public static String ATTR_ID = "id"; //$NON-NLS-1$
 
-    public static String ATTR_TEXT = "text";
+    public static String ATTR_TEXT = "text"; //$NON-NLS-1$
 
-    public static String ATTR_LAYOUT_WIDTH = "layout_width";
+    public static String ATTR_LAYOUT_WIDTH = "layout_width"; //$NON-NLS-1$
 
-    public static String ATTR_LAYOUT_HEIGHT = "layout_height";
+    public static String ATTR_LAYOUT_HEIGHT = "layout_height"; //$NON-NLS-1$
 
     // Some common Android layout attribute values used by the view rules.
-    public static String VALUE_FILL_PARENT = "fill_parent";
+    public static String VALUE_FILL_PARENT = "fill_parent"; //$NON-NLS-1$
 
-    public static String VALUE_MATCH_PARENT = "match_parent"; // like fill_parent for API 8
+    // like fill_parent for API 8
+    public static String VALUE_MATCH_PARENT = "match_parent"; //$NON-NLS-1$
 
-    public static String VALUE_WRAP_CONTENT = "wrap_content";
+    public static String VALUE_WRAP_CONTENT = "wrap_content"; //$NON-NLS-1$
 
     // Cache of attributes. Key is FQCN of a node mixed with its view hierarchy
     // parent. Values are a custom map as needed by getContextMenu.
@@ -127,7 +128,7 @@ public class BaseView implements IViewRule {
         if (VALUE_FILL_PARENT.equals(curr_w)) {
             curr_w = VALUE_MATCH_PARENT;
         } else if (!VALUE_WRAP_CONTENT.equals(curr_w) && !VALUE_MATCH_PARENT.equals(curr_w)) {
-            curr_w = "zcustom";
+            curr_w = "zcustom"; //$NON-NLS-1$
             custom_w = "Custom: " + curr_w;
         }
 
@@ -137,7 +138,7 @@ public class BaseView implements IViewRule {
         if (VALUE_FILL_PARENT.equals(curr_h)) {
             curr_h = VALUE_MATCH_PARENT;
         } else if (!VALUE_WRAP_CONTENT.equals(curr_h) && !VALUE_MATCH_PARENT.equals(curr_h)) {
-            curr_h = "zcustom";
+            curr_h = "zcustom"; //$NON-NLS-1$
             custom_h = "Custom: " + curr_h;
         }
 
@@ -148,12 +149,12 @@ public class BaseView implements IViewRule {
                     final String valueId,
                     final Boolean newValue) {
                 String fullActionId = action.getId();
-                boolean isProp = fullActionId.startsWith("@prop@");
+                boolean isProp = fullActionId.startsWith("@prop@"); //$NON-NLS-1$
                 final String actionId = isProp ? fullActionId.substring(6) : fullActionId;
                 final INode node = selectedNode;
 
-                if (fullActionId.equals("layout_1width")) {
-                    if (!valueId.startsWith("z")) {
+                if (fullActionId.equals("layout_1width")) { //$NON-NLS-1$
+                    if (!valueId.startsWith("z")) {         //$NON-NLS-1$
                         node.editXml("Change attribute " + ATTR_LAYOUT_WIDTH, new INodeHandler() {
                             public void handle(INode n) {
                                 n.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, valueId);
@@ -161,8 +162,8 @@ public class BaseView implements IViewRule {
                         });
                     }
                     return;
-                } else if (fullActionId.equals("layout_2height")) {
-                    if (!valueId.startsWith("z")) {
+                } else if (fullActionId.equals("layout_2height")) { //$NON-NLS-1$
+                    if (!valueId.startsWith("z")) {                 //$NON-NLS-1$
                         node.editXml("Change attribute " + ATTR_LAYOUT_HEIGHT, new INodeHandler() {
                             public void handle(INode n) {
                                 n.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, valueId);
@@ -181,21 +182,22 @@ public class BaseView implements IViewRule {
                             public void handle(INode n) {
                                 if (prop.isToggle()) {
                                     // case of toggle
-                                    String value = "";
-                                    if (valueId.equals("1t")) {
-                                        value = newValue ? "true" : "";
+                                    String value = "";                  //$NON-NLS-1$
+                                    if (valueId.equals("1t")) {         //$NON-NLS-1$
+                                        value = newValue ? "true" : ""; //$NON-NLS-1$ //$NON-NLS-2$
                                     } else if (valueId.equals("2f")) {
-                                        value = newValue ? "false" : "";
+                                        value = newValue ? "false" : "";//$NON-NLS-1$ //$NON-NLS-2$
                                     }
                                     n.setAttribute(ANDROID_URI, actionId, value);
                                 } else if (prop.isFlag()) {
                                     // case of a flag
-                                    String values = "";
-                                    if (!valueId.equals("~2clr")) {
+                                    String values = "";                 //$NON-NLS-1$
+                                    if (!valueId.equals("~2clr")) {     //$NON-NLS-1$
                                         values = n.getStringAttr(ANDROID_URI, actionId);
                                         Set<String> newValues = new HashSet<String>();
                                         if (values != null) {
-                                            newValues.addAll(Arrays.asList(values.split("\\|")));
+                                            newValues.addAll(Arrays.asList(
+                                                    values.split("\\|"))); //$NON-NLS-1$
                                         }
                                         if (newValue) {
                                             newValues.add(valueId);
@@ -207,9 +209,9 @@ public class BaseView implements IViewRule {
                                     n.setAttribute(ANDROID_URI, actionId, values);
                                 } else {
                                     // case of an enum
-                                    String value = "";
-                                    if (!valueId.equals("~2clr")) {
-                                        value = newValue ? valueId : "";
+                                    String value = "";                   //$NON-NLS-1$
+                                    if (!valueId.equals("~2clr")) {      //$NON-NLS-1$
+                                        value = newValue ? valueId : ""; //$NON-NLS-1$
                                     }
                                     n.setAttribute(ANDROID_URI, actionId, value);
                                 }
@@ -221,23 +223,23 @@ public class BaseView implements IViewRule {
         };
 
         List<MenuAction> list1 = Arrays.asList(new MenuAction[] {
-            new MenuAction.Choices("layout_1width", "Layout Width",
+            new MenuAction.Choices("layout_1width", "Layout Width", //$NON-NLS-1$
                     mapify(
-                      "wrap_content", "Wrap Content",
-                      "match_parent", "Match Parent",
-                      "zcustom", custom_w
+                      "wrap_content", "Wrap Content", //$NON-NLS-1$
+                      "match_parent", "Match Parent", //$NON-NLS-1$
+                      "zcustom", custom_w             //$NON-NLS-1$
                     ),
                     curr_w,
                     onChange ),
-           new MenuAction.Choices("layout_2height", "Layout Height",
+           new MenuAction.Choices("layout_2height", "Layout Height", //$NON-NLS-1$
                    mapify(
-                      "wrap_content", "Wrap Content",
-                      "match_parent", "Match Parent",
-                      "zcustom", custom_h
+                      "wrap_content", "Wrap Content", //$NON-NLS-1$
+                      "match_parent", "Match Parent", //$NON-NLS-1$
+                      "zcustom", custom_h             //$NON-NLS-1$
                    ),
                     curr_h,
                     onChange ),
-           new MenuAction.Group("properties", "Properties")
+           new MenuAction.Group("properties", "Properties") //$NON-NLS-1$
         });
 
         // Prepare a list of all simple properties.
@@ -298,44 +300,45 @@ public class BaseView implements IViewRule {
                 String value = selectedNode.getStringAttr(ANDROID_URI, id);
                 if (value != null)
                     value = value.toLowerCase();
-                if ("true".equals(value)) {
-                    value = "1t";
-                } else if ("false".equals(value)) {
-                    value = "2f";
+                if ("true".equals(value)) {         //$NON-NLS-1$
+                    value = "1t";                   //$NON-NLS-1$
+                } else if ("false".equals(value)) { //$NON-NLS-1$
+                    value = "2f";                   //$NON-NLS-1$
                 } else {
-                    value = "4clr";
+                    value = "4clr";                 //$NON-NLS-1$
                 }
 
                 a = new MenuAction.Choices(
-                    "@prop@" + id,
+                    "@prop@" + id,          //$NON-NLS-1$
                     p.getTitle(),
                     mapify(
-                        "1t", "True",
-                        "2f", "False",
-                        "3sep", MenuAction.Choices.SEPARATOR,
-                        "4clr", "Clear"),
+                        "1t", "True",       //$NON-NLS-1$
+                        "2f", "False",      //$NON-NLS-1$
+                        "3sep", MenuAction.Choices.SEPARATOR, //$NON-NLS-1$
+                        "4clr", "Clear"),   //$NON-NLS-1$
                     value,
-                    "properties",
+                    "properties",           //$NON-NLS-1$
                     onChange);
             } else {
                 // Enum or flags. Their possible values are the multiple-choice
                 // items, with an extra "clear" option to remove everything.
                 String current = selectedNode.getStringAttr(ANDROID_URI, id);
                 if (current == null || current.length() == 0) {
-                    current = "~2clr";
+                    current = "~2clr";   //$NON-NLS-1$
                 }
                 a = new MenuAction.Choices(
-                    "@prop@" + id,
+                    "@prop@" + id,       //$NON-NLS-1$
                     p.getTitle(),
                     concatenate(
                         p.getChoices(),
                         mapify(
-                            "~1sep", MenuAction.Choices.SEPARATOR,
-                            "~2clr", "Clear " + (p.isFlag() ? "flag" : "enum")
+                            "~1sep", MenuAction.Choices.SEPARATOR,  //$NON-NLS-1$
+                            "~2clr",                                //$NON-NLS-1$
+                            "Clear " + (p.isFlag() ? "flag" : "enum")
                         )
                     ),
                     current,
-                    "properties",
+                    "properties", //$NON-NLS-1$
                     onChange);
             }
             list2.add(a);
