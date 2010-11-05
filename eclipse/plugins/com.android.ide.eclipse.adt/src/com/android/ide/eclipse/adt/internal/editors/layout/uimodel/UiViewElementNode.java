@@ -92,7 +92,7 @@ public class UiViewElementNode extends UiElementNode {
                     }
                 }
             }
-        } else if (ui_parent instanceof UiViewElementNode){
+        } else if (ui_parent instanceof UiViewElementNode) {
             layout_attrs =
                 ((ViewElementDescriptor) ui_parent.getDescriptor()).getLayoutAttributes();
         }

@@ -52,12 +52,14 @@ class LayoutCanvasViewer extends Viewer {
         mLayoutEditor = layoutEditor;
         mCanvas = new LayoutCanvas(layoutEditor, rulesEngine, parent, style);
 
-        mCanvas.addSelectionChangedListener(new ISelectionChangedListener() {
-            public void selectionChanged(SelectionChangedEvent event) {
-                fireSelectionChanged(event);
-            }
-        });
+        mCanvas.getSelectionManager().addSelectionChangedListener(mSelectionListener);
     }
+
+    private ISelectionChangedListener mSelectionListener = new ISelectionChangedListener() {
+        public void selectionChanged(SelectionChangedEvent event) {
+            fireSelectionChanged(event);
+        }
+    };
 
     @Override
     public Control getControl() {
@@ -70,6 +72,7 @@ class LayoutCanvasViewer extends Viewer {
      * have it already casted in the right type.
      * <p/>
      * This can never be null.
+     * @return The underlying {@link LayoutCanvas}.
      */
     public LayoutCanvas getCanvas() {
         return mCanvas;
@@ -96,7 +99,7 @@ class LayoutCanvasViewer extends Viewer {
      */
     @Override
     public ISelection getSelection() {
-        return mCanvas.getSelection();
+        return mCanvas.getSelectionManager().getSelection();
     }
 
     /**
@@ -106,7 +109,7 @@ class LayoutCanvasViewer extends Viewer {
      */
     @Override
     public void setSelection(ISelection selection, boolean reveal) {
-        mCanvas.setSelection(selection);
+        mCanvas.getSelectionManager().setSelection(selection);
     }
 
     /** Unused. Refreshing is done solely by the owning {@link LayoutEditor}. */
@@ -119,6 +122,9 @@ class LayoutCanvasViewer extends Viewer {
         if (mCanvas != null) {
             mCanvas.dispose();
             mCanvas = null;
+        }
+        if (mSelectionListener != null) {
+            mCanvas.getSelectionManager().removeSelectionChangedListener(mSelectionListener);
         }
     }
 }

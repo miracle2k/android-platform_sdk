@@ -609,7 +609,8 @@ public class RelativeLayoutRule extends BaseLayout {
                     }
 
                     for (String it : data.getCurr().getAttr()) {
-                        newChild.setAttribute(ANDROID_URI, "layout_" + it, id != null ? id : "true");
+                        newChild.setAttribute(ANDROID_URI,
+                                "layout_" + it, id != null ? id : "true");
                     }
 
                     addInnerElements(newChild, element, idMap);

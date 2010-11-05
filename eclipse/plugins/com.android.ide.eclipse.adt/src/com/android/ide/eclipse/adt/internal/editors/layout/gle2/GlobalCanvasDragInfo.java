@@ -31,10 +31,10 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
  * off a canvas or its palette and then set back to null when the drag'n'drop is finished.
  * <p/>
  * Note that when a drag starts in one instance of Eclipse and the dragOver/drop is done
- * in a <em>separate</em> instance of Eclipse, the tragged FQCN won't be registered here
+ * in a <em>separate</em> instance of Eclipse, the dragged FQCN won't be registered here
  * and will be null.
  */
-class GlobalCanvasDragInfo {
+final class GlobalCanvasDragInfo {
 
     private static final GlobalCanvasDragInfo sInstance = new GlobalCanvasDragInfo();
 

@@ -367,7 +367,7 @@ public class NodeProxy implements INode {
     private ViewElementDescriptor getFqcnViewDescritor(String fqcn) {
         AndroidXmlEditor editor = mNode.getEditor();
         if (editor instanceof LayoutEditor) {
-            return ((LayoutEditor) editor).getFqcnViewDescritor(fqcn);
+            return ((LayoutEditor) editor).getFqcnViewDescriptor(fqcn);
         }
 
         return null;

@@ -17,12 +17,18 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.INode;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
+import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.graphics.Rectangle;
+import org.w3c.dom.Node;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents one selection in {@link LayoutCanvas}.
@@ -70,6 +76,7 @@ import org.eclipse.swt.graphics.Rectangle;
     /**
      * Returns true when this selection item represents the root, the top level
      * layout element in the editor.
+     * @return True if and only if this element is at the root of the hierarchy
      */
     public boolean isRoot() {
         return mNodeProxy.getParent() == null;
@@ -123,7 +130,7 @@ import org.eclipse.swt.graphics.Rectangle;
         if (mNodeProxy != null) {
             INode parent = mNodeProxy.getParent();
             if (parent instanceof NodeProxy) {
-                gre.callOnChildSelected(gcWrapper, (NodeProxy)parent, mNodeProxy);
+                gre.callOnChildSelected(gcWrapper, (NodeProxy) parent, mNodeProxy);
             }
         }
     }
@@ -173,5 +180,48 @@ import org.eclipse.swt.graphics.Rectangle;
         }
 
         return name;
+    }
+
+    /**
+     * Gets the XML text from the given selection for a text transfer.
+     * The returned string can be empty but not null.
+     */
+    /* package */ static String getAsText(LayoutCanvas canvas, List<CanvasSelection> selection) {
+        StringBuilder sb = new StringBuilder();
+
+        LayoutEditor layoutEditor = canvas.getLayoutEditor();
+        for (CanvasSelection cs : selection) {
+            CanvasViewInfo vi = cs.getViewInfo();
+            UiViewElementNode key = vi.getUiViewKey();
+            Node node = key.getXmlNode();
+            String t = layoutEditor.getXmlText(node);
+            if (t != null) {
+                if (sb.length() > 0) {
+                    sb.append('\n');
+                }
+                sb.append(t);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Returns elements representing the given selection of canvas items.
+     *
+     * @param items Items to wrap in elements
+     * @return An array of wrapper elements. Never null.
+     */
+    /* package */ static SimpleElement[] getAsElements(List<CanvasSelection> items) {
+        ArrayList<SimpleElement> elements = new ArrayList<SimpleElement>();
+
+        for (CanvasSelection cs : items) {
+            CanvasViewInfo vi = cs.getViewInfo();
+
+            SimpleElement e = vi.toSimpleElement();
+            elements.add(e);
+        }
+
+        return elements.toArray(new SimpleElement[elements.size()]);
     }
 }

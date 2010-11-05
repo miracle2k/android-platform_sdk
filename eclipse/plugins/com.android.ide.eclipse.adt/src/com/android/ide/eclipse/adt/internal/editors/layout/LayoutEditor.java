@@ -534,7 +534,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
      * Helper method that returns a {@link ViewElementDescriptor} for the requested FQCN.
      * Will return null if we can't find that FQCN or we lack the editor/data/descriptors info.
      */
-    public ViewElementDescriptor getFqcnViewDescritor(String fqcn) {
+    public ViewElementDescriptor getFqcnViewDescriptor(String fqcn) {
         ViewElementDescriptor desc = null;
 
         AndroidTargetData data = getTargetData();

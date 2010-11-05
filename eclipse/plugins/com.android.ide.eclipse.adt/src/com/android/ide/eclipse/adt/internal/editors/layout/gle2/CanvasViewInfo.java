@@ -16,7 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.ILayoutResult;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 
@@ -69,7 +73,8 @@ public class CanvasViewInfo implements IPropertySource {
         this(viewInfo, null /*parent*/, 0 /*parentX*/, 0 /*parentY*/);
     }
 
-    private CanvasViewInfo(ILayoutViewInfo viewInfo, CanvasViewInfo parent, int parentX, int parentY) {
+    private CanvasViewInfo(ILayoutViewInfo viewInfo, CanvasViewInfo parent,
+            int parentX, int parentY) {
         mParent = parent;
         mName = viewInfo.getName();
 
@@ -258,4 +263,65 @@ public class CanvasViewInfo implements IPropertySource {
 
         return null;
     }
+
+    /**
+     * Returns true iff this view info corresponds to a root element.
+     *
+     * @return True iff this is a root view info.
+     */
+    public boolean isRoot() {
+        // Select the visual element -- unless it's the root.
+        // The root element is the one whose GRAND parent
+        // is null (because the parent will be a -document-
+        // node).
+        return mUiViewKey == null || mUiViewKey.getUiParent() == null ||
+            mUiViewKey.getUiParent().getUiParent() == null;
+    }
+
+    /**
+     * Returns the info represented as a {@link SimpleElement}.
+     *
+     * @return A {@link SimpleElement} wrapping this info.
+     */
+    /* package */ SimpleElement toSimpleElement() {
+
+        UiViewElementNode uiNode = getUiViewKey();
+
+        String fqcn = SimpleXmlTransfer.getFqcn(uiNode.getDescriptor());
+        String parentFqcn = null;
+        Rect bounds = new Rect(getAbsRect());
+        Rect parentBounds = null;
+
+        UiElementNode uiParent = uiNode.getUiParent();
+        if (uiParent != null) {
+            parentFqcn = SimpleXmlTransfer.getFqcn(uiParent.getDescriptor());
+        }
+        if (getParent() != null) {
+            parentBounds = new Rect(getParent().getAbsRect());
+        }
+
+        SimpleElement e = new SimpleElement(fqcn, parentFqcn, bounds, parentBounds);
+
+        for (UiAttributeNode attr : uiNode.getUiAttributes()) {
+            String value = attr.getCurrentValue();
+            if (value != null && value.length() > 0) {
+                AttributeDescriptor attrDesc = attr.getDescriptor();
+                SimpleAttribute a = new SimpleAttribute(
+                        attrDesc.getNamespaceUri(),
+                        attrDesc.getXmlLocalName(),
+                        value);
+                e.addAttribute(a);
+            }
+        }
+
+        for (CanvasViewInfo childVi : getChildren()) {
+            SimpleElement e2 = childVi.toSimpleElement();
+            if (e2 != null) {
+                e.addInnerElement(e2);
+            }
+        }
+
+        return e;
+    }
+
 }
