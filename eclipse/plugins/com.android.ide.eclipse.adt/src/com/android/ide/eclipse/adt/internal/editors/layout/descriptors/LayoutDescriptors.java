@@ -165,6 +165,10 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         newDescriptors.add(mergeTag);
         newLayouts.add(mergeTag);
 
+        // Sort palette contents
+        Collections.sort(newViews);
+        Collections.sort(newLayouts);
+
         mViewDescriptors = newViews;
         mLayoutDescriptors  = newLayouts;
         mRootDescriptor.setChildren(newDescriptors);
