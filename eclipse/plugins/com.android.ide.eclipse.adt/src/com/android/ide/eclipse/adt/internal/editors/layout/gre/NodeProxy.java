@@ -198,7 +198,7 @@ public class NodeProxy implements INode {
         checkEditOK();
 
         // Find the descriptor for this FQCN
-        ViewElementDescriptor vd = getFqcnViewDescritor(viewFqcn);
+        ViewElementDescriptor vd = getFqcnViewDescriptor(viewFqcn);
         if (vd == null) {
             warnPrintf("Can't create a new %s element", viewFqcn);
             return null;
@@ -230,7 +230,7 @@ public class NodeProxy implements INode {
         checkEditOK();
 
         // Find the descriptor for this FQCN
-        ViewElementDescriptor vd = getFqcnViewDescritor(viewFqcn);
+        ViewElementDescriptor vd = getFqcnViewDescriptor(viewFqcn);
         if (vd == null) {
             warnPrintf("Can't create a new %s element", viewFqcn);
             return null;
@@ -364,7 +364,7 @@ public class NodeProxy implements INode {
      * (which shouldn't really happen since at this point the SDK should be fully loaded and
      * isn't reloading, or we wouldn't be here editing XML for a layout rule.)
      */
-    private ViewElementDescriptor getFqcnViewDescritor(String fqcn) {
+    private ViewElementDescriptor getFqcnViewDescriptor(String fqcn) {
         AndroidXmlEditor editor = mNode.getEditor();
         if (editor instanceof LayoutEditor) {
             return ((LayoutEditor) editor).getFqcnViewDescriptor(fqcn);

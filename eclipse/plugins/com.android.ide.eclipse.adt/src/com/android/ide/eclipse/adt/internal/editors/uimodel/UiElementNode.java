@@ -30,6 +30,7 @@ import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.Android
 import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.IUiUpdateListener.UiUpdateState;
 import com.android.ide.eclipse.adt.internal.editors.xml.descriptors.XmlDescriptors;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.sdklib.SdkConstants;
@@ -295,6 +296,7 @@ public class UiElementNode implements IPropertySource {
      * <p/>
      * The XML {@link Document} is initially null. The XML {@link Document} must be set only on the
      * UI root element node (this method takes care of that.)
+     * @param xmlDoc The new XML document to associate this node with.
      */
     public void setXmlDocument(Document xmlDoc) {
         if (mUiParent == null) {
@@ -340,6 +342,7 @@ public class UiElementNode implements IPropertySource {
      * <p/>
      * Do not use this to call getDescriptor().getAttributes(), instead call
      * getAttributeDescriptors() which can be overridden by derived classes.
+     * @return The {@link ElementDescriptor} for this node. This is never null.
      */
     public ElementDescriptor getDescriptor() {
         return mDescriptor;
@@ -350,6 +353,7 @@ public class UiElementNode implements IPropertySource {
      * <p/>
      * Use this instead of getDescriptor().getAttributes() -- derived classes can override
      * this to manipulate the attribute descriptor list depending on the current UI node.
+     * @return The {@link AttributeDescriptor} array for the descriptor of this node.
      */
     public AttributeDescriptor[] getAttributeDescriptors() {
         return mDescriptor.getAttributes();
@@ -396,7 +400,9 @@ public class UiElementNode implements IPropertySource {
     }
 
     /**
-     * Returns The root {@link UiElementNode}.
+     * Returns the root {@link UiElementNode}.
+     *
+     * @return The root {@link UiElementNode}.
      */
     public UiElementNode getUiRoot() {
         UiElementNode root = this;
@@ -408,8 +414,10 @@ public class UiElementNode implements IPropertySource {
     }
 
     /**
-     * Returns the previous UI sibling of this UI node.
-     * If the node does not have a previous sibling, returns null.
+     * Returns the previous UI sibling of this UI node. If the node does not have a previous
+     * sibling, returns null.
+     *
+     * @return The previous UI sibling of this UI node, or null if not applicable.
      */
     public UiElementNode getUiPreviousSibling() {
         if (mUiParent != null) {
@@ -425,6 +433,8 @@ public class UiElementNode implements IPropertySource {
     /**
      * Returns the next UI sibling of this UI node.
      * If the node does not have a next sibling, returns null.
+     *
+     * @return The next UI sibling of this UI node, or null.
      */
     public UiElementNode getUiNextSibling() {
         if (mUiParent != null) {
@@ -444,6 +454,8 @@ public class UiElementNode implements IPropertySource {
      * Sets the {@link AndroidXmlEditor} handling this {@link UiElementNode} hierarchy.
      * <p/>
      * The editor must always be set on the root node. This method takes care of that.
+     *
+     * @param editor The editor to associate this node with.
      */
     public void setEditor(AndroidXmlEditor editor) {
         if (mUiParent == null) {
@@ -467,6 +479,8 @@ public class UiElementNode implements IPropertySource {
 
     /**
      * Returns the Android target data for the file being edited.
+     *
+     * @return The Android target data for the file being edited.
      */
     public AndroidTargetData getAndroidTarget() {
         return getEditor().getTargetData();
@@ -502,6 +516,7 @@ public class UiElementNode implements IPropertySource {
 
     /**
      * Sets the error flag value.
+     *
      * @param errorFlag the error flag
      */
     public final void setHasError(boolean errorFlag) {
@@ -510,6 +525,9 @@ public class UiElementNode implements IPropertySource {
 
     /**
      * Returns whether this node, its attributes, or one of the children nodes (and attributes)
+     * has errors.
+     *
+     * @return True if this node, its attributes, or one of the children nodes (and attributes)
      * has errors.
      */
     public final boolean hasError() {
@@ -596,6 +614,8 @@ public class UiElementNode implements IPropertySource {
 
     /**
      * Adds a new {@link IUiUpdateListener} to the internal update listener list.
+     *
+     * @param listener The listener to add.
      */
     public void addUpdateListener(IUiUpdateListener listener) {
        if (mUiUpdateListeners == null) {
@@ -609,6 +629,8 @@ public class UiElementNode implements IPropertySource {
     /**
      * Removes an existing {@link IUiUpdateListener} from the internal update listener list.
      * Does nothing if the list is empty or the listener is not registered.
+     *
+     * @param listener The listener to remove.
      */
     public void removeUpdateListener(IUiUpdateListener listener) {
        if (mUiUpdateListeners != null) {
@@ -833,20 +855,81 @@ public class UiElementNode implements IPropertySource {
             xmlNextSibling = uiNextSibling.getXmlNode();
         }
 
-        // If this is the first element we are adding into a new element,
-        // we need to insert a newline at the beginning too. Unless it's already
-        // there, which is the case for the root element created for the .xml template
-        // files - but this is why we use the xml node list rather than the element
-        // count.
-        if (parentXmlNode.getChildNodes().getLength() == 0) {
-            parentXmlNode.insertBefore(doc.createTextNode("\n"), xmlNextSibling); //$NON-NLS-1$
+        Node previousTextNode = null;
+        if (xmlNextSibling != null) {
+            Node previousNode = xmlNextSibling.getPreviousSibling();
+            if (previousNode != null && previousNode.getNodeType() == Node.TEXT_NODE) {
+                previousTextNode = previousNode;
+            }
+        } else {
+            Node lastChild = parentXmlNode.getLastChild();
+            if (lastChild != null && lastChild.getNodeType() == Node.TEXT_NODE) {
+                previousTextNode = lastChild;
+            }
         }
 
+        String insertAfter = null;
+
+        // Try to figure out the indentation node to insert. Even in auto-formatting
+        // we need to do this, because it turns out the XML editor's formatter does
+        // not do a very good job with completely botched up XML; it does a much better
+        // job if the new XML is already mostly well formatted. Thus, the main purpose
+        // of applying the real XML formatter after our own indentation attempts here is
+        // to make it apply its own tab-versus-spaces indentation properties, have it
+        // insert line breaks before attributes (if the user has configured that), etc.
+
+        // First figure out the indentation level of the newly inserted element;
+        // this is either the same as the previous sibling, or if there is no sibling,
+        // it's the indentation of the parent plus one indentation level.
+        boolean isFirstChild = getUiPreviousSibling() == null
+                || parentXmlNode.getFirstChild() == null;
+        AndroidXmlEditor editor = getEditor();
+        String indent;
+        String parentIndent = ""; //$NON-NLS-1$
+        if (isFirstChild) {
+            indent = parentIndent = editor.getIndent(parentXmlNode);
+            // We need to add one level of indentation. Are we using tabs?
+            // Can't get to formatting settings so let's just look at the
+            // parent indentation and see if we can guess
+            if (indent.length() > 0 && indent.charAt(indent.length()-1) == '\t') {
+                indent = indent + '\t';
+            } else {
+                // Not using tabs, or we can't figure it out (because parent had no
+                // indentation). In that case, indent with 4 spaces, as seems to
+                // be the Android default.
+                indent = indent + "    "; //$NON-NLS-1$
+            }
+        } else {
+            // Find out the indent of the previous sibling
+            indent = editor.getIndent(getUiPreviousSibling().getXmlNode());
+        }
+
+        // We want to insert the new element BEFORE the text node which precedes
+        // the next element, since that text node is the next element's indentation!
+        if (previousTextNode != null) {
+            xmlNextSibling = previousTextNode;
+        } else {
+            // If there's no previous text node, we are probably inside an
+            // empty element (<LinearLayout>|</LinearLayout>) and in that case we need
+            // to not only insert a newline and indentation before the new element, but
+            // after it as well.
+            insertAfter = parentIndent;
+        }
+
+        // Insert indent text node before the new element
+        Text indentNode = doc.createTextNode("\n" + indent); //$NON-NLS-1$
+        parentXmlNode.insertBefore(indentNode, xmlNextSibling);
+
+        // Insert the element itself
         parentXmlNode.insertBefore(mXmlNode, xmlNextSibling);
 
-        // Insert a separator after the tag, to make it easier to read
-        Text sep = doc.createTextNode("\n"); //$NON-NLS-1$
-        parentXmlNode.insertBefore(sep, xmlNextSibling);
+        // Insert a separator after the tag. We only do this when we've inserted
+        // a tag into an area where there was no whitespace before
+        // (e.g. a new child of <LinearLayout></LinearLayout>).
+        if (insertAfter != null) {
+            Text sep = doc.createTextNode("\n" + insertAfter); //$NON-NLS-1$
+            parentXmlNode.insertBefore(sep, xmlNextSibling);
+        }
 
         // Set all initial attributes in the XML node if they are not empty.
         // Iterate on the descriptor list to get the desired order and then use the
@@ -863,6 +946,10 @@ public class UiElementNode implements IPropertySource {
                 UiAttributeNode uiAttr = getInternalUiAttributes().get(attrDesc);
                 commitAttributeToXml(uiAttr, uiAttr.getCurrentValue());
             }
+        }
+
+        if (mUiParent != null) {
+            mUiParent.formatOnInsert(this);
         }
 
         invokeUiUpdateListeners(UiUpdateState.CREATED);
@@ -890,14 +977,18 @@ public class UiElementNode implements IPropertySource {
         if (xmlParent == null) {
             xmlParent = getXmlDocument();
         }
-        Node nextSibling = oldXmlNode.getNextSibling();
+        Node previousSibling = oldXmlNode.getPreviousSibling();
         oldXmlNode = xmlParent.removeChild(oldXmlNode);
 
-        // Remove following text node if it's just blank space, to account for
-        // the fact what we add these when we insert nodes.
-        if (nextSibling != null && nextSibling.getNodeType() == Node.TEXT_NODE
-                && nextSibling.getNodeValue().trim().length() == 0) {
-            xmlParent.removeChild(nextSibling);
+        // We need to remove the text node BEFORE the removed element, since THAT's the
+        // indentation node for the removed element.
+        if (previousSibling != null && previousSibling.getNodeType() == Node.TEXT_NODE
+                && previousSibling.getNodeValue().trim().length() == 0) {
+            xmlParent.removeChild(previousSibling);
+        }
+
+        if (mUiParent != null) {
+            mUiParent.formatOnDeletion(this);
         }
 
         invokeUiUpdateListeners(UiUpdateState.DELETED);
@@ -1070,6 +1161,7 @@ public class UiElementNode implements IPropertySource {
             }
 
             mUiChildren.remove(uiIndex);
+
             return true;
         } finally {
             // Tell listeners that a node has been removed.
@@ -1665,6 +1757,78 @@ public class UiElementNode implements IPropertySource {
                     commitAttributeToXml(fAttribute, newValue);
                 }
             });
+        }
+    }
+
+    /** Handles reformatting of the XML buffer when a given node has been inserted.
+     *
+     * @param node The node that was inserted.
+     */
+    private void formatOnInsert(UiElementNode node) {
+        // Reformat parent if it's the first child (such that it for example can force
+        // children into their own lines.)
+        if (mUiChildren.size() == 1) {
+            reformat();
+        } else {
+            // In theory, we should ONLY have to reformat the node itself:
+            // uiNode.reformat();
+            //
+            // However, the XML formatter does not correctly handle this; in particular
+            // it will -dedent- a correctly indented child. Here's an example:
+            //
+            // @formatter:off
+            //    <?xml version="1.0" encoding="utf-8"?>
+            //    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            //        android:layout_width="fill_parent" android:layout_height="fill_parent"
+            //        android:orientation="vertical">
+            //        <LinearLayout android:id="@+id/LinearLayout01"
+            //            android:layout_width="wrap_content" android:layout_height="wrap_content">
+            //            <Button android:id="@+id/Button03"></Button>
+            //        </LinearLayout>
+            //    </LinearLayout>
+            // @formatter:on
+            //
+            // If we  have just inserted the button inside the nested LinearLayout, and
+            // attempt to format it, it will incorrectly dedent the button to be flush with
+            // its parent.
+            //
+            // Therefore, for now, in this case, format the PARENT on insert. This means that
+            // siblings can be formatted as well, but that can't be helped.
+
+            // This should be "uiNode.reformat();" instead of "reformat()" if formatting
+            // worked correctly:
+            reformat();
+        }
+    }
+
+    /**
+     * Handles reformatting of the XML buffer when a given node has been removed.
+     *
+     * @param node The node that was removed.
+     */
+    private void formatOnDeletion(UiElementNode node) {
+        // Reformat parent if it's the last child removed, such that we can for example
+        // place the closing element back on the same line as the opening tag (if the
+        // user has that mode configured in the formatting options.)
+        if (mUiChildren.size() <= 1) {
+            // <= 1 instead of == 0: turns out the parent hasn't always deleted
+            // this child from its its children list yet.
+            reformat();
+        }
+    }
+
+    /**
+     * Reformats the XML corresponding to the given XML node. This will do nothing if we have
+     * errors, or if the user has turned off XML auto-formatting.
+     */
+    private void reformat() {
+        if (mHasError || !AdtPrefs.getPrefs().getFormatXml()) {
+            return;
+        }
+
+        AndroidXmlEditor editor = getEditor();
+        if (editor != null && mXmlNode != null) {
+            editor.reformatNode(mXmlNode);
         }
     }
 }

@@ -543,7 +543,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
             if (layoutDesc != null) {
                 DocumentDescriptor docDesc = layoutDesc.getDescriptor();
                 if (docDesc != null) {
-                    desc = internalFindFqcnViewDescritor(fqcn, docDesc.getChildren(), null);
+                    desc = internalFindFqcnViewDescriptor(fqcn, docDesc.getChildren(), null);
                 }
             }
         }
@@ -567,7 +567,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
      *  necessary since the view descriptor hierarchy is cyclic.
      * @return Either a matching {@link ViewElementDescriptor} or null.
      */
-    private ViewElementDescriptor internalFindFqcnViewDescritor(String fqcn,
+    private ViewElementDescriptor internalFindFqcnViewDescriptor(String fqcn,
             ElementDescriptor[] descriptors,
             Set<ElementDescriptor> visited) {
         if (visited == null) {
@@ -587,7 +587,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
 
                     // Visit its children
                     ViewElementDescriptor vd =
-                        internalFindFqcnViewDescritor(fqcn, desc.getChildren(), visited);
+                        internalFindFqcnViewDescriptor(fqcn, desc.getChildren(), visited);
                     if (vd != null) {
                         return vd;
                     }
