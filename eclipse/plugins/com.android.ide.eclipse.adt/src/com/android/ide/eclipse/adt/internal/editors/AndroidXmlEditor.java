@@ -39,7 +39,9 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.source.ISourceViewer;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
@@ -67,6 +69,7 @@ import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.sse.ui.StructuredTextEditor;
+import org.eclipse.wst.sse.ui.internal.StructuredTextViewer;
 import org.eclipse.wst.xml.core.internal.document.NodeContainer;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 import org.w3c.dom.Document;
@@ -87,7 +90,7 @@ import java.net.URL;
 public abstract class AndroidXmlEditor extends FormEditor implements IResourceChangeListener {
 
     /** Preference name for the current page of this file */
-    private static final String PREF_CURRENT_PAGE = "_current_page";
+    private static final String PREF_CURRENT_PAGE = "_current_page"; // $NON-NLS-1$
 
     /** Id string used to create the Android SDK browser */
     private static String BROWSER_ID = "android"; // $NON-NLS-1$
@@ -946,7 +949,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * Get the XML text directly from the editor.
      *
      * @param xmlNode The node whose XML text we want to obtain.
-     * @return The XML representation of the {@link Node}.
+     * @return The XML representation of the {@link Node}, or null if there was an error.
      */
     public String getXmlText(Node xmlNode) {
         String data = null;
@@ -972,6 +975,135 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
             model.releaseFromRead();
         }
         return data;
+    }
+
+    /**
+     * Formats the text around the given caret range, using the current Eclipse
+     * XML formatter settings.
+     *
+     * @param begin The starting offset of the range to be reformatted.
+     * @param end The ending offset of the range to be reformatted.
+     */
+    public void reformatRegion(int begin, int end) {
+        ISourceViewer textViewer = getStructuredSourceViewer();
+
+        // Clamp text range to valid offsets.
+        IDocument document = textViewer.getDocument();
+        int documentLength = document.getLength();
+        end = Math.min(end, documentLength);
+        begin = Math.min(begin, end);
+
+        // It turns out the XML formatter does *NOT* format things correctly if you
+        // select just a region of text. You *MUST* also include the leading whitespace
+        // on the line, or it will dedent all the content to column 0. Therefore,
+        // we must figure out the offset of the start of the line that contains the
+        // beginning of the tag.
+        try {
+            IRegion lineInformation = document.getLineInformationOfOffset(begin);
+            if (lineInformation != null) {
+                int lineBegin = lineInformation.getOffset();
+                if (lineBegin != begin) {
+                    begin = lineBegin;
+                } else if (begin > 0) {
+                    // Trick #2: It turns out that, if an XML element starts in column 0,
+                    // then the XML formatter will NOT indent it (even if its parent is
+                    // indented). If you on the other hand include the end of the previous
+                    // line (the newline), THEN the formatter also correctly inserts the
+                    // element. Therefore, we adjust the beginning range to include the
+                    // previous line (if we are not already in column 0 of the first line)
+                    // in the case where the element starts the line.
+                    begin--;
+                }
+            }
+        } catch (BadLocationException e) {
+            // This cannot happen because we already clamped the offsets
+            AdtPlugin.log(e, e.toString()); // $NON-NLS-1$
+        }
+
+        if (textViewer instanceof StructuredTextViewer) {
+            StructuredTextViewer structuredTextViewer = (StructuredTextViewer) textViewer;
+            int operation = ISourceViewer.FORMAT;
+            boolean canFormat = structuredTextViewer.canDoOperation(operation);
+            if (canFormat) {
+                StyledText textWidget = textViewer.getTextWidget();
+                textWidget.setSelection(begin, end);
+                structuredTextViewer.doOperation(operation);
+            }
+        }
+    }
+
+    /**
+     * Formats the XML region corresponding to the given node.
+     *
+     * @param node The node to be formatted.
+     */
+    public void reformatNode(Node node) {
+        if (mIsCreatingPage) {
+            return;
+        }
+
+        if (node instanceof IndexedRegion) {
+            IndexedRegion region = (IndexedRegion) node;
+            int begin = region.getStartOffset();
+            int end = region.getEndOffset();
+            reformatRegion(begin, end);
+        }
+    }
+
+    /**
+     * Formats the XML document according to the user's XML formatting settings.
+     */
+    public void reformatDocument() {
+        ISourceViewer textViewer = getStructuredSourceViewer();
+        if (textViewer instanceof StructuredTextViewer) {
+            StructuredTextViewer structuredTextViewer = (StructuredTextViewer) textViewer;
+            int operation = StructuredTextViewer.FORMAT_DOCUMENT;
+            boolean canFormat = structuredTextViewer.canDoOperation(operation);
+            if (canFormat) {
+                structuredTextViewer.doOperation(operation);
+            }
+        }
+    }
+
+    /**
+     * Returns the indentation String of the given node.
+     *
+     * @param xmlNode The node whose indentation we want.
+     * @return The indent-string of the given node, or "" if the indentation for some reason could
+     *         not be computed.
+     */
+    public String getIndent(Node xmlNode) {
+        assert xmlNode.getNodeType() == Node.ELEMENT_NODE;
+
+        if (xmlNode instanceof IndexedRegion) {
+            IndexedRegion region = (IndexedRegion)xmlNode;
+            IDocument document = getStructuredSourceViewer().getDocument();
+            int startOffset = region.getStartOffset();
+            try {
+                IRegion lineInformation = document.getLineInformationOfOffset(startOffset);
+                if (lineInformation != null) {
+                    int lineBegin = lineInformation.getOffset();
+                    if (lineBegin != startOffset) {
+                        String prefix = document.get(lineBegin, startOffset - lineBegin);
+
+                        // It's possible that the tag whose indentation we seek is not
+                        // at the beginning of the line. In that case we'll just return
+                        // the indentation of the line itself.
+                        for (int i = 0; i < prefix.length(); i++) {
+                            if (!Character.isWhitespace(prefix.charAt(i))) {
+                                return prefix.substring(0, i);
+                            }
+                        }
+
+                        return prefix;
+                    }
+                }
+            } catch (BadLocationException e) {
+                AdtPlugin.log(e, "Could not obtain indentation"); // $NON-NLS-1$
+            }
+        }
+
+        return ""; // $NON-NLS-1$
     }
 
     /**

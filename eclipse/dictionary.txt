@@ -30,6 +30,7 @@ configurability
 coords
 ddms
 debuggable
+dedent
 deprecated
 deselect
 deselects
