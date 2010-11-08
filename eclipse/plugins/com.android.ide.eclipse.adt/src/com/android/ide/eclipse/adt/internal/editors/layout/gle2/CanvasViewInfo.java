@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.Rect;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -62,6 +63,13 @@ public class CanvasViewInfo implements IPropertySource {
     private final UiViewElementNode mUiViewKey;
     private final CanvasViewInfo mParent;
     private final ArrayList<CanvasViewInfo> mChildren = new ArrayList<CanvasViewInfo>();
+
+    /**
+     * Is this view info an individually exploded view? This is the case for views
+     * that were specially inflated by the {@link UiElementPullParser} and assigned
+     * fixed padding because they were invisible and somebody requested visibility.
+     */
+    private boolean mExploded;
 
     /**
      * Constructs a {@link CanvasViewInfo} hierarchy based on a given {@link ILayoutViewInfo}
@@ -276,6 +284,45 @@ public class CanvasViewInfo implements IPropertySource {
         // node).
         return mUiViewKey == null || mUiViewKey.getUiParent() == null ||
             mUiViewKey.getUiParent().getUiParent() == null;
+    }
+
+    /**
+     * Returns true if this {@link CanvasViewInfo} represents an invisible parent - in
+     * other words, a view that can have children, and that has zero bounds making it
+     * effectively invisible. (We don't actually look for -0- bounds, but
+     * bounds smaller than SELECTION_MIN_SIZE.)
+     *
+     * @return True if this is an invisible parent.
+     */
+    public boolean isInvisibleParent() {
+        if (mAbsRect.width < SELECTION_MIN_SIZE || mAbsRect.height < SELECTION_MIN_SIZE) {
+            return mUiViewKey != null && mUiViewKey.getDescriptor().hasChildren();
+        }
+
+        return false;
+    }
+
+    /**
+     * Is this {@link CanvasViewInfo} a view that has had its padding inflated in order to
+     * make it visible during selection or dragging? Note that this is NOT considered to
+     * be the case in the explode-all-views mode where all nodes have their padding
+     * increased; it's only used for views that individually exploded because they were
+     * requested visible and they returned true for {@link #isInvisibleParent()}.
+     *
+     * @return True if this is an exploded node.
+     */
+    public boolean isExploded() {
+        return mExploded;
+    }
+
+    /**
+     * Mark this {@link CanvasViewInfo} as having been exploded or not. See the
+     * {@link #isExploded()} method for details on what this property means.
+     *
+     * @param exploded New value of the exploded property to mark this info with.
+     */
+    /* package */ void setExploded(boolean exploded) {
+        this.mExploded = exploded;
     }
 
     /**
