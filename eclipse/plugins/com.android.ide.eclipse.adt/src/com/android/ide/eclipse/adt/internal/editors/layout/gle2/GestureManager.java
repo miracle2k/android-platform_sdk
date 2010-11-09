@@ -207,6 +207,14 @@ public class GestureManager {
      *            listening to.
      */
     public void unregisterListeners(DragSource dragSource, DropTarget dropTarget) {
+        if (mCanvas.isDisposed()) {
+            // If the LayoutCanvas is already disposed, we shouldn't try to unregister
+            // the listeners; they are already not active and an attempt to remove the
+            // listener will throw a widget-is-disposed exception.
+            mListener = null;
+            return;
+        }
+
         if (mListener != null) {
             mCanvas.removeMouseMoveListener(mListener);
             mCanvas.removeMouseListener(mListener);
