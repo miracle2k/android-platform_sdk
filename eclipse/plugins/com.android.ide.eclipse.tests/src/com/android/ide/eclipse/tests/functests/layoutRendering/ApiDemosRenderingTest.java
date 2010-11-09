@@ -74,6 +74,10 @@ public class ApiDemosRenderingTest extends SdkTestCase {
         public Object getViewKey() {
             return null;
         }
+
+        public IXmlPullParser getParser(String layoutName) {
+            return null;
+        }
     }
 
     private final static class ProjectCallBack implements IProjectCallback {
