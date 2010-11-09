@@ -119,12 +119,12 @@ class LayoutCanvasViewer extends Viewer {
     }
 
     public void dispose() {
+        if (mSelectionListener != null) {
+            mCanvas.getSelectionManager().removeSelectionChangedListener(mSelectionListener);
+        }
         if (mCanvas != null) {
             mCanvas.dispose();
             mCanvas = null;
-        }
-        if (mSelectionListener != null) {
-            mCanvas.getSelectionManager().removeSelectionChangedListener(mSelectionListener);
         }
     }
 }
