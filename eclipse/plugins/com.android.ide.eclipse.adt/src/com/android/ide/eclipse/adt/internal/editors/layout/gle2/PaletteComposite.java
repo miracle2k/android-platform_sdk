@@ -159,7 +159,7 @@ public class PaletteComposite extends Composite {
 
     // ----- private methods ----
 
-    /** Returns true if scroolbar changed. */
+    /** Returns true if scrollbar changed. */
     private  boolean recomputeScrollbar() {
         if (mVBar != null && mRoot != null) {
 

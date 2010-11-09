@@ -5,6 +5,7 @@ aidl
 alt
 android
 antialias
+antialiased
 apache
 api
 apk
@@ -95,6 +96,7 @@ registry
 reparse
 reparses
 residual
+scrollable
 scrollbar
 scrollbars
 sdk
@@ -105,6 +107,7 @@ standalone
 stateless
 stderr
 stdout
+subclassing
 supertype
 syncs
 themed
@@ -120,6 +123,7 @@ uri
 url
 validator
 verbosity
+vs
 webtools
 workflow
 xml
