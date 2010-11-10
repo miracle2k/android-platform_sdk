@@ -52,7 +52,7 @@ public interface ILayoutScene {
     /**
      * Returns the result for the original call to {@link ILayoutBridge#startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, java.util.Map, java.util.Map, IProjectCallback, ILayoutLog)}
      */
-    ILayoutResult getStatus();
+    ILayoutResult getResult();
 
     /**
      * Returns the {@link ILayoutViewInfo} object for the top level view.

@@ -74,7 +74,9 @@ public interface ILayoutBridge {
     boolean dispose();
 
     /**
-     * Computes and renders a layout
+     * Starts a layout session by inflating and rendering it. The method returns a
+     * {@link ILayoutScene} on which further actions can be taken.
+     *
      * @param layoutDescription the {@link IXmlPullParser} letting the LayoutLib Bridge visit the
      * layout file.
      * @param projectKey An Object identifying the project. This is used for the cache mechanism.
