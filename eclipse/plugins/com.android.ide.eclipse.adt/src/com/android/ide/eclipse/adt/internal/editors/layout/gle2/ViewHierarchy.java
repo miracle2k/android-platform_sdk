@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.common.api.INode;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.ILayoutResult;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 
@@ -27,7 +28,10 @@ import org.w3c.dom.Node;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The view hierarchy class manages a set of view info objects and performs find
@@ -48,7 +52,7 @@ public class ViewHierarchy {
     }
 
     /**
-     * The CanvasViewInfo root created by the last call to {@link #setResult(ILayoutResult)}
+     * The CanvasViewInfo root created by the last call to {@link #setResult}
      * with a valid layout.
      * <p/>
      * This <em>can</em> be null to indicate we're dealing with an empty document with
@@ -59,7 +63,7 @@ public class ViewHierarchy {
     private CanvasViewInfo mLastValidViewInfoRoot;
 
     /**
-     * True when the last {@link #setResult(ILayoutResult)} provided a valid {@link ILayoutResult}.
+     * True when the last {@link #setResult} provided a valid {@link ILayoutResult}.
      * <p/>
      * When false this means the canvas is displaying an out-dated result image & bounds and some
      * features should be disabled accordingly such a drag'n'drop.
@@ -70,6 +74,27 @@ public class ViewHierarchy {
     private boolean mIsResultValid;
 
     /**
+     * A list of invisible parents (see {@link CanvasViewInfo#isInvisibleParent()} for
+     * details) in the current view hierarchy.
+     */
+    private final List<CanvasViewInfo> mInvisibleParents = new ArrayList<CanvasViewInfo>();
+
+    /**
+     * A read-only view of {@link #mInvisibleParents}; note that this is NOT a copy so it
+     * reflects updates to the underlying {@link #mInvisibleParents} list.
+     */
+    private final List<CanvasViewInfo> mInvisibleParentsReadOnly =
+        Collections.unmodifiableList(mInvisibleParents);
+
+    /**
+     * Flag which records whether or not we have any exploded parent nodes in this
+     * view hierarchy. This is used to track whether or not we need to recompute the
+     * layout when we exit show-all-invisible-parents mode (see
+     * {@link LayoutCanvas#showInvisibleViews}).
+     */
+    private boolean mExplodedParents;
+
+    /**
      * Sets the result of the layout rendering. The result object indicates if the layout
      * rendering succeeded. If it did, it contains a bitmap and the objects rectangles.
      *
@@ -78,9 +103,15 @@ public class ViewHierarchy {
      * when it is valid.
      *
      * @param result The new rendering result, either valid or not.
+     * @param explodedNodes The set of individual nodes the layout computer was asked to
+     *            explode. Note that these are independent of the explode-all mode where
+     *            all views are exploded; this is used only for the mode (
+     *            {@link LayoutCanvas#showInvisibleViews}) where individual invisible
+     *            nodes are padded during certain interactions.
      */
-    /* package */ void setResult(ILayoutResult result) {
+    /* package */ void setResult(ILayoutResult result, Set<UiElementNode> explodedNodes) {
         mIsResultValid = (result != null && result.getSuccess() == ILayoutResult.SUCCESS);
+        mExplodedParents = false;
 
         if (mIsResultValid && result != null) {
             ILayoutViewInfo root = result.getRootView();
@@ -92,8 +123,18 @@ public class ViewHierarchy {
 
             updateNodeProxies(mLastValidViewInfoRoot);
 
+            // Update the data structures related to tracking invisible and exploded nodes.
+            // We need to find the {@link CanvasViewInfo} objects that correspond to
+            // the passed in {@link UiElementNode} keys that were re-rendered, and mark
+            // them as exploded and store them in a list for rendering.
+            mExplodedParents = false;
+            mInvisibleParents.clear();
+            addInvisibleParents(mLastValidViewInfoRoot, explodedNodes);
+
             // Update the selection
             mCanvas.getSelectionManager().sync(mLastValidViewInfoRoot);
+        } else {
+            mInvisibleParents.clear();
         }
     }
 
@@ -122,10 +163,45 @@ public class ViewHierarchy {
         }
     }
 
+    /**
+     * Make a pass over the view hierarchy and look for two things:
+     * <ol>
+     * <li>Invisible parents. These are nodes that can hold children and have empty
+     * bounds. These are then added to the {@link #mInvisibleParents} list.
+     * <li>Exploded nodes. These are nodes that were previously marked as invisible, and
+     * subsequently rendered by a recomputed layout. They now no longer have empty bounds,
+     * but should be specially marked via {@link CanvasViewInfo#setExploded} such that we
+     * for example in selection operations can determine if we need to recompute the
+     * layout.
+     * </ol>
+     *
+     * @param vi
+     * @param invisibleNodes
+     */
+    private void addInvisibleParents(CanvasViewInfo vi, Set<UiElementNode> invisibleNodes) {
+        if (vi == null) {
+            return;
+        }
 
+        if (vi.isInvisibleParent()) {
+            mInvisibleParents.add(vi);
+        } else if (invisibleNodes != null) {
+            UiViewElementNode key = vi.getUiViewKey();
+
+            if (key != null && invisibleNodes.contains(key)) {
+                vi.setExploded(true);
+                mExplodedParents = true;
+                mInvisibleParents.add(vi);
+            }
+        }
+
+        for (CanvasViewInfo child : vi.getChildren()) {
+            addInvisibleParents(child, invisibleNodes);
+        }
+    }
 
     /**
-     * Returns true when the last {@link #setResult(ILayoutResult)} provided a valid
+     * Returns true when the last {@link #setResult} provided a valid
      * {@link ILayoutResult}.
      * <p/>
      * When false this means the canvas is displaying an out-dated result image & bounds and some
@@ -145,6 +221,24 @@ public class ViewHierarchy {
      */
     public boolean isEmpty() {
         return mLastValidViewInfoRoot == null;
+    }
+
+    /**
+     * Returns true if we have parents in this hierarchy that are invisible (e.g. because
+     * they have no children and zero layout bounds).
+     *
+     * @return True if we have invisible parents.
+     */
+    public boolean hasInvisibleParents() {
+        return mInvisibleParents.size() > 0;
+    }
+
+    /**
+     * Returns true if we have views that were exploded during rendering
+     * @return True if we have exploded parents
+     */
+    public boolean hasExplodedParents() {
+        return mExplodedParents;
     }
 
     /** Locates and return any views that overlap the given selection rectangle.
@@ -411,7 +505,7 @@ public class ViewHierarchy {
     }
 
     /**
-     * Return the root of the view hierarchy, if any (could be null, for example
+     * Returns the root of the view hierarchy, if any (could be null, for example
      * on rendering failure).
      *
      * @return The current view hierarchy, or null
@@ -420,4 +514,42 @@ public class ViewHierarchy {
         return mLastValidViewInfoRoot;
     }
 
+    /**
+     * Returns a collection of views that have zero bounds and that correspond to empty
+     * parents. Note that the views may not actually have zero bounds; in particular, if
+     * they are exploded ({@link CanvasViewInfo#isExploded()}, then they will have the
+     * bounds of a shown invisible node. Therefore, this method returns the views that
+     * would be invisible in a real rendering of the scene.
+     *
+     * @return A collection of empty parent views.
+     */
+    public List<CanvasViewInfo> getInvisibleViews() {
+        return mInvisibleParentsReadOnly;
+    }
+
+    /**
+     * Returns the invisible nodes (the {@link UiElementNode} objects corresponding
+     * to the {@link CanvasViewInfo} objects returned from {@link #getInvisibleViews()}.
+     * We are pulling out the nodes since they preserve their identity across layout
+     * rendering, and in particular we return it as a set such that the layout renderer
+     * can perform quick identity checks when looking up attribute values during the
+     * rendering process.
+     *
+     * @return A set of the invisible nodes.
+     */
+    public Set<UiElementNode> getInvisibleNodes() {
+        if (mInvisibleParents.size() == 0) {
+            return Collections.emptySet();
+        }
+
+        Set<UiElementNode> nodes = new HashSet<UiElementNode>(mInvisibleParents.size());
+        for (CanvasViewInfo info : mInvisibleParents) {
+            UiViewElementNode node = info.getUiViewKey();
+            if (node != null) {
+                nodes.add(node);
+            }
+        }
+
+        return nodes;
+    }
 }

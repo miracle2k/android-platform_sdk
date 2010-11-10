@@ -37,6 +37,7 @@ import org.xmlpull.v1.XmlPullParserException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,7 +50,7 @@ import java.util.regex.Pattern;
  */
 public final class UiElementPullParser extends BasePullParser {
     private final static String ATTR_PADDING = "padding"; //$NON-NLS-1$
-    private final static Pattern sFloatPattern = Pattern.compile("(-?[0-9]+(?:\\.[0-9]+)?)(.*)"); //$NON-NLS-1$
+    private final static Pattern FLOAT_PATTERN = Pattern.compile("(-?[0-9]+(?:\\.[0-9]+)?)(.*)"); //$NON-NLS-1$
 
     private final int[] sIntOut = new int[1];
 
@@ -61,16 +62,52 @@ public final class UiElementPullParser extends BasePullParser {
     private List<ElementDescriptor> mLayoutDescriptors;
     private final int mDensityValue;
     private final float mXdpi;
-    private final String mDefaultPaddingValue;
 
-    public UiElementPullParser(UiElementNode top, boolean explodeRendering, int densityValue,
-            float xdpi, IProject project) {
+    /**
+     * Number of pixels to pad views with in exploded-rendering mode.
+     */
+    private static final String DEFAULT_PADDING_VALUE =
+        ExplodedRenderingHelper.PADDING_VALUE + "px"; //$NON-NLS-1$
+
+    /**
+     * Number of pixels to pad exploded individual views with. (This is HALF the width of the
+     * rectangle since padding is repeated on both sides of the empty content.)
+     */
+    private static final String FIXED_PADDING_VALUE = "20px"; //$NON-NLS-1$
+
+    /**
+     * Set of nodes that we want to auto-pad using {@link #FIXED_PADDING_VALUE} as the padding
+     * attribute value. Can be null, which is the case when we don't want to perform any
+     * <b>individual</b> node exploding.
+     */
+    private final Set<UiElementNode> mExplodeNodes;
+
+    /**
+     * Constructs a new {@link UiElementPullParser}, a parser dedicated to the special case of
+     * parsing a layout resource files, and handling "exploded rendering" - adding padding on views
+     * to make them easier to see and operate on.
+     *
+     * @param top The {@link UiElementNode} for the root node.
+     * @param explodeRendering When true, add padding to <b>all</b> nodes in the hierarchy. This
+     *            will add rather than replace padding of a node.
+     * @param explodeNodes A set of individual nodes that should be assigned a fixed amount of
+     *            padding ({@link #FIXED_PADDING_VALUE}). This is intended for use with nodes that
+     *            (without padding) would be invisible. This parameter can be null, in which case
+     *            nodes are not individually exploded (but they may all be exploded with the
+     *            explodeRendering parameter.
+     * @param densityValue the density factor for the screen.
+     * @param xdpi the screen actual dpi in X
+     * @param project Project containing this layout.
+     */
+    public UiElementPullParser(UiElementNode top, boolean explodeRendering,
+            Set<UiElementNode> explodeNodes,
+            int densityValue, float xdpi, IProject project) {
         super();
         mRoot = top;
         mExplodedRendering = explodeRendering;
+        mExplodeNodes = explodeNodes;
         mDensityValue = densityValue;
         mXdpi = xdpi;
-        mDefaultPaddingValue = ExplodedRenderingHelper.PADDING_VALUE + "px"; //$NON-NLS-1$
         if (mExplodedRendering) {
             // get the layout descriptor
             IAndroidTarget target = Sdk.getCurrent().getTarget(project);
@@ -255,7 +292,7 @@ public final class UiElementPullParser extends BasePullParser {
     public String getAttributeValue(int i) {
         if (mZeroAttributeIsPadding) {
             if (i == 0) {
-                return mDefaultPaddingValue;
+                return DEFAULT_PADDING_VALUE;
             } else {
                 i--;
             }
@@ -279,9 +316,17 @@ public final class UiElementPullParser extends BasePullParser {
      * This is the main method used by the LayoutInflater to query for attributes.
      */
     public String getAttributeValue(String namespace, String localName) {
+        if (mExplodeNodes != null && ATTR_PADDING.equals(localName) &&
+                SdkConstants.NS_RESOURCES.equals(namespace)) {
+            UiElementNode node = getCurrentNode();
+            if (node != null && mExplodeNodes.contains(node)) {
+                return FIXED_PADDING_VALUE;
+            }
+        }
+
         if (mZeroAttributeIsPadding && ATTR_PADDING.equals(localName) &&
                 SdkConstants.NS_RESOURCES.equals(namespace)) {
-            return mDefaultPaddingValue;
+            return DEFAULT_PADDING_VALUE;
         }
 
         // get the current uiNode
@@ -457,14 +502,14 @@ public final class UiElementPullParser extends BasePullParser {
      */
     private boolean stringToPixel(String s) {
         // remove the space before and after
-        s.trim();
+        s = s.trim();
         int len = s.length();
 
         if (len <= 0) {
             return false;
         }
 
-        // check that there's no non ascii characters.
+        // check that there's no non ASCII characters.
         char[] buf = s.toCharArray();
         for (int i = 0 ; i < len ; i++) {
             if (buf[i] > 255) {
@@ -478,7 +523,7 @@ public final class UiElementPullParser extends BasePullParser {
         }
 
         // now look for the string that is after the float...
-        Matcher m = sFloatPattern.matcher(s);
+        Matcher m = FLOAT_PATTERN.matcher(s);
         if (m.matches()) {
             String f_str = m.group(1);
             String end = m.group(2);

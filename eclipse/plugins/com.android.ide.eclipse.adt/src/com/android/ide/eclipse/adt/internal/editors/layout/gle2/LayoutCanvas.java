@@ -71,6 +71,10 @@ import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.w3c.dom.Node;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
  * Displays the image rendered by the {@link GraphicalEditorPart} and handles
  * the interaction with the widgets.
@@ -109,6 +113,9 @@ class LayoutCanvas extends Canvas {
 
     /** When true, always display the outline of all views. */
     private boolean mShowOutline;
+
+    /** When true, display the outline of all empty parent views. */
+    private boolean mShowInvisible;
 
     /** Drop target associated with this composite. */
     private DropTarget mDropTarget;
@@ -161,6 +168,9 @@ class LayoutCanvas extends Canvas {
     /** The overlay which paints the optional outline. */
     private OutlineOverlay mOutlineOverlay;
 
+    /** The overlay which paints outlines around empty children */
+    private EmptyViewsOverlay mEmptyOverlay;
+
     /** The overlay which paints the mouse hover. */
     private HoverOverlay mHoverOverlay;
 
@@ -199,7 +209,7 @@ class LayoutCanvas extends Canvas {
         mFont = display.getSystemFont();
 
         // --- Set up graphic overlays
-        // mOutlineOverlay is initialized lazily
+        // mOutlineOverlay and mEmptyOverlay are initialized lazily
         mHoverOverlay = new HoverOverlay(mHScale, mVScale);
         mHoverOverlay.create(display);
         mSelectionOverlay = new SelectionOverlay();
@@ -298,6 +308,11 @@ class LayoutCanvas extends Canvas {
         if (mOutlineOverlay != null) {
             mOutlineOverlay.dispose();
             mOutlineOverlay = null;
+        }
+
+        if (mEmptyOverlay != null) {
+            mEmptyOverlay.dispose();
+            mEmptyOverlay = null;
         }
 
         if (mHoverOverlay != null) {
@@ -427,12 +442,17 @@ class LayoutCanvas extends Canvas {
      * when it is valid.
      *
      * @param result The new rendering result, either valid or not.
+     * @param explodedNodes The set of individual nodes the layout computer was asked to
+     *            explode. Note that these are independent of the explode-all mode where
+     *            all views are exploded; this is used only for the mode (
+     *            {@link #showInvisibleViews(boolean)}) where individual invisible nodes
+     *            are padded during certain interactions.
      */
-    /* package */ void setResult(ILayoutResult result) {
+    /* package */ void setResult(ILayoutResult result, Set<UiElementNode> explodedNodes) {
         // disable any hover
         clearHover();
 
-        mViewHierarchy.setResult(result);
+        mViewHierarchy.setResult(result, explodedNodes);
         if (mViewHierarchy.isValid() && result != null) {
             Image image = mImageOverlay.setImage(result.getImage());
 
@@ -532,6 +552,14 @@ class LayoutCanvas extends Canvas {
                 mOutlineOverlay.paint(gc);
             }
 
+            if (mShowInvisible) {
+                if (mEmptyOverlay == null) {
+                    mEmptyOverlay = new EmptyViewsOverlay(mViewHierarchy, mHScale, mVScale);
+                    mEmptyOverlay.create(getDisplay());
+                }
+                mEmptyOverlay.paint(gc);
+            }
+
             mHoverOverlay.paint(gc);
             mSelectionOverlay.paint(mSelectionManager, gc, mGCWrapper, mRulesEngine);
             mGestureManager.paint(gc);
@@ -539,6 +567,72 @@ class LayoutCanvas extends Canvas {
         } finally {
             mGCWrapper.setGC(null);
         }
+    }
+
+    /**
+     * Shows or hides invisible parent views, which are views which have empty bounds and
+     * no children. The nodes which will be shown are provided by
+     * {@link #getNodesToExplode()}.
+     *
+     * @param show When true, any invisible parent nodes are padded and highlighted
+     *            ("exploded"), and when false any formerly exploded nodes are hidden.
+     */
+    /* package */ void showInvisibleViews(boolean show) {
+        if (mShowInvisible == show) {
+            return;
+        }
+
+        // Optimization: Avoid doing work when we don't have invisible parents (on show)
+        // or formerly exploded nodes (on hide).
+        if (show && !mViewHierarchy.hasInvisibleParents()) {
+            return;
+        } else if (!show && !mViewHierarchy.hasExplodedParents()) {
+            return;
+        }
+
+        mShowInvisible = show;
+        mLayoutEditor.recomputeLayout();
+    }
+
+    /**
+     * Returns a set of nodes that should be exploded (forced non-zero padding during render),
+     * or null if no nodes should be exploded. (Note that this is independent of the
+     * explode-all mode, where all nodes are padded -- that facility does not use this
+     * mechanism, which is only intended to be used to expose invisible parent nodes.
+     *
+     * @return The set of invisible parents, or null if no views should be expanded.
+     */
+    public Set<UiElementNode> getNodesToExplode() {
+        if (mShowInvisible) {
+            return mViewHierarchy.getInvisibleNodes();
+        }
+
+        // IF we have selection, and IF we have invisible nodes in the view,
+        // see if any of the selected items are among the invisible nodes, and if so
+        // add them to a lazily constructed set which we pass back for rendering.
+        Set<UiElementNode> result = null;
+        List<CanvasSelection> selections = mSelectionManager.getSelections();
+        if (selections.size() > 0) {
+            List<CanvasViewInfo> invisibleParents = mViewHierarchy.getInvisibleViews();
+            if (invisibleParents.size() > 0) {
+                for (CanvasSelection item : selections) {
+                    CanvasViewInfo viewInfo = item.getViewInfo();
+                    // O(n^2) here, but both the selection size and especially the
+                    // invisibleParents size are expected to be small
+                    if (invisibleParents.contains(viewInfo)) {
+                        UiViewElementNode node = viewInfo.getUiViewKey();
+                        if (node != null) {
+                            if (result == null) {
+                                result = new HashSet<UiElementNode>();
+                            }
+                            result.add(node);
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -889,5 +983,4 @@ class LayoutCanvas extends Canvas {
             AdtPlugin.printToConsole("Canvas", String.format(message, params));
         }
     }
-
 }

@@ -1084,7 +1084,7 @@ public class GraphicalEditorPart extends EditorPart
                         }
                     };
 
-                    mCanvasViewer.getCanvas().setResult(result);
+                    mCanvasViewer.getCanvas().setResult(result, null /*explodeNodes*/);
                     return;
                 }
 
@@ -1209,8 +1209,11 @@ public class GraphicalEditorPart extends EditorPart
         float ydpi = mConfigComposite.getYDpi();
         boolean isProjectTheme = mConfigComposite.isProjectTheme();
 
+        LayoutCanvas canvas = getCanvasControl();
+        Set<UiElementNode> explodeNodes = canvas.getNodesToExplode();
+
         UiElementPullParser parser = new UiElementPullParser(getModel(),
-                mUseExplodeMode, density, xdpi, iProject);
+                mUseExplodeMode, explodeNodes, density, xdpi, iProject);
 
         ILayoutResult result = computeLayout(bridge, parser,
                 iProject /* projectKey */,
@@ -1223,7 +1226,7 @@ public class GraphicalEditorPart extends EditorPart
         // post rendering clean up
         bridge.cleanUp();
 
-        mCanvasViewer.getCanvas().setResult(result);
+        canvas.setResult(result, explodeNodes);
 
         // update the UiElementNode with the layout info.
         if (result.getSuccess() != ILayoutResult.SUCCESS) {
