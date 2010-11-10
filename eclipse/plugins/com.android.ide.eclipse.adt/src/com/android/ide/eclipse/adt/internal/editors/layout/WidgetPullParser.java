@@ -53,6 +53,11 @@ public class WidgetPullParser extends BasePullParser {
         return mDescriptor;
     }
 
+    public IXmlPullParser getParser(String layoutName) {
+        // there's no embedded layout for a single widget.
+        return null;
+    }
+
     public int getAttributeCount() {
         return mAttributes.length; // text attribute
     }

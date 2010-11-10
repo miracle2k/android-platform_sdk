@@ -154,6 +154,14 @@ public final class UiElementPullParser extends BasePullParser {
         return getCurrentNode();
     }
 
+    /**
+     * This implementation does nothing for now as all the embedded XML will use a normal KXML
+     * parser.
+     */
+    public IXmlPullParser getParser(String layoutName) {
+        return null;
+    }
+
     // ------------- XmlPullParser --------
 
     public String getPositionDescription() {
