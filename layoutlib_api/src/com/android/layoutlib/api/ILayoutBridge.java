@@ -24,6 +24,11 @@ import java.util.Map;
  * <p/>
  * <p/>{@link #getApiLevel()} gives the ability to know which methods are available.
  * <p/>
+ * Changes in API level 5:
+ * <ul>
+ * <li>new render method: {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+ * <li>deprecated {@link #computeLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}</li>
+ * </ul>
  * Changes in API level 4:
  * <ul>
  * <li>new render method: {@link #computeLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}</li>
@@ -43,7 +48,7 @@ import java.util.Map;
  */
 public interface ILayoutBridge {
 
-    final int API_CURRENT = 4;
+    final int API_CURRENT = 5;
 
     /**
      * Returns the API level of the layout library.
@@ -62,6 +67,48 @@ public interface ILayoutBridge {
      * @since 1
      */
     boolean init(String fontOsLocation, Map<String, Map<String, Integer>> enumValueMap);
+
+    /**
+     * Prepares the layoutlib to unloaded.
+     */
+    boolean dispose();
+
+    /**
+     * Computes and renders a layout
+     * @param layoutDescription the {@link IXmlPullParser} letting the LayoutLib Bridge visit the
+     * layout file.
+     * @param projectKey An Object identifying the project. This is used for the cache mechanism.
+     * @param screenWidth the screen width
+     * @param screenHeight the screen height
+     * @param renderFullSize if true, the rendering will render the full size needed by the
+     * layout. This size is never smaller than <var>screenWidth</var> x <var>screenHeight</var>.
+     * @param density the density factor for the screen.
+     * @param xdpi the screen actual dpi in X
+     * @param ydpi the screen actual dpi in Y
+     * @param themeName The name of the theme to use.
+     * @param isProjectTheme true if the theme is a project theme, false if it is a framework theme.
+     * @param projectResources the resources of the project. The map contains (String, map) pairs
+     * where the string is the type of the resource reference used in the layout file, and the
+     * map contains (String, {@link IResourceValue}) pairs where the key is the resource name,
+     * and the value is the resource value.
+     * @param frameworkResources the framework resources. The map contains (String, map) pairs
+     * where the string is the type of the resource reference used in the layout file, and the map
+     * contains (String, {@link IResourceValue}) pairs where the key is the resource name, and the
+     * value is the resource value.
+     * @param projectCallback The {@link IProjectCallback} object to get information from
+     * the project.
+     * @param logger the object responsible for displaying warning/errors to the user.
+     * @return a new {@link ILayoutScene} object that contains the result of the layout.
+     * @since 5
+     */
+    ILayoutScene startLayout(IXmlPullParser layoutDescription,
+            Object projectKey,
+            int screenWidth, int screenHeight, boolean renderFullSize,
+            int density, float xdpi, float ydpi,
+            String themeName, boolean isProjectTheme,
+            Map<String, Map<String, IResourceValue>> projectResources,
+            Map<String, Map<String, IResourceValue>> frameworkResources,
+            IProjectCallback projectCallback, ILayoutLog logger);
 
     /**
      * Computes and renders a layout
@@ -89,8 +136,10 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
+     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
      * @since 4
      */
+    @Deprecated
     ILayoutResult computeLayout(IXmlPullParser layoutDescription,
             Object projectKey,
             int screenWidth, int screenHeight, boolean renderFullSize,
@@ -124,6 +173,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
+     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
      * @since 3
      */
     @Deprecated
@@ -156,7 +206,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated Use {@link #computeLayout(IXmlPullParser, Object, int, int, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
      * @since 2
      */
     @Deprecated
@@ -188,7 +238,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated Use {@link #computeLayout(IXmlPullParser, Object, int, int, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
      * @since 1
      */
     @Deprecated
