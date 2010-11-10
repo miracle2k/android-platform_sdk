@@ -63,19 +63,21 @@ public class AndroidTargetData {
          * versions of the layoutlib.
          */
         public void cleanUp() {
-            try {
-                Class<?> looperClass = classLoader.loadClass("android.os.Looper"); //$NON-NLS-1$
-                Field threadLocalField = looperClass.getField("sThreadLocal"); //$NON-NLS-1$
-                if (threadLocalField != null) {
-                    threadLocalField.setAccessible(true);
-                    // get object. Field is static so no need to pass an object
-                    ThreadLocal<?> threadLocal = (ThreadLocal<?>) threadLocalField.get(null);
-                    if (threadLocal != null) {
-                        threadLocal.remove();
+            if (apiLevel <= 4) {
+                try {
+                    Class<?> looperClass = classLoader.loadClass("android.os.Looper"); //$NON-NLS-1$
+                    Field threadLocalField = looperClass.getField("sThreadLocal"); //$NON-NLS-1$
+                    if (threadLocalField != null) {
+                        threadLocalField.setAccessible(true);
+                        // get object. Field is static so no need to pass an object
+                        ThreadLocal<?> threadLocal = (ThreadLocal<?>) threadLocalField.get(null);
+                        if (threadLocal != null) {
+                            threadLocal.remove();
+                        }
                     }
+                } catch (Exception e) {
+                    AdtPlugin.log(e, "Failed to clean up bridge for API level %d", apiLevel);
                 }
-            } catch (Exception e) {
-                AdtPlugin.log(e, "Failed to clean up bridge for API level %d", apiLevel);
             }
         }
     }
