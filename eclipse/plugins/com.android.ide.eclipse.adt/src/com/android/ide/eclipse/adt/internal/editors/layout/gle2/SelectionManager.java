@@ -180,6 +180,7 @@ public class SelectionManager implements ISelectionProvider {
                 }
 
                 boolean changed = false;
+                boolean redoLayout = false;
 
                 // Create a list of all currently selected view infos
                 Set<CanvasViewInfo> oldSelected = new HashSet<CanvasViewInfo>();
@@ -206,15 +207,24 @@ public class SelectionManager implements ISelectionProvider {
                             mSelections.add(createSelection(newVi));
                             changed = true;
                         }
+                        if (newVi.isInvisibleParent()) {
+                            redoLayout = true;
+                        }
                     }
                 }
 
                 // Deselect old selected items that are not in the new one
                 for (CanvasViewInfo vi : oldSelected) {
+                    if (vi.isExploded()) {
+                        redoLayout = true;
+                    }
                     deselect(vi);
                     changed = true;
                 }
 
+                if (redoLayout) {
+                    mCanvas.getLayoutEditor().recomputeLayout();
+                }
                 if (changed) {
                     redraw();
                     updateMenuActions();
@@ -238,7 +248,6 @@ public class SelectionManager implements ISelectionProvider {
      *            is a plain select or a toggle, etc.
      */
     public void select(MouseEvent e) {
-
         boolean isMultiClick = (e.stateMask & SWT.SHIFT) != 0 ||
             // On Mac, the Command key is the normal toggle accelerator
             ((SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_DARWIN) &&
@@ -284,6 +293,10 @@ public class SelectionManager implements ISelectionProvider {
             if (vi != null) {
                 // toggle this selection on-off: remove it if already selected
                 if (deselect(vi)) {
+                    if (vi.isExploded()) {
+                        mCanvas.getLayoutEditor().recomputeLayout();
+                    }
+
                     redraw();
                     return;
                 }
@@ -334,7 +347,6 @@ public class SelectionManager implements ISelectionProvider {
 
         } else {
             // Case where no modifier is pressed: either select or reset the selection.
-
             selectSingle(vi);
         }
     }
@@ -349,6 +361,8 @@ public class SelectionManager implements ISelectionProvider {
         // reset alternate selection if any
         mAltSelection = null;
 
+        boolean redoLayout = hasExplodedItems();
+
         // reset (multi)selection if any
         if (!mSelections.isEmpty()) {
             if (mSelections.size() == 1 && mSelections.getFirst().getViewInfo() == vi) {
@@ -360,9 +374,28 @@ public class SelectionManager implements ISelectionProvider {
 
         if (vi != null) {
             mSelections.add(createSelection(vi));
+            if (vi.isInvisibleParent()) {
+                redoLayout = true;
+            }
         }
         fireSelectionChanged();
+
+        if (redoLayout) {
+            mCanvas.getLayoutEditor().recomputeLayout();
+        }
+
         redraw();
+    }
+
+    /** Returns true if the view hierarchy is showing exploded items. */
+    private boolean hasExplodedItems() {
+        for (CanvasSelection item : mSelections) {
+            if (item.getViewInfo().isExploded()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -377,14 +410,24 @@ public class SelectionManager implements ISelectionProvider {
         // reset alternate selection if any
         mAltSelection = null;
 
+        boolean redoLayout = hasExplodedItems();
+
         mSelections.clear();
         if (viewInfos != null) {
             for (CanvasViewInfo viewInfo : viewInfos) {
                 mSelections.add(createSelection(viewInfo));
+                if (viewInfo.isInvisibleParent()) {
+                    redoLayout = true;
+                }
             }
         }
 
         fireSelectionChanged();
+
+        if (redoLayout) {
+            mCanvas.getLayoutEditor().recomputeLayout();
+        }
+
         redraw();
     }
 

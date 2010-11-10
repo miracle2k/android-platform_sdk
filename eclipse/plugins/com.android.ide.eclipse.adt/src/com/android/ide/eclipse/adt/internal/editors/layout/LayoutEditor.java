@@ -278,6 +278,13 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     }
 
     /**
+     * Tells the graphical editor to recompute its layout.
+     */
+    public void recomputeLayout() {
+        mGraphicalEditor.recomputeLayout();
+    }
+
+    /**
      * Returns the custom IContentOutlinePage or IPropertySheetPage when asked for it.
      */
     @SuppressWarnings("unchecked")

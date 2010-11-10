@@ -28,8 +28,10 @@ codenames
 combo
 config
 configurability
+congrats
 coords
 ddms
+deactivated
 debuggable
 dedent
 deprecated
@@ -93,6 +95,7 @@ recompilation
 redo
 regexp
 registry
+remap
 reparse
 reparses
 residual

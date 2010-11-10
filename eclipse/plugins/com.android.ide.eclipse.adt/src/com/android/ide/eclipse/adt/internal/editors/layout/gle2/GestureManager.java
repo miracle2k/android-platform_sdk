@@ -370,6 +370,8 @@ public class GestureManager {
          * The cursor has entered the drop target boundaries. {@inheritDoc}
          */
         public void dragEnter(DropTargetEvent event) {
+            mCanvas.showInvisibleViews(true);
+
             if (mCurrentGesture == null) {
                 Gesture newGesture = mZombieGesture;
                 if (newGesture == null) {
@@ -406,6 +408,8 @@ public class GestureManager {
                 finishGesture(ControlPoint.create(mCanvas, event), true);
                 mZombieGesture = dropGesture;
             }
+
+            mCanvas.showInvisibleViews(false);
         }
 
         /**
@@ -477,7 +481,6 @@ public class GestureManager {
             // element, *change* the selection to match the element under the
             // cursor and use that. If nothing can be selected, abort the drag
             // operation.
-
             List<CanvasSelection> selections = mCanvas.getSelectionManager().getSelections();
             mDragSelection.clear();
 
@@ -559,6 +562,7 @@ public class GestureManager {
                 e.doit = false;
             } else {
                 // Otherwise, the drag means you are moving something
+                mCanvas.showInvisibleViews(true);
                 startGesture(ControlPoint.create(mCanvas, e), new MoveGesture(mCanvas), 0);
             }
 
@@ -601,6 +605,7 @@ public class GestureManager {
             GlobalCanvasDragInfo.getInstance().stopDrag();
 
             finishGesture(ControlPoint.create(mCanvas, e), e.detail == DND.DROP_NONE);
+            mCanvas.showInvisibleViews(false);
             mCanvas.redraw();
         }
     }

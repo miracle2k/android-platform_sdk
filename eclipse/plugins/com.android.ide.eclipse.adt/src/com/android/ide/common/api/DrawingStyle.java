@@ -91,9 +91,15 @@ public enum DrawingStyle {
     HELP,
 
     /**
-     * The style used to raw illegal/error/invalid markers
+     * The style used to draw illegal/error/invalid markers
      */
     INVALID,
+
+    /**
+     * The style used to draw empty containers of zero bounds (which are padded
+     * a bit to make them visible during a drag or selection).
+     */
+    EMPTY,
 
     /**
      * A style used for unspecified purposes; can be used by a client to have

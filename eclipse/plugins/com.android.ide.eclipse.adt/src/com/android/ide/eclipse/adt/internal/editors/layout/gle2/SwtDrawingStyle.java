@@ -90,6 +90,11 @@ public enum SwtDrawingStyle {
     INVALID(new RGB(0xFF, 0xFF, 0xFF), 255, new RGB(0xFF, 0x00, 0x00), 150, 2, SWT.LINE_SOLID),
 
     /**
+     * The style definition corresponding to {@link DrawingStyle#EMPTY}
+     */
+    EMPTY(new RGB(0xFF, 0xFF, 0x55), 255, new RGB(0xFF, 0xFF, 0x55), 255, 1, SWT.LINE_DASH),
+
+    /**
      * The style definition corresponding to {@link DrawingStyle#CUSTOM1}
      */
     CUSTOM1(new RGB(0xFF, 0x00, 0xFF), 255, null, 0, 1, SWT.LINE_SOLID),
@@ -183,6 +188,8 @@ public enum SwtDrawingStyle {
     /**
      * Return the corresponding SwtDrawingStyle for the given
      * {@link DrawingStyle}
+     * @param style The style to convert from a {@link DrawingStyle} to a {@link SwtDrawingStyle}.
+     * @return A corresponding {@link SwtDrawingStyle}.
      */
     public static SwtDrawingStyle of(DrawingStyle style) {
         switch (style) {
@@ -208,6 +215,8 @@ public enum SwtDrawingStyle {
                 return HELP;
             case INVALID:
                 return INVALID;
+            case EMPTY:
+                return EMPTY;
             case CUSTOM1:
                 return CUSTOM1;
             case CUSTOM2:
