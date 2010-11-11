@@ -48,7 +48,6 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.layoutlib.api.ILayoutLog;
 import com.android.layoutlib.api.IResourceValue;
-import com.android.layoutlib.api.LayoutBridge;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneParams;
 import com.android.layoutlib.api.SceneResult;
