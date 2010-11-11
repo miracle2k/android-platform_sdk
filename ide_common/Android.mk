@@ -21,6 +21,6 @@ LOCAL_SRC_FILES := $(call all-java-files-under,src)
 LOCAL_JAVA_LIBRARIES := \
 	layoutlib_api
 
-LOCAL_MODULE := layoutlib_utils
+LOCAL_MODULE := ide_common
 
 include $(BUILD_HOST_JAVA_LIBRARY)
