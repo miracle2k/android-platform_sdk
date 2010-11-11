@@ -35,7 +35,7 @@ BASE="sdk/eclipse/plugins/com.android.ide.eclipse.tests"
 DEST=$BASE
 BACK=`back $DEST`
 
-LIBS="easymock layoutlib_utils"
+LIBS="easymock"
 
 echo "make java libs ..."
 make -j3 showcommands $LIBS || die "ADT: Fail to build one of $LIBS."

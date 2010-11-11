@@ -12,7 +12,7 @@ Bundle-ClassPath: .,
  libs/commons-compress-1.0.jar,
  libs/kxml2-2.3.0.jar,
  libs/layoutlib_api.jar,
- libs/layoutlib_utils.jar
+ libs/ide_common.jar
 Bundle-Activator: com.android.ide.eclipse.adt.AdtPlugin
 Bundle-Vendor: The Android Open Source Project
 Require-Bundle: com.android.ide.eclipse.ddms,
