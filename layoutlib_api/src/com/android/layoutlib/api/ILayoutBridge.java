@@ -26,8 +26,7 @@ import java.util.Map;
  * <p/>
  * Changes in API level 5:
  * <ul>
- * <li>new render method: {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
- * <li>deprecated {@link #computeLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}</li>
+ * <li>Bridge should extend {@link LayoutBridge} instead of implementing {@link ILayoutBridge}.</li>
  * </ul>
  * Changes in API level 4:
  * <ul>
@@ -45,10 +44,12 @@ import java.util.Map;
  * <li>new render method: {@link #computeLayout(IXmlPullParser, Object, int, int, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}</li>
  * <li>deprecated {@link #computeLayout(IXmlPullParser, Object, int, int, String, Map, Map, IProjectCallback, ILayoutLog)}</li>
  * </ul>
+ * @Deprecated Extend {@link LayoutBridge} instead.
  */
+@Deprecated
 public interface ILayoutBridge {
 
-    final int API_CURRENT = 5;
+    final int API_CURRENT = 4;
 
     /**
      * Returns the API level of the layout library.
@@ -77,43 +78,6 @@ public interface ILayoutBridge {
      * Starts a layout session by inflating and rendering it. The method returns a
      * {@link ILayoutScene} on which further actions can be taken.
      *
-     * @param layoutDescription the {@link IXmlPullParser} letting the LayoutLib Bridge visit the
-     * layout file.
-     * @param projectKey An Object identifying the project. This is used for the cache mechanism.
-     * @param screenWidth the screen width
-     * @param screenHeight the screen height
-     * @param renderFullSize if true, the rendering will render the full size needed by the
-     * layout. This size is never smaller than <var>screenWidth</var> x <var>screenHeight</var>.
-     * @param density the density factor for the screen.
-     * @param xdpi the screen actual dpi in X
-     * @param ydpi the screen actual dpi in Y
-     * @param themeName The name of the theme to use.
-     * @param isProjectTheme true if the theme is a project theme, false if it is a framework theme.
-     * @param projectResources the resources of the project. The map contains (String, map) pairs
-     * where the string is the type of the resource reference used in the layout file, and the
-     * map contains (String, {@link IResourceValue}) pairs where the key is the resource name,
-     * and the value is the resource value.
-     * @param frameworkResources the framework resources. The map contains (String, map) pairs
-     * where the string is the type of the resource reference used in the layout file, and the map
-     * contains (String, {@link IResourceValue}) pairs where the key is the resource name, and the
-     * value is the resource value.
-     * @param projectCallback The {@link IProjectCallback} object to get information from
-     * the project.
-     * @param logger the object responsible for displaying warning/errors to the user.
-     * @return a new {@link ILayoutScene} object that contains the result of the layout.
-     * @since 5
-     */
-    ILayoutScene startLayout(IXmlPullParser layoutDescription,
-            Object projectKey,
-            int screenWidth, int screenHeight, boolean renderFullSize,
-            int density, float xdpi, float ydpi,
-            String themeName, boolean isProjectTheme,
-            Map<String, Map<String, IResourceValue>> projectResources,
-            Map<String, Map<String, IResourceValue>> frameworkResources,
-            IProjectCallback projectCallback, ILayoutLog logger);
-
-    /**
-     * Computes and renders a layout
      * @param layoutDescription the {@link IXmlPullParser} letting the LayoutLib Bridge visit the
      * layout file.
      * @param projectKey An Object identifying the project. This is used for the cache mechanism.
