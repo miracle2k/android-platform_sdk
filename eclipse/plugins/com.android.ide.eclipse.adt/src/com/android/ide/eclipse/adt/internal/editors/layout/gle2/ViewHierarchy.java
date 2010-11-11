@@ -20,8 +20,9 @@ import com.android.ide.common.api.INode;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.layoutlib.api.ILayoutResult;
-import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
+import com.android.layoutlib.api.LayoutScene;
+import com.android.layoutlib.api.SceneResult;
+import com.android.layoutlib.api.ViewInfo;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.w3c.dom.Node;
@@ -63,7 +64,7 @@ public class ViewHierarchy {
     private CanvasViewInfo mLastValidViewInfoRoot;
 
     /**
-     * True when the last {@link #setResult} provided a valid {@link ILayoutResult}.
+     * True when the last {@link #setResult} provided a valid {@link LayoutScene}.
      * <p/>
      * When false this means the canvas is displaying an out-dated result image & bounds and some
      * features should be disabled accordingly such a drag'n'drop.
@@ -102,23 +103,23 @@ public class ViewHierarchy {
      * allocated ILayourResult. That means we can keep this result and hold on to it
      * when it is valid.
      *
-     * @param result The new rendering result, either valid or not.
+     * @param scene The new result, either valid or not.
      * @param explodedNodes The set of individual nodes the layout computer was asked to
      *            explode. Note that these are independent of the explode-all mode where
      *            all views are exploded; this is used only for the mode (
      *            {@link LayoutCanvas#showInvisibleViews}) where individual invisible
      *            nodes are padded during certain interactions.
      */
-    /* package */ void setResult(ILayoutResult result, Set<UiElementNode> explodedNodes) {
-        mIsResultValid = (result != null && result.getSuccess() == ILayoutResult.SUCCESS);
+    /* package */ void setResult(LayoutScene scene, Set<UiElementNode> explodedNodes) {
+        mIsResultValid = (scene != null && scene.getResult() == SceneResult.SUCCESS);
         mExplodedParents = false;
 
-        if (mIsResultValid && result != null) {
-            ILayoutViewInfo root = result.getRootView();
+        if (mIsResultValid && scene != null) {
+            ViewInfo root = scene.getRootView();
             if (root == null) {
                 mLastValidViewInfoRoot = null;
             } else {
-                mLastValidViewInfoRoot = new CanvasViewInfo(result.getRootView());
+                mLastValidViewInfoRoot = new CanvasViewInfo(scene.getRootView());
             }
 
             updateNodeProxies(mLastValidViewInfoRoot);
@@ -202,7 +203,7 @@ public class ViewHierarchy {
 
     /**
      * Returns true when the last {@link #setResult} provided a valid
-     * {@link ILayoutResult}.
+     * {@link LayoutScene}.
      * <p/>
      * When false this means the canvas is displaying an out-dated result image & bounds and some
      * features should be disabled accordingly such a drag'n'drop.

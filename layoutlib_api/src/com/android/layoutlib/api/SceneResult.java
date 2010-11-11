@@ -29,13 +29,9 @@ public class SceneResult {
     public enum LayoutStatus { SUCCESS, ERROR, NOT_IMPLEMENTED };
 
     /**
-     * Creates a successful {@link SceneResult} object.
+     * Singleton SUCCESS {@link SceneResult} object.
      */
-    public SceneResult() {
-        mStatus = LayoutStatus.SUCCESS;
-        mErrorMessage = null;
-        mThrowable = null;
-    }
+    public static final SceneResult SUCCESS = new SceneResult(LayoutStatus.SUCCESS);
 
     /**
      * Creates an error {@link SceneResult} object with the given message.

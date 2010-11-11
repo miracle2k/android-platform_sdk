@@ -15,9 +15,9 @@
  */
 package com.android.ide.eclipse.tests;
 
+import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetParser;
-import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
 
