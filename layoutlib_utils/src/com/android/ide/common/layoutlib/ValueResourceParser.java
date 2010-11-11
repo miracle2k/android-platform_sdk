@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.utils;
+package com.android.ide.common.layoutlib;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;

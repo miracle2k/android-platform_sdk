@@ -17,6 +17,8 @@
 package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ddmlib.IDevice;
+import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.build.DexWrapper;
@@ -27,7 +29,6 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IResourceEventListener;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState.LibraryDifference;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState.LibraryState;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
@@ -764,9 +765,9 @@ public final class Sdk  {
                         // get the bridge for the target, and clear the cache for this project.
                         AndroidTargetData data = mTargetDataMap.get(target);
                         if (data != null) {
-                            LayoutBridge bridge = data.getLayoutBridge();
-                            if (bridge != null && bridge.status == LoadStatus.LOADED) {
-                                bridge.bridge.clearCaches(project);
+                            LayoutLibrary layoutLib = data.getLayoutLibrary();
+                            if (layoutLib != null && layoutLib.getStatus() == LoadStatus.LOADED) {
+                                layoutLib.getBridge().clearCaches(project);
                             }
                         }
                     }

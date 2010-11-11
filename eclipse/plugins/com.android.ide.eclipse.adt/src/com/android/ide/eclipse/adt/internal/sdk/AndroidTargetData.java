@@ -16,7 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.sdk;
 
-import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvider;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
@@ -25,11 +26,10 @@ import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.Resour
 import com.android.ide.eclipse.adt.internal.editors.xml.descriptors.XmlDescriptors;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
-import com.android.layoutlib.api.ILayoutBridge;
+import com.android.layoutlib.api.LayoutBridge;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Map;
@@ -47,40 +47,6 @@ public class AndroidTargetData {
     public final static int DESCRIPTOR_SEARCHABLE = 6;
     public final static int DESCRIPTOR_PREFERENCES = 7;
     public final static int DESCRIPTOR_APPWIDGET_PROVIDER = 8;
-
-    public final static class LayoutBridge {
-        /** Link to the layout bridge */
-        public ILayoutBridge bridge;
-
-        public LoadStatus status = LoadStatus.LOADING;
-
-        public ClassLoader classLoader;
-
-        public int apiLevel;
-
-        /**
-         * Post rendering clean-up that must be done here so that it's done even for older
-         * versions of the layoutlib.
-         */
-        public void cleanUp() {
-            if (apiLevel <= 4) {
-                try {
-                    Class<?> looperClass = classLoader.loadClass("android.os.Looper"); //$NON-NLS-1$
-                    Field threadLocalField = looperClass.getField("sThreadLocal"); //$NON-NLS-1$
-                    if (threadLocalField != null) {
-                        threadLocalField.setAccessible(true);
-                        // get object. Field is static so no need to pass an object
-                        ThreadLocal<?> threadLocal = (ThreadLocal<?>) threadLocalField.get(null);
-                        if (threadLocal != null) {
-                            threadLocal.remove();
-                        }
-                    }
-                } catch (Exception e) {
-                    AdtPlugin.log(e, "Failed to clean up bridge for API level %d", apiLevel);
-                }
-            }
-        }
-    }
 
     private final IAndroidTarget mTarget;
 
@@ -106,7 +72,7 @@ public class AndroidTargetData {
     private Map<String, Map<String, Integer>> mEnumValueMap;
 
     private ProjectResources mFrameworkResources;
-    private LayoutBridge mLayoutBridge;
+    private LayoutLibrary mLayoutLibrary;
 
     private boolean mLayoutBridgeInit = false;
 
@@ -133,7 +99,7 @@ public class AndroidTargetData {
             String[] platformLibraries,
             IOptionalLibrary[] optionalLibraries,
             ProjectResources resources,
-            LayoutBridge layoutBridge) {
+            LayoutLibrary layoutLibrary) {
 
         mSystemResourceRepository = systemResourceRepository;
         mManifestDescriptors = manifestDescriptors;
@@ -142,7 +108,7 @@ public class AndroidTargetData {
         mXmlDescriptors = xmlDescriptors;
         mEnumValueMap = enumValueMap;
         mFrameworkResources = resources;
-        mLayoutBridge = layoutBridge;
+        mLayoutLibrary = layoutLibrary;
 
         setPermissions(permissionValues);
         setIntentFilterActionsAndCategories(activityIntentActionValues, broadcastIntentActionValues,
@@ -274,18 +240,19 @@ public class AndroidTargetData {
     }
 
     /**
-     * Returns a {@link LayoutBridge} object possibly containing a {@link ILayoutBridge} object.
-     * <p/>If {@link LayoutBridge#bridge} is <code>null</code>, {@link LayoutBridge#status} will
-     * contain the reason (either {@link LoadStatus#LOADING} or {@link LoadStatus#FAILED}).
-     * <p/>Valid {@link ILayoutBridge} objects are always initialized before being returned.
+     * Returns a {@link LayoutLibrary} object possibly containing a {@link LayoutBridge} object.
+     * <p/>If {@link LayoutLibrary#getBridge()} is <code>null</code>,
+     * {@link LayoutBridge#getStatus()} will contain the reason (either {@link LoadStatus#LOADING}
+     * or {@link LoadStatus#FAILED}).
+     * <p/>Valid {@link LayoutBridge} objects are always initialized before being returned.
      */
-    public synchronized LayoutBridge getLayoutBridge() {
-        if (mLayoutBridgeInit == false && mLayoutBridge.bridge != null) {
-            mLayoutBridge.bridge.init(mTarget.getPath(IAndroidTarget.FONTS),
+    public synchronized LayoutLibrary getLayoutLibrary() {
+        if (mLayoutBridgeInit == false && mLayoutLibrary.getBridge() != null) {
+            mLayoutLibrary.getBridge().init(mTarget.getPath(IAndroidTarget.FONTS),
                     getEnumValueMap());
             mLayoutBridgeInit = true;
         }
-        return mLayoutBridge;
+        return mLayoutLibrary;
     }
 
     /**

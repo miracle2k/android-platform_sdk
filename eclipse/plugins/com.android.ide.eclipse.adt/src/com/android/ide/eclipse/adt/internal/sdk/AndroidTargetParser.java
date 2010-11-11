@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.sdk;
 
+import com.android.ide.common.layoutlib.LayoutLibrary;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.menu.descriptors.MenuDescriptors;
@@ -30,8 +30,6 @@ import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
-import com.android.layoutlib.api.ILayoutBridge;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 
@@ -41,16 +39,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -241,7 +234,10 @@ public final class AndroidTargetParser {
             progress.worked(1);
 
             // now load the layout lib bridge
-            LayoutBridge layoutBridge = loadLayoutBridge();
+            LayoutLibrary layoutBridge =  LayoutLibrary.load(
+                    mAndroidTarget.getPath(IAndroidTarget.LAYOUT_LIB),
+                    AdtPlugin.getDefault());
+
             progress.worked(1);
 
             // and finally create the PlatformData with all that we loaded.
@@ -635,62 +631,4 @@ public final class AndroidTargetParser {
         return attrsXmlParser.getDeclareStyleableList();
     }
 
-    /**
-     * Loads the layout bridge from the dynamically loaded layoutlib.jar
-     */
-    private LayoutBridge loadLayoutBridge() {
-        LayoutBridge layoutBridge = new LayoutBridge();
-
-        try {
-            // get the URL for the file.
-            File f = new File(mAndroidTarget.getPath(IAndroidTarget.LAYOUT_LIB));
-            if (f.isFile() == false) {
-                AdtPlugin.log(IStatus.ERROR, "layoutlib.jar is missing!"); //$NON-NLS-1$
-            } else {
-                URI uri = f.toURI();
-                URL url = uri.toURL();
-
-                // create a class loader. Because this jar reference interfaces
-                // that are in the editors plugin, it's important to provide
-                // a parent class loader.
-                layoutBridge.classLoader = new URLClassLoader(new URL[] { url },
-                        this.getClass().getClassLoader());
-
-                // load the class
-                Class<?> clazz = layoutBridge.classLoader.loadClass(AndroidConstants.CLASS_BRIDGE);
-                if (clazz != null) {
-                    // instantiate an object of the class.
-                    Constructor<?> constructor = clazz.getConstructor();
-                    if (constructor != null) {
-                        Object bridge = constructor.newInstance();
-                        if (bridge instanceof ILayoutBridge) {
-                            layoutBridge.bridge = (ILayoutBridge)bridge;
-                        }
-                    }
-                }
-
-                if (layoutBridge.bridge == null) {
-                    layoutBridge.status = LoadStatus.FAILED;
-                    AdtPlugin.log(IStatus.ERROR, "Failed to load " + AndroidConstants.CLASS_BRIDGE); //$NON-NLS-1$
-                } else {
-                    // get the api level
-                    try {
-                        layoutBridge.apiLevel = layoutBridge.bridge.getApiLevel();
-                    } catch (AbstractMethodError e) {
-                        // the first version of the api did not have this method
-                        layoutBridge.apiLevel = 1;
-                    }
-
-                    // and mark the lib as loaded.
-                    layoutBridge.status = LoadStatus.LOADED;
-                }
-            }
-        } catch (Throwable t) {
-            layoutBridge.status = LoadStatus.FAILED;
-            // log the error.
-            AdtPlugin.log(t, "Failed to load the LayoutLib");
-        }
-
-        return layoutBridge;
-    }
 }

@@ -7,6 +7,7 @@
 	<classpathentry kind="lib" path="layoutlib.jar"/>
 	<classpathentry kind="lib" path="kxml2-2.3.0.jar"/>
 	<classpathentry kind="lib" path="easymock.jar"/>
+	<classpathentry kind="lib" path="layoutlib_utils.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ddmlib"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ddmuilib"/>
 	<classpathentry kind="lib" path="/adt/libs/layoutlib_api.jar" sourcepath="/layoutlib_api"/>

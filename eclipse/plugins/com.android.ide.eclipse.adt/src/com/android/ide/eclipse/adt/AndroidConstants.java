@@ -207,8 +207,6 @@ public class AndroidConstants {
     /** provider value for marker attribute "type" */
     public final static String MARKER_ATTR_TYPE_PROVIDER = "provider"; //$NON-NLS-1$
 
-    public final static String CLASS_BRIDGE = "com.android.layoutlib.bridge.Bridge"; //$NON-NLS-1$
-
     /**
      * Prefered compiler level, i.e. "1.5".
      */

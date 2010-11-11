@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.layoutlib.api.ILayoutResult;
+import com.android.layoutlib.api.LayoutScene;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.ui.IEditorPart;
@@ -86,7 +86,7 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
 
     /**
      * Renders the given model, using this editor's theme and screen settings, and returns
-     * the result as an {@link ILayoutResult}. Any error messages will be written to the
+     * the result as a {@link LayoutScene}. Any error messages will be written to the
      * editor's error area.
      *
      * @param model the model to be rendered, which can be different than the editor's own
@@ -94,9 +94,9 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
      * @param width the width to use for the layout
      * @param height the height to use for the layout
      * @param explodeNodes a set of nodes to explode, or null for none
-     * @return the resulting rendered image wrapped in an {@link ILayoutResult}
+     * @return the resulting rendered image wrapped in an {@link LayoutScene}
      */
-    abstract ILayoutResult render(UiDocumentNode model,
+    abstract LayoutScene render(UiDocumentNode model,
             int width, int height, Set<UiElementNode> explodeNodes);
 
 }

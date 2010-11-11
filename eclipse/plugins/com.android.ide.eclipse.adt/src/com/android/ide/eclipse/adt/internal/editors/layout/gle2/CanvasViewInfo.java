@@ -22,8 +22,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.layoutlib.api.ILayoutResult;
-import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
+import com.android.layoutlib.api.ViewInfo;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.ui.views.properties.IPropertyDescriptor;
@@ -34,14 +33,14 @@ import org.w3c.dom.Node;
 import java.util.ArrayList;
 
 /**
- * Maps a {@link ILayoutViewInfo} in a structure more adapted to our needs.
+ * Maps a {@link ViewInfo} in a structure more adapted to our needs.
  * The only large difference is that we keep both the original bounds of the view info
  * and we pre-compute the selection bounds which are absolute to the rendered image
  * (whereas the original bounds are relative to the parent view.)
  * <p/>
  * Each view also knows its parent and children.
  * <p/>
- * We can't alter {@link ILayoutViewInfo} as it is part of the LayoutBridge and needs to
+ * We can't alter {@link ViewInfo} as it is part of the LayoutBridge and needs to
  * have a fixed API.
  * <p/>
  * The view info also implements {@link IPropertySource}, which enables a linked
@@ -72,21 +71,21 @@ public class CanvasViewInfo implements IPropertySource {
     private boolean mExploded;
 
     /**
-     * Constructs a {@link CanvasViewInfo} hierarchy based on a given {@link ILayoutViewInfo}
+     * Constructs a {@link CanvasViewInfo} hierarchy based on a given {@link ViewInfo}
      * hierarchy. This call is recursive and builds a full tree.
      *
-     * @param viewInfo The root of the {@link ILayoutViewInfo} hierarchy.
+     * @param viewInfo The root of the {@link ViewInfo} hierarchy.
      */
-    public CanvasViewInfo(ILayoutViewInfo viewInfo) {
+    public CanvasViewInfo(ViewInfo viewInfo) {
         this(viewInfo, null /*parent*/, 0 /*parentX*/, 0 /*parentY*/);
     }
 
-    private CanvasViewInfo(ILayoutViewInfo viewInfo, CanvasViewInfo parent,
+    private CanvasViewInfo(ViewInfo viewInfo, CanvasViewInfo parent,
             int parentX, int parentY) {
         mParent = parent;
-        mName = viewInfo.getName();
+        mName = viewInfo.getClassName();
 
-        // The ILayoutViewInfo#getViewKey() method returns a key which depends on the
+        // The ViewInfo#getViewKey() method returns a key which depends on the
         // IXmlPullParser used to parse the layout files. In this case, the parser is
         // guaranteed to be an UiElementPullParser, which creates keys that are of type
         // UiViewElementNode.
@@ -107,7 +106,7 @@ public class CanvasViewInfo implements IPropertySource {
         mAbsRect = new Rectangle(x, y, w - 1, h - 1);
 
         if (viewInfo.getChildren() != null) {
-            for (ILayoutViewInfo child : viewInfo.getChildren()) {
+            for (ViewInfo child : viewInfo.getChildren()) {
                 // Only use children which have a ViewKey of the correct type.
                 // We can't interact with those when they have a null key or
                 // an incompatible type.
@@ -135,7 +134,7 @@ public class CanvasViewInfo implements IPropertySource {
     }
 
     /**
-     * Returns the original {@link ILayoutResult} bounds in absolute coordinates
+     * Returns the original {@link ViewInfo} bounds in absolute coordinates
      * over the whole graphic.
      */
     public Rectangle getAbsRect() {
@@ -156,7 +155,7 @@ public class CanvasViewInfo implements IPropertySource {
     /**
      * Returns the view key. Could be null, although unlikely.
      * @return An {@link UiViewElementNode} that uniquely identifies the object in the XML model.
-     * @see ILayoutViewInfo#getViewKey()
+     * @see ViewInfo#getViewKey()
      */
     public UiViewElementNode getUiViewKey() {
         return mUiViewKey;
@@ -203,7 +202,7 @@ public class CanvasViewInfo implements IPropertySource {
      * Could be null, although unlikely.
      * Experience shows this is the full qualified Java name of the View.
      *
-     * @see ILayoutViewInfo#getName()
+     * @see ViewInfo#getClassName()
      */
     public String getName() {
         return mName;

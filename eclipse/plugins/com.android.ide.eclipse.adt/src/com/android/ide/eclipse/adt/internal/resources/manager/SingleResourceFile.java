@@ -16,12 +16,12 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.ide.common.layoutlib.DensityBasedResourceValue;
+import com.android.ide.common.layoutlib.ResourceValue;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IDensityBasedResourceValue.Density;
-import com.android.layoutlib.utils.DensityBasedResourceValue;
-import com.android.layoutlib.utils.ResourceValue;
 import com.android.sdklib.io.IAbstractFile;
 
 import java.util.ArrayList;

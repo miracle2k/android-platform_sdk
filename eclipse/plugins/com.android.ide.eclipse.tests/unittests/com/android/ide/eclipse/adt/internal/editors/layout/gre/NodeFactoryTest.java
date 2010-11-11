@@ -21,7 +21,7 @@ import com.android.ide.common.api.Rect;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.CanvasViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
-import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
+import com.android.layoutlib.api.ViewInfo;
 
 import java.util.Arrays;
 
@@ -47,7 +47,7 @@ public class NodeFactoryTest extends TestCase {
     public final void testCreateCanvasViewInfo() {
         ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
-        MockLayoutViewInfo lvi = new MockLayoutViewInfo(uiv, "name", 10, 12, 110, 120);
+        ViewInfo lvi = new ViewInfo("name", uiv, 10, 12, 110, 120);
         CanvasViewInfo cvi = new CanvasViewInfo(lvi);
 
         // Create a NodeProxy.
@@ -94,7 +94,7 @@ public class NodeFactoryTest extends TestCase {
     public final void testCreateDup() {
         ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
-        MockLayoutViewInfo lvi = new MockLayoutViewInfo(uiv, "name", 10, 12, 110, 120);
+        ViewInfo lvi = new ViewInfo("name", uiv, 10, 12, 110, 120);
         CanvasViewInfo cvi = new CanvasViewInfo(lvi);
 
         // NodeProxies are cached. Creating the same one twice returns the same proxy.
@@ -106,7 +106,7 @@ public class NodeFactoryTest extends TestCase {
     public final void testClear() {
         ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
-        MockLayoutViewInfo lvi = new MockLayoutViewInfo(uiv, "name", 10, 12, 110, 120);
+        ViewInfo lvi = new ViewInfo("name", uiv, 10, 12, 110, 120);
         CanvasViewInfo cvi = new CanvasViewInfo(lvi);
 
         // NodeProxies are cached. Creating the same one twice returns the same proxy.
@@ -118,60 +118,6 @@ public class NodeFactoryTest extends TestCase {
         m.clear();
         NodeProxy proxy3 = m.create(cvi);
         assertNotSame(proxy1, proxy3);
-    }
-
-    private static class MockLayoutViewInfo implements ILayoutViewInfo {
-        private final Object mViewKey;
-        private final String mName;
-        private final int mLeft;
-        private final int mTop;
-        private final int mRight;
-        private final int mBottom;
-
-        public MockLayoutViewInfo(
-                Object viewKey,
-                String name,
-                int left,
-                int top,
-                int right,
-                int bottom) {
-                    mViewKey = viewKey;
-                    mName = name;
-                    mLeft = left;
-                    mTop = top;
-                    mRight = right;
-                    mBottom = bottom;
-        }
-
-
-        public ILayoutViewInfo[] getChildren() {
-            return null;
-        }
-
-        public Object getViewKey() {
-            return mViewKey;
-        }
-
-        public String getName() {
-            return mName;
-        }
-
-        public int getLeft() {
-            return mLeft;
-        }
-
-        public int getTop() {
-            return mTop;
-        }
-
-        public int getRight() {
-            return mRight;
-        }
-
-
-        public int getBottom() {
-            return mBottom;
-        }
     }
 
 }

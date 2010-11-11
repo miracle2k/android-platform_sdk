@@ -16,6 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.layoutlib.BasicLayoutScene;
+import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.ExplodedRenderingHelper;
@@ -40,17 +43,15 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
-import com.android.layoutlib.api.ILayoutBridge;
 import com.android.layoutlib.api.ILayoutLog;
-import com.android.layoutlib.api.ILayoutResult;
-import com.android.layoutlib.api.IProjectCallback;
 import com.android.layoutlib.api.IResourceValue;
-import com.android.layoutlib.api.IXmlPullParser;
+import com.android.layoutlib.api.LayoutBridge;
+import com.android.layoutlib.api.LayoutScene;
+import com.android.layoutlib.api.SceneParams;
+import com.android.layoutlib.api.SceneResult;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
@@ -100,7 +101,6 @@ import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
 import org.w3c.dom.Node;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -915,8 +915,8 @@ public class GraphicalEditorPart extends EditorPart
     public void onTargetChange() {
         AndroidTargetData targetData = mConfigComposite.onXmlModelLoaded();
         if (targetData != null) {
-            LayoutBridge bridge = targetData.getLayoutBridge();
-            setClippingSupport(bridge.apiLevel >= 4);
+            LayoutLibrary layoutLib = targetData.getLayoutLibrary();
+            setClippingSupport(layoutLib.getBridge().getApiLevel() >= 4);
         }
 
         mConfigListener.onConfigurationChange();
@@ -1007,41 +1007,26 @@ public class GraphicalEditorPart extends EditorPart
                 // Although we display an error, we still treat an empty document as a
                 // successful layout result so that we can drop new elements in it.
                 //
-                // For that purpose, create a special ILayoutResult that has no image,
+                // For that purpose, create a special LayoutScene that has no image,
                 // no root view yet indicates success and then update the canvas with it.
 
-                ILayoutResult result = new ILayoutResult() {
-                    public String getErrorMessage() {
-                        return null;
-                    }
-
-                    public BufferedImage getImage() {
-                        return null;
-                    }
-
-                    public ILayoutViewInfo getRootView() {
-                        return null;
-                    }
-
-                    public int getSuccess() {
-                        return ILayoutResult.SUCCESS;
-                    }
-                };
-
-                mCanvasViewer.getCanvas().setResult(result, null /*explodeNodes*/);
+                mCanvasViewer.getCanvas().setResult(
+                        new BasicLayoutScene(SceneResult.SUCCESS, null /*rootViewInfo*/,
+                                null /*image*/),
+                        null /*explodeNodes*/);
                 return;
             }
 
-            LayoutBridge bridge = getReadyBridge();
+            LayoutLibrary layoutLib = getReadyLayoutLib();
 
-            if (bridge != null) {
+            if (layoutLib != null) {
                 // if drawing in real size, (re)set the scaling factor.
                 if (mZoomRealSizeButton.getSelection()) {
                     computeAndSetRealScale(false /* redraw */);
                 }
 
                 IProject iProject = mEditedFile.getProject();
-                renderWithBridge(iProject, model, bridge);
+                renderWithBridge(iProject, model, layoutLib);
             }
         } finally {
             // no matter the result, we are done doing the recompute based on the latest
@@ -1082,14 +1067,14 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     /**
-     * Returns a {@link LayoutBridge} that is ready for rendering, or null if the bridge
+     * Returns a {@link LayoutLibrary} that is ready for rendering, or null if the bridge
      * is not available or not ready yet (due to SDK loading still being in progress etc).
      * Any reasons preventing the bridge from being returned are displayed to the editor's
      * error area.
      *
      * @return LayoutBridge the layout bridge for rendering this editor's scene
      */
-    private LayoutBridge getReadyBridge() {
+    private LayoutLibrary getReadyLayoutLib() {
         Sdk currentSdk = Sdk.getCurrent();
         if (currentSdk != null) {
             IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
@@ -1123,15 +1108,15 @@ public class GraphicalEditorPart extends EditorPart
                 return null;
             }
 
-            LayoutBridge bridge = data.getLayoutBridge();
+            LayoutLibrary layoutLib = data.getLayoutLibrary();
 
-            if (bridge.bridge != null) { // bridge can never be null.
-                return bridge;
+            if (layoutLib.getBridge() != null) { // layoutLib can never be null.
+                return layoutLib;
             } else {
                 // SDK is loaded but not the layout library!
 
                 // check whether the bridge managed to load, or not
-                if (bridge.status == LoadStatus.LOADING) {
+                if (layoutLib.getStatus() == LoadStatus.LOADING) {
                     displayError("Eclipse is loading framework information and the layout library from the SDK folder.\n%1$s will refresh automatically once the process is finished.",
                                  mEditedFile.getName());
                 } else {
@@ -1157,7 +1142,8 @@ public class GraphicalEditorPart extends EditorPart
         return true;
     }
 
-    private void renderWithBridge(IProject iProject, UiDocumentNode model, LayoutBridge bridge) {
+    private void renderWithBridge(IProject iProject, UiDocumentNode model,
+            LayoutLibrary layoutLib) {
         LayoutCanvas canvas = getCanvasControl();
         Set<UiElementNode> explodeNodes = canvas.getNodesToExplode();
 
@@ -1167,14 +1153,15 @@ public class GraphicalEditorPart extends EditorPart
         int width = rect.width;
         int height = rect.height;
 
-        ILayoutResult result = renderWithBridge(iProject, model, bridge, width, height, explodeNodes);
+        LayoutScene scene = renderWithBridge(iProject, model, layoutLib, width, height,
+                explodeNodes);
 
-        canvas.setResult(result, explodeNodes);
+        canvas.setResult(scene, explodeNodes);
 
         // update the UiElementNode with the layout info.
-        if (result.getSuccess() != ILayoutResult.SUCCESS) {
+        if (scene.getResult() != SceneResult.SUCCESS) {
             // An error was generated. Print it.
-            displayError(result.getErrorMessage());
+            displayError(scene.getResult().getErrorMessage());
 
         } else {
             // Success means there was no exception. But we might have detected
@@ -1192,7 +1179,7 @@ public class GraphicalEditorPart extends EditorPart
         model.refreshUi();
     }
 
-    public ILayoutResult render(UiDocumentNode model, int width, int height,
+    public LayoutScene render(UiDocumentNode model, int width, int height,
             Set<UiElementNode> explodeNodes) {
         if (!ensureFileValid()) {
             return null;
@@ -1200,14 +1187,14 @@ public class GraphicalEditorPart extends EditorPart
         if (!ensureModelValid(model)) {
             return null;
         }
-        LayoutBridge bridge = getReadyBridge();
+        LayoutLibrary layoutLib = getReadyLayoutLib();
 
         IProject iProject = mEditedFile.getProject();
-        return renderWithBridge(iProject, model, bridge, width, height, explodeNodes);
+        return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes);
     }
 
-    private ILayoutResult renderWithBridge(IProject iProject, UiDocumentNode model,
-            LayoutBridge bridge, int width, int height, Set<UiElementNode> explodeNodes) {
+    private LayoutScene renderWithBridge(IProject iProject, UiDocumentNode model,
+            LayoutLibrary layoutLib, int width, int height, Set<UiElementNode> explodeNodes) {
         ResourceManager resManager = ResourceManager.getInstance();
 
         ProjectResources projectRes = resManager.getProjectResources(iProject);
@@ -1236,7 +1223,7 @@ public class GraphicalEditorPart extends EditorPart
         // Lazily create the project callback the first time we need it
         if (mProjectCallback == null) {
             mProjectCallback = new ProjectCallback(
-                    bridge.classLoader, projectRes, iProject);
+                    layoutLib.getClassLoader(), projectRes, iProject);
         } else {
             // Also clears the set of missing classes prior to rendering
             mProjectCallback.getMissingClasses().clear();
@@ -1295,74 +1282,16 @@ public class GraphicalEditorPart extends EditorPart
         UiElementPullParser parser = new UiElementPullParser(model,
                 mUseExplodeMode, explodeNodes, density, xdpi, iProject);
 
-        ILayoutResult result = computeLayout(bridge, parser,
+        LayoutScene scene = layoutLib.getBridge().createScene(new SceneParams(
+                parser,
                 iProject /* projectKey */,
                 width, height, !mClippingButton.getSelection(),
                 density, xdpi, ydpi,
                 theme, isProjectTheme,
                 configuredProjectRes, frameworkResources, mProjectCallback,
-                mLogger);
+                mLogger));
 
-        // post rendering clean up
-        bridge.cleanUp();
-
-        return result;
-    }
-
-    /**
-     * Computes a layout by calling the correct computeLayout method of ILayoutBridge based on
-     * the implementation API level.
-     *
-     * Implementation detail: the bridge's computeLayout() method already returns a newly
-     * allocated ILayoutResult.
-     */
-    @SuppressWarnings("deprecation")
-    private static ILayoutResult computeLayout(LayoutBridge bridge,
-            IXmlPullParser layoutDescription, Object projectKey,
-            int screenWidth, int screenHeight, boolean renderFullSize,
-            int density, float xdpi, float ydpi,
-            String themeName, boolean isProjectTheme,
-            Map<String, Map<String, IResourceValue>> projectResources,
-            Map<String, Map<String, IResourceValue>> frameworkResources,
-            IProjectCallback projectCallback, ILayoutLog logger) {
-
-        if (bridge.apiLevel >= ILayoutBridge.API_CURRENT) {
-            // newest API with support for "render full height"
-            // TODO: link boolean to UI.
-            return bridge.bridge.computeLayout(layoutDescription,
-                    projectKey, screenWidth, screenHeight, renderFullSize,
-                    density, xdpi, ydpi,
-                    themeName, isProjectTheme,
-                    projectResources, frameworkResources, projectCallback,
-                    logger);
-        } else if (bridge.apiLevel == 3) {
-            // newer api with density support.
-            return bridge.bridge.computeLayout(layoutDescription,
-                    projectKey, screenWidth, screenHeight, density, xdpi, ydpi,
-                    themeName, isProjectTheme,
-                    projectResources, frameworkResources, projectCallback,
-                    logger);
-        } else if (bridge.apiLevel == 2) {
-            // api with boolean for separation of project/framework theme
-            return bridge.bridge.computeLayout(layoutDescription,
-                    projectKey, screenWidth, screenHeight, themeName, isProjectTheme,
-                    projectResources, frameworkResources, projectCallback,
-                    logger);
-        } else {
-            // oldest api with no density/dpi, and project theme boolean mixed
-            // into the theme name.
-
-            // change the string if it's a custom theme to make sure we can
-            // differentiate them
-            if (isProjectTheme) {
-                themeName = "*" + themeName; //$NON-NLS-1$
-            }
-
-            return bridge.bridge.computeLayout(layoutDescription,
-                    projectKey, screenWidth, screenHeight, themeName,
-                    projectResources, frameworkResources, projectCallback,
-                    logger);
-        }
+        return scene;
     }
 
     public Rectangle getBounds() {
@@ -1423,10 +1352,10 @@ public class GraphicalEditorPart extends EditorPart
 
                     AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
                     if (data != null) {
-                        LayoutBridge bridge = data.getLayoutBridge();
+                        LayoutLibrary layoutLib = data.getLayoutLibrary();
 
-                        if (bridge.bridge != null) {
-                            bridge.bridge.clearCaches(mEditedFile.getProject());
+                        if (layoutLib.getBridge() != null) {
+                            layoutLib.getBridge().clearCaches(mEditedFile.getProject());
                         }
                     }
                 }

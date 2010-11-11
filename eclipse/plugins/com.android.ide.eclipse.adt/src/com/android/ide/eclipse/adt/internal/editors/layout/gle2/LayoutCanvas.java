@@ -28,7 +28,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.layoutlib.api.ILayoutResult;
+import com.android.layoutlib.api.LayoutScene;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.jface.action.Action;
@@ -441,20 +441,20 @@ class LayoutCanvas extends Canvas {
      * allocated ILayourResult. That means we can keep this result and hold on to it
      * when it is valid.
      *
-     * @param result The new rendering result, either valid or not.
+     * @param scene The new scene, either valid or not.
      * @param explodedNodes The set of individual nodes the layout computer was asked to
      *            explode. Note that these are independent of the explode-all mode where
      *            all views are exploded; this is used only for the mode (
      *            {@link #showInvisibleViews(boolean)}) where individual invisible nodes
      *            are padded during certain interactions.
      */
-    /* package */ void setResult(ILayoutResult result, Set<UiElementNode> explodedNodes) {
+    /* package */ void setResult(LayoutScene scene, Set<UiElementNode> explodedNodes) {
         // disable any hover
         clearHover();
 
-        mViewHierarchy.setResult(result, explodedNodes);
-        if (mViewHierarchy.isValid() && result != null) {
-            Image image = mImageOverlay.setImage(result.getImage());
+        mViewHierarchy.setResult(scene, explodedNodes);
+        if (mViewHierarchy.isValid() && scene != null) {
+            Image image = mImageOverlay.setImage(scene.getImage());
 
             mOutlinePage.setModel(mViewHierarchy.getRoot());
 

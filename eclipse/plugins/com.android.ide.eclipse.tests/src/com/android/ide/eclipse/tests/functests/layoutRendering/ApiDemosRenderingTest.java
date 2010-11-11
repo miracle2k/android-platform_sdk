@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.tests.functests.layoutRendering;
 
+import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.NavigationMethodQualifier;
@@ -29,13 +31,15 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreen
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.ide.eclipse.tests.SdkTestCase;
 import com.android.layoutlib.api.ILayoutResult;
 import com.android.layoutlib.api.IProjectCallback;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IXmlPullParser;
+import com.android.layoutlib.api.LayoutScene;
+import com.android.layoutlib.api.SceneParams;
+import com.android.layoutlib.api.SceneResult;
+import com.android.layoutlib.api.SceneResult.LayoutStatus;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.FolderWrapper;
@@ -151,8 +155,8 @@ public class ApiDemosRenderingTest extends SdkTestCase {
             fail("No AndroidData!");
         }
 
-        LayoutBridge bridge = data.getLayoutBridge();
-        if (bridge.status != LoadStatus.LOADED || bridge.bridge == null) {
+        LayoutLibrary layoutLib = data.getLayoutLibrary();
+        if (layoutLib.getStatus() != LoadStatus.LOADED || layoutLib.getBridge() == null) {
             fail("Fail to load the bridge");
         }
 
@@ -197,7 +201,7 @@ public class ApiDemosRenderingTest extends SdkTestCase {
 
             ProjectCallBack projectCallBack = new ProjectCallBack();
 
-            ILayoutResult result = bridge.bridge.computeLayout(
+            LayoutScene scene = layoutLib.getBridge().createScene(new SceneParams(
                     parser,
                     null /*projectKey*/,
                     320,
@@ -212,20 +216,20 @@ public class ApiDemosRenderingTest extends SdkTestCase {
                     configuredFramework,
                     projectCallBack,
                     null //logger
-                    );
+                    ));
 
-            if (result.getSuccess() != ILayoutResult.SUCCESS) {
+            if (scene.getResult() != SceneResult.SUCCESS) {
                 if (projectCallBack.mCustomViewAttempt == false) {
                     System.out.println("FAILED");
                     fail(String.format("Rendering %1$s: %2$s", layout.getName(),
-                            result.getErrorMessage()));
+                            scene.getResult().getErrorMessage()));
                 } else {
                     System.out.println("Ignore custom views for now");
                 }
             } else {
                 if (saveFiles) {
                     File tmp = File.createTempFile(layout.getName(), ".png");
-                    ImageIO.write(result.getImage(), "png", tmp);
+                    ImageIO.write(scene.getImage(), "png", tmp);
                 }
                 System.out.println("Success!");
             }

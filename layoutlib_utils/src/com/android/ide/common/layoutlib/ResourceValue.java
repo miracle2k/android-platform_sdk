@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.utils;
+package com.android.ide.common.layoutlib;
 
 import com.android.layoutlib.api.IResourceValue;
 
