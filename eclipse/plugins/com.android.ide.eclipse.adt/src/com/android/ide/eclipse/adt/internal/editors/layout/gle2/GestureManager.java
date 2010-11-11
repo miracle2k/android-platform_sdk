@@ -332,7 +332,12 @@ public class GestureManager {
         }
 
         public void mouseDoubleClick(MouseEvent e) {
-            mCanvas.showXml(e);
+            // SWT delivers a double click event even if you click two different buttons
+            // in rapid succession. In any case, we only want to let you double click the
+            // first button to warp to XML:
+            if (e.button == 1) {
+                mCanvas.showXml(e);
+            }
         }
 
         // --- KeyListener ---
