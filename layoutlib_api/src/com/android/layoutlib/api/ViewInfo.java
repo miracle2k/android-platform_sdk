@@ -16,7 +16,6 @@
 
 package com.android.layoutlib.api;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,7 @@ public class ViewInfo {
     protected final int mRight;
     protected final int mTop;
     protected final int mBottom;
-    protected List<ViewInfo> mChildren;;
+    protected List<ViewInfo> mChildren = Collections.emptyList();
 
     public ViewInfo(String name, Object key, int left, int top, int right, int bottom) {
         mName = name;
@@ -47,9 +46,7 @@ public class ViewInfo {
      * Sets the list of children {@link ViewInfo}.
      */
     public void setChildren(List<ViewInfo> children) {
-        mChildren = new ArrayList<ViewInfo>();
-        mChildren.addAll(children);
-        mChildren = Collections.unmodifiableList(mChildren);
+        mChildren = Collections.unmodifiableList(children);
     }
 
     /**
@@ -65,42 +62,42 @@ public class ViewInfo {
      * @see IXmlPullParser#getViewKey()
      */
     public Object getViewKey() {
-        return null;
+        return mKey;
     }
 
     /**
      * Returns the class name of the view object. Can be null.
      */
     public String getClassName() {
-        return null;
+        return mName;
     }
 
     /**
      * Returns the left of the view bounds, relative to the view parent bounds.
      */
     public int getLeft() {
-        return 0;
+        return mLeft;
     }
 
     /**
      * Returns the top of the view bounds, relative to the view parent bounds.
      */
     public int getTop() {
-        return 0;
+        return mTop;
     }
 
     /**
      * Returns the right of the view bounds, relative to the view parent bounds.
      */
     public int getRight() {
-        return 0;
+        return mRight;
     }
 
     /**
      * Returns the bottom of the view bounds, relative to the view parent bounds.
      */
     public int getBottom() {
-        return 0;
+        return mBottom;
     }
 
     /**

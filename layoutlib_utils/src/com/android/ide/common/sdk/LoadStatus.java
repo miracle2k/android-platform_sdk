@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.utils;
+package com.android.ide.common.sdk;
 
-import com.android.layoutlib.api.IDensityBasedResourceValue;
-
-public class DensityBasedResourceValue extends ResourceValue implements IDensityBasedResourceValue {
-
-    private Density mDensity;
-
-    public DensityBasedResourceValue(String type, String name, String value, Density density,
-            boolean isFramework) {
-        super(type, name, value, isFramework);
-        mDensity = density;
-    }
-
-    public Density getDensity() {
-        return mDensity;
-    }
+/**
+ * Enum for loading status of various SDK parts.
+ */
+public enum LoadStatus {
+    LOADING, LOADED, FAILED;
 }

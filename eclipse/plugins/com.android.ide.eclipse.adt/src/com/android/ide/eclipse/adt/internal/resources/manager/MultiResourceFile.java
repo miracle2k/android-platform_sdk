@@ -16,11 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
+import com.android.ide.common.layoutlib.ResourceValue;
+import com.android.ide.common.layoutlib.ValueResourceParser;
+import com.android.ide.common.layoutlib.ValueResourceParser.IValueResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.layoutlib.api.IResourceValue;
-import com.android.layoutlib.utils.ResourceValue;
-import com.android.layoutlib.utils.ValueResourceParser;
-import com.android.layoutlib.utils.ValueResourceParser.IValueResourceRepository;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.StreamException;
 
