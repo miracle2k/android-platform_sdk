@@ -23,4 +23,6 @@ LOCAL_JAVA_LIBRARIES := \
 
 LOCAL_MODULE := ide_common
 
+LOCAL_MODULE_TAGS := optional
+
 include $(BUILD_HOST_JAVA_LIBRARY)
