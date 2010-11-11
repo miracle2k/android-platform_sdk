@@ -21,12 +21,8 @@ import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.graphics.PaletteData;
 
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.awt.image.Raster;
 
 /**
  * The {@link ImageOverlay} class renders an image as an overlay.
@@ -88,18 +84,7 @@ public class ImageOverlay extends Overlay {
             mImage = null;
 
         } else {
-            int width = awtImage.getWidth();
-            int height = awtImage.getHeight();
-
-            Raster raster = awtImage.getData(new java.awt.Rectangle(width, height));
-            int[] imageDataBuffer = ((DataBufferInt) raster.getDataBuffer()).getData();
-
-            ImageData imageData = new ImageData(width, height, 32, new PaletteData(0x00FF0000,
-                    0x0000FF00, 0x000000FF));
-
-            imageData.setPixels(0, 0, imageDataBuffer.length, imageDataBuffer, 0);
-
-            mImage = new Image(mCanvas.getDisplay(), imageData);
+            mImage = SwtUtils.convertImage(mCanvas.getDisplay(), awtImage, false, -1);
         }
 
         return mImage;

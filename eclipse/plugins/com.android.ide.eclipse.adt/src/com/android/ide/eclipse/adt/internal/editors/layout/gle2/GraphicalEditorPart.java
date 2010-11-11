@@ -1153,7 +1153,7 @@ public class GraphicalEditorPart extends EditorPart
         int height = rect.height;
 
         LayoutScene scene = renderWithBridge(iProject, model, layoutLib, width, height,
-                explodeNodes);
+                explodeNodes, false);
 
         canvas.setResult(scene, explodeNodes);
 
@@ -1179,7 +1179,7 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     public LayoutScene render(UiDocumentNode model, int width, int height,
-            Set<UiElementNode> explodeNodes) {
+            Set<UiElementNode> explodeNodes, boolean transparentBackground) {
         if (!ensureFileValid()) {
             return null;
         }
@@ -1189,11 +1189,13 @@ public class GraphicalEditorPart extends EditorPart
         LayoutLibrary layoutLib = getReadyLayoutLib();
 
         IProject iProject = mEditedFile.getProject();
-        return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes);
+        return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes,
+                transparentBackground);
     }
 
     private LayoutScene renderWithBridge(IProject iProject, UiDocumentNode model,
-            LayoutLibrary layoutLib, int width, int height, Set<UiElementNode> explodeNodes) {
+            LayoutLibrary layoutLib, int width, int height, Set<UiElementNode> explodeNodes,
+            boolean transparentBackground) {
         ResourceManager resManager = ResourceManager.getInstance();
 
         ProjectResources projectRes = resManager.getProjectResources(iProject);
@@ -1281,14 +1283,21 @@ public class GraphicalEditorPart extends EditorPart
         UiElementPullParser parser = new UiElementPullParser(model,
                 mUseExplodeMode, explodeNodes, density, xdpi, iProject);
 
-        LayoutScene scene = layoutLib.getBridge().createScene(new SceneParams(
+        SceneParams params = new SceneParams(
                 parser,
                 iProject /* projectKey */,
                 width, height, !mClippingButton.getSelection(),
                 density, xdpi, ydpi,
                 theme, isProjectTheme,
                 configuredProjectRes, frameworkResources, mProjectCallback,
-                mLogger));
+                mLogger);
+        if (transparentBackground) {
+            // It doesn't matter what the background color is as long as the alpha
+            // is 0 (fully transparent). We're using red to make it more obvious if
+            // for some reason the background is painted when it shouldn't be.
+            params.setCustomBackgroundColor(0x00FF0000);
+        }
+        LayoutScene scene = layoutLib.getBridge().createScene(params);
 
         return scene;
     }
@@ -1346,16 +1355,10 @@ public class GraphicalEditorPart extends EditorPart
                 mConfiguredProjectRes = null;
 
                 // clear the cache in the bridge in case a bitmap/9-patch changed.
-                IAndroidTarget target = Sdk.getCurrent().getTarget(mEditedFile.getProject());
-                if (target != null) {
-
-                    AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
-                    if (data != null) {
-                        LayoutLibrary layoutLib = data.getLayoutLibrary();
-
-                        if (layoutLib.getBridge() != null) {
-                            layoutLib.getBridge().clearCaches(mEditedFile.getProject());
-                        }
+                LayoutLibrary layoutLib = getLayoutLibrary();
+                if (layoutLib != null) {
+                    if (layoutLib.getBridge() != null) {
+                        layoutLib.getBridge().clearCaches(mEditedFile.getProject());
                     }
                 }
             }
@@ -1380,6 +1383,20 @@ public class GraphicalEditorPart extends EditorPart
                 });
             }
         }
+    }
+
+    public LayoutLibrary getLayoutLibrary() {
+        // clear the cache in the bridge in case a bitmap/9-patch changed.
+        IAndroidTarget target = Sdk.getCurrent().getTarget(mEditedFile.getProject());
+        if (target != null) {
+            AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
+            if (data != null) {
+                LayoutLibrary layoutLib = data.getLayoutLibrary();
+                return layoutLib;
+            }
+        }
+
+        return null;
     }
 
     // ---- Error handling ----
