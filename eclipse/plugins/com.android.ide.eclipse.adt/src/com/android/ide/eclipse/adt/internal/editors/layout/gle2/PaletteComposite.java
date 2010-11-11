@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 
@@ -74,14 +75,16 @@ public class PaletteComposite extends Composite {
     private ScrollBar mVBar;
     private ControlListener mControlListener;
     private Listener mScrollbarListener;
+    private IGraphicalLayoutEditor mEditor;
 
     /**
      * Create the composite.
      * @param parent The parent composite.
      */
-    public PaletteComposite(Composite parent) {
+    public PaletteComposite(Composite parent, IGraphicalLayoutEditor editor) {
         super(parent, SWT.BORDER | SWT.V_SCROLL);
 
+        mEditor = editor;
         mVBar = getVerticalBar();
 
         mScrollbarListener = new Listener() {

@@ -342,7 +342,7 @@ public class GraphicalEditorPart extends EditorPart
         mSashPalette = new SashForm(parent, SWT.HORIZONTAL);
         mSashPalette.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        mPalette = new PaletteComposite(mSashPalette);
+        mPalette = new PaletteComposite(mSashPalette, this);
 
         mSashError = new SashForm(mSashPalette, SWT.VERTICAL | SWT.BORDER);
         mSashError.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -998,119 +998,50 @@ public class GraphicalEditorPart extends EditorPart
     public void recomputeLayout() {
         doXmlReload(false /* force */);
         try {
-            // check that the resource exists. If the file is opened but the project is closed
-            // or deleted for some reason (changed from outside of eclipse), then this will
-            // return false;
-            if (mEditedFile.exists() == false) {
-                displayError("Resource '%1$s' does not exist.",
-                             mEditedFile.getFullPath().toString());
+            if (!ensureFileValid()) {
                 return;
             }
 
-            IProject iProject = mEditedFile.getProject();
+            UiDocumentNode model = getModel();
+            if (!ensureModelValid(model)) {
+                // Although we display an error, we still treat an empty document as a
+                // successful layout result so that we can drop new elements in it.
+                //
+                // For that purpose, create a special ILayoutResult that has no image,
+                // no root view yet indicates success and then update the canvas with it.
 
-            if (mEditedFile.isSynchronized(IResource.DEPTH_ZERO) == false) {
-                String message = String.format("%1$s is out of sync. Please refresh.",
-                        mEditedFile.getName());
+                ILayoutResult result = new ILayoutResult() {
+                    public String getErrorMessage() {
+                        return null;
+                    }
 
-                displayError(message);
+                    public BufferedImage getImage() {
+                        return null;
+                    }
 
-                // also print it in the error console.
-                AdtPlugin.printErrorToConsole(iProject.getName(), message);
+                    public ILayoutViewInfo getRootView() {
+                        return null;
+                    }
+
+                    public int getSuccess() {
+                        return ILayoutResult.SUCCESS;
+                    }
+                };
+
+                mCanvasViewer.getCanvas().setResult(result, null /*explodeNodes*/);
                 return;
             }
 
-            Sdk currentSdk = Sdk.getCurrent();
-            if (currentSdk != null) {
-                IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
-                if (target == null) {
-                    displayError("The project target is not set.");
-                    return;
+            LayoutBridge bridge = getReadyBridge();
+
+            if (bridge != null) {
+                // if drawing in real size, (re)set the scaling factor.
+                if (mZoomRealSizeButton.getSelection()) {
+                    computeAndSetRealScale(false /* redraw */);
                 }
 
-                AndroidTargetData data = currentSdk.getTargetData(target);
-                if (data == null) {
-                    // It can happen that the workspace refreshes while the SDK is loading its
-                    // data, which could trigger a redraw of the opened layout if some resources
-                    // changed while Eclipse is closed.
-                    // In this case data could be null, but this is not an error.
-                    // We can just silently return, as all the opened editors are automatically
-                    // refreshed once the SDK finishes loading.
-                    LoadStatus targetLoadStatus = currentSdk.checkAndLoadTargetData(target, null);
-                    switch (targetLoadStatus) {
-                        case LOADING:
-                            displayError("The project target (%1$s) is still loading.\n%2$s will refresh automatically once the process is finished.",
-                                    target.getName(), mEditedFile.getName());
-
-                            break;
-                        case FAILED: // known failure
-                        case LOADED: // success but data isn't loaded?!?!
-                            displayError("The project target (%s) was not properly loaded.",
-                                    target.getName());
-                            break;
-                    }
-
-                    return;
-                }
-
-                // check there is actually a model (maybe the file is empty).
-                UiDocumentNode model = getModel();
-
-                if (model.getUiChildren().size() == 0) {
-                    displayError(
-                            "No XML content. Please add a root view or layout to your document.");
-
-                    // Although we display an error, we still treat an empty document as a
-                    // successful layout result so that we can drop new elements in it.
-                    //
-                    // For that purpose, create a special ILayoutResult that has no image,
-                    // no root view yet indicates success and then update the canvas with it.
-
-                    ILayoutResult result = new ILayoutResult() {
-                        public String getErrorMessage() {
-                            return null;
-                        }
-
-                        public BufferedImage getImage() {
-                            return null;
-                        }
-
-                        public ILayoutViewInfo getRootView() {
-                            return null;
-                        }
-
-                        public int getSuccess() {
-                            return ILayoutResult.SUCCESS;
-                        }
-                    };
-
-                    mCanvasViewer.getCanvas().setResult(result, null /*explodeNodes*/);
-                    return;
-                }
-
-                LayoutBridge bridge = data.getLayoutBridge();
-
-                if (bridge.bridge != null) { // bridge can never be null.
-                    // if drawing in real size, (re)set the scaling factor.
-                    if (mZoomRealSizeButton.getSelection()) {
-                        computeAndSetRealScale(false /*redraw*/);
-                    }
-
-                    renderWithBridge(iProject, model, bridge);
-                } else {
-                    // SDK is loaded but not the layout library!
-
-                    // check whether the bridge managed to load, or not
-                    if (bridge.status == LoadStatus.LOADING) {
-                        displayError("Eclipse is loading framework information and the layout library from the SDK folder.\n%1$s will refresh automatically once the process is finished.",
-                                     mEditedFile.getName());
-                    } else {
-                        displayError("Eclipse failed to load the framework information and the layout library!");
-                    }
-                }
-            } else {
-                displayError("Eclipse is loading the SDK.\n%1$s will refresh automatically once the process is finished.",
-                             mEditedFile.getName());
+                IProject iProject = mEditedFile.getProject();
+                renderWithBridge(iProject, model, bridge);
             }
         } finally {
             // no matter the result, we are done doing the recompute based on the latest
@@ -1119,13 +1050,170 @@ public class GraphicalEditorPart extends EditorPart
         }
     }
 
+    /**
+     * Ensure that the file associated with this editor is valid (exists and is
+     * synchronized). Any reasons why it is not are displayed in the editor's error area.
+     *
+     * @return True if the editor is valid, false otherwise.
+     */
+    private boolean ensureFileValid() {
+        // check that the resource exists. If the file is opened but the project is closed
+        // or deleted for some reason (changed from outside of eclipse), then this will
+        // return false;
+        if (mEditedFile.exists() == false) {
+            displayError("Resource '%1$s' does not exist.",
+                         mEditedFile.getFullPath().toString());
+            return false;
+        }
+
+        if (mEditedFile.isSynchronized(IResource.DEPTH_ZERO) == false) {
+            String message = String.format("%1$s is out of sync. Please refresh.",
+                    mEditedFile.getName());
+
+            displayError(message);
+
+            // also print it in the error console.
+            IProject iProject = mEditedFile.getProject();
+            AdtPlugin.printErrorToConsole(iProject.getName(), message);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns a {@link LayoutBridge} that is ready for rendering, or null if the bridge
+     * is not available or not ready yet (due to SDK loading still being in progress etc).
+     * Any reasons preventing the bridge from being returned are displayed to the editor's
+     * error area.
+     *
+     * @return LayoutBridge the layout bridge for rendering this editor's scene
+     */
+    private LayoutBridge getReadyBridge() {
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk != null) {
+            IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
+            if (target == null) {
+                displayError("The project target is not set.");
+                return null;
+            }
+
+            AndroidTargetData data = currentSdk.getTargetData(target);
+            if (data == null) {
+                // It can happen that the workspace refreshes while the SDK is loading its
+                // data, which could trigger a redraw of the opened layout if some resources
+                // changed while Eclipse is closed.
+                // In this case data could be null, but this is not an error.
+                // We can just silently return, as all the opened editors are automatically
+                // refreshed once the SDK finishes loading.
+                LoadStatus targetLoadStatus = currentSdk.checkAndLoadTargetData(target, null);
+                switch (targetLoadStatus) {
+                    case LOADING:
+                        displayError("The project target (%1$s) is still loading.\n%2$s will refresh automatically once the process is finished.",
+                                target.getName(), mEditedFile.getName());
+
+                        break;
+                    case FAILED: // known failure
+                    case LOADED: // success but data isn't loaded?!?!
+                        displayError("The project target (%s) was not properly loaded.",
+                                target.getName());
+                        break;
+                }
+
+                return null;
+            }
+
+            LayoutBridge bridge = data.getLayoutBridge();
+
+            if (bridge.bridge != null) { // bridge can never be null.
+                return bridge;
+            } else {
+                // SDK is loaded but not the layout library!
+
+                // check whether the bridge managed to load, or not
+                if (bridge.status == LoadStatus.LOADING) {
+                    displayError("Eclipse is loading framework information and the layout library from the SDK folder.\n%1$s will refresh automatically once the process is finished.",
+                                 mEditedFile.getName());
+                } else {
+                    displayError("Eclipse failed to load the framework information and the layout library!");
+                }
+            }
+        } else {
+            displayError("Eclipse is loading the SDK.\n%1$s will refresh automatically once the process is finished.",
+                         mEditedFile.getName());
+        }
+
+        return null;
+    }
+
+    private boolean ensureModelValid(UiDocumentNode model) {
+        // check there is actually a model (maybe the file is empty).
+        if (model.getUiChildren().size() == 0) {
+            displayError(
+                    "No XML content. Please add a root view or layout to your document.");
+            return false;
+        }
+
+        return true;
+    }
+
     private void renderWithBridge(IProject iProject, UiDocumentNode model, LayoutBridge bridge) {
+        LayoutCanvas canvas = getCanvasControl();
+        Set<UiElementNode> explodeNodes = canvas.getNodesToExplode();
+
+        // Compute the layout
+        Rectangle rect = getBounds();
+
+        int width = rect.width;
+        int height = rect.height;
+
+        ILayoutResult result = renderWithBridge(iProject, model, bridge, width, height, explodeNodes);
+
+        canvas.setResult(result, explodeNodes);
+
+        // update the UiElementNode with the layout info.
+        if (result.getSuccess() != ILayoutResult.SUCCESS) {
+            // An error was generated. Print it.
+            displayError(result.getErrorMessage());
+
+        } else {
+            // Success means there was no exception. But we might have detected
+            // some missing classes and swapped them by a mock view.
+            Set<String> missingClasses = mProjectCallback.getMissingClasses();
+            if (missingClasses.size() > 0) {
+                displayMissingClasses(missingClasses);
+            } else {
+                // Nope, no missing classes. Clear success, congrats!
+                hideError();
+            }
+
+        }
+
+        model.refreshUi();
+    }
+
+    public ILayoutResult render(UiDocumentNode model, int width, int height,
+            Set<UiElementNode> explodeNodes) {
+        if (!ensureFileValid()) {
+            return null;
+        }
+        if (!ensureModelValid(model)) {
+            return null;
+        }
+        LayoutBridge bridge = getReadyBridge();
+
+        IProject iProject = mEditedFile.getProject();
+        return renderWithBridge(iProject, model, bridge, width, height, explodeNodes);
+    }
+
+    private ILayoutResult renderWithBridge(IProject iProject, UiDocumentNode model,
+            LayoutBridge bridge, int width, int height, Set<UiElementNode> explodeNodes) {
         ResourceManager resManager = ResourceManager.getInstance();
 
         ProjectResources projectRes = resManager.getProjectResources(iProject);
         if (projectRes == null) {
             displayError("Missing project resources.");
-            return;
+            return null;
         }
 
         // Get the resources of the file's project.
@@ -1183,14 +1271,9 @@ public class GraphicalEditorPart extends EditorPart
             displayError("Missing theme.");
         }
 
-        // Compute the layout
-        Rectangle rect = getBounds();
-
-        int width = rect.width;
-        int height = rect.height;
         if (mUseExplodeMode) {
             // compute how many padding in x and y will bump the screen size
-            List<UiElementNode> children = getModel().getUiChildren();
+            List<UiElementNode> children = model.getUiChildren();
             if (children.size() == 1) {
                 ExplodedRenderingHelper helper = new ExplodedRenderingHelper(
                         children.get(0).getXmlNode(), iProject);
@@ -1209,10 +1292,7 @@ public class GraphicalEditorPart extends EditorPart
         float ydpi = mConfigComposite.getYDpi();
         boolean isProjectTheme = mConfigComposite.isProjectTheme();
 
-        LayoutCanvas canvas = getCanvasControl();
-        Set<UiElementNode> explodeNodes = canvas.getNodesToExplode();
-
-        UiElementPullParser parser = new UiElementPullParser(getModel(),
+        UiElementPullParser parser = new UiElementPullParser(model,
                 mUseExplodeMode, explodeNodes, density, xdpi, iProject);
 
         ILayoutResult result = computeLayout(bridge, parser,
@@ -1226,27 +1306,7 @@ public class GraphicalEditorPart extends EditorPart
         // post rendering clean up
         bridge.cleanUp();
 
-        canvas.setResult(result, explodeNodes);
-
-        // update the UiElementNode with the layout info.
-        if (result.getSuccess() != ILayoutResult.SUCCESS) {
-            // An error was generated. Print it.
-            displayError(result.getErrorMessage());
-
-        } else {
-            // Success means there was no exception. But we might have detected
-            // some missing classes and swapped them by a mock view.
-            Set<String> missingClasses = mProjectCallback.getMissingClasses();
-            if (missingClasses.size() > 0) {
-                displayMissingClasses(missingClasses);
-            } else {
-                // Nope, no missing classes. Clear success, congrats!
-                hideError();
-            }
-
-        }
-
-        model.refreshUi();
+        return result;
     }
 
     /**
