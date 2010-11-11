@@ -3,10 +3,10 @@
 <schema targetNamespace="com.android.ide.eclipse.ddms" xmlns="http://www.w3.org/2001/XMLSchema">
 <annotation>
       <appInfo>
-         <meta.schema plugin="com.android.ide.eclipse.ddms" id="adbLocator" name="ADB Locator"/>
+         <meta.schema plugin="com.android.ide.eclipse.ddms" id="toolsLocator" name="Tools Locator"/>
       </appInfo>
       <documentation>
-         Extension Point to provide the location of adb to DDMS.
+         Extension Point to provide the location of SDK Tools to DDMS.
       </documentation>
    </annotation>
 
@@ -18,7 +18,7 @@
                   
                </documentation>
                <appInfo>
-                  <meta.attribute kind="java" basedOn=":com.android.ide.eclipse.ddms.IAdbLocator"/>
+                  <meta.attribute kind="java" basedOn=":com.android.ide.eclipse.ddms.IToolsLocator"/>
                </appInfo>
             </annotation>
          </attribute>
@@ -76,8 +76,8 @@
          <meta.section type="examples"/>
       </appInfo>
       <documentation>
-         &lt;extension point=&quot;com.android.ide.eclipse.ddms.adbLocator&quot;&gt;
-    &lt;locator class=&quot;com.android.ide.eclipse.adt.AdbLocator&quot;/&gt;
+         &lt;extension point=&quot;com.android.ide.eclipse.ddms.toolsLocator&quot;&gt;
+    &lt;locator class=&quot;com.android.ide.eclipse.adt.ToolsLocator&quot;/&gt;
 &lt;/extension&gt;
       </documentation>
    </annotation>
@@ -87,7 +87,7 @@
          <meta.section type="apiinfo"/>
       </appInfo>
       <documentation>
-         The class must implement com.android.ide.ddms.IAdbLocator.
+         The class must implement com.android.ide.ddms.IToolsLocator.
       </documentation>
    </annotation>
 

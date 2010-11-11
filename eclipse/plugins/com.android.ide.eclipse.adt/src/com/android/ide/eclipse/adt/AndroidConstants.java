@@ -120,6 +120,10 @@ public class AndroidConstants {
         (SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_WINDOWS) ?
             "traceview.exe" : "traceview"; //$NON-NLS-1$ //$NON-NLS-2$
 
+    public final static String FN_HPROF_CONV =
+        (SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_WINDOWS) ?
+            "hprof-conv.exe" : "hprof-conv"; //$NON-NLS-1$ //$NON-NLS-2$
+
     /** Absolute path of the workspace root, i.e. "/" */
     public final static String WS_ROOT = WS_SEP;
 
