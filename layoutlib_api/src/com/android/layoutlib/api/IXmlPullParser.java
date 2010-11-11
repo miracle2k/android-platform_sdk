@@ -28,7 +28,7 @@ public interface IXmlPullParser extends XmlPullParser {
 
     /**
      * Returns a key for the current XML node.
-     * <p/>This key will be passed back in the {@link ILayoutViewInfo} objects, allowing association
+     * <p/>This key will be passed back in the {@link ViewInfo} objects, allowing association
      * of a particular XML node with its result from the layout computation.
      */
     Object getViewKey();
