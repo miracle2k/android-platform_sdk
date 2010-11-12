@@ -227,7 +227,8 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
                 if (AdtPrefs.PREFS_SDK_DIR.equals(event.getProperty())) {
 
                     // finally restart adb, in case it's a different version
-                    DdmsPlugin.setAdb(getOsAbsoluteAdb(), true /* startAdb */);
+                    DdmsPlugin.setToolsLocation(getOsAbsoluteAdb(), true /* startAdb */,
+                            getOsAbsoluteHprofConv(), getOsAbsoluteTraceview());
 
                     // get the SDK location and build id.
                     if (checkSdkLocationAndId()) {
@@ -348,6 +349,11 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
     /** Returns the absolute emulator path */
     public static String getOsAbsoluteEmulator() {
         return getOsSdkFolder() + getOsRelativeEmulator();
+    }
+
+    public static String getOsAbsoluteHprofConv() {
+        return getOsSdkFolder() + SdkConstants.OS_SDK_TOOLS_FOLDER +
+                AndroidConstants.FN_HPROF_CONV;
     }
 
     /** Returns the absolute proguard path */

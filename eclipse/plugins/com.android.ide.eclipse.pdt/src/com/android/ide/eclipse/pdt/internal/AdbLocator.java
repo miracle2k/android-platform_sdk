@@ -16,15 +16,23 @@
 
 package com.android.ide.eclipse.pdt.internal;
 
-import com.android.ide.eclipse.ddms.IAdbLocator;
+import com.android.ide.eclipse.ddms.IToolsLocator;
 import com.android.ide.eclipse.pdt.PdtPlugin;
 
 /**
  * Implementation of the com.android.ide.ddms.adbLocator extension point.
  */
-public class AdbLocator implements IAdbLocator {
+public class AdbLocator implements IToolsLocator {
 
     public String getAdbLocation() {
         return PdtPlugin.getAdbLocation();
+    }
+
+    public String getHprofConvLocation() {
+        return PdtPlugin.getHprofConvLocation();
+    }
+
+    public String getTraceViewLocation() {
+        return PdtPlugin.getTraceViewLocation();
     }
 }
