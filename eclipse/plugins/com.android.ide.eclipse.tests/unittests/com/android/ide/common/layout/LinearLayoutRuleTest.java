@@ -69,7 +69,8 @@ public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
                 "[useStyle(DROP_RECIPIENT), "
                         +
                         // Bounds rectangle
-                        "drawRect(Rect[0,0,240,480]), " + "useStyle(DROP_ZONE), "
+                        "drawRect(Rect[0,0,240,480]), "
+                        + "useStyle(DROP_ZONE), drawLine(1,0,1,480), "
                         + "useStyle(DROP_ZONE_ACTIVE), " + "useStyle(DROP_PREVIEW), " +
                         // Insert position line
                         "drawLine(1,0,1,480)" + (haveBounds ?
@@ -83,7 +84,7 @@ public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
         rule.onDropped(targetNode, elements, feedback, dropPoint);
         assertEquals(1, targetNode.getChildren().length);
         assertEquals("@+id/Button01", targetNode.getChildren()[0].getStringAttr(
-                BaseLayout.ANDROID_URI, BaseLayout.ATTR_ID));
+                BaseView.ANDROID_URI, BaseView.ATTR_ID));
     }
 
     // Utility for other tests
@@ -91,7 +92,7 @@ public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
             int insertIndex, int currentIndex,
             String... graphicsFragments) {
         INode linearLayout = TestNode.create("android.widget.LinearLayout").id(
-                "@+id/LinearLayout01").bounds(new Rect(0, 0, 240, 480)).set(BaseLayout.ANDROID_URI,
+                "@+id/LinearLayout01").bounds(new Rect(0, 0, 240, 480)).set(BaseView.ANDROID_URI,
                 LinearLayoutRule.ATTR_ORIENTATION,
                 vertical ? LinearLayoutRule.VALUE_VERTICAL : LinearLayoutRule.VALUE_HORIZONTAL)
                 .add(
@@ -130,7 +131,7 @@ public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
         LinearLayoutRule rule = new LinearLayoutRule();
         INode node = TestNode.create("android.widget.Button").id("@+id/Button012");
 
-        assertNull(node.getStringAttr(BaseLayout.ANDROID_URI, LinearLayoutRule.ATTR_ORIENTATION));
+        assertNull(node.getStringAttr(BaseView.ANDROID_URI, LinearLayoutRule.ATTR_ORIENTATION));
 
         List<MenuAction> contextMenu = rule.getContextMenu(node);
         assertEquals(4, contextMenu.size());
@@ -143,11 +144,11 @@ public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
         IMenuCallback callback = choices.getCallback();
         callback.action(orientationAction, LinearLayoutRule.VALUE_VERTICAL, true);
 
-        String orientation = node.getStringAttr(BaseLayout.ANDROID_URI,
+        String orientation = node.getStringAttr(BaseView.ANDROID_URI,
                 LinearLayoutRule.ATTR_ORIENTATION);
         assertEquals(LinearLayoutRule.VALUE_VERTICAL, orientation);
         callback.action(orientationAction, LinearLayoutRule.VALUE_HORIZONTAL, true);
-        orientation = node.getStringAttr(BaseLayout.ANDROID_URI, LinearLayoutRule.ATTR_ORIENTATION);
+        orientation = node.getStringAttr(BaseView.ANDROID_URI, LinearLayoutRule.ATTR_ORIENTATION);
         assertEquals(LinearLayoutRule.VALUE_HORIZONTAL, orientation);
     }
 
@@ -174,7 +175,8 @@ public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
 
                 // Drop zones
                 "useStyle(DROP_ZONE), drawLine(0,0,240,0), drawLine(0,90,240,90), "
-                        + "drawLine(0,190,240,190), drawLine(0,290,240,290)",
+                        + "drawLine(0,190,240,190), drawLine(0,290,240,290), "
+                        + "drawLine(0,381,240,381)",
 
                 // Active nearest line
                 "useStyle(DROP_ZONE_ACTIVE), useStyle(DROP_PREVIEW), drawLine(0,0,240,0)",
@@ -300,6 +302,34 @@ public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
 
                 // Preview of the dropped rectangle
                 "useStyle(DROP_ZONE_ACTIVE), useStyle(DROP_PREVIEW), drawRect(Rect[0,100,100,80])");
+    }
+
+    public void testDragToLastPosition() {
+        // Drag a button to the last position -- and confirm that the preview rectangle
+        // is now shown midway between the second to last and last positions, but fully
+        // below the drop zone line:
+        dragInto(true,
+                // Bounds of the dragged item
+                new Rect(0, 100, 100, 80),
+                // Drag point
+                new Point(0, 400),
+                // Expected insert location
+                3,
+                // Dragging 1st item
+                1,
+
+                // Bounds rectangle
+                "useStyle(DROP_RECIPIENT), drawRect(Rect[0,0,240,480])",
+
+                // Drop Zones
+                "useStyle(DROP_ZONE), drawLine(0,0,240,0), drawLine(0,290,240,290), " +
+                "drawLine(0,381,240,381), ",
+
+                // Active Drop Zone
+                "useStyle(DROP_ZONE_ACTIVE), useStyle(DROP_PREVIEW), drawLine(0,381,240,381)",
+
+                // Drop Preview
+                "seStyle(DROP_PREVIEW), drawRect(Rect[0,381,100,80])");
     }
 
     // Left to test:

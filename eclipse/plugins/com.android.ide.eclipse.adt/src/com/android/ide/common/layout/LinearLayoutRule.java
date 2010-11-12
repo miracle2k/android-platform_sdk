@@ -147,7 +147,7 @@ public class LinearLayoutRule extends BaseLayout {
         // course we happened to be dragging the last element
         if (!lastDragged) {
             int v = last + 1;
-            indexes.add(new MatchPos(v, -1));
+            indexes.add(new MatchPos(v, pos));
         }
 
         return new DropFeedback(new LinearDropData(indexes, isVertical, selfPos),
@@ -223,6 +223,8 @@ public class LinearLayoutRule extends BaseLayout {
             }
 
             if (be.isValid()) {
+                boolean isLast = (data.getInsertPos() == data.getIndexes().size());
+
                 // At least the first element has a bound. Draw rectangles for
                 // all dropped elements with valid bounds, offset at the drop
                 // point.
@@ -230,9 +232,10 @@ public class LinearLayoutRule extends BaseLayout {
                 int offsetY;
                 if (isVertical) {
                     offsetX = b.x - be.x;
-                    offsetY = currY - be.y - (be.h / 2);
+                    offsetY = currY - be.y - (isLast ? 0 : (be.h / 2));
+
                 } else {
-                    offsetX = currX - be.x - (be.w / 2);
+                    offsetX = currX - be.x - (isLast ? 0 : (be.w / 2));
                     offsetY = b.y - be.y;
                 }
 
