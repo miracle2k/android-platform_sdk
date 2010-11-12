@@ -45,6 +45,7 @@ dirs
 dpi
 editable
 exec
+fallback
 foo
 fqcn
 gen
@@ -82,6 +83,7 @@ os
 palette
 params
 pings
+placeholder
 plugin
 pre
 precompiler
@@ -104,6 +106,7 @@ scrollbar
 scrollbars
 sdk
 se
+semi
 settable
 spec
 standalone

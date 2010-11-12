@@ -301,7 +301,7 @@ public class MoveGesture extends DropGesture {
             return;
         }
 
-        final LayoutPoint canvasPoint = ControlPoint.create(mCanvas, event).toLayout();
+        final LayoutPoint canvasPoint = getDropLocation(event).toLayout();
 
         // Record children of the target right before the drop (such that we can
         // find out after the drop which exact children were inserted)
@@ -472,6 +472,27 @@ public class MoveGesture extends DropGesture {
     }
 
     /**
+     * Returns the top left corner location of the drop target event.
+     *
+     * @param event the drop target event
+     * @return a {@link ControlPoint} location corresponding to the top left corner
+     */
+    private ControlPoint getDropLocation(DropTargetEvent event) {
+        ControlPoint p = ControlPoint.create(mCanvas, event);
+
+        // Is the image offset from the mouse pointer?
+        GlobalCanvasDragInfo dragInfo = GlobalCanvasDragInfo.getInstance();
+        if (dragInfo != null) {
+            ControlPoint imageOffset = dragInfo.getImageOffset();
+            if (imageOffset != null) {
+                p = ControlPoint.create(mCanvas, p.x + imageOffset.x, p.y + imageOffset.y);
+            }
+        }
+
+        return p;
+    }
+
+    /**
      * Called on both dragEnter and dragMove.
      * Generates the onDropEnter/Move/Leave events depending on the currently
      * selected target node.
@@ -485,7 +506,7 @@ public class MoveGesture extends DropGesture {
             return;
         }
 
-        LayoutPoint p = ControlPoint.create(mCanvas, event).toLayout();
+        LayoutPoint p = getDropLocation(event).toLayout();
 
         // Is the mouse currently captured by a DropFeedback.captureArea?
         boolean isCaptured = false;
