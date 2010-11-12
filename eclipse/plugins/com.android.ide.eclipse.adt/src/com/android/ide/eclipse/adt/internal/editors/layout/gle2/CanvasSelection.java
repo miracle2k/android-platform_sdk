@@ -155,7 +155,7 @@ import java.util.List;
             return "";
         }
 
-        String name = gre.callGetDisplayName(canvasViewInfo.getUiViewKey());
+        String name = gre.callGetDisplayName(canvasViewInfo.getUiViewNode());
 
         if (name == null) {
             // The name is typically a fully-qualified class name. Let's make it a tad shorter.
@@ -192,7 +192,7 @@ import java.util.List;
         LayoutEditor layoutEditor = canvas.getLayoutEditor();
         for (CanvasSelection cs : selection) {
             CanvasViewInfo vi = cs.getViewInfo();
-            UiViewElementNode key = vi.getUiViewKey();
+            UiViewElementNode key = vi.getUiViewNode();
             Node node = key.getXmlNode();
             String t = layoutEditor.getXmlText(node);
             if (t != null) {

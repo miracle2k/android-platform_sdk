@@ -555,7 +555,7 @@ public class SelectionManager implements ISelectionProvider {
 
             // Check if the selected object still exists
             ViewHierarchy viewHierarchy = mCanvas.getViewHierarchy();
-            Object key = s.getViewInfo().getUiViewKey();
+            Object key = s.getViewInfo().getUiViewNode();
             CanvasViewInfo vi = viewHierarchy.findViewInfoKey(key, lastValidViewInfoRoot);
 
             // Remove the previous selection -- if the selected object still exists
@@ -625,7 +625,7 @@ public class SelectionManager implements ISelectionProvider {
         for (Iterator<CanvasSelection> it = selection.iterator(); it.hasNext(); ) {
             CanvasSelection cs = it.next();
             CanvasViewInfo vi = cs.getViewInfo();
-            UiViewElementNode key = vi == null ? null : vi.getUiViewKey();
+            UiViewElementNode key = vi == null ? null : vi.getUiViewNode();
             Node node = key == null ? null : key.getXmlNode();
             if (node == null) {
                 // Missing ViewInfo or view key or XML, discard this.

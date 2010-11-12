@@ -129,7 +129,7 @@ public class OutlinePage2 extends ContentOutlinePage
         tv.setComparer(new IElementComparer() {
             public int hashCode(Object element) {
                 if (element instanceof CanvasViewInfo) {
-                    UiViewElementNode key = ((CanvasViewInfo) element).getUiViewKey();
+                    UiViewElementNode key = ((CanvasViewInfo) element).getUiViewNode();
                     if (key != null) {
                         return key.hashCode();
                     }
@@ -142,8 +142,8 @@ public class OutlinePage2 extends ContentOutlinePage
 
             public boolean equals(Object a, Object b) {
                 if (a instanceof CanvasViewInfo && b instanceof CanvasViewInfo) {
-                    UiViewElementNode keyA = ((CanvasViewInfo) a).getUiViewKey();
-                    UiViewElementNode keyB = ((CanvasViewInfo) b).getUiViewKey();
+                    UiViewElementNode keyA = ((CanvasViewInfo) a).getUiViewNode();
+                    UiViewElementNode keyB = ((CanvasViewInfo) b).getUiViewNode();
                     if (keyA != null) {
                         return keyA.equals(keyB);
                     }
@@ -350,7 +350,7 @@ public class OutlinePage2 extends ContentOutlinePage
          */
         public Image getImage(Object element) {
             if (element instanceof CanvasViewInfo) {
-                element = ((CanvasViewInfo) element).getUiViewKey();
+                element = ((CanvasViewInfo) element).getUiViewNode();
             }
 
             if (element instanceof UiElementNode) {
@@ -376,7 +376,7 @@ public class OutlinePage2 extends ContentOutlinePage
          */
         public String getText(Object element) {
             if (element instanceof CanvasViewInfo) {
-                element = ((CanvasViewInfo) element).getUiViewKey();
+                element = ((CanvasViewInfo) element).getUiViewNode();
             }
 
             if (element instanceof UiElementNode) {

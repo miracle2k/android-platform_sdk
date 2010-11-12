@@ -18,35 +18,48 @@ package com.android.layoutlib.api;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Layout information for a specific view object
  */
-public class ViewInfo {
+public final class ViewInfo {
 
-    protected final Object mKey;
-    protected final String mName;
-    protected final int mLeft;
-    protected final int mRight;
-    protected final int mTop;
-    protected final int mBottom;
-    protected List<ViewInfo> mChildren = Collections.emptyList();
+    private final Object mCookie;
+    private final String mName;
+    private final int mLeft;
+    private final int mRight;
+    private final int mTop;
+    private final int mBottom;
+    private List<ViewInfo> mChildren = Collections.emptyList();
+    private final Object mViewObject;
+    private final Object mLayoutParamsObject;
 
-    public ViewInfo(String name, Object key, int left, int top, int right, int bottom) {
+    public ViewInfo(String name, Object cookie, int left, int top, int right, int bottom) {
+        this(name, cookie, left, top, right, bottom, null /*viewObject*/,
+                null /*layoutParamsObject*/);
+    }
+
+    public ViewInfo(String name, Object cookie, int left, int top, int right, int bottom,
+            Object viewObject, Object layoutParamsObject) {
         mName = name;
-        mKey = key;
+        mCookie = cookie;
         mLeft = left;
         mRight = right;
         mTop = top;
         mBottom = bottom;
+        mViewObject = viewObject;
+        mLayoutParamsObject = layoutParamsObject;
     }
 
     /**
      * Sets the list of children {@link ViewInfo}.
      */
     public void setChildren(List<ViewInfo> children) {
-        mChildren = Collections.unmodifiableList(children);
+        if (children != null) {
+            mChildren = Collections.unmodifiableList(children);
+        } else {
+            mChildren = Collections.emptyList();
+        }
     }
 
     /**
@@ -57,12 +70,12 @@ public class ViewInfo {
     }
 
     /**
-     * Returns the key associated with the node. Can be null.
+     * Returns the cookie associated with the XML node. Can be null.
      *
      * @see IXmlPullParser#getViewKey()
      */
-    public Object getViewKey() {
-        return mKey;
+    public Object getCookie() {
+        return mCookie;
     }
 
     /**
@@ -101,11 +114,12 @@ public class ViewInfo {
     }
 
     /**
-     * Returns a map of default values for some properties. The map key is the property name,
-     * as found in the XML.
+     * Returns the actual android.view.View (or child class) object. This can be used
+     * to query the object properties that are not in the XML and not in the map returned
+     * by {@link #getDefaultPropertyValues()}.
      */
-    public Map<String, String> getDefaultPropertyValues() {
-        return null;
+    public Object getViewObject() {
+        return mViewObject;
     }
 
     /**
@@ -113,7 +127,7 @@ public class ViewInfo {
      * to query the object properties that are not in the XML and not in the map returned
      * by {@link #getDefaultPropertyValues()}.
      */
-    public Object getViewObject() {
-        return null;
+    public Object getLayoutParamsObject() {
+        return mLayoutParamsObject;
     }
 }
