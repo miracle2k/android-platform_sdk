@@ -9,9 +9,9 @@
             name="Android"/>
    </extension>
    <extension
-         point="com.android.ide.eclipse.ddms.adbLocator">
+         point="com.android.ide.eclipse.ddms.toolsLocator">
       <locator
-            class="com.android.ide.eclipse.pdt.internal.AdbLocator">
+            class="com.android.ide.eclipse.pdt.internal.ToolsLocator">
       </locator>
    </extension>
    <extension

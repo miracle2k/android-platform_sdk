@@ -16,15 +16,23 @@
 
 package com.android.ide.eclipse.adt;
 
-import com.android.ide.eclipse.ddms.IAdbLocator;
+import com.android.ide.eclipse.ddms.IToolsLocator;
 
 /**
- * Implementation of the com.android.ide.ddms.adbLocator extension point.
+ * Implementation of the com.android.ide.ddms.toolsLocator extension point.
  *
  */
-public class AdbLocator implements IAdbLocator {
+public class ToolsLocator implements IToolsLocator {
 
     public String getAdbLocation() {
         return AdtPlugin.getOsAbsoluteAdb();
+    }
+
+    public String getHprofConvLocation() {
+        return AdtPlugin.getOsAbsoluteHprofConv();
+    }
+
+    public String getTraceViewLocation() {
+        return AdtPlugin.getOsAbsoluteTraceview();
     }
 }

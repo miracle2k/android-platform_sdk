@@ -53,7 +53,8 @@ public class PdtPlugin extends AbstractUIPlugin {
                 // if the SDK changed, we have to do some extra work
                 if (PrefPage.PREFS_DEVTREE_DIR.equals(event.getProperty())) {
                     // restart adb, in case it's a different version
-                    DdmsPlugin.setAdb(getAdbLocation(), true /* startAdb */);
+                    DdmsPlugin.setToolsLocation(getAdbLocation(), true /* startAdb */,
+                            getHprofConvLocation(), getTraceViewLocation());
                 }
             }
         });
@@ -80,10 +81,46 @@ public class PdtPlugin extends AbstractUIPlugin {
      * Returns the location of adb or <code>null</code> if unknown.
      */
     public static String getAdbLocation() {
+        String devTreeBin = getDevTreeOutBin();
+
+        if (devTreeBin != null && devTreeBin.length() > 0) {
+            return devTreeBin + "adb"; //$NON-NLS-1$
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the location of hprof-conv or <code>null</code> if unknown.
+     */
+    public static String getHprofConvLocation() {
+        String devTreeBin = getDevTreeOutBin();
+
+        if (devTreeBin != null && devTreeBin.length() > 0) {
+            return devTreeBin + "hprof-conv"; //$NON-NLS-1$
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the location of traceview or <code>null</code> if unknown.
+     */
+    public static String getTraceViewLocation() {
+        String devTreeBin = getDevTreeOutBin();
+
+        if (devTreeBin != null && devTreeBin.length() > 0) {
+            return devTreeBin + "traceview"; //$NON-NLS-1$
+        }
+
+        return null;
+    }
+
+    private static String getDevTreeOutBin() {
         String devTree = getDevTree();
 
         if (devTree != null && devTree.length() > 0) {
-            return devTree + "/out/host/" + currentPlatform() + "/bin/adb"; //$NON-NLS-1$ //$NON-NLS-2$
+            return devTree + "/out/host/" + currentPlatform() + "/bin/"; //$NON-NLS-1$ //$NON-NLS-2$
         }
 
         return null;
@@ -105,5 +142,4 @@ public class PdtPlugin extends AbstractUIPlugin {
 
         return ""; //$NON-NLS-1$
     }
-
 }

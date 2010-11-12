@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.2"?>
 <plugin>
-   <extension-point id="adbLocator" name="ADB Locator" schema="schema/adbLocator.exsd"/>
+   <extension-point id="toolsLocator" name="Tools Locator" schema="schema/toolsLocator.exsd"/>
    <extension-point id="debuggerConnector" name="Debugger Connector" schema="schema/debuggerConnector.exsd"/>
    <extension-point id="sourceRevealer" name="Source Revealer" schema="schema/sourceRevealer.exsd"/>
 
