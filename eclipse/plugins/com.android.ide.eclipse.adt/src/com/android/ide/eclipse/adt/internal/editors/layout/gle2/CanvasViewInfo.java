@@ -59,7 +59,7 @@ public class CanvasViewInfo implements IPropertySource {
     private final Rectangle mAbsRect;
     private final Rectangle mSelectionRect;
     private final String mName;
-    private final UiViewElementNode mUiViewKey;
+    private final UiViewElementNode mUiViewNode;
     private final CanvasViewInfo mParent;
     private final ArrayList<CanvasViewInfo> mChildren = new ArrayList<CanvasViewInfo>();
 
@@ -85,13 +85,13 @@ public class CanvasViewInfo implements IPropertySource {
         mParent = parent;
         mName = viewInfo.getClassName();
 
-        // The ViewInfo#getViewKey() method returns a key which depends on the
-        // IXmlPullParser used to parse the layout files. In this case, the parser is
-        // guaranteed to be an UiElementPullParser, which creates keys that are of type
-        // UiViewElementNode.
+        // The ViewInfo#getViewKey() method returns a cookie uniquely identifying the object
+        // they represent on this side of the API.
+        // In this case, the parser is guaranteed to be an UiElementPullParser, which creates
+        // cookies that are of type UiViewElementNode.
         // We'll simply crash if the type is not right, as this is not supposed to happen
         // and nothing could work if there's a type mismatch.
-        mUiViewKey  = (UiViewElementNode) viewInfo.getViewKey();
+        mUiViewNode  = (UiViewElementNode) viewInfo.getCookie();
 
         int x = viewInfo.getLeft();
         int y = viewInfo.getTop();
@@ -110,7 +110,7 @@ public class CanvasViewInfo implements IPropertySource {
                 // Only use children which have a ViewKey of the correct type.
                 // We can't interact with those when they have a null key or
                 // an incompatible type.
-                if (child.getViewKey() instanceof UiViewElementNode) {
+                if (child.getCookie() instanceof UiViewElementNode) {
                     mChildren.add(new CanvasViewInfo(child, this, x, y));
                 }
             }
@@ -153,12 +153,12 @@ public class CanvasViewInfo implements IPropertySource {
     }
 
     /**
-     * Returns the view key. Could be null, although unlikely.
+     * Returns the view node. Could be null, although unlikely.
      * @return An {@link UiViewElementNode} that uniquely identifies the object in the XML model.
-     * @see ViewInfo#getViewKey()
+     * @see ViewInfo#getCookie()
      */
-    public UiViewElementNode getUiViewKey() {
-        return mUiViewKey;
+    public UiViewElementNode getUiViewNode() {
+        return mUiViewNode;
     }
 
     /**
@@ -211,7 +211,7 @@ public class CanvasViewInfo implements IPropertySource {
     // ---- Implementation of IPropertySource
 
     public Object getEditableValue() {
-        UiViewElementNode uiView = getUiViewKey();
+        UiViewElementNode uiView = getUiViewNode();
         if (uiView != null) {
             return ((IPropertySource) uiView).getEditableValue();
         }
@@ -219,7 +219,7 @@ public class CanvasViewInfo implements IPropertySource {
     }
 
     public IPropertyDescriptor[] getPropertyDescriptors() {
-        UiViewElementNode uiView = getUiViewKey();
+        UiViewElementNode uiView = getUiViewNode();
         if (uiView != null) {
             return ((IPropertySource) uiView).getPropertyDescriptors();
         }
@@ -227,7 +227,7 @@ public class CanvasViewInfo implements IPropertySource {
     }
 
     public Object getPropertyValue(Object id) {
-        UiViewElementNode uiView = getUiViewKey();
+        UiViewElementNode uiView = getUiViewNode();
         if (uiView != null) {
             return ((IPropertySource) uiView).getPropertyValue(id);
         }
@@ -235,7 +235,7 @@ public class CanvasViewInfo implements IPropertySource {
     }
 
     public boolean isPropertySet(Object id) {
-        UiViewElementNode uiView = getUiViewKey();
+        UiViewElementNode uiView = getUiViewNode();
         if (uiView != null) {
             return ((IPropertySource) uiView).isPropertySet(id);
         }
@@ -243,14 +243,14 @@ public class CanvasViewInfo implements IPropertySource {
     }
 
     public void resetPropertyValue(Object id) {
-        UiViewElementNode uiView = getUiViewKey();
+        UiViewElementNode uiView = getUiViewNode();
         if (uiView != null) {
             ((IPropertySource) uiView).resetPropertyValue(id);
         }
     }
 
     public void setPropertyValue(Object id, Object value) {
-        UiViewElementNode uiView = getUiViewKey();
+        UiViewElementNode uiView = getUiViewNode();
         if (uiView != null) {
             ((IPropertySource) uiView).setPropertyValue(id, value);
         }
@@ -263,7 +263,7 @@ public class CanvasViewInfo implements IPropertySource {
      * @return The XML node corresponding to this info object, or null
      */
     public Node getXmlNode() {
-        UiViewElementNode uiView = getUiViewKey();
+        UiViewElementNode uiView = getUiViewNode();
         if (uiView != null) {
             return uiView.getXmlNode();
         }
@@ -281,8 +281,8 @@ public class CanvasViewInfo implements IPropertySource {
         // The root element is the one whose GRAND parent
         // is null (because the parent will be a -document-
         // node).
-        return mUiViewKey == null || mUiViewKey.getUiParent() == null ||
-            mUiViewKey.getUiParent().getUiParent() == null;
+        return mUiViewNode == null || mUiViewNode.getUiParent() == null ||
+            mUiViewNode.getUiParent().getUiParent() == null;
     }
 
     /**
@@ -295,7 +295,7 @@ public class CanvasViewInfo implements IPropertySource {
      */
     public boolean isInvisibleParent() {
         if (mAbsRect.width < SELECTION_MIN_SIZE || mAbsRect.height < SELECTION_MIN_SIZE) {
-            return mUiViewKey != null && mUiViewKey.getDescriptor().hasChildren();
+            return mUiViewNode != null && mUiViewNode.getDescriptor().hasChildren();
         }
 
         return false;
@@ -331,7 +331,7 @@ public class CanvasViewInfo implements IPropertySource {
      */
     /* package */ SimpleElement toSimpleElement() {
 
-        UiViewElementNode uiNode = getUiViewKey();
+        UiViewElementNode uiNode = getUiViewNode();
 
         String fqcn = SimpleXmlTransfer.getFqcn(uiNode.getDescriptor());
         String parentFqcn = null;

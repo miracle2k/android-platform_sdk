@@ -41,7 +41,7 @@ public class NodeFactory {
      * {@link CanvasViewInfo}. The bounds of the node are set to the canvas view bounds.
      */
     public NodeProxy create(CanvasViewInfo canvasViewInfo) {
-        return create(canvasViewInfo.getUiViewKey(), canvasViewInfo.getAbsRect());
+        return create(canvasViewInfo.getUiViewNode(), canvasViewInfo.getAbsRect());
     }
 
     /**
