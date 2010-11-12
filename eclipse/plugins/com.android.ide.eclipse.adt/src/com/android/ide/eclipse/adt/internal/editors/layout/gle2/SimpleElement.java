@@ -74,7 +74,7 @@ public class SimpleElement implements IDragElement {
     /**
      * Returns the bounds of the element's node, if it originated from an existing
      * canvas. The rectangle is invalid and non-null when the element originated
-     * from the object palette.
+     * from the object palette (unless it successfully rendered a preview)
      */
     public Rect getBounds() {
         return mBounds;
