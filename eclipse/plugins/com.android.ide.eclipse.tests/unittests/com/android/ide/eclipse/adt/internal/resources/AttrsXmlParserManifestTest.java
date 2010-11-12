@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.resources;
 
-
 import com.android.ide.eclipse.tests.AdtTestData;
 
 import java.util.Arrays;
