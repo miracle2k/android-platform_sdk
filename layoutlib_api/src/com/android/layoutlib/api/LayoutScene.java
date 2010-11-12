@@ -19,6 +19,7 @@ package com.android.layoutlib.api;
 import com.android.layoutlib.api.SceneResult.LayoutStatus;
 
 import java.awt.image.BufferedImage;
+import java.util.Map;
 
 /**
  * An object allowing interaction with an Android layout.
@@ -78,6 +79,17 @@ public class LayoutScene {
      * This can be safely modified by the caller.
      */
     public BufferedImage getImage() {
+        return null;
+    }
+
+
+    /**
+     * Returns a map of (XML attribute name, attribute value) containing only default attribute
+     * values, for the given view Object.
+     * @param viewObject the view object.
+     * @return a map of the default property values or null.
+     */
+    public Map<String, String> getDefaultViewPropertyValues(Object viewObject) {
         return null;
     }
 

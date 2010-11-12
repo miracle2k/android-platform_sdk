@@ -620,7 +620,7 @@ class LayoutCanvas extends Canvas {
                     // O(n^2) here, but both the selection size and especially the
                     // invisibleParents size are expected to be small
                     if (invisibleParents.contains(viewInfo)) {
-                        UiViewElementNode node = viewInfo.getUiViewKey();
+                        UiViewElementNode node = viewInfo.getUiViewNode();
                         if (node != null) {
                             if (result == null) {
                                 result = new HashSet<UiElementNode>();

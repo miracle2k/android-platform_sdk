@@ -184,7 +184,7 @@ public class ClipboardSupport {
                     CanvasViewInfo vi = cs.getViewInfo();
                     // You can't delete the root element
                     if (vi != null && !vi.isRoot()) {
-                        UiViewElementNode ui = vi.getUiViewKey();
+                        UiViewElementNode ui = vi.getUiViewNode();
                         if (ui != null) {
                             ui.deleteXmlNode();
                         }

@@ -153,7 +153,7 @@ public class ViewHierarchy {
             return;
         }
 
-        UiViewElementNode key = vi.getUiViewKey();
+        UiViewElementNode key = vi.getUiViewNode();
 
         if (key != null) {
             mCanvas.getNodeFactory().create(vi);
@@ -187,7 +187,7 @@ public class ViewHierarchy {
         if (vi.isInvisibleParent()) {
             mInvisibleParents.add(vi);
         } else if (invisibleNodes != null) {
-            UiViewElementNode key = vi.getUiViewKey();
+            UiViewElementNode key = vi.getUiViewNode();
 
             if (key != null && invisibleNodes.contains(key)) {
                 vi.setExploded(true);
@@ -461,7 +461,7 @@ public class ViewHierarchy {
         if (canvasViewInfo == null) {
             return null;
         }
-        if (canvasViewInfo.getUiViewKey() == viewKey) {
+        if (canvasViewInfo.getUiViewNode() == viewKey) {
             return canvasViewInfo;
         }
 
@@ -545,7 +545,7 @@ public class ViewHierarchy {
 
         Set<UiElementNode> nodes = new HashSet<UiElementNode>(mInvisibleParents.size());
         for (CanvasViewInfo info : mInvisibleParents) {
-            UiViewElementNode node = info.getUiViewKey();
+            UiViewElementNode node = info.getUiViewNode();
             if (node != null) {
                 nodes.add(node);
             }
