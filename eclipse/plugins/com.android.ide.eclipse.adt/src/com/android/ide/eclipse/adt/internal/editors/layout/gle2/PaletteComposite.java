@@ -62,6 +62,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -603,8 +604,20 @@ public class PaletteComposite extends Composite {
             if (!mIsPlaceholder) {
                 // Shift the drag feedback image up such that it's centered under the
                 // mouse pointer
-                event.offsetX = mImage.getBounds().width / 2;
-                event.offsetY = mImage.getBounds().height / 2;
+
+                // TODO quick'ndirty fix. swt.dnd in 3.4 doesn't have offsetX/Y.
+                try {
+                    Field xField = event.getClass().getDeclaredField("offsetX");
+                    Field yField = event.getClass().getDeclaredField("offsetY");
+
+                    xField.set(event, Integer.valueOf(mImage.getBounds().width / 2));
+                    yField.set(event, Integer.valueOf(mImage.getBounds().height / 2));
+                } catch (SecurityException e) {
+                } catch (NoSuchFieldException e) {
+                } catch (IllegalArgumentException e) {
+                } catch (IllegalAccessException e) {
+                }
+
                 // ...and record this info in the drag state object such that we can
                 // account for it when performing the drop, since we want to place the newly
                 // inserted object where it is currently shown, not with its top left corner
