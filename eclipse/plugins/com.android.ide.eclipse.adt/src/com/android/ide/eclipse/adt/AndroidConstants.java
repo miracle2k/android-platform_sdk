@@ -118,7 +118,7 @@ public class AndroidConstants {
 
     public final static String FN_TRACEVIEW =
         (SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_WINDOWS) ?
-            "traceview.exe" : "traceview"; //$NON-NLS-1$ //$NON-NLS-2$
+            "traceview.bat" : "traceview"; //$NON-NLS-1$ //$NON-NLS-2$
 
     public final static String FN_HPROF_CONV =
         (SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_WINDOWS) ?
