@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
+
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.widgets.Display;
@@ -35,7 +37,18 @@ public class SwtUtilsTest extends TestCase {
         g.fillRect(0, 0, image.getWidth(), image.getHeight());
         g.dispose();
 
-        BufferedImage crop = SwtUtils.cropBlank(image);
+        BufferedImage crop = SwtUtils.cropBlank(image, null);
+        assertNull(crop);
+    }
+
+    public void testCropBlankPre() throws Exception {
+        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics g = image.getGraphics();
+        g.setColor(new Color(0, true));
+        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        g.dispose();
+
+        BufferedImage crop = SwtUtils.cropBlank(image, new Rect(5, 5, 80, 80));
         assertNull(crop);
     }
 
@@ -46,7 +59,7 @@ public class SwtUtilsTest extends TestCase {
         g.fillRect(0, 0, image.getWidth(), image.getHeight());
         g.dispose();
 
-        BufferedImage crop = SwtUtils.cropBlank(image);
+        BufferedImage crop = SwtUtils.cropBlank(image, null);
         assertNotNull(crop);
         assertEquals(image.getWidth(), crop.getWidth());
         assertEquals(image.getHeight(), crop.getHeight());
@@ -61,7 +74,41 @@ public class SwtUtilsTest extends TestCase {
         g.fillRect(25, 25, 50, 50);
         g.dispose();
 
-        BufferedImage crop = SwtUtils.cropBlank(image);
+        BufferedImage crop = SwtUtils.cropBlank(image, null);
+        assertNotNull(crop);
+        assertEquals(50, crop.getWidth());
+        assertEquals(50, crop.getHeight());
+        assertEquals(0xFF00FF00, crop.getRGB(0, 0));
+        assertEquals(0xFF00FF00, crop.getRGB(49, 49));
+    }
+
+    public void testCropSomethingPre() throws Exception {
+        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics g = image.getGraphics();
+        g.setColor(new Color(0, true));
+        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        g.setColor(new Color(0xFF00FF00, true));
+        g.fillRect(25, 25, 50, 50);
+        g.dispose();
+
+        BufferedImage crop = SwtUtils.cropBlank(image, new Rect(0, 0, 100, 100));
+        assertNotNull(crop);
+        assertEquals(50, crop.getWidth());
+        assertEquals(50, crop.getHeight());
+        assertEquals(0xFF00FF00, crop.getRGB(0, 0));
+        assertEquals(0xFF00FF00, crop.getRGB(49, 49));
+    }
+
+    public void testCropSomethingPre2() throws Exception {
+        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics g = image.getGraphics();
+        g.setColor(new Color(0, true));
+        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        g.setColor(new Color(0xFF00FF00, true));
+        g.fillRect(25, 25, 50, 50);
+        g.dispose();
+
+        BufferedImage crop = SwtUtils.cropBlank(image, new Rect(5, 5, 80, 80));
         assertNotNull(crop);
         assertEquals(50, crop.getWidth());
         assertEquals(50, crop.getHeight());
@@ -76,7 +123,7 @@ public class SwtUtilsTest extends TestCase {
         g.fillRect(0, 0, image.getWidth(), image.getHeight());
         g.dispose();
 
-        BufferedImage crop = SwtUtils.cropColor(image, 0xFF00FF00);
+        BufferedImage crop = SwtUtils.cropColor(image, 0xFF00FF00, null);
         assertNull(crop);
     }
 
@@ -87,7 +134,7 @@ public class SwtUtilsTest extends TestCase {
         g.fillRect(0, 0, image.getWidth(), image.getHeight());
         g.dispose();
 
-        BufferedImage crop = SwtUtils.cropColor(image, 0xFFFF0000);
+        BufferedImage crop = SwtUtils.cropColor(image, 0xFFFF0000, null);
         assertNotNull(crop);
         assertEquals(image.getWidth(), crop.getWidth());
         assertEquals(image.getHeight(), crop.getHeight());
@@ -102,7 +149,7 @@ public class SwtUtilsTest extends TestCase {
         g.fillRect(25, 25, 50, 50);
         g.dispose();
 
-        BufferedImage crop = SwtUtils.cropColor(image, 0xFF00FF00);
+        BufferedImage crop = SwtUtils.cropColor(image, 0xFF00FF00, null);
         assertEquals(50, crop.getWidth());
         assertEquals(50, crop.getHeight());
         assertEquals(0xFFFF0000, crop.getRGB(0, 0));
@@ -110,8 +157,8 @@ public class SwtUtilsTest extends TestCase {
     }
 
     public void testNullOk() throws Exception {
-        SwtUtils.cropBlank(null);
-        SwtUtils.cropColor(null, 0);
+        SwtUtils.cropBlank(null, null);
+        SwtUtils.cropColor(null, 0, null);
     }
 
     public void testImageConvertNoAlpha() throws Exception {
@@ -206,6 +253,17 @@ public class SwtUtilsTest extends TestCase {
                 assertEquals(expected, actual);
             }
         }
+    }
+
+    public void testNothingTodo() throws Exception {
+        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics g = image.getGraphics();
+        g.setColor(new Color(0xFF00FF00, true));
+        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        g.dispose();
+
+        BufferedImage crop = SwtUtils.cropColor(image, 0xFFFF0000, new Rect(40, 40, 0, 0));
+        assertNull(crop);
     }
 
 }

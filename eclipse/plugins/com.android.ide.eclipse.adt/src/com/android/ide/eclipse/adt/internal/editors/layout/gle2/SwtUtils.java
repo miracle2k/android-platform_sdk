@@ -15,6 +15,8 @@
  */
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
+
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
@@ -91,18 +93,22 @@ public class SwtUtils {
      * this is not the same as pixels that aren't opaque (an alpha value other than 255).
      *
      * @param image the image to be cropped
+     * @param initialCrop If not null, specifies a rectangle which contains an initial
+     *            crop to continue. This can be used to crop an image where you already
+     *            know about margins in the image
      * @return a cropped version of the source image, or null if the whole image was blank
      *         and cropping completely removed everything
      */
-    public static BufferedImage cropBlank(BufferedImage image) {
-        return crop(image, new CropFilter() {
+    public static BufferedImage cropBlank(BufferedImage image, Rect initialCrop) {
+        CropFilter filter = new CropFilter() {
             public boolean crop(BufferedImage bufferedImage, int x, int y) {
                 int rgb = bufferedImage.getRGB(x, y);
                 return (rgb & 0xFF000000) == 0x00000000;
                 // TODO: Do a threshold of 80 instead of just 0? Might give better
                 // visual results -- e.g. check <= 0x80000000
             }
-        });
+        };
+        return crop(image, filter, initialCrop);
     }
 
     /**
@@ -112,15 +118,20 @@ public class SwtUtils {
      * @param image the image to be cropped
      * @param blankRgba the color considered to be blank, as a 32 pixel integer with 8
      *            bits of alpha, red, green and blue
+     * @param initialCrop If not null, specifies a rectangle which contains an initial
+     *            crop to continue. This can be used to crop an image where you already
+     *            know about margins in the image
      * @return a cropped version of the source image, or null if the whole image was blank
      *         and cropping completely removed everything
      */
-    public static BufferedImage cropColor(BufferedImage image, final int blankRgba) {
-        return crop(image, new CropFilter() {
+    public static BufferedImage cropColor(BufferedImage image,
+            final int blankRgba, Rect initialCrop) {
+        CropFilter filter = new CropFilter() {
             public boolean crop(BufferedImage bufferedImage, int x, int y) {
                 return blankRgba == bufferedImage.getRGB(x, y);
             }
-        });
+        };
+        return crop(image, filter, initialCrop);
     }
 
     /**
@@ -139,16 +150,29 @@ public class SwtUtils {
         boolean crop(BufferedImage image, int x, int y);
     }
 
-    private static BufferedImage crop(BufferedImage image, CropFilter filter) {
+    private static BufferedImage crop(BufferedImage image, CropFilter filter, Rect initialCrop) {
         if (image == null) {
             return null;
         }
 
         // First, determine the dimensions of the real image within the image
-        int x1 = 0;
-        int y1 = 0;
-        int x2 = image.getWidth();
-        int y2 = image.getHeight();
+        int x1, y1, x2, y2;
+        if (initialCrop != null) {
+            x1 = initialCrop.x;
+            y1 = initialCrop.y;
+            x2 = initialCrop.x + initialCrop.w;
+            y2 = initialCrop.y + initialCrop.h;
+        } else {
+            x1 = 0;
+            y1 = 0;
+            x2 = image.getWidth();
+            y2 = image.getHeight();
+        }
+
+        // Nothing left to crop
+        if (x1 == x2 || y1 == y2) {
+            return null;
+        }
 
         // This algorithm is a bit dumb -- it just scans along the edges looking for
         // a pixel that shouldn't be cropped. I could maybe try to make it smarter by
