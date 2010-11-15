@@ -75,7 +75,7 @@ public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
                         // Insert position line
                         "drawLine(1,0,1,480)" + (haveBounds ?
                         // Outline of dragged node centered over position line
-                        ", useStyle(DROP_PREVIEW), " + "drawRect(Rect[-49,0,100,80])"
+                        ", useStyle(DROP_PREVIEW), " + "drawRect(Rect[1,0,100,80])"
                                 // Nothing when we don't have bounds
                                 : "") + "]", graphics.getDrawn().toString());
 
@@ -207,17 +207,17 @@ public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
 
                 // Drop zones
                 "useStyle(DROP_ZONE), drawLine(0,0,240,0), drawLine(0,90,240,90), "
-                        + "drawLine(0,190,240,190), drawLine(0,290,240,290)",
+                        + "drawLine(0,190,240,190), drawLine(0,290,240,290), drawLine(0,381,240,381), ",
 
                 // Active nearest line
                 "useStyle(DROP_ZONE_ACTIVE), useStyle(DROP_PREVIEW), drawLine(0,381,240,381)",
 
                 // Preview of the dropped rectangle
-                "useStyle(DROP_PREVIEW), drawRect(Rect[0,341,105,80])");
+                "useStyle(DROP_PREVIEW), drawRect(Rect[0,381,105,80])");
 
         // Check without bounds too
         dragInto(true, new Rect(0, 0, 105, 80), new Point(30, 500), 4, -1,
-                "useStyle(DROP_PREVIEW), drawRect(Rect[0,341,105,80])");
+                "useStyle(DROP_PREVIEW), drawRect(Rect[0,381,105,80])");
     }
 
     public void testDragInVerticalMiddle() {
