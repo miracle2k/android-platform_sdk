@@ -140,6 +140,10 @@ public class LinearLayoutRule extends BaseLayout {
 
                 last = isVertical ? (bc.y + bc.h) : (bc.x + bc.w);
                 lastDragged = isDragged;
+            } else {
+                // We still have to count this position even if it has no bounds, or
+                // subsequent children will be inserted at the wrong place
+                pos++;
             }
         }
 
@@ -150,7 +154,8 @@ public class LinearLayoutRule extends BaseLayout {
             indexes.add(new MatchPos(v, pos));
         }
 
-        return new DropFeedback(new LinearDropData(indexes, isVertical, selfPos),
+        int posCount = targetNode.getChildren().length + 1;
+        return new DropFeedback(new LinearDropData(indexes, posCount, isVertical, selfPos),
                 new IFeedbackPainter() {
 
                     public void paint(IGraphics gc, INode node, DropFeedback feedback) {
@@ -223,7 +228,7 @@ public class LinearLayoutRule extends BaseLayout {
             }
 
             if (be.isValid()) {
-                boolean isLast = (data.getInsertPos() == data.getIndexes().size());
+                boolean isLast = data.isLastPosition();
 
                 // At least the first element has a bound. Draw rectangles for
                 // all dropped elements with valid bounds, offset at the drop
@@ -241,7 +246,16 @@ public class LinearLayoutRule extends BaseLayout {
 
                 gc.useStyle(DrawingStyle.DROP_PREVIEW);
                 for (IDragElement element : elements) {
-                    drawElement(gc, element, offsetX, offsetY);
+                    Rect bounds = element.getBounds();
+                    if (bounds.isValid() && (bounds.w > b.w || bounds.h > b.h)) {
+                        // The bounds of the child does not fully fit inside the target.
+                        // Limit the bounds to the layout bounds.
+                        Rect within = new Rect(b.x, b.y,
+                                Math.min(bounds.w, b.w), Math.min(bounds.h, b.h));
+                        gc.drawRect(within);
+                    } else {
+                        drawElement(gc, element, offsetX, offsetY);
+                    }
                 }
             }
         }
@@ -390,6 +404,9 @@ public class LinearLayoutRule extends BaseLayout {
         /** Insert points (pixels + index) */
         private final List<MatchPos> mIndexes;
 
+        /** Number of insert positions in the target node */
+        private final int mNumPositions;
+
         /** Current marker X position */
         private Integer mCurrX;
 
@@ -409,8 +426,10 @@ public class LinearLayoutRule extends BaseLayout {
         /** height of match line if it's a vertical one */
         private Integer mHeight;
 
-        public LinearDropData(List<MatchPos> indexes, boolean isVertical, int selfPos) {
+        public LinearDropData(List<MatchPos> indexes, int numPositions,
+                boolean isVertical, int selfPos) {
             this.mIndexes = indexes;
+            this.mNumPositions = numPositions;
             this.mVertical = isVertical;
             this.mSelfPos = selfPos;
         }
@@ -478,6 +497,15 @@ public class LinearLayoutRule extends BaseLayout {
 
         private Integer getHeight() {
             return mHeight;
+        }
+
+        /**
+         * Returns true if we are inserting into the last position
+         *
+         * @return true if we are inserting into the last position
+         */
+        public boolean isLastPosition() {
+            return mInsertPos == mNumPositions - 1;
         }
     }
 }
