@@ -472,24 +472,13 @@ public class MoveGesture extends DropGesture {
     }
 
     /**
-     * Returns the top left corner location of the drop target event.
+     * Returns the mouse location of the drop target event.
      *
      * @param event the drop target event
      * @return a {@link ControlPoint} location corresponding to the top left corner
      */
     private ControlPoint getDropLocation(DropTargetEvent event) {
-        ControlPoint p = ControlPoint.create(mCanvas, event);
-
-        // Is the image offset from the mouse pointer?
-        GlobalCanvasDragInfo dragInfo = GlobalCanvasDragInfo.getInstance();
-        if (dragInfo != null) {
-            ControlPoint imageOffset = dragInfo.getImageOffset();
-            if (imageOffset != null) {
-                p = ControlPoint.create(mCanvas, p.x + imageOffset.x, p.y + imageOffset.y);
-            }
-        }
-
-        return p;
+        return ControlPoint.create(mCanvas, event);
     }
 
     /**

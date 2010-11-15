@@ -51,6 +51,7 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -606,31 +607,22 @@ public class PaletteComposite extends Composite {
                 // Shift the drag feedback image up such that it's centered under the
                 // mouse pointer
 
-                // TODO quick'ndirty fix. swt.dnd in 3.4 doesn't have offsetX/Y.
-                ControlPoint offset = ControlPoint.create(null, 0, 0);
+                // Eclipse 3.4 does not support drag image offsets
+                // TODO: Replace by direct field access when we drop Eclipse 3.4 support.
                 try {
-                    Field xField = event.getClass().getDeclaredField("offsetX");
-                    Field yField = event.getClass().getDeclaredField("offsetY");
+                    Field xField = event.getClass().getDeclaredField("offsetX"); //$NON-NLS-1$
+                    Field yField = event.getClass().getDeclaredField("offsetY"); //$NON-NLS-1$
 
-                    int offsetX = mImage.getBounds().width / 2;
-                    int offsetY = mImage.getBounds().height / 2;
+                    Rectangle imageBounds = mImage.getBounds();
+                    int offsetX = imageBounds.width / 2;
+                    int offsetY = imageBounds.height / 2;
                     xField.set(event, Integer.valueOf(offsetX));
                     yField.set(event, Integer.valueOf(offsetY));
-
-                    // ...and record this info in the drag state object such that we can
-                    // account for it when performing the drop, since we want to place the newly
-                    // inserted object where it is currently shown, not with its top left corner
-                    // in the center where the mouse cursor was (this mostly matters for
-                    // the AbsoluteLayout).
-                    offset = ControlPoint.create(null, -offsetX, -offsetY);
-
                 } catch (SecurityException e) {
                 } catch (NoSuchFieldException e) {
                 } catch (IllegalArgumentException e) {
                 } catch (IllegalAccessException e) {
                 }
-
-                GlobalCanvasDragInfo.getInstance().setImageOffset(offset);
             }
         }
 

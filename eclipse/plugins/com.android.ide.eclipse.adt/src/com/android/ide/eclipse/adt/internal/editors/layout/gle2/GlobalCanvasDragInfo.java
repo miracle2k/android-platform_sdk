@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import org.eclipse.swt.dnd.DragSourceEffect;
 
 /**
  * This singleton is used to keep track of drag'n'drops initiated within this
@@ -44,8 +43,6 @@ final class GlobalCanvasDragInfo {
     private CanvasSelection[] mCurrentSelection;
     private Object mSourceCanvas = null;
     private Runnable mRemoveSourceHandler;
-
-    private ControlPoint mImageOffset;
 
     /** Private constructor. Use {@link #getInstance()} to retrieve the singleton. */
     private GlobalCanvasDragInfo() {
@@ -116,27 +113,5 @@ final class GlobalCanvasDragInfo {
             mRemoveSourceHandler.run();
             mRemoveSourceHandler = null;
         }
-    }
-
-    /**
-     * Returns an image offset set on this drag info. The image offset is the distance
-     * between the top left corner of the dragged image, and the mouse position. It is
-     * typically the negative distance of the offsets set on a {@link DragSourceEffect}
-     * image in effect during the drag and drop.
-     *
-     * @return The image offset, or null if none apply
-     */
-    public ControlPoint getImageOffset() {
-        return mImageOffset;
-    }
-
-    /**
-     * Sets the image offset for this drag. See the {@link #getImageOffset()}
-     * documentation for details.
-     *
-     * @param imageOffset a new offset to apply
-     */
-    public void setImageOffset(ControlPoint imageOffset) {
-        this.mImageOffset = imageOffset;
     }
 }

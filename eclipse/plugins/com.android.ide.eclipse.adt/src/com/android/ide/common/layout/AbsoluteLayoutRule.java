@@ -84,8 +84,8 @@ public class AbsoluteLayoutRule extends BaseLayout {
             // At least the first element has a bound. Draw rectangles
             // for all dropped elements with valid bounds, offset at
             // the drop point.
-            int offsetX = x - be.x;
-            int offsetY = y - be.y;
+            int offsetX = x - be.x - be.w / 2;
+            int offsetY = y - be.y - be.h / 2;
             gc.useStyle(DrawingStyle.DROP_PREVIEW);
             for (IDragElement element : elements) {
                 drawElement(gc, element, offsetX, offsetY);
@@ -150,8 +150,8 @@ public class AbsoluteLayoutRule extends BaseLayout {
                     // Copy all the attributes, modifying them as needed.
                     addAttributes(newChild, element, idMap, DEFAULT_ATTR_FILTER);
 
-                    int x = p.x - b.x;
-                    int y = p.y - b.y;
+                    int x = p.x - b.x - (be.isValid() ? be.w / 2 : 0);
+                    int y = p.y - b.y - (be.isValid() ? be.h / 2 : 0);
 
                     if (first) {
                         first = false;
