@@ -84,6 +84,12 @@ public class Main {
         // get the ddms parent folder location
         String ddmsParentLocation = System.getProperty("com.android.ddms.bindir"); //$NON-NLS-1$
 
+        if (ddmsParentLocation == null) {
+            // Tip: for debugging DDMS in eclipse, set this env var to the SDK/tools
+            // directory path.
+            ddmsParentLocation = System.getenv("com.android.ddms.bindir"); //$NON-NLS-1$
+        }
+
         // we're past the point where ddms can be called just to send a ping, so we can
         // ping for ddms itself.
         ping(ddmsParentLocation);
