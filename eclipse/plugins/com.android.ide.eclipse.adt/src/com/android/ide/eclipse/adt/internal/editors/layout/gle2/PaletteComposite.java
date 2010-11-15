@@ -555,7 +555,7 @@ public class PaletteComposite extends Composite {
         private static final int RENDER_WIDTH = 500;
 
         /** Amount of alpha to multiply into the image (divided by 256) */
-        private static final int IMG_ALPHA = 192;
+        private static final int IMG_ALPHA = 216;
 
         /** The item this preview is rendering a preview for */
         private final Item mItem;
@@ -590,14 +590,22 @@ public class PaletteComposite extends Composite {
                 final Image image = new Image(mItem.getDisplay(), size.x, size.y);
                 gc.copyArea(image, 0, 0);
                 gc.dispose();
-                ImageData data = image.getImageData();
 
-                data.alpha = IMG_ALPHA;
+                Display display = mItem.getDisplay();
+                BufferedImage awtImage = SwtUtils.convertToAwt(image);
+                if (awtImage != null) {
+                    awtImage = ImageUtils.createDropShadow(awtImage, 3 /* shadowSize */,
+                            0.7f /* shadowAlpha */, 0x000000 /* shadowRgb */);
+                    mImage = SwtUtils.convertToSwt(display, awtImage, true, IMG_ALPHA);
+                } else {
+                    ImageData data = image.getImageData();
+                    data.alpha = IMG_ALPHA;
 
-                // Changing the ImageData -after- constructing an image on it
-                // has no effect, so we have to construct a new image. Luckily these
-                // are tiny images.
-                mImage = new Image(mItem.getDisplay(), data);
+                    // Changing the ImageData -after- constructing an image on it
+                    // has no effect, so we have to construct a new image. Luckily these
+                    // are tiny images.
+                    mImage = new Image(display, data);
+                }
                 image.dispose();
             }
 
@@ -707,15 +715,39 @@ public class PaletteComposite extends Composite {
                     }
 
                     if (hasTransparency) {
-                        cropped = SwtUtils.cropBlank(image, initialCrop);
+                        cropped = ImageUtils.cropBlank(image, initialCrop);
                     } else {
-                        int edgeColor = image.getRGB(image.getWidth() - 1, image.getHeight() - 1);
-                        cropped = SwtUtils.cropColor(image, edgeColor, initialCrop);
+                        // Find out what the "background" color is such that we can properly
+                        // crop it out of the image. To do this we pick out a pixel in the
+                        // bottom right unpainted area. Rather than pick the one in the far
+                        // bottom corner, we pick one as close to the bounds of the view as
+                        // possible (but still outside of the bounds), such that we can
+                        // deal with themes like the dialog theme.
+                        int edgeX = image.getWidth() -1;
+                        int edgeY = image.getHeight() -1;
+                        if (viewInfo != null) {
+                            if (viewInfo.getRight() < image.getWidth()-1) {
+                                edgeX = viewInfo.getRight()+1;
+                            }
+                            if (viewInfo.getBottom() < image.getHeight()-1) {
+                                edgeY = viewInfo.getBottom()+1;
+                            }
+                        }
+                        int edgeColor = image.getRGB(edgeX, edgeY);
+                        cropped = ImageUtils.cropColor(image, edgeColor, initialCrop);
                     }
 
                     if (cropped != null) {
+                        boolean needsContrast = hasTransparency
+                                && !ImageUtils.containsDarkPixels(cropped);
+                        cropped = ImageUtils.createDropShadow(cropped,
+                                hasTransparency ? 3 : 5 /* shadowSize */,
+                                !hasTransparency ? 0.6f : needsContrast ? 0.8f : 0.7f /* alpha */,
+                                0x000000 /* shadowRgb */);
+
                         Display display = getControl().getDisplay();
-                        Image swtImage = SwtUtils.convertImage(display, cropped, true, IMG_ALPHA);
+                        int alpha = (!hasTransparency || !needsContrast) ? IMG_ALPHA : -1;
+                        Image swtImage = SwtUtils.convertToSwt(display, cropped, true, alpha);
                         return swtImage;
                     }
                 }
