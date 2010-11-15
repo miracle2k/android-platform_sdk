@@ -21,16 +21,22 @@ import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
 
 /**
- * An {@link IViewRule} for android.widget.ListView and all its derived classes.
- * This is the "root" rule, that is used whenever there is not more specific
- * rule to apply.
+ * An {@link IViewRule} for com.google.android.maps.MapView.
+ * <p>
+ * TODO: This class should be pulled out of the ADT and bundled with the add ons
+ * (not the core jar but an optional tool jar)
  */
-public class ListViewRule extends BaseView {
+public class MapViewRule extends BaseView {
 
     @Override
     public void onCreate(INode node, INode parent, InsertType insertType) {
         super.onCreate(node, parent, insertType);
 
-        node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+        if (insertType == InsertType.CREATE) {
+            node.setAttribute(ANDROID_URI, "android:apiKey",  //$NON-NLS-1$
+                   "Your API key: see " + //$NON-NLS-1$
+                   "http://code.google.com/android/add-ons/google-apis/mapkey.html"); //$NON-NLS-1$
+        }
     }
+
 }

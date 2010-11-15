@@ -21,16 +21,29 @@ import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
 
 /**
- * An {@link IViewRule} for android.widget.ListView and all its derived classes.
- * This is the "root" rule, that is used whenever there is not more specific
- * rule to apply.
+ * An {@link IViewRule} for android.widget.ScrollView.
  */
-public class ListViewRule extends BaseView {
+public class ScrollViewRule extends BaseView {
+
+    @Override
+    public void onChildInserted(INode child, INode parent, InsertType insertType) {
+        super.onChildInserted(child, parent, insertType);
+
+        // The child of the ScrollView should fill in both directions
+        child.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+        child.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+    }
 
     @Override
     public void onCreate(INode node, INode parent, InsertType insertType) {
         super.onCreate(node, parent, insertType);
 
-        node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+        if (insertType == InsertType.CREATE) {
+            // Insert a default linear layout (which will in turn be registered as
+            // a child of this node and the create child method above will set its
+            // fill parent attributes, its id, etc.
+            node.appendChild(FQCN_LINEAR_LAYOUT);
+        }
     }
+
 }

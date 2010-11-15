@@ -179,6 +179,9 @@ import java.util.regex.Pattern;
                     contrib = createDynamicChoices(
                             (MenuAction.Choices)firstAction, choiceMap, actionsMap);
                 }
+            } else {
+                // Must be a plain action
+                contrib = createDynamicAction(firstAction, actionsMap);
             }
 
             if (contrib != null) {
@@ -328,7 +331,7 @@ import java.util.regex.Pattern;
 
                 mEditor.wrapUndoEditXmlModel(label, new Runnable() {
                     public void run() {
-                        // Invoke the closures of all the actions using the same action-id
+                        // Invoke the callbacks of all the actions using the same action-id
                         for (MenuAction a2 : actions) {
                             if (a2 instanceof MenuAction.Action) {
                                 IMenuCallback c = ((MenuAction.Action) a2).getCallback();
@@ -348,6 +351,66 @@ import java.util.regex.Pattern;
         };
         a.setId(firstAction.getId());
         a.setChecked(isChecked);
+
+        return new ActionContributionItem(a);
+    }
+
+    /**
+     * Invoked by {@link #populateDynamicContextMenu()} to create a new menu item
+     * for a plain action. This is nearly identical to {@link #createDynamicMenuToggle},
+     * except for the {@link IAction} type and the removal of setChecked, isChecked, etc.
+     *
+     * @param firstAction The action to convert to a menu item. In the case of a
+     *   multiple selection, this is the first of many similar actions.
+     * @param actionsMap Map of all contributed actions.
+     * @return a new {@link IContributionItem} to add to the context menu
+     */
+    private IContributionItem createDynamicAction(
+            final MenuAction.Action firstAction,
+            final TreeMap<String, ArrayList<MenuAction>> actionsMap) {
+
+        Action a = new Action(firstAction.getTitle(), IAction.AS_PUSH_BUTTON) {
+            @Override
+            public void run() {
+                final List<MenuAction> actions = actionsMap.get(firstAction.getId());
+                if (actions == null || actions.isEmpty()) {
+                    return;
+                }
+
+                String label = actions.get(0).getTitle();
+                if (actions.size() > 1) {
+                    label += String.format(" (%d elements)", actions.size());
+                }
+
+                if (mEditor.isEditXmlModelPending()) {
+                    // This should not be happening.
+                    logError("Action '%s' failed: XML changes pending, document might be corrupt.", //$NON-NLS-1$
+                             label);
+                    return;
+                }
+
+                mEditor.wrapUndoEditXmlModel(label, new Runnable() {
+                    public void run() {
+                        // Invoke the callbacks of all the actions using the same action-id
+                        for (MenuAction a2 : actions) {
+                            if (a2 instanceof MenuAction.Action) {
+                                IMenuCallback c = ((MenuAction.Action) a2).getCallback();
+                                if (c != null) {
+                                    try {
+                                        // Values do not apply for plain actions
+                                        c.action(a2, null /* valueId */, null /* newValue */);
+                                    } catch (Exception e) {
+                                        RulesEngine gre = mCanvas.getRulesEngine();
+                                        gre.logError("XML edit operation failed: %s", e.toString());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+        a.setId(firstAction.getId());
 
         return new ActionContributionItem(a);
     }
@@ -429,7 +492,7 @@ import java.util.regex.Pattern;
             }
 
             // We consider the item to be checked if all actions are all checked.
-            // This means a mixed item will be first toggled from off to on by all the closures.
+            // This means a mixed item will be first toggled from off to on by all the callbacks.
             final boolean isChecked = numOff == 0 && numOn > 0;
             boolean isMixed = numOff > 0 && numOn > 0;
 
@@ -456,7 +519,7 @@ import java.util.regex.Pattern;
 
                     mEditor.wrapUndoEditXmlModel(label, new Runnable() {
                         public void run() {
-                            // Invoke the closures of all the actions using the same action-id
+                            // Invoke the callbacks of all the actions using the same action-id
                             for (MenuAction a2 : actions) {
                                 if (a2 instanceof MenuAction.Action) {
                                     try {

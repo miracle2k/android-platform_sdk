@@ -899,7 +899,7 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         if (mRulesEngine == null) {
-            mRulesEngine = new RulesEngine(mEditedFile.getProject());
+            mRulesEngine = new RulesEngine(this, mEditedFile.getProject());
             if (mCanvasViewer != null) {
                 mCanvasViewer.getCanvas().setRulesEngine(mRulesEngine);
             }
@@ -947,6 +947,15 @@ public class GraphicalEditorPart extends EditorPart
 
     public LayoutEditor getLayoutEditor() {
         return mLayoutEditor;
+    }
+
+    /**
+     * Returns the {@link RulesEngine} associated with this editor
+     *
+     * @return the {@link RulesEngine} associated with this editor, never null
+     */
+    public RulesEngine getRulesEngine() {
+        return mRulesEngine;
     }
 
     /* package */ LayoutCanvas getCanvasControl() {
@@ -1174,7 +1183,7 @@ public class GraphicalEditorPart extends EditorPart
         Set<UiElementNode> explodeNodes = canvas.getNodesToExplode();
 
         // Compute the layout
-        Rectangle rect = getBounds();
+        Rectangle rect = getScreenBounds();
 
         int width = rect.width;
         int height = rect.height;
@@ -1355,7 +1364,7 @@ public class GraphicalEditorPart extends EditorPart
         // FIXME: get rid of the current LayoutScene if any.
     }
 
-    public Rectangle getBounds() {
+    public Rectangle getScreenBounds() {
         return mConfigComposite.getScreenBounds();
     }
 

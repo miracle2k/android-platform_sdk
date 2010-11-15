@@ -127,10 +127,10 @@ public class AndroidConstants {
     /** Absolute path of the workspace root, i.e. "/" */
     public final static String WS_ROOT = WS_SEP;
 
-    /** Absolute path of the resource folder, eg "/res".<br> This is a workspace path. */
+    /** Absolute path of the resource folder, e.g. "/res".<br> This is a workspace path. */
     public final static String WS_RESOURCES = WS_SEP + SdkConstants.FD_RESOURCES;
 
-    /** Absolute path of the resource folder, eg "/assets".<br> This is a workspace path. */
+    /** Absolute path of the resource folder, e.g. "/assets".<br> This is a workspace path. */
     public final static String WS_ASSETS = WS_SEP + SdkConstants.FD_ASSETS;
 
     /** Leaf of the javaDoc folder. Does not start with a separator. */
@@ -212,7 +212,7 @@ public class AndroidConstants {
     public final static String MARKER_ATTR_TYPE_PROVIDER = "provider"; //$NON-NLS-1$
 
     /**
-     * Prefered compiler level, i.e. "1.5".
+     * Preferred compiler level, i.e. "1.5".
      */
     public final static String COMPILER_COMPLIANCE_PREFERRED = "1.5"; //$NON-NLS-1$
     /**

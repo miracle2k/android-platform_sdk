@@ -16,21 +16,13 @@
 
 package com.android.ide.common.layout;
 
-import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
-import com.android.ide.common.api.InsertType;
 
 /**
- * An {@link IViewRule} for android.widget.ListView and all its derived classes.
- * This is the "root" rule, that is used whenever there is not more specific
- * rule to apply.
+ * An {@link IViewRule} for android.widget.AbsListViewRule
  */
-public class ListViewRule extends BaseView {
+public class AbsListViewRule extends IgnoredLayoutRule {
 
-    @Override
-    public void onCreate(INode node, INode parent, InsertType insertType) {
-        super.onCreate(node, parent, insertType);
+    // GridViews and ListViews are not configurable via XML
 
-        node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
-    }
 }

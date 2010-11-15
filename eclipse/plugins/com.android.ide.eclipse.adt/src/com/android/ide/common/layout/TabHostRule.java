@@ -16,7 +16,9 @@
 
 package com.android.ide.common.layout;
 
+import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.InsertType;
 
 /**
  * An {@link IViewRule} for android.widget.TabHost.
@@ -26,6 +28,32 @@ public class TabHostRule extends IgnoredLayoutRule {
     // manipulate its children via the TabHost rather than directly manipulating
     // the child elements yourself, e.g. via addTab() etc.
 
-    // TODO: We should add a context menu here to add tabs. We should also add
-    // creation code to pre-populate a tab
+    @Override
+    public void onCreate(INode node, INode parent, InsertType insertType) {
+        super.onCreate(node, parent, insertType);
+
+        if (insertType == InsertType.CREATE) {
+            // Configure default Table setup as described in the Table tutorial
+            node.setAttribute(ANDROID_URI, ATTR_ID, "@android:id/tabhost"); //$NON-NLS-1$
+            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+
+            INode linear = node.appendChild(FQCN_LINEAR_LAYOUT);
+            linear.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+            linear.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+            linear.setAttribute(ANDROID_URI, LinearLayoutRule.ATTR_ORIENTATION,
+                    LinearLayoutRule.VALUE_VERTICAL);
+
+            INode tab = linear.appendChild(FQCN_TAB_WIDGET);
+            tab.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+            tab.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_WRAP_CONTENT);
+            tab.setAttribute(ANDROID_URI, ATTR_ID, "@android:id/tabs"); //$NON-NLS-1$
+
+            INode frame = linear.appendChild(FQCN_FRAME_LAYOUT);
+            frame.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+            frame.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+            frame.setAttribute(ANDROID_URI, ATTR_ID, "@android:id/tabcontent"); //$NON-NLS-1$
+        }
+    }
+
 }

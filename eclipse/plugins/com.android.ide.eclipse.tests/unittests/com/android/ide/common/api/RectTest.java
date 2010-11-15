@@ -16,11 +16,6 @@
 
 package com.android.ide.common.api;
 
-import com.android.ide.common.api.Point;
-import com.android.ide.common.api.Rect;
-
-import org.eclipse.swt.graphics.Rectangle;
-
 import junit.framework.TestCase;
 
 public class RectTest extends TestCase {
@@ -54,16 +49,6 @@ public class RectTest extends TestCase {
         assertEquals(r2, r);
     }
 
-    public final void testRectRectangle() {
-        Rectangle r = new Rectangle(3, 4, 20, 30);
-        Rect r2 = new Rect(r);
-
-        assertEquals(3, r2.x);
-        assertEquals(4, r2.y);
-        assertEquals(20, r2.w);
-        assertEquals(30, r2.h);
-    }
-
     public final void testSetIntIntIntInt() {
         Rect r = new Rect(1, 2, 3, 4);
         Rect r2 = r.set(3, 4, 20, 30);
@@ -78,19 +63,6 @@ public class RectTest extends TestCase {
     public final void testSetRect() {
         Rect r = new Rect(1, 2, 3, 4);
         Rect r2 = new Rect(3, 4, 20, 30);
-        Rect r3 = r.set(r2);
-
-        assertSame(r3, r);
-        assertNotSame(r3, r2);
-        assertEquals(3, r.x);
-        assertEquals(4, r.y);
-        assertEquals(20, r.w);
-        assertEquals(30, r.h);
-    }
-
-    public final void testSetRectangle() {
-        Rect r = new Rect(1, 2, 3, 4);
-        Rectangle r2 = new Rectangle(3, 4, 20, 30);
         Rect r3 = r.set(r2);
 
         assertSame(r3, r);

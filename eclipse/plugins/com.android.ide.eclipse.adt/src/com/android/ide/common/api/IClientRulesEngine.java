@@ -28,8 +28,6 @@ import com.android.sdklib.annotations.Nullable;
  * <b>NOTE: This is not a public or final API; if you rely on this be prepared
  * to adjust your code for the next tools release.</b>
  * </p>
- *
- * @see IViewRule#RULES_ENGINE
  */
 public interface IClientRulesEngine {
 
@@ -55,6 +53,14 @@ public interface IClientRulesEngine {
      *   is fast and will return the same rule instance.
      */
     IViewRule loadRule(String fqcn);
+
+    /**
+     * Returns the metadata associated with the given fully qualified class name.
+     *
+     * @param fqcn a fully qualified class name for an Android view class
+     * @return the metadata associated with the given fully qualified class name.
+     */
+    IViewMetadata getMetadata(String fqcn);
 
     /**
      * Displays the given message string in an alert dialog with an "OK" button.
