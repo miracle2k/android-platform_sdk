@@ -15,20 +15,17 @@
  */
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.common.api.Rect;
-
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.widgets.Display;
 
-import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
 
 /**
- * Various generic SWT utilities such as image conversion and cropping.
+ * Various generic SWT utilities such as image conversion.
  */
 public class SwtUtils {
     private SwtUtils() {
@@ -47,7 +44,7 @@ public class SwtUtils {
      * @return A new SWT {@link Image} with the same contents as the source
      *         {@link BufferedImage}
      */
-    public static Image convertImage(Display display, BufferedImage awtImage,
+    public static Image convertToSwt(Display display, BufferedImage awtImage,
             boolean transferAlpha, int globalAlpha) {
         int width = awtImage.getWidth();
         int height = awtImage.getHeight();
@@ -88,158 +85,28 @@ public class SwtUtils {
     }
 
     /**
-     * Crops blank pixels from the edges of the image and returns the cropped result. We
-     * crop off pixels that are blank (meaning they have an alpha value = 0). Note that
-     * this is not the same as pixels that aren't opaque (an alpha value other than 255).
+     * Converts a direct-color model SWT image to an equivalent AWT image. If the image
+     * does not have a supported color model, returns null. This method does <b>NOT</b>
+     * preserve alpha in the source image.
      *
-     * @param image the image to be cropped
-     * @param initialCrop If not null, specifies a rectangle which contains an initial
-     *            crop to continue. This can be used to crop an image where you already
-     *            know about margins in the image
-     * @return a cropped version of the source image, or null if the whole image was blank
-     *         and cropping completely removed everything
+     * @param swtImage the SWT image to be converted to AWT
+     * @return an AWT image representing the source SWT image
      */
-    public static BufferedImage cropBlank(BufferedImage image, Rect initialCrop) {
-        CropFilter filter = new CropFilter() {
-            public boolean crop(BufferedImage bufferedImage, int x, int y) {
-                int rgb = bufferedImage.getRGB(x, y);
-                return (rgb & 0xFF000000) == 0x00000000;
-                // TODO: Do a threshold of 80 instead of just 0? Might give better
-                // visual results -- e.g. check <= 0x80000000
+    public static BufferedImage convertToAwt(Image swtImage) {
+        ImageData data = swtImage.getImageData();
+        BufferedImage awtImage = new BufferedImage(data.width, data.height, BufferedImage.TYPE_INT_ARGB);
+        PaletteData palette = data.palette;
+        if (palette.isDirect) {
+            for (int y = 0; y < data.height; y++) {
+                for (int x = 0; x < data.width; x++) {
+                  int pixel = data.getPixel(x, y);
+                  awtImage.setRGB(x, y, 0xFF000000 | pixel);
+                }
             }
-        };
-        return crop(image, filter, initialCrop);
-    }
-
-    /**
-     * Crops pixels of a given color from the edges of the image and returns the cropped
-     * result.
-     *
-     * @param image the image to be cropped
-     * @param blankRgba the color considered to be blank, as a 32 pixel integer with 8
-     *            bits of alpha, red, green and blue
-     * @param initialCrop If not null, specifies a rectangle which contains an initial
-     *            crop to continue. This can be used to crop an image where you already
-     *            know about margins in the image
-     * @return a cropped version of the source image, or null if the whole image was blank
-     *         and cropping completely removed everything
-     */
-    public static BufferedImage cropColor(BufferedImage image,
-            final int blankRgba, Rect initialCrop) {
-        CropFilter filter = new CropFilter() {
-            public boolean crop(BufferedImage bufferedImage, int x, int y) {
-                return blankRgba == bufferedImage.getRGB(x, y);
-            }
-        };
-        return crop(image, filter, initialCrop);
-    }
-
-    /**
-     * Interface implemented by cropping functions that determine whether
-     * a pixel should be cropped or not.
-     */
-    private static interface CropFilter {
-        /**
-         * Returns true if the pixel is should be cropped.
-         *
-         * @param image the image containing the pixel in question
-         * @param x the x position of the pixel
-         * @param y the y position of the pixel
-         * @return true if the pixel should be cropped (for example, is blank)
-         */
-        boolean crop(BufferedImage image, int x, int y);
-    }
-
-    private static BufferedImage crop(BufferedImage image, CropFilter filter, Rect initialCrop) {
-        if (image == null) {
-            return null;
-        }
-
-        // First, determine the dimensions of the real image within the image
-        int x1, y1, x2, y2;
-        if (initialCrop != null) {
-            x1 = initialCrop.x;
-            y1 = initialCrop.y;
-            x2 = initialCrop.x + initialCrop.w;
-            y2 = initialCrop.y + initialCrop.h;
         } else {
-            x1 = 0;
-            y1 = 0;
-            x2 = image.getWidth();
-            y2 = image.getHeight();
-        }
-
-        // Nothing left to crop
-        if (x1 == x2 || y1 == y2) {
             return null;
         }
 
-        // This algorithm is a bit dumb -- it just scans along the edges looking for
-        // a pixel that shouldn't be cropped. I could maybe try to make it smarter by
-        // for example doing a binary search to quickly eliminate large empty areas to
-        // the right and bottom -- but this is slightly tricky with components like the
-        // AnalogClock where I could accidentally end up finding a blank horizontal or
-        // vertical line somewhere in the middle of the rendering of the clock, so for now
-        // we do the dumb thing -- not a big deal since we tend to crop reasonably
-        // small images.
-
-        // First determine top edge
-        topEdge: for (; y1 < y2; y1++) {
-            for (int x = x1; x < x2; x++) {
-                if (!filter.crop(image, x, y1)) {
-                    break topEdge;
-                }
-            }
-        }
-
-        if (y1 == image.getHeight()) {
-            // The image is blank
-            return null;
-        }
-
-        // Next determine left edge
-        leftEdge: for (; x1 < x2; x1++) {
-            for (int y = y1; y < y2; y++) {
-                if (!filter.crop(image, x1, y)) {
-                    break leftEdge;
-                }
-            }
-        }
-
-        // Next determine right edge
-        rightEdge: for (; x2 > x1; x2--) {
-            for (int y = y1; y < y2; y++) {
-                if (!filter.crop(image, x2 - 1, y)) {
-                    break rightEdge;
-                }
-            }
-        }
-
-        // Finally determine bottom edge
-        bottomEdge: for (; y2 > y1; y2--) {
-            for (int x = x1; x < x2; x++) {
-                if (!filter.crop(image, x, y2 - 1)) {
-                    break bottomEdge;
-                }
-            }
-        }
-
-        // No need to crop?
-        if (x1 == 0 && y1 == 0 && x2 == image.getWidth() && y2 == image.getHeight()) {
-            return image;
-        }
-
-        if (x1 == x2 || y1 == y2) {
-            // Nothing left after crop -- blank image
-            return null;
-        }
-
-        // Now extract the sub-image
-        BufferedImage cropped = new BufferedImage(x2 - x1, y2 - y1, image.getType());
-        Graphics g = cropped.getGraphics();
-        g.drawImage(image, 0, 0, x2 - x1, y2 - y1, x1, y1, x2, y2, null);
-        g.dispose();
-
-        return cropped;
+        return awtImage;
     }
 }

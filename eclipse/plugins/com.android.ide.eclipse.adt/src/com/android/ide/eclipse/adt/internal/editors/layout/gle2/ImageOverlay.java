@@ -84,7 +84,7 @@ public class ImageOverlay extends Overlay {
             mImage = null;
 
         } else {
-            mImage = SwtUtils.convertImage(mCanvas.getDisplay(), awtImage, false, -1);
+            mImage = SwtUtils.convertToSwt(mCanvas.getDisplay(), awtImage, false, -1);
         }
 
         return mImage;
