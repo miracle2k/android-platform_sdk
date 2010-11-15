@@ -31,6 +31,7 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.layoutlib.api.LayoutBridge;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneResult;
+import com.android.layoutlib.api.ViewInfo;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.SWT;
@@ -547,10 +548,10 @@ public class PaletteComposite extends Composite {
         // actually scanning pixels.
 
         /** Width of the rendered preview image (before it is cropped) */
-        private static final int RENDER_HEIGHT = 200;
+        private static final int RENDER_HEIGHT = 400;
 
         /** Height of the rendered preview image (before it is cropped) */
-        private static final int RENDER_WIDTH = 300;
+        private static final int RENDER_WIDTH = 500;
 
         /** Amount of alpha to multiply into the image (divided by 256) */
         private static final int IMG_ALPHA = 192;
@@ -703,11 +704,21 @@ public class PaletteComposite extends Composite {
                 BufferedImage image = result.getImage();
                 if (image != null) {
                     BufferedImage cropped;
+                    Rect initialCrop = null;
+                    ViewInfo viewInfo = result.getRootView();
+                    if (viewInfo != null) {
+                        int x1 = viewInfo.getLeft();
+                        int x2 = viewInfo.getRight();
+                        int y2 = viewInfo.getBottom();
+                        int y1 = viewInfo.getTop();
+                        initialCrop = new Rect(x1, y1, x2 - x1, y2 - y1);
+                    }
+
                     if (hasTransparency) {
-                        cropped = SwtUtils.cropBlank(image);
+                        cropped = SwtUtils.cropBlank(image, initialCrop);
                     } else {
                         int edgeColor = image.getRGB(image.getWidth() - 1, image.getHeight() - 1);
-                        cropped = SwtUtils.cropColor(image, edgeColor);
+                        cropped = SwtUtils.cropColor(image, edgeColor, initialCrop);
                     }
 
                     if (cropped != null) {

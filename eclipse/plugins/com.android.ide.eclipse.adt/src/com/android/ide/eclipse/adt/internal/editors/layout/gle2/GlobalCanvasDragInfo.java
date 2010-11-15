@@ -45,7 +45,7 @@ final class GlobalCanvasDragInfo {
     private Object mSourceCanvas = null;
     private Runnable mRemoveSourceHandler;
 
-    private ControlPoint imageOffset;
+    private ControlPoint mImageOffset;
 
     /** Private constructor. Use {@link #getInstance()} to retrieve the singleton. */
     private GlobalCanvasDragInfo() {
@@ -127,7 +127,7 @@ final class GlobalCanvasDragInfo {
      * @return The image offset, or null if none apply
      */
     public ControlPoint getImageOffset() {
-        return imageOffset;
+        return mImageOffset;
     }
 
     /**
@@ -137,6 +137,6 @@ final class GlobalCanvasDragInfo {
      * @param imageOffset a new offset to apply
      */
     public void setImageOffset(ControlPoint imageOffset) {
-        this.imageOffset = imageOffset;
+        this.mImageOffset = imageOffset;
     }
 }
