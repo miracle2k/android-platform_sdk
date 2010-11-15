@@ -596,27 +596,32 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         /**
-         * Returns a {@link ProjectResources} for the framework resources.
+         * Returns a {@link ProjectResources} for the framework resources based on the current
+         * configuration selection.
          * @return the framework resources or null if not found.
          */
         public ProjectResources getFrameworkResources() {
-            if (mEditedFile != null) {
-                Sdk currentSdk = Sdk.getCurrent();
-                if (currentSdk != null) {
-                    IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
+            return getFrameworkResources(getRenderingTarget());
+        }
 
-                    if (target != null) {
-                        AndroidTargetData data = currentSdk.getTargetData(target);
+        /**
+         * Returns a {@link ProjectResources} for the framework resources of a given
+         * target.
+         * @param target the target for which to return the framework resources.
+         * @return the framework resources or null if not found.
+         */
+        public ProjectResources getFrameworkResources(IAndroidTarget target) {
+            if (target != null) {
+                AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
 
-                        if (data != null) {
-                            return data.getFrameworkResources();
-                        }
-                    }
+                if (data != null) {
+                    return data.getFrameworkResources();
                 }
             }
 
             return null;
         }
+
 
         public ProjectResources getProjectResources() {
             if (mEditedFile != null) {
@@ -757,21 +762,18 @@ public class GraphicalEditorPart extends EditorPart
             }
         }
 
-        public void onTargetLoaded(IAndroidTarget target) {
-            IProject project = getProject();
-            if (target != null && target.equals(Sdk.getCurrent().getTarget(project))) {
+        public void onTargetLoaded(IAndroidTarget loadedTarget) {
+            IAndroidTarget target = getRenderingTarget();
+            if (target != null && target.equals(loadedTarget)) {
                 updateEditor();
             }
         }
 
         public void onSdkLoaded() {
-            Sdk currentSdk = Sdk.getCurrent();
-            if (currentSdk != null && mEditedFile != null) {
-                IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
-                if (target != null) {
-                    mConfigComposite.onSdkLoaded(target);
-                    mConfigListener.onConfigurationChange();
-                }
+            IAndroidTarget target = getRenderingTarget();
+            if (target != null) {
+                mConfigComposite.onSdkLoaded(target);
+                mConfigListener.onConfigurationChange();
             }
         }
 
@@ -932,13 +934,10 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     public void onSdkChange() {
-        Sdk currentSdk = Sdk.getCurrent();
-        if (currentSdk != null) {
-            IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
-            if (target != null) {
-                mConfigComposite.onSdkLoaded(target);
-                mConfigListener.onConfigurationChange();
-            }
+        IAndroidTarget target = getRenderingTarget();
+        if (target != null) {
+            mConfigComposite.onSdkLoaded(target);
+            mConfigListener.onConfigurationChange();
         }
     }
 
@@ -1016,7 +1015,7 @@ public class GraphicalEditorPart extends EditorPart
                 return;
             }
 
-            LayoutLibrary layoutLib = getReadyLayoutLib();
+            LayoutLibrary layoutLib = getReadyLayoutLib(true /*displayError*/);
 
             if (layoutLib != null) {
                 // if drawing in real size, (re)set the scaling factor.
@@ -1068,63 +1067,99 @@ public class GraphicalEditorPart extends EditorPart
     /**
      * Returns a {@link LayoutLibrary} that is ready for rendering, or null if the bridge
      * is not available or not ready yet (due to SDK loading still being in progress etc).
-     * Any reasons preventing the bridge from being returned are displayed to the editor's
-     * error area.
+     * If enabled, any reasons preventing the bridge from being returned are displayed to the
+     * editor's error area.
+     *
+     * @param displayError whether to display the loading error or not.
      *
      * @return LayoutBridge the layout bridge for rendering this editor's scene
      */
-    private LayoutLibrary getReadyLayoutLib() {
+    private LayoutLibrary getReadyLayoutLib(boolean displayError) {
         Sdk currentSdk = Sdk.getCurrent();
         if (currentSdk != null) {
-            IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
-            if (target == null) {
+            IAndroidTarget target = getRenderingTarget();
+
+            if (target != null) {
+                AndroidTargetData data = currentSdk.getTargetData(target);
+                if (data != null) {
+                    LayoutLibrary layoutLib = data.getLayoutLibrary();
+
+                    if (layoutLib.getBridge() != null) { // layoutLib can never be null.
+                        return layoutLib;
+                    } else if (displayError) { // getBridge() == null
+                        // SDK is loaded but not the layout library!
+
+                        // check whether the bridge managed to load, or not
+                        if (layoutLib.getStatus() == LoadStatus.LOADING) {
+                            displayError("Eclipse is loading framework information and the layout library from the SDK folder.\n%1$s will refresh automatically once the process is finished.",
+                                         mEditedFile.getName());
+                        } else {
+                            displayError("Eclipse failed to load the framework information and the layout library!");
+                        }
+                    }
+                } else { // data == null
+                    // It can happen that the workspace refreshes while the SDK is loading its
+                    // data, which could trigger a redraw of the opened layout if some resources
+                    // changed while Eclipse is closed.
+                    // In this case data could be null, but this is not an error.
+                    // We can just silently return, as all the opened editors are automatically
+                    // refreshed once the SDK finishes loading.
+                    LoadStatus targetLoadStatus = currentSdk.checkAndLoadTargetData(target, null);
+
+                    // display error is asked.
+                    if (displayError) {
+                        switch (targetLoadStatus) {
+                            case LOADING:
+                                displayError("The project target (%1$s) is still loading.\n%2$s will refresh automatically once the process is finished.",
+                                        target.getName(), mEditedFile.getName());
+
+                                break;
+                            case FAILED: // known failure
+                            case LOADED: // success but data isn't loaded?!?!
+                                displayError("The project target (%s) was not properly loaded.",
+                                        target.getName());
+                                break;
+                        }
+                    }
+                }
+
+            } else if (displayError) { // target == null
                 displayError("The project target is not set.");
-                return null;
             }
-
-            AndroidTargetData data = currentSdk.getTargetData(target);
-            if (data == null) {
-                // It can happen that the workspace refreshes while the SDK is loading its
-                // data, which could trigger a redraw of the opened layout if some resources
-                // changed while Eclipse is closed.
-                // In this case data could be null, but this is not an error.
-                // We can just silently return, as all the opened editors are automatically
-                // refreshed once the SDK finishes loading.
-                LoadStatus targetLoadStatus = currentSdk.checkAndLoadTargetData(target, null);
-                switch (targetLoadStatus) {
-                    case LOADING:
-                        displayError("The project target (%1$s) is still loading.\n%2$s will refresh automatically once the process is finished.",
-                                target.getName(), mEditedFile.getName());
-
-                        break;
-                    case FAILED: // known failure
-                    case LOADED: // success but data isn't loaded?!?!
-                        displayError("The project target (%s) was not properly loaded.",
-                                target.getName());
-                        break;
-                }
-
-                return null;
-            }
-
-            LayoutLibrary layoutLib = data.getLayoutLibrary();
-
-            if (layoutLib.getBridge() != null) { // layoutLib can never be null.
-                return layoutLib;
-            } else {
-                // SDK is loaded but not the layout library!
-
-                // check whether the bridge managed to load, or not
-                if (layoutLib.getStatus() == LoadStatus.LOADING) {
-                    displayError("Eclipse is loading framework information and the layout library from the SDK folder.\n%1$s will refresh automatically once the process is finished.",
-                                 mEditedFile.getName());
-                } else {
-                    displayError("Eclipse failed to load the framework information and the layout library!");
-                }
-            }
-        } else {
+        } else if (displayError) { // currentSdk == null
             displayError("Eclipse is loading the SDK.\n%1$s will refresh automatically once the process is finished.",
                          mEditedFile.getName());
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the {@link IAndroidTarget} used for the rendering.
+     * <p/>
+     * This first looks for the rendering target setup in the config UI, and if nothing has
+     * been setup yet, returns the target of the project.
+     *
+     * @return an IAndroidTarget object or null if no target is setup and the project has no
+     * target set.
+     *
+     */
+    private IAndroidTarget getRenderingTarget() {
+        // if the SDK is null no targets are loaded.
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk == null) {
+            return null;
+        }
+
+        // attempt to get a target from the configuration selector.
+        IAndroidTarget renderingTarget = mConfigComposite.getRenderingTarget();
+        if (renderingTarget != null) {
+            return renderingTarget;
+        }
+
+        // fall back to the project target
+        if (mEditedFile != null) {
+            return currentSdk.getTarget(mEditedFile.getProject());
         }
 
         return null;
@@ -1186,7 +1221,7 @@ public class GraphicalEditorPart extends EditorPart
         if (!ensureModelValid(model)) {
             return null;
         }
-        LayoutLibrary layoutLib = getReadyLayoutLib();
+        LayoutLibrary layoutLib = getReadyLayoutLib(true /*displayError*/);
 
         IProject iProject = mEditedFile.getProject();
         return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes,
@@ -1355,7 +1390,7 @@ public class GraphicalEditorPart extends EditorPart
                 mConfiguredProjectRes = null;
 
                 // clear the cache in the bridge in case a bitmap/9-patch changed.
-                LayoutLibrary layoutLib = getLayoutLibrary();
+                LayoutLibrary layoutLib = getReadyLayoutLib(true /*displayError*/);
                 if (layoutLib != null) {
                     if (layoutLib.getBridge() != null) {
                         layoutLib.getBridge().clearCaches(mEditedFile.getProject());
@@ -1386,16 +1421,7 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     public LayoutLibrary getLayoutLibrary() {
-        // clear the cache in the bridge in case a bitmap/9-patch changed.
-        IAndroidTarget target = Sdk.getCurrent().getTarget(mEditedFile.getProject());
-        if (target != null) {
-            AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
-            if (data != null) {
-                return data.getLayoutLibrary();
-            }
-        }
-
-        return null;
+        return getReadyLayoutLib(false /*displayError*/);
     }
 
     // ---- Error handling ----

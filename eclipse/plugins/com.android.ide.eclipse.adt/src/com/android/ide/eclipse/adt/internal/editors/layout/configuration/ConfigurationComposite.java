@@ -28,6 +28,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.RegionQuali
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenDimensionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenOrientationQualifier;
+import com.android.ide.eclipse.adt.internal.resources.configurations.VersionQualifier;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
@@ -56,7 +57,6 @@ import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -106,6 +106,7 @@ public class ConfigurationComposite extends Composite {
     private final static int LOCALE_REGION = 1;
 
     private Label mCurrentLayoutLabel;
+    private Button mCreateButton;
 
     private Combo mDeviceCombo;
     private Combo mDeviceConfigCombo;
@@ -113,13 +114,14 @@ public class ConfigurationComposite extends Composite {
     private Combo mDockCombo;
     private Combo mNightCombo;
     private Combo mThemeCombo;
-    private Button mCreateButton;
+    private Combo mApiCombo;
 
     private int mPlatformThemeCount = 0;
     /** updates are disabled if > 0 */
     private int mDisableUpdates = 0;
 
     private List<LayoutDevice> mDeviceList;
+    private final List<IAndroidTarget> mTargetList = new ArrayList<IAndroidTarget>();
 
     private final ArrayList<ResourceQualifier[] > mLocaleList =
         new ArrayList<ResourceQualifier[]>();
@@ -158,6 +160,7 @@ public class ConfigurationComposite extends Composite {
 
         ProjectResources getProjectResources();
         ProjectResources getFrameworkResources();
+        ProjectResources getFrameworkResources(IAndroidTarget target);
         Map<String, Map<String, IResourceValue>> getConfiguredProjectResources();
         Map<String, Map<String, IResourceValue>> getConfiguredFrameworkResources();
     }
@@ -428,11 +431,11 @@ public class ConfigurationComposite extends Composite {
 
         GridLayout gl;
         GridData gd;
-        int cols = 9;  // device+config+locale+dock+day/night+separator*2+theme+createBtn
+        int cols = 9;  // device+config+locale+dock+day/night+separator*2+theme+apiLevel
 
         // ---- First line: custom buttons, clipping button, editing config display.
         Composite labelParent = new Composite(this, SWT.NONE);
-        labelParent.setLayout(gl = new GridLayout(2 + customButtons.length, false));
+        labelParent.setLayout(gl = new GridLayout(2 + customButtons.length + 1, false));
         gl.marginWidth = gl.marginHeight = 0;
         labelParent.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
         gd.horizontalSpan = cols;
@@ -456,6 +459,18 @@ public class ConfigurationComposite extends Composite {
 
             }
         }
+
+        mCreateButton = new Button(labelParent, SWT.PUSH | SWT.FLAT);
+        mCreateButton.setText("Create...");
+        mCreateButton.setEnabled(false);
+        mCreateButton.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                if (mListener != null) {
+                    mListener.onCreate();
+                }
+            }
+        });
 
         // ---- 2nd line: device/config/locale/theme Combos, create button.
 
@@ -487,10 +502,8 @@ public class ConfigurationComposite extends Composite {
         mLocaleCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
         mLocaleCombo.setLayoutData(new GridData(
                 GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
-        mLocaleCombo.addSelectionListener(new SelectionListener() {
-            public void widgetDefaultSelected(SelectionEvent e) {
-                onLocaleChange();
-            }
+        mLocaleCombo.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 onLocaleChange();
             }
@@ -502,10 +515,8 @@ public class ConfigurationComposite extends Composite {
         for (DockMode mode : DockMode.values()) {
             mDockCombo.add(mode.getLongDisplayValue());
         }
-        mDockCombo.addSelectionListener(new SelectionListener() {
-            public void widgetDefaultSelected(SelectionEvent e) {
-                onDockChange();
-            }
+        mDockCombo.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 onDockChange();
             }
@@ -517,10 +528,8 @@ public class ConfigurationComposite extends Composite {
         for (NightMode mode : NightMode.values()) {
             mNightCombo.add(mode.getLongDisplayValue());
         }
-        mNightCombo.addSelectionListener(new SelectionListener() {
-            public void widgetDefaultSelected(SelectionEvent e) {
-                onDayChange();
-            }
+        mNightCombo.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 onDayChange();
             }
@@ -550,15 +559,13 @@ public class ConfigurationComposite extends Composite {
                 GridData.VERTICAL_ALIGN_FILL | GridData.GRAB_VERTICAL));
         gd.heightHint = 0;
 
-        mCreateButton = new Button(this, SWT.PUSH | SWT.FLAT);
-        mCreateButton.setText("Create...");
-        mCreateButton.setEnabled(false);
-        mCreateButton.addSelectionListener(new SelectionAdapter() {
+        mApiCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+        mApiCombo.setLayoutData(new GridData(
+                GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
+        mApiCombo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                if (mListener != null) {
-                    mListener.onCreate();
-                }
+                onApiLevelChange();
             }
         });
     }
@@ -610,26 +617,28 @@ public class ConfigurationComposite extends Composite {
         mDisableUpdates++; // we do not want to trigger onXXXChange when setting
                            // new values in the widgets.
 
-        // only attempt to do anything if the SDK and targets are loaded.
-        LoadStatus sdkStatus = AdtPlugin.getDefault().getSdkLoadStatus();
-        if (sdkStatus == LoadStatus.LOADED) {
-            LoadStatus targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
+        try {
+            // only attempt to do anything if the SDK and targets are loaded.
+            LoadStatus sdkStatus = AdtPlugin.getDefault().getSdkLoadStatus();
+            if (sdkStatus == LoadStatus.LOADED) {
+                LoadStatus targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
 
-            if (targetStatus == LoadStatus.LOADED) {
+                if (targetStatus == LoadStatus.LOADED) {
 
-                // update the current config selection to make sure it's
-                // compatible with the new file
-                adaptConfigSelection(true /*needBestMatch*/);
+                    // update the current config selection to make sure it's
+                    // compatible with the new file
+                    adaptConfigSelection(true /*needBestMatch*/);
 
-                // compute the final current config
-                computeCurrentConfig(true /*force*/);
+                    // compute the final current config
+                    computeCurrentConfig(true /*force*/);
 
-                // update the string showing the config value
-                updateConfigDisplay(mEditedConfig);
+                    // update the string showing the config value
+                    updateConfigDisplay(mEditedConfig);
+                }
             }
+        } finally {
+            mDisableUpdates--;
         }
-
-        mDisableUpdates--;
     }
 
     /**
@@ -666,16 +675,18 @@ public class ConfigurationComposite extends Composite {
 
         mDisableUpdates++; // we do not want to trigger onXXXChange when setting
                            // new values in the widgets.
-
-        // this is going to be followed by a call to onTargetLoaded.
-        // So we can only care about the layout devices in this case.
-        initDevices();
-
-        mDisableUpdates--;
+        try {
+            // this is going to be followed by a call to onTargetLoaded.
+            // So we can only care about the layout devices in this case.
+            initDevices();
+            initTargets();
+        } finally {
+            mDisableUpdates--;
+        }
     }
 
     /**
-     * Answers to the XML model being loaded, either the first time or when the Targget/SDK changes.
+     * Answers to the XML model being loaded, either the first time or when the Target/SDK changes.
      * <p>This initializes the UI, either with the first compatible configuration found,
      * or attempts to restore a configuration if one is found to have been saved in the file
      * persistent storage.
@@ -696,80 +707,84 @@ public class ConfigurationComposite extends Composite {
         if (sdkStatus == LoadStatus.LOADED) {
             mDisableUpdates++; // we do not want to trigger onXXXChange when setting
 
-            // init the devices if needed (new SDK or first time going through here)
-            if (mSdkChanged || mFirstXmlModelChange) {
-                initDevices();
-            }
-
-            IProject iProject = mEditedFile.getProject();
-
-            Sdk currentSdk = Sdk.getCurrent();
-            if (currentSdk != null) {
-                mTarget = currentSdk.getTarget(iProject);
-            }
-
-            LoadStatus targetStatus = LoadStatus.FAILED;
-            if (mTarget != null) {
-                targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
-            }
-
-            if (targetStatus == LoadStatus.LOADED) {
-                if (mResources == null) {
-                    mResources = ResourceManager.getInstance().getProjectResources(iProject);
-                }
-                if (mEditedConfig == null) {
-                    ResourceFolder resFolder = mResources.getResourceFolder(
-                            (IFolder) mEditedFile.getParent());
-                    mEditedConfig = resFolder.getConfiguration();
+            try {
+                // init the devices if needed (new SDK or first time going through here)
+                if (mSdkChanged || mFirstXmlModelChange) {
+                    initDevices();
+                    initTargets();
                 }
 
-                targetData = Sdk.getCurrent().getTargetData(mTarget);
+                IProject iProject = mEditedFile.getProject();
 
-                // get the file stored state
-                boolean loadedConfigData = false;
-                try {
-                    QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID, CONFIG_STATE);
-                    String data = mEditedFile.getPersistentProperty(qname);
-                    if (data != null) {
-                        loadedConfigData = mState.setData(data);
+                Sdk currentSdk = Sdk.getCurrent();
+                if (currentSdk != null) {
+                    mTarget = currentSdk.getTarget(iProject);
+                }
+
+                LoadStatus targetStatus = LoadStatus.FAILED;
+                if (mTarget != null) {
+                    targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
+                    initTargets();
+                }
+
+                if (targetStatus == LoadStatus.LOADED) {
+                    if (mResources == null) {
+                        mResources = ResourceManager.getInstance().getProjectResources(iProject);
                     }
-                } catch (CoreException e) {
-                    // pass
+                    if (mEditedConfig == null) {
+                        ResourceFolder resFolder = mResources.getResourceFolder(
+                                (IFolder) mEditedFile.getParent());
+                        mEditedConfig = resFolder.getConfiguration();
+                    }
+
+                    targetData = Sdk.getCurrent().getTargetData(mTarget);
+
+                    // get the file stored state
+                    boolean loadedConfigData = false;
+                    try {
+                        QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID, CONFIG_STATE);
+                        String data = mEditedFile.getPersistentProperty(qname);
+                        if (data != null) {
+                            loadedConfigData = mState.setData(data);
+                        }
+                    } catch (CoreException e) {
+                        // pass
+                    }
+
+                    // update the themes and locales.
+                    updateThemes();
+                    updateLocales();
+
+                    // If the current state was loaded from the persistent storage, we update the
+                    // UI with it and then try to adapt it (which will handle incompatible
+                    // configuration).
+                    // Otherwise, just look for the first compatible configuration.
+                    if (loadedConfigData) {
+                        // first make sure we have the config to adapt
+                        selectDevice(mState.device);
+                        fillConfigCombo(mState.configName);
+
+                        adaptConfigSelection(false /*needBestMatch*/);
+
+                        mDockCombo.select(DockMode.getIndex(mState.dock));
+                        mNightCombo.select(NightMode.getIndex(mState.night));
+                    } else {
+                        findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
+
+                        mDockCombo.select(0);
+                        mNightCombo.select(0);
+                    }
+
+                    // update the string showing the config value
+                    updateConfigDisplay(mEditedConfig);
+
+                    // compute the final current config
+                    computeCurrentConfig(true /*force*/);
                 }
-
-                // update the themes and locales.
-                updateThemes();
-                updateLocales();
-
-                // If the current state was loaded from the persistent storage, we update the
-                // UI with it and then try to adapt it (which will handle incompatible
-                // configuration).
-                // Otherwise, just look for the first compatible configuration.
-                if (loadedConfigData) {
-                    // first make sure we have the config to adapt
-                    selectDevice(mState.device);
-                    fillConfigCombo(mState.configName);
-
-                    adaptConfigSelection(false /*needBestMatch*/);
-
-                    mDockCombo.select(DockMode.getIndex(mState.dock));
-                    mNightCombo.select(NightMode.getIndex(mState.night));
-                } else {
-                    findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
-
-                    mDockCombo.select(0);
-                    mNightCombo.select(0);
-                }
-
-                // update the string showing the config value
-                updateConfigDisplay(mEditedConfig);
-
-                // compute the final current config
-                computeCurrentConfig(true /*force*/);
+            } finally {
+                mDisableUpdates--;
+                mFirstXmlModelChange = false;
             }
-
-            mDisableUpdates--;
-            mFirstXmlModelChange  = false;
         }
 
         return targetData;
@@ -969,7 +984,9 @@ public class ConfigurationComposite extends Composite {
 
     private void updateConfigDisplay(FolderConfiguration fileConfig) {
         String current = fileConfig.toDisplayString();
-        mCurrentLayoutLabel.setText(current != null ? current : "(Default)");
+        String layoutLabel = current != null ? current : "(Default)";
+        mCurrentLayoutLabel.setText(layoutLabel);
+        mCurrentLayoutLabel.setToolTipText(layoutLabel);
     }
 
     private void saveState(boolean force) {
@@ -1029,74 +1046,77 @@ public class ConfigurationComposite extends Composite {
 
         mDisableUpdates++;
 
-        // Reset the combo
-        mLocaleCombo.removeAll();
-        mLocaleList.clear();
+        try {
+            // Reset the combo
+            mLocaleCombo.removeAll();
+            mLocaleList.clear();
 
-        SortedSet<String> languages = null;
-        boolean hasLocale = false;
+            SortedSet<String> languages = null;
+            boolean hasLocale = false;
 
-        // get the languages from the project.
-        ProjectResources project = mListener.getProjectResources();
+            // get the languages from the project.
+            ProjectResources project = mListener.getProjectResources();
 
-        // in cases where the opened file is not linked to a project, this could be null.
-        if (project != null) {
-            // now get the languages from the project.
-            languages = project.getLanguages();
+            // in cases where the opened file is not linked to a project, this could be null.
+            if (project != null) {
+                // now get the languages from the project.
+                languages = project.getLanguages();
 
-            for (String language : languages) {
-                hasLocale = true;
+                for (String language : languages) {
+                    hasLocale = true;
 
-                LanguageQualifier langQual = new LanguageQualifier(language);
+                    LanguageQualifier langQual = new LanguageQualifier(language);
 
-                // find the matching regions and add them
-                SortedSet<String> regions = project.getRegions(language);
-                for (String region : regions) {
-                    mLocaleCombo.add(String.format("%1$s / %2$s", language, region)); //$NON-NLS-1$
-                    RegionQualifier regionQual = new RegionQualifier(region);
-                    mLocaleList.add(new ResourceQualifier[] { langQual, regionQual });
+                    // find the matching regions and add them
+                    SortedSet<String> regions = project.getRegions(language);
+                    for (String region : regions) {
+                        mLocaleCombo.add(
+                                String.format("%1$s / %2$s", language, region)); //$NON-NLS-1$
+                        RegionQualifier regionQual = new RegionQualifier(region);
+                        mLocaleList.add(new ResourceQualifier[] { langQual, regionQual });
+                    }
+
+                    // now the entry for the other regions the language alone
+                    if (regions.size() > 0) {
+                        mLocaleCombo.add(String.format("%1$s / Other", language)); //$NON-NLS-1$
+                    } else {
+                        mLocaleCombo.add(String.format("%1$s / Any", language)); //$NON-NLS-1$
+                    }
+                    // create a region qualifier that will never be matched by qualified resources.
+                    mLocaleList.add(new ResourceQualifier[] {
+                            langQual,
+                            new RegionQualifier(RegionQualifier.FAKE_REGION_VALUE)
+                    });
                 }
-
-                // now the entry for the other regions the language alone
-                if (regions.size() > 0) {
-                    mLocaleCombo.add(String.format("%1$s / Other", language)); //$NON-NLS-1$
-                } else {
-                    mLocaleCombo.add(String.format("%1$s / Any", language)); //$NON-NLS-1$
-                }
-                // create a region qualifier that will never be matched by qualified resources.
-                mLocaleList.add(new ResourceQualifier[] {
-                        langQual,
-                        new RegionQualifier(RegionQualifier.FAKE_REGION_VALUE)
-                });
             }
+
+            // add a locale not present in the project resources. This will let the dev
+            // tests his/her default values.
+            if (hasLocale) {
+                mLocaleCombo.add("Other");
+            } else {
+                mLocaleCombo.add("Any locale");
+            }
+
+            // create language/region qualifier that will never be matched by qualified resources.
+            mLocaleList.add(new ResourceQualifier[] {
+                    new LanguageQualifier(LanguageQualifier.FAKE_LANG_VALUE),
+                    new RegionQualifier(RegionQualifier.FAKE_REGION_VALUE)
+            });
+
+            if (mState.locale != null) {
+                // FIXME: this may fails if the layout was deleted (and was the last one to have
+                // that local. (we have other problem in this case though)
+                setLocaleCombo(mState.locale[LOCALE_LANG],
+                        mState.locale[LOCALE_REGION]);
+            } else {
+                mLocaleCombo.select(0);
+            }
+
+            mThemeCombo.getParent().layout();
+        } finally {
+            mDisableUpdates--;
         }
-
-        // add a locale not present in the project resources. This will let the dev
-        // tests his/her default values.
-        if (hasLocale) {
-            mLocaleCombo.add("Other");
-        } else {
-            mLocaleCombo.add("Any locale");
-        }
-
-        // create language/region qualifier that will never be matched by qualified resources.
-        mLocaleList.add(new ResourceQualifier[] {
-                new LanguageQualifier(LanguageQualifier.FAKE_LANG_VALUE),
-                new RegionQualifier(RegionQualifier.FAKE_REGION_VALUE)
-        });
-
-        if (mState.locale != null) {
-            // FIXME: this may fails if the layout was deleted (and was the last one to have that local.
-            // (we have other problem in this case though)
-            setLocaleCombo(mState.locale[LOCALE_LANG],
-                    mState.locale[LOCALE_REGION]);
-        } else {
-            mLocaleCombo.select(0);
-        }
-
-        mThemeCombo.getParent().layout();
-
-        mDisableUpdates--;
     }
 
     /**
@@ -1108,105 +1128,107 @@ public class ConfigurationComposite extends Composite {
             return; // can't do anything w/o it.
         }
 
-        ProjectResources frameworkProject = mListener.getFrameworkResources();
+        ProjectResources frameworkProject = mListener.getFrameworkResources(getRenderingTarget());
 
         mDisableUpdates++;
 
-        // Reset the combo
-        mThemeCombo.removeAll();
-        mPlatformThemeCount = 0;
+        try {
+            // Reset the combo
+            mThemeCombo.removeAll();
+            mPlatformThemeCount = 0;
 
-        ArrayList<String> themes = new ArrayList<String>();
+            ArrayList<String> themes = new ArrayList<String>();
 
-        // get the themes, and languages from the Framework.
-        if (frameworkProject != null) {
-            // get the configured resources for the framework
-            Map<String, Map<String, IResourceValue>> frameworResources =
-                mListener.getConfiguredFrameworkResources();
+            // get the themes, and languages from the Framework.
+            if (frameworkProject != null) {
+                // get the configured resources for the framework
+                Map<String, Map<String, IResourceValue>> frameworResources =
+                    frameworkProject.getConfiguredResources(getCurrentConfig());
 
-            if (frameworResources != null) {
-                // get the styles.
-                Map<String, IResourceValue> styles = frameworResources.get(
-                        ResourceType.STYLE.getName());
+                if (frameworResources != null) {
+                    // get the styles.
+                    Map<String, IResourceValue> styles = frameworResources.get(
+                            ResourceType.STYLE.getName());
 
 
-                // collect the themes out of all the styles.
-                for (IResourceValue value : styles.values()) {
-                    String name = value.getName();
-                    if (name.startsWith("Theme.") || name.equals("Theme")) {
-                        themes.add(value.getName());
-                        mPlatformThemeCount++;
-                    }
-                }
-
-                // sort them and add them to the combo
-                Collections.sort(themes);
-
-                for (String theme : themes) {
-                    mThemeCombo.add(theme);
-                }
-
-                mPlatformThemeCount = themes.size();
-                themes.clear();
-            }
-        }
-
-        // now get the themes and languages from the project.
-        ProjectResources project = mListener.getProjectResources();
-        // in cases where the opened file is not linked to a project, this could be null.
-        if (project != null) {
-            // get the configured resources for the project
-            Map<String, Map<String, IResourceValue>> configuredProjectRes =
-                mListener.getConfiguredProjectResources();
-
-            if (configuredProjectRes != null) {
-                // get the styles.
-                Map<String, IResourceValue> styleMap = configuredProjectRes.get(
-                        ResourceType.STYLE.getName());
-
-                if (styleMap != null) {
-                    // collect the themes out of all the styles, ie styles that extend,
-                    // directly or indirectly a platform theme.
-                    for (IResourceValue value : styleMap.values()) {
-                        if (isTheme(value, styleMap)) {
+                    // collect the themes out of all the styles.
+                    for (IResourceValue value : styles.values()) {
+                        String name = value.getName();
+                        if (name.startsWith("Theme.") || name.equals("Theme")) {
                             themes.add(value.getName());
+                            mPlatformThemeCount++;
                         }
                     }
 
-                    // sort them and add them the to the combo.
-                    if (mPlatformThemeCount > 0 && themes.size() > 0) {
-                        mThemeCombo.add(THEME_SEPARATOR);
-                    }
-
+                    // sort them and add them to the combo
                     Collections.sort(themes);
 
                     for (String theme : themes) {
                         mThemeCombo.add(theme);
                     }
+
+                    mPlatformThemeCount = themes.size();
+                    themes.clear();
                 }
             }
-        }
 
-        // try to reselect the previous theme.
-        if (mState.theme != null) {
-            final int count = mThemeCombo.getItemCount();
-            for (int i = 0 ; i < count ; i++) {
-                if (mState.theme.equals(mThemeCombo.getItem(i))) {
-                    mThemeCombo.select(i);
-                    break;
+            // now get the themes and languages from the project.
+            ProjectResources project = mListener.getProjectResources();
+            // in cases where the opened file is not linked to a project, this could be null.
+            if (project != null) {
+                // get the configured resources for the project
+                Map<String, Map<String, IResourceValue>> configuredProjectRes =
+                    mListener.getConfiguredProjectResources();
+
+                if (configuredProjectRes != null) {
+                    // get the styles.
+                    Map<String, IResourceValue> styleMap = configuredProjectRes.get(
+                            ResourceType.STYLE.getName());
+
+                    if (styleMap != null) {
+                        // collect the themes out of all the styles, ie styles that extend,
+                        // directly or indirectly a platform theme.
+                        for (IResourceValue value : styleMap.values()) {
+                            if (isTheme(value, styleMap)) {
+                                themes.add(value.getName());
+                            }
+                        }
+
+                        // sort them and add them the to the combo.
+                        if (mPlatformThemeCount > 0 && themes.size() > 0) {
+                            mThemeCombo.add(THEME_SEPARATOR);
+                        }
+
+                        Collections.sort(themes);
+
+                        for (String theme : themes) {
+                            mThemeCombo.add(theme);
+                        }
+                    }
                 }
             }
-            mThemeCombo.setEnabled(true);
-        } else if (mThemeCombo.getItemCount() > 0) {
-            mThemeCombo.select(0);
-            mThemeCombo.setEnabled(true);
-        } else {
-            mThemeCombo.setEnabled(false);
+
+            // try to reselect the previous theme.
+            if (mState.theme != null) {
+                final int count = mThemeCombo.getItemCount();
+                for (int i = 0 ; i < count ; i++) {
+                    if (mState.theme.equals(mThemeCombo.getItem(i))) {
+                        mThemeCombo.select(i);
+                        break;
+                    }
+                }
+                mThemeCombo.setEnabled(true);
+            } else if (mThemeCombo.getItemCount() > 0) {
+                mThemeCombo.select(0);
+                mThemeCombo.setEnabled(true);
+            } else {
+                mThemeCombo.setEnabled(false);
+            }
+
+            mThemeCombo.getParent().layout();
+        } finally {
+            mDisableUpdates--;
         }
-
-        mThemeCombo.getParent().layout();
-
-        mDisableUpdates--;
     }
 
     // ---- getters for the config selection values ----
@@ -1322,6 +1344,54 @@ public class ConfigurationComposite extends Composite {
      */
     public boolean isProjectTheme() {
         return mThemeCombo.getSelectionIndex() >= mPlatformThemeCount;
+    }
+
+    public IAndroidTarget getRenderingTarget() {
+        int index = mApiCombo.getSelectionIndex();
+        if (index >= 0) {
+            return mTargetList.get(index);
+        }
+
+        return null;
+    }
+
+    /**
+     * Loads the list of {@link IAndroidTarget} and inits the UI with it.
+     */
+    private void initTargets() {
+        // do we have a selection already?
+        IAndroidTarget renderingTarget = getRenderingTarget();
+
+        mApiCombo.removeAll();
+        mTargetList.clear();
+
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk != null) {
+            IAndroidTarget[] targets = currentSdk.getTargets();
+            int match = -1;
+            for (int i = 0 ; i < targets.length; i++) {
+                // FIXME: support add-on rendering and check based on project minSdkVersion
+                if (targets[i].isPlatform()) {
+                    mApiCombo.add(targets[i].getFullName());
+                    mTargetList.add(targets[i]);
+
+                    if (renderingTarget != null) {
+                        if (renderingTarget == targets[i]) {
+                            match = mTargetList.indexOf(targets[i]);
+                        }
+                    } else if (mTarget == targets[i]) {
+                        match = mTargetList.indexOf(targets[i]);
+                    }
+                }
+            }
+
+            mApiCombo.setEnabled(mTargetList.size() > 1);
+            if (match == -1) {
+                mApiCombo.deselectAll();
+            } else {
+                mApiCombo.select(match);
+            }
+        }
     }
 
     /**
@@ -1458,27 +1528,29 @@ public class ConfigurationComposite extends Composite {
         // Update the UI with no triggered event
         mDisableUpdates++;
 
-        LayoutDevice oldCurrent = mState.device;
+        try {
+            LayoutDevice oldCurrent = mState.device;
 
-        // but first, update the device combo
-        initDevices();
+            // but first, update the device combo
+            initDevices();
 
-        // attempts to reselect the current device.
-        if (selectDevice(oldCurrent)) {
-            // current device still exists.
-            // reselect the config
-            selectConfig(mState.configName);
+            // attempts to reselect the current device.
+            if (selectDevice(oldCurrent)) {
+                // current device still exists.
+                // reselect the config
+                selectConfig(mState.configName);
 
-            // reset the UI as if it was just a replacement file, since we can keep
-            // the current device (and possibly config).
-            adaptConfigSelection(false /*needBestMatch*/);
+                // reset the UI as if it was just a replacement file, since we can keep
+                // the current device (and possibly config).
+                adaptConfigSelection(false /*needBestMatch*/);
 
-        } else {
-            // find a new device/config to match the current file.
-            findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
+            } else {
+                // find a new device/config to match the current file.
+                findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
+            }
+        } finally {
+            mDisableUpdates--;
         }
-
-        mDisableUpdates--;
 
         // recompute the current config
         computeCurrentConfig(false /*force*/);
@@ -1592,7 +1664,7 @@ public class ConfigurationComposite extends Composite {
      * Call back for language combo selection
      */
     private void onLocaleChange() {
-        // because mLocaleList triggers onLanguageChange at each modification, the filling
+        // because mLocaleList triggers onLocaleChange at each modification, the filling
         // of the combo with data will trigger notifications, and we don't want that.
         if (mDisableUpdates > 0) {
             return;
@@ -1616,6 +1688,28 @@ public class ConfigurationComposite extends Composite {
     }
 
     /**
+     * Call back for api level combo selection
+     */
+    private void onApiLevelChange() {
+        // because mApiCombo triggers onApiLevelChange at each modification, the filling
+        // of the combo with data will trigger notifications, and we don't want that.
+        if (mDisableUpdates > 0) {
+            return;
+        }
+
+        boolean computeOk = computeCurrentConfig(false /*force*/);
+
+        // force a theme update to reflect the new rendering target.
+        // This must be done after computeCurrentConfig since it'll depend on the currentConfig
+        // to figure out the theme list.
+        updateThemes();
+
+        if (computeOk &&  mListener != null) {
+            mListener.onConfigurationChange();
+        }
+    }
+
+    /**
      * Saves the current state and the current configuration
      * @param force forces saving the states even if updates are disabled
      *
@@ -1634,9 +1728,9 @@ public class ConfigurationComposite extends Composite {
             mCurrentConfig.set(config);
 
             // replace the locale qualifiers with the one coming from the locale combo
-            int localeIndex = mLocaleCombo.getSelectionIndex();
-            if (localeIndex != -1) {
-                ResourceQualifier[] localeQualifiers = mLocaleList.get(localeIndex);
+            int index = mLocaleCombo.getSelectionIndex();
+            if (index != -1) {
+                ResourceQualifier[] localeQualifiers = mLocaleList.get(index);
 
                 mCurrentConfig.setLanguageQualifier(
                         (LanguageQualifier)localeQualifiers[LOCALE_LANG]);
@@ -1644,7 +1738,7 @@ public class ConfigurationComposite extends Composite {
                         (RegionQualifier)localeQualifiers[LOCALE_REGION]);
             }
 
-            int index = mDockCombo.getSelectionIndex();
+            index = mDockCombo.getSelectionIndex();
             if (index == -1) {
                 index = 0; // no selection = 0
             }
@@ -1656,6 +1750,20 @@ public class ConfigurationComposite extends Composite {
             }
             mCurrentConfig.setNightModeQualifier(
                     new NightModeQualifier(NightMode.getByIndex(index)));
+
+            // replace the API level by the selection of the combo
+            index = mApiCombo.getSelectionIndex();
+            if (index == -1) {
+                index = mTargetList.indexOf(mTarget);
+            }
+            if (index != -1) {
+                IAndroidTarget target = mTargetList.get(index);
+
+                if (target != null) {
+                    mCurrentConfig.setVersionQualifier(
+                            new VersionQualifier(target.getVersion().getApiLevel()));
+                }
+            }
 
             // update the create button.
             checkCreateEnable();

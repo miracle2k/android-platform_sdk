@@ -76,6 +76,14 @@ public final class VersionQualifier extends ResourceQualifier {
         return ""; //$NON-NLS-1$
     }
 
+    public VersionQualifier(int apiLevel) {
+        mVersion = apiLevel;
+    }
+
+    public VersionQualifier() {
+        //pass
+    }
+
     public int getVersion() {
         return mVersion;
     }
@@ -123,6 +131,38 @@ public final class VersionQualifier extends ResourceQualifier {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean isMatchFor(ResourceQualifier qualifier) {
+        if (qualifier instanceof VersionQualifier) {
+            // it is considered a match if the api level is equal or lower to the given qualifier
+            return mVersion <= ((VersionQualifier) qualifier).mVersion;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean isBetterMatchThan(ResourceQualifier compareTo, ResourceQualifier reference) {
+        if (compareTo == null) {
+            return true;
+        }
+
+        VersionQualifier compareQ = (VersionQualifier)compareTo;
+        VersionQualifier referenceQ = (VersionQualifier)reference;
+
+        if (compareQ.mVersion == referenceQ.mVersion) {
+            // what we have is already the best possible match (exact match)
+            return false;
+        } else if (mVersion == referenceQ.mVersion) {
+            // got new exact value, this is the best!
+            return true;
+        } else {
+            // in all case we're going to prefer the higher version (since they have been filtered
+            // to not be too high
+            return mVersion > compareQ.mVersion;
+        }
     }
 
     @Override
