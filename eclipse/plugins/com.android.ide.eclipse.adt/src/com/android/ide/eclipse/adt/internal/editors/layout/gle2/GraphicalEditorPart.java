@@ -1391,8 +1391,7 @@ public class GraphicalEditorPart extends EditorPart
         if (target != null) {
             AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
             if (data != null) {
-                LayoutLibrary layoutLib = data.getLayoutLibrary();
-                return layoutLib;
+                return data.getLayoutLibrary();
             }
         }
 
