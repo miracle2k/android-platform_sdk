@@ -57,8 +57,7 @@ public class Main {
      */
     public static void main(String[] args) {
         // In order to have the AWT/SWT bridge work on Leopard, we do this little hack.
-        String os = System.getProperty("os.name"); //$NON-NLS-1$
-        if (os.startsWith("Mac OS")) { //$NON-NLS-1$
+        if (isMac()) {
             RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
             System.setProperty(
                     "JAVA_STARTED_ON_FIRST_THREAD_" + (rt.getName().split("@"))[0], //$NON-NLS-1$
@@ -85,6 +84,12 @@ public class Main {
         // get the ddms parent folder location
         String ddmsParentLocation = System.getProperty("com.android.ddms.bindir"); //$NON-NLS-1$
 
+        if (ddmsParentLocation == null) {
+            // Tip: for debugging DDMS in eclipse, set this env var to the SDK/tools
+            // directory path.
+            ddmsParentLocation = System.getenv("com.android.ddms.bindir"); //$NON-NLS-1$
+        }
+
         // we're past the point where ddms can be called just to send a ping, so we can
         // ping for ddms itself.
         ping(ddmsParentLocation);
@@ -107,6 +112,14 @@ public class Main {
         // this is kinda bad, but on MacOS the shutdown doesn't seem to finish because of
         // a thread called AWT-Shutdown. This will help while I track this down.
         System.exit(0);
+    }
+
+    /** Return true iff we're running on a Mac */
+    static boolean isMac() {
+        // TODO: Replace usages of this method with
+        // org.eclipse.jface.util.Util#isMac() when we switch to Eclipse 3.5
+        // (ddms is currently built with SWT 3.4.2 from ANDROID_SWT)
+        return System.getProperty("os.name").startsWith("Mac OS"); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     public static void ping(String ddmsParentLocation) {

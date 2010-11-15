@@ -59,7 +59,7 @@ import java.io.UnsupportedEncodingException;
  * {@link SimpleAttribute}s, all of which have very specific properties that are
  * specifically limited to our needs for drag'n'drop.
  */
-class SimpleXmlTransfer extends ByteArrayTransfer {
+final class SimpleXmlTransfer extends ByteArrayTransfer {
 
     // Reference: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
 

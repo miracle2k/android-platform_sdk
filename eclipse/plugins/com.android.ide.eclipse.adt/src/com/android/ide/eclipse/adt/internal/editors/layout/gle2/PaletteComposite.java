@@ -16,14 +16,29 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
+import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutConstants;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
+import com.android.layoutlib.api.LayoutBridge;
+import com.android.layoutlib.api.LayoutScene;
+import com.android.layoutlib.api.SceneResult;
+import com.android.layoutlib.api.ViewInfo;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSource;
+import org.eclipse.swt.dnd.DragSourceEffect;
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.Transfer;
@@ -32,17 +47,29 @@ import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseTrackListener;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
+import java.awt.image.BufferedImage;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * A palette composite for the {@link GraphicalEditorPart}.
@@ -74,14 +101,17 @@ public class PaletteComposite extends Composite {
     private ScrollBar mVBar;
     private ControlListener mControlListener;
     private Listener mScrollbarListener;
+    private IGraphicalLayoutEditor mEditor;
 
     /**
      * Create the composite.
      * @param parent The parent composite.
+     * @param editor An editor associated with this palette.
      */
-    public PaletteComposite(Composite parent) {
+    public PaletteComposite(Composite parent, IGraphicalLayoutEditor editor) {
         super(parent, SWT.BORDER | SWT.V_SCROLL);
 
+        mEditor = editor;
         mVBar = getVerticalBar();
 
         mScrollbarListener = new Listener() {
@@ -159,7 +189,7 @@ public class PaletteComposite extends Composite {
 
     // ----- private methods ----
 
-    /** Returns true if scroolbar changed. */
+    /** Returns true if scrollbar changed. */
     private  boolean recomputeScrollbar() {
         if (mVBar != null && mRoot != null) {
 
@@ -249,11 +279,15 @@ public class PaletteComposite extends Composite {
                 continue;
             }
 
-            Item item = new Item(group, desc);
+            Item item = new Item(group, this, desc);
             toggle.addItem(item);
             GridData gd = new GridData();
             item.setLayoutData(gd);
         }
+    }
+
+    /* package */ IGraphicalLayoutEditor getEditor() {
+        return mEditor;
     }
 
     /**
@@ -363,7 +397,7 @@ public class PaletteComposite extends Composite {
 
             // Tell the root composite that its content changed.
             mRoot.layout(true /*changed*/);
-            // Force the top composite to recompute the scrollbar and refrehs it.
+            // Force the top composite to recompute the scrollbar and refresh it.
             mControlListener.controlResized(null /*event*/);
         }
     }
@@ -376,9 +410,13 @@ public class PaletteComposite extends Composite {
 
         private boolean mMouseIn;
         private DragSource mSource;
+        private final ElementDescriptor mDesc;
+        public PaletteComposite mPalette;
 
-        public Item(Composite parent, ElementDescriptor desc) {
+        public Item(Composite parent, PaletteComposite palette, ElementDescriptor desc) {
             super(parent, SWT.NONE);
+            mPalette = palette;
+            mDesc = desc;
             mMouseIn = false;
 
             setText(desc.getUiName());
@@ -389,7 +427,8 @@ public class PaletteComposite extends Composite {
             // DND Reference: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
             mSource = new DragSource(this, DND.DROP_COPY);
             mSource.setTransfer(new Transfer[] { SimpleXmlTransfer.getInstance() });
-            mSource.addDragListener(new DescDragSourceListener(desc));
+            mSource.addDragListener(new DescDragSourceListener(this));
+            mSource.setDragSourceEffect(new PreviewDragSourceEffect(this));
         }
 
         @Override
@@ -427,6 +466,18 @@ public class PaletteComposite extends Composite {
         public void mouseHover(MouseEvent e) {
             // pass
         }
+
+        /* package */ ElementDescriptor getDescriptor() {
+            return mDesc;
+        }
+
+        /* package */ IGraphicalLayoutEditor getEditor() {
+            return mPalette.getEditor();
+        }
+
+        /* package */ DragSource getDragSource() {
+            return mSource;
+        }
     }
 
     /**
@@ -434,24 +485,41 @@ public class PaletteComposite extends Composite {
      * {@link ElementDescriptor}s.
      */
     private static class DescDragSourceListener implements DragSourceListener {
+        private final Item mItem;
+        private SimpleElement[] mElements;
 
-        private final SimpleElement[] mElements;
-
-        public DescDragSourceListener(ElementDescriptor desc) {
-            SimpleElement se = new SimpleElement(
-                    SimpleXmlTransfer.getFqcn(desc),
-                    null /* parentFqcn */,
-                    null /* bounds */,
-                    null /* parentBounds */);
-            mElements = new SimpleElement[] { se };
+        public DescDragSourceListener(Item item) {
+            mItem = item;
         }
 
         public void dragStart(DragSourceEvent e) {
+            // See if we can find out the bounds of this element from a preview image.
+            // Preview images are created before the drag source listener is notified
+            // of the started drag.
+            Rect bounds = null;
+            DragSource dragSource = mItem.getDragSource();
+            DragSourceEffect dragSourceEffect = dragSource.getDragSourceEffect();
+            if (dragSourceEffect instanceof PreviewDragSourceEffect) {
+                PreviewDragSourceEffect preview = (PreviewDragSourceEffect) dragSourceEffect;
+                Image previewImage = preview.getPreviewImage();
+                if (previewImage != null && !preview.isPlaceholder()) {
+                    ImageData data = previewImage.getImageData();
+                    bounds = new Rect(0, 0, data.width, data.height);
+                }
+            }
+
+            SimpleElement se = new SimpleElement(
+                    SimpleXmlTransfer.getFqcn(mItem.getDescriptor()),
+                    null   /* parentFqcn */,
+                    bounds /* bounds */,
+                    null   /* parentBounds */);
+            mElements = new SimpleElement[] { se };
+
             // Register this as the current dragged data
             GlobalCanvasDragInfo.getInstance().startDrag(
                     mElements,
                     null /* selection */,
-                    null /*canvas*/,
+                    null /* canvas */,
                     null /* removeSource */);
         }
 
@@ -465,6 +533,224 @@ public class PaletteComposite extends Composite {
         public void dragFinished(DragSourceEvent e) {
             // Unregister the dragged data.
             GlobalCanvasDragInfo.getInstance().stopDrag();
+            mElements = null;
+        }
+    }
+
+    /**
+     * A {@link DragSourceEffect} (an image shown under the drag cursor) which renders a
+     * preview of the given item.
+     */
+    private static class PreviewDragSourceEffect extends DragSourceEffect {
+        // TODO: Figure out the right dimensions to use for rendering.
+        // We WILL crop this after rendering, but for performance reasons it would be good
+        // not to make it much larger than necessary since to crop this we rely on
+        // actually scanning pixels.
+
+        /** Width of the rendered preview image (before it is cropped) */
+        private static final int RENDER_HEIGHT = 400;
+
+        /** Height of the rendered preview image (before it is cropped) */
+        private static final int RENDER_WIDTH = 500;
+
+        /** Amount of alpha to multiply into the image (divided by 256) */
+        private static final int IMG_ALPHA = 192;
+
+        /** The item this preview is rendering a preview for */
+        private final Item mItem;
+
+        /** The image shown by the drag source effect */
+        private Image mImage;
+
+        /**
+         * If true, the image is a preview of the view, and if not it is a "fallback"
+         * image of some sort, such as a rendering of the palette item itself
+         */
+        private boolean mIsPlaceholder;
+
+        private PreviewDragSourceEffect(Item item) {
+            super(item);
+            mItem = item;
+        }
+
+        @Override
+        public void dragStart(DragSourceEvent event) {
+            mImage = renderPreview();
+
+            mIsPlaceholder = mImage == null;
+            if (mIsPlaceholder) {
+                // Couldn't render preview (or the preview is a blank image, such as for
+                // example the preview of an empty layout), so instead create a placeholder
+                // image
+                // Render the palette item itself as an image
+                Control control = getControl();
+                GC gc = new GC(control);
+                Point size = control.getSize();
+                final Image image = new Image(mItem.getDisplay(), size.x, size.y);
+                gc.copyArea(image, 0, 0);
+                gc.dispose();
+                ImageData data = image.getImageData();
+
+                data.alpha = IMG_ALPHA;
+
+                // Changing the ImageData -after- constructing an image on it
+                // has no effect, so we have to construct a new image. Luckily these
+                // are tiny images.
+                mImage = new Image(mItem.getDisplay(), data);
+                image.dispose();
+            }
+
+            event.image = mImage;
+
+            if (!mIsPlaceholder) {
+                // Shift the drag feedback image up such that it's centered under the
+                // mouse pointer
+
+                // TODO quick'ndirty fix. swt.dnd in 3.4 doesn't have offsetX/Y.
+                ControlPoint offset = ControlPoint.create(null, 0, 0);
+                try {
+                    Field xField = event.getClass().getDeclaredField("offsetX");
+                    Field yField = event.getClass().getDeclaredField("offsetY");
+
+                    int offsetX = mImage.getBounds().width / 2;
+                    int offsetY = mImage.getBounds().height / 2;
+                    xField.set(event, Integer.valueOf(offsetX));
+                    yField.set(event, Integer.valueOf(offsetY));
+
+                    // ...and record this info in the drag state object such that we can
+                    // account for it when performing the drop, since we want to place the newly
+                    // inserted object where it is currently shown, not with its top left corner
+                    // in the center where the mouse cursor was (this mostly matters for
+                    // the AbsoluteLayout).
+                    offset = ControlPoint.create(null, -offsetX, -offsetY);
+
+                } catch (SecurityException e) {
+                } catch (NoSuchFieldException e) {
+                } catch (IllegalArgumentException e) {
+                } catch (IllegalAccessException e) {
+                }
+
+                GlobalCanvasDragInfo.getInstance().setImageOffset(offset);
+            }
+        }
+
+        @Override
+        public void dragFinished(DragSourceEvent event) {
+            super.dragFinished(event);
+
+            if (mImage != null) {
+                mImage.dispose();
+                mImage = null;
+            }
+        }
+
+        @Override
+        public void dragSetData(DragSourceEvent event) {
+            super.dragSetData(event);
+        }
+
+        /** Performs the actual rendering of the descriptor into an image */
+        private Image renderPreview() {
+            // Create blank XML document
+            Document document = null;
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            try {
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                document = builder.newDocument();
+            } catch (ParserConfigurationException e) {
+                return null;
+            }
+
+            // Insert our target view's XML into it as a node
+            ElementDescriptor desc = mItem.getDescriptor();
+            IGraphicalLayoutEditor editor = mItem.getEditor();
+            LayoutEditor layoutEditor = editor.getLayoutEditor();
+
+            String viewName = desc.getXmlLocalName();
+            Element element = document.createElement(viewName);
+            element.setAttributeNS(SdkConstants.NS_RESOURCES,
+                    LayoutConstants.ATTR_LAYOUT_WIDTH, LayoutConstants.VALUE_WRAP_CONTENT);
+            element.setAttributeNS(SdkConstants.NS_RESOURCES,
+                    LayoutConstants.ATTR_LAYOUT_HEIGHT, LayoutConstants.VALUE_WRAP_CONTENT);
+
+            // This doesn't apply to all, but doesn't seem to cause harm and makes for a
+            // better experience with text-oriented views like buttons and texts
+            UiElementNode uiRoot = layoutEditor.getUiRootNode();
+            String text = DescriptorsUtils.getFreeWidgetId(uiRoot, viewName);
+            element.setAttributeNS(SdkConstants.NS_RESOURCES, LayoutConstants.ATTR_TEXT, text);
+
+            document.insertBefore(element, null);
+
+            // Construct UI model from XML
+            DocumentDescriptor documentDescriptor =
+                new DocumentDescriptor("layout_doc", null); //$NON-NLS-1$
+            UiDocumentNode model = new UiDocumentNode(documentDescriptor);
+            model.setEditor(layoutEditor);
+            model.loadFromXmlNode(document);
+
+            boolean hasTransparency = false;
+            LayoutLibrary layoutLibrary = editor.getLayoutLibrary();
+            if (layoutLibrary != null) {
+                LayoutBridge bridge = layoutLibrary.getBridge();
+                if (bridge != null) {
+                    hasTransparency = bridge.getApiLevel() >= 5;
+                }
+            }
+
+            LayoutScene result = editor.render(model, RENDER_WIDTH, RENDER_HEIGHT,
+                    null /* explodeNodes */, hasTransparency);
+
+            if (result != null && result.getResult() == SceneResult.SUCCESS) {
+                BufferedImage image = result.getImage();
+                if (image != null) {
+                    BufferedImage cropped;
+                    Rect initialCrop = null;
+                    ViewInfo viewInfo = result.getRootView();
+                    if (viewInfo != null) {
+                        int x1 = viewInfo.getLeft();
+                        int x2 = viewInfo.getRight();
+                        int y2 = viewInfo.getBottom();
+                        int y1 = viewInfo.getTop();
+                        initialCrop = new Rect(x1, y1, x2 - x1, y2 - y1);
+                    }
+
+                    if (hasTransparency) {
+                        cropped = SwtUtils.cropBlank(image, initialCrop);
+                    } else {
+                        int edgeColor = image.getRGB(image.getWidth() - 1, image.getHeight() - 1);
+                        cropped = SwtUtils.cropColor(image, edgeColor, initialCrop);
+                    }
+
+                    if (cropped != null) {
+                        Display display = getControl().getDisplay();
+                        Image swtImage = SwtUtils.convertImage(display, cropped, true, IMG_ALPHA);
+                        return swtImage;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /**
+         * Returns the image shown as the drag source effect. The image may be a preview
+         * of the palette item, or just a placeholder image; {@link #isPlaceholder()} can
+         * tell the difference.
+         *
+         * @return the image shown as preview. May be null (between drags).
+         */
+        /* package */ Image getPreviewImage() {
+            return mImage;
+        }
+
+        /**
+         * Returns true if the image returned by {@link #getPreviewImage()} is just a
+         * placeholder for a real preview, and false if the image is an actual preview.
+         *
+         * @return true if the preview image is just a placeholder
+         */
+        /* package */ boolean isPlaceholder() {
+            return mIsPlaceholder;
         }
     }
 }

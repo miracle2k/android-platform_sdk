@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DrawingStyle;
+import com.android.ide.common.api.DrawingStyle;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.RGB;
@@ -34,7 +34,7 @@ public enum SwtDrawingStyle {
     /**
      * The style definition corresponding to {@link DrawingStyle#SELECTION}
      */
-    SELECTION(new RGB(0x00, 0x99, 0xFF), 255, new RGB(0x00, 0x99, 0xFF), 64, 2, SWT.LINE_DASH),
+    SELECTION(new RGB(0x00, 0x99, 0xFF), 255, new RGB(0x00, 0x99, 0xFF), 64, 1, SWT.LINE_DASH),
 
     /**
      * The style definition corresponding to {@link DrawingStyle#GUIDELINE}
@@ -88,6 +88,11 @@ public enum SwtDrawingStyle {
      * The style definition corresponding to {@link DrawingStyle#INVALID}
      */
     INVALID(new RGB(0xFF, 0xFF, 0xFF), 255, new RGB(0xFF, 0x00, 0x00), 150, 2, SWT.LINE_SOLID),
+
+    /**
+     * The style definition corresponding to {@link DrawingStyle#EMPTY}
+     */
+    EMPTY(new RGB(0xFF, 0xFF, 0x55), 255, new RGB(0xFF, 0xFF, 0x55), 255, 1, SWT.LINE_DASH),
 
     /**
      * The style definition corresponding to {@link DrawingStyle#CUSTOM1}
@@ -183,6 +188,8 @@ public enum SwtDrawingStyle {
     /**
      * Return the corresponding SwtDrawingStyle for the given
      * {@link DrawingStyle}
+     * @param style The style to convert from a {@link DrawingStyle} to a {@link SwtDrawingStyle}.
+     * @return A corresponding {@link SwtDrawingStyle}.
      */
     public static SwtDrawingStyle of(DrawingStyle style) {
         switch (style) {
@@ -208,6 +215,8 @@ public enum SwtDrawingStyle {
                 return HELP;
             case INVALID:
                 return INVALID;
+            case EMPTY:
+                return EMPTY;
             case CUSTOM1:
                 return CUSTOM1;
             case CUSTOM2:

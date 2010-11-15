@@ -16,6 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.layoutlib.BasicLayoutScene;
+import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.ExplodedRenderingHelper;
@@ -40,17 +43,14 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData.LayoutBridge;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
-import com.android.layoutlib.api.ILayoutBridge;
 import com.android.layoutlib.api.ILayoutLog;
-import com.android.layoutlib.api.ILayoutResult;
-import com.android.layoutlib.api.IProjectCallback;
 import com.android.layoutlib.api.IResourceValue;
-import com.android.layoutlib.api.IXmlPullParser;
+import com.android.layoutlib.api.LayoutScene;
+import com.android.layoutlib.api.SceneParams;
+import com.android.layoutlib.api.SceneResult;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
@@ -98,8 +98,8 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
+import org.w3c.dom.Node;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -172,7 +172,7 @@ public class GraphicalEditorPart extends EditorPart
     /** The layout canvas displayed to the right of the sash. */
     private LayoutCanvasViewer mCanvasViewer;
 
-    /** The Groovy Rules Engine associated with this editor. It is project-specific. */
+    /** The Rules Engine associated with this editor. It is project-specific. */
     private RulesEngine mRulesEngine;
 
     /** Styled text displaying the most recent error in the error view. */
@@ -341,7 +341,7 @@ public class GraphicalEditorPart extends EditorPart
         mSashPalette = new SashForm(parent, SWT.HORIZONTAL);
         mSashPalette.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        mPalette = new PaletteComposite(mSashPalette);
+        mPalette = new PaletteComposite(mSashPalette, this);
 
         mSashError = new SashForm(mSashPalette, SWT.VERTICAL | SWT.BORDER);
         mSashError.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -454,6 +454,14 @@ public class GraphicalEditorPart extends EditorPart
             mCanvasViewer = null;
         }
         super.dispose();
+    }
+
+    /**
+     * Select the visual element corresponding to the given XML node
+     * @param xmlNode The Node whose element we want to select
+     */
+    public void select(Node xmlNode) {
+        mCanvasViewer.getCanvas().getSelectionManager().select(xmlNode);
     }
 
     /**
@@ -906,8 +914,8 @@ public class GraphicalEditorPart extends EditorPart
     public void onTargetChange() {
         AndroidTargetData targetData = mConfigComposite.onXmlModelLoaded();
         if (targetData != null) {
-            LayoutBridge bridge = targetData.getLayoutBridge();
-            setClippingSupport(bridge.apiLevel >= 4);
+            LayoutLibrary layoutLib = targetData.getLayoutLibrary();
+            setClippingSupport(layoutLib.getBridge().getApiLevel() >= 4);
         }
 
         mConfigListener.onConfigurationChange();
@@ -989,119 +997,35 @@ public class GraphicalEditorPart extends EditorPart
     public void recomputeLayout() {
         doXmlReload(false /* force */);
         try {
-            // check that the resource exists. If the file is opened but the project is closed
-            // or deleted for some reason (changed from outside of eclipse), then this will
-            // return false;
-            if (mEditedFile.exists() == false) {
-                displayError("Resource '%1$s' does not exist.",
-                             mEditedFile.getFullPath().toString());
+            if (!ensureFileValid()) {
                 return;
             }
 
-            IProject iProject = mEditedFile.getProject();
+            UiDocumentNode model = getModel();
+            if (!ensureModelValid(model)) {
+                // Although we display an error, we still treat an empty document as a
+                // successful layout result so that we can drop new elements in it.
+                //
+                // For that purpose, create a special LayoutScene that has no image,
+                // no root view yet indicates success and then update the canvas with it.
 
-            if (mEditedFile.isSynchronized(IResource.DEPTH_ZERO) == false) {
-                String message = String.format("%1$s is out of sync. Please refresh.",
-                        mEditedFile.getName());
-
-                displayError(message);
-
-                // also print it in the error console.
-                AdtPlugin.printErrorToConsole(iProject.getName(), message);
+                mCanvasViewer.getCanvas().setResult(
+                        new BasicLayoutScene(SceneResult.SUCCESS, null /*rootViewInfo*/,
+                                null /*image*/),
+                        null /*explodeNodes*/);
                 return;
             }
 
-            Sdk currentSdk = Sdk.getCurrent();
-            if (currentSdk != null) {
-                IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
-                if (target == null) {
-                    displayError("The project target is not set.");
-                    return;
+            LayoutLibrary layoutLib = getReadyLayoutLib();
+
+            if (layoutLib != null) {
+                // if drawing in real size, (re)set the scaling factor.
+                if (mZoomRealSizeButton.getSelection()) {
+                    computeAndSetRealScale(false /* redraw */);
                 }
 
-                AndroidTargetData data = currentSdk.getTargetData(target);
-                if (data == null) {
-                    // It can happen that the workspace refreshes while the SDK is loading its
-                    // data, which could trigger a redraw of the opened layout if some resources
-                    // changed while Eclipse is closed.
-                    // In this case data could be null, but this is not an error.
-                    // We can just silently return, as all the opened editors are automatically
-                    // refreshed once the SDK finishes loading.
-                    LoadStatus targetLoadStatus = currentSdk.checkAndLoadTargetData(target, null);
-                    switch (targetLoadStatus) {
-                        case LOADING:
-                            displayError("The project target (%1$s) is still loading.\n%2$s will refresh automatically once the process is finished.",
-                                    target.getName(), mEditedFile.getName());
-
-                            break;
-                        case FAILED: // known failure
-                        case LOADED: // success but data isn't loaded?!?!
-                            displayError("The project target (%s) was not properly loaded.",
-                                    target.getName());
-                            break;
-                    }
-
-                    return;
-                }
-
-                // check there is actually a model (maybe the file is empty).
-                UiDocumentNode model = getModel();
-
-                if (model.getUiChildren().size() == 0) {
-                    displayError(
-                            "No XML content. Please add a root view or layout to your document.");
-
-                    // Although we display an error, we still treat an empty document as a
-                    // successful layout result so that we can drop new elements in it.
-                    //
-                    // For that purpose, create a special ILayoutResult that has no image,
-                    // no root view yet indicates success and then update the canvas with it.
-
-                    ILayoutResult result = new ILayoutResult() {
-                        public String getErrorMessage() {
-                            return null;
-                        }
-
-                        public BufferedImage getImage() {
-                            return null;
-                        }
-
-                        public ILayoutViewInfo getRootView() {
-                            return null;
-                        }
-
-                        public int getSuccess() {
-                            return ILayoutResult.SUCCESS;
-                        }
-                    };
-
-                    mCanvasViewer.getCanvas().setResult(result);
-                    return;
-                }
-
-                LayoutBridge bridge = data.getLayoutBridge();
-
-                if (bridge.bridge != null) { // bridge can never be null.
-                    // if drawing in real size, (re)set the scaling factor.
-                    if (mZoomRealSizeButton.getSelection()) {
-                        computeAndSetRealScale(false /*redraw*/);
-                    }
-
-                    renderWithBridge(iProject, model, bridge);
-                } else {
-                    // SDK is loaded but not the layout library!
-
-                    // check whether the bridge managed to load, or not
-                    if (bridge.status == LoadStatus.LOADING) {
-                        displayError("Eclipse is loading framework information and the layout library from the SDK folder.\n%1$s will refresh automatically once the process is finished.",
-                                     mEditedFile.getName());
-                    } else {
-                        displayError("Eclipse failed to load the framework information and the layout library!");
-                    }
-                }
-            } else {
-                displayError("Eclipse is loading the SDK.\n%1$s will refresh automatically once the process is finished.",
-                             mEditedFile.getName());
+                IProject iProject = mEditedFile.getProject();
+                renderWithBridge(iProject, model, layoutLib);
             }
         } finally {
             // no matter the result, we are done doing the recompute based on the latest
@@ -1110,13 +1034,174 @@ public class GraphicalEditorPart extends EditorPart
         }
     }
 
-    private void renderWithBridge(IProject iProject, UiDocumentNode model, LayoutBridge bridge) {
+    /**
+     * Ensure that the file associated with this editor is valid (exists and is
+     * synchronized). Any reasons why it is not are displayed in the editor's error area.
+     *
+     * @return True if the editor is valid, false otherwise.
+     */
+    private boolean ensureFileValid() {
+        // check that the resource exists. If the file is opened but the project is closed
+        // or deleted for some reason (changed from outside of eclipse), then this will
+        // return false;
+        if (mEditedFile.exists() == false) {
+            displayError("Resource '%1$s' does not exist.",
+                         mEditedFile.getFullPath().toString());
+            return false;
+        }
+
+        if (mEditedFile.isSynchronized(IResource.DEPTH_ZERO) == false) {
+            String message = String.format("%1$s is out of sync. Please refresh.",
+                    mEditedFile.getName());
+
+            displayError(message);
+
+            // also print it in the error console.
+            IProject iProject = mEditedFile.getProject();
+            AdtPlugin.printErrorToConsole(iProject.getName(), message);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns a {@link LayoutLibrary} that is ready for rendering, or null if the bridge
+     * is not available or not ready yet (due to SDK loading still being in progress etc).
+     * Any reasons preventing the bridge from being returned are displayed to the editor's
+     * error area.
+     *
+     * @return LayoutBridge the layout bridge for rendering this editor's scene
+     */
+    private LayoutLibrary getReadyLayoutLib() {
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk != null) {
+            IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
+            if (target == null) {
+                displayError("The project target is not set.");
+                return null;
+            }
+
+            AndroidTargetData data = currentSdk.getTargetData(target);
+            if (data == null) {
+                // It can happen that the workspace refreshes while the SDK is loading its
+                // data, which could trigger a redraw of the opened layout if some resources
+                // changed while Eclipse is closed.
+                // In this case data could be null, but this is not an error.
+                // We can just silently return, as all the opened editors are automatically
+                // refreshed once the SDK finishes loading.
+                LoadStatus targetLoadStatus = currentSdk.checkAndLoadTargetData(target, null);
+                switch (targetLoadStatus) {
+                    case LOADING:
+                        displayError("The project target (%1$s) is still loading.\n%2$s will refresh automatically once the process is finished.",
+                                target.getName(), mEditedFile.getName());
+
+                        break;
+                    case FAILED: // known failure
+                    case LOADED: // success but data isn't loaded?!?!
+                        displayError("The project target (%s) was not properly loaded.",
+                                target.getName());
+                        break;
+                }
+
+                return null;
+            }
+
+            LayoutLibrary layoutLib = data.getLayoutLibrary();
+
+            if (layoutLib.getBridge() != null) { // layoutLib can never be null.
+                return layoutLib;
+            } else {
+                // SDK is loaded but not the layout library!
+
+                // check whether the bridge managed to load, or not
+                if (layoutLib.getStatus() == LoadStatus.LOADING) {
+                    displayError("Eclipse is loading framework information and the layout library from the SDK folder.\n%1$s will refresh automatically once the process is finished.",
+                                 mEditedFile.getName());
+                } else {
+                    displayError("Eclipse failed to load the framework information and the layout library!");
+                }
+            }
+        } else {
+            displayError("Eclipse is loading the SDK.\n%1$s will refresh automatically once the process is finished.",
+                         mEditedFile.getName());
+        }
+
+        return null;
+    }
+
+    private boolean ensureModelValid(UiDocumentNode model) {
+        // check there is actually a model (maybe the file is empty).
+        if (model.getUiChildren().size() == 0) {
+            displayError(
+                    "No XML content. Please add a root view or layout to your document.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void renderWithBridge(IProject iProject, UiDocumentNode model,
+            LayoutLibrary layoutLib) {
+        LayoutCanvas canvas = getCanvasControl();
+        Set<UiElementNode> explodeNodes = canvas.getNodesToExplode();
+
+        // Compute the layout
+        Rectangle rect = getBounds();
+
+        int width = rect.width;
+        int height = rect.height;
+
+        LayoutScene scene = renderWithBridge(iProject, model, layoutLib, width, height,
+                explodeNodes, false);
+
+        canvas.setResult(scene, explodeNodes);
+
+        // update the UiElementNode with the layout info.
+        if (scene.getResult() != SceneResult.SUCCESS) {
+            // An error was generated. Print it.
+            displayError(scene.getResult().getErrorMessage());
+
+        } else {
+            // Success means there was no exception. But we might have detected
+            // some missing classes and swapped them by a mock view.
+            Set<String> missingClasses = mProjectCallback.getMissingClasses();
+            if (missingClasses.size() > 0) {
+                displayMissingClasses(missingClasses);
+            } else {
+                // Nope, no missing classes. Clear success, congrats!
+                hideError();
+            }
+
+        }
+
+        model.refreshUi();
+    }
+
+    public LayoutScene render(UiDocumentNode model, int width, int height,
+            Set<UiElementNode> explodeNodes, boolean transparentBackground) {
+        if (!ensureFileValid()) {
+            return null;
+        }
+        if (!ensureModelValid(model)) {
+            return null;
+        }
+        LayoutLibrary layoutLib = getReadyLayoutLib();
+
+        IProject iProject = mEditedFile.getProject();
+        return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes,
+                transparentBackground);
+    }
+
+    private LayoutScene renderWithBridge(IProject iProject, UiDocumentNode model,
+            LayoutLibrary layoutLib, int width, int height, Set<UiElementNode> explodeNodes,
+            boolean transparentBackground) {
         ResourceManager resManager = ResourceManager.getInstance();
 
         ProjectResources projectRes = resManager.getProjectResources(iProject);
         if (projectRes == null) {
             displayError("Missing project resources.");
-            return;
+            return null;
         }
 
         // Get the resources of the file's project.
@@ -1139,7 +1224,7 @@ public class GraphicalEditorPart extends EditorPart
         // Lazily create the project callback the first time we need it
         if (mProjectCallback == null) {
             mProjectCallback = new ProjectCallback(
-                    bridge.classLoader, projectRes, iProject);
+                    layoutLib.getClassLoader(), projectRes, iProject);
         } else {
             // Also clears the set of missing classes prior to rendering
             mProjectCallback.getMissingClasses().clear();
@@ -1174,14 +1259,9 @@ public class GraphicalEditorPart extends EditorPart
             displayError("Missing theme.");
         }
 
-        // Compute the layout
-        Rectangle rect = getBounds();
-
-        int width = rect.width;
-        int height = rect.height;
         if (mUseExplodeMode) {
             // compute how many padding in x and y will bump the screen size
-            List<UiElementNode> children = getModel().getUiChildren();
+            List<UiElementNode> children = model.getUiChildren();
             if (children.size() == 1) {
                 ExplodedRenderingHelper helper = new ExplodedRenderingHelper(
                         children.get(0).getXmlNode(), iProject);
@@ -1200,97 +1280,26 @@ public class GraphicalEditorPart extends EditorPart
         float ydpi = mConfigComposite.getYDpi();
         boolean isProjectTheme = mConfigComposite.isProjectTheme();
 
-        UiElementPullParser parser = new UiElementPullParser(getModel(),
-                mUseExplodeMode, density, xdpi, iProject);
+        UiElementPullParser parser = new UiElementPullParser(model,
+                mUseExplodeMode, explodeNodes, density, xdpi, iProject);
 
-        ILayoutResult result = computeLayout(bridge, parser,
+        SceneParams params = new SceneParams(
+                parser,
                 iProject /* projectKey */,
                 width, height, !mClippingButton.getSelection(),
                 density, xdpi, ydpi,
                 theme, isProjectTheme,
                 configuredProjectRes, frameworkResources, mProjectCallback,
                 mLogger);
-
-        // post rendering clean up
-        bridge.cleanUp();
-
-        mCanvasViewer.getCanvas().setResult(result);
-
-        // update the UiElementNode with the layout info.
-        if (result.getSuccess() != ILayoutResult.SUCCESS) {
-            // An error was generated. Print it.
-            displayError(result.getErrorMessage());
-
-        } else {
-            // Success means there was no exception. But we might have detected
-            // some missing classes and swapped them by a mock view.
-            Set<String> missingClasses = mProjectCallback.getMissingClasses();
-            if (missingClasses.size() > 0) {
-                displayMissingClasses(missingClasses);
-            } else {
-                // Nope, no missing classes. Clear success, congrats!
-                hideError();
-            }
-
+        if (transparentBackground) {
+            // It doesn't matter what the background color is as long as the alpha
+            // is 0 (fully transparent). We're using red to make it more obvious if
+            // for some reason the background is painted when it shouldn't be.
+            params.setCustomBackgroundColor(0x00FF0000);
         }
+        LayoutScene scene = layoutLib.getBridge().createScene(params);
 
-        model.refreshUi();
-    }
-
-    /**
-     * Computes a layout by calling the correct computeLayout method of ILayoutBridge based on
-     * the implementation API level.
-     *
-     * Implementation detail: the bridge's computeLayout() method already returns a newly
-     * allocated ILayoutResult.
-     */
-    @SuppressWarnings("deprecation")
-    private static ILayoutResult computeLayout(LayoutBridge bridge,
-            IXmlPullParser layoutDescription, Object projectKey,
-            int screenWidth, int screenHeight, boolean renderFullSize,
-            int density, float xdpi, float ydpi,
-            String themeName, boolean isProjectTheme,
-            Map<String, Map<String, IResourceValue>> projectResources,
-            Map<String, Map<String, IResourceValue>> frameworkResources,
-            IProjectCallback projectCallback, ILayoutLog logger) {
-
-        if (bridge.apiLevel >= ILayoutBridge.API_CURRENT) {
-            // newest API with support for "render full height"
-            // TODO: link boolean to UI.
-            return bridge.bridge.computeLayout(layoutDescription,
-                    projectKey, screenWidth, screenHeight, renderFullSize,
-                    density, xdpi, ydpi,
-                    themeName, isProjectTheme,
-                    projectResources, frameworkResources, projectCallback,
-                    logger);
-        } else if (bridge.apiLevel == 3) {
-            // newer api with density support.
-            return bridge.bridge.computeLayout(layoutDescription,
-                    projectKey, screenWidth, screenHeight, density, xdpi, ydpi,
-                    themeName, isProjectTheme,
-                    projectResources, frameworkResources, projectCallback,
-                    logger);
-        } else if (bridge.apiLevel == 2) {
-            // api with boolean for separation of project/framework theme
-            return bridge.bridge.computeLayout(layoutDescription,
-                    projectKey, screenWidth, screenHeight, themeName, isProjectTheme,
-                    projectResources, frameworkResources, projectCallback,
-                    logger);
-        } else {
-            // oldest api with no density/dpi, and project theme boolean mixed
-            // into the theme name.
-
-            // change the string if it's a custom theme to make sure we can
-            // differentiate them
-            if (isProjectTheme) {
-                themeName = "*" + themeName; //$NON-NLS-1$
-            }
-
-            return bridge.bridge.computeLayout(layoutDescription,
-                    projectKey, screenWidth, screenHeight, themeName,
-                    projectResources, frameworkResources, projectCallback,
-                    logger);
-        }
+        return scene;
     }
 
     public Rectangle getBounds() {
@@ -1346,16 +1355,10 @@ public class GraphicalEditorPart extends EditorPart
                 mConfiguredProjectRes = null;
 
                 // clear the cache in the bridge in case a bitmap/9-patch changed.
-                IAndroidTarget target = Sdk.getCurrent().getTarget(mEditedFile.getProject());
-                if (target != null) {
-
-                    AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
-                    if (data != null) {
-                        LayoutBridge bridge = data.getLayoutBridge();
-
-                        if (bridge.bridge != null) {
-                            bridge.bridge.clearCaches(mEditedFile.getProject());
-                        }
+                LayoutLibrary layoutLib = getLayoutLibrary();
+                if (layoutLib != null) {
+                    if (layoutLib.getBridge() != null) {
+                        layoutLib.getBridge().clearCaches(mEditedFile.getProject());
                     }
                 }
             }
@@ -1382,10 +1385,23 @@ public class GraphicalEditorPart extends EditorPart
         }
     }
 
+    public LayoutLibrary getLayoutLibrary() {
+        // clear the cache in the bridge in case a bitmap/9-patch changed.
+        IAndroidTarget target = Sdk.getCurrent().getTarget(mEditedFile.getProject());
+        if (target != null) {
+            AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
+            if (data != null) {
+                return data.getLayoutLibrary();
+            }
+        }
+
+        return null;
+    }
+
     // ---- Error handling ----
 
     /**
-     * Switches the shash to display the error label.
+     * Switches the sash to display the error label.
      *
      * @param errorFormat The new error to display if not null.
      * @param parameters String.format parameters for the error format.
@@ -1406,7 +1422,7 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     /**
-     * Switches the shash to display the error label to show a list of
+     * Switches the sash to display the error label to show a list of
      * missing classes and give options to create them.
      */
     private void displayMissingClasses(Set<String> missingClasses) {

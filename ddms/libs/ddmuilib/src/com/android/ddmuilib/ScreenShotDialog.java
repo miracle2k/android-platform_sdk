@@ -41,6 +41,7 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
+import java.io.File;
 import java.io.IOException;
 
 
@@ -285,7 +286,12 @@ public class ScreenShotDialog extends Dialog {
 
         dlg.setText("Save image...");
         dlg.setFileName("device.png");
-        dlg.setFilterPath(DdmUiPreferences.getStore().getString("lastImageSaveDir"));
+
+        String lastDir = DdmUiPreferences.getStore().getString("lastImageSaveDir");
+        if (lastDir.length() == 0) {
+            lastDir = DdmUiPreferences.getStore().getString("imageSaveDir");
+        }
+        dlg.setFilterPath(lastDir);
         dlg.setFilterNames(new String[] {
             "PNG Files (*.png)"
         });
@@ -295,7 +301,15 @@ public class ScreenShotDialog extends Dialog {
 
         fileName = dlg.open();
         if (fileName != null) {
-            DdmUiPreferences.getStore().setValue("lastImageSaveDir", dlg.getFilterPath());
+            // FileDialog.getFilterPath() does NOT always return the current
+            // directory of the FileDialog; on the Mac it sometimes just returns
+            // the value the dialog was initialized with. It does however return
+            // the full path as its return value, so just pick the path from
+            // there.
+            String saveDir = new File(fileName).getParent();
+            if (saveDir != null) {
+                DdmUiPreferences.getStore().setValue("lastImageSaveDir", saveDir);
+            }
 
             Log.d("ddms", "Saving image to " + fileName);
             ImageData imageData = mImageLabel.getImage().getImageData();

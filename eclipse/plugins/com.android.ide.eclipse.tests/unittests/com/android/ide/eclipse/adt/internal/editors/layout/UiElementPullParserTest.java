@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
+import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
@@ -170,6 +170,7 @@ public class UiElementPullParserTest extends TestCase {
             UiElementPullParser parser = new UiElementPullParser(
                     ui, // model
                     false, // explodedView
+                    null, // explodeNodes
                     Density.MEDIUM.getDpiValue(), // density (default from ConfigurationComposite)
                     Density.MEDIUM.getDpiValue(), // xdpi (default from ConfigurationComposite)
                     null // iProject

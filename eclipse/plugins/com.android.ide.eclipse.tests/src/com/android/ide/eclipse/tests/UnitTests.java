@@ -55,8 +55,7 @@ public class UnitTests {
         @Override
         protected boolean isTestClass(Class<?> testClass) {
             return super.isTestClass(testClass) &&
-            !testClass.getPackage().getName().startsWith(FuncTests.FUNC_TEST_PACKAGE) &&
-            !testClass.getPackage().getName().startsWith(GroovyTestsSuite.GROOVY_TEST_PACKAGE);
+            !testClass.getPackage().getName().startsWith(FuncTests.FUNC_TEST_PACKAGE);
         }
     }
 }

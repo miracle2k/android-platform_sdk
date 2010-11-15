@@ -16,10 +16,10 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.IMenuCallback;
+import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.MenuAction;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IMenuCallback;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.MenuAction;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 
 /**
  * Helper class that is responsible for adding and managing the dynamic menu items
- * contributed by the {@link IViewRule} groovy instances, based on the current selection
+ * contributed by the {@link IViewRule} instances, based on the current selection
  * on the {@link LayoutCanvas}.
  * <p/>
  * This class is tied to a specific {@link LayoutCanvas} instance and a root {@link MenuManager}.
@@ -68,7 +68,7 @@ import java.util.regex.Pattern;
 
     /**
      * Creates a new helper responsible for adding and managing the dynamic menu items
-     * contributed by the {@link IViewRule} groovy instances, based on the current selection
+     * contributed by the {@link IViewRule} instances, based on the current selection
      * on the {@link LayoutCanvas}.
      *
      * @param canvas The {@link LayoutCanvas} providing the selection, the node factory and
@@ -215,7 +215,7 @@ import java.util.regex.Pattern;
             final TreeMap<String, ArrayList<MenuAction>> outActionsMap,
             final TreeMap<String, MenuAction.Group> outGroupsMap) {
         int maxMenuSelection = 0;
-        for (CanvasSelection selection : mCanvas.getCanvasSelections()) {
+        for (CanvasSelection selection : mCanvas.getSelectionManager().getSelections()) {
             List<MenuAction> viewActions = null;
             if (selection != null) {
                 CanvasViewInfo vi = selection.getViewInfo();
@@ -269,7 +269,7 @@ import java.util.regex.Pattern;
     }
 
     /**
-     * Returns the menu actions computed by the groovy rule associated with this view.
+     * Returns the menu actions computed by the rule associated with this view.
      */
     public List<MenuAction> getMenuActions(CanvasViewInfo vi) {
         if (vi == null) {

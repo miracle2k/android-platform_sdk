@@ -46,6 +46,8 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
 
     public final static String PREFS_MONITOR_DENSITY = AdtPlugin.PLUGIN_ID + ".monitorDensity"; //$NON-NLS-1$
 
+    public final static String PREFS_FORMAT_XML = AdtPlugin.PLUGIN_ID + ".formatXml"; //$NON-NLS-1$
+
     /** singleton instance */
     private final static AdtPrefs sThis = new AdtPrefs();
 
@@ -60,6 +62,7 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
 
     private boolean mBuildForceResResfresh = false;
     private boolean mBuildForceErrorOnNativeLibInJar = true;
+    private boolean mFormatXml = false;
     private float mMonitorDensity = 0.f;
 
     public static enum BuildVerbosity {
@@ -139,6 +142,10 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         if (property == null || PREFS_MONITOR_DENSITY.equals(property)) {
             mMonitorDensity = mStore.getFloat(PREFS_MONITOR_DENSITY);
         }
+
+        if (property == null || PREFS_FORMAT_XML.equals(property)) {
+            mFormatXml = mStore.getBoolean(PREFS_FORMAT_XML);
+        }
     }
 
     /**
@@ -153,8 +160,12 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         return mBuildVerbosity;
     }
 
-    public  boolean getBuildForceResResfresh() {
+    public boolean getBuildForceResResfresh() {
         return mBuildForceResResfresh;
+    }
+
+    public boolean getFormatXml() {
+        return mFormatXml;
     }
 
     public boolean getBuildForceErrorOnNativeLibInJar() {
@@ -185,6 +196,7 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         store.setDefault(PREFS_HOME_PACKAGE, "android.process.acore"); //$NON-NLS-1$
 
         store.setDefault(PREFS_MONITOR_DENSITY, 0.f);
+        store.setDefault(PREFS_FORMAT_XML, false);
 
         try {
             store.setDefault(PREFS_DEFAULT_DEBUG_KEYSTORE,

@@ -118,7 +118,7 @@ public class AndroidConstants {
 
     public final static String FN_TRACEVIEW =
         (SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_WINDOWS) ?
-            "traceview.exe" : "traceview"; //$NON-NLS-1$ //$NON-NLS-2$
+            "traceview.bat" : "traceview"; //$NON-NLS-1$ //$NON-NLS-2$
 
     public final static String FN_HPROF_CONV =
         (SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_WINDOWS) ?
@@ -210,8 +210,6 @@ public class AndroidConstants {
     public final static String MARKER_ATTR_TYPE_RECEIVER = "receiver"; //$NON-NLS-1$
     /** provider value for marker attribute "type" */
     public final static String MARKER_ATTR_TYPE_PROVIDER = "provider"; //$NON-NLS-1$
-
-    public final static String CLASS_BRIDGE = "com.android.layoutlib.bridge.Bridge"; //$NON-NLS-1$
 
     /**
      * Prefered compiler level, i.e. "1.5".

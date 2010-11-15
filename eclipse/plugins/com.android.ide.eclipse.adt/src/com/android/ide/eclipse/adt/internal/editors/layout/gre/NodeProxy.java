@@ -16,11 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
+import com.android.ide.common.api.IAttributeInfo;
+import com.android.ide.common.api.INode;
+import com.android.ide.common.api.INodeHandler;
+import com.android.ide.common.api.Rect;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INodeHandler;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
@@ -198,7 +198,7 @@ public class NodeProxy implements INode {
         checkEditOK();
 
         // Find the descriptor for this FQCN
-        ViewElementDescriptor vd = getFqcnViewDescritor(viewFqcn);
+        ViewElementDescriptor vd = getFqcnViewDescriptor(viewFqcn);
         if (vd == null) {
             warnPrintf("Can't create a new %s element", viewFqcn);
             return null;
@@ -230,7 +230,7 @@ public class NodeProxy implements INode {
         checkEditOK();
 
         // Find the descriptor for this FQCN
-        ViewElementDescriptor vd = getFqcnViewDescritor(viewFqcn);
+        ViewElementDescriptor vd = getFqcnViewDescriptor(viewFqcn);
         if (vd == null) {
             warnPrintf("Can't create a new %s element", viewFqcn);
             return null;
@@ -362,12 +362,12 @@ public class NodeProxy implements INode {
      * Helper methods that returns a {@link ViewElementDescriptor} for the requested FQCN.
      * Will return null if we can't find that FQCN or we lack the editor/data/descriptors info
      * (which shouldn't really happen since at this point the SDK should be fully loaded and
-     * isn't reloading, or we wouldn't be here editing XML for a groovy script.)
+     * isn't reloading, or we wouldn't be here editing XML for a layout rule.)
      */
-    private ViewElementDescriptor getFqcnViewDescritor(String fqcn) {
+    private ViewElementDescriptor getFqcnViewDescriptor(String fqcn) {
         AndroidXmlEditor editor = mNode.getEditor();
         if (editor instanceof LayoutEditor) {
-            return ((LayoutEditor) editor).getFqcnViewDescritor(fqcn);
+            return ((LayoutEditor) editor).getFqcnViewDescriptor(fqcn);
         }
 
         return null;
@@ -375,7 +375,7 @@ public class NodeProxy implements INode {
 
     private void warnPrintf(String msg, Object...params) {
         AdtPlugin.printToConsole(
-                mNode == null ? "Groovy" : mNode.getDescriptor().getXmlLocalName() + ".groovy",
+                mNode == null ? "" : mNode.getDescriptor().getXmlLocalName(),
                 String.format(msg, params)
                 );
     }

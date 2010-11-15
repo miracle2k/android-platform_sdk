@@ -17,8 +17,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
-import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
 import junit.framework.TestCase;
 
@@ -76,23 +76,23 @@ public class DescriptorsUtilsTest extends TestCase {
         assertEquals("android.content.Intent",
                 DescriptorsUtils.formatTooltip(
                         "{@link android.content.Intent}"));
-        
+
         assertEquals("FLAG_ACTIVITY_SINGLE_TOP",
                 DescriptorsUtils.formatTooltip(
                         "{@link android.content.Intent#FLAG_ACTIVITY_SINGLE_TOP}"));
-        
+
         assertEquals("activity-alias",
                 DescriptorsUtils.formatTooltip(
                         "{@link \t  #AndroidManifestActivityAlias  \tactivity-alias }"));
-        
+
         assertEquals("\"permission\"",
                 DescriptorsUtils.formatTooltip(
                         "{@link #AndroidManifestPermission &lt;permission&gt;}"));
-        
+
         assertEquals("and etc.",
                 DescriptorsUtils.formatTooltip(
                         "{@link #IntentCategory <category> and etc. }"));
-        
+
         assertEquals("Activity.onNewIntent()",
                 DescriptorsUtils.formatTooltip(
                         "{@link android.app.Activity#onNewIntent Activity.onNewIntent()}"));
@@ -123,5 +123,16 @@ public class DescriptorsUtilsTest extends TestCase {
                 DescriptorsUtils.formatFormText(
                         "{@link #AndroidManifestPermission &lt;permission&gt;}",
                         desc, docBaseUrl));
+    }
+
+    public void testGetFreeWidgetId() throws Exception {
+        DocumentDescriptor documentDescriptor =
+            new DocumentDescriptor("layout_doc", null); //$NON-NLS-1$
+        UiDocumentNode model = new UiDocumentNode(documentDescriptor);
+        UiElementNode uiRoot = model.getUiRoot();
+
+        assertEquals("@+id/Button01", DescriptorsUtils.getFreeWidgetId(uiRoot, "Button"));
+        assertEquals("@+id/LinearLayout01",
+                DescriptorsUtils.getFreeWidgetId(uiRoot, "LinearLayout"));
     }
 }

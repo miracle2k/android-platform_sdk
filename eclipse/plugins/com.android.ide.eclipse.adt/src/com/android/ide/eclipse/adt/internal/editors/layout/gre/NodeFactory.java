@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.INode;
+import com.android.ide.common.api.INode;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.CanvasViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 
@@ -41,12 +41,12 @@ public class NodeFactory {
      * {@link CanvasViewInfo}. The bounds of the node are set to the canvas view bounds.
      */
     public NodeProxy create(CanvasViewInfo canvasViewInfo) {
-        return create(canvasViewInfo.getUiViewKey(), canvasViewInfo.getAbsRect());
+        return create(canvasViewInfo.getUiViewNode(), canvasViewInfo.getAbsRect());
     }
 
     /**
      * Returns an {@link INode} proxy based on a given {@link UiViewElementNode} that
-     * is not yet part of the canvas, typically those created by groovy scripts
+     * is not yet part of the canvas, typically those created by layout rules
      * when generating new XML.
      */
     public NodeProxy create(UiViewElementNode uiNode) {

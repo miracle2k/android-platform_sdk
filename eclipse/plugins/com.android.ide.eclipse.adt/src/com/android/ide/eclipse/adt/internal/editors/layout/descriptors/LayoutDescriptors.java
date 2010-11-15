@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.descriptors;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
+import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
@@ -164,6 +164,10 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         mergeTag.setChildren(newDescriptors);  // mergeTag makes a copy of the list
         newDescriptors.add(mergeTag);
         newLayouts.add(mergeTag);
+
+        // Sort palette contents
+        Collections.sort(newViews);
+        Collections.sort(newLayouts);
 
         mViewDescriptors = newViews;
         mLayoutDescriptors  = newLayouts;

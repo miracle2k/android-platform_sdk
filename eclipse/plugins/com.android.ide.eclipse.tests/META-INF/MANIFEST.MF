@@ -10,5 +10,4 @@ Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Bundle-ClassPath: kxml2-2.3.0.jar,
  .,
  layoutlib.jar,
- groovy-all-1.7.0.jar,
  easymock.jar

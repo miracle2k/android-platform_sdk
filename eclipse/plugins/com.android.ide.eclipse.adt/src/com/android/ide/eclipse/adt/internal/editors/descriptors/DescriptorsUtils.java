@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
+import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -715,7 +715,7 @@ public final class DescriptorsUtils {
     }
 
     /**
-     * Given a UI root node, returns the first available id that matches the
+     * Given a UI node, returns the first available id that matches the
      * pattern "prefix%02d".
      * <p/>TabWidget is a special case and the method will always return "@android:id/tabs".
      *
@@ -725,11 +725,25 @@ public final class DescriptorsUtils {
      */
     public static String getFreeWidgetId(UiElementNode uiNode) {
         String name = uiNode.getDescriptor().getXmlLocalName();
+        return getFreeWidgetId(uiNode.getUiRoot(), name);
+    }
+
+    /**
+     * Given a UI root node and a potential XML node name, returns the first available
+     * id that matches the pattern "prefix%02d".
+     * <p/>TabWidget is a special case and the method will always return "@android:id/tabs".
+     *
+     * @param uiRoot The root UI node to search for name conflicts from
+     * @param name The XML node prefix name to look for
+     * @return A suitable generated id in the attribute form needed by the XML id tag
+     * (e.g. "@+id/something")
+     */
+    public static String getFreeWidgetId(UiElementNode uiRoot, String name) {
         if ("TabWidget".equals(name)) {                        //$NON-NLS-1$
             return "@android:id/tabs";                         //$NON-NLS-1$
         }
 
-        return "@+id/" + getFreeWidgetId(uiNode.getUiRoot(),   //$NON-NLS-1$
+        return "@+id/" + getFreeWidgetId(uiRoot,   //$NON-NLS-1$
                 new Object[] { name, null, null, null });
     }
 

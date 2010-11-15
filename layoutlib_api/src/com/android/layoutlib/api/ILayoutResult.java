@@ -21,6 +21,9 @@ import java.awt.image.BufferedImage;
 /**
  * The result of a layout computation through
  * {@link ILayoutLibBridge#computeLayout(IXmlPullParser, int, int, String, java.util.Map, java.util.Map, java.util.Map, IFontLoader, ILayoutLibLog, ICustomViewLoader)}
+ *
+ * @since 1
+ * @deprecated use {@link ILayoutScene} as returned by {@link ILayoutBridge#startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, java.util.Map, java.util.Map, IProjectCallback, ILayoutLog)}
  */
 public interface ILayoutResult {
     /**
@@ -59,6 +62,7 @@ public interface ILayoutResult {
 
     /**
      * Layout information for a specific view.
+     * @deprecated
      */
     public interface ILayoutViewInfo {
 

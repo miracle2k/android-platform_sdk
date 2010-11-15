@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.uimodel;
 
+import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IAttributeInfo.Format;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -30,6 +30,7 @@ import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.Android
 import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.IUiUpdateListener.UiUpdateState;
 import com.android.ide.eclipse.adt.internal.editors.xml.descriptors.XmlDescriptors;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.sdklib.SdkConstants;
@@ -118,8 +119,6 @@ public class UiElementNode implements IPropertySource {
     private IUnknownDescriptorProvider mUnknownDescProvider;
     /** Error Flag */
     private boolean mHasError;
-    /** Temporary data used by the editors. This data is not sync'ed with the XML */
-    private Object mEditData;
 
     /**
      * Creates a new {@link UiElementNode} described by a given {@link ElementDescriptor}.
@@ -177,12 +176,12 @@ public class UiElementNode implements IPropertySource {
      */
     private HashMap<AttributeDescriptor, UiAttributeNode> getInternalUiAttributes() {
         if (mUiAttributes == null) {
-            AttributeDescriptor[] attr_list = getAttributeDescriptors();
-            mUiAttributes = new HashMap<AttributeDescriptor, UiAttributeNode>(attr_list.length);
-            for (AttributeDescriptor desc : attr_list) {
-                UiAttributeNode ui_node = desc.createUiNode(this);
-                if (ui_node != null) {  // Some AttributeDescriptors do not have UI associated
-                    mUiAttributes.put(desc, ui_node);
+            AttributeDescriptor[] attrList = getAttributeDescriptors();
+            mUiAttributes = new HashMap<AttributeDescriptor, UiAttributeNode>(attrList.length);
+            for (AttributeDescriptor desc : attrList) {
+                UiAttributeNode uiNode = desc.createUiNode(this);
+                if (uiNode != null) {  // Some AttributeDescriptors do not have UI associated
+                    mUiAttributes.put(desc, uiNode);
                 }
             }
         }
@@ -273,20 +272,20 @@ public class UiElementNode implements IPropertySource {
      * Computes a "breadcrumb trail" description for this node.
      * It will look something like "Manifest > Application > .myactivity (Activity) > Intent-Filter"
      *
-     * @param include_root Whether to include the root (e.g. "Manifest") or not. Has no effect
+     * @param includeRoot Whether to include the root (e.g. "Manifest") or not. Has no effect
      *                     when called on the root node itself.
      * @return The "breadcrumb trail" description for this node.
      */
-    public String getBreadcrumbTrailDescription(boolean include_root) {
+    public String getBreadcrumbTrailDescription(boolean includeRoot) {
         StringBuilder sb = new StringBuilder(getShortDescription());
 
-        for (UiElementNode ui_node = getUiParent();
-                ui_node != null;
-                ui_node = ui_node.getUiParent()) {
-            if (!include_root && ui_node.getUiParent() == null) {
+        for (UiElementNode uiNode = getUiParent();
+                uiNode != null;
+                uiNode = uiNode.getUiParent()) {
+            if (!includeRoot && uiNode.getUiParent() == null) {
                 break;
             }
-            sb.insert(0, String.format("%1$s > ", ui_node.getShortDescription())); //$NON-NLS-1$
+            sb.insert(0, String.format("%1$s > ", uiNode.getShortDescription())); //$NON-NLS-1$
         }
 
         return sb.toString();
@@ -297,12 +296,13 @@ public class UiElementNode implements IPropertySource {
      * <p/>
      * The XML {@link Document} is initially null. The XML {@link Document} must be set only on the
      * UI root element node (this method takes care of that.)
+     * @param xmlDoc The new XML document to associate this node with.
      */
-    public void setXmlDocument(Document xml_doc) {
+    public void setXmlDocument(Document xmlDoc) {
         if (mUiParent == null) {
-            mXmlDocument = xml_doc;
+            mXmlDocument = xmlDoc;
         } else {
-            mUiParent.setXmlDocument(xml_doc);
+            mUiParent.setXmlDocument(xmlDoc);
         }
     }
 
@@ -341,7 +341,8 @@ public class UiElementNode implements IPropertySource {
      * Returns the {@link ElementDescriptor} for this node. This is never null.
      * <p/>
      * Do not use this to call getDescriptor().getAttributes(), instead call
-     * getAttributeDescriptors() which can be overriden by derived classes.
+     * getAttributeDescriptors() which can be overridden by derived classes.
+     * @return The {@link ElementDescriptor} for this node. This is never null.
      */
     public ElementDescriptor getDescriptor() {
         return mDescriptor;
@@ -352,6 +353,7 @@ public class UiElementNode implements IPropertySource {
      * <p/>
      * Use this instead of getDescriptor().getAttributes() -- derived classes can override
      * this to manipulate the attribute descriptor list depending on the current UI node.
+     * @return The {@link AttributeDescriptor} array for the descriptor of this node.
      */
     public AttributeDescriptor[] getAttributeDescriptors() {
         return mDescriptor.getAttributes();
@@ -368,11 +370,11 @@ public class UiElementNode implements IPropertySource {
     private Map<String, AttributeDescriptor> getHiddenAttributeDescriptors() {
         if (mCachedHiddenAttributes == null) {
             mCachedHiddenAttributes = new HashMap<String, AttributeDescriptor>();
-            for (AttributeDescriptor attr_desc : getAttributeDescriptors()) {
-                if (attr_desc instanceof XmlnsAttributeDescriptor) {
+            for (AttributeDescriptor attrDesc : getAttributeDescriptors()) {
+                if (attrDesc instanceof XmlnsAttributeDescriptor) {
                     mCachedHiddenAttributes.put(
-                            ((XmlnsAttributeDescriptor) attr_desc).getXmlNsName(),
-                            attr_desc);
+                            ((XmlnsAttributeDescriptor) attrDesc).getXmlNsName(),
+                            attrDesc);
                 }
             }
         }
@@ -398,7 +400,9 @@ public class UiElementNode implements IPropertySource {
     }
 
     /**
-     * Returns The root {@link UiElementNode}.
+     * Returns the root {@link UiElementNode}.
+     *
+     * @return The root {@link UiElementNode}.
      */
     public UiElementNode getUiRoot() {
         UiElementNode root = this;
@@ -410,8 +414,10 @@ public class UiElementNode implements IPropertySource {
     }
 
     /**
-     * Returns the previous UI sibling of this UI node.
-     * If the node does not have a previous sibling, returns null.
+     * Returns the previous UI sibling of this UI node. If the node does not have a previous
+     * sibling, returns null.
+     *
+     * @return The previous UI sibling of this UI node, or null if not applicable.
      */
     public UiElementNode getUiPreviousSibling() {
         if (mUiParent != null) {
@@ -427,6 +433,8 @@ public class UiElementNode implements IPropertySource {
     /**
      * Returns the next UI sibling of this UI node.
      * If the node does not have a next sibling, returns null.
+     *
+     * @return The next UI sibling of this UI node, or null.
      */
     public UiElementNode getUiNextSibling() {
         if (mUiParent != null) {
@@ -446,6 +454,8 @@ public class UiElementNode implements IPropertySource {
      * Sets the {@link AndroidXmlEditor} handling this {@link UiElementNode} hierarchy.
      * <p/>
      * The editor must always be set on the root node. This method takes care of that.
+     *
+     * @param editor The editor to associate this node with.
      */
     public void setEditor(AndroidXmlEditor editor) {
         if (mUiParent == null) {
@@ -469,6 +479,8 @@ public class UiElementNode implements IPropertySource {
 
     /**
      * Returns the Android target data for the file being edited.
+     *
+     * @return The Android target data for the file being edited.
      */
     public AndroidTargetData getAndroidTarget() {
         return getEditor().getTargetData();
@@ -504,6 +516,7 @@ public class UiElementNode implements IPropertySource {
 
     /**
      * Sets the error flag value.
+     *
      * @param errorFlag the error flag
      */
     public final void setHasError(boolean errorFlag) {
@@ -512,6 +525,9 @@ public class UiElementNode implements IPropertySource {
 
     /**
      * Returns whether this node, its attributes, or one of the children nodes (and attributes)
+     * has errors.
+     *
+     * @return True if this node, its attributes, or one of the children nodes (and attributes)
      * has errors.
      */
     public final boolean hasError() {
@@ -598,6 +614,8 @@ public class UiElementNode implements IPropertySource {
 
     /**
      * Adds a new {@link IUiUpdateListener} to the internal update listener list.
+     *
+     * @param listener The listener to add.
      */
     public void addUpdateListener(IUiUpdateListener listener) {
        if (mUiUpdateListeners == null) {
@@ -611,6 +629,8 @@ public class UiElementNode implements IPropertySource {
     /**
      * Removes an existing {@link IUiUpdateListener} from the internal update listener list.
      * Does nothing if the list is empty or the listener is not registered.
+     *
+     * @param listener The listener to remove.
      */
     public void removeUpdateListener(IUiUpdateListener listener) {
        if (mUiUpdateListeners != null) {
@@ -629,21 +649,21 @@ public class UiElementNode implements IPropertySource {
      */
     public UiElementNode findUiChildNode(String path) {
         String[] items = path.split("/");  //$NON-NLS-1$
-        UiElementNode ui_node = this;
+        UiElementNode uiNode = this;
         for (String item : items) {
-            boolean next_segment = false;
-            for (UiElementNode c : ui_node.mUiChildren) {
+            boolean nextSegment = false;
+            for (UiElementNode c : uiNode.mUiChildren) {
                 if (c.getDescriptor().getXmlName().equals(item)) {
-                    ui_node = c;
-                    next_segment = true;
+                    uiNode = c;
+                    nextSegment = true;
                     break;
                 }
             }
-            if (!next_segment) {
+            if (!nextSegment) {
                 return null;
             }
         }
-        return ui_node;
+        return uiNode;
     }
 
     /**
@@ -675,12 +695,12 @@ public class UiElementNode implements IPropertySource {
      * Returns the {@link UiAttributeNode} matching this attribute descriptor or
      * null if not found.
      *
-     * @param attr_desc The {@link AttributeDescriptor} to match.
+     * @param attrDesc The {@link AttributeDescriptor} to match.
      * @return the {@link UiAttributeNode} matching this attribute descriptor or null
      *         if not found.
      */
-    public UiAttributeNode findUiAttribute(AttributeDescriptor attr_desc) {
-        return getInternalUiAttributes().get(attr_desc);
+    public UiAttributeNode findUiAttribute(AttributeDescriptor attrDesc) {
+        return getInternalUiAttributes().get(attrDesc);
     }
 
     /**
@@ -692,19 +712,19 @@ public class UiElementNode implements IPropertySource {
      * This method can be both used for populating values the first time and updating values
      * after the XML model changed.
      *
-     * @param xml_node The XML node to mirror
+     * @param xmlNode The XML node to mirror
      * @return Returns true if the XML structure has changed (nodes added, removed or replaced)
      */
-    public boolean loadFromXmlNode(Node xml_node) {
-        boolean structure_changed = (mXmlNode != xml_node);
-        mXmlNode = xml_node;
-        if (xml_node != null) {
-            updateAttributeList(xml_node);
-            structure_changed |= updateElementList(xml_node);
-            invokeUiUpdateListeners(structure_changed ? UiUpdateState.CHILDREN_CHANGED
+    public boolean loadFromXmlNode(Node xmlNode) {
+        boolean structureChanged = (mXmlNode != xmlNode);
+        mXmlNode = xmlNode;
+        if (xmlNode != null) {
+            updateAttributeList(xmlNode);
+            structureChanged |= updateElementList(xmlNode);
+            invokeUiUpdateListeners(structureChanged ? UiUpdateState.CHILDREN_CHANGED
                                                       : UiUpdateState.ATTR_UPDATED);
         }
-        return structure_changed;
+        return structureChanged;
     }
 
     /**
@@ -717,18 +737,18 @@ public class UiElementNode implements IPropertySource {
      * Rather than try to diff inflated UI nodes (as loadFromXmlNode does), we don't bother
      * and reload everything. This is not subtle and should be used very rarely.
      *
-     * @param xml_node The XML node or document to reload. Can be null.
+     * @param xmlNode The XML node or document to reload. Can be null.
      */
-    public void reloadFromXmlNode(Node xml_node) {
+    public void reloadFromXmlNode(Node xmlNode) {
         // The editor needs to be preserved, it is not affected by an XML change.
         AndroidXmlEditor editor = getEditor();
         clearContent();
         setEditor(editor);
-        if (xml_node != null) {
-            setXmlDocument(xml_node.getOwnerDocument());
+        if (xmlNode != null) {
+            setXmlDocument(xmlNode.getOwnerDocument());
         }
         // This will reload all the XML and recreate the UI structure from scratch.
-        loadFromXmlNode(xml_node);
+        loadFromXmlNode(xmlNode);
     }
 
     /**
@@ -759,28 +779,30 @@ public class UiElementNode implements IPropertySource {
      * This is called by the UI when the embedding part needs to be committed.
      */
     public void commit() {
-        for (UiAttributeNode ui_attr : getInternalUiAttributes().values()) {
-            ui_attr.commit();
+        for (UiAttributeNode uiAttr : getInternalUiAttributes().values()) {
+            uiAttr.commit();
         }
 
-        for (UiAttributeNode ui_attr : mUnknownUiAttributes) {
-            ui_attr.commit();
+        for (UiAttributeNode uiAttr : mUnknownUiAttributes) {
+            uiAttr.commit();
         }
     }
 
     /**
      * Returns true if the part has been modified with respect to the data
      * loaded from the model.
+     * @return True if the part has been modified with respect to the data
+     * loaded from the model.
      */
     public boolean isDirty() {
-        for (UiAttributeNode ui_attr : getInternalUiAttributes().values()) {
-            if (ui_attr.isDirty()) {
+        for (UiAttributeNode uiAttr : getInternalUiAttributes().values()) {
+            if (uiAttr.isDirty()) {
                 return true;
             }
         }
 
-        for (UiAttributeNode ui_attr : mUnknownUiAttributes) {
-            if (ui_attr.isDirty()) {
+        for (UiAttributeNode uiAttr : mUnknownUiAttributes) {
+            if (uiAttr.isDirty()) {
                 return true;
             }
         }
@@ -809,22 +831,22 @@ public class UiElementNode implements IPropertySource {
             }
         }
 
-        String element_name = getDescriptor().getXmlName();
+        String elementName = getDescriptor().getXmlName();
         Document doc = getXmlDocument();
 
         // We *must* have a root node. If not, we need to abort.
         if (doc == null) {
             throw new RuntimeException(
-                    String.format("Missing XML document for %1$s XML node.", element_name));
+                    String.format("Missing XML document for %1$s XML node.", elementName));
         }
 
-        // If we get here and parent_xml_node is null, the node is to be created
+        // If we get here and parentXmlNode is null, the node is to be created
         // as the root node of the document (which can't be null, cf check above).
         if (parentXmlNode == null) {
             parentXmlNode = doc;
         }
 
-        mXmlNode = doc.createElement(element_name);
+        mXmlNode = doc.createElement(elementName);
 
         Node xmlNextSibling = null;
 
@@ -833,27 +855,101 @@ public class UiElementNode implements IPropertySource {
             xmlNextSibling = uiNextSibling.getXmlNode();
         }
 
+        Node previousTextNode = null;
+        if (xmlNextSibling != null) {
+            Node previousNode = xmlNextSibling.getPreviousSibling();
+            if (previousNode != null && previousNode.getNodeType() == Node.TEXT_NODE) {
+                previousTextNode = previousNode;
+            }
+        } else {
+            Node lastChild = parentXmlNode.getLastChild();
+            if (lastChild != null && lastChild.getNodeType() == Node.TEXT_NODE) {
+                previousTextNode = lastChild;
+            }
+        }
+
+        String insertAfter = null;
+
+        // Try to figure out the indentation node to insert. Even in auto-formatting
+        // we need to do this, because it turns out the XML editor's formatter does
+        // not do a very good job with completely botched up XML; it does a much better
+        // job if the new XML is already mostly well formatted. Thus, the main purpose
+        // of applying the real XML formatter after our own indentation attempts here is
+        // to make it apply its own tab-versus-spaces indentation properties, have it
+        // insert line breaks before attributes (if the user has configured that), etc.
+
+        // First figure out the indentation level of the newly inserted element;
+        // this is either the same as the previous sibling, or if there is no sibling,
+        // it's the indentation of the parent plus one indentation level.
+        boolean isFirstChild = getUiPreviousSibling() == null
+                || parentXmlNode.getFirstChild() == null;
+        AndroidXmlEditor editor = getEditor();
+        String indent;
+        String parentIndent = ""; //$NON-NLS-1$
+        if (isFirstChild) {
+            indent = parentIndent = editor.getIndent(parentXmlNode);
+            // We need to add one level of indentation. Are we using tabs?
+            // Can't get to formatting settings so let's just look at the
+            // parent indentation and see if we can guess
+            if (indent.length() > 0 && indent.charAt(indent.length()-1) == '\t') {
+                indent = indent + '\t';
+            } else {
+                // Not using tabs, or we can't figure it out (because parent had no
+                // indentation). In that case, indent with 4 spaces, as seems to
+                // be the Android default.
+                indent = indent + "    "; //$NON-NLS-1$
+            }
+        } else {
+            // Find out the indent of the previous sibling
+            indent = editor.getIndent(getUiPreviousSibling().getXmlNode());
+        }
+
+        // We want to insert the new element BEFORE the text node which precedes
+        // the next element, since that text node is the next element's indentation!
+        if (previousTextNode != null) {
+            xmlNextSibling = previousTextNode;
+        } else {
+            // If there's no previous text node, we are probably inside an
+            // empty element (<LinearLayout>|</LinearLayout>) and in that case we need
+            // to not only insert a newline and indentation before the new element, but
+            // after it as well.
+            insertAfter = parentIndent;
+        }
+
+        // Insert indent text node before the new element
+        Text indentNode = doc.createTextNode("\n" + indent); //$NON-NLS-1$
+        parentXmlNode.insertBefore(indentNode, xmlNextSibling);
+
+        // Insert the element itself
         parentXmlNode.insertBefore(mXmlNode, xmlNextSibling);
 
-        // Insert a separator after the tag, to make it easier to read
-        Text sep = doc.createTextNode("\n");
-        parentXmlNode.appendChild(sep);
+        // Insert a separator after the tag. We only do this when we've inserted
+        // a tag into an area where there was no whitespace before
+        // (e.g. a new child of <LinearLayout></LinearLayout>).
+        if (insertAfter != null) {
+            Text sep = doc.createTextNode("\n" + insertAfter); //$NON-NLS-1$
+            parentXmlNode.insertBefore(sep, xmlNextSibling);
+        }
 
         // Set all initial attributes in the XML node if they are not empty.
         // Iterate on the descriptor list to get the desired order and then use the
         // internal values, if any.
-        for (AttributeDescriptor attr_desc : getAttributeDescriptors()) {
-            if (attr_desc instanceof XmlnsAttributeDescriptor) {
-                XmlnsAttributeDescriptor desc = (XmlnsAttributeDescriptor) attr_desc;
+        for (AttributeDescriptor attrDesc : getAttributeDescriptors()) {
+            if (attrDesc instanceof XmlnsAttributeDescriptor) {
+                XmlnsAttributeDescriptor desc = (XmlnsAttributeDescriptor) attrDesc;
                 Attr attr = doc.createAttributeNS(XmlnsAttributeDescriptor.XMLNS_URI,
                         desc.getXmlNsName());
                 attr.setValue(desc.getValue());
                 attr.setPrefix(desc.getXmlNsPrefix());
                 mXmlNode.getAttributes().setNamedItemNS(attr);
             } else {
-                UiAttributeNode ui_attr = getInternalUiAttributes().get(attr_desc);
-                commitAttributeToXml(ui_attr, ui_attr.getCurrentValue());
+                UiAttributeNode uiAttr = getInternalUiAttributes().get(attrDesc);
+                commitAttributeToXml(uiAttr, uiAttr.getCurrentValue());
             }
+        }
+
+        if (mUiParent != null) {
+            mUiParent.formatOnInsert(this);
         }
 
         invokeUiUpdateListeners(UiUpdateState.CREATED);
@@ -864,7 +960,7 @@ public class UiElementNode implements IPropertySource {
      * Removes the XML node corresponding to this UI node if it exists
      * and also removes all mirrored information in this UI node (i.e. children, attributes)
      *
-     * @return The removed node or null if it didn't exist in the firtst place.
+     * @return The removed node or null if it didn't exist in the first place.
      */
     public Node deleteXmlNode() {
         if (mXmlNode == null) {
@@ -874,17 +970,29 @@ public class UiElementNode implements IPropertySource {
         // First clear the internals of the node and *then* actually deletes the XML
         // node (because doing so will generate an update even and this node may be
         // revisited via loadFromXmlNode).
-        Node old_xml_node = mXmlNode;
+        Node oldXmlNode = mXmlNode;
         clearContent();
 
-        Node xml_parent = old_xml_node.getParentNode();
-        if (xml_parent == null) {
-            xml_parent = getXmlDocument();
+        Node xmlParent = oldXmlNode.getParentNode();
+        if (xmlParent == null) {
+            xmlParent = getXmlDocument();
         }
-        old_xml_node = xml_parent.removeChild(old_xml_node);
+        Node previousSibling = oldXmlNode.getPreviousSibling();
+        oldXmlNode = xmlParent.removeChild(oldXmlNode);
+
+        // We need to remove the text node BEFORE the removed element, since THAT's the
+        // indentation node for the removed element.
+        if (previousSibling != null && previousSibling.getNodeType() == Node.TEXT_NODE
+                && previousSibling.getNodeValue().trim().length() == 0) {
+            xmlParent.removeChild(previousSibling);
+        }
+
+        if (mUiParent != null) {
+            mUiParent.formatOnDeletion(this);
+        }
 
         invokeUiUpdateListeners(UiUpdateState.DELETED);
-        return old_xml_node;
+        return oldXmlNode;
     }
 
     /**
@@ -904,104 +1012,104 @@ public class UiElementNode implements IPropertySource {
      * </ul>
      * Note that only the first case is used when populating the ui list the first time.
      *
-     * @param xml_node The XML node to mirror
+     * @param xmlNode The XML node to mirror
      * @return True when the XML structure has changed.
      */
-    protected boolean updateElementList(Node xml_node) {
-        boolean structure_changed = false;
-        int ui_index = 0;
-        Node xml_child = xml_node.getFirstChild();
-        while (xml_child != null) {
-            if (xml_child.getNodeType() == Node.ELEMENT_NODE) {
-                String element_name = xml_child.getNodeName();
-                UiElementNode ui_node = null;
-                if (mUiChildren.size() <= ui_index) {
+    protected boolean updateElementList(Node xmlNode) {
+        boolean structureChanged = false;
+        int uiIndex = 0;
+        Node xmlChild = xmlNode.getFirstChild();
+        while (xmlChild != null) {
+            if (xmlChild.getNodeType() == Node.ELEMENT_NODE) {
+                String elementName = xmlChild.getNodeName();
+                UiElementNode uiNode = null;
+                if (mUiChildren.size() <= uiIndex) {
                     // A new node is being added at the end of the list
-                    ElementDescriptor desc = mDescriptor.findChildrenDescriptor(element_name,
+                    ElementDescriptor desc = mDescriptor.findChildrenDescriptor(elementName,
                             false /* recursive */);
                     if (desc == null) {
                         // Unknown node. Create a temporary descriptor for it.
                         // We'll add unknown attributes to it later.
                         IUnknownDescriptorProvider p = getUnknownDescriptorProvider();
-                        desc = p.getDescriptor(element_name);
+                        desc = p.getDescriptor(elementName);
                     }
-                    structure_changed = true;
-                    ui_node = appendNewUiChild(desc);
-                    ui_index++;
+                    structureChanged = true;
+                    uiNode = appendNewUiChild(desc);
+                    uiIndex++;
                 } else {
                     // A new node is being inserted or moved.
                     // Note: mandatory nodes can be created without an XML node in which case
                     // getXmlNode() is null.
-                    UiElementNode ui_child;
+                    UiElementNode uiChild;
                     int n = mUiChildren.size();
-                    for (int j = ui_index; j < n; j++) {
-                        ui_child = mUiChildren.get(j);
-                        if (ui_child.getXmlNode() != null && ui_child.getXmlNode() == xml_child) {
-                            if (j > ui_index) {
+                    for (int j = uiIndex; j < n; j++) {
+                        uiChild = mUiChildren.get(j);
+                        if (uiChild.getXmlNode() != null && uiChild.getXmlNode() == xmlChild) {
+                            if (j > uiIndex) {
                                 // Found the same XML node at some later index, now move it here.
                                 mUiChildren.remove(j);
-                                mUiChildren.add(ui_index, ui_child);
-                                structure_changed = true;
+                                mUiChildren.add(uiIndex, uiChild);
+                                structureChanged = true;
                             }
-                            ui_node = ui_child;
-                            ui_index++;
+                            uiNode = uiChild;
+                            uiIndex++;
                             break;
                         }
                     }
 
-                    if (ui_node == null) {
+                    if (uiNode == null) {
                         // Look for an unused mandatory node with no XML node attached
                         // referencing the same XML element name
-                        for (int j = ui_index; j < n; j++) {
-                            ui_child = mUiChildren.get(j);
-                            if (ui_child.getXmlNode() == null &&
-                                    ui_child.getDescriptor().isMandatory() &&
-                                    ui_child.getDescriptor().getXmlName().equals(element_name)) {
-                                if (j > ui_index) {
+                        for (int j = uiIndex; j < n; j++) {
+                            uiChild = mUiChildren.get(j);
+                            if (uiChild.getXmlNode() == null &&
+                                    uiChild.getDescriptor().isMandatory() &&
+                                    uiChild.getDescriptor().getXmlName().equals(elementName)) {
+                                if (j > uiIndex) {
                                     // Found it, now move it here
                                     mUiChildren.remove(j);
-                                    mUiChildren.add(ui_index, ui_child);
+                                    mUiChildren.add(uiIndex, uiChild);
                                 }
                                 // assign the XML node to this empty mandatory element.
-                                ui_child.mXmlNode = xml_child;
-                                structure_changed = true;
-                                ui_node = ui_child;
-                                ui_index++;
+                                uiChild.mXmlNode = xmlChild;
+                                structureChanged = true;
+                                uiNode = uiChild;
+                                uiIndex++;
                             }
                         }
                     }
 
-                    if (ui_node == null) {
+                    if (uiNode == null) {
                         // Inserting new node
-                        ElementDescriptor desc = mDescriptor.findChildrenDescriptor(element_name,
+                        ElementDescriptor desc = mDescriptor.findChildrenDescriptor(elementName,
                                 false /* recursive */);
                         if (desc == null) {
                             // Unknown element. Simply ignore it.
                             AdtPlugin.log(IStatus.WARNING,
                                     "AndroidManifest: Ignoring unknown '%s' XML element", //$NON-NLS-1$
-                                    element_name);
+                                    elementName);
                         } else {
-                            structure_changed = true;
-                            ui_node = insertNewUiChild(ui_index, desc);
-                            ui_index++;
+                            structureChanged = true;
+                            uiNode = insertNewUiChild(uiIndex, desc);
+                            uiIndex++;
                         }
                     }
                 }
-                if (ui_node != null) {
+                if (uiNode != null) {
                     // If we touched an UI Node, even an existing one, refresh its content.
                     // For new nodes, this will populate them recursively.
-                    structure_changed |= ui_node.loadFromXmlNode(xml_child);
+                    structureChanged |= uiNode.loadFromXmlNode(xmlChild);
                 }
             }
-            xml_child = xml_child.getNextSibling();
+            xmlChild = xmlChild.getNextSibling();
         }
 
         // There might be extra UI nodes at the end if the XML node list got shorter.
-        for (int index = mUiChildren.size() - 1; index >= ui_index; --index) {
-             structure_changed |= removeUiChildAtIndex(index);
+        for (int index = mUiChildren.size() - 1; index >= uiIndex; --index) {
+             structureChanged |= removeUiChildAtIndex(index);
         }
 
-        return structure_changed;
+        return structureChanged;
     }
 
     /**
@@ -1011,27 +1119,27 @@ public class UiElementNode implements IPropertySource {
      * Also invokes the update listener on the node to be deleted *after* the node has
      * been removed.
      *
-     * @param ui_index The index of the UI child to remove, range 0 .. mUiChildren.size()-1
+     * @param uiIndex The index of the UI child to remove, range 0 .. mUiChildren.size()-1
      * @return True if the structure has changed
      * @throws IndexOutOfBoundsException if index is out of mUiChildren's bounds. Of course you
      *         know that could never happen unless the computer is on fire or something.
      */
-    private boolean removeUiChildAtIndex(int ui_index) {
-        UiElementNode ui_node = mUiChildren.get(ui_index);
-        ElementDescriptor desc = ui_node.getDescriptor();
+    private boolean removeUiChildAtIndex(int uiIndex) {
+        UiElementNode uiNode = mUiChildren.get(uiIndex);
+        ElementDescriptor desc = uiNode.getDescriptor();
 
         try {
-            if (ui_node.getDescriptor().isMandatory()) {
+            if (uiNode.getDescriptor().isMandatory()) {
                 // This is a mandatory node. Such a node must exist in the UiNode hierarchy
                 // even if there's no XML counterpart. However we only need to keep one.
 
                 // Check if the parent (e.g. this node) has another similar ui child node.
                 boolean keepNode = true;
                 for (UiElementNode child : mUiChildren) {
-                    if (child != ui_node && child.getDescriptor() == desc) {
+                    if (child != uiNode && child.getDescriptor() == desc) {
                         // We found another child with the same descriptor that is not
                         // the node we want to remove. This means we have one mandatory
-                        // node so we can safely remove ui_node.
+                        // node so we can safely remove uiNode.
                         keepNode = false;
                         break;
                     }
@@ -1045,14 +1153,15 @@ public class UiElementNode implements IPropertySource {
                     // A mandatory node with no XML means it doesn't really exist, so it can't be
                     // deleted. So the structure will change only if the ui node is actually
                     // associated to an XML node.
-                    boolean xml_exists = (ui_node.getXmlNode() != null);
+                    boolean xmlExists = (uiNode.getXmlNode() != null);
 
-                    ui_node.clearContent();
-                    return xml_exists;
+                    uiNode.clearContent();
+                    return xmlExists;
                 }
             }
 
-            mUiChildren.remove(ui_index);
+            mUiChildren.remove(uiIndex);
+
             return true;
         } finally {
             // Tell listeners that a node has been removed.
@@ -1069,12 +1178,12 @@ public class UiElementNode implements IPropertySource {
      * @return The new UI node that has been appended
      */
     public UiElementNode appendNewUiChild(ElementDescriptor descriptor) {
-        UiElementNode ui_node;
-        ui_node = descriptor.createUiNode();
-        mUiChildren.add(ui_node);
-        ui_node.setUiParent(this);
-        ui_node.invokeUiUpdateListeners(UiUpdateState.CREATED);
-        return ui_node;
+        UiElementNode uiNode;
+        uiNode = descriptor.createUiNode();
+        mUiChildren.add(uiNode);
+        uiNode.setUiParent(this);
+        uiNode.invokeUiUpdateListeners(UiUpdateState.CREATED);
+        return uiNode;
     }
 
     /**
@@ -1086,12 +1195,12 @@ public class UiElementNode implements IPropertySource {
      * @return The new UI node.
      */
     public UiElementNode insertNewUiChild(int index, ElementDescriptor descriptor) {
-        UiElementNode ui_node;
-        ui_node = descriptor.createUiNode();
-        mUiChildren.add(index, ui_node);
-        ui_node.setUiParent(this);
-        ui_node.invokeUiUpdateListeners(UiUpdateState.CREATED);
-        return ui_node;
+        UiElementNode uiNode;
+        uiNode = descriptor.createUiNode();
+        mUiChildren.add(index, uiNode);
+        uiNode.setUiParent(this);
+        uiNode.invokeUiUpdateListeners(UiUpdateState.CREATED);
+        return uiNode;
     }
 
     /**
@@ -1104,7 +1213,7 @@ public class UiElementNode implements IPropertySource {
      * For each attribute declared in this {@link UiElementNode}, get
      * the corresponding XML attribute. It may not exist, in which case the
      * value will be null. We don't really know if a value has changed, so
-     * the updateValue() is called on the UI sattribute in all cases.
+     * the updateValue() is called on the UI attribute in all cases.
      *
      * @param xmlNode The XML node to mirror
      */
@@ -1216,27 +1325,8 @@ public class UiElementNode implements IPropertySource {
     // --- for derived implementations only ---
 
     // TODO doc
-    protected void setXmlNode(Node xml_node) {
-        mXmlNode = xml_node;
-    }
-
-    /**
-     * Sets the temporary data used by the editors.
-     * @param data the data.
-     *
-     * @since GLE1
-     * @deprecated Used by GLE1. Should be deprecated for GLE2.
-     */
-    public void setEditData(Object data) {
-        mEditData = data;
-    }
-
-    /**
-     * Returns the temporary data used by the editors for this object.
-     * @return the data, or <code>null</code> if none has been set.
-     */
-    public Object getEditData() {
-        return mEditData;
+    protected void setXmlNode(Node xmlNode) {
+        mXmlNode = xmlNode;
     }
 
     public void refreshUi() {
@@ -1312,10 +1402,10 @@ public class UiElementNode implements IPropertySource {
         HashMap<AttributeDescriptor, UiAttributeNode> attributeMap = getInternalUiAttributes();
 
         for (Entry<AttributeDescriptor, UiAttributeNode> entry : attributeMap.entrySet()) {
-            UiAttributeNode ui_attr = entry.getValue();
-            if (ui_attr.isDirty()) {
-                result |= commitAttributeToXml(ui_attr, ui_attr.getCurrentValue());
-                ui_attr.setDirty(false);
+            UiAttributeNode uiAttr = entry.getValue();
+            if (uiAttr.isDirty()) {
+                result |= commitAttributeToXml(uiAttr, uiAttr.getCurrentValue());
+                uiAttr.setDirty(false);
             }
         }
         return result;
@@ -1505,10 +1595,10 @@ public class UiElementNode implements IPropertySource {
         HashMap<AttributeDescriptor, UiAttributeNode> attributeMap = getInternalUiAttributes();
 
         for (Entry<AttributeDescriptor, UiAttributeNode> entry : attributeMap.entrySet()) {
-            AttributeDescriptor ui_desc = entry.getKey();
-            if (ui_desc.getXmlLocalName().equals(attrXmlName)) {
-                UiAttributeNode ui_attr = entry.getValue();
-                return ui_attr.getCurrentValue();
+            AttributeDescriptor uiDesc = entry.getKey();
+            if (uiDesc.getXmlLocalName().equals(attrXmlName)) {
+                UiAttributeNode uiAttr = entry.getValue();
+                return uiAttr.getCurrentValue();
             }
         }
         return null;
@@ -1667,6 +1757,78 @@ public class UiElementNode implements IPropertySource {
                     commitAttributeToXml(fAttribute, newValue);
                 }
             });
+        }
+    }
+
+    /** Handles reformatting of the XML buffer when a given node has been inserted.
+     *
+     * @param node The node that was inserted.
+     */
+    private void formatOnInsert(UiElementNode node) {
+        // Reformat parent if it's the first child (such that it for example can force
+        // children into their own lines.)
+        if (mUiChildren.size() == 1) {
+            reformat();
+        } else {
+            // In theory, we should ONLY have to reformat the node itself:
+            // uiNode.reformat();
+            //
+            // However, the XML formatter does not correctly handle this; in particular
+            // it will -dedent- a correctly indented child. Here's an example:
+            //
+            // @formatter:off
+            //    <?xml version="1.0" encoding="utf-8"?>
+            //    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            //        android:layout_width="fill_parent" android:layout_height="fill_parent"
+            //        android:orientation="vertical">
+            //        <LinearLayout android:id="@+id/LinearLayout01"
+            //            android:layout_width="wrap_content" android:layout_height="wrap_content">
+            //            <Button android:id="@+id/Button03"></Button>
+            //        </LinearLayout>
+            //    </LinearLayout>
+            // @formatter:on
+            //
+            // If we  have just inserted the button inside the nested LinearLayout, and
+            // attempt to format it, it will incorrectly dedent the button to be flush with
+            // its parent.
+            //
+            // Therefore, for now, in this case, format the PARENT on insert. This means that
+            // siblings can be formatted as well, but that can't be helped.
+
+            // This should be "uiNode.reformat();" instead of "reformat()" if formatting
+            // worked correctly:
+            reformat();
+        }
+    }
+
+    /**
+     * Handles reformatting of the XML buffer when a given node has been removed.
+     *
+     * @param node The node that was removed.
+     */
+    private void formatOnDeletion(UiElementNode node) {
+        // Reformat parent if it's the last child removed, such that we can for example
+        // place the closing element back on the same line as the opening tag (if the
+        // user has that mode configured in the formatting options.)
+        if (mUiChildren.size() <= 1) {
+            // <= 1 instead of == 0: turns out the parent hasn't always deleted
+            // this child from its its children list yet.
+            reformat();
+        }
+    }
+
+    /**
+     * Reformats the XML corresponding to the given XML node. This will do nothing if we have
+     * errors, or if the user has turned off XML auto-formatting.
+     */
+    private void reformat() {
+        if (mHasError || !AdtPrefs.getPrefs().getFormatXml()) {
+            return;
+        }
+
+        AndroidXmlEditor editor = getEditor();
+        if (editor != null && mXmlNode != null) {
+            editor.reformatNode(mXmlNode);
         }
     }
 }

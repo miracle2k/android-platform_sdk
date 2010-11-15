@@ -24,6 +24,10 @@ import java.util.Map;
  * <p/>
  * <p/>{@link #getApiLevel()} gives the ability to know which methods are available.
  * <p/>
+ * Changes in API level 5:
+ * <ul>
+ * <li>Bridge should extend {@link LayoutBridge} instead of implementing {@link ILayoutBridge}.</li>
+ * </ul>
  * Changes in API level 4:
  * <ul>
  * <li>new render method: {@link #computeLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}</li>
@@ -40,7 +44,9 @@ import java.util.Map;
  * <li>new render method: {@link #computeLayout(IXmlPullParser, Object, int, int, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}</li>
  * <li>deprecated {@link #computeLayout(IXmlPullParser, Object, int, int, String, Map, Map, IProjectCallback, ILayoutLog)}</li>
  * </ul>
+ * @Deprecated Extend {@link LayoutBridge} instead.
  */
+@Deprecated
 public interface ILayoutBridge {
 
     final int API_CURRENT = 4;
@@ -64,7 +70,14 @@ public interface ILayoutBridge {
     boolean init(String fontOsLocation, Map<String, Map<String, Integer>> enumValueMap);
 
     /**
-     * Computes and renders a layout
+     * Prepares the layoutlib to unloaded.
+     */
+    boolean dispose();
+
+    /**
+     * Starts a layout session by inflating and rendering it. The method returns a
+     * {@link ILayoutScene} on which further actions can be taken.
+     *
      * @param layoutDescription the {@link IXmlPullParser} letting the LayoutLib Bridge visit the
      * layout file.
      * @param projectKey An Object identifying the project. This is used for the cache mechanism.
@@ -89,8 +102,10 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
+     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
      * @since 4
      */
+    @Deprecated
     ILayoutResult computeLayout(IXmlPullParser layoutDescription,
             Object projectKey,
             int screenWidth, int screenHeight, boolean renderFullSize,
@@ -124,6 +139,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
+     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
      * @since 3
      */
     @Deprecated
@@ -156,7 +172,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated Use {@link #computeLayout(IXmlPullParser, Object, int, int, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
      * @since 2
      */
     @Deprecated
@@ -188,7 +204,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated Use {@link #computeLayout(IXmlPullParser, Object, int, int, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
      * @since 1
      */
     @Deprecated

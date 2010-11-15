@@ -18,6 +18,8 @@ package com.android.ide.eclipse.adt;
 
 import com.android.ddmuilib.console.DdmConsole;
 import com.android.ddmuilib.console.IDdmConsole;
+import com.android.ide.common.log.ILogger;
+import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.VersionCheck;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
@@ -35,7 +37,6 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
-import com.android.ide.eclipse.adt.internal.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
@@ -105,7 +106,7 @@ import java.util.List;
 /**
  * The activator class controls the plug-in life cycle
  */
-public class AdtPlugin extends AbstractUIPlugin {
+public class AdtPlugin extends AbstractUIPlugin implements ILogger {
     /** The plug-in ID */
     public static final String PLUGIN_ID = "com.android.ide.eclipse.adt"; //$NON-NLS-1$
 
@@ -187,7 +188,7 @@ public class AdtPlugin extends AbstractUIPlugin {
         mAndroidConsoleErrorStream = mAndroidConsole.newMessageStream();
         mRed = new Color(display, 0xFF, 0x00, 0x00);
 
-        // because this can be run, in some cases, by a non ui thread, and beccause
+        // because this can be run, in some cases, by a non ui thread, and because
         // changing the console properties update the ui, we need to make this change
         // in the ui thread.
         display.asyncExec(new Runnable() {
@@ -1342,5 +1343,23 @@ public class AdtPlugin extends AbstractUIPlugin {
                 stream.println(obj.toString());
             }
         }
+    }
+
+    // --------- ILogger methods -----------
+
+    public void error(Throwable t, String format, Object... args) {
+        if (t != null) {
+            log(t, format, args);
+        } else {
+            log(IStatus.ERROR, format, args);
+        }
+    }
+
+    public void printf(String format, Object... args) {
+        log(IStatus.INFO, format, args);
+    }
+
+    public void warning(String format, Object... args) {
+        log(IStatus.WARNING, format, args);
     }
 }

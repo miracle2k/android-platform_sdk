@@ -129,7 +129,7 @@ public class OutlinePage2 extends ContentOutlinePage
         tv.setComparer(new IElementComparer() {
             public int hashCode(Object element) {
                 if (element instanceof CanvasViewInfo) {
-                    UiViewElementNode key = ((CanvasViewInfo) element).getUiViewKey();
+                    UiViewElementNode key = ((CanvasViewInfo) element).getUiViewNode();
                     if (key != null) {
                         return key.hashCode();
                     }
@@ -142,8 +142,8 @@ public class OutlinePage2 extends ContentOutlinePage
 
             public boolean equals(Object a, Object b) {
                 if (a instanceof CanvasViewInfo && b instanceof CanvasViewInfo) {
-                    UiViewElementNode keyA = ((CanvasViewInfo) a).getUiViewKey();
-                    UiViewElementNode keyB = ((CanvasViewInfo) b).getUiViewKey();
+                    UiViewElementNode keyA = ((CanvasViewInfo) a).getUiViewNode();
+                    UiViewElementNode keyB = ((CanvasViewInfo) b).getUiViewNode();
                     if (keyA != null) {
                         return keyA.equals(keyB);
                     }
@@ -155,8 +155,11 @@ public class OutlinePage2 extends ContentOutlinePage
             }
         });
 
-        mDragSource = LayoutCanvas.createDragSource(getControl(), new DelegateDragListener());
-        mDropTarget = LayoutCanvas.createDropTarget(getControl(), new DelegateDropListener());
+        mDragSource = LayoutCanvas.createDragSource(getControl());
+        mDragSource.addDragListener(new DelegateDragListener());
+
+        mDropTarget = LayoutCanvas.createDropTarget(getControl());
+        mDropTarget.addDropListener(new DelegateDropListener());
 
         setupContextMenu();
 
@@ -347,7 +350,7 @@ public class OutlinePage2 extends ContentOutlinePage
          */
         public Image getImage(Object element) {
             if (element instanceof CanvasViewInfo) {
-                element = ((CanvasViewInfo) element).getUiViewKey();
+                element = ((CanvasViewInfo) element).getUiViewNode();
             }
 
             if (element instanceof UiElementNode) {
@@ -373,7 +376,7 @@ public class OutlinePage2 extends ContentOutlinePage
          */
         public String getText(Object element) {
             if (element instanceof CanvasViewInfo) {
-                element = ((CanvasViewInfo) element).getUiViewKey();
+                element = ((CanvasViewInfo) element).getUiViewNode();
             }
 
             if (element instanceof UiElementNode) {
@@ -715,8 +718,8 @@ public class OutlinePage2 extends ContentOutlinePage
 
                 LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
                 if (canvas != null) {
-                    com.android.ide.eclipse.adt.editors.layout.gscripts.Point p =
-                        canvas.canvasToControlPoint(x, y);
+                    com.android.ide.common.api.Point p =
+                        canvas.layoutToControlPoint(x, y);
 
                     inOutXY.x = p.x;
                     inOutXY.y = p.y;

@@ -44,7 +44,7 @@ import java.util.Map.Entry;
  *
  * TODO
  * - find a better class name :)
- * - move the logic for each layout to groovy scripts?
+ * - move the logic for each layout to the layout rule classes?
  * - support custom classes (by querying JDT for its super class and reverting to its behavior)
  */
 public final class ExplodedRenderingHelper {

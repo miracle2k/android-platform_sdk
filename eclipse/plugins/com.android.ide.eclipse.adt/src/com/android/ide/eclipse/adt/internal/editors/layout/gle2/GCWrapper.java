@@ -16,12 +16,12 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.eclipse.adt.editors.layout.gscripts.DrawingStyle;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IColor;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IGraphics;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.IViewRule;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Point;
-import com.android.ide.eclipse.adt.editors.layout.gscripts.Rect;
+import com.android.ide.common.api.DrawingStyle;
+import com.android.ide.common.api.IColor;
+import com.android.ide.common.api.IGraphics;
+import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.Point;
+import com.android.ide.common.api.Rect;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -38,7 +38,7 @@ import java.util.Map;
 /**
  * Wraps an SWT {@link GC} into an {@link IGraphics} interface so that {@link IViewRule} objects
  * can directly draw on the canvas.
- * </p>
+ * <p/>
  * The actual wrapped GC object is only non-null during the context of a paint operation.
  */
 public class GCWrapper implements IGraphics {
@@ -211,6 +211,9 @@ public class GCWrapper implements IGraphics {
             break;
         case LINE_DASHDOTDOT:
             swtStyle = SWT.LINE_DASHDOTDOT;
+            break;
+        default:
+            assert false : style;
             break;
         }
 
@@ -422,12 +425,12 @@ public class GCWrapper implements IGraphics {
         mCurrentStyle = swtStyle;
     }
 
-    /** Use the stroke alpha for subsequent drawing operations */
+    /** Uses the stroke alpha for subsequent drawing operations. */
     private void useStrokeAlpha() {
         mGc.setAlpha(mCurrentStyle.getStrokeAlpha());
     }
 
-    /** Use the fill alpha for subsequent drawing operations */
+    /** Uses the fill alpha for subsequent drawing operations. */
     private void useFillAlpha() {
         mGc.setAlpha(mCurrentStyle.getFillAlpha());
     }

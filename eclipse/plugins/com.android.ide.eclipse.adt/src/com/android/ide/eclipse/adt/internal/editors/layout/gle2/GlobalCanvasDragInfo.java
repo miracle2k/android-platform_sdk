@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import org.eclipse.swt.dnd.DragSourceEffect;
+
 /**
  * This singleton is used to keep track of drag'n'drops initiated within this
  * session of Eclipse. A drag can be initiated from a palette or from a canvas
@@ -31,10 +33,10 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
  * off a canvas or its palette and then set back to null when the drag'n'drop is finished.
  * <p/>
  * Note that when a drag starts in one instance of Eclipse and the dragOver/drop is done
- * in a <em>separate</em> instance of Eclipse, the tragged FQCN won't be registered here
+ * in a <em>separate</em> instance of Eclipse, the dragged FQCN won't be registered here
  * and will be null.
  */
-class GlobalCanvasDragInfo {
+final class GlobalCanvasDragInfo {
 
     private static final GlobalCanvasDragInfo sInstance = new GlobalCanvasDragInfo();
 
@@ -42,6 +44,8 @@ class GlobalCanvasDragInfo {
     private CanvasSelection[] mCurrentSelection;
     private Object mSourceCanvas = null;
     private Runnable mRemoveSourceHandler;
+
+    private ControlPoint mImageOffset;
 
     /** Private constructor. Use {@link #getInstance()} to retrieve the singleton. */
     private GlobalCanvasDragInfo() {
@@ -112,5 +116,27 @@ class GlobalCanvasDragInfo {
             mRemoveSourceHandler.run();
             mRemoveSourceHandler = null;
         }
+    }
+
+    /**
+     * Returns an image offset set on this drag info. The image offset is the distance
+     * between the top left corner of the dragged image, and the mouse position. It is
+     * typically the negative distance of the offsets set on a {@link DragSourceEffect}
+     * image in effect during the drag and drop.
+     *
+     * @return The image offset, or null if none apply
+     */
+    public ControlPoint getImageOffset() {
+        return mImageOffset;
+    }
+
+    /**
+     * Sets the image offset for this drag. See the {@link #getImageOffset()}
+     * documentation for details.
+     *
+     * @param imageOffset a new offset to apply
+     */
+    public void setImageOffset(ControlPoint imageOffset) {
+        this.mImageOffset = imageOffset;
     }
 }

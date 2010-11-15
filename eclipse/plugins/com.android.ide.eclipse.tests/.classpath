@@ -6,11 +6,11 @@
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="lib" path="layoutlib.jar"/>
 	<classpathentry kind="lib" path="kxml2-2.3.0.jar"/>
-	<classpathentry kind="lib" path="groovy-all-1.7.0.jar"/>
 	<classpathentry kind="lib" path="easymock.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ddmlib"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ddmuilib"/>
 	<classpathentry kind="lib" path="/adt/libs/layoutlib_api.jar" sourcepath="/layoutlib_api"/>
+	<classpathentry kind="lib" path="/adt/libs/ide_common.jar" sourcepath="/ide_common"/>
 	<classpathentry kind="lib" path="/adt/libs/ninepatch.jar"/>
 	<classpathentry kind="lib" path="/adt/libs/sdklib.jar" sourcepath="/SdkLib"/>
 	<classpathentry kind="lib" path="/adt/libs/sdkuilib.jar" sourcepath="/SdkUiLib"/>
