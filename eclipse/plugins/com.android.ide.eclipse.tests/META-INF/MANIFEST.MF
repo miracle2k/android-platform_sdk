@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Android Plugin Tests
 Bundle-SymbolicName: com.android.ide.eclipse.tests
-Bundle-Version: 8.0.0.qualifier
+Bundle-Version: 9.0.0.qualifier
 Bundle-Vendor: The Android Open Source Project
-Fragment-Host: com.android.ide.eclipse.adt;bundle-version="0.9.8"
+Fragment-Host: com.android.ide.eclipse.adt;bundle-version="9.0.0"
 Require-Bundle: org.junit
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Bundle-ClassPath: kxml2-2.3.0.jar,
