@@ -3,21 +3,21 @@
    <description url="https://android.corp.google.com/adt/">
       Update Site for Android Development Toolkit
    </description>
-   <feature url="features/com.android.ide.eclipse.adt_8.0.0.qualifier.jar" id="com.android.ide.eclipse.adt" version="8.0.0.qualifier">
+   <feature url="features/com.android.ide.eclipse.adt_9.0.0.qualifier.jar" id="com.android.ide.eclipse.adt" version="9.0.0.qualifier">
       <category name="developer"/>
    </feature>
-   <feature url="features/com.android.ide.eclipse.ddms_8.0.0.qualifier.jar" id="com.android.ide.eclipse.ddms" version="8.0.0.qualifier">
-      <category name="developer"/>
-      <category name="platform"/>
-   </feature>
-   <feature url="features/com.android.ide.eclipse.hierarchyviewer_8.0.0.qualifier.jar" id="com.android.ide.eclipse.hierarchyviewer" version="8.0.0.qualifier">
+   <feature url="features/com.android.ide.eclipse.ddms_9.0.0.qualifier.jar" id="com.android.ide.eclipse.ddms" version="9.0.0.qualifier">
       <category name="developer"/>
       <category name="platform"/>
    </feature>
-   <feature url="features/com.android.ide.eclipse.tests_8.0.0.qualifier.jar" id="com.android.ide.eclipse.tests" version="8.0.0.qualifier">
+   <feature url="features/com.android.ide.eclipse.hierarchyviewer_9.0.0.qualifier.jar" id="com.android.ide.eclipse.hierarchyviewer" version="9.0.0.qualifier">
+      <category name="developer"/>
+      <category name="platform"/>
+   </feature>
+   <feature url="features/com.android.ide.eclipse.tests_9.0.0.qualifier.jar" id="com.android.ide.eclipse.tests" version="9.0.0.qualifier">
       <category name="test"/>
    </feature>
-   <feature url="features/com.android.ide.eclipse.pdt_1.0.0.qualifier.jar" id="com.android.ide.eclipse.pdt" version="1.0.0.qualifier">
+   <feature url="features/com.android.ide.eclipse.pdt_9.0.0.qualifier.jar" id="com.android.ide.eclipse.pdt" version="9.0.0.qualifier">
       <category name="platform"/>
    </feature>
    <category-def name="developer" label="Application Developer Tools">
