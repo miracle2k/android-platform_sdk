@@ -1,5 +1,10 @@
 Change log for Android SDK Tools.
 
+Revision 9:
+- Default proguard config file changes:
+   * ignore classes extending android.preference.Preference
+   * ignore classes extending android.app.backup.BackupAgentHelper
+
 Revision 8:
 - New SDK component: platform-tools. This makes all platforms use the same
   latest version of aapt/aidl/dx.
