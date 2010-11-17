@@ -123,9 +123,9 @@ public final class ViewInfo {
     }
 
     /**
-     * Returns the actual android.view.View (or child class) object. This can be used
-     * to query the object properties that are not in the XML and not in the map returned
-     * by {@link #getDefaultPropertyValues()}.
+     * Returns the actual  android.view.ViewGroup$LayoutParams (or child class) object.
+     * This can be used to query the object properties that are not in the XML and not in
+     * the map returned by {@link #getDefaultPropertyValues()}.
      */
     public Object getLayoutParamsObject() {
         return mLayoutParamsObject;
