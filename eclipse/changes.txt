@@ -1,3 +1,10 @@
+9.0.0
+- Visual Layout Editor
+    - Empty layouts with 0,0 size are now automatically expanded when selected and during drag and drop
+    - The generated XML will be better formatted. Full XML formatter can be enabled in the preferences (under Android > Editors), but will touch part of the XML that isn't modified.
+    - Rendering target can now be changed from the default (project target)
+    - when choosing resources for rendering, the API level is properly handled
+
 8.0.0
 - New version number scheme following the SDK Tools revision number.
 - Support for true debug build. No need to change the value of debuggable in
