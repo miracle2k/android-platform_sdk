@@ -18,6 +18,8 @@ package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 
 import com.android.ide.common.api.IAttributeInfo;
 import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.common.resources.platform.AttributeInfo;
+import com.android.ide.common.resources.platform.DeclareStyleableInfo;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
@@ -27,8 +29,6 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.ITextAttributeCr
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ListAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ReferenceAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.IStatus;

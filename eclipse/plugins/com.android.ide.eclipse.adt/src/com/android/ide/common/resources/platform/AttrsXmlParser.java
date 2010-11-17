@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.resources;
+package com.android.ide.common.resources.platform;
 
 import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.common.resources.platform.ViewClassInfo.LayoutParamsInfo;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
-import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo.LayoutParamsInfo;
 
 import org.eclipse.core.runtime.IStatus;
 import org.w3c.dom.Document;
@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.Map.Entry;

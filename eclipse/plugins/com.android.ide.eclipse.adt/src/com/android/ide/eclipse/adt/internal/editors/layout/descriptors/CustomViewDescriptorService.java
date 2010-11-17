@@ -16,9 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.descriptors;
 
+import com.android.ide.common.resources.platform.ViewClassInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
-import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;

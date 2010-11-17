@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.resources;
+package com.android.ide.common.resources.platform;
+
+
 
 
 /**
