@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.resources;
+package com.android.ide.common.resources.platform;
 
 import com.android.ide.common.api.IAttributeInfo;
 

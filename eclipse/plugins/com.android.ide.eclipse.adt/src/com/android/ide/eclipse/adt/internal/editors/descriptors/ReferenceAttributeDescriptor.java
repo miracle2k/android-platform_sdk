@@ -18,11 +18,11 @@ package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
 import com.android.ide.common.api.IAttributeInfo;
 import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.common.resources.platform.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.ui.ResourceValueCellEditor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiResourceAttributeNode;
-import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
 

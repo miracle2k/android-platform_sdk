@@ -17,11 +17,11 @@
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
 import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.common.resources.platform.AttributeInfo;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
 

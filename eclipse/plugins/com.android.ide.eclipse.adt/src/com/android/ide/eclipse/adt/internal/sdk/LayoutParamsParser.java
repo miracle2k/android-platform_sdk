@@ -16,10 +16,10 @@
 
 package com.android.ide.eclipse.adt.internal.sdk;
 
+import com.android.ide.common.resources.platform.AttrsXmlParser;
+import com.android.ide.common.resources.platform.ViewClassInfo;
+import com.android.ide.common.resources.platform.ViewClassInfo.LayoutParamsInfo;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.resources.AttrsXmlParser;
-import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo;
-import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo.LayoutParamsInfo;
 import com.android.ide.eclipse.adt.internal.sdk.IAndroidClassLoader.IClassDescriptor;
 import com.android.sdklib.SdkConstants;
 

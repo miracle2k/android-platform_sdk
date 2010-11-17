@@ -17,15 +17,15 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.descriptors;
 
 import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.common.resources.platform.AttributeInfo;
+import com.android.ide.common.resources.platform.ViewClassInfo;
+import com.android.ide.common.resources.platform.ViewClassInfo.LayoutParamsInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvider;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.SeparatorAttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
-import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo;
-import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo.LayoutParamsInfo;
 import com.android.sdklib.SdkConstants;
 
 import java.util.ArrayList;

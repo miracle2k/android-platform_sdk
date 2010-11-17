@@ -17,17 +17,17 @@
 package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.resources.platform.AttrsXmlParser;
+import com.android.ide.common.resources.platform.DeclareStyleableInfo;
+import com.android.ide.common.resources.platform.ViewClassInfo;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.menu.descriptors.MenuDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.xml.descriptors.XmlDescriptors;
-import com.android.ide.eclipse.adt.internal.resources.AttrsXmlParser;
-import com.android.ide.eclipse.adt.internal.resources.DeclareStyleableInfo;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
-import com.android.ide.eclipse.adt.internal.resources.ViewClassInfo;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.sdklib.IAndroidTarget;

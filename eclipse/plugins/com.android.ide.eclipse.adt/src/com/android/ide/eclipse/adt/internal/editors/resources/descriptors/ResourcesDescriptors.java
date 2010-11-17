@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.resources.descriptors;
 
 import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.common.resources.platform.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.FlagAttributeDescriptor;
@@ -24,7 +25,6 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvi
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ListAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextValueDescriptor;
-import com.android.ide.eclipse.adt.internal.resources.AttributeInfo;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 
 
