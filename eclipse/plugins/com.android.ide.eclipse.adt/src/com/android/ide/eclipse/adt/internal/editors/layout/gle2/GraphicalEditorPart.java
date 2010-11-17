@@ -48,6 +48,7 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.layoutlib.api.ILayoutLog;
 import com.android.layoutlib.api.IResourceValue;
+import com.android.layoutlib.api.LayoutBridge;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneParams;
 import com.android.layoutlib.api.SceneResult;
@@ -128,7 +129,7 @@ import java.util.Set;
  *
  * TODO List:
  * - display error icon
- * - completly rethink the property panel
+ * - Completely rethink the property panel
  */
 public class GraphicalEditorPart extends EditorPart
     implements IGraphicalLayoutEditor, ISelectionListener, INullSelectionListener {
@@ -564,6 +565,10 @@ public class GraphicalEditorPart extends EditorPart
             }
         }
 
+        public void onRenderingTargetPreChange(IAndroidTarget oldTarget) {
+            preRenderingTargetChangeCleanUp(oldTarget);
+        }
+
         public Map<String, Map<String, IResourceValue>> getConfiguredFrameworkResources() {
             if (mConfiguredFrameworkRes == null && mConfigComposite != null) {
                 ProjectResources frameworkRes = getFrameworkResources();
@@ -770,10 +775,18 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         public void onSdkLoaded() {
-            IAndroidTarget target = getRenderingTarget();
-            if (target != null) {
-                mConfigComposite.onSdkLoaded(target);
-                mConfigListener.onConfigurationChange();
+            // get the current rendering target to unload it
+            IAndroidTarget oldTarget = getRenderingTarget();
+            preRenderingTargetChangeCleanUp(oldTarget);
+
+            // get the project target
+            Sdk currentSdk = Sdk.getCurrent();
+            if (currentSdk != null) {
+                IAndroidTarget target = currentSdk.getTarget(mEditedFile.getProject());
+                if (target != null) {
+                    mConfigComposite.onSdkLoaded(target);
+                    mConfigListener.onConfigurationChange();
+                }
             }
         }
 
@@ -933,14 +946,6 @@ public class GraphicalEditorPart extends EditorPart
         }
     }
 
-    public void onSdkChange() {
-        IAndroidTarget target = getRenderingTarget();
-        if (target != null) {
-            mConfigComposite.onSdkLoaded(target);
-            mConfigListener.onConfigurationChange();
-        }
-    }
-
     public LayoutEditor getLayoutEditor() {
         return mLayoutEditor;
     }
@@ -1063,6 +1068,7 @@ public class GraphicalEditorPart extends EditorPart
 
         return true;
     }
+
 
     /**
      * Returns a {@link LayoutLibrary} that is ready for rendering, or null if the bridge
@@ -1335,6 +1341,29 @@ public class GraphicalEditorPart extends EditorPart
         LayoutScene scene = layoutLib.getBridge().createScene(params);
 
         return scene;
+    }
+
+    /**
+     * Cleans up when the rendering target is about to change
+     * @param oldTarget the old rendering target.
+     */
+    private void preRenderingTargetChangeCleanUp(IAndroidTarget oldTarget) {
+        // first clear the caches related to this file in the old target
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk != null) {
+            AndroidTargetData data = currentSdk.getTargetData(oldTarget);
+            if (data != null) {
+                LayoutLibrary layoutLib = data.getLayoutLibrary();
+
+                // layoutLib can never be null.
+                LayoutBridge bridge = layoutLib.getBridge();
+                if (bridge != null) {
+                    bridge.clearCaches(mEditedFile.getProject());
+                }
+            }
+        }
+
+        // FIXME: get rid of the current LayoutScene if any.
     }
 
     public Rectangle getBounds() {

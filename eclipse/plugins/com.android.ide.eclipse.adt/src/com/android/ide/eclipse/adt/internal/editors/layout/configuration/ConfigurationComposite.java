@@ -114,7 +114,7 @@ public class ConfigurationComposite extends Composite {
     private Combo mDockCombo;
     private Combo mNightCombo;
     private Combo mThemeCombo;
-    private Combo mApiCombo;
+    private Combo mTargetCombo;
 
     private int mPlatformThemeCount = 0;
     /** updates are disabled if > 0 */
@@ -142,7 +142,9 @@ public class ConfigurationComposite extends Composite {
     /** The {@link ProjectResources} for the edited file's project */
     private ProjectResources mResources;
     /** The target of the project of the file being edited. */
-    private IAndroidTarget mTarget;
+    private IAndroidTarget mProjectTarget;
+    /** The target of the project of the file being edited. */
+    private IAndroidTarget mRenderingTarget;
     /** The {@link FolderConfiguration} being edited. */
     private FolderConfiguration mEditedConfig;
 
@@ -154,9 +156,28 @@ public class ConfigurationComposite extends Composite {
      * be displayed.
      */
     public interface IConfigListener {
+        /**
+         * Called when the {@link FolderConfiguration} change. The new config can be queried
+         * with {@link ConfigurationComposite#getCurrentConfig()}.
+         */
         void onConfigurationChange();
+
+        /**
+         * Called when the current theme changes. The theme can be queried with
+         * {@link ConfigurationComposite#getTheme()}.
+         */
         void onThemeChange();
+
+        /**
+         * Called when the "Create" button is clicked.
+         */
         void onCreate();
+
+        /**
+         * Called before the rendering target changes.
+         * @param oldTarget the old rendering target
+         */
+        void onRenderingTargetPreChange(IAndroidTarget oldTarget);
 
         ProjectResources getProjectResources();
         ProjectResources getFrameworkResources();
@@ -559,13 +580,13 @@ public class ConfigurationComposite extends Composite {
                 GridData.VERTICAL_ALIGN_FILL | GridData.GRAB_VERTICAL));
         gd.heightHint = 0;
 
-        mApiCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-        mApiCombo.setLayoutData(new GridData(
+        mTargetCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+        mTargetCombo.setLayoutData(new GridData(
                 GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
-        mApiCombo.addSelectionListener(new SelectionAdapter() {
+        mTargetCombo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                onApiLevelChange();
+                onRenderingTargetChange();
             }
         });
     }
@@ -621,7 +642,8 @@ public class ConfigurationComposite extends Composite {
             // only attempt to do anything if the SDK and targets are loaded.
             LoadStatus sdkStatus = AdtPlugin.getDefault().getSdkLoadStatus();
             if (sdkStatus == LoadStatus.LOADED) {
-                LoadStatus targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
+                LoadStatus targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mProjectTarget,
+                        null /*project*/);
 
                 if (targetStatus == LoadStatus.LOADED) {
 
@@ -630,7 +652,7 @@ public class ConfigurationComposite extends Composite {
                     adaptConfigSelection(true /*needBestMatch*/);
 
                     // compute the final current config
-                    computeCurrentConfig(true /*force*/);
+                    computeCurrentConfig();
 
                     // update the string showing the config value
                     updateConfigDisplay(mEditedConfig);
@@ -671,7 +693,7 @@ public class ConfigurationComposite extends Composite {
         mSdkChanged = true;
 
         // store the new target.
-        mTarget = target;
+        mProjectTarget = target;
 
         mDisableUpdates++; // we do not want to trigger onXXXChange when setting
                            // new values in the widgets.
@@ -718,12 +740,12 @@ public class ConfigurationComposite extends Composite {
 
                 Sdk currentSdk = Sdk.getCurrent();
                 if (currentSdk != null) {
-                    mTarget = currentSdk.getTarget(iProject);
+                    mProjectTarget = currentSdk.getTarget(iProject);
                 }
 
                 LoadStatus targetStatus = LoadStatus.FAILED;
-                if (mTarget != null) {
-                    targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mTarget, null);
+                if (mProjectTarget != null) {
+                    targetStatus = Sdk.getCurrent().checkAndLoadTargetData(mProjectTarget, null);
                     initTargets();
                 }
 
@@ -737,7 +759,7 @@ public class ConfigurationComposite extends Composite {
                         mEditedConfig = resFolder.getConfiguration();
                     }
 
-                    targetData = Sdk.getCurrent().getTargetData(mTarget);
+                    targetData = Sdk.getCurrent().getTargetData(mProjectTarget);
 
                     // get the file stored state
                     boolean loadedConfigData = false;
@@ -779,7 +801,7 @@ public class ConfigurationComposite extends Composite {
                     updateConfigDisplay(mEditedConfig);
 
                     // compute the final current config
-                    computeCurrentConfig(true /*force*/);
+                    computeCurrentConfig();
                 }
             } finally {
                 mDisableUpdates--;
@@ -864,7 +886,7 @@ public class ConfigurationComposite extends Composite {
                 mLocaleCombo.select(anyLocaleIndex);
 
                 // TODO: display a better warning!
-                computeCurrentConfig(false /*force*/);
+                computeCurrentConfig();
                 AdtPlugin.printErrorToConsole(mEditedFile.getProject(),
                         String.format(
                                 "'%1$s' is not a best match for any device/locale combination.",
@@ -989,7 +1011,7 @@ public class ConfigurationComposite extends Composite {
         mCurrentLayoutLabel.setToolTipText(layoutLabel);
     }
 
-    private void saveState(boolean force) {
+    private void saveState() {
         if (mDisableUpdates == 0) {
             int index = mDeviceConfigCombo.getSelectionIndex();
             if (index != -1) {
@@ -1209,20 +1231,27 @@ public class ConfigurationComposite extends Composite {
             }
 
             // try to reselect the previous theme.
+            boolean needDefaultSelection = true;
+
             if (mState.theme != null) {
                 final int count = mThemeCombo.getItemCount();
                 for (int i = 0 ; i < count ; i++) {
                     if (mState.theme.equals(mThemeCombo.getItem(i))) {
                         mThemeCombo.select(i);
+                        needDefaultSelection = false;
+                        mThemeCombo.setEnabled(true);
                         break;
                     }
                 }
-                mThemeCombo.setEnabled(true);
-            } else if (mThemeCombo.getItemCount() > 0) {
-                mThemeCombo.select(0);
-                mThemeCombo.setEnabled(true);
-            } else {
-                mThemeCombo.setEnabled(false);
+            }
+
+            if (needDefaultSelection) {
+                if (mThemeCombo.getItemCount() > 0) {
+                    mThemeCombo.select(0);
+                    mThemeCombo.setEnabled(true);
+                } else {
+                    mThemeCombo.setEnabled(false);
+                }
             }
 
             mThemeCombo.getParent().layout();
@@ -1347,7 +1376,7 @@ public class ConfigurationComposite extends Composite {
     }
 
     public IAndroidTarget getRenderingTarget() {
-        int index = mApiCombo.getSelectionIndex();
+        int index = mTargetCombo.getSelectionIndex();
         if (index >= 0) {
             return mTargetList.get(index);
         }
@@ -1359,10 +1388,7 @@ public class ConfigurationComposite extends Composite {
      * Loads the list of {@link IAndroidTarget} and inits the UI with it.
      */
     private void initTargets() {
-        // do we have a selection already?
-        IAndroidTarget renderingTarget = getRenderingTarget();
-
-        mApiCombo.removeAll();
+        mTargetCombo.removeAll();
         mTargetList.clear();
 
         Sdk currentSdk = Sdk.getCurrent();
@@ -1372,24 +1398,32 @@ public class ConfigurationComposite extends Composite {
             for (int i = 0 ; i < targets.length; i++) {
                 // FIXME: support add-on rendering and check based on project minSdkVersion
                 if (targets[i].isPlatform()) {
-                    mApiCombo.add(targets[i].getFullName());
+                    mTargetCombo.add(targets[i].getFullName());
                     mTargetList.add(targets[i]);
 
-                    if (renderingTarget != null) {
-                        if (renderingTarget == targets[i]) {
+                    if (mRenderingTarget != null) {
+                        // use equals because the rendering could be from a previous SDK, so
+                        // it may not be the same instance.
+                        if (mRenderingTarget.equals(targets[i])) {
                             match = mTargetList.indexOf(targets[i]);
                         }
-                    } else if (mTarget == targets[i]) {
+                    } else if (mProjectTarget == targets[i]) {
                         match = mTargetList.indexOf(targets[i]);
                     }
                 }
             }
 
-            mApiCombo.setEnabled(mTargetList.size() > 1);
+            mTargetCombo.setEnabled(mTargetList.size() > 1);
             if (match == -1) {
-                mApiCombo.deselectAll();
+                mTargetCombo.deselectAll();
+
+                // the rendering target is the same as the project.
+                mRenderingTarget = mProjectTarget;
             } else {
-                mApiCombo.select(match);
+                mTargetCombo.select(match);
+
+                // set the rendering target to the new object.
+                mRenderingTarget = mTargetList.get(match);
             }
         }
     }
@@ -1508,7 +1542,7 @@ public class ConfigurationComposite extends Composite {
 
         fillConfigCombo(newConfigName);
 
-        computeCurrentConfig(false /*force*/);
+        computeCurrentConfig();
 
         if (recomputeLayout) {
             onDeviceConfigChange();
@@ -1553,7 +1587,7 @@ public class ConfigurationComposite extends Composite {
         }
 
         // recompute the current config
-        computeCurrentConfig(false /*force*/);
+        computeCurrentConfig();
 
         // force a redraw
         onDeviceChange(true /*recomputeLayout*/);
@@ -1655,7 +1689,7 @@ public class ConfigurationComposite extends Composite {
             return;
         }
 
-        if (computeCurrentConfig(false /*force*/) && mListener != null) {
+        if (computeCurrentConfig() && mListener != null) {
             mListener.onConfigurationChange();
         }
     }
@@ -1670,19 +1704,19 @@ public class ConfigurationComposite extends Composite {
             return;
         }
 
-        if (computeCurrentConfig(false /*force*/) &&  mListener != null) {
+        if (computeCurrentConfig() &&  mListener != null) {
             mListener.onConfigurationChange();
         }
     }
 
     private void onDockChange() {
-        if (computeCurrentConfig(false /*force*/) &&  mListener != null) {
+        if (computeCurrentConfig() &&  mListener != null) {
             mListener.onConfigurationChange();
         }
     }
 
     private void onDayChange() {
-        if (computeCurrentConfig(false /*force*/) &&  mListener != null) {
+        if (computeCurrentConfig() &&  mListener != null) {
             mListener.onConfigurationChange();
         }
     }
@@ -1690,19 +1724,32 @@ public class ConfigurationComposite extends Composite {
     /**
      * Call back for api level combo selection
      */
-    private void onApiLevelChange() {
+    private void onRenderingTargetChange() {
         // because mApiCombo triggers onApiLevelChange at each modification, the filling
         // of the combo with data will trigger notifications, and we don't want that.
         if (mDisableUpdates > 0) {
             return;
         }
 
-        boolean computeOk = computeCurrentConfig(false /*force*/);
+        // tell the listener a new rendering target is being set. Need to do this before updating
+        // mRenderingTarget.
+        if (mListener != null && mRenderingTarget != null) {
+            mListener.onRenderingTargetPreChange(mRenderingTarget);
+        }
+
+        int index = mTargetCombo.getSelectionIndex();
+        mRenderingTarget = mTargetList.get(index);
+
+        boolean computeOk = computeCurrentConfig();
 
         // force a theme update to reflect the new rendering target.
         // This must be done after computeCurrentConfig since it'll depend on the currentConfig
         // to figure out the theme list.
         updateThemes();
+
+        // since the state is saved in computeCurrentConfig, we need to resave it since theme
+        // change could have impacted it.
+        saveState();
 
         if (computeOk &&  mListener != null) {
             mListener.onConfigurationChange();
@@ -1711,12 +1758,11 @@ public class ConfigurationComposite extends Composite {
 
     /**
      * Saves the current state and the current configuration
-     * @param force forces saving the states even if updates are disabled
      *
-     * @see #saveState(boolean)
+     * @see #saveState()
      */
-    private boolean computeCurrentConfig(boolean force) {
-        saveState(force);
+    private boolean computeCurrentConfig() {
+        saveState();
 
         if (mState.device != null) {
             // get the device config from the device/config combos.
@@ -1752,9 +1798,9 @@ public class ConfigurationComposite extends Composite {
                     new NightModeQualifier(NightMode.getByIndex(index)));
 
             // replace the API level by the selection of the combo
-            index = mApiCombo.getSelectionIndex();
+            index = mTargetCombo.getSelectionIndex();
             if (index == -1) {
-                index = mTargetList.indexOf(mTarget);
+                index = mTargetList.indexOf(mProjectTarget);
             }
             if (index != -1) {
                 IAndroidTarget target = mTargetList.get(index);
@@ -1775,7 +1821,7 @@ public class ConfigurationComposite extends Composite {
     }
 
     private void onThemeChange() {
-        saveState(false /*force*/);
+        saveState();
 
         int themeIndex = mThemeCombo.getSelectionIndex();
         if (themeIndex != -1) {

@@ -58,11 +58,6 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
     abstract void onTargetChange();
 
     /**
-     * Responds to an SDK reload/change.
-     */
-    abstract void onSdkChange();
-
-    /**
      * Callback for XML model changed. Only update/recompute the layout if the editor is visible
      */
     abstract void onXmlModelChanged();
