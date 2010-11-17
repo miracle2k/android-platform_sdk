@@ -46,7 +46,7 @@ if debug NEQ "%1" goto NoDebug
     shift 1
 :NoDebug
 
-set jarpath=%frameworkdir%%jarfile%
+set jarpath=%frameworkdir%%jarfile%;%frameworkdir%hierarchyviewerlib.jar
 
 if not defined ANDROID_SWT goto QueryArch
     set swt_path=%ANDROID_SWT%
@@ -64,6 +64,7 @@ if exist %swt_path% goto SetPath
     exit /B
 
 :SetPath
-set javaextdirs=%swt_path%;%frameworkdir%
 
-call %java_exe% %java_debug% -Xmx512m -Djava.ext.dirs=%frameworkdir% -Dcom.android.hierarchyviewer.bindir= -jar %jarpath% %*
+call %java_exe% %java_debug% -Xmx512m -Dcom.android.hierarchyviewer.bindir= -classpath "%jarpath%;%swt_path%\swt.jar" com.android.hierarchyviewer.HierarchyViewerApplication %*
+
+
