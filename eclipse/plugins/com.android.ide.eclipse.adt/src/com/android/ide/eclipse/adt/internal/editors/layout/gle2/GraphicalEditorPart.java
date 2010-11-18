@@ -1213,8 +1213,11 @@ public class GraphicalEditorPart extends EditorPart
                 // Nope, no missing classes. Clear success, congrats!
                 hideError();
             }
-
         }
+
+        // at the moment we don't keep the scene around for future actions,
+        // so we must dispose it asap.
+        scene.dispose();
 
         model.refreshUi();
     }
