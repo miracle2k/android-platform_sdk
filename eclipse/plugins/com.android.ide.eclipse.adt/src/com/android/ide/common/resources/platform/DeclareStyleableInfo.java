@@ -17,9 +17,6 @@
 package com.android.ide.common.resources.platform;
 
 
-
-
-
 /**
  * Information needed to represent a View or ViewGroup (aka Layout) item
  * in the layout hierarchy, as extracted from the main android.jar and the

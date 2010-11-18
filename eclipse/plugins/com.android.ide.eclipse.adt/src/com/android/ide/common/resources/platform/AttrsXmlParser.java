@@ -17,12 +17,11 @@
 package com.android.ide.common.resources.platform;
 
 import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.common.log.ILogger;
 import com.android.ide.common.resources.platform.ViewClassInfo.LayoutParamsInfo;
-import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 
-import org.eclipse.core.runtime.IStatus;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -47,6 +46,7 @@ public final class AttrsXmlParser {
 
     private Document mDocument;
     private String mOsAttrsXmlPath;
+
     // all attributes that have the same name are supposed to have the same
     // parameters so we'll keep a cache of them to avoid processing them twice.
     private HashMap<String, AttributeInfo> mAttributeMap;
@@ -55,30 +55,56 @@ public final class AttrsXmlParser {
     private final Map<String, DeclareStyleableInfo> mStyleMap =
         new HashMap<String, DeclareStyleableInfo>();
 
-    /** Map of all (constant, value) pairs for attributes of format enum or flag.
+    /**
+     * Map of all (constant, value) pairs for attributes of format enum or flag.
      * E.g. for attribute name=gravity, this tells us there's an enum/flag called "center"
      * with value 0x11.
      */
     private Map<String, Map<String, Integer>> mEnumFlagValues;
+
+    /**
+     * A logger object. Must not be null.
+     */
+    private final ILogger mLog;
 
 
     /**
      * Creates a new {@link AttrsXmlParser}, set to load things from the given
      * XML file. Nothing has been parsed yet. Callers should call {@link #preload()}
      * next.
+     *
+     * @param osAttrsXmlPath The path of the <code>attrs.xml</code> file to parse.
+     *              Must not be null. Should point to an existing valid XML document.
+     * @param log A logger object. Must not be null.
      */
-    public AttrsXmlParser(String osAttrsXmlPath) {
-        this(osAttrsXmlPath, null /* inheritableAttributes */);
+    public AttrsXmlParser(String osAttrsXmlPath, ILogger log) {
+        this(osAttrsXmlPath, null /* inheritableAttributes */, log);
     }
 
     /**
      * Creates a new {@link AttrsXmlParser} set to load things from the given
-     * XML file. If inheritableAttributes is non-null, it must point to a preloaded
+     * XML file.
+     * <p/>
+     * If inheritableAttributes is non-null, it must point to a preloaded
      * {@link AttrsXmlParser} which attributes will be used for this one. Since
      * already defined attributes are not modifiable, they are thus "inherited".
+     *
+     * @param osAttrsXmlPath The path of the <code>attrs.xml</code> file to parse.
+     *              Must not be null. Should point to an existing valid XML document.
+     * @param inheritableAttributes An optional parser with attributes to inherit. Can be null.
+     *              If not null, the parser must have had its {@link #preload()} method
+     *              invoked prior to being used here.
+     * @param log A logger object. Must not be null.
      */
-    public AttrsXmlParser(String osAttrsXmlPath, AttrsXmlParser inheritableAttributes) {
+    public AttrsXmlParser(
+            String osAttrsXmlPath,
+            AttrsXmlParser inheritableAttributes,
+            ILogger log) {
         mOsAttrsXmlPath = osAttrsXmlPath;
+        mLog = log;
+
+        assert osAttrsXmlPath != null;
+        assert log != null;
 
         if (inheritableAttributes == null) {
             mAttributeMap = new HashMap<String, AttributeInfo>();
@@ -91,7 +117,7 @@ public final class AttrsXmlParser {
     }
 
     /**
-     * @return The OS path of the attrs.xml file parsed
+     * Returns the OS path of the attrs.xml file parsed.
      */
     public String getOsAttrsXmlPath() {
         return mOsAttrsXmlPath;
@@ -106,7 +132,7 @@ public final class AttrsXmlParser {
         Document doc = getDocument();
 
         if (doc == null) {
-            AdtPlugin.log(IStatus.WARNING, "Failed to find %1$s", //$NON-NLS-1$
+            mLog.warning("Failed to find %1$s", //$NON-NLS-1$
                     mOsAttrsXmlPath);
             return this;
         }
@@ -119,7 +145,7 @@ public final class AttrsXmlParser {
         }
 
         if (res == null) {
-            AdtPlugin.log(IStatus.WARNING, "Failed to find a <resources> node in %1$s", //$NON-NLS-1$
+            mLog.warning("Failed to find a <resources> node in %1$s", //$NON-NLS-1$
                     mOsAttrsXmlPath);
             return this;
         }
@@ -161,7 +187,7 @@ public final class AttrsXmlParser {
     }
 
     /**
-     * Returns a list of all decleare-styleable found in the xml file.
+     * Returns a list of all <code>decleare-styleable</code> found in the XML file.
      */
     public Map<String, DeclareStyleableInfo> getDeclareStyleableList() {
         return Collections.unmodifiableMap(mStyleMap);
@@ -189,13 +215,13 @@ public final class AttrsXmlParser {
                 DocumentBuilder builder = factory.newDocumentBuilder();
                 mDocument = builder.parse(new File(mOsAttrsXmlPath));
             } catch (ParserConfigurationException e) {
-                AdtPlugin.log(e, "Failed to create XML document builder for %1$s", //$NON-NLS-1$
+                mLog.error(e, "Failed to create XML document builder for %1$s", //$NON-NLS-1$
                         mOsAttrsXmlPath);
             } catch (SAXException e) {
-                AdtPlugin.log(e, "Failed to parse XML document %1$s", //$NON-NLS-1$
+                mLog.error(e, "Failed to parse XML document %1$s", //$NON-NLS-1$
                         mOsAttrsXmlPath);
             } catch (IOException e) {
-                AdtPlugin.log(e, "Failed to read XML document %1$s", //$NON-NLS-1$
+                mLog.error(e, "Failed to read XML document %1$s", //$NON-NLS-1$
                         mOsAttrsXmlPath);
             }
         }
@@ -203,7 +229,8 @@ public final class AttrsXmlParser {
     }
 
     /**
-     * Finds all the <declare-styleable> and <attr> nodes in the top <resources> node.
+     * Finds all the &lt;declare-styleable&gt; and &lt;attr&gt; nodes
+     * in the top &lt;resources&gt; node.
      */
     private void parseResources(Node res) {
 
@@ -438,8 +465,9 @@ public final class AttrsXmlParser {
                         formats.add(format);
                     }
                 } catch (IllegalArgumentException e) {
-                    AdtPlugin.log(e, "Unknown format name '%s' in <attr name=\"%s\">, file '%s'.", //$NON-NLS-1$
-                            f, name, getOsAttrsXmlPath());
+                    mLog.error(e,
+                        "Unknown format name '%s' in <attr name=\"%s\">, file '%s'.", //$NON-NLS-1$
+                        f, name, getOsAttrsXmlPath());
                 }
             }
         }
@@ -487,7 +515,7 @@ public final class AttrsXmlParser {
             if (child.getNodeType() == Node.ELEMENT_NODE && child.getNodeName().equals(filter)) {
                 Node nameNode = child.getAttributes().getNamedItem("name");  //$NON-NLS-1$
                 if (nameNode == null) {
-                    AdtPlugin.log(IStatus.WARNING,
+                    mLog.warning(
                             "Missing name attribute in <attr name=\"%s\"><%s></attr>", //$NON-NLS-1$
                             attrName, filter);
                 } else {
@@ -499,9 +527,9 @@ public final class AttrsXmlParser {
 
                     Node valueNode = child.getAttributes().getNamedItem("value");  //$NON-NLS-1$
                     if (valueNode == null) {
-                        AdtPlugin.log(IStatus.WARNING,
-                                "Missing value attribute in <attr name=\"%s\"><%s name=\"%s\"></attr>", //$NON-NLS-1$
-                                attrName, filter, name);
+                        mLog.warning(
+                            "Missing value attribute in <attr name=\"%s\"><%s name=\"%s\"></attr>", //$NON-NLS-1$
+                            attrName, filter, name);
                     } else {
                         String value = valueNode.getNodeValue();
                         try {
@@ -517,7 +545,7 @@ public final class AttrsXmlParser {
                             map.put(name, Integer.valueOf(i));
 
                         } catch(NumberFormatException e) {
-                            AdtPlugin.log(e,
+                            mLog.error(e,
                                     "Value in <attr name=\"%s\"><%s name=\"%s\" value=\"%s\"></attr> is not a valid decimal or hexadecimal", //$NON-NLS-1$
                                     attrName, filter, name, value);
                         }

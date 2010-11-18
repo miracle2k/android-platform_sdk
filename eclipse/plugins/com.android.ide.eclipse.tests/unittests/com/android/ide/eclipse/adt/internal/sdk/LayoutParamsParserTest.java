@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.sdk;
 import com.android.ide.common.resources.platform.AttrsXmlParser;
 import com.android.ide.common.resources.platform.ViewClassInfo;
 import com.android.ide.common.resources.platform.ViewClassInfo.LayoutParamsInfo;
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidJarLoader.ClassWrapper;
 import com.android.ide.eclipse.adt.internal.sdk.IAndroidClassLoader.IClassDescriptor;
 import com.android.ide.eclipse.tests.AdtTestData;
@@ -60,7 +61,8 @@ public class LayoutParamsParserTest extends TestCase {
         public MockLayoutParamsParser() {
             super(new MockFrameworkClassLoader(),
                   new AttrsXmlParser(
-                          AdtTestData.getInstance().getTestFilePath(MOCK_DATA_PATH)).preload());
+                          AdtTestData.getInstance().getTestFilePath(MOCK_DATA_PATH),
+                          AdtPlugin.getDefault()).preload());
 
             mTopViewClass = new ClassWrapper(mock_android.view.View.class);
             mTopGroupClass = new ClassWrapper(mock_android.view.ViewGroup.class);
