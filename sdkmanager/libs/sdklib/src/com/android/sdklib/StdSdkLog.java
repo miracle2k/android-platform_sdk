@@ -4,7 +4,7 @@
  * Licensed under the Eclipse Public License, Version 1.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.eclipse.org/org/documents/epl-v10.php
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.sdkmanager;
+package com.android.sdklib;
 
-import com.android.sdklib.ISdkLog;
 
 /**
- * 
+ * An implementation of {@link ISdkLog} that prints to {@link System#out} and {@link System#err}.
+ * <p/>
+ * This is mostly useful for unit tests. It should not be used by GUI-based tools (e.g.
+ * Eclipse plugin or SWT-based apps) which should have a better way to expose their logging
+ * error and warnings.
  */
-public class MockStdLogger implements ISdkLog {
+public class StdSdkLog implements ISdkLog {
 
     public void error(Throwable t, String errorFormat, Object... args) {
         if (errorFormat != null) {

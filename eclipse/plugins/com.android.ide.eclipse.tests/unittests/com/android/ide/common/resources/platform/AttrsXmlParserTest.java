@@ -18,6 +18,7 @@ package com.android.ide.common.resources.platform;
 
 
 import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.tests.AdtTestData;
 
 import java.util.Map;
@@ -35,7 +36,7 @@ public class AttrsXmlParserTest extends TestCase {
     @Override
     public void setUp() throws Exception {
         mFilePath = AdtTestData.getInstance().getTestFilePath(MOCK_DATA_PATH); //$NON-NLS-1$
-        mParser = new AttrsXmlParser(mFilePath);
+        mParser = new AttrsXmlParser(mFilePath, AdtPlugin.getDefault());
     }
 
     @Override
