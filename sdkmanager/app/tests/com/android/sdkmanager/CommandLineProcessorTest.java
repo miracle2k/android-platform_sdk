@@ -17,13 +17,14 @@
 package com.android.sdkmanager;
 
 import com.android.sdklib.ISdkLog;
+import com.android.sdklib.StdSdkLog;
 
 import junit.framework.TestCase;
 
 
 public class CommandLineProcessorTest extends TestCase {
 
-    private MockStdLogger mLog;
+    private StdSdkLog mLog;
     
     /**
      * A mock version of the {@link CommandLineProcessor} class that does not
@@ -92,7 +93,7 @@ public class CommandLineProcessorTest extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
-        mLog = new MockStdLogger();
+        mLog = new StdSdkLog();
         super.setUp();
     }
 

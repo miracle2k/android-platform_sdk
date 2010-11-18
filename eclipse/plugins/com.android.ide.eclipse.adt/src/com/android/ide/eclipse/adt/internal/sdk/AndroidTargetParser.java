@@ -136,14 +136,16 @@ public final class AndroidTargetParser {
             // gather the attribute definition
             progress.subTask("Attributes definitions");
             AttrsXmlParser attrsXmlParser = new AttrsXmlParser(
-                    mAndroidTarget.getPath(IAndroidTarget.ATTRIBUTES));
+                    mAndroidTarget.getPath(IAndroidTarget.ATTRIBUTES),
+                    AdtPlugin.getDefault());
             attrsXmlParser.preload();
             progress.worked(1);
 
             progress.subTask("Manifest definitions");
             AttrsXmlParser attrsManifestXmlParser = new AttrsXmlParser(
                     mAndroidTarget.getPath(IAndroidTarget.MANIFEST_ATTRIBUTES),
-                    attrsXmlParser);
+                    attrsXmlParser,
+                    AdtPlugin.getDefault());
             attrsManifestXmlParser.preload();
             progress.worked(1);
 
