@@ -361,6 +361,12 @@ public class SelectionManager implements ISelectionProvider {
         // reset alternate selection if any
         mAltSelection = null;
 
+        if (vi == null) {
+            // The user clicked outside the bounds of the root element; in that case, just
+            // select the root element.
+            vi = mCanvas.getViewHierarchy().getRoot();
+        }
+
         boolean redoLayout = hasExplodedItems();
 
         // reset (multi)selection if any

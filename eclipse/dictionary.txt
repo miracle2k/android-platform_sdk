@@ -59,6 +59,7 @@ fqcn
 gen
 groovy
 hardcoded
+hotfix
 href
 http
 ids
@@ -142,6 +143,7 @@ themed
 tmp
 tooltip
 traceview
+translucency
 ui
 uncomment
 undescribed
@@ -154,6 +156,7 @@ upcoming
 uri
 url
 validator
+varargs
 verbosity
 vs
 webtools

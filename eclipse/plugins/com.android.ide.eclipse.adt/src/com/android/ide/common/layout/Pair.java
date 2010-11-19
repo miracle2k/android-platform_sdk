@@ -27,7 +27,7 @@ package com.android.ide.common.layout;
  * @param <S> The type of the first value
  * @param <T> The type of the second value
  */
-class Pair<S,T> {
+public class Pair<S,T> {
     private final S mFirst;
     private final T mSecond;
 
@@ -37,19 +37,35 @@ class Pair<S,T> {
         this.mSecond = second;
     }
 
-    /** Return the first item in the pair */
+    /**
+     * Return the first item in the pair
+     *
+     * @return the first item in the pair
+     */
     public S getFirst() {
         return mFirst;
     }
 
-    /** Return the second item in the pair */
+    /**
+     * Return the second item in the pair
+     *
+     * @return the second item in the pair
+     */
     public T getSecond() {
         return mSecond;
     }
 
-    /** Constructs a new pair of the given two objects, inferring generic types. */
-    public static <S,T> Pair<S,T> of(S a, T b) {
-        return new Pair<S,T>(a,b);
+    /**
+     * Constructs a new pair of the given two objects, inferring generic types.
+     *
+     * @param first the first item to store in the pair
+     * @param second the second item to store in the pair
+     * @param <S> the type of the first item
+     * @param <T> the type of the second item
+     * @return a new pair wrapping the two items
+     */
+    public static <S,T> Pair<S,T> of(S first, T second) {
+        return new Pair<S,T>(first,second);
     }
 
     @Override

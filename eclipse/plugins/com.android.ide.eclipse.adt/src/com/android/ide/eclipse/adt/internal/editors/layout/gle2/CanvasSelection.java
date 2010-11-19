@@ -49,7 +49,8 @@ import java.util.List;
     /**
      * Creates a new {@link CanvasSelection} object.
      * @param canvasViewInfo The view info being selected. Must not be null.
-     * @param nodeFactory
+     * @param gre the rules engine
+     * @param nodeFactory the node factory
      */
     public CanvasSelection(CanvasViewInfo canvasViewInfo,
             RulesEngine gre,
