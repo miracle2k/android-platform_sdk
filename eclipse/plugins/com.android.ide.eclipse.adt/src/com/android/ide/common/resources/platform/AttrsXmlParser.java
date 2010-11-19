@@ -19,8 +19,6 @@ package com.android.ide.common.resources.platform;
 import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.log.ILogger;
 import com.android.ide.common.resources.platform.ViewClassInfo.LayoutParamsInfo;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
-import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -43,6 +41,8 @@ import javax.xml.parsers.ParserConfigurationException;
  * Parser for attributes description files.
  */
 public final class AttrsXmlParser {
+
+    public static final String ANDROID_MANIFEST_STYLEABLE = "AndroidManifest";  //$NON-NLS-1$
 
     private Document mDocument;
     private String mOsAttrsXmlPath;
@@ -187,7 +187,7 @@ public final class AttrsXmlParser {
     }
 
     /**
-     * Returns a list of all <code>decleare-styleable</code> found in the XML file.
+     * Returns a list of all <code>declare-styleable</code> found in the XML file.
      */
     public Map<String, DeclareStyleableInfo> getDeclareStyleableList() {
         return Collections.unmodifiableMap(mStyleMap);
@@ -291,8 +291,7 @@ public final class AttrsXmlParser {
                 if (key.startsWith(name) && !key.equals(name)) {
                     // We found a child which name starts with the full name of the
                     // parent. Simplify the children name.
-                    String newName = AndroidManifestDescriptors.ANDROID_MANIFEST_STYLEABLE +
-                        key.substring(name.length());
+                    String newName = ANDROID_MANIFEST_STYLEABLE + key.substring(name.length());
 
                     DeclareStyleableInfo newStyle =
                         new DeclareStyleableInfo(newName, mStyleMap.get(key));
@@ -560,8 +559,7 @@ public final class AttrsXmlParser {
      * Parses the javadoc comment.
      * Only keeps the first sentence.
      * <p/>
-     * This does not remove nor simplify links and references. Such a transformation
-     * is done later at "display" time in {@link DescriptorsUtils#formatTooltip(String)} and co.
+     * This does not remove nor simplify links and references.
      */
     private String parseJavadoc(String comment) {
         if (comment == null) {

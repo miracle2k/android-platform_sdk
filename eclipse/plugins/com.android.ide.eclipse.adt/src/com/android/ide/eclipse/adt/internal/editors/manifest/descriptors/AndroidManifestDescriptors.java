@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.manifest.descriptors;
 import com.android.ide.common.api.IAttributeInfo;
 import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.resources.platform.AttributeInfo;
+import com.android.ide.common.resources.platform.AttrsXmlParser;
 import com.android.ide.common.resources.platform.DeclareStyleableInfo;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
@@ -53,7 +54,8 @@ import java.util.Map.Entry;
 public final class AndroidManifestDescriptors implements IDescriptorProvider {
 
     private static final String MANIFEST_NODE_NAME = "manifest";                //$NON-NLS-1$
-    public static final String ANDROID_MANIFEST_STYLEABLE = "AndroidManifest";  //$NON-NLS-1$
+    private static final String ANDROID_MANIFEST_STYLEABLE =
+        AttrsXmlParser.ANDROID_MANIFEST_STYLEABLE;
 
     // Public attributes names, attributes descriptors and elements descriptors
 
