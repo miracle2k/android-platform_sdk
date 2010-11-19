@@ -16,7 +16,6 @@
 
 package com.android.ide.common.api;
 
-import org.eclipse.swt.graphics.Rectangle;
 
 
 /**
@@ -49,11 +48,6 @@ public class Rect {
     }
 
     /** Initialize rectangle to the given values. They can be invalid. */
-    public Rect(Rectangle swtRect) {
-        set(swtRect);
-    }
-
-    /** Initialize rectangle to the given values. They can be invalid. */
     public Rect set(int x, int y, int w, int h) {
         this.x = x;
         this.y = y;
@@ -65,12 +59,6 @@ public class Rect {
     /** Initialize rectangle to match the given one. */
     public Rect set(Rect r) {
         set(r.x, r.y, r.w, r.h);
-        return this;
-    }
-
-    /** Initialize rectangle to match the given one. */
-    public Rect set(Rectangle swtRect) {
-        set(swtRect.x, swtRect.y, swtRect.width, swtRect.height);
         return this;
     }
 
@@ -161,11 +149,6 @@ public class Rect {
             }
 
             return this.x == rhs.x && this.y == rhs.y && this.w == rhs.w && this.h == rhs.h;
-
-        } else if (obj instanceof Rectangle) {
-            Rectangle rhs = (Rectangle) obj;
-            return this.x == rhs.x && this.y == rhs.y &&
-                   this.w == rhs.width && this.h == rhs.height;
         }
 
         return false;
@@ -173,10 +156,10 @@ public class Rect {
 
     @Override
     public int hashCode() {
-        int h = x;
-        h ^= ((y >>  8) & 0x0FFFFFF) | ((y & 0x00000FF) << 24);
-        h ^= ((w >> 16) & 0x000FFFF) | ((w & 0x000FFFF) << 16);
-        h ^= ((h >> 24) & 0x00000FF) | ((h & 0x0FFFFFF) <<  8);
-        return h;
+        int hc = x;
+        hc ^= ((y >>  8) & 0x0FFFFFF) | ((y & 0x00000FF) << 24);
+        hc ^= ((w >> 16) & 0x000FFFF) | ((w & 0x000FFFF) << 16);
+        hc ^= ((h >> 24) & 0x00000FF) | ((h & 0x0FFFFFF) <<  8);
+        return hc;
     }
 }

@@ -16,8 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
+
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
@@ -132,6 +135,27 @@ public class SwtUtilsTest extends TestCase {
                 assertEquals(expected, actual);
             }
         }
+    }
+
+    public final void testSetRectangle() {
+        Rect r = new Rect(1, 2, 3, 4);
+        Rectangle r2 = new Rectangle(3, 4, 20, 30);
+        SwtUtils.set(r, r2);
+
+        assertEquals(3, r.x);
+        assertEquals(4, r.y);
+        assertEquals(20, r.w);
+        assertEquals(30, r.h);
+    }
+
+    public final void testRectRectangle() {
+        Rectangle r = new Rectangle(3, 4, 20, 30);
+        Rect r2 = SwtUtils.toRect(r);
+
+        assertEquals(3, r2.x);
+        assertEquals(4, r2.y);
+        assertEquals(20, r2.w);
+        assertEquals(30, r2.h);
     }
 
 }

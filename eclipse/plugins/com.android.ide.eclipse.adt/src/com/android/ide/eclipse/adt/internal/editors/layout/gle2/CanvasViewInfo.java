@@ -335,7 +335,7 @@ public class CanvasViewInfo implements IPropertySource {
 
         String fqcn = SimpleXmlTransfer.getFqcn(uiNode.getDescriptor());
         String parentFqcn = null;
-        Rect bounds = new Rect(getAbsRect());
+        Rect bounds = SwtUtils.toRect(getAbsRect());
         Rect parentBounds = null;
 
         UiElementNode uiParent = uiNode.getUiParent();
@@ -343,7 +343,7 @@ public class CanvasViewInfo implements IPropertySource {
             parentFqcn = SimpleXmlTransfer.getFqcn(uiParent.getDescriptor());
         }
         if (getParent() != null) {
-            parentBounds = new Rect(getParent().getAbsRect());
+            parentBounds = SwtUtils.toRect(getParent().getAbsRect());
         }
 
         SimpleElement e = new SimpleElement(fqcn, parentFqcn, bounds, parentBounds);

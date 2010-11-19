@@ -22,6 +22,7 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.LayoutScene;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.ui.IEditorPart;
 
 import java.util.Set;
@@ -96,8 +97,10 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
      *
      * @param model the model to be rendered, which can be different than the editor's own
      *            {@link #getModel()}.
-     * @param width the width to use for the layout
-     * @param height the height to use for the layout
+     * @param width the width to use for the layout, or -1 to use the width of the screen
+     *            associated with this editor
+     * @param height the height to use for the layout, or -1 to use the height of the screen
+     *            associated with this editor
      * @param explodeNodes a set of nodes to explode, or null for none
      * @param transparentBackground If true, the rendering will <b>not</b> paint the
      *            normal background requested by the theme, and it will instead paint the
@@ -107,4 +110,10 @@ public interface IGraphicalLayoutEditor extends IEditorPart {
     abstract LayoutScene render(UiDocumentNode model,
             int width, int height, Set<UiElementNode> explodeNodes, boolean transparentBackground);
 
+    /**
+     * Returns the current bounds of the Android device screen, in canvas control pixels
+     *
+     * @return the bounds of the screen, never null
+     */
+    abstract Rectangle getScreenBounds();
 }

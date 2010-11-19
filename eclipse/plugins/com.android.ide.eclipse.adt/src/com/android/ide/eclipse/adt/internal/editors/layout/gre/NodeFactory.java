@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.common.api.INode;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.CanvasViewInfo;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SwtUtils;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 
 import org.eclipse.swt.graphics.Rectangle;
@@ -67,7 +68,7 @@ public class NodeFactory {
             proxy = new NodeProxy(uiNode, bounds, this);
             mNodeMap.put(uiNode, proxy);
 
-        } else if (bounds != null && !proxy.getBounds().equals(bounds)) {
+        } else if (bounds != null && !SwtUtils.equals(proxy.getBounds(), bounds)) {
             // Update the bounds if necessary
             proxy.setBounds(bounds);
         }

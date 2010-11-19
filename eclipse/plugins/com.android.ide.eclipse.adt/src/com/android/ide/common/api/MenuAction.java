@@ -152,7 +152,7 @@ public abstract class MenuAction {
     /**
      * The base class for {@link Toggle} and {@link Choices}.
      */
-    public static abstract class Action extends MenuAction {
+    public static class Action extends MenuAction {
 
         /**
          * A callback executed when the action is selected in the context menu.
@@ -176,7 +176,7 @@ public abstract class MenuAction {
          * @param callback The callback executed when the action is selected.
          *            Must not be null.
          */
-        private Action(String id, String title, String groupId, IMenuCallback callback) {
+        public Action(String id, String title, String groupId, IMenuCallback callback) {
             super(id, title);
             mGroupId = groupId;
             mCallback = callback;

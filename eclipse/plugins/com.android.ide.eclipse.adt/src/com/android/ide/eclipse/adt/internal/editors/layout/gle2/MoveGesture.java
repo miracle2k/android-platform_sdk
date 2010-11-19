@@ -17,6 +17,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.INode;
+import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.ide.eclipse.adt.AdtPlugin;
@@ -316,10 +317,19 @@ public class MoveGesture extends DropGesture {
         String label = computeUndoLabel(mTargetNode, elements, event.detail);
         mCanvas.getLayoutEditor().wrapUndoEditXmlModel(label, new Runnable() {
             public void run() {
+                InsertType insertType;
+                if (event.detail == DND.DROP_MOVE) {
+                    insertType = InsertType.MOVE;
+                } else if (GlobalCanvasDragInfo.getInstance().getSourceCanvas() != null) {
+                    insertType = InsertType.PASTE;
+                } else {
+                    insertType = InsertType.CREATE;
+                }
                 mCanvas.getRulesEngine().callOnDropped(mTargetNode,
                         elementsFinal,
                         mFeedback,
-                        new Point(canvasPoint.x, canvasPoint.y));
+                        new Point(canvasPoint.x, canvasPoint.y),
+                        insertType);
                 // Clean up drag if applicable
                 if (event.detail == DND.DROP_MOVE) {
                     GlobalCanvasDragInfo.getInstance().removeSource();

@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package com.android.ide.common.layout;
-
-import com.android.ide.common.api.INode;
-import com.android.ide.common.api.IViewRule;
-import com.android.ide.common.api.InsertType;
+package com.android.ide.common.api;
 
 /**
- * An {@link IViewRule} for android.widget.ListView and all its derived classes.
- * This is the "root" rule, that is used whenever there is not more specific
- * rule to apply.
+ * An enumerated type of different insertion events, such as an insertion from a
+ * copy/paste operation or as the first half of a move operation.
  */
-public class ListViewRule extends BaseView {
+public enum InsertType {
+    /** The view is newly created (by for example a palette drag) */
+    CREATE,
 
-    @Override
-    public void onCreate(INode node, INode parent, InsertType insertType) {
-        super.onCreate(node, parent, insertType);
+    /** The view is being inserted here because it was moved from somewhere else */
+    MOVE,
 
-        node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
-    }
+    /**
+     * The view is being inserted here as a result of a copy/paste from elsewhere
+     * (including drags, but not from the palette)
+     */
+    PASTE;
 }
