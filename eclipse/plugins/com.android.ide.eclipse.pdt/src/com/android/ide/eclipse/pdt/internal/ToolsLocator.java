@@ -22,7 +22,7 @@ import com.android.ide.eclipse.pdt.PdtPlugin;
 /**
  * Implementation of the com.android.ide.ddms.adbLocator extension point.
  */
-public class AdbLocator implements IToolsLocator {
+public class ToolsLocator implements IToolsLocator {
 
     public String getAdbLocation() {
         return PdtPlugin.getAdbLocation();
