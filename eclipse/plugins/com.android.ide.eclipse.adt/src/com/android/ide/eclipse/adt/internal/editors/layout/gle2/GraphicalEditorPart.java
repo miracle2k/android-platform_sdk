@@ -52,6 +52,7 @@ import com.android.layoutlib.api.LayoutBridge;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneParams;
 import com.android.layoutlib.api.SceneResult;
+import com.android.layoutlib.api.SceneParams.RenderingMode;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
@@ -1322,10 +1323,23 @@ public class GraphicalEditorPart extends EditorPart
         UiElementPullParser parser = new UiElementPullParser(model,
                 mUseExplodeMode, explodeNodes, density, xdpi, iProject);
 
+        RenderingMode renderingMode = RenderingMode.NORMAL;
+        if (mClippingButton.getSelection() == false) {
+            renderingMode = RenderingMode.FULL_EXPAND;
+        } else {
+            // FIXME set the rendering mode using ViewRule or something.
+            List<UiElementNode> children = model.getUiChildren();
+            if (children.size() > 0 &&
+                    children.get(0).getDescriptor().getXmlLocalName().equals("ScrollView")) {
+                renderingMode = RenderingMode.V_SCROLL;
+            }
+        }
+
         SceneParams params = new SceneParams(
                 parser,
                 iProject /* projectKey */,
-                width, height, !mClippingButton.getSelection(),
+                width, height,
+                renderingMode,
                 density, xdpi, ydpi,
                 theme, isProjectTheme,
                 configuredProjectRes, frameworkResources, mProjectCallback,

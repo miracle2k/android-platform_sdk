@@ -20,11 +20,34 @@ import java.util.Map;
 
 public class SceneParams {
 
+    public static enum RenderingMode {
+        NORMAL(false, false),
+        V_SCROLL(false, true),
+        H_SCROLL(true, false),
+        FULL_EXPAND(true, true);
+
+        private final boolean mHorizExpand;
+        private final boolean mVertExpand;
+
+        private RenderingMode(boolean horizExpand, boolean vertExpand) {
+            mHorizExpand = horizExpand;
+            mVertExpand = vertExpand;
+        }
+
+        public boolean isHorizExpand() {
+            return mHorizExpand;
+        }
+
+        public boolean isVertExpand() {
+            return mVertExpand;
+        }
+    }
+
     private IXmlPullParser mLayoutDescription;
     private Object mProjectKey;
     private int mScreenWidth;
     private int mScreenHeight;
-    private boolean mRenderFullSize;
+    private RenderingMode mRenderingMode;
     private int mDensity;
     private float mXdpi;
     private float mYdpi;
@@ -44,8 +67,7 @@ public class SceneParams {
      * @param projectKey An Object identifying the project. This is used for the cache mechanism.
      * @param screenWidth the screen width
      * @param screenHeight the screen height
-     * @param renderFullSize if true, the rendering will render the full size needed by the
-     * layout. This size is never smaller than <var>screenWidth</var> x <var>screenHeight</var>.
+     * @param renderingMode The rendering mode.
      * @param density the density factor for the screen.
      * @param xdpi the screen actual dpi in X
      * @param ydpi the screen actual dpi in Y
@@ -65,7 +87,7 @@ public class SceneParams {
      */
     public SceneParams(IXmlPullParser layoutDescription,
             Object projectKey,
-            int screenWidth, int screenHeight, boolean renderFullSize,
+            int screenWidth, int screenHeight, RenderingMode renderingMode,
             int density, float xdpi, float ydpi,
             String themeName, boolean isProjectTheme,
             Map<String, Map<String, IResourceValue>> projectResources,
@@ -75,7 +97,7 @@ public class SceneParams {
         mProjectKey = projectKey;
         mScreenWidth = screenWidth;
         mScreenHeight = screenHeight;
-        mRenderFullSize = renderFullSize;
+        mRenderingMode = renderingMode;
         mDensity = density;
         mXdpi = xdpi;
         mYdpi = ydpi;
@@ -96,7 +118,7 @@ public class SceneParams {
         mProjectKey = params.mProjectKey;
         mScreenWidth = params.mScreenWidth;
         mScreenHeight = params.mScreenHeight;
-        mRenderFullSize = params.mRenderFullSize;
+        mRenderingMode = params.mRenderingMode;
         mDensity = params.mDensity;
         mXdpi = params.mXdpi;
         mYdpi = params.mYdpi;
@@ -131,8 +153,8 @@ public class SceneParams {
         return mScreenHeight;
     }
 
-    public boolean getRenderFullSize() {
-        return mRenderFullSize;
+    public RenderingMode getRenderingMode() {
+        return mRenderingMode;
     }
 
     public int getDensity() {

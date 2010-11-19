@@ -24,6 +24,7 @@ import com.android.layoutlib.api.SceneParams;
 import com.android.layoutlib.api.SceneResult;
 import com.android.layoutlib.api.ViewInfo;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
+import com.android.layoutlib.api.SceneParams.RenderingMode;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -82,7 +83,8 @@ class LayoutBridgeWrapper extends LayoutBridge {
             // Final ILayoutBridge API added support for "render full height"
             result = mBridge.computeLayout(
                     params.getLayoutDescription(), params.getProjectKey(),
-                    params.getScreenWidth(), params.getScreenHeight(), params.getRenderFullSize(),
+                    params.getScreenWidth(), params.getScreenHeight(),
+                    params.getRenderingMode() == RenderingMode.FULL_EXPAND ? true : false,
                     params.getDensity(), params.getXdpi(), params.getYdpi(),
                     params.getThemeName(), params.getIsProjectTheme(),
                     params.getProjectResources(), params.getFrameworkResources(),
