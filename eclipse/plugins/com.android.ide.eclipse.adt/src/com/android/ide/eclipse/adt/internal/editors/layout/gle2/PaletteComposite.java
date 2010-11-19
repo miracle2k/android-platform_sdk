@@ -16,15 +16,21 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.Rect;
+import com.android.ide.common.layout.BaseView;
 import com.android.ide.common.layoutlib.LayoutLibrary;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
+import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
@@ -60,10 +66,13 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -548,11 +557,18 @@ public class PaletteComposite extends Composite {
         // not to make it much larger than necessary since to crop this we rely on
         // actually scanning pixels.
 
-        /** Width of the rendered preview image (before it is cropped) */
-        private static final int RENDER_HEIGHT = 400;
+        /**
+         * Width of the rendered preview image (before it is cropped), although the actual
+         * width may be smaller (since we also take the device screen's size into account)
+         */
+        private static final int MAX_RENDER_HEIGHT = 400;
 
-        /** Height of the rendered preview image (before it is cropped) */
-        private static final int RENDER_WIDTH = 500;
+        /**
+         * Height of the rendered preview image (before it is cropped), although the
+         * actual width may be smaller (since we also take the device screen's size into
+         * account)
+         */
+        private static final int MAX_RENDER_WIDTH = 500;
 
         /** Amount of alpha to multiply into the image (divided by 256) */
         private static final int IMG_ALPHA = 216;
@@ -655,6 +671,8 @@ public class PaletteComposite extends Composite {
             Document document = null;
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             try {
+                factory.setNamespaceAware(true);
+                factory.setValidating(false);
                 DocumentBuilder builder = factory.newDocumentBuilder();
                 document = builder.newDocument();
             } catch (ParserConfigurationException e) {
@@ -668,6 +686,13 @@ public class PaletteComposite extends Composite {
 
             String viewName = desc.getXmlLocalName();
             Element element = document.createElement(viewName);
+
+            // Set up a proper name space
+            Attr attr = document.createAttributeNS(XmlnsAttributeDescriptor.XMLNS_URI,
+                    "xmlns:android"); //$NON-NLS-1$
+            attr.setValue(BaseView.ANDROID_URI);
+            element.getAttributes().setNamedItemNS(attr);
+
             element.setAttributeNS(SdkConstants.NS_RESOURCES,
                     LayoutConstants.ATTR_LAYOUT_WIDTH, LayoutConstants.VALUE_WRAP_CONTENT);
             element.setAttributeNS(SdkConstants.NS_RESOURCES,
@@ -679,14 +704,36 @@ public class PaletteComposite extends Composite {
             String text = DescriptorsUtils.getFreeWidgetId(uiRoot, viewName);
             element.setAttributeNS(SdkConstants.NS_RESOURCES, LayoutConstants.ATTR_TEXT, text);
 
-            document.insertBefore(element, null);
+            document.appendChild(element);
 
             // Construct UI model from XML
-            DocumentDescriptor documentDescriptor =
-                new DocumentDescriptor("layout_doc", null); //$NON-NLS-1$
-            UiDocumentNode model = new UiDocumentNode(documentDescriptor);
+            AndroidTargetData data = layoutEditor.getTargetData();
+            DocumentDescriptor documentDescriptor;
+            if (data == null) {
+                documentDescriptor = new DocumentDescriptor("temp", null /*children*/); //$NON-NLS-1$
+            } else {
+                documentDescriptor = data.getLayoutDescriptors().getDescriptor();
+            }
+            UiDocumentNode model = (UiDocumentNode) documentDescriptor.createUiNode();
             model.setEditor(layoutEditor);
+            model.setUnknownDescriptorProvider(editor.getModel().getUnknownDescriptorProvider());
             model.loadFromXmlNode(document);
+
+            // Call the create-hooks such that we for example insert mandatory
+            // children into views like the DialerFilter, apply image source attributes
+            // to ImageButtons, etc.
+            if (editor instanceof GraphicalEditorPart) {
+                LayoutCanvas canvas = ((GraphicalEditorPart) editor).getCanvasControl();
+                NodeFactory nodeFactory = canvas.getNodeFactory();
+                UiElementNode parent = model.getUiRoot();
+                UiElementNode child = parent.getUiChildren().get(0);
+                if (child instanceof UiViewElementNode) {
+                    UiViewElementNode childUiNode = (UiViewElementNode) child;
+                    NodeProxy childNode = nodeFactory.create(childUiNode);
+                    canvas.getRulesEngine().callCreateHooks(layoutEditor,
+                            null, childNode, InsertType.CREATE);
+                }
+            }
 
             boolean hasTransparency = false;
             LayoutLibrary layoutLibrary = editor.getLayoutLibrary();
@@ -697,8 +744,23 @@ public class PaletteComposite extends Composite {
                 }
             }
 
-            LayoutScene scene = editor.render(model, RENDER_WIDTH, RENDER_HEIGHT,
+            LayoutScene scene = null;
+            try {
+                // Use at most the size of the screen for the preview render.
+                // This is important since when we fill the size of certain views (like
+                // a SeekBar), we want it to at most be the width of the screen, and for small
+                // screens the RENDER_WIDTH was wider.
+                org.eclipse.draw2d.geometry.Rectangle screenBounds = editor.getScreenBounds();
+                int renderWidth = Math.min(screenBounds.width, MAX_RENDER_WIDTH);
+                int renderHeight = Math.min(screenBounds.height, MAX_RENDER_HEIGHT);
+
+                scene = editor.render(model, renderWidth, renderHeight,
                     null /* explodeNodes */, hasTransparency);
+            } catch (Throwable t) {
+                // Previews can fail for a variety of reasons -- let's not bug
+                // the user with it
+                return null;
+            }
 
             if (scene != null) {
                 if (scene.getResult() == SceneResult.SUCCESS) {
@@ -758,6 +820,41 @@ public class PaletteComposite extends Composite {
             }
 
             return null;
+        }
+
+        /**
+         * Utility method to print out the contents of the given XML document. This is
+         * really useful when working on the preview code above. I'm including all the
+         * code inside a constant false, which means the compiler will omit all the code,
+         * but I'd like to leave it in the code base and by doing it this way rather than
+         * as commented out code the code won't be accidentally broken.
+         */
+        @SuppressWarnings("all")
+        private static void dumpDocument(Document document) {
+            // Diagnostics: print out the XML that we're about to render
+            if (false) { // Will be omitted by the compiler
+                org.apache.xml.serialize.OutputFormat outputFormat =
+                    new org.apache.xml.serialize.OutputFormat(
+                            "XML", "ISO-8859-1", true); //$NON-NLS-1$ //$NON-NLS-2$
+                outputFormat.setIndent(2);
+                outputFormat.setLineWidth(100);
+                outputFormat.setIndenting(true);
+                outputFormat.setOmitXMLDeclaration(true);
+                outputFormat.setOmitDocumentType(true);
+                StringWriter stringWriter = new StringWriter();
+                // Using FQN here to avoid having an import above, which will result
+                // in a deprecation warning, and there isn't a way to annotate a single
+                // import element with a SuppressWarnings.
+                org.apache.xml.serialize.XMLSerializer serializer =
+                    new org.apache.xml.serialize.XMLSerializer(stringWriter, outputFormat);
+                serializer.setNamespaces(true);
+                try {
+                    serializer.serialize(document.getDocumentElement());
+                    System.out.println(stringWriter.toString());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         /**

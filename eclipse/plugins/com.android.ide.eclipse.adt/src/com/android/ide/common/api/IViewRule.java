@@ -17,7 +17,6 @@
 package com.android.ide.common.api;
 
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -45,13 +44,6 @@ import java.util.Map;
 public interface IViewRule {
 
     /**
-     * The name of the property that returns a {@link IClientRulesEngine} created for this
-     * rules. The instance lets rules use some methods from the rules engine, for example
-     * for accessing other rules.
-     */
-    final static String RULES_ENGINE = "_rules_engine";
-
-    /**
      * This method is called by the rule engine when the script is first loaded.
      * It gives the rule a chance to initialize itself.
      *
@@ -63,7 +55,7 @@ public interface IViewRule {
      *   the engine during initialization and then use it later to invoke some of the
      *   {@link IClientRulesEngine} methods for example to request user input.
      * @return True if this rule can handle the given FQCN. False if the rule can't handle the
-     *   given FQCN, in which case the rule engine will find another rule matching a parent clas.
+     *   given FQCN, in which case the rule engine will find another rule matching a parent class.
      */
     boolean onInitialize(String fqcn, IClientRulesEngine engine);
 
@@ -140,23 +132,6 @@ public interface IViewRule {
             INode childNode);
 
 
-    // ==== XML Creation ====
-
-    /**
-     * Returns the default attributes that a new XML element of this type should have
-     * when added to an XML layout file. Note that these defaults can be overridden by the
-     * specific code performing the insertion.
-     *
-     * TODO:
-     * - added=>created
-     * - list tuple(uri, local name, str: value)
-     * - gen id
-     *
-     * @return A map of attribute:values for a new element of this type. Can be null or empty.
-     */
-    Map<?, ?> getDefaultAttributes();
-
-
     // ==== Drag'n'drop support ====
 
     /**
@@ -215,4 +190,40 @@ public interface IViewRule {
      * @param pastedElements The elements being pasted.
      */
     void onPaste(INode targetNode, IDragElement[] pastedElements);
+
+    // ==== XML Creation ====
+
+    /**
+     * Called when a view for this rule is being created. This allows for the rule to
+     * customize the newly created object. Note that this method is called not just when a
+     * view is created from a palette drag, but when views are constructed via a drag-move
+     * (where views are created in the destination and then deleted from the source), and
+     * even when views are constructed programmatically from other view rules. The
+     * {@link InsertType} parameter can be used to distinguish the context for the
+     * insertion. For example, the <code>DialerFilterRule</code> will insert EditText children
+     * when a DialerFilter is first created, but not during a copy/paste or a move.
+     *
+     * @param node the newly created node (which will always be a View that applies to
+     *            this {@link IViewRule})
+     * @param parent the parent of the node (which may not yet contain the newly created
+     *            node in its child list)
+     * @param insertType whether this node was created as part of a newly created view, or
+     *            as a copy, or as a move, etc.
+     */
+    void onCreate(INode node, INode parent, InsertType insertType);
+
+    /**
+     * Called when a child for this view has been created and is being inserted into the
+     * view parent for which this {@link IViewRule} applies. Allows the parent to perform
+     * customizations of the object. As with {@link #onCreate}, the {@link InsertType}
+     * parameter can be used to handle new creation versus moves versus copy/paste
+     * operations differently.
+     *
+     * @param child the newly created node
+     * @param parent the parent of the newly created node (which may not yet contain the
+     *            newly created node in its child list)
+     * @param insertType whether this node was created as part of a newly created view, or
+     *            as a copy, or as a move, etc.
+     */
+    void onChildInserted(INode child, INode parent, InsertType insertType);
 }

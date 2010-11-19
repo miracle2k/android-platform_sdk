@@ -26,6 +26,7 @@ import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
@@ -45,7 +46,7 @@ import java.util.Set;
  * Common IViewRule processing to all view and layout classes.
  */
 public class BaseView implements IViewRule {
-    private IClientRulesEngine mRulesEngine;
+    protected IClientRulesEngine mRulesEngine;
 
     /**
      * Namespace for the Android resource XML, i.e.
@@ -53,23 +54,42 @@ public class BaseView implements IViewRule {
      */
     public static String ANDROID_URI = "http://schemas.android.com/apk/res/android"; //$NON-NLS-1$
 
+    /** The fully qualified class name of an EditText view */
+    public static final String FQCN_EDIT_TEXT = "android.widget.EditText"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a LinearLayout view */
+    public static final String FQCN_LINEAR_LAYOUT = "android.widget.LinearLayout"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a FrameLayout view */
+    public static final String FQCN_FRAME_LAYOUT = "android.widget.FrameLayout"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a TableRow view */
+    public static final String FQCN_TABLE_ROW = "android.widget.TableRow"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a TabWidget view */
+    public static final String FQCN_TAB_WIDGET = "android.widget.TabWidget"; //$NON-NLS-1$
+
     // Some common Android layout attribute names used by the view rules.
     // All these belong to the attribute namespace ANDROID_URI.
-    public static String ATTR_ID = "id"; //$NON-NLS-1$
+    public static final String ATTR_ID = "id"; //$NON-NLS-1$
 
-    public static String ATTR_TEXT = "text"; //$NON-NLS-1$
+    public static final String ATTR_TEXT = "text"; //$NON-NLS-1$
 
-    public static String ATTR_LAYOUT_WIDTH = "layout_width"; //$NON-NLS-1$
+    public static final String ATTR_LAYOUT_WIDTH = "layout_width"; //$NON-NLS-1$
 
-    public static String ATTR_LAYOUT_HEIGHT = "layout_height"; //$NON-NLS-1$
+    public static final String ATTR_LAYOUT_HEIGHT = "layout_height"; //$NON-NLS-1$
+
+    public static final String ATTR_SRC = "src"; //$NON-NLS-1$
+
+    public static final String ATTR_LAYOUT_BELOW = "layout_below"; //$NON-NLS-1$
 
     // Some common Android layout attribute values used by the view rules.
-    public static String VALUE_FILL_PARENT = "fill_parent"; //$NON-NLS-1$
+    public static final String VALUE_FILL_PARENT = "fill_parent"; //$NON-NLS-1$
 
     // like fill_parent for API 8
-    public static String VALUE_MATCH_PARENT = "match_parent"; //$NON-NLS-1$
+    public static final String VALUE_MATCH_PARENT = "match_parent"; //$NON-NLS-1$
 
-    public static String VALUE_WRAP_CONTENT = "wrap_content"; //$NON-NLS-1$
+    public static final String VALUE_WRAP_CONTENT = "wrap_content"; //$NON-NLS-1$
 
     // Cache of attributes. Key is FQCN of a node mixed with its view hierarchy
     // parent. Values are a custom map as needed by getContextMenu.
@@ -95,11 +115,6 @@ public class BaseView implements IViewRule {
 
     public String getDisplayName() {
         // Default is to not override the selection display name.
-        return null;
-    }
-
-    public Map<?, ?> getDefaultAttributes() {
-        // The base rule does not have any custom default attributes.
         return null;
     }
 
@@ -530,5 +545,27 @@ public class BaseView implements IViewRule {
         private Map<String, String> getChoices() {
             return mChoices;
         }
+    }
+
+    /**
+     * Returns a source attribute value which points to a sample image. This is typically
+     * used to provide an initial image shown on ImageButtons, etc. There is no guarantee
+     * that the source pointed to by this method actually exists.
+     *
+     * @return a source attribute to use for sample images, never null
+     */
+    protected String getSampleImageSrc() {
+        // For now, we point to the sample icon which is written into new Android projects
+        // created in ADT. We could alternatively look into the project resources folder
+        // and try to pick something else, or even return some builtin image resource
+        // in the @android namespace.
+
+        return "@drawable/icon"; //$NON-NLS-1$
+    }
+
+    public void onCreate(INode node, INode parent, InsertType insertType) {
+    }
+
+    public void onChildInserted(INode node, INode parent, InsertType insertType) {
     }
 }

@@ -29,6 +29,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescripto
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleAttribute;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SwtUtils;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
@@ -71,7 +72,7 @@ public class NodeProxy implements INode {
         if (bounds == null) {
             mBounds = new Rect();
         } else {
-            mBounds = new Rect(bounds);
+            mBounds = SwtUtils.toRect(bounds);
         }
     }
 
@@ -85,7 +86,7 @@ public class NodeProxy implements INode {
      * This is a package-protected method, only the {@link NodeFactory} uses this method.
      */
     /*package*/ void setBounds(Rectangle bounds) {
-        mBounds.set(bounds);
+        SwtUtils.set(mBounds, bounds);
     }
 
     /**
@@ -195,38 +196,14 @@ public class NodeProxy implements INode {
     }
 
     public INode appendChild(String viewFqcn) {
-        checkEditOK();
-
-        // Find the descriptor for this FQCN
-        ViewElementDescriptor vd = getFqcnViewDescriptor(viewFqcn);
-        if (vd == null) {
-            warnPrintf("Can't create a new %s element", viewFqcn);
-            return null;
-        }
-
-        // Append at the end.
-        UiElementNode uiNew = mNode.appendNewUiChild(vd);
-
-        // TODO we probably want to defer that to the GRE to use IViewRule#getDefaultAttributes()
-        DescriptorsUtils.setDefaultLayoutAttributes(uiNew, false /*updateLayout*/);
-
-        Node xmlNode = uiNew.createXmlNode();
-
-        if (!(uiNew instanceof UiViewElementNode) || xmlNode == null) {
-            // Both things are not supposed to happen. When they do, we're in big trouble.
-            // We don't really know how to revert the state at this point and the UI model is
-            // now out of sync with the XML model.
-            // Panic ensues.
-            // The best bet is to abort now. The edit wrapper will release the edit and the
-            // XML/UI should get reloaded properly (with a likely invalid XML.)
-            warnPrintf("Failed to create a new %s element", viewFqcn);
-            throw new RuntimeException("XML node creation failed."); //$NON-NLS-1$
-        }
-
-        return mFactory.create((UiViewElementNode) uiNew);
+        return insertOrAppend(viewFqcn, -1);
     }
 
     public INode insertChildAt(String viewFqcn, int index) {
+        return insertOrAppend(viewFqcn, index);
+    }
+
+    private INode insertOrAppend(String viewFqcn, int index) {
         checkEditOK();
 
         // Find the descriptor for this FQCN
@@ -236,13 +213,18 @@ public class NodeProxy implements INode {
             return null;
         }
 
-        // Insert at the requested position or at the end.
-        int n = mNode.getUiChildren().size();
-        UiElementNode uiNew = null;
-        if (index < 0 || index >= n) {
+        final UiElementNode uiNew;
+        if (index == -1) {
+            // Append at the end.
             uiNew = mNode.appendNewUiChild(vd);
         } else {
-            uiNew = mNode.insertNewUiChild(index, vd);
+            // Insert at the requested position or at the end.
+            int n = mNode.getUiChildren().size();
+            if (index < 0 || index >= n) {
+                uiNew = mNode.appendNewUiChild(vd);
+            } else {
+                uiNew = mNode.insertNewUiChild(index, vd);
+            }
         }
 
         // TODO we probably want to defer that to the GRE to use IViewRule#getDefaultAttributes()
@@ -261,7 +243,18 @@ public class NodeProxy implements INode {
             throw new RuntimeException("XML node creation failed."); //$NON-NLS-1$
         }
 
-        return mFactory.create((UiViewElementNode) uiNew);
+        UiViewElementNode uiNewView = (UiViewElementNode) uiNew;
+        NodeProxy newNode = mFactory.create(uiNewView);
+
+        AndroidXmlEditor editor = mNode.getEditor();
+        if (editor instanceof LayoutEditor) {
+            RulesEngine engine = ((LayoutEditor)editor).getRulesEngine();
+            if (engine != null) {
+                engine.callCreateHooks(editor, this, newNode, null);
+            }
+        }
+
+        return newNode;
     }
 
     public boolean setAttribute(String uri, String name, String value) {

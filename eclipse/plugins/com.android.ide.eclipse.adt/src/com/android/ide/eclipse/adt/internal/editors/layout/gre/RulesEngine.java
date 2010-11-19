@@ -22,12 +22,16 @@ import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IValidator;
+import com.android.ide.common.api.IViewMetadata;
 import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.layout.ViewRule;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleElement;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
@@ -63,6 +67,15 @@ import java.util.Map;
 public class RulesEngine {
     private final IProject mProject;
     private final Map<Object, IViewRule> mRulesCache = new HashMap<Object, IViewRule>();
+    /**
+     * The type of any upcoming node manipulations performed by the {@link IViewRule}s.
+     * When actions are performed in the tool (like a paste action, or a drag from palette,
+     * or a drag move within the canvas, etc), these are different types of inserts,
+     * and we don't want to have the rules track them closely (and pass them back to us
+     * in the {@link INode#insertChildAt} methods etc), so instead we track the state
+     * here on behalf of the currently executing rule.
+     */
+    private InsertType mInsertType = InsertType.CREATE;
 
     /**
      * Class loader (or null) used to load user/project-specific IViewRule
@@ -77,14 +90,21 @@ public class RulesEngine {
     private boolean mUserClassLoaderInited;
 
     /**
+     * The editor which owns this {@link RulesEngine}
+     */
+    private IGraphicalLayoutEditor mEditor;
+
+    /**
      * Creates a new {@link RulesEngine} associated with the selected project.
      * <p/>
      * The rules engine will look in the project for a tools jar to load custom view rules.
      *
+     * @param editor the editor which owns this {@link RulesEngine}
      * @param project A non-null open project.
      */
-    public RulesEngine(IProject project) {
+    public RulesEngine(IGraphicalLayoutEditor editor, IProject project) {
         mProject = project;
+        mEditor = editor;
     }
 
     /**
@@ -194,6 +214,7 @@ public class RulesEngine {
 
         if (rule != null) {
             try {
+                mInsertType = InsertType.CREATE;
                 return rule.getContextMenu(selectedNode);
 
             } catch (Exception e) {
@@ -335,12 +356,14 @@ public class RulesEngine {
     public void callOnDropped(NodeProxy targetNode,
             IDragElement[] elements,
             DropFeedback feedback,
-            Point where) {
+            Point where,
+            InsertType insertType) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(targetNode.getNode());
 
         if (rule != null) {
             try {
+                mInsertType = insertType;
                 rule.onDropped(targetNode, elements, feedback, where);
 
             } catch (Exception e) {
@@ -379,6 +402,7 @@ public class RulesEngine {
 
         if (rule != null) {
             try {
+                mInsertType = InsertType.PASTE;
                 rule.onPaste(targetNode, pastedElements);
 
             } catch (Exception e) {
@@ -386,6 +410,74 @@ public class RulesEngine {
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
+        }
+    }
+
+    // ---- Creation customizations ----
+
+    /**
+     * Invokes the create hooks ({@link IViewRule#onCreate},
+     * {@link IViewRule#onChildInserted} when a new child has been created/pasted/moved, and
+     * is inserted into a given parent. The parent may be null (for example when rendering
+     * top level items for preview).
+     *
+     * @param editor the XML editor to apply edits to the model for (performed by view
+     *            rules)
+     * @param parentNode the parent XML node, or null if unknown
+     * @param childNode the XML node of the new node, never null
+     * @param overrideInsertType If not null, specifies an explicit insert type to use for
+     *            edits made during the customization
+     */
+    public void callCreateHooks(
+        AndroidXmlEditor editor,
+        NodeProxy parentNode, NodeProxy childNode,
+        InsertType overrideInsertType) {
+        IViewRule parentRule = null;
+
+        if (parentNode != null) {
+            UiViewElementNode parentUiNode = parentNode.getNode();
+            parentRule = loadRule(parentUiNode);
+        }
+
+        if (overrideInsertType != null) {
+            mInsertType = overrideInsertType;
+        }
+
+        UiViewElementNode newUiNode = childNode.getNode();
+        IViewRule childRule = loadRule(newUiNode);
+        if (childRule != null || parentRule != null) {
+            callCreateHooks(editor, mInsertType, parentRule, parentNode,
+                    childRule, childNode);
+        }
+    }
+
+    private static void callCreateHooks(
+            final AndroidXmlEditor editor, final InsertType insertType,
+            final IViewRule parentRule, final INode parentNode,
+            final IViewRule childRule, final INode newNode) {
+        // Notify the parent about the new child in case it wants to customize it
+        // (For example, a ScrollView parent can go and set all its children's layout params to
+        // fill the parent.)
+        if (!editor.isEditXmlModelPending()) {
+            editor.wrapUndoEditXmlModel("Customize creation", new Runnable() {
+                public void run() {
+                    callCreateHooks(editor, insertType,
+                            parentRule, parentNode, childRule, newNode);
+                }
+            });
+            return;
+        }
+
+        if (parentRule != null) {
+            parentRule.onChildInserted(newNode, parentNode, insertType);
+        }
+
+        // Look up corresponding IViewRule, and notify the rule about
+        // this create action in case it wants to customize the new object.
+        // (For example, a rule for TabHosts can go and create a default child tab
+        // when you create it.)
+        if (childRule != null) {
+            childRule.onCreate(newNode, parentNode, insertType);
         }
     }
 
@@ -531,7 +623,11 @@ public class RulesEngine {
             // than in the same package as the widgets.
             String ruleClassName;
             ClassLoader classLoader;
-            if (realFqcn.startsWith("android.")) { //$NON-NLS-1$
+            if (realFqcn.startsWith("android.") || //$NON-NLS-1$
+                    // FIXME: Remove this special case as soon as we pull
+                    // the MapViewRule out of this code base and bundle it
+                    // with the add ons
+                    realFqcn.startsWith("com.google.android.maps.")) { //$NON-NLS-1$
                 // This doesn't handle a case where there are name conflicts
                 // (e.g. where there are multiple different views with the same
                 // class name and only differing in package names, but that's a
@@ -697,6 +793,9 @@ public class RulesEngine {
             }
             return null;
         }
-    }
 
+        public IViewMetadata getMetadata(final String fqcn) {
+            return new ViewMetadata(mEditor.getLayoutEditor(), fqcn);
+        }
+    }
 }

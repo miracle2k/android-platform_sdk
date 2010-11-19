@@ -15,9 +15,12 @@
  */
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
+
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 
 import java.awt.image.BufferedImage;
@@ -108,5 +111,39 @@ public class SwtUtils {
         }
 
         return awtImage;
+    }
+
+    /**
+     * Converts the given SWT {@link Rectangle} into an ADT {@link Rect}
+     *
+     * @param swtRect the SWT {@link Rectangle}
+     * @return an equivalent {@link Rect}
+     */
+    public static Rect toRect(Rectangle swtRect) {
+        return new Rect(swtRect.x, swtRect.y, swtRect.width, swtRect.height);
+    }
+
+    /**
+     * Sets the values of the given ADT {@link Rect} to the values of the given SWT
+     * {@link Rectangle}
+     *
+     * @param target the ADT {@link Rect} to modify
+     * @param source the SWT {@link Rectangle} to read values from
+     */
+    public static void set(Rect target, Rectangle source) {
+        target.set(source.x, source.y, source.width, source.height);
+    }
+
+    /**
+     * Compares an ADT {@link Rect} with an SWT {@link Rectangle} and returns true if they
+     * are equivalent
+     *
+     * @param r1 the ADT {@link Rect}
+     * @param r2 the SWT {@link Rectangle}
+     * @return true if the two rectangles are equivalent
+     */
+    public static boolean equals(Rect r1, Rectangle r2) {
+        return r1.x == r2.x && r1.y == r2.y && r1.w == r2.width && r1.h == r2.height;
+
     }
 }

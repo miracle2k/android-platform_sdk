@@ -198,7 +198,7 @@ public class IconFactory {
             gc.setAntialias(SWT.ON);
             gc.setTextAntialias(SWT.ON);
 
-            // image.setBackground() does not appear to have any affect; we must explicitly
+            // image.setBackground() does not appear to have any effect; we must explicitly
             // paint into the image the background color we want masked out later.
             // HOWEVER, alpha transparency does not work; we only get to mark a single color
             // as transparent. You might think we could pick a system color (to avoid having

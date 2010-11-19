@@ -28,6 +28,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewEleme
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.OutlinePage2;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.PropertySheetPage2;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
@@ -202,7 +203,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         // Optional: set the default page. Eventually a default page might be
         // restored by selectDefaultPage() later based on the last page used by the user.
         // For example, to make the last page the default one (rather than the first page),
-        // un-comment this line:
+        // uncomment this line:
         //   setActivePage(getPageCount() - 1);
     }
 
@@ -600,6 +601,19 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
                     }
                 }
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the {@link RulesEngine} associated with this editor
+     *
+     * @return the {@link RulesEngine} associated with this editor, or null
+     */
+    public RulesEngine getRulesEngine() {
+        if (mGraphicalEditor instanceof GraphicalEditorPart) {
+            return ((GraphicalEditorPart) mGraphicalEditor).getRulesEngine();
         }
 
         return null;

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.android.ide.common.layout;
 
 import com.android.ide.common.api.INode;
@@ -21,16 +20,24 @@ import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
 
 /**
- * An {@link IViewRule} for android.widget.ListView and all its derived classes.
- * This is the "root" rule, that is used whenever there is not more specific
- * rule to apply.
+ * An {@link IViewRule} for android.widget.TableRow.
  */
-public class ListViewRule extends BaseView {
+public class TableRowRule extends LinearLayoutRule {
+    @Override
+    protected boolean isVertical(INode node) {
+        return false;
+    }
 
     @Override
-    public void onCreate(INode node, INode parent, InsertType insertType) {
-        super.onCreate(node, parent, insertType);
-
-        node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+    protected boolean supportsOrientation() {
+        return false;
     }
+
+    @Override
+    public void onChildInserted(INode child, INode parent, InsertType insertType) {
+        // Overridden to inhibit the setting of layout_width/layout_height since
+        // the table row will enforce match_parent and wrap_content for width and height
+        // respectively.
+    }
+
 }

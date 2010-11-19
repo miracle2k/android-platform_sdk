@@ -21,16 +21,17 @@ import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
 
 /**
- * An {@link IViewRule} for android.widget.ListView and all its derived classes.
- * This is the "root" rule, that is used whenever there is not more specific
- * rule to apply.
+ * An {@link IViewRule} for android.widget.SeekBar
  */
-public class ListViewRule extends BaseView {
+public class SeekBarRule extends BaseView {
 
     @Override
     public void onCreate(INode node, INode parent, InsertType insertType) {
         super.onCreate(node, parent, insertType);
 
+        // A SeekBar isn't useful with wrap_content because it packs itself down to
+        // almost no usable width -- so just make it grow in all layouts
         node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
     }
+
 }

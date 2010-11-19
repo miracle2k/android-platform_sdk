@@ -24,10 +24,13 @@ import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
+import com.android.ide.common.api.IViewMetadata;
 import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
+import com.android.ide.common.api.IViewMetadata.FillPreference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,34 +50,57 @@ public class LinearLayoutRule extends BaseLayout {
      */
     @Override
     public List<MenuAction> getContextMenu(final INode selectedNode) {
-
-        String curr_orient = selectedNode.getStringAttr(ANDROID_URI, ATTR_ORIENTATION);
-        if (curr_orient == null || curr_orient.length() == 0) {
-            curr_orient = VALUE_HORIZONTAL;
-        }
-
-        IMenuCallback onChange = new IMenuCallback() {
-            public void action(MenuAction action, final String valueId, Boolean newValue) {
-                String actionId = action.getId();
-                final INode node = selectedNode;
-
-                if (actionId.equals("_orientation")) { //$NON-NLS-1$
-                    node.editXml("Change LinearLayout " + ATTR_ORIENTATION, new INodeHandler() {
-                        public void handle(INode n) {
-                            node.setAttribute(ANDROID_URI, ATTR_ORIENTATION, valueId);
-                        }
-                    });
-                }
+        if (supportsOrientation()) {
+            String curr_orient = selectedNode.getStringAttr(ANDROID_URI, ATTR_ORIENTATION);
+            if (curr_orient == null || curr_orient.length() == 0) {
+                curr_orient = VALUE_HORIZONTAL;
             }
-        };
 
-        return concatenate(super.getContextMenu(selectedNode),
-            new MenuAction.Choices("_orientation", "Orientation",  //$NON-NLS-1$
-                mapify(
-                    "horizontal", "Horizontal",                    //$NON-NLS-1$
-                    "vertical", "Vertical"                         //$NON-NLS-1$
-                ),
-                curr_orient, onChange));
+            IMenuCallback onChange = new IMenuCallback() {
+                public void action(MenuAction action, final String valueId, Boolean newValue) {
+                    String actionId = action.getId();
+                    final INode node = selectedNode;
+
+                    if (actionId.equals("_orientation")) { //$NON-NLS-1$
+                        node.editXml("Change LinearLayout " + ATTR_ORIENTATION, new INodeHandler() {
+                            public void handle(INode n) {
+                                node.setAttribute(ANDROID_URI, ATTR_ORIENTATION, valueId);
+                            }
+                        });
+                    }
+                }
+            };
+
+            return concatenate(super.getContextMenu(selectedNode),
+                new MenuAction.Choices("_orientation", "Orientation",  //$NON-NLS-1$
+                    mapify(
+                        "horizontal", "Horizontal",                    //$NON-NLS-1$
+                        "vertical", "Vertical"                         //$NON-NLS-1$
+                    ),
+                    curr_orient, onChange));
+        } else {
+            return super.getContextMenu(selectedNode);
+        }
+    }
+
+    /**
+     * Returns true if the given node represents a vertical linear layout.
+     * @param node the node to check layout orientation for
+     * @return true if the layout is in vertical mode, otherwise false
+     */
+    protected boolean isVertical(INode node) {
+        // Horizontal is the default, so if no value is specified it is horizontal.
+        return VALUE_VERTICAL.equals(node.getStringAttr(ANDROID_URI,
+                ATTR_ORIENTATION));
+    }
+
+    /**
+     * Returns true if this LinearLayout supports switching orientation.
+     *
+     * @return true if this layout supports orientations
+     */
+    protected boolean supportsOrientation() {
+        return true;
     }
 
     // ==== Drag'n'drop support ====
@@ -91,8 +117,7 @@ public class LinearLayoutRule extends BaseLayout {
             return null;
         }
 
-        boolean isVertical = VALUE_VERTICAL.equals(targetNode.getStringAttr(ANDROID_URI,
-                ATTR_ORIENTATION));
+        boolean isVertical = isVertical(targetNode);
 
         // Prepare a list of insertion points: X coords for horizontal, Y for
         // vertical.
@@ -247,11 +272,28 @@ public class LinearLayoutRule extends BaseLayout {
                 gc.useStyle(DrawingStyle.DROP_PREVIEW);
                 for (IDragElement element : elements) {
                     Rect bounds = element.getBounds();
-                    if (bounds.isValid() && (bounds.w > b.w || bounds.h > b.h)) {
+                    if (bounds.isValid() && (bounds.w > b.w || bounds.h > b.h) &&
+                            node.getChildren().length == 0) {
                         // The bounds of the child does not fully fit inside the target.
-                        // Limit the bounds to the layout bounds.
-                        Rect within = new Rect(b.x, b.y,
-                                Math.min(bounds.w, b.w), Math.min(bounds.h, b.h));
+                        // Limit the bounds to the layout bounds (but only when there
+                        // are no children, since otherwise positioning around the existing
+                        // children gets difficult)
+                        final int px, py, pw, ph;
+                        if (bounds.w > b.w) {
+                            px = b.x;
+                            pw = b.w;
+                        } else {
+                            px = bounds.x + offsetX;
+                            pw = bounds.w;
+                        }
+                        if (bounds.h > b.h) {
+                            py = b.y;
+                            ph = b.h;
+                        } else {
+                            py = bounds.y + offsetY;
+                            ph = bounds.h;
+                        }
+                        Rect within = new Rect(px, py, pw, ph);
                         gc.drawRect(within);
                     } else {
                         drawElement(gc, element, offsetX, offsetY);
@@ -367,6 +409,25 @@ public class LinearLayoutRule extends BaseLayout {
                 }
             }
         });
+    }
+
+    @Override
+    public void onChildInserted(INode node, INode parent, InsertType insertType) {
+        // Attempt to set fill-properties on newly added views such that for example,
+        // in a vertical layout, a text field defaults to filling horizontally, but not
+        // vertically.
+        String fqcn = node.getFqcn();
+        IViewMetadata metadata = mRulesEngine.getMetadata(fqcn);
+        if (metadata != null) {
+            boolean vertical = isVertical(parent);
+            FillPreference fill = metadata.getFillPreference();
+            if (fill.fillHorizontally(vertical)) {
+                node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+            }
+            if (fill.fillVertically(vertical)) {
+                node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+            }
+        }
     }
 
     /** A possible match position */
