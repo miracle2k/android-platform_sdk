@@ -69,7 +69,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     /** Root node of the UI element hierarchy */
     private UiDocumentNode mUiRootNode;
 
-    private IGraphicalLayoutEditor mGraphicalEditor;
+    private GraphicalEditorPart mGraphicalEditor;
     private int mGraphicalEditorIndex;
     /** Implementation of the {@link IContentOutlinePage} for this editor */
     private IContentOutlinePage mOutline;
@@ -91,6 +91,15 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
      */
     public LayoutEditor() {
         super(false /* addTargetListener */);
+    }
+
+    /**
+     * Returns the {@link RulesEngine} associated with this editor
+     *
+     * @return the {@link RulesEngine} associated with this editor.
+     */
+    public RulesEngine getRulesEngine() {
+        return mGraphicalEditor.getRulesEngine();
     }
 
     /**
@@ -291,20 +300,20 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     @SuppressWarnings("unchecked")
     @Override
     public Object getAdapter(Class adapter) {
-        // for the outline, force it to come from the Graphical Editor.
+        // For the outline, force it to come from the Graphical Editor.
         // This fixes the case where a layout file is opened in XML view first and the outline
         // gets stuck in the XML outline.
         if (IContentOutlinePage.class == adapter && mGraphicalEditor != null) {
 
-            if (mOutline == null && mGraphicalEditor instanceof GraphicalEditorPart) {
-                mOutline = new OutlinePage2((GraphicalEditorPart) mGraphicalEditor);
+            if (mOutline == null && mGraphicalEditor != null) {
+                mOutline = new OutlinePage2(mGraphicalEditor);
             }
 
             return mOutline;
         }
 
         if (IPropertySheetPage.class == adapter && mGraphicalEditor != null) {
-            if (mPropertyPage == null && mGraphicalEditor instanceof GraphicalEditorPart) {
+            if (mPropertyPage == null) {
                 mPropertyPage = new PropertySheetPage2();
             }
 
@@ -326,8 +335,8 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
             int caretOffset = textViewer.getTextWidget().getCaretOffset();
             if (caretOffset >= 0) {
                 Node node = AndroidXmlEditor.getNode(textViewer.getDocument(), caretOffset);
-                if (node != null && mGraphicalEditor instanceof GraphicalEditorPart) {
-                    ((GraphicalEditorPart)mGraphicalEditor).select(node);
+                if (node != null && mGraphicalEditor != null) {
+                    mGraphicalEditor.select(node);
                 }
             }
         }
@@ -601,19 +610,6 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
                     }
                 }
             }
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns the {@link RulesEngine} associated with this editor
-     *
-     * @return the {@link RulesEngine} associated with this editor, or null
-     */
-    public RulesEngine getRulesEngine() {
-        if (mGraphicalEditor instanceof GraphicalEditorPart) {
-            return ((GraphicalEditorPart) mGraphicalEditor).getRulesEngine();
         }
 
         return null;

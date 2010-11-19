@@ -23,7 +23,6 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.ContextPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.ExplodedRenderingHelper;
-import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor;
 import com.android.ide.eclipse.adt.internal.editors.layout.ProjectCallback;
@@ -134,13 +133,9 @@ import java.util.Set;
  * outline and property sheet (these are registered by {@link LayoutEditor#getAdapter(Class)}).
  *
  * @since GLE2
- *
- * TODO List:
- * - display error icon
- * - Completely rethink the property panel
  */
 public class GraphicalEditorPart extends EditorPart
-    implements IGraphicalLayoutEditor, ISelectionListener, INullSelectionListener {
+    implements ISelectionListener, INullSelectionListener {
 
     /*
      * Useful notes:
@@ -933,6 +928,9 @@ public class GraphicalEditorPart extends EditorPart
         mConfigComposite.changeFileOnNewConfig(mEditedFile);
     }
 
+    /**
+     * Responds to a target change for the project of the edited file
+     */
     public void onTargetChange() {
         AndroidTargetData targetData = mConfigComposite.onXmlModelLoaded();
         if (targetData != null) {
@@ -941,16 +939,6 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         mConfigListener.onConfigurationChange();
-    }
-
-    private void setClippingSupport(boolean b) {
-        mClippingButton.setEnabled(b);
-        if (b) {
-            mClippingButton.setToolTipText("Toggles screen clipping on/off");
-        } else {
-            mClippingButton.setSelection(true);
-            mClippingButton.setToolTipText("Non clipped rendering is not supported");
-        }
     }
 
     public LayoutEditor getLayoutEditor() {
@@ -1041,6 +1029,78 @@ public class GraphicalEditorPart extends EditorPart
         }
     }
 
+    public void reloadPalette() {
+        if (mPalette != null) {
+            mPalette.reloadPalette(mLayoutEditor.getTargetData());
+        }
+    }
+
+    /**
+     * Renders the given model, using this editor's theme and screen settings, and returns
+     * the result as a {@link LayoutScene}. Any error messages will be written to the
+     * editor's error area.
+     *
+     * @param model the model to be rendered, which can be different than the editor's own
+     *            {@link #getModel()}.
+     * @param width the width to use for the layout, or -1 to use the width of the screen
+     *            associated with this editor
+     * @param height the height to use for the layout, or -1 to use the height of the screen
+     *            associated with this editor
+     * @param explodeNodes a set of nodes to explode, or null for none
+     * @param transparentBackground If true, the rendering will <b>not</b> paint the
+     *            normal background requested by the theme, and it will instead paint the
+     *            background using a fully transparent background color
+     * @return the resulting rendered image wrapped in an {@link LayoutScene}
+     */
+    public LayoutScene render(UiDocumentNode model, int width, int height,
+            Set<UiElementNode> explodeNodes, boolean transparentBackground) {
+        if (!ensureFileValid()) {
+            return null;
+        }
+        if (!ensureModelValid(model)) {
+            return null;
+        }
+        LayoutLibrary layoutLib = getReadyLayoutLib(true /*displayError*/);
+
+        IProject iProject = mEditedFile.getProject();
+        return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes,
+                transparentBackground);
+    }
+
+    /**
+     * Returns the {@link LayoutLibrary} associated with this editor, if it has
+     * been initialized already. May return null if it has not been initialized (or has
+     * not finished initializing).
+     *
+     * @return The {@link LayoutLibrary}, or null
+     */
+    public LayoutLibrary getLayoutLibrary() {
+        return getReadyLayoutLib(false /*displayError*/);
+    }
+
+    /**
+     * Returns the current bounds of the Android device screen, in canvas control pixels.
+     *
+     * @return the bounds of the screen, never null
+     */
+    public Rectangle getScreenBounds() {
+        return mConfigComposite.getScreenBounds();
+    }
+
+
+
+    // --- private methods ---
+
+    private void setClippingSupport(boolean b) {
+        mClippingButton.setEnabled(b);
+        if (b) {
+            mClippingButton.setToolTipText("Toggles screen clipping on/off");
+        } else {
+            mClippingButton.setSelection(true);
+            mClippingButton.setToolTipText("Non clipped rendering is not supported");
+        }
+    }
+
     /**
      * Ensure that the file associated with this editor is valid (exists and is
      * synchronized). Any reasons why it is not are displayed in the editor's error area.
@@ -1071,7 +1131,6 @@ public class GraphicalEditorPart extends EditorPart
 
         return true;
     }
-
 
     /**
      * Returns a {@link LayoutLibrary} that is ready for rendering, or null if the bridge
@@ -1223,21 +1282,6 @@ public class GraphicalEditorPart extends EditorPart
         scene.dispose();
 
         model.refreshUi();
-    }
-
-    public LayoutScene render(UiDocumentNode model, int width, int height,
-            Set<UiElementNode> explodeNodes, boolean transparentBackground) {
-        if (!ensureFileValid()) {
-            return null;
-        }
-        if (!ensureModelValid(model)) {
-            return null;
-        }
-        LayoutLibrary layoutLib = getReadyLayoutLib(true /*displayError*/);
-
-        IProject iProject = mEditedFile.getProject();
-        return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes,
-                transparentBackground);
     }
 
     private LayoutScene renderWithBridge(IProject iProject, UiDocumentNode model,
@@ -1417,16 +1461,6 @@ public class GraphicalEditorPart extends EditorPart
         // FIXME: get rid of the current LayoutScene if any.
     }
 
-    public Rectangle getScreenBounds() {
-        return mConfigComposite.getScreenBounds();
-    }
-
-    public void reloadPalette() {
-        if (mPalette != null) {
-            mPalette.reloadPalette(mLayoutEditor.getTargetData());
-        }
-    }
-
     private class ReloadListener implements ILayoutReloadListener {
         /*
          * Called when the file changes triggered a redraw of the layout
@@ -1498,10 +1532,6 @@ public class GraphicalEditorPart extends EditorPart
                 });
             }
         }
-    }
-
-    public LayoutLibrary getLayoutLibrary() {
-        return getReadyLayoutLib(false /*displayError*/);
     }
 
     // ---- Error handling ----

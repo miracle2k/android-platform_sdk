@@ -24,7 +24,6 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
@@ -111,14 +110,14 @@ public class PaletteComposite extends Composite {
     private ScrollBar mVBar;
     private ControlListener mControlListener;
     private Listener mScrollbarListener;
-    private IGraphicalLayoutEditor mEditor;
+    private GraphicalEditorPart mEditor;
 
     /**
      * Create the composite.
      * @param parent The parent composite.
      * @param editor An editor associated with this palette.
      */
-    public PaletteComposite(Composite parent, IGraphicalLayoutEditor editor) {
+    public PaletteComposite(Composite parent, GraphicalEditorPart editor) {
         super(parent, SWT.BORDER | SWT.V_SCROLL);
 
         mEditor = editor;
@@ -296,7 +295,7 @@ public class PaletteComposite extends Composite {
         }
     }
 
-    /* package */ IGraphicalLayoutEditor getEditor() {
+    /* package */ GraphicalEditorPart getEditor() {
         return mEditor;
     }
 
@@ -481,7 +480,7 @@ public class PaletteComposite extends Composite {
             return mDesc;
         }
 
-        /* package */ IGraphicalLayoutEditor getEditor() {
+        /* package */ GraphicalEditorPart getEditor() {
             return mPalette.getEditor();
         }
 
@@ -681,7 +680,7 @@ public class PaletteComposite extends Composite {
 
             // Insert our target view's XML into it as a node
             ElementDescriptor desc = mItem.getDescriptor();
-            IGraphicalLayoutEditor editor = mItem.getEditor();
+            GraphicalEditorPart editor = mItem.getEditor();
             LayoutEditor layoutEditor = editor.getLayoutEditor();
 
             String viewName = desc.getXmlLocalName();
@@ -722,17 +721,15 @@ public class PaletteComposite extends Composite {
             // Call the create-hooks such that we for example insert mandatory
             // children into views like the DialerFilter, apply image source attributes
             // to ImageButtons, etc.
-            if (editor instanceof GraphicalEditorPart) {
-                LayoutCanvas canvas = ((GraphicalEditorPart) editor).getCanvasControl();
-                NodeFactory nodeFactory = canvas.getNodeFactory();
-                UiElementNode parent = model.getUiRoot();
-                UiElementNode child = parent.getUiChildren().get(0);
-                if (child instanceof UiViewElementNode) {
-                    UiViewElementNode childUiNode = (UiViewElementNode) child;
-                    NodeProxy childNode = nodeFactory.create(childUiNode);
-                    canvas.getRulesEngine().callCreateHooks(layoutEditor,
-                            null, childNode, InsertType.CREATE);
-                }
+            LayoutCanvas canvas = editor.getCanvasControl();
+            NodeFactory nodeFactory = canvas.getNodeFactory();
+            UiElementNode parent = model.getUiRoot();
+            UiElementNode child = parent.getUiChildren().get(0);
+            if (child instanceof UiViewElementNode) {
+                UiViewElementNode childUiNode = (UiViewElementNode) child;
+                NodeProxy childNode = nodeFactory.create(childUiNode);
+                canvas.getRulesEngine().callCreateHooks(layoutEditor,
+                        null, childNode, InsertType.CREATE);
             }
 
             boolean hasTransparency = false;
