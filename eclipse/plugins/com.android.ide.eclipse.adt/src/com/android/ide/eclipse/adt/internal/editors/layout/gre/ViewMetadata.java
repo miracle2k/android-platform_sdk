@@ -22,7 +22,6 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
  */
 import com.android.ide.common.api.IViewMetadata;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 
 import java.util.HashMap;
@@ -35,29 +34,29 @@ final class ViewMetadata implements IViewMetadata {
     /** The fully qualified class name of the view whose metadata this class represents */
     private String mFqcn;
 
-    /** The {@link IGraphicalLayoutEditor} associated with the view we're looking up */
+    /** The {@link LayoutEditor} associated with the view we're looking up */
     private LayoutEditor mEditor;
 
     /**
-     * A map from class names to {@link FillPreference} which indicates how each view
+     * A map from class names to {@link IViewMetadata.FillPreference} which indicates how each view
      * prefers to grow when added in various layout contexts
      */
-    private static final Map<String,FillPreference> mFill = new HashMap<String,FillPreference>();
+    private static final Map<String, FillPreference> mFill = new HashMap<String,FillPreference>();
     static {
         // Hardcoded metadata about fill preferences for various known views. We should
         // work to try to get this into the platform as designtime annotations.
 
-        mFill.put("android.widget.EditText", FillPreference.WIDTH_IN_VERTICAL);     //$NON-NLS-1$
+        mFill.put("android.widget.EditText",     FillPreference.WIDTH_IN_VERTICAL); //$NON-NLS-1$
         mFill.put("android.widget.DialerFilter", FillPreference.WIDTH_IN_VERTICAL); //$NON-NLS-1$
-        mFill.put("android.widget.SeekBar", FillPreference.WIDTH_IN_VERTICAL);      //$NON-NLS-1$
-        mFill.put("android.widget.Spinner", FillPreference.WIDTH_IN_VERTICAL);      //$NON-NLS-1$
+        mFill.put("android.widget.SeekBar",      FillPreference.WIDTH_IN_VERTICAL); //$NON-NLS-1$
+        mFill.put("android.widget.Spinner",      FillPreference.WIDTH_IN_VERTICAL); //$NON-NLS-1$
         mFill.put("android.widget.AutoComplete", FillPreference.WIDTH_IN_VERTICAL); //$NON-NLS-1$
-        mFill.put("android.widget.ListView", FillPreference.WIDTH_IN_VERTICAL);     //$NON-NLS-1$
-        mFill.put("android.widget.GridView", FillPreference.OPPOSITE);              //$NON-NLS-1$
-        mFill.put("android.widget.Gallery", FillPreference.WIDTH_IN_VERTICAL);      //$NON-NLS-1$
-        mFill.put("android.widget.TabWidget", FillPreference.WIDTH_IN_VERTICAL);    //$NON-NLS-1$
-        mFill.put("android.widget.MapView", FillPreference.OPPOSITE);               //$NON-NLS-1$
-        mFill.put("android.widget.WebView", FillPreference.OPPOSITE);               //$NON-NLS-1$
+        mFill.put("android.widget.ListView",     FillPreference.WIDTH_IN_VERTICAL); //$NON-NLS-1$
+        mFill.put("android.widget.GridView",     FillPreference.OPPOSITE);          //$NON-NLS-1$
+        mFill.put("android.widget.Gallery",      FillPreference.WIDTH_IN_VERTICAL); //$NON-NLS-1$
+        mFill.put("android.widget.TabWidget",    FillPreference.WIDTH_IN_VERTICAL); //$NON-NLS-1$
+        mFill.put("android.widget.MapView",      FillPreference.OPPOSITE);          //$NON-NLS-1$
+        mFill.put("android.widget.WebView",      FillPreference.OPPOSITE);          //$NON-NLS-1$
 
         // In addition, all layouts are FillPreference.OPPOSITE - these are computed
         // lazily rather than enumerating them here
