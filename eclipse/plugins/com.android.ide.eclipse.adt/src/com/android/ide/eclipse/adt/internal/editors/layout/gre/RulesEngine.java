@@ -31,8 +31,8 @@ import com.android.ide.common.layout.ViewRule;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleElement;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
@@ -92,7 +92,7 @@ public class RulesEngine {
     /**
      * The editor which owns this {@link RulesEngine}
      */
-    private IGraphicalLayoutEditor mEditor;
+    private GraphicalEditorPart mEditor;
 
     /**
      * Creates a new {@link RulesEngine} associated with the selected project.
@@ -102,7 +102,7 @@ public class RulesEngine {
      * @param editor the editor which owns this {@link RulesEngine}
      * @param project A non-null open project.
      */
-    public RulesEngine(IGraphicalLayoutEditor editor, IProject project) {
+    public RulesEngine(GraphicalEditorPart editor, IProject project) {
         mProject = project;
         mEditor = editor;
     }
