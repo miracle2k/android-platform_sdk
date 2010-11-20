@@ -20,6 +20,8 @@ import com.android.ide.common.api.Rect;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -33,36 +35,52 @@ import junit.framework.TestCase;
 public class SwtUtilsTest extends TestCase {
 
     public void testImageConvertNoAlpha() throws Exception {
-        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
-        Graphics g = image.getGraphics();
-        g.setColor(new Color(0xFF00FF00, true));
-        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        BufferedImage inImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics g = inImage.getGraphics();
+        g.setColor(new Color(0xFF00FF00, true));  // green
+        g.fillRect(0, 0, inImage.getWidth(), inImage.getHeight());
         g.dispose();
 
         Shell shell = new Shell();
         Display display = shell.getDisplay();
-        Image swtImage = SwtUtils.convertToSwt(display, image, false, -1);
-        assertNotNull(swtImage);
-        ImageData data = swtImage.getImageData();
-        assertEquals(image.getWidth(), data.width);
-        assertEquals(image.getHeight(), data.height);
-        assertNull(data.alphaData);
-        for (int y = 0; y < data.height; y++) {
-            for (int x = 0; x < data.width; x++) {
-                assertEquals(image.getRGB(x, y) & 0xFFFFFF, data.getPixel(x, y));
+
+        Image outImage = SwtUtils.convertToSwt(display, inImage, false, -1);
+        assertNotNull(outImage);
+
+        ImageData outData = outImage.getImageData();
+        assertEquals(inImage.getWidth(), outData.width);
+        assertEquals(inImage.getHeight(), outData.height);
+        assertNull(outData.alphaData);
+
+        PaletteData inPalette  = SwtUtils.getAwtPaletteData(inImage.getType());
+        PaletteData outPalette = outData.palette;
+
+        for (int y = 0; y < outData.height; y++) {
+            for (int x = 0; x < outData.width; x++) {
+                // Note: we can't compare pixel directly as integers since convertToSwt() might
+                // have changed the RGBA ordering depending on the platform (e.g. it will on
+                // Windows.)
+                RGB expected = outPalette.getRGB(outData.getPixel(x, y));
+                RGB actual   = inPalette.getRGB( inImage.getRGB(  x, y));
+                assertEquals(expected, actual);
             }
         }
 
         // Convert back to AWT and compare with original AWT image
-        BufferedImage awtImage = SwtUtils.convertToAwt(swtImage);
+        BufferedImage awtImage = SwtUtils.convertToAwt(outImage);
         assertNotNull(awtImage);
-        for (int y = 0; y < data.height; y++) {
-            for (int x = 0; x < data.width; x++) {
-                assertEquals(image.getRGB(x, y), awtImage.getRGB(x, y));
+
+        // Both image have compatible RGB orderings
+        assertEquals(BufferedImage.TYPE_INT_ARGB_PRE, inImage.getType());
+        assertEquals(BufferedImage.TYPE_INT_ARGB,     awtImage.getType());
+
+        for (int y = 0; y < outData.height; y++) {
+            for (int x = 0; x < outData.width; x++) {
+                // Note: we can compare pixels as integers since we just
+                // asserted both images have the same color image type.
+                assertEquals(inImage.getRGB(x, y), awtImage.getRGB(x, y));
             }
         }
-
-
     }
 
     public void testImageConvertGlobalAlpha() throws Exception {
