@@ -23,8 +23,8 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.layoutlib.api.IXmlPullParser;
+import com.android.layoutlib.api.ViewInfo;
 import com.android.layoutlib.api.IDensityBasedResourceValue.Density;
-import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 
@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
  * <p/>
  * It's designed to work on layout files, and will most likely not work on other resource files.
  * <p/>
- * This pull parser generates {@link ILayoutViewInfo}s which key is a {@link UiElementNode}.
+ * This pull parser generates {@link ViewInfo}s which key is a {@link UiElementNode}.
  */
 public final class UiElementPullParser extends BasePullParser {
     private final static String ATTR_PADDING = "padding"; //$NON-NLS-1$

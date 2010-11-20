@@ -21,6 +21,7 @@ import com.android.ide.common.layoutlib.LayoutLibrary;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
+import com.android.ide.eclipse.adt.internal.editors.layout.ContextPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.ExplodedRenderingHelper;
 import com.android.ide.eclipse.adt.internal.editors.layout.IGraphicalLayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
@@ -37,6 +38,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
+import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
@@ -48,6 +50,7 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.layoutlib.api.ILayoutLog;
 import com.android.layoutlib.api.IResourceValue;
+import com.android.layoutlib.api.IXmlPullParser;
 import com.android.layoutlib.api.LayoutBridge;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneParams;
@@ -101,9 +104,13 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
 import org.w3c.dom.Node;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -1320,8 +1327,40 @@ public class GraphicalEditorPart extends EditorPart
         float ydpi = mConfigComposite.getYDpi();
         boolean isProjectTheme = mConfigComposite.isProjectTheme();
 
-        UiElementPullParser parser = new UiElementPullParser(model,
+        IXmlPullParser modelParser = new UiElementPullParser(model,
                 mUseExplodeMode, explodeNodes, density, xdpi, iProject);
+        IXmlPullParser topParser = modelParser;
+
+        // Code to support editing included layout
+        // FIXME: refactor this somewhere else, and deal with edit workflow
+        if (false) {
+            // name of the top layout.
+            String contextLayoutName = "includes";
+
+            // find the layout file.
+            Map<String, IResourceValue> layouts = configuredProjectRes.get(
+                    ResourceType.LAYOUT.getName());
+
+            IResourceValue contextLayout = layouts.get(contextLayoutName);
+            File layoutFile = new File(contextLayout.getValue());
+            if (layoutFile.isFile()) {
+                try {
+                    // get the name of the layout actually being edited, without the extension
+                    // as it's what IXmlPullParser.getParser(String) will receive.
+                    String queryLayoutName = mEditedFile.getName().substring(
+                            0, mEditedFile.getName().indexOf('.'));
+
+                    topParser = new ContextPullParser(queryLayoutName, modelParser);
+                    topParser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
+                    topParser.setInput(new FileReader(layoutFile));
+                } catch (XmlPullParserException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (FileNotFoundException e) {
+                    // this will not happen since we check above.
+                }
+            }
+        }
 
         RenderingMode renderingMode = RenderingMode.NORMAL;
         if (mClippingButton.getSelection() == false) {
@@ -1336,7 +1375,7 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         SceneParams params = new SceneParams(
-                parser,
+                topParser,
                 iProject /* projectKey */,
                 width, height,
                 renderingMode,
