@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.Rect;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
@@ -35,15 +36,18 @@ import junit.framework.TestCase;
 public class SwtUtilsTest extends TestCase {
 
     public void testImageConvertNoAlpha() throws Exception {
-        BufferedImage inImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
+        // Note: We need an TYPE_INT_ARGB SWT image here (instead of TYPE_INT_ARGB_PRE) to
+        // prevent the alpha from being pre-multiplied into the RGB when drawing the image.
+        BufferedImage inImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
         Graphics g = inImage.getGraphics();
-        g.setColor(new Color(0xFF00FF00, true));  // green
+        g.setColor(new Color(0xAA112233, true));
         g.fillRect(0, 0, inImage.getWidth(), inImage.getHeight());
         g.dispose();
 
         Shell shell = new Shell();
         Display display = shell.getDisplay();
 
+        // Convert the RGB image, effectively discarding the alpha channel entirely.
         Image outImage = SwtUtils.convertToSwt(display, inImage, false, -1);
         assertNotNull(outImage);
 
@@ -51,6 +55,7 @@ public class SwtUtilsTest extends TestCase {
         assertEquals(inImage.getWidth(), outData.width);
         assertEquals(inImage.getHeight(), outData.height);
         assertNull(outData.alphaData);
+        assertEquals(SWT.TRANSPARENCY_NONE, outData.getTransparencyType());
 
         PaletteData inPalette  = SwtUtils.getAwtPaletteData(inImage.getType());
         PaletteData outPalette = outData.palette;
@@ -60,8 +65,8 @@ public class SwtUtilsTest extends TestCase {
                 // Note: we can't compare pixel directly as integers since convertToSwt() might
                 // have changed the RGBA ordering depending on the platform (e.g. it will on
                 // Windows.)
-                RGB expected = outPalette.getRGB(outData.getPixel(x, y));
-                RGB actual   = inPalette.getRGB( inImage.getRGB(  x, y));
+                RGB expected = inPalette.getRGB( inImage.getRGB(  x, y));
+                RGB actual   = outPalette.getRGB(outData.getPixel(x, y));
                 assertEquals(expected, actual);
             }
         }
@@ -70,87 +75,123 @@ public class SwtUtilsTest extends TestCase {
         BufferedImage awtImage = SwtUtils.convertToAwt(outImage);
         assertNotNull(awtImage);
 
-        // Both image have compatible RGB orderings
-        assertEquals(BufferedImage.TYPE_INT_ARGB_PRE, inImage.getType());
-        assertEquals(BufferedImage.TYPE_INT_ARGB,     awtImage.getType());
+        // Both image have the same RGBA ordering
+        assertEquals(BufferedImage.TYPE_INT_ARGB, inImage.getType());
+        assertEquals(BufferedImage.TYPE_INT_ARGB, awtImage.getType());
+
+        int awtAlphaMask = 0xFF000000;
 
         for (int y = 0; y < outData.height; y++) {
             for (int x = 0; x < outData.width; x++) {
                 // Note: we can compare pixels as integers since we just
-                // asserted both images have the same color image type.
-                assertEquals(inImage.getRGB(x, y), awtImage.getRGB(x, y));
+                // asserted both images have the same color image type except
+                // for the content of the alpha channel.
+                int actual = awtImage.getRGB(x, y);
+                assertEquals(awtAlphaMask, actual & awtAlphaMask);
+                assertEquals(awtAlphaMask | inImage.getRGB(x, y), awtImage.getRGB(x, y));
             }
         }
     }
 
     public void testImageConvertGlobalAlpha() throws Exception {
-        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
-        Graphics g = image.getGraphics();
-        g.setColor(new Color(0xFF00FF00, true));
-        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        BufferedImage inImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
+        Graphics g = inImage.getGraphics();
+        g.setColor(new Color(0xAA112233, true));
+        g.fillRect(0, 0, inImage.getWidth(), inImage.getHeight());
         g.dispose();
 
         Shell shell = new Shell();
         Display display = shell.getDisplay();
-        Image swtImage = SwtUtils.convertToSwt(display, image, false, 128);
-        assertNotNull(swtImage);
-        ImageData data = swtImage.getImageData();
-        assertEquals(image.getWidth(), data.width);
-        assertEquals(image.getHeight(), data.height);
-        assertNull(data.alphaData);
-        assertEquals(128, data.alpha);
-        for (int y = 0; y < data.height; y++) {
-            for (int x = 0; x < data.width; x++) {
-                assertEquals(image.getRGB(x, y) & 0xFFFFFF, data.getPixel(x, y));
+
+        Image outImage = SwtUtils.convertToSwt(display, inImage, false, 128);
+        assertNotNull(outImage);
+
+        ImageData outData = outImage.getImageData();
+        assertEquals(inImage.getWidth(), outData.width);
+        assertEquals(inImage.getHeight(), outData.height);
+        assertEquals(128, outData.alpha);
+        assertEquals(SWT.TRANSPARENCY_NONE, outData.getTransparencyType());
+        assertNull(outData.alphaData);
+
+        PaletteData inPalette  = SwtUtils.getAwtPaletteData(inImage.getType());
+        PaletteData outPalette = outData.palette;
+
+        for (int y = 0; y < outData.height; y++) {
+            for (int x = 0; x < outData.width; x++) {
+
+                RGB expected = inPalette.getRGB( inImage.getRGB(  x, y));
+                RGB actual   = outPalette.getRGB(outData.getPixel(x, y));
+                assertEquals(expected, actual);
             }
         }
     }
 
     public void testImageConvertAlpha() throws Exception {
-        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
-        Graphics g = image.getGraphics();
-        g.setColor(new Color(0xFF00FF00, true));
-        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        BufferedImage inImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
+        Graphics g = inImage.getGraphics();
+        g.setColor(new Color(0xAA112233, true));
+        g.fillRect(0, 0, inImage.getWidth(), inImage.getHeight());
         g.dispose();
 
         Shell shell = new Shell();
         Display display = shell.getDisplay();
-        Image swtImage = SwtUtils.convertToSwt(display, image, true, -1);
-        assertNotNull(swtImage);
-        ImageData data = swtImage.getImageData();
-        assertEquals(image.getWidth(), data.width);
-        assertEquals(image.getHeight(), data.height);
-        for (int y = 0; y < data.height; y++) {
-            for (int x = 0; x < data.width; x++) {
-                assertEquals(image.getRGB(x, y) & 0xFFFFFF, data.getPixel(x, y));
-                // Note: >> instead of >>> since we will compare with byte (a signed
-                // number)
-                assertEquals(image.getRGB(x, y) >> 24, data.alphaData[y * data.width + x]);
+
+        Image outImage = SwtUtils.convertToSwt(display, inImage, true, -1);
+        assertNotNull(outImage);
+
+        ImageData outData = outImage.getImageData();
+        assertEquals(inImage.getWidth(), outData.width);
+        assertEquals(inImage.getHeight(), outData.height);
+        assertEquals(SWT.TRANSPARENCY_ALPHA, outData.getTransparencyType());
+
+        PaletteData inPalette  = SwtUtils.getAwtPaletteData(inImage.getType());
+        PaletteData outPalette = outData.palette;
+
+        for (int y = 0; y < outData.height; y++) {
+            for (int x = 0; x < outData.width; x++) {
+                RGB expected = inPalette.getRGB( inImage.getRGB(  x, y));
+                RGB actual   = outPalette.getRGB(outData.getPixel(x, y));
+                assertEquals(expected, actual);
+
+                // Note: >> instead of >>> since we will compare with byte (a signed number)
+                int expectedAlpha = inImage.getRGB(x, y) >> 24;
+                int actualAlpha = outData.alphaData[y * outData.width + x];
+                assertEquals(expectedAlpha, actualAlpha);
             }
         }
     }
 
     public void testImageConvertAlphaMultiplied() throws Exception {
-        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
-        Graphics g = image.getGraphics();
-        g.setColor(new Color(0xFF00FF00, true));
-        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        BufferedImage inImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
+        Graphics g = inImage.getGraphics();
+        g.setColor(new Color(0xAA112233, true));
+        g.fillRect(0, 0, inImage.getWidth(), inImage.getHeight());
         g.dispose();
 
         Shell shell = new Shell();
         Display display = shell.getDisplay();
-        Image swtImage = SwtUtils.convertToSwt(display, image, true, 32);
-        assertNotNull(swtImage);
-        ImageData data = swtImage.getImageData();
-        assertEquals(image.getWidth(), data.width);
-        assertEquals(image.getHeight(), data.height);
-        for (int y = 0; y < data.height; y++) {
-            for (int x = 0; x < data.width; x++) {
-                assertEquals(image.getRGB(x, y) & 0xFFFFFF, data.getPixel(x, y));
-                int expectedAlpha = (image.getRGB(x,y) >>> 24);
-                byte expected = (byte)(expectedAlpha / 8);
-                byte actual = data.alphaData[y * data.width + x];
+        Image outImage = SwtUtils.convertToSwt(display, inImage, true, 32);
+        assertNotNull(outImage);
+
+        // Expected alpha is 0xAA from the AWT input image pre-multiplied by 32 in convertToSwt.
+        int expectedAlpha = (0xAA * 32) >> 8;
+
+        ImageData outData = outImage.getImageData();
+        assertEquals(inImage.getWidth(), outData.width);
+        assertEquals(inImage.getHeight(), outData.height);
+        assertEquals(SWT.TRANSPARENCY_ALPHA, outData.getTransparencyType());
+
+        PaletteData inPalette  = SwtUtils.getAwtPaletteData(inImage.getType());
+        PaletteData outPalette = outData.palette;
+
+        for (int y = 0; y < outData.height; y++) {
+            for (int x = 0; x < outData.width; x++) {
+                RGB expected = inPalette.getRGB( inImage.getRGB(  x, y));
+                RGB actual   = outPalette.getRGB(outData.getPixel(x, y));
                 assertEquals(expected, actual);
+
+                byte actualAlpha = outData.alphaData[y * outData.width + x];
+                assertEquals(expectedAlpha, actualAlpha);
             }
         }
     }
