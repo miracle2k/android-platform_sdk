@@ -556,7 +556,7 @@ class LayoutCanvas extends Canvas {
             }
 
             mHoverOverlay.paint(gc);
-            mSelectionOverlay.paint(mSelectionManager, gc, mGCWrapper, mRulesEngine);
+            mSelectionOverlay.paint(mSelectionManager, mGCWrapper, mRulesEngine);
             mGestureManager.paint(gc);
 
         } finally {

@@ -46,28 +46,8 @@ public class RelativeLayoutRule extends BaseLayout {
 
     // ==== Selection ====
 
-    /**
-     * Display some relation layout information on a selected child.
-     */
     @Override
-    public void onChildSelected(IGraphics gc, INode parentNode, INode childNode) {
-        super.onChildSelected(gc, parentNode, childNode);
-
-        // Get the top parent, to display data under it
-        INode topParent = parentNode;
-        while (true) {
-            INode p = topParent.getParent();
-            if (p == null) {
-                break;
-            }
-            topParent = p;
-        }
-
-        Rect b = topParent.getBounds();
-        if (!b.isValid()) {
-            return;
-        }
-
+    public List<String> getSelectionHint(INode parentNode, INode childNode) {
         List<String> infos = new ArrayList<String>(18);
         addAttr("above", childNode, infos);                   //$NON-NLS-1$
         addAttr("below", childNode, infos);                   //$NON-NLS-1$
@@ -87,12 +67,7 @@ public class RelativeLayoutRule extends BaseLayout {
         addAttr("centerInParent", childNode, infos);          //$NON-NLS-1$
         addAttr("centerVertical", childNode, infos);          //$NON-NLS-1$
 
-        if (infos.size() > 0) {
-            gc.useStyle(DrawingStyle.HELP);
-            int x = b.x + 10;
-            int y = b.y + b.h + 10;
-            gc.drawBoxedStrings(x, y, infos);
-        }
+        return infos;
     }
 
     private void addAttr(String propertyName, INode childNode, List<String> infos) {
