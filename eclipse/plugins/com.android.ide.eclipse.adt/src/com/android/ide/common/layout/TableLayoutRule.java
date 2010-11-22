@@ -43,7 +43,7 @@ public class TableLayoutRule extends LinearLayoutRule {
     }
 
     @Override
-    public void onChildInserted(INode node, INode parent, InsertType insertType) {
+    public void onChildInserted(INode child, INode parent, InsertType insertType) {
         // Overridden to inhibit the setting of layout_width/layout_height since
         // it should always be match_parent
     }
