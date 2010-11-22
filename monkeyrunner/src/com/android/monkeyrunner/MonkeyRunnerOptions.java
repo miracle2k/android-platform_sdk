@@ -33,13 +33,15 @@ public class MonkeyRunnerOptions {
     private final String backend;
     private final Collection<File> plugins;
     private final Collection<String> arguments;
+    private final Level logLevel;
 
     private MonkeyRunnerOptions(String hostname, int port, File scriptFile, String backend,
-            Collection<File> plugins, Collection<String> arguments) {
+            Level logLevel, Collection<File> plugins, Collection<String> arguments) {
         this.hostname = hostname;
         this.port = port;
         this.scriptFile = scriptFile;
         this.backend = backend;
+        this.logLevel = logLevel;
         this.plugins = plugins;
         this.arguments = arguments;
     }
@@ -68,6 +70,10 @@ public class MonkeyRunnerOptions {
         return arguments;
     }
 
+    public Level getLogLevel() {
+        return logLevel;
+    }
+
     private static void printUsage(String message) {
         System.out.println(message);
         System.out.println("Usage: monkeyrunner [options] SCRIPT_FILE");
@@ -92,6 +98,7 @@ public class MonkeyRunnerOptions {
         File scriptFile = null;
         int port = DEFAULT_MONKEY_PORT;
         String backend = "adb";
+        Level logLevel = Level.SEVERE;
 
         ImmutableList.Builder<File> pluginListBuilder = ImmutableList.builder();
         ImmutableList.Builder<String> argumentBuilder = ImmutableList.builder();
@@ -120,11 +127,7 @@ public class MonkeyRunnerOptions {
                     return null;
                 }
 
-                Level level = Level.parse(args[index++]);
-                LOG.setLevel(level);
-                level = LOG.getLevel();
-                System.out.println("Log level set to: " + level + "(" + level.intValue() + ").");
-                System.out.println("Warning: Log levels below INFO(800) not working currently... parent issues");
+                logLevel = Level.parse(args[index++]);
             } else if ("-be".equals(argument)) {
                 // quick check on the next argument.
                 if (index == args.length) {
@@ -174,7 +177,7 @@ public class MonkeyRunnerOptions {
             }
         };
 
-        return new MonkeyRunnerOptions(hostname, port, scriptFile, backend,
+        return new MonkeyRunnerOptions(hostname, port, scriptFile, backend, logLevel,
                 pluginListBuilder.build(), argumentBuilder.build());
     }
 }
