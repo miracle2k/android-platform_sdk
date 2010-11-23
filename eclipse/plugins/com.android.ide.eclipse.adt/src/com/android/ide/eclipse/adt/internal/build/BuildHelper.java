@@ -213,8 +213,13 @@ public class BuildHelper {
             throws ApkCreationException, KeytoolException, AndroidLocationException,
             NativeLibInJarException, DuplicateFileException, CoreException {
 
+        AdtPlugin adt = AdtPlugin.getDefault();
+        if (adt == null) {
+            return;
+        }
+
         // get the debug keystore to use.
-        IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
+        IPreferenceStore store = adt.getPreferenceStore();
         String keystoreOsPath = store.getString(AdtPrefs.PREFS_CUSTOM_DEBUG_KEYSTORE);
         if (keystoreOsPath == null || new File(keystoreOsPath).isFile() == false) {
             keystoreOsPath = DebugKeyProvider.getDefaultKeyStoreOsPath();
