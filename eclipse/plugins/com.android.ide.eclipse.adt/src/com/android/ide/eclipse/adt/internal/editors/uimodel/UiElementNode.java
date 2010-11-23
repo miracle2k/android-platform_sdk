@@ -1370,10 +1370,16 @@ public class UiElementNode implements IPropertySource {
                 // Add or replace an attribute
                 Document doc = element.getOwnerDocument();
                 if (doc != null) {
-                    Attr attr = doc.createAttributeNS(attrNsUri, attrLocalName);
+                    Attr attr;
+                    if (attrNsUri != null && attrNsUri.length() > 0) {
+                        attr = doc.createAttributeNS(attrNsUri, attrLocalName);
+                        attr.setPrefix(lookupNamespacePrefix(element, attrNsUri));
+                        attrMap.setNamedItemNS(attr);
+                    } else {
+                        attr = doc.createAttribute(attrLocalName);
+                        attrMap.setNamedItem(attr);
+                    }
                     attr.setValue(newValue);
-                    attr.setPrefix(lookupNamespacePrefix(element, attrNsUri));
-                    attrMap.setNamedItemNS(attr);
                     return true;
                 }
             }
@@ -1529,8 +1535,11 @@ public class UiElementNode implements IPropertySource {
         // Try with all internal attributes
         UiAttributeNode uiAttr = setInternalAttrValue(
                 getInternalUiAttributes().values(), attrXmlName, attrNsUri, value, override);
+        if (uiAttr != null) {
+            return uiAttr;
+        }
 
-        // Look at existing unknown (aka custom) attributes
+        // Look at existing unknown (a.k.a. custom) attributes
         uiAttr = setInternalAttrValue(
                 getUnknownUiAttributes(), attrXmlName, attrNsUri, value, override);
 
@@ -1539,6 +1548,7 @@ public class UiElementNode implements IPropertySource {
             // in which case we just create a new custom one.
 
             uiAttr = addUnknownAttribute(attrXmlName, attrXmlName, attrNsUri);
+            // FIXME: The will create the attribute, but not actually set the value on it...
         }
 
         return uiAttr;
@@ -1550,6 +1560,14 @@ public class UiElementNode implements IPropertySource {
             String attrNsUri,
             String value,
             boolean override) {
+
+        // For namespace less attributes (like the "layout" attribute of an <include> tag
+        // we may be passed "" as the namespace (during an attribute copy), and it
+        // should really be null instead.
+        if (attrNsUri != null && attrNsUri.length() == 0) {
+            attrNsUri = null;
+        }
+
         for (UiAttributeNode uiAttr : attributes) {
             AttributeDescriptor uiDesc = uiAttr.getDescriptor();
 

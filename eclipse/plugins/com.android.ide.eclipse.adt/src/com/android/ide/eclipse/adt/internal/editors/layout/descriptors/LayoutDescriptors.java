@@ -314,7 +314,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         // Create the include descriptor
         ViewElementDescriptor desc = new ViewElementDescriptor(xml_name,  // xml_name
                 xml_name, // ui_name
-                null,     // canonical class name, we don't have one
+                VIEW_INCLUDE, // "class name"; the GLE only treats this as an element tag
                 "Lets you statically include XML layouts inside other XML layouts.",  // tooltip
                 null, // sdk_url
                 attributes.toArray(new AttributeDescriptor[attributes.size()]),
