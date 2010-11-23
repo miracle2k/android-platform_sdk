@@ -20,6 +20,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor.Mandatory;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.sdklib.xml.AndroidXPathFactory;
@@ -37,7 +38,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
 /**
- * Multi-page form editor for /res/menu XML files. 
+ * Multi-page form editor for /res/menu XML files.
  */
 public class MenuEditor extends AndroidXmlEditor {
 
@@ -68,7 +69,7 @@ public class MenuEditor extends AndroidXmlEditor {
      * Returns whether the "save as" operation is supported by this editor.
      * <p/>
      * Save-As is a valid operation for the ManifestEditor since it acts on a
-     * single source file. 
+     * single source file.
      *
      * @see IEditorPart
      */
@@ -87,7 +88,7 @@ public class MenuEditor extends AndroidXmlEditor {
         } catch (PartInitException e) {
             AdtPlugin.log(e, "Error creating nested page"); //$NON-NLS-1$
         }
-        
+
      }
 
     /* (non-java doc)
@@ -102,10 +103,10 @@ public class MenuEditor extends AndroidXmlEditor {
             setPartName(String.format("%1$s", file.getName()));
         }
     }
-    
+
     /**
      * Processes the new XML Model, which XML root node is given.
-     * 
+     *
      * @param xml_doc The XML document, if available, or null if none exists.
      */
     @Override
@@ -121,24 +122,24 @@ public class MenuEditor extends AndroidXmlEditor {
                 Node node = (Node) xpath.evaluate("/" + root_desc.getXmlName(),  //$NON-NLS-1$
                         xml_doc,
                         XPathConstants.NODE);
-                if (node == null && root_desc.isMandatory()) {
+                if (node == null && root_desc.getMandatory() != Mandatory.NOT_MANDATORY) {
                     // Create the root element if it doesn't exist yet (for empty new documents)
                     node = mUiRootNode.createXmlNode();
                 }
 
-                // Refresh the manifest UI node and all its descendants 
+                // Refresh the manifest UI node and all its descendants
                 mUiRootNode.loadFromXmlNode(node);
-                
+
                 // TODO ? startMonitoringMarkers();
             } catch (XPathExpressionException e) {
                 AdtPlugin.log(e, "XPath error when trying to find '%s' element in XML.", //$NON-NLS-1$
                         root_desc.getXmlName());
             }
         }
-        
+
         super.xmlModelChanged(xml_doc);
     }
-    
+
     /**
      * Creates the initial UI Root Node, including the known mandatory elements.
      * @param force if true, a new UiRootNode is recreated even if it already exists.
@@ -151,7 +152,7 @@ public class MenuEditor extends AndroidXmlEditor {
             if (mUiRootNode != null) {
                 doc = mUiRootNode.getXmlDocument();
             }
-            
+
             // get the target data from the opened file (and its project)
             AndroidTargetData data = getTargetData();
 

@@ -46,7 +46,7 @@ public final class OverviewPage extends FormPage {
 
     /** Page id used for switching tabs programmatically */
     final static String PAGE_ID = "overview_page"; //$NON-NLS-1$
-    
+
     /** Container editor */
     ManifestEditor mEditor;
     /** Overview part (attributes for manifest) */
@@ -55,7 +55,7 @@ public final class OverviewPage extends FormPage {
     private OverviewLinksPart mOverviewLinkPart;
 
     private UiTreeBlock mTreeBlock;
-    
+
     public OverviewPage(ManifestEditor editor) {
         super(editor, PAGE_ID, "Manifest");  // tab's label, user visible, keep it short
         mEditor = editor;
@@ -63,7 +63,7 @@ public final class OverviewPage extends FormPage {
 
     /**
      * Creates the content in the form hosted in this page.
-     * 
+     *
      * @param managedForm the form hosted in this page.
      */
     @Override
@@ -72,23 +72,23 @@ public final class OverviewPage extends FormPage {
         ScrolledForm form = managedForm.getForm();
         form.setText("Android Manifest");
         form.setImage(AdtPlugin.getAndroidLogo());
-        
+
         Composite body = form.getBody();
         FormToolkit toolkit = managedForm.getToolkit();
-        
+
         // Usually we would set a ColumnLayout on body here. However the presence of the
         // UiTreeBlock forces a GridLayout with one column so we comply with it.
 
         mOverviewPart = new OverviewInfoPart(body, toolkit, mEditor);
         mOverviewPart.getSection().setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         managedForm.addPart(mOverviewPart);
-        
+
         newManifestExtrasPart(managedForm);
-        
+
         OverviewExportPart exportPart = new OverviewExportPart(this, body, toolkit, mEditor);
         exportPart.getSection().setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         managedForm.addPart(exportPart);
-        
+
         mOverviewLinkPart = new OverviewLinksPart(body, toolkit, mEditor);
         mOverviewLinkPart.getSection().setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         managedForm.addPart(mOverviewLinkPart);
@@ -105,13 +105,13 @@ public final class OverviewPage extends FormPage {
     }
 
     /**
-     * Changes and refreshes the Application UI node handle by the sub parts.
+     * Changes and refreshes the Application UI node handled by the sub parts.
      */
     public void refreshUiApplicationNode() {
         if (mOverviewPart != null) {
             mOverviewPart.onSdkChanged();
         }
-        
+
         if (mOverviewLinkPart != null) {
             mOverviewLinkPart.onSdkChanged();
         }
@@ -123,7 +123,7 @@ public final class OverviewPage extends FormPage {
                     true /* refresh */);
         }
     }
-    
+
     private ElementDescriptor[] computeManifestExtraFilters() {
         UiElementNode manifest = mEditor.getUiRootNode();
         AndroidManifestDescriptors manifestDescriptor = mEditor.getManifestDescriptors();

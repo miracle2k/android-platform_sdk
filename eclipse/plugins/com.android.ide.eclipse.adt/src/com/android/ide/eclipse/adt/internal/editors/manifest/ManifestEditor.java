@@ -197,6 +197,7 @@ public final class ManifestEditor extends AndroidXmlEditor {
         return null;
     }
 
+    @SuppressWarnings("restriction")
     private void onDescriptorsChanged() {
         IStructuredModel model = getModelForRead();
         if (model != null) {
@@ -350,29 +351,30 @@ public final class ManifestEditor extends AndroidXmlEditor {
             mUiManifestNode = manifestElement.createUiNode();
             mUiManifestNode.setEditor(this);
 
-            // Similarly, always create the /manifest/application and /manifest/uses-sdk nodes
-            ElementDescriptor appElement = manifestDescriptor.getApplicationElement();
+            // Similarly, always create the /manifest/uses-sdk followed by /manifest/application
+            // (order of the elements now matters)
+            ElementDescriptor element = manifestDescriptor.getUsesSdkElement();
             boolean present = false;
             for (UiElementNode ui_node : mUiManifestNode.getUiChildren()) {
-                if (ui_node.getDescriptor() == appElement) {
+                if (ui_node.getDescriptor() == element) {
                     present = true;
                     break;
                 }
             }
             if (!present) {
-                mUiManifestNode.appendNewUiChild(appElement);
+                mUiManifestNode.appendNewUiChild(element);
             }
 
-            appElement = manifestDescriptor.getUsesSdkElement();
+            element = manifestDescriptor.getApplicationElement();
             present = false;
             for (UiElementNode ui_node : mUiManifestNode.getUiChildren()) {
-                if (ui_node.getDescriptor() == appElement) {
+                if (ui_node.getDescriptor() == element) {
                     present = true;
                     break;
                 }
             }
             if (!present) {
-                mUiManifestNode.appendNewUiChild(appElement);
+                mUiManifestNode.appendNewUiChild(element);
             }
 
             onDescriptorsChanged();
