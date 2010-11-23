@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.ui.tree;
 
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor.Mandatory;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
@@ -49,7 +50,7 @@ public abstract class UiActions implements ICommitXml {
 
     /**
      * Utility method to select an outline item based on its model node
-     * 
+     *
      * @param uiNode The node to select. Can be null (in which case nothing should happen)
      */
     abstract protected void selectUiNode(UiElementNode uiNode);
@@ -65,10 +66,10 @@ public abstract class UiActions implements ICommitXml {
     public void doAdd(UiElementNode uiNode, Shell shell) {
         doAdd(uiNode, null /* descriptorFilters */, shell, new UiModelTreeLabelProvider());
     }
-    
+
     /**
      * Called when the "Add..." button next to the tree view is selected.
-     * 
+     *
      * Displays a selection dialog that lets the user select which kind of node
      * to create, depending on the current selection.
      */
@@ -105,7 +106,7 @@ public abstract class UiActions implements ICommitXml {
      * If a sibling is given and that sibling has the same parent, the new node is added
      * right after that sibling. Otherwise the new node is added at the end of the parent
      * child list.
-     * 
+     *
      * @param uiParent An existing UI node or null to add to the tree root
      * @param uiSibling An existing UI node before which to insert the new node. Can be null.
      * @param descriptor The descriptor of the element to add
@@ -125,31 +126,31 @@ public abstract class UiActions implements ICommitXml {
 
         UiElementNode uiNew = addNewTreeElement(uiParent, uiSibling, descriptor, updateLayout);
         selectUiNode(uiNew);
-        
+
         return uiNew;
     }
 
     /**
      * Called when the "Remove" button is selected.
-     * 
+     *
      * If the tree has a selection, remove it.
      * This simply deletes the XML node attached to the UI node: when the XML model fires the
      * update event, the tree will get refreshed.
      */
     public void doRemove(final List<UiElementNode> nodes, Shell shell) {
-        
+
         if (nodes == null || nodes.size() == 0) {
             return;
         }
-        
+
         final int len = nodes.size();
-        
+
         StringBuilder sb = new StringBuilder();
         for (UiElementNode node : nodes) {
             sb.append("\n- "); //$NON-NLS-1$
             sb.append(node.getBreadcrumbTrailDescription(false /* include_root */));
         }
-        
+
         if (MessageDialog.openQuestion(shell,
                 len > 1 ? "Remove elements from Android XML"  // title
                         : "Remove element from Android XML",
@@ -164,11 +165,11 @@ public abstract class UiActions implements ICommitXml {
                         UiElementNode node = nodes.get(i);
                         previous = node.getUiPreviousSibling();
                         parent = node.getUiParent();
-                        
+
                         // delete node
                         node.deleteXmlNode();
                     }
-                    
+
                     // try to select the last previous sibling or the last parent
                     if (previous != null) {
                         selectUiNode(previous);
@@ -190,20 +191,20 @@ public abstract class UiActions implements ICommitXml {
         if (nodes == null || nodes.size() < 1) {
             return;
         }
-        
+
         final Node[] select_xml_node = { null };
         UiElementNode last_node = null;
         UiElementNode search_root = null;
-        
+
         for (int i = 0; i < nodes.size(); i++) {
             final UiElementNode node = last_node = nodes.get(i);
-            
+
             // the node will move either up to its parent or grand-parent
             search_root = node.getUiParent();
             if (search_root != null && search_root.getUiParent() != null) {
                 search_root = search_root.getUiParent();
             }
-    
+
             commitPendingXmlChanges();
             getRootNode().getEditor().wrapEditXmlModel(new Runnable() {
                 public void run() {
@@ -263,7 +264,7 @@ public abstract class UiActions implements ICommitXml {
 
     /**
      * Called when the "Down" button is selected.
-     * 
+     *
      * If the tree has a selection, move it down, either in the same child list or as the
      * first child of the next parent.
      */
@@ -271,7 +272,7 @@ public abstract class UiActions implements ICommitXml {
         if (nodes == null || nodes.size() < 1) {
             return;
         }
-        
+
         final Node[] select_xml_node = { null };
         UiElementNode last_node = null;
         UiElementNode search_root = null;
@@ -283,7 +284,7 @@ public abstract class UiActions implements ICommitXml {
             if (search_root != null && search_root.getUiParent() != null) {
                 search_root = search_root.getUiParent();
             }
-    
+
             commitPendingXmlChanges();
             getRootNode().getEditor().wrapEditXmlModel(new Runnable() {
                 public void run() {
@@ -344,33 +345,55 @@ public abstract class UiActions implements ICommitXml {
     }
 
     //---------------------
-    
+
     /**
      * Adds a new element of the given descriptor's type to the given UI parent node.
-     * 
+     *
      * This actually creates the corresponding XML node in the XML model, which in turn
      * will refresh the current tree view.
-     *  
+     *
      * @param uiParent An existing UI node or null to add to the tree root
-     * @param uiSibling An existing UI node to insert right before. Can be null. 
+     * @param uiSibling An existing UI node to insert right before. Can be null.
      * @param descriptor The descriptor of the element to add
      * @param updateLayout True if layout attributes should be set
      * @return The {@link UiElementNode} that has been added to the UI tree.
      */
     private UiElementNode addNewTreeElement(UiElementNode uiParent,
-            final UiElementNode uiSibling,
+            UiElementNode uiSibling,
             ElementDescriptor descriptor,
             final boolean updateLayout) {
         commitPendingXmlChanges();
-        
-        int index = 0;
-        for (UiElementNode uiChild : uiParent.getUiChildren()) {
-            if (uiChild == uiSibling) {
-                break;
+
+        List<UiElementNode> uiChildren = uiParent.getUiChildren();
+        int n = uiChildren.size();
+
+        // The default is to append at the end of the list.
+        int index = n;
+
+        if (uiSibling != null) {
+            // Try to find the requested sibling.
+            index = uiChildren.indexOf(uiSibling);
+            if (index < 0) {
+                // This sibling didn't exist. Should not happen but compensate
+                // by simply adding to the end of the list.
+                uiSibling = null;
+                index = n;
             }
-            index++;
         }
-        
+
+        if (uiSibling == null) {
+            // If we don't require any specific position, make sure to insert before the
+            // first mandatory_last descriptor's position, if any.
+
+            for (int i = 0; i < n; i++) {
+                UiElementNode uiChild = uiChildren.get(i);
+                if (uiChild.getDescriptor().getMandatory() == Mandatory.MANDATORY_LAST) {
+                    index = i;
+                    break;
+                }
+            }
+        }
+
         final UiElementNode uiNew = uiParent.insertNewUiChild(index, descriptor);
         UiElementNode rootNode = getRootNode();
 

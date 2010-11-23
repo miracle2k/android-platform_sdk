@@ -84,48 +84,6 @@ public final class ViewElementDescriptor extends ElementDescriptor {
     }
 
     /**
-     * Constructs a new {@link ElementDescriptor} based on its XML name, the canonical
-     * name of the class it represents, and its children list.
-     * The UI name is build by capitalizing the XML name.
-     * The UI nodes will be non-mandatory.
-     *
-     * @param xml_name The XML element node name. Case sensitive.
-     * @param fullClassName The fully qualified class name the {@link ViewElementDescriptor} is
-     *          representing.
-     * @param children The list of allowed children. Can be null or empty.
-     * @param mandatory Whether this node must always exist (even for empty models). A mandatory
-     *  UI node is never deleted and it may lack an actual XML node attached. A non-mandatory
-     *  UI node MUST have an XML node attached and it will cease to exist when the XML node
-     *  ceases to exist.
-     *
-     *  @deprecated Never used. We should clean it up someday.
-     */
-    public ViewElementDescriptor(String xml_name, String fullClassName,
-            ElementDescriptor[] children,
-            boolean mandatory) {
-        super(xml_name, children, mandatory);
-        mFullClassName = fullClassName;
-    }
-
-    /**
-     * Constructs a new {@link ElementDescriptor} based on its XML name and children list.
-     * The UI name is build by capitalizing the XML name.
-     * The UI nodes will be non-mandatory.
-     *
-     * @param xml_name The XML element node name. Case sensitive.
-     * @param fullClassName The fully qualified class name the {@link ViewElementDescriptor} is
-     * representing.
-     * @param children The list of allowed children. Can be null or empty.
-     *
-     *  @deprecated Never used. We should clean it up someday.
-     */
-    public ViewElementDescriptor(String xml_name, String fullClassName,
-            ElementDescriptor[] children) {
-        super(xml_name, children);
-        mFullClassName = fullClassName;
-    }
-
-    /**
      * Constructs a new {@link ElementDescriptor} based on its XML name and on the canonical
      * name of the class it represents.
      * The UI name is build by capitalizing the XML name.

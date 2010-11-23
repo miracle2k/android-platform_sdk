@@ -26,6 +26,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.IUnknownDescript
 import com.android.ide.eclipse.adt.internal.editors.descriptors.SeparatorAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor.Mandatory;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors;
@@ -128,6 +129,16 @@ public class UiElementNode implements IPropertySource {
     public UiElementNode(ElementDescriptor elementDescriptor) {
         mDescriptor = elementDescriptor;
         clearContent();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s [desc: %s, parent: %s, children: %d]",         //$NON-NLS-1$
+                this.getClass().getSimpleName(),
+                mDescriptor,
+                mUiParent != null ? mUiParent.toString() : "none",              //$NON-NLS-1$
+                mUiChildren != null ? mUiChildren.size() : 0
+                );
     }
 
     /**
@@ -765,7 +776,7 @@ public class UiElementNode implements IPropertySource {
      * @return The XML node matching this {@link UiElementNode} or null.
      */
     public Node prepareCommit() {
-        if (getDescriptor().isMandatory()) {
+        if (getDescriptor().getMandatory() != Mandatory.NOT_MANDATORY) {
             createXmlNode();
             // The new XML node has been created.
             // We don't need to refresh using loadFromXmlNode() since there are
@@ -1017,6 +1028,7 @@ public class UiElementNode implements IPropertySource {
      */
     protected boolean updateElementList(Node xmlNode) {
         boolean structureChanged = false;
+        boolean hasMandatoryLast = false;
         int uiIndex = 0;
         Node xmlChild = xmlNode.getFirstChild();
         while (xmlChild != null) {
@@ -1063,14 +1075,16 @@ public class UiElementNode implements IPropertySource {
                         for (int j = uiIndex; j < n; j++) {
                             uiChild = mUiChildren.get(j);
                             if (uiChild.getXmlNode() == null &&
-                                    uiChild.getDescriptor().isMandatory() &&
+                                    uiChild.getDescriptor().getMandatory() !=
+                                                                Mandatory.NOT_MANDATORY &&
                                     uiChild.getDescriptor().getXmlName().equals(elementName)) {
+
                                 if (j > uiIndex) {
                                     // Found it, now move it here
                                     mUiChildren.remove(j);
                                     mUiChildren.add(uiIndex, uiChild);
                                 }
-                                // assign the XML node to this empty mandatory element.
+                                // Assign the XML node to this empty mandatory element.
                                 uiChild.mXmlNode = xmlChild;
                                 structureChanged = true;
                                 uiNode = uiChild;
@@ -1099,6 +1113,10 @@ public class UiElementNode implements IPropertySource {
                     // If we touched an UI Node, even an existing one, refresh its content.
                     // For new nodes, this will populate them recursively.
                     structureChanged |= uiNode.loadFromXmlNode(xmlChild);
+
+                    // Remember if there are any mandatory-last nodes to reorder.
+                    hasMandatoryLast |=
+                        uiNode.getDescriptor().getMandatory() == Mandatory.MANDATORY_LAST;
                 }
             }
             xmlChild = xmlChild.getNextSibling();
@@ -1107,6 +1125,28 @@ public class UiElementNode implements IPropertySource {
         // There might be extra UI nodes at the end if the XML node list got shorter.
         for (int index = mUiChildren.size() - 1; index >= uiIndex; --index) {
              structureChanged |= removeUiChildAtIndex(index);
+        }
+
+        if (hasMandatoryLast) {
+            // At least one mandatory-last uiNode was moved. Let's see if we can
+            // move them back to the last position. That's possible if the only
+            // thing between these and the end are other mandatory empty uiNodes
+            // (mandatory uiNodes with no XML attached are pure "virtual" reserved
+            // slots and it's ok to reorganize them but other can't.)
+            int n = mUiChildren.size() - 1;
+            for (int index = n; index >= 0; index--) {
+                UiElementNode uiChild = mUiChildren.get(index);
+                Mandatory mand = uiChild.getDescriptor().getMandatory();
+                if (mand == Mandatory.MANDATORY_LAST && index < n) {
+                    // Remove it from index and move it back at the end of the list.
+                    mUiChildren.remove(index);
+                    mUiChildren.add(uiChild);
+                } else if (mand == Mandatory.NOT_MANDATORY || uiChild.getXmlNode() != null) {
+                    // We found at least one non-mandatory or a mandatory node with an actual
+                    // XML attached, so there's nothing we can reorganize past this point.
+                    break;
+                }
+            }
         }
 
         return structureChanged;
@@ -1129,7 +1169,7 @@ public class UiElementNode implements IPropertySource {
         ElementDescriptor desc = uiNode.getDescriptor();
 
         try {
-            if (uiNode.getDescriptor().isMandatory()) {
+            if (uiNode.getDescriptor().getMandatory() != Mandatory.NOT_MANDATORY) {
                 // This is a mandatory node. Such a node must exist in the UiNode hierarchy
                 // even if there's no XML counterpart. However we only need to keep one.
 
@@ -1191,6 +1231,10 @@ public class UiElementNode implements IPropertySource {
      * and inserts it in the element children list at the specified position.
      *
      * @param index The position where to insert in the element children list.
+     *              Shifts the element currently at that position (if any) and any
+     *              subsequent elements to the right (adds one to their indices).
+     *              Index must >= 0 and <= getUiChildren.size().
+     *              Using size() means to append to the end of the list.
      * @param descriptor The {@link ElementDescriptor} that knows how to create the UI node.
      * @return The new UI node.
      */

@@ -40,9 +40,9 @@ import java.util.Set;
  */
 public class ElementDescriptor implements Comparable<ElementDescriptor> {
     /** The XML element node name. Case sensitive. */
-    private String mXmlName;
+    private final String mXmlName;
     /** The XML element name for the user interface, typically capitalized. */
-    private String mUiName;
+    private final String mUiName;
     /** The list of allowed attributes. */
     private AttributeDescriptor[] mAttributes;
     /** The list of allowed children */
@@ -52,7 +52,41 @@ public class ElementDescriptor implements Comparable<ElementDescriptor> {
     /** An optional SKD URL. Can be empty. */
     private String mSdkUrl;
     /** Whether this UI node must always exist (even for empty models). */
-    private boolean mMandatory;
+    private final Mandatory mMandatory;
+
+    public enum Mandatory {
+        NOT_MANDATORY,
+        MANDATORY,
+        MANDATORY_LAST
+    }
+
+    /**
+     * Constructs a new {@link ElementDescriptor} based on its XML name, UI name,
+     * tooltip, SDK url, attributes list, children list and mandatory.
+     *
+     * @param xml_name The XML element node name. Case sensitive.
+     * @param ui_name The XML element name for the user interface, typically capitalized.
+     * @param tooltip An optional tooltip. Can be null or empty.
+     * @param sdk_url An optional SKD URL. Can be null or empty.
+     * @param attributes The list of allowed attributes. Can be null or empty.
+     * @param children The list of allowed children. Can be null or empty.
+     * @param mandatory Whether this node must always exist (even for empty models). A mandatory
+     *  UI node is never deleted and it may lack an actual XML node attached. A non-mandatory
+     *  UI node MUST have an XML node attached and it will cease to exist when the XML node
+     *  ceases to exist.
+     */
+    public ElementDescriptor(String xml_name, String ui_name, String tooltip, String sdk_url,
+            AttributeDescriptor[] attributes,
+            ElementDescriptor[] children,
+            Mandatory mandatory) {
+        mMandatory = mandatory;
+        mXmlName = xml_name;
+        mUiName = ui_name;
+        mTooltip = (tooltip != null && tooltip.length() > 0) ? tooltip : null;
+        mSdkUrl = (sdk_url != null && sdk_url.length() > 0) ? sdk_url : null;
+        setAttributes(attributes != null ? attributes : new AttributeDescriptor[]{});
+        mChildren = children != null ? children : new ElementDescriptor[]{};
+    }
 
     /**
      * Constructs a new {@link ElementDescriptor} based on its XML name, UI name,
@@ -73,7 +107,7 @@ public class ElementDescriptor implements Comparable<ElementDescriptor> {
             AttributeDescriptor[] attributes,
             ElementDescriptor[] children,
             boolean mandatory) {
-        mMandatory = mandatory;
+        mMandatory = mandatory ? Mandatory.MANDATORY : Mandatory.NOT_MANDATORY;
         mXmlName = xml_name;
         mUiName = ui_name;
         mTooltip = (tooltip != null && tooltip.length() > 0) ? tooltip : null;
@@ -94,7 +128,7 @@ public class ElementDescriptor implements Comparable<ElementDescriptor> {
      *  UI node MUST have an XML node attached and it will cease to exist when the XML node
      *  ceases to exist.
      */
-    public ElementDescriptor(String xml_name, ElementDescriptor[] children, boolean mandatory) {
+    public ElementDescriptor(String xml_name, ElementDescriptor[] children, Mandatory mandatory) {
         this(xml_name, prettyName(xml_name), null, null, null, children, mandatory);
     }
 
@@ -122,8 +156,19 @@ public class ElementDescriptor implements Comparable<ElementDescriptor> {
     }
 
     /** Returns whether this node must always exist (even for empty models) */
-    public boolean isMandatory() {
+    public Mandatory getMandatory() {
         return mMandatory;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s [%s, attr %d, children %d%s]",    //$NON-NLS-1$
+                this.getClass().getSimpleName(),
+                mXmlName,
+                mAttributes != null ? mAttributes.length : 0,
+                mChildren != null ? mChildren.length : 0,
+                mMandatory != Mandatory.NOT_MANDATORY ? ", " + mMandatory.toString() : "" //$NON-NLS-1$ //$NON-NLS-2$
+                );
     }
 
     /**
