@@ -136,7 +136,7 @@ public class NinePatch {
      * @return
      */
     public int getWidth() {
-        return mImage.getWidth() - 2;
+        return mImage.getWidth();
     }
 
     /**
@@ -146,7 +146,7 @@ public class NinePatch {
      * @return
      */
     public int getHeight() {
-        return mImage.getHeight() - 2;
+        return mImage.getHeight();
     }
 
     /**
@@ -177,8 +177,8 @@ public class NinePatch {
     }
 
     private NinePatch(BufferedImage image) {
-        mImage = image;
         mChunk = NinePatchChunk.create(image);
+        mImage = extractBitmapContent(image);
     }
 
     private static void ensure9Patch(BufferedImage image) {
@@ -216,4 +216,9 @@ public class NinePatch {
 
         return buffer;
     }
+
+    private BufferedImage extractBitmapContent(BufferedImage image) {
+        return image.getSubimage(1, 1, image.getWidth() - 2, image.getHeight() - 2);
+    }
+
 }
