@@ -22,15 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.android.monkeyrunner.adb.AdbBackend;
 import com.android.monkeyrunner.stub.StubBackend;
 
-import org.python.core.Py;
-import org.python.core.PyBuiltinMethod;
-import org.python.core.PyDataDescr;
-import org.python.core.PyNewWrapper;
-import org.python.core.PyObject;
-import org.python.core.PySystemState;
-import org.python.core.PyType;
-import org.python.expose.BaseTypeBuilder;
-import org.python.expose.TypeBuilder;
 import org.python.util.PythonInterpreter;
 
 import java.io.File;
@@ -184,7 +175,7 @@ public class MonkeyRunnerStarter {
 
 
 
-    private static final void replaceAllLogFormatters(Formatter form) {
+    private static final void replaceAllLogFormatters(Formatter form, Level level) {
         LogManager mgr = LogManager.getLogManager();
         Enumeration<String> loggerNames = mgr.getLoggerNames();
         while (loggerNames.hasMoreElements()) {
@@ -192,7 +183,7 @@ public class MonkeyRunnerStarter {
             Logger logger = mgr.getLogger(loggerName);
             for (Handler handler : logger.getHandlers()) {
                 handler.setFormatter(form);
-                handler.setLevel(Level.INFO);
+                handler.setLevel(level);
             }
         }
     }
@@ -201,7 +192,7 @@ public class MonkeyRunnerStarter {
         MonkeyRunnerOptions options = MonkeyRunnerOptions.processOptions(args);
 
         // logging property files are difficult
-        replaceAllLogFormatters(MonkeyFormatter.DEFAULT_INSTANCE);
+        replaceAllLogFormatters(MonkeyFormatter.DEFAULT_INSTANCE, options.getLogLevel());
 
         if (options == null) {
             return;
