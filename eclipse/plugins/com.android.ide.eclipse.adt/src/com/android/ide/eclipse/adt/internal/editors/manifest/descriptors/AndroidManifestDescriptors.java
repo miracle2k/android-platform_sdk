@@ -30,6 +30,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.ITextAttributeCr
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ListAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ReferenceAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor.Mandatory;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.IStatus;
@@ -86,12 +87,12 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
     private final TextAttributeDescriptor PACKAGE_ATTR_DESC;
 
     public AndroidManifestDescriptors() {
-        APPLICATION_ELEMENT = createElement("application", null, true); //$NON-NLS-1$ + no child & mandatory
+        APPLICATION_ELEMENT = createElement("application", null, Mandatory.MANDATORY_LAST); //$NON-NLS-1$ + no child & mandatory
         INTRUMENTATION_ELEMENT = createElement("instrumentation"); //$NON-NLS-1$
 
         PERMISSION_ELEMENT = createElement("permission"); //$NON-NLS-1$
         USES_PERMISSION_ELEMENT = createElement("uses-permission"); //$NON-NLS-1$
-        USES_SDK_ELEMENT = createElement("uses-sdk", null, true); //$NON-NLS-1$ + no child & mandatory
+        USES_SDK_ELEMENT = createElement("uses-sdk", null, Mandatory.MANDATORY); //$NON-NLS-1$ + no child & mandatory
 
         PERMISSION_GROUP_ELEMENT = createElement("permission-group"); //$NON-NLS-1$
         PERMISSION_TREE_ELEMENT = createElement("permission-tree"); //$NON-NLS-1$
@@ -107,7 +108,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
                                         PERMISSION_TREE_ELEMENT,
                                         USES_SDK_ELEMENT,
                         },
-                        true /* mandatory */);
+                        Mandatory.MANDATORY);
 
         // The "package" attribute is treated differently as it doesn't have the standard
         // Android XML namespace.
@@ -302,7 +303,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
     private ElementDescriptor createElement(
             String xmlName,
             ElementDescriptor[] childrenElements,
-            boolean mandatory) {
+            Mandatory mandatory) {
         // Creates an element with no attribute overrides.
         String styleName = guessStyleName(xmlName);
         String sdkUrl = DescriptorsUtils.MANIFEST_SDK_URL + styleName;
@@ -321,7 +322,7 @@ public final class AndroidManifestDescriptors implements IDescriptorProvider {
      */
     private ElementDescriptor createElement(String xmlName) {
         // Creates an element with no child and not mandatory
-        return createElement(xmlName, null, false);
+        return createElement(xmlName, null, Mandatory.NOT_MANDATORY);
     }
 
     /**

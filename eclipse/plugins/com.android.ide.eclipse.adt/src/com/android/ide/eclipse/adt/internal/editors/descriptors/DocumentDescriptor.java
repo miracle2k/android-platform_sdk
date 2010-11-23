@@ -21,7 +21,7 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
 /**
  * {@link DocumentDescriptor} describes the properties expected for an XML document node.
- * 
+ *
  * Compared to ElementDescriptor, {@link DocumentDescriptor} does not have XML name nor UI name,
  * tooltip, SDK url and attributes list.
  * <p/>
@@ -39,12 +39,12 @@ public class DocumentDescriptor extends ElementDescriptor {
      * <p/>
      * The XML name is never shown in the UI directly. It is however used when an icon
      * needs to be found for the node.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      * @param children The list of allowed children. Can be null or empty.
      */
     public DocumentDescriptor(String xml_name, ElementDescriptor[] children) {
-        super(xml_name, children, true /* mandatory */);
+        super(xml_name, children, Mandatory.MANDATORY);
     }
 
     /**

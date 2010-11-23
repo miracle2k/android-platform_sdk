@@ -25,14 +25,14 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
  * {@link ManifestElementDescriptor} describes an XML element node, with its
  * element name, its possible attributes, its possible child elements but also
  * its display name and tooltip.
- * 
+ *
  * This {@link ElementDescriptor} is specialized to create {@link UiManifestElementNode} UI nodes.
  */
 public class ManifestElementDescriptor extends ElementDescriptor {
 
     /**
      * Constructs a new {@link ManifestElementDescriptor}.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      * @param ui_name The XML element name for the user interface, typically capitalized.
      * @param tooltip An optional tooltip. Can be null or empty.
@@ -41,7 +41,31 @@ public class ManifestElementDescriptor extends ElementDescriptor {
      * @param children The list of allowed children. Can be null or empty.
      * @param mandatory Whether this node must always exist (even for empty models).
      */
-    public ManifestElementDescriptor(String xml_name, String ui_name, String tooltip, String sdk_url,
+    public ManifestElementDescriptor(String xml_name,
+            String ui_name,
+            String tooltip,
+            String sdk_url,
+            AttributeDescriptor[] attributes,
+            ElementDescriptor[] children,
+            Mandatory mandatory) {
+        super(xml_name, ui_name, tooltip, sdk_url, attributes, children, mandatory);
+    }
+
+    /**
+     * Constructs a new {@link ManifestElementDescriptor}.
+     *
+     * @param xml_name The XML element node name. Case sensitive.
+     * @param ui_name The XML element name for the user interface, typically capitalized.
+     * @param tooltip An optional tooltip. Can be null or empty.
+     * @param sdk_url An optional SKD URL. Can be null or empty.
+     * @param attributes The list of allowed attributes. Can be null or empty.
+     * @param children The list of allowed children. Can be null or empty.
+     * @param mandatory Whether this node must always exist (even for empty models).
+     */
+    public ManifestElementDescriptor(String xml_name,
+            String ui_name,
+            String tooltip,
+            String sdk_url,
             AttributeDescriptor[] attributes,
             ElementDescriptor[] children,
             boolean mandatory) {
@@ -50,7 +74,7 @@ public class ManifestElementDescriptor extends ElementDescriptor {
 
     /**
      * Constructs a new {@link ManifestElementDescriptor}.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      * @param ui_name The XML element name for the user interface, typically capitalized.
      * @param tooltip An optional tooltip. Can be null or empty.
@@ -58,7 +82,10 @@ public class ManifestElementDescriptor extends ElementDescriptor {
      * @param attributes The list of allowed attributes. Can be null or empty.
      * @param children The list of allowed children. Can be null or empty.
      */
-    public ManifestElementDescriptor(String xml_name, String ui_name, String tooltip, String sdk_url,
+    public ManifestElementDescriptor(String xml_name,
+            String ui_name,
+            String tooltip,
+            String sdk_url,
             AttributeDescriptor[] attributes,
             ElementDescriptor[] children) {
         super(xml_name, ui_name, tooltip, sdk_url, attributes, children, false);
@@ -68,7 +95,7 @@ public class ManifestElementDescriptor extends ElementDescriptor {
      * This is a shortcut for
      * ManifestElementDescriptor(xml_name, xml_name.capitalize(), null, null, null, children).
      * This constructor is mostly used for unit tests.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      */
     public ManifestElementDescriptor(String xml_name, ElementDescriptor[] children) {
@@ -79,7 +106,7 @@ public class ManifestElementDescriptor extends ElementDescriptor {
      * This is a shortcut for
      * ManifestElementDescriptor(xml_name, xml_name.capitalize(), null, null, null, null).
      * This constructor is mostly used for unit tests.
-     * 
+     *
      * @param xml_name The XML element node name. Case sensitive.
      */
     public ManifestElementDescriptor(String xml_name) {
