@@ -228,55 +228,30 @@ public class RulesEngine {
     }
 
     /**
-     * Invokes {@link IViewRule#onSelected(IGraphics, INode, String, boolean)}
+     * Invokes {@link IViewRule#getSelectionHint(INode, INode)}
      * on the rule matching the specified element.
      *
-     * @param gc An {@link IGraphics} instance, to perform drawing operations.
-     * @param selectedNode The node selected. Never null.
-     * @param displayName The name to display, as returned by {@link IViewRule#getDisplayName()}.
-     * @param isMultipleSelection A boolean set to true if more than one element is selected.
-     */
-    public void callOnSelected(IGraphics gc, NodeProxy selectedNode,
-            String displayName, boolean isMultipleSelection) {
-        // try to find a rule for this element's FQCN
-        IViewRule rule = loadRule(selectedNode.getNode());
-
-        if (rule != null) {
-            try {
-                rule.onSelected(gc, selectedNode, displayName, isMultipleSelection);
-
-            } catch (Exception e) {
-                logError("%s.onSelected() failed: %s",
-                        rule.getClass().getSimpleName(),
-                        e.toString());
-            }
-        }
-    }
-
-    /**
-     * Invokes {@link IViewRule#onChildSelected(IGraphics, INode, INode)}
-     * on the rule matching the specified element.
-     *
-     * @param gc An {@link IGraphics} instance, to perform drawing operations.
      * @param parentNode The parent of the node selected. Never null.
      * @param childNode The child node that was selected. Never null.
+     * @return a list of strings to be displayed, or null or empty to display nothing
      */
-    public void callOnChildSelected(IGraphics gc, NodeProxy parentNode, NodeProxy childNode) {
+    public List<String> callGetSelectionHint(NodeProxy parentNode, NodeProxy childNode) {
         // try to find a rule for this element's FQCN
         IViewRule rule = loadRule(parentNode.getNode());
 
         if (rule != null) {
             try {
-                rule.onChildSelected(gc, parentNode, childNode);
+                return rule.getSelectionHint(parentNode, childNode);
 
             } catch (Exception e) {
-                logError("%s.onChildSelected() failed: %s",
+                logError("%getSelectionHint() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
         }
-    }
 
+        return null;
+    }
 
     /**
      * Called when the d'n'd starts dragging over the target node.

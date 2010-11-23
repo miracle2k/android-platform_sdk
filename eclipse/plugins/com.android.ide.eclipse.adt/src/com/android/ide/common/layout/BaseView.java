@@ -16,12 +16,10 @@
 
 package com.android.ide.common.layout;
 
-import com.android.ide.common.api.DrawingStyle;
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IAttributeInfo;
 import com.android.ide.common.api.IClientRulesEngine;
 import com.android.ide.common.api.IDragElement;
-import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
@@ -29,13 +27,11 @@ import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
-import com.android.ide.common.api.Rect;
 import com.android.ide.common.api.IAttributeInfo.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -416,53 +412,8 @@ public class BaseView implements IViewRule {
 
     // ==== Selection ====
 
-    public void onSelected(IGraphics gc, INode selectedNode, String displayName,
-            boolean isMultipleSelection) {
-        Rect r = selectedNode.getBounds();
-
-        if (!r.isValid()) {
-            return;
-        }
-
-        gc.useStyle(DrawingStyle.SELECTION);
-        gc.fillRect(r);
-        gc.drawRect(r);
-
-        if (displayName == null || isMultipleSelection) {
-            return;
-        }
-
-        int xs = r.x + 2;
-        int ys = r.y - gc.getFontHeight() - 4;
-        if (ys < 0) {
-            ys = r.y + r.h + 3;
-        }
-        gc.useStyle(DrawingStyle.HELP);
-        gc.drawBoxedStrings(xs, ys, Collections.singletonList(displayName));
-    }
-
-    public void onChildSelected(IGraphics gc, INode parentNode, INode childNode) {
-        // @formatter:off
-        /* Drawing anchor lines: temporarily disabled. Enable via context menu perhaps?
-        Rect rp = parentNode.getBounds();
-        Rect rc = childNode.getBounds();
-
-        if (rp.isValid() && rc.isValid()) {
-            gc.useStyle(DrawingStyle.ANCHOR);
-
-            // top line
-            int m = rc.x + rc.w / 2;
-            gc.drawLine(m, rc.y, m, rp.y);
-            // bottom line
-            gc.drawLine(m, rc.y + rc.h, m, rp.y + rp.h);
-            // left line
-            m = rc.y + rc.h / 2;
-            gc.drawLine(rc.x, m, rp.x, m);
-            // right line
-            gc.drawLine(rc.x + rc.w, m, rp.x + rp.w, m);
-        }
-        */
-        // @formatter:on
+    public List<String> getSelectionHint(INode parentNode, INode childNode) {
+        return null;
     }
 
     // ==== Drag'n'drop support ====

@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.ide.common.api.INode;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
@@ -46,7 +45,6 @@ import java.util.List;
 
     /** The name displayed over the selection, typically the widget class name. Can be null. */
     private final String mName;
-
 
     /**
      * Creates a new {@link CanvasSelection} object.
@@ -105,34 +103,9 @@ import java.util.List;
         return mName;
     }
 
-    /**
-     * Calls IViewRule.onSelected on the selected view.
-     *
-     * @param gre The rules engines.
-     * @param gcWrapper The GC to use for drawing.
-     * @param isMultipleSelection True if more than one view is selected.
-     */
-    /*package*/ void paintSelection(RulesEngine gre,
-            GCWrapper gcWrapper,
-            boolean isMultipleSelection) {
-        if (mNodeProxy != null) {
-            gre.callOnSelected(gcWrapper, mNodeProxy, mName, isMultipleSelection);
-        }
-    }
-
-    /**
-     * Calls IViewRule.onChildSelected on the parent of the selected view, if it has one.
-     *
-     * @param gre The rules engines.
-     * @param gcWrapper The GC to use for drawing.
-     */
-    public void paintParentSelection(RulesEngine gre, GCWrapper gcWrapper) {
-        if (mNodeProxy != null) {
-            INode parent = mNodeProxy.getParent();
-            if (parent instanceof NodeProxy) {
-                gre.callOnChildSelected(gcWrapper, (NodeProxy) parent, mNodeProxy);
-            }
-        }
+    /** Returns the node associated with this selection (may be null) */
+    /* package */ NodeProxy getNode() {
+        return mNodeProxy;
     }
 
     //----
