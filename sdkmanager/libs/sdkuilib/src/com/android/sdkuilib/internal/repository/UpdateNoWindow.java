@@ -193,9 +193,9 @@ public class UpdateNoWindow {
          * Increments the current value of the progress bar.
          */
         public void incProgress(int delta) {
-            assert mIncCoef > 0;
-            assert delta > 0;
-            internalIncProgress(delta * mIncCoef);
+            if (delta > 0 && mIncCoef > 0) {
+                internalIncProgress(delta * mIncCoef);
+            }
         }
 
         private void internalIncProgress(double realDelta) {
@@ -309,8 +309,9 @@ public class UpdateNoWindow {
         }
 
         public void incProgress(int delta) {
-            assert mSubCoef > 0;
-            subIncProgress(delta * mSubCoef);
+            if (delta > 0 && mSubCoef > 0) {
+                subIncProgress(delta * mSubCoef);
+            }
         }
 
         public void subIncProgress(double realDelta) {
