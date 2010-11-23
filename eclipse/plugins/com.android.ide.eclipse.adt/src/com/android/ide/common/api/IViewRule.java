@@ -99,38 +99,18 @@ public interface IViewRule {
     // ==== Selection ====
 
     /**
-     * Called by the canvas when a view is being selected.
-     * <p/>
-     * Before the method is called, the canvas' Graphic Context is initialized
-     * with a foreground color already set to the desired selection color, fully
-     * opaque and with the default adequate font.
-     *
-     * @param gc An {@link IGraphics} instance, to perform drawing operations.
-     * @param selectedNode The node selected. Never null.
-     * @param displayName The name to display, as returned by {@link #getDisplayName()}.
-     * @param isMultipleSelection A boolean set to true if more than one element is selected.
-     */
-    void onSelected(IGraphics gc,
-            INode selectedNode,
-            String displayName,
-            boolean isMultipleSelection);
-
-    /**
-     * Called by the canvas when a single child view is being selected.
+     * Returns a list of strings that will be displayed when a single child is being
+     * selected in a layout corresponding to this rule. This gives the container a chance
+     * to describe the child's layout attributes or other relevant information.
      * <p/>
      * Note that this is called only for single selections.
      * <p/>
-     * This allows a parent to draw stuff around its children, for example to display
-     * layout attributes graphically.
      *
-     * @param gc An {@link IGraphics} instance, to perform drawing operations.
      * @param parentNode The parent of the node selected. Never null.
      * @param childNode The child node that was selected. Never null.
+     * @return a list of strings to be displayed, or null or empty to display nothing
      */
-    void onChildSelected(IGraphics gc,
-            INode parentNode,
-            INode childNode);
-
+    List<String> getSelectionHint(INode parentNode, INode childNode);
 
     // ==== Drag'n'drop support ====
 
