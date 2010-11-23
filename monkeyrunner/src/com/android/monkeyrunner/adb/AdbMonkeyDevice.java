@@ -20,11 +20,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.InstallException;
 import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
-import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.monkeyrunner.MonkeyDevice;
 import com.android.monkeyrunner.MonkeyImage;
 import com.android.monkeyrunner.MonkeyManager;
@@ -94,7 +94,8 @@ public class AdbMonkeyDevice extends MonkeyDevice {
                     LOG.log(Level.SEVERE, "Error starting command: " + command, e);
                     throw new RuntimeException(e);
                 } catch (ShellCommandUnresponsiveException e) {
-                    LOG.log(Level.SEVERE, "Error starting command: " + command, e);
+                    // This happens a lot
+                    LOG.log(Level.INFO, "Error starting command: " + command, e);
                     throw new RuntimeException(e);
                 } catch (IOException e) {
                     LOG.log(Level.SEVERE, "Error starting command: " + command, e);
