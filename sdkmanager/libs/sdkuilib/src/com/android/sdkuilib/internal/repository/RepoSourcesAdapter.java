@@ -145,7 +145,7 @@ public class RepoSourcesAdapter {
 
         // Called when the input is set or changed on the provider
         public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-            assert newInput == RepoSourcesAdapter.this;
+            // pass
         }
 
         /**

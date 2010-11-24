@@ -65,6 +65,11 @@ public class NinePatchChunk implements Serializable {
         private float mVerticalPatchesSum;
     }
 
+    /**
+     * Computes and returns the 9-patch chunks.
+     * @param image the image containing both the content and the control outer line.
+     * @return the {@link NinePatchChunk}.
+     */
     public static NinePatchChunk create(BufferedImage image) {
         NinePatchChunk chunk = new NinePatchChunk();
         chunk.findPatches(image);
@@ -221,7 +226,6 @@ public class NinePatchChunk implements Serializable {
         }
 
         data.mRemainderHorizontal = scaledWidth - remainderHorizontal;
-
         data.mRemainderVertical = scaledHeight - remainderVertical;
 
         data.mHorizontalPatchesSum = 0;
@@ -266,15 +270,22 @@ public class NinePatchChunk implements Serializable {
     }
 
 
+    /**
+     * Finds the 9-patch patches and padding from a {@link BufferedImage} image that contains
+     * both the image content and the control outer lines.
+     */
     private void findPatches(BufferedImage image) {
-        int width = image.getWidth();
-        int height = image.getHeight();
+        // the size of the actual image content
+        int width = image.getWidth() - 2;
+        int height = image.getHeight() - 2;
 
         int[] row = null;
         int[] column = null;
 
-        row = GraphicsUtilities.getPixels(image, 0, 0, width, 1, row);
-        column = GraphicsUtilities.getPixels(image, 0, 0, 1, height, column);
+        // extract the patch line. Make sure to start at 1 and be only as long as the image content,
+        // to not include the outer control line.
+        row = GraphicsUtilities.getPixels(image, 1, 0, width, 1, row);
+        column = GraphicsUtilities.getPixels(image, 0, 1, 1, height, column);
 
         boolean[] result = new boolean[1];
         Pair<List<Pair<Integer>>> left = getPatches(column, result);
@@ -293,18 +304,19 @@ public class NinePatchChunk implements Serializable {
         } else {
             if (top.mFirst.size() > 0) {
                 mHorizontalPatches = new ArrayList<Rectangle>(0);
-                mVerticalPatches = getVerticalRectangles(image, top.mFirst);
+                mVerticalPatches = getVerticalRectangles(height, top.mFirst);
             } else if (left.mFirst.size() > 0) {
-                mHorizontalPatches = getHorizontalRectangles(image, left.mFirst);
+                mHorizontalPatches = getHorizontalRectangles(width, left.mFirst);
                 mVerticalPatches = new ArrayList<Rectangle>(0);
             } else {
                 mHorizontalPatches = mVerticalPatches = new ArrayList<Rectangle>(0);
             }
         }
 
-
-        row = GraphicsUtilities.getPixels(image, 0, height - 1, width, 1, row);
-        column = GraphicsUtilities.getPixels(image, width - 1, 0, 1, height, column);
+        // extract the padding line. Make sure to start at 1 and be only as long as the image
+        // content, to not include the outer control line.
+        row = GraphicsUtilities.getPixels(image, 1, height + 1, width, 1, row);
+        column = GraphicsUtilities.getPixels(image, width + 1, 1, 1, height, column);
 
         top = getPatches(row, result);
         mHorizontalPadding = getPadding(top.mFirst);
@@ -313,26 +325,26 @@ public class NinePatchChunk implements Serializable {
         mVerticalPadding = getPadding(left.mFirst);
     }
 
-    private List<Rectangle> getVerticalRectangles(BufferedImage image,
+    private List<Rectangle> getVerticalRectangles(int imageHeight,
             List<Pair<Integer>> topPairs) {
         List<Rectangle> rectangles = new ArrayList<Rectangle>();
         for (Pair<Integer> top : topPairs) {
             int x = top.mFirst;
             int width = top.mSecond - top.mFirst;
 
-            rectangles.add(new Rectangle(x, 1, width, image.getHeight() - 2));
+            rectangles.add(new Rectangle(x, 0, width, imageHeight));
         }
         return rectangles;
     }
 
-    private List<Rectangle> getHorizontalRectangles(BufferedImage image,
+    private List<Rectangle> getHorizontalRectangles(int imageWidth,
             List<Pair<Integer>> leftPairs) {
         List<Rectangle> rectangles = new ArrayList<Rectangle>();
         for (Pair<Integer> left : leftPairs) {
             int y = left.mFirst;
             int height = left.mSecond - left.mFirst;
 
-            rectangles.add(new Rectangle(1, y, image.getWidth() - 2, height));
+            rectangles.add(new Rectangle(0, y, imageWidth, height));
         }
         return rectangles;
     }
@@ -369,15 +381,32 @@ public class NinePatchChunk implements Serializable {
         return rectangles;
     }
 
+    /**
+     * Computes a list of Patch based on a pixel line.
+     *
+     * This returns both the fixed areas, and the patches (stretchable) areas.
+     *
+     * The return value is a pair of list. The first list ({@link Pair#mFirst}) is the list
+     * of fixed area. The second list ({@link Pair#mSecond}) is the list of stretchable areas.
+     *
+     * Each area is defined as a Pair of (start, end) coordinate in the given line.
+     *
+     * @param pixels the pixels of the control line. The line should have the same length as the
+     *           content (i.e. it should be stripped of the first/last control pixel which are not
+     *           used)
+     * @param startWithPatch a boolean array of size 1 used to return the boolean value of whether
+     *           a patch (stretchable area) is first or not.
+     * @return
+     */
     private Pair<List<Pair<Integer>>> getPatches(int[] pixels, boolean[] startWithPatch) {
-        int lastIndex = 1;
-        int lastPixel = pixels[1];
+        int lastIndex = 0;
+        int lastPixel = pixels[0];
         boolean first = true;
 
         List<Pair<Integer>> fixed = new ArrayList<Pair<Integer>>();
         List<Pair<Integer>> patches = new ArrayList<Pair<Integer>>();
 
-        for (int i = 1; i < pixels.length - 1; i++) {
+        for (int i = 0; i < pixels.length; i++) {
             int pixel = pixels[i];
             if (pixel != lastPixel) {
                 if (lastPixel == 0xFF000000) {
@@ -394,13 +423,13 @@ public class NinePatchChunk implements Serializable {
         }
         if (lastPixel == 0xFF000000) {
             if (first) startWithPatch[0] = true;
-            patches.add(new Pair<Integer>(lastIndex, pixels.length - 1));
+            patches.add(new Pair<Integer>(lastIndex, pixels.length));
         } else {
-            fixed.add(new Pair<Integer>(lastIndex, pixels.length - 1));
+            fixed.add(new Pair<Integer>(lastIndex, pixels.length));
         }
 
         if (patches.size() == 0) {
-            patches.add(new Pair<Integer>(1, pixels.length - 1));
+            patches.add(new Pair<Integer>(1, pixels.length));
             startWithPatch[0] = true;
             fixed.clear();
         }
@@ -408,6 +437,11 @@ public class NinePatchChunk implements Serializable {
         return new Pair<List<Pair<Integer>>>(fixed, patches);
     }
 
+    /**
+     * A pair of values.
+     *
+     * @param <E>
+     */
     /*package*/ static class Pair<E> implements Serializable {
         /** Generated Serial Version UID */
         private static final long serialVersionUID = -2204108979541762418L;
