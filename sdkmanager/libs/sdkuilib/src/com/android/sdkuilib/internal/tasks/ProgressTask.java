@@ -93,9 +93,9 @@ public final class ProgressTask implements ITaskMonitor {
      * This method can be invoked from a non-UI thread.
      */
     public void incProgress(int delta) {
-        assert mIncCoef > 0;
-        assert delta > 0;
-        internalIncProgress(delta * mIncCoef);
+        if (delta > 0 && mIncCoef > 0) {
+            internalIncProgress(delta * mIncCoef);
+        }
     }
 
     private void internalIncProgress(double realDelta) {
@@ -235,8 +235,9 @@ public final class ProgressTask implements ITaskMonitor {
         }
 
         public void incProgress(int delta) {
-            assert mSubCoef > 0;
-            subIncProgress(delta * mSubCoef);
+            if (delta > 0 && mSubCoef > 0) {
+                subIncProgress(delta * mSubCoef);
+            }
         }
 
         public void subIncProgress(double realDelta) {
