@@ -29,7 +29,7 @@ import com.android.ide.common.api.MenuAction.Choices;
 import java.util.List;
 
 /** Test the {@link LinearLayoutRule} */
-public class LinearLayoutRuleTest extends AbstractLayoutRuleTest {
+public class LinearLayoutRuleTest extends LayoutTestBase {
     // Utility for other tests
     protected void dragIntoEmpty(Rect dragBounds) {
         boolean haveBounds = dragBounds.isValid();

@@ -31,7 +31,7 @@ import java.util.Set;
 // TODO: Check equals() but not == strings by using new String("") to prevent interning
 // TODO: Rename BaseLayout to BaseLayoutRule, and tests too of course
 
-public class BaseLayoutTest extends AbstractLayoutRuleTest {
+public class BaseLayoutTest extends LayoutTestBase {
 
     /** Provides test data used by other test cases */
     private IDragElement[] createSampleElements() {
