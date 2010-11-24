@@ -112,8 +112,10 @@ public class AddonsListFetcherTest extends TestCase {
         assertEquals("My Example Add-ons.", result[0].getUiName());
         assertEquals("http://www.example.com/my_addons.xml", result[0].getUrl());
 
-        // The XML file is UTF-8 so we support character sets
-        assertEquals("ありがとうございます。", result[1].getUiName());
+        // The XML file is UTF-8 so we support character sets (but the Java source file is
+        // not, so we use the \\u notation to create the Unicode String)
+        assertEquals("\u3042\u308A\u304C\u3068\u3046\u3054\u3056\u3044\u307E\u3059\u3002",
+                result[1].getUiName());
         assertEquals("http://www.example.co.jp/addons.xml", result[1].getUrl());
 
         assertEquals("Example of directory URL.", result[2].getUiName());

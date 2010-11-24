@@ -34,9 +34,9 @@ import junit.framework.TestCase;
 /**
  * Common layout helpers from LayoutRule tests
  */
-public abstract class AbstractLayoutRuleTest extends TestCase {
-    public static String ANDROID_URI = BaseLayout.ANDROID_URI;
-    public static String ATTR_ID = BaseLayout.ATTR_ID;
+public abstract class LayoutTestBase extends TestCase {
+    public static String ANDROID_URI = BaseView.ANDROID_URI;
+    public static String ATTR_ID = BaseView.ATTR_ID;
 
     /**
      * Helper function used by tests to drag a button into a canvas containing
@@ -52,7 +52,7 @@ public abstract class AbstractLayoutRuleTest extends TestCase {
      *            dropping at the dropPoint
      * @param currentIndex If the dragged widget is already in the canvas this
      *            should be its child index; if not, pass in -1
-     * @param graphicshicsFragments This is a varargs array of String fragments
+     * @param graphicsFragments This is a varargs array of String fragments
      *            we expect to see in the graphics output on the drag over
      *            event.
      * @return The inserted node
@@ -151,6 +151,8 @@ public abstract class AbstractLayoutRuleTest extends TestCase {
     /**
      * Utility method for asserting that two collections contain exactly the
      * same elements (regardless of order)
+     * @param expected expected collection
+     * @param actual  actual collection
      */
     public static void assertContainsSame(Collection<String> expected, Collection<String> actual) {
         if (expected.size() != actual.size()) {

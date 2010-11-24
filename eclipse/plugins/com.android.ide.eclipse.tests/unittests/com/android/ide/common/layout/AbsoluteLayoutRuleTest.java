@@ -21,7 +21,7 @@ import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 
 /** Test the {@link AbsoluteLayoutRule} */
-public class AbsoluteLayoutRuleTest extends AbstractLayoutRuleTest {
+public class AbsoluteLayoutRuleTest extends LayoutTestBase {
     // Utility for other tests
     protected INode dragInto(Rect dragBounds, Point dragPoint, int insertIndex, int currentIndex,
             String... graphicsFragments) {

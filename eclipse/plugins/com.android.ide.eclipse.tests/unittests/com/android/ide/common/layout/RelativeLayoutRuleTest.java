@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Test the {@link RelativeLayoutRule} */
-public class RelativeLayoutRuleTest extends AbstractLayoutRuleTest {
+public class RelativeLayoutRuleTest extends LayoutTestBase {
     // Utility for other tests
     protected INode dragInto(Rect dragBounds, Point dragPoint, Point secondDragPoint,
             int insertIndex, int currentIndex, String... graphicsFragments) {
