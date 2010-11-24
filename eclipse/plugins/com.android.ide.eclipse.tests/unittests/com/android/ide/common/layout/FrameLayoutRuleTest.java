@@ -21,7 +21,7 @@ import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 
 /** Test the {@link FrameLayoutRule} */
-public class FrameLayoutRuleTest extends AbstractLayoutRuleTest {
+public class FrameLayoutRuleTest extends LayoutTestBase {
     // Utility for other tests
     protected void dragInto(Rect dragBounds, Point dragPoint, int insertIndex, int currentIndex,
             String... graphicsFragments) {
