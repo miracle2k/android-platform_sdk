@@ -336,7 +336,13 @@ public class GestureManager {
             // in rapid succession. In any case, we only want to let you double click the
             // first button to warp to XML:
             if (e.button == 1) {
-                mCanvas.showXml(e);
+                // Warp to the text editor and show the corresponding XML for the
+                // double-clicked widget
+                LayoutPoint p = ControlPoint.create(mCanvas, e).toLayout();
+                CanvasViewInfo vi = mCanvas.getViewHierarchy().findViewInfoAt(p);
+                if (vi != null) {
+                    mCanvas.show(vi);
+                }
             }
         }
 

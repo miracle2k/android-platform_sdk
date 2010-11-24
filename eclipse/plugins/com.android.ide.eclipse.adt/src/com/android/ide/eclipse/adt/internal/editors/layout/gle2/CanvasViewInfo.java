@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.common.api.Rect;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -28,6 +29,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.ui.views.properties.IPropertyDescriptor;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.eclipse.ui.views.properties.IPropertySource;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import java.util.ArrayList;
@@ -370,4 +372,33 @@ public class CanvasViewInfo implements IPropertySource {
         return e;
     }
 
+    /**
+     * Returns the layout url attribute value for the closest surrounding include element
+     * parent, or null if this {@link CanvasViewInfo} is not rendered as part of an
+     * include tag.
+     *
+     * @return the layout url attribute value for the surrounding include tag, or null if
+     *         not applicable
+     */
+    public String getIncludeUrl() {
+        CanvasViewInfo curr = this;
+        while (curr != null) {
+            if (curr.mUiViewNode != null) {
+                Node node = curr.mUiViewNode.getXmlNode();
+                if (node != null && node.getNamespaceURI() == null
+                        && node.getNodeType() == Node.ELEMENT_NODE
+                        && LayoutDescriptors.VIEW_INCLUDE.equals(node.getNodeName())) {
+                    // Note: the layout attribute is NOT in the Android namespace
+                    Element element = (Element) node;
+                    String url = element.getAttribute(LayoutDescriptors.ATTR_LAYOUT);
+                    if (url.length() > 0) {
+                        return url;
+                    }
+                }
+            }
+            curr = curr.mParent;
+        }
+
+        return null;
+    }
 }

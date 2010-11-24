@@ -103,6 +103,7 @@ preload
 preloads
 primordial
 printf
+programmatic
 programmatically
 proguard
 proxies
@@ -110,11 +111,13 @@ proxy
 recompilation
 rect
 redo
+refactor
 regexp
 registry
 remap
 reparse
 reparses
+rescales
 residual
 scrollable
 scrollbar
@@ -145,6 +148,7 @@ undescribed
 uninstall
 uninstallation
 uninstalling
+unset
 upcoming
 uri
 url
