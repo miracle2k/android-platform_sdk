@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.editors.layout;
-
+package com.android.ide.common.layout;
 
 /**
  * A bunch of constants that map to either:
@@ -26,7 +25,6 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
  * </ul>
  */
 public class LayoutConstants {
-
     public static final String RELATIVE_LAYOUT = "RelativeLayout";      //$NON-NLS-1$
     public static final String LINEAR_LAYOUT   = "LinearLayout";        //$NON-NLS-1$
     public static final String ABSOLUTE_LAYOUT = "AbsoluteLayout";      //$NON-NLS-1$
@@ -61,6 +59,36 @@ public class LayoutConstants {
     public static final String VALUE_TRUE = "true";                             //$NON-NLS-1$
     public static final String VALUE_N_DIP = "%ddip";                           //$NON-NLS-1$
 
-    private LayoutConstants() {
-    }
+    /**
+     * Namespace for the Android resource XML, i.e.
+     * "http://schemas.android.com/apk/res/android"
+     */
+    public static String ANDROID_URI = "http://schemas.android.com/apk/res/android"; //$NON-NLS-1$
+
+    /** The fully qualified class name of an EditText view */
+    public static final String FQCN_EDIT_TEXT = "android.widget.EditText"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a LinearLayout view */
+    public static final String FQCN_LINEAR_LAYOUT = "android.widget.LinearLayout"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a FrameLayout view */
+    public static final String FQCN_FRAME_LAYOUT = "android.widget.FrameLayout"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a TableRow view */
+    public static final String FQCN_TABLE_ROW = "android.widget.TableRow"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a TabWidget view */
+    public static final String FQCN_TAB_WIDGET = "android.widget.TabWidget"; //$NON-NLS-1$
+
+    public static final String ATTR_SRC = "src"; //$NON-NLS-1$
+
+    // like fill_parent for API 8
+    public static final String VALUE_MATCH_PARENT = "match_parent"; //$NON-NLS-1$
+
+    public static String ATTR_ORIENTATION = "orientation"; //$NON-NLS-1$
+
+    public static String VALUE_HORIZONTAL = "horizontal"; //$NON-NLS-1$
+
+    public static String VALUE_VERTICAL = "vertical"; //$NON-NLS-1$
+
 }

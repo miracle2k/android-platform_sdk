@@ -16,10 +16,18 @@
 
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_BELOW;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
+import static com.android.ide.common.layout.LayoutConstants.RELATIVE_LAYOUT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
+
 import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.resources.platform.AttributeInfo;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.editors.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -30,8 +38,8 @@ import org.eclipse.swt.graphics.Image;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -668,27 +676,27 @@ public final class DescriptorsUtils {
         boolean fill = ui_node.getDescriptor().hasChildren() &&
                        ui_node.getUiParent() instanceof UiDocumentNode;
         ui_node.setAttributeValue(
-                LayoutConstants.ATTR_LAYOUT_WIDTH,
+                ATTR_LAYOUT_WIDTH,
                 SdkConstants.NS_RESOURCES,
-                fill ? LayoutConstants.VALUE_FILL_PARENT : LayoutConstants.VALUE_WRAP_CONTENT,
+                fill ? VALUE_FILL_PARENT : VALUE_WRAP_CONTENT,
                 false /* override */);
         ui_node.setAttributeValue(
-                LayoutConstants.ATTR_LAYOUT_HEIGHT,
+                ATTR_LAYOUT_HEIGHT,
                 SdkConstants.NS_RESOURCES,
-                fill ? LayoutConstants.VALUE_FILL_PARENT : LayoutConstants.VALUE_WRAP_CONTENT,
+                fill ? VALUE_FILL_PARENT : VALUE_WRAP_CONTENT,
                 false /* override */);
 
         String widget_id = getFreeWidgetId(ui_node);
         if (widget_id != null) {
             ui_node.setAttributeValue(
-                    LayoutConstants.ATTR_ID,
+                    ATTR_ID,
                     SdkConstants.NS_RESOURCES,
                     widget_id,
                     false /* override */);
         }
 
         ui_node.setAttributeValue(
-                LayoutConstants.ATTR_TEXT,
+                ATTR_TEXT,
                 SdkConstants.NS_RESOURCES,
                 widget_id,
                 false /*override*/);
@@ -697,14 +705,14 @@ public final class DescriptorsUtils {
             UiElementNode ui_parent = ui_node.getUiParent();
             if (ui_parent != null &&
                     ui_parent.getDescriptor().getXmlLocalName().equals(
-                            LayoutConstants.RELATIVE_LAYOUT)) {
+                            RELATIVE_LAYOUT)) {
                 UiElementNode ui_previous = ui_node.getUiPreviousSibling();
                 if (ui_previous != null) {
-                    String id = ui_previous.getAttributeValue(LayoutConstants.ATTR_ID);
+                    String id = ui_previous.getAttributeValue(ATTR_ID);
                     if (id != null && id.length() > 0) {
                         id = id.replace("@+", "@");                     //$NON-NLS-1$ //$NON-NLS-2$
                         ui_node.setAttributeValue(
-                                LayoutConstants.ATTR_LAYOUT_BELOW,
+                                ATTR_LAYOUT_BELOW,
                                 SdkConstants.NS_RESOURCES,
                                 id,
                                 false /* override */);
@@ -804,7 +812,7 @@ public final class DescriptorsUtils {
             params[2] = generated;
         }
 
-        String id = uiRoot.getAttributeValue(LayoutConstants.ATTR_ID);
+        String id = uiRoot.getAttributeValue(ATTR_ID);
         if (id != null) {
             id = id.replace("@+id/", "");                               //$NON-NLS-1$ $NON-NLS-2$
             id = id.replace("@id/", "");                                //$NON-NLS-1$ $NON-NLS-2$

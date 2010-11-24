@@ -16,15 +16,19 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
+
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.Rect;
-import com.android.ide.common.layout.BaseView;
 import com.android.ide.common.layoutlib.LayoutLibrary;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
@@ -676,19 +680,19 @@ public class PaletteComposite extends Composite {
             // Set up a proper name space
             Attr attr = document.createAttributeNS(XmlnsAttributeDescriptor.XMLNS_URI,
                     "xmlns:android"); //$NON-NLS-1$
-            attr.setValue(BaseView.ANDROID_URI);
+            attr.setValue(ANDROID_URI);
             element.getAttributes().setNamedItemNS(attr);
 
             element.setAttributeNS(SdkConstants.NS_RESOURCES,
-                    LayoutConstants.ATTR_LAYOUT_WIDTH, LayoutConstants.VALUE_WRAP_CONTENT);
+                    ATTR_LAYOUT_WIDTH, VALUE_WRAP_CONTENT);
             element.setAttributeNS(SdkConstants.NS_RESOURCES,
-                    LayoutConstants.ATTR_LAYOUT_HEIGHT, LayoutConstants.VALUE_WRAP_CONTENT);
+                    ATTR_LAYOUT_HEIGHT, VALUE_WRAP_CONTENT);
 
             // This doesn't apply to all, but doesn't seem to cause harm and makes for a
             // better experience with text-oriented views like buttons and texts
             UiElementNode uiRoot = layoutEditor.getUiRootNode();
             String text = DescriptorsUtils.getFreeWidgetId(uiRoot, viewName);
-            element.setAttributeNS(SdkConstants.NS_RESOURCES, LayoutConstants.ATTR_TEXT, text);
+            element.setAttributeNS(SdkConstants.NS_RESOURCES, ATTR_TEXT, text);
 
             document.appendChild(element);
 

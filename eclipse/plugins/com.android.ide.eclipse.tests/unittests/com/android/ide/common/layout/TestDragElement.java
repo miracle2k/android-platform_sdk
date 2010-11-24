@@ -15,6 +15,9 @@
  */
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+
 import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.Rect;
 
@@ -79,7 +82,7 @@ public class TestDragElement implements IDragElement {
     }
 
     public TestDragElement id(String id) {
-        return set(BaseView.ANDROID_URI, BaseView.ATTR_ID, id);
+        return set(ANDROID_URI, ATTR_ID, id);
     }
 
     public static TestDragElement create(String fqn, Rect bounds) {

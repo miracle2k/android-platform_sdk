@@ -16,6 +16,13 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_MATCH_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
+
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IAttributeInfo;
 import com.android.ide.common.api.IClientRulesEngine;
@@ -43,49 +50,6 @@ import java.util.Set;
  */
 public class BaseView implements IViewRule {
     protected IClientRulesEngine mRulesEngine;
-
-    /**
-     * Namespace for the Android resource XML, i.e.
-     * "http://schemas.android.com/apk/res/android"
-     */
-    public static String ANDROID_URI = "http://schemas.android.com/apk/res/android"; //$NON-NLS-1$
-
-    /** The fully qualified class name of an EditText view */
-    public static final String FQCN_EDIT_TEXT = "android.widget.EditText"; //$NON-NLS-1$
-
-    /** The fully qualified class name of a LinearLayout view */
-    public static final String FQCN_LINEAR_LAYOUT = "android.widget.LinearLayout"; //$NON-NLS-1$
-
-    /** The fully qualified class name of a FrameLayout view */
-    public static final String FQCN_FRAME_LAYOUT = "android.widget.FrameLayout"; //$NON-NLS-1$
-
-    /** The fully qualified class name of a TableRow view */
-    public static final String FQCN_TABLE_ROW = "android.widget.TableRow"; //$NON-NLS-1$
-
-    /** The fully qualified class name of a TabWidget view */
-    public static final String FQCN_TAB_WIDGET = "android.widget.TabWidget"; //$NON-NLS-1$
-
-    // Some common Android layout attribute names used by the view rules.
-    // All these belong to the attribute namespace ANDROID_URI.
-    public static final String ATTR_ID = "id"; //$NON-NLS-1$
-
-    public static final String ATTR_TEXT = "text"; //$NON-NLS-1$
-
-    public static final String ATTR_LAYOUT_WIDTH = "layout_width"; //$NON-NLS-1$
-
-    public static final String ATTR_LAYOUT_HEIGHT = "layout_height"; //$NON-NLS-1$
-
-    public static final String ATTR_SRC = "src"; //$NON-NLS-1$
-
-    public static final String ATTR_LAYOUT_BELOW = "layout_below"; //$NON-NLS-1$
-
-    // Some common Android layout attribute values used by the view rules.
-    public static final String VALUE_FILL_PARENT = "fill_parent"; //$NON-NLS-1$
-
-    // like fill_parent for API 8
-    public static final String VALUE_MATCH_PARENT = "match_parent"; //$NON-NLS-1$
-
-    public static final String VALUE_WRAP_CONTENT = "wrap_content"; //$NON-NLS-1$
 
     // Cache of attributes. Key is FQCN of a node mixed with its view hierarchy
     // parent. Values are a custom map as needed by getContextMenu.

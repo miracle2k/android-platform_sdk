@@ -16,6 +16,14 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ORIENTATION;
+import static com.android.ide.common.layout.LayoutConstants.FQCN_LINEAR_LAYOUT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_HORIZONTAL;
+
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
@@ -42,8 +50,8 @@ public class HorizontalScrollViewRule extends BaseView {
             // Insert a horizontal linear layout which is commonly used with horizontal scrollbars
             // as described by the documentation for HorizontalScrollbars.
             INode linearLayout = node.appendChild(FQCN_LINEAR_LAYOUT);
-            linearLayout.setAttribute(ANDROID_URI, LinearLayoutRule.ATTR_ORIENTATION,
-                    LinearLayoutRule.VALUE_HORIZONTAL);
+            linearLayout.setAttribute(ANDROID_URI, ATTR_ORIENTATION,
+                    VALUE_HORIZONTAL);
         }
     }
 

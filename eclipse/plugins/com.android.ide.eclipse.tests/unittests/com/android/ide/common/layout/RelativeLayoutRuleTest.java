@@ -16,6 +16,8 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
@@ -76,7 +78,7 @@ public class RelativeLayoutRuleTest extends LayoutTestBase {
                 // Drop preview
                 "useStyle(DROP_PREVIEW), drawRect(Rect[0,0,105,80])");
 
-        assertEquals("true", inserted.getStringAttr(BaseLayout.ANDROID_URI,
+        assertEquals("true", inserted.getStringAttr(ANDROID_URI,
                 "layout_alignParentTop"));
     }
 
@@ -144,7 +146,7 @@ public class RelativeLayoutRuleTest extends LayoutTestBase {
                 String[] elements = attachment.split("=");
                 String name = "layout_" + elements[0];
                 String value = elements[1];
-                assertEquals(value, inserted.getStringAttr(BaseLayout.ANDROID_URI, name));
+                assertEquals(value, inserted.getStringAttr(ANDROID_URI, name));
             }
         }
     }
