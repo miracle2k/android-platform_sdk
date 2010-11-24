@@ -31,11 +31,19 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.sdklib.SdkConstants;
 
+import org.eclipse.core.filesystem.EFS;
+import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.jdt.internal.ui.javaeditor.EditorUtility;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuManager;
+import org.eclipse.jface.action.IStatusLineManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.swt.SWT;
@@ -63,10 +71,14 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.IEditorSite;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.actions.TextActionHandler;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.w3c.dom.Node;
@@ -671,18 +683,77 @@ class LayoutCanvas extends Canvas {
     }
 
     /**
-     * Show the XML element corresponding to the point under the mouse event
-     * (unless it's a root).
+     * Shows the given {@link CanvasViewInfo}, which can mean exposing its XML or if it's
+     * an included element, its corresponding file.
      *
-     * @param e A mouse event pointing on the screen whose underlying XML
-     *            element we want to view
+     * @param vi the {@link CanvasViewInfo} to be shown
      */
-    public void showXml(MouseEvent e) {
+    public void show(CanvasViewInfo vi) {
+        String url = vi.getIncludeUrl();
+        if (url != null) {
+            showInclude(url);
+        } else {
+            showXml(vi);
+        }
+    }
+
+    /**
+     * Shows the layout file referenced by the given url in the same project.
+     *
+     * @param url The layout attribute url of the form @layout/foo
+     */
+    private void showInclude(String url) {
+        GraphicalEditorPart graphicalEditor = mLayoutEditor.getGraphicalEditor();
+        IPath filePath = graphicalEditor.findResourceFile(url);
+
+        IWorkspaceRoot workspace = ResourcesPlugin.getWorkspace().getRoot();
+        IPath workspacePath = workspace.getLocation();
+        IEditorSite editorSite = graphicalEditor.getEditorSite();
+        if (workspacePath.isPrefixOf(filePath)) {
+            IPath relativePath = filePath.makeRelativeTo(workspacePath);
+            IResource xmlFile = workspace.findMember(relativePath);
+            try {
+                EditorUtility.openInEditor(xmlFile, true);
+                return;
+            } catch (PartInitException ex) {
+                AdtPlugin.log(ex, "Can't open %$1s", url); //$NON-NLS-1$
+            }
+        } else {
+            // It's not a path in the workspace; look externally
+            // (this is probably an @android: path)
+            if (filePath.isAbsolute()) {
+                IFileStore fileStore = EFS.getLocalFileSystem().getStore(filePath);
+                // fileStore = fileStore.getChild(names[i]);
+                if (!fileStore.fetchInfo().isDirectory() && fileStore.fetchInfo().exists()) {
+                    IWorkbenchPage page = editorSite.getWorkbenchWindow().getActivePage();
+                    try {
+                        IDE.openEditorOnFileStore(page, fileStore);
+                        return;
+                    } catch (PartInitException ex) {
+                        AdtPlugin.log(ex, "Can't open %$1s", url); //$NON-NLS-1$
+                    }
+                }
+            }
+        }
+
+        // Failed: display message to the user
+        String message = String.format("Could not find resource %1$s", url);
+        IStatusLineManager status = editorSite.getActionBars().getStatusLineManager();
+        status.setErrorMessage(message);
+        getDisplay().beep();
+    }
+
+    /**
+     * Show the XML element corresponding to the given {@link CanvasViewInfo} (unless it's
+     * a root).
+     *
+     * @param vi The clicked {@link CanvasViewInfo} whose underlying XML element we want
+     *            to view
+     */
+    private void showXml(CanvasViewInfo vi) {
         // Warp to the text editor and show the corresponding XML for the
         // double-clicked widget
-        LayoutPoint p = ControlPoint.create(this, e).toLayout();
-        CanvasViewInfo vi = mViewHierarchy.findViewInfoAt(p);
-        if (vi == null || vi.isRoot()) {
+        if (vi.isRoot()) {
             return;
         }
 

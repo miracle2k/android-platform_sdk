@@ -103,6 +103,15 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
     }
 
     /**
+     * Returns the {@link GraphicalEditorPart} associated with this editor
+     *
+     * @return the {@link GraphicalEditorPart} associated with this editor
+     */
+    public GraphicalEditorPart getGraphicalEditor() {
+        return mGraphicalEditor;
+    }
+
+    /**
      * @return The root node of the UI element hierarchy
      */
     @Override

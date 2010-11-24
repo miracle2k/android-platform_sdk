@@ -47,6 +47,13 @@ public final class LayoutDescriptors implements IDescriptorProvider {
      */
     public static final String VIEW_INCLUDE = "include";      //$NON-NLS-1$
 
+    /**
+     * The attribute name of the include tag's url naming the resource to be inserted
+     * <p>
+     * <b>NOTE</b>: The layout attribute is NOT in the Android namespace!
+     */
+    public static final String ATTR_LAYOUT = "layout"; //$NON-NLS-1$
+
     // Public attributes names, attributes descriptors and elements descriptors
     public static final String ID_ATTR = "id"; //$NON-NLS-1$
 
@@ -293,7 +300,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
                 null, //elementXmlName
                 null, //nsUri
                 new AttributeInfo(
-                        "layout",       //$NON-NLS-1$
+                        ATTR_LAYOUT,
                         new Format[] { Format.REFERENCE } ),
                 true,  //required
                 null); //overrides

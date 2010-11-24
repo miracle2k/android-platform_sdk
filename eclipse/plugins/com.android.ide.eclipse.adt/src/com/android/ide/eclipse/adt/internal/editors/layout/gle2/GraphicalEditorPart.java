@@ -64,9 +64,11 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.draw2d.geometry.Rectangle;
@@ -1603,6 +1605,93 @@ public class GraphicalEditorPart extends EditorPart
         }
         sr.underline = true;
         styledText.setStyleRange(sr);
+    }
+
+    /**
+     * Looks up the resource file corresponding to the given type
+     *
+     * @param type The type of resource to look up, such as {@link ResourceType#LAYOUT}
+     * @param name The name of the resource (not including ".xml")
+     * @param isFrameworkResource if true, the resource is a framework resource, otherwise
+     *            it's a project resource
+     * @return the resource file defining the named resource, or null if not found
+     */
+    public IPath findResourceFile(ResourceType type, String name, boolean isFrameworkResource) {
+        // FIXME: This code does not handle theme value resolution.
+        // There is code to handle this, but it's in layoutlib; we should
+        // expose that and use it here.
+
+        Map<String, Map<String, IResourceValue>> map;
+        map = isFrameworkResource ? mConfiguredFrameworkRes : mConfiguredProjectRes;
+        if (map == null) {
+            // Not yet configured
+            return null;
+        }
+
+        Map<String, IResourceValue> layoutMap = map.get(type.getName());
+        if (layoutMap != null) {
+            IResourceValue value = layoutMap.get(name);
+            if (value != null) {
+                String valueStr = value.getValue();
+                if (valueStr.startsWith("?")) { //$NON-NLS-1$
+                    // FIXME: It's a reference. We should resolve this properly.
+                    return null;
+                }
+                return new Path(valueStr);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Looks up the path to the file corresponding to the given attribute value, such as
+     * @layout/foo, which will return the foo.xml file in res/layout/. (The general format
+     * of the resource url is {@literal @[<package_name>:]<resource_type>/<resource_name>}.
+     *
+     * @param url the attribute url
+     * @return the path to the file defining this attribute, or null if not found
+     */
+    public IPath findResourceFile(String url) {
+        if (!url.startsWith("@")) { //$NON-NLS-1$
+            return null;
+        }
+        int typeEnd = url.indexOf('/', 1);
+        if (typeEnd == -1) {
+            return null;
+        }
+        int nameBegin = typeEnd + 1;
+        int typeBegin = 1;
+        int colon = url.lastIndexOf(':', typeEnd);
+        boolean isFrameworkResource = false;
+        if (colon != -1) {
+            // The URL contains a package name.
+
+            // FIXME: We should consult the package and Do The Right Thing.
+            // If the package is @android (which is by far the most common case),
+            // then maybe we can look up the corresponding file in the "data/" folder
+            // in the SDK.
+            // Otherwise, the package MAY be the same package as the current project,
+            // in which case we can just ignore it (because it will be exactly
+            // relative to the current project's folder), and otherwise we may
+            // have to look in other projects. Fortunately, this is not common.
+
+            String packageName = url.substring(typeBegin, colon);
+            if ("android".equals(packageName)) {  //$NON-NLS-1$
+                isFrameworkResource = true;
+            }
+
+            typeBegin = colon + 1;
+        }
+
+        String typeName = url.substring(typeBegin, typeEnd);
+        ResourceType type = ResourceType.getEnum(typeName);
+        if (type == null) {
+            return null;
+        }
+
+        String name = url.substring(nameBegin);
+        return findResourceFile(type, name, isFrameworkResource);
     }
 
     /** This StyleRange represents a missing class link that the user can click */
