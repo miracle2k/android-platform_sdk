@@ -20,6 +20,8 @@ import java.util.Map;
 
 public class SceneParams {
 
+    public final static long DEFAULT_TIMEOUT = 250; //ms
+
     public static enum RenderingMode {
         NORMAL(false, false),
         V_SCROLL(false, true),
@@ -57,8 +59,10 @@ public class SceneParams {
     private Map<String, Map<String, IResourceValue>> mFrameworkResources;
     private IProjectCallback mProjectCallback;
     private ILayoutLog mLogger;
+
     private boolean mCustomBackgroundEnabled;
     private int mCustomBackgroundColor;
+    private long mTimeout;
 
     /**
      *
@@ -108,6 +112,7 @@ public class SceneParams {
         mProjectCallback = projectCallback;
         mLogger = logger;
         mCustomBackgroundEnabled = false;
+        mTimeout = DEFAULT_TIMEOUT;
     }
 
     /**
@@ -130,11 +135,16 @@ public class SceneParams {
         mLogger = params.mLogger;
         mCustomBackgroundEnabled = params.mCustomBackgroundEnabled;
         mCustomBackgroundColor = params.mCustomBackgroundColor;
+        mTimeout = params.mTimeout;
     }
 
     public void setCustomBackgroundColor(int color) {
         mCustomBackgroundEnabled = true;
         mCustomBackgroundColor = color;
+    }
+
+    public void setCustomTimeout(long timeout) {
+        mTimeout = timeout;
     }
 
     public IXmlPullParser getLayoutDescription() {
@@ -199,5 +209,9 @@ public class SceneParams {
 
     public int getCustomBackgroundColor() {
         return mCustomBackgroundColor;
+    }
+
+    public long getTimeout() {
+        return mTimeout;
     }
 }

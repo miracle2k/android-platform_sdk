@@ -61,6 +61,7 @@ public class CanvasViewInfo implements IPropertySource {
     private final Rectangle mAbsRect;
     private final Rectangle mSelectionRect;
     private final String mName;
+    private final Object mViewObject;
     private final UiViewElementNode mUiViewNode;
     private final CanvasViewInfo mParent;
     private final ArrayList<CanvasViewInfo> mChildren = new ArrayList<CanvasViewInfo>();
@@ -86,6 +87,7 @@ public class CanvasViewInfo implements IPropertySource {
             int parentX, int parentY) {
         mParent = parent;
         mName = viewInfo.getClassName();
+        mViewObject = viewInfo.getViewObject();
 
         // The ViewInfo#getViewKey() method returns a cookie uniquely identifying the object
         // they represent on this side of the API.
@@ -208,6 +210,14 @@ public class CanvasViewInfo implements IPropertySource {
      */
     public String getName() {
         return mName;
+    }
+
+    /**
+     * Returns the View object associated with the {@link CanvasViewInfo}.
+     * @return the view object or null.
+     */
+    public Object getViewObject() {
+        return mViewObject;
     }
 
     // ---- Implementation of IPropertySource

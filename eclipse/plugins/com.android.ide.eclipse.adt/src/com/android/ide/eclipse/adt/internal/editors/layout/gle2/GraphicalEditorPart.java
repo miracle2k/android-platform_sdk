@@ -1290,10 +1290,6 @@ public class GraphicalEditorPart extends EditorPart
             }
         }
 
-        // at the moment we don't keep the scene around for future actions,
-        // so we must dispose it asap.
-        scene.dispose();
-
         model.refreshUi();
     }
 
