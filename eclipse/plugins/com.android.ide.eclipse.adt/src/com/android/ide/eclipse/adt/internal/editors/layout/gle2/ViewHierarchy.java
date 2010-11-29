@@ -95,6 +95,8 @@ public class ViewHierarchy {
      */
     private boolean mExplodedParents;
 
+    private LayoutScene mScene;
+
     /**
      * Sets the result of the layout rendering. The result object indicates if the layout
      * rendering succeeded. If it did, it contains a bitmap and the objects rectangles.
@@ -111,6 +113,12 @@ public class ViewHierarchy {
      *            nodes are padded during certain interactions.
      */
     /* package */ void setResult(LayoutScene scene, Set<UiElementNode> explodedNodes) {
+        // replace the previous scene, so the previous scene must be disposed.
+        if (mScene != null) {
+            mScene.dispose();
+        }
+
+        mScene = scene;
         mIsResultValid = (scene != null && scene.getResult() == SceneResult.SUCCESS);
         mExplodedParents = false;
 
@@ -199,6 +207,14 @@ public class ViewHierarchy {
         for (CanvasViewInfo child : vi.getChildren()) {
             addInvisibleParents(child, invisibleNodes);
         }
+    }
+
+    /**
+     * Returns the current {@link LayoutScene}.
+     * @return the scene or null if none have been set.
+     */
+    public LayoutScene getScene() {
+        return mScene;
     }
 
     /**

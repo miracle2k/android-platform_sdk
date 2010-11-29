@@ -29,6 +29,8 @@ import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElement
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.LayoutScene;
+import com.android.layoutlib.api.SceneResult;
+import com.android.layoutlib.api.LayoutScene.IAnimationListener;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.filesystem.EFS;
@@ -83,6 +85,7 @@ import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.w3c.dom.Node;
 
+import java.awt.image.BufferedImage;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashSet;
@@ -995,6 +998,46 @@ class LayoutCanvas extends Canvas {
         manager.add(mCutAction);
         manager.add(mCopyAction);
         manager.add(mPasteAction);
+
+        manager.add(new Separator());
+
+        // Add test action
+        // Don't add it at the top above (by the cut action) because the
+        // dynamic context menu makes some assumptions about where things are
+        manager.add(new Action("Run My Test", IAction.AS_PUSH_BUTTON) {
+            @Override
+            public void run() {
+                List<CanvasSelection> selection = mSelectionManager.getSelections();
+                CanvasSelection canvasSelection = selection.get(0);
+                CanvasViewInfo info = canvasSelection.getViewInfo();
+
+                Object viewObject = info.getViewObject();
+                if (viewObject != null) {
+                    LayoutScene scene = mViewHierarchy.getScene();
+
+                    scene.animate(viewObject, "testanim", false /*isFrameworkAnimation*/,
+                            new IAnimationListener() {
+
+                                public void onNewFrame(final BufferedImage image) {
+                                    getDisplay().asyncExec(new Runnable() {
+                                        public void run() {
+                                            mImageOverlay.setImage(image);
+                                            redraw();
+                                        }
+                                    });
+                                }
+
+                                public boolean isCanceled() {
+                                    return false;
+                                }
+
+                                public void done(SceneResult result) {
+                                }
+                            });
+                }
+            }
+        });
+
 
         manager.add(new Separator());
 
