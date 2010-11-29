@@ -1,0 +1,4 @@
+#Wed Nov 24 07:39:01 PST 2010
+eclipse.preferences.version=1
+org.moreunit.unitsourcefolder=adt\:src\:adt-tests\:unittests
+org.moreunit.useprojectsettings=true
