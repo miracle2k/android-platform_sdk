@@ -38,7 +38,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
 /**
- * Multi-page form editor for /res/values and /res/drawable XML files. 
+ * Multi-page form editor for /res/values and /res/drawable XML files.
  */
 public class ResourcesEditor extends AndroidXmlEditor {
 
@@ -63,14 +63,14 @@ public class ResourcesEditor extends AndroidXmlEditor {
     public UiElementNode getUiRootNode() {
         return mUiResourcesNode;
     }
-    
+
     // ---- Base Class Overrides ----
 
     /**
      * Returns whether the "save as" operation is supported by this editor.
      * <p/>
      * Save-As is a valid operation for the ManifestEditor since it acts on a
-     * single source file. 
+     * single source file.
      *
      * @see IEditorPart
      */
@@ -105,10 +105,10 @@ public class ResourcesEditor extends AndroidXmlEditor {
                     file.getName()));
         }
     }
-    
+
     /**
      * Processes the new XML Model, which XML root node is given.
-     * 
+     *
      * @param xml_doc The XML document, if available, or null if none exists.
      */
     @Override
@@ -125,19 +125,20 @@ public class ResourcesEditor extends AndroidXmlEditor {
                 Node node = (Node) xpath.evaluate("/" + resources_desc.getXmlName(),  //$NON-NLS-1$
                         xml_doc,
                         XPathConstants.NODE);
-                assert node != null && node.getNodeName().equals(resources_desc.getXmlName());
+                // Node can be null _or_ it must be the element we searched for.
+                assert node == null || node.getNodeName().equals(resources_desc.getXmlName());
 
-                // Refresh the manifest UI node and all its descendants 
+                // Refresh the manifest UI node and all its descendants
                 mUiResourcesNode.loadFromXmlNode(node);
             } catch (XPathExpressionException e) {
                 AdtPlugin.log(e, "XPath error when trying to find '%s' element in XML.", //$NON-NLS-1$
                         resources_desc.getXmlName());
             }
         }
-        
+
         super.xmlModelChanged(xml_doc);
     }
-    
+
     /**
      * Creates the initial UI Root Node, including the known mandatory elements.
      * @param force if true, a new UiRootNode is recreated even if it already exists.
@@ -147,10 +148,10 @@ public class ResourcesEditor extends AndroidXmlEditor {
         // The manifest UI node is always created, even if there's no corresponding XML node.
         if (mUiResourcesNode == null || force) {
             ElementDescriptor resources_desc =
-                    ResourcesDescriptors.getInstance().getElementDescriptor();   
+                    ResourcesDescriptors.getInstance().getElementDescriptor();
             mUiResourcesNode = resources_desc.createUiNode();
             mUiResourcesNode.setEditor(this);
-            
+
             onDescriptorsChanged();
         }
     }
