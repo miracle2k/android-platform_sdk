@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Represents one selection in {@link LayoutCanvas}.
  */
-/* package */ class CanvasSelection {
+/* package */ class SelectionItem {
 
     /** Current selected view info. Can be null. */
     private final CanvasViewInfo mCanvasViewInfo;
@@ -47,12 +47,12 @@ import java.util.List;
     private final String mName;
 
     /**
-     * Creates a new {@link CanvasSelection} object.
+     * Creates a new {@link SelectionItem} object.
      * @param canvasViewInfo The view info being selected. Must not be null.
      * @param gre the rules engine
      * @param nodeFactory the node factory
      */
-    public CanvasSelection(CanvasViewInfo canvasViewInfo,
+    public SelectionItem(CanvasViewInfo canvasViewInfo,
             RulesEngine gre,
             NodeFactory nodeFactory) {
 
@@ -160,11 +160,11 @@ import java.util.List;
      * Gets the XML text from the given selection for a text transfer.
      * The returned string can be empty but not null.
      */
-    /* package */ static String getAsText(LayoutCanvas canvas, List<CanvasSelection> selection) {
+    /* package */ static String getAsText(LayoutCanvas canvas, List<SelectionItem> selection) {
         StringBuilder sb = new StringBuilder();
 
         LayoutEditor layoutEditor = canvas.getLayoutEditor();
-        for (CanvasSelection cs : selection) {
+        for (SelectionItem cs : selection) {
             CanvasViewInfo vi = cs.getViewInfo();
             UiViewElementNode key = vi.getUiViewNode();
             Node node = key.getXmlNode();
@@ -186,10 +186,10 @@ import java.util.List;
      * @param items Items to wrap in elements
      * @return An array of wrapper elements. Never null.
      */
-    /* package */ static SimpleElement[] getAsElements(List<CanvasSelection> items) {
+    /* package */ static SimpleElement[] getAsElements(List<SelectionItem> items) {
         ArrayList<SimpleElement> elements = new ArrayList<SimpleElement>();
 
-        for (CanvasSelection cs : items) {
+        for (SelectionItem cs : items) {
             CanvasViewInfo vi = cs.getViewInfo();
 
             SimpleElement e = vi.toSimpleElement();

@@ -29,7 +29,7 @@ import com.android.ide.common.api.InsertType;
 /**
  * An {@link IViewRule} for android.widget.ScrollView.
  */
-public class ScrollViewRule extends BaseView {
+public class ScrollViewRule extends BaseViewRule {
 
     @Override
     public void onChildInserted(INode child, INode parent, InsertType insertType) {

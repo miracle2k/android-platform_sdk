@@ -27,7 +27,7 @@ import com.android.ide.common.api.InsertType;
 /**
  * An {@link IViewRule} for android.widget.SeekBar
  */
-public class SeekBarRule extends BaseView {
+public class SeekBarRule extends BaseViewRule {
 
     @Override
     public void onCreate(INode node, INode parent, InsertType insertType) {

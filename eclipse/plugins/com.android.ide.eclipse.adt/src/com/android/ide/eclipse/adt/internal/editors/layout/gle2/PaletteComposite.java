@@ -700,7 +700,7 @@ public class PaletteComposite extends Composite {
             AndroidTargetData data = layoutEditor.getTargetData();
             DocumentDescriptor documentDescriptor;
             if (data == null) {
-                documentDescriptor = new DocumentDescriptor("temp", null /*children*/); //$NON-NLS-1$
+                documentDescriptor = new DocumentDescriptor("temp", null/*children*/);//$NON-NLS-1$
             } else {
                 documentDescriptor = data.getLayoutDescriptors().getDescriptor();
             }
@@ -793,7 +793,7 @@ public class PaletteComposite extends Composite {
                                     && !ImageUtils.containsDarkPixels(cropped);
                             cropped = ImageUtils.createDropShadow(cropped,
                                     hasTransparency ? 3 : 5 /* shadowSize */,
-                                    !hasTransparency ? 0.6f : needsContrast ? 0.8f : 0.7f /* alpha */,
+                                    !hasTransparency ? 0.6f : needsContrast ? 0.8f : 0.7f/*alpha*/,
                                     0x000000 /* shadowRgb */);
 
                             Display display = getControl().getDisplay();

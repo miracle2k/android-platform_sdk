@@ -141,10 +141,10 @@ class LayoutCanvas extends Canvas {
     private final NodeFactory mNodeFactory = new NodeFactory();
 
     /** Vertical scaling & scrollbar information. */
-    private ScaleInfo mVScale;
+    private CanvasTransform mVScale;
 
     /** Horizontal scaling & scrollbar information. */
-    private ScaleInfo mHScale;
+    private CanvasTransform mHScale;
 
     /** Drag source associated with this canvas. */
     private DragSource mDragSource;
@@ -156,7 +156,7 @@ class LayoutCanvas extends Canvas {
      * when page's widget is already disposed.
      * Added the DisposeListener to OutlinePage2 in order to correctly dispose this page.
      **/
-    private OutlinePage2 mOutlinePage;
+    private OutlinePage mOutlinePage;
 
     /** Delete action for the Edit or context menu. */
     private Action mDeleteAction;
@@ -217,8 +217,8 @@ class LayoutCanvas extends Canvas {
         mRulesEngine = rulesEngine;
 
         mClipboardSupport = new ClipboardSupport(this, parent);
-        mHScale = new ScaleInfo(this, getHorizontalBar());
-        mVScale = new ScaleInfo(this, getVerticalBar());
+        mHScale = new CanvasTransform(this, getHorizontalBar());
+        mVScale = new CanvasTransform(this, getVerticalBar());
 
         mGCWrapper = new GCWrapper(mHScale, mVScale);
 
@@ -286,8 +286,8 @@ class LayoutCanvas extends Canvas {
         // --- setup outline ---
         // Get the outline associated with this editor, if any and of the right type.
         Object outline = layoutEditor.getAdapter(IContentOutlinePage.class);
-        if (outline instanceof OutlinePage2) {
-            mOutlinePage = (OutlinePage2) outline;
+        if (outline instanceof OutlinePage) {
+            mOutlinePage = (OutlinePage) outline;
         }
     }
 
@@ -368,7 +368,7 @@ class LayoutCanvas extends Canvas {
 
     /**
      * Returns our {@link DragSourceListener}.
-     * This is used by {@link OutlinePage2} to delegate drag source events.
+     * This is used by {@link OutlinePage} to delegate drag source events.
      */
     /* package */ DragSourceListener getDragListener() {
         return mGestureManager.getDragSourceListener();
@@ -376,7 +376,7 @@ class LayoutCanvas extends Canvas {
 
     /**
      * Returns our {@link DropTargetListener}.
-     * This is used by {@link OutlinePage2} to delegate drop target events.
+     * This is used by {@link OutlinePage} to delegate drop target events.
      */
     /* package */ DropTargetListener getDropListener() {
         return mGestureManager.getDropTargetListener();
@@ -408,24 +408,24 @@ class LayoutCanvas extends Canvas {
     }
 
     /**
-     * Returns the horizontal {@link ScaleInfo} transform object, which can map
+     * Returns the horizontal {@link CanvasTransform} transform object, which can map
      * a layout point into a control point.
      *
-     * @return A {@link ScaleInfo} for mapping between layout and control
+     * @return A {@link CanvasTransform} for mapping between layout and control
      *         coordinates in the horizontal dimension.
      */
-    /* package */ ScaleInfo getHorizontalTransform() {
+    /* package */ CanvasTransform getHorizontalTransform() {
         return mHScale;
     }
 
     /**
-     * Returns the vertical {@link ScaleInfo} transform object, which can map a
+     * Returns the vertical {@link CanvasTransform} transform object, which can map a
      * layout point into a control point.
      *
-     * @return A {@link ScaleInfo} for mapping between layout and control
+     * @return A {@link CanvasTransform} for mapping between layout and control
      *         coordinates in the vertical dimension.
      */
-    /* package */ ScaleInfo getVerticalTransform() {
+    /* package */ CanvasTransform getVerticalTransform() {
         return mVScale;
     }
 
@@ -632,11 +632,11 @@ class LayoutCanvas extends Canvas {
         // see if any of the selected items are among the invisible nodes, and if so
         // add them to a lazily constructed set which we pass back for rendering.
         Set<UiElementNode> result = null;
-        List<CanvasSelection> selections = mSelectionManager.getSelections();
+        List<SelectionItem> selections = mSelectionManager.getSelections();
         if (selections.size() > 0) {
             List<CanvasViewInfo> invisibleParents = mViewHierarchy.getInvisibleViews();
             if (invisibleParents.size() > 0) {
-                for (CanvasSelection item : selections) {
+                for (SelectionItem item : selections) {
                     CanvasViewInfo viewInfo = item.getViewInfo();
                     // O(n^2) here, but both the selection size and especially the
                     // invisibleParents size are expected to be small
@@ -809,7 +809,7 @@ class LayoutCanvas extends Canvas {
     /**
      * Helper to create the drag source for the given control.
      * <p/>
-     * This is static with package-access so that {@link OutlinePage2} can also
+     * This is static with package-access so that {@link OutlinePage} can also
      * create an exact copy of the source with the same attributes.
      */
     /* package */static DragSource createDragSource(Control control) {
@@ -824,7 +824,7 @@ class LayoutCanvas extends Canvas {
     /**
      * Helper to create the drop target for the given control.
      * <p/>
-     * This is static with package-access so that {@link OutlinePage2} can also
+     * This is static with package-access so that {@link OutlinePage} can also
      * create an exact copy of the drop target with the same attributes.
      */
     /* package */static DropTarget createDropTarget(Control control) {
@@ -1007,8 +1007,8 @@ class LayoutCanvas extends Canvas {
         manager.add(new Action("Run My Test", IAction.AS_PUSH_BUTTON) {
             @Override
             public void run() {
-                List<CanvasSelection> selection = mSelectionManager.getSelections();
-                CanvasSelection canvasSelection = selection.get(0);
+                List<SelectionItem> selection = mSelectionManager.getSelections();
+                SelectionItem canvasSelection = selection.get(0);
                 CanvasViewInfo info = canvasSelection.getViewInfo();
 
                 Object viewObject = info.getViewObject();

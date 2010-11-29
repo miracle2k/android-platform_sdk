@@ -28,7 +28,7 @@ import com.android.ide.common.api.InsertType;
  * TODO: This class should be pulled out of the ADT and bundled with the add ons
  * (not the core jar but an optional tool jar)
  */
-public class MapViewRule extends BaseView {
+public class MapViewRule extends BaseViewRule {
 
     @Override
     public void onCreate(INode node, INode parent, InsertType insertType) {

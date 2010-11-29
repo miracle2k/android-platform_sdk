@@ -476,7 +476,7 @@ public class GestureManager {
          * canvas selection due to the "sanitize" pass. Can be empty but never
          * null.
          */
-        private final ArrayList<CanvasSelection> mDragSelection = new ArrayList<CanvasSelection>();
+        private final ArrayList<SelectionItem> mDragSelection = new ArrayList<SelectionItem>();
 
         private SimpleElement[] mDragElements;
 
@@ -497,14 +497,14 @@ public class GestureManager {
             // element, *change* the selection to match the element under the
             // cursor and use that. If nothing can be selected, abort the drag
             // operation.
-            List<CanvasSelection> selections = mCanvas.getSelectionManager().getSelections();
+            List<SelectionItem> selections = mCanvas.getSelectionManager().getSelections();
             mDragSelection.clear();
 
             if (!selections.isEmpty()) {
                 // Is the cursor on top of a selected element?
                 boolean insideSelection = false;
 
-                for (CanvasSelection cs : selections) {
+                for (SelectionItem cs : selections) {
                     if (!cs.isRoot() && cs.getRect().contains(p.x, p.y)) {
                         insideSelection = true;
                         break;
@@ -532,7 +532,7 @@ public class GestureManager {
                         mDragSelection.addAll(selections);
                     } else {
                         // Only drag non-root items.
-                        for (CanvasSelection cs : selections) {
+                        for (SelectionItem cs : selections) {
                             if (!cs.isRoot()) {
                                 mDragSelection.add(cs);
                             }
@@ -555,9 +555,9 @@ public class GestureManager {
             e.doit = !mDragSelection.isEmpty();
             int imageCount = mDragSelection.size();
             if (e.doit) {
-                mDragElements = CanvasSelection.getAsElements(mDragSelection);
+                mDragElements = SelectionItem.getAsElements(mDragSelection);
                 GlobalCanvasDragInfo.getInstance().startDrag(mDragElements,
-                        mDragSelection.toArray(new CanvasSelection[imageCount]),
+                        mDragSelection.toArray(new SelectionItem[imageCount]),
                         mCanvas, new Runnable() {
                             public void run() {
                                 mCanvas.getClipboardSupport().deleteSelection("Remove",
@@ -593,7 +593,7 @@ public class GestureManager {
                     if (imageCount > 0) {
                         ImageData data = image.getImageData();
                         Rectangle imageRectangle = new Rectangle(0, 0, data.width, data.height);
-                        for (CanvasSelection item : mDragSelection) {
+                        for (SelectionItem item : mDragSelection) {
                             Rectangle bounds = item.getRect();
                             // Some bounds can be outside the rendered rectangle (for
                             // example, in an absolute layout, you can have negative
@@ -630,7 +630,7 @@ public class GestureManager {
          */
         public void dragSetData(DragSourceEvent e) {
             if (TextTransfer.getInstance().isSupportedType(e.dataType)) {
-                e.data = CanvasSelection.getAsText(mCanvas, mDragSelection);
+                e.data = SelectionItem.getAsText(mCanvas, mDragSelection);
                 return;
             }
 

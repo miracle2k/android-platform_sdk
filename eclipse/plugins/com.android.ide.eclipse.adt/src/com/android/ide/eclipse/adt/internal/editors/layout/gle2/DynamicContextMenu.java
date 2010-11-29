@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
  * This class is tied to a specific {@link LayoutCanvas} instance and a root {@link MenuManager}.
  * <p/>
  * Two instances of this are used: one created by {@link LayoutCanvas} and the other one
- * created by {@link OutlinePage2}. Different root {@link MenuManager}s are populated, however
+ * created by {@link OutlinePage}. Different root {@link MenuManager}s are populated, however
  * they are both linked to the current selection state of the {@link LayoutCanvas}.
  */
 /* package */ class DynamicContextMenu {
@@ -74,7 +74,7 @@ import java.util.regex.Pattern;
      * @param canvas The {@link LayoutCanvas} providing the selection, the node factory and
      *   the rules engine.
      * @param rootMenu The root of the context menu displayed. In practice this may be the
-     *   context menu manager of the {@link LayoutCanvas} or the one from {@link OutlinePage2}.
+     *   context menu manager of the {@link LayoutCanvas} or the one from {@link OutlinePage}.
      */
     public DynamicContextMenu(LayoutEditor editor, LayoutCanvas canvas, MenuManager rootMenu) {
         mEditor = editor;
@@ -218,7 +218,7 @@ import java.util.regex.Pattern;
             final TreeMap<String, ArrayList<MenuAction>> outActionsMap,
             final TreeMap<String, MenuAction.Group> outGroupsMap) {
         int maxMenuSelection = 0;
-        for (CanvasSelection selection : mCanvas.getSelectionManager().getSelections()) {
+        for (SelectionItem selection : mCanvas.getSelectionManager().getSelections()) {
             List<MenuAction> viewActions = null;
             if (selection != null) {
                 CanvasViewInfo vi = selection.getViewInfo();

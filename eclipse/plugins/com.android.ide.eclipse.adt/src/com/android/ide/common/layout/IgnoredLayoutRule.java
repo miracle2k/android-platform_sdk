@@ -30,7 +30,7 @@ import com.android.ide.common.api.INode;
  * LinearLayout even though it extends it. Our ZoomControls rule is therefore a
  * subclass of this {@link IgnoredLayoutRule} class.
  */
-public abstract class IgnoredLayoutRule extends BaseLayout {
+public abstract class IgnoredLayoutRule extends BaseLayoutRule {
     @Override
     public DropFeedback onDropEnter(INode targetNode, IDragElement[] elements) {
         // Do nothing; this layout rule corresponds to a layout that

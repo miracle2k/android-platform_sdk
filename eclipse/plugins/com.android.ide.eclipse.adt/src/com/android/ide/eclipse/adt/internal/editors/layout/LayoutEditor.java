@@ -26,8 +26,8 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.CustomVie
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
-import com.android.ide.eclipse.adt.internal.editors.layout.gle2.OutlinePage2;
-import com.android.ide.eclipse.adt.internal.editors.layout.gle2.PropertySheetPage2;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.OutlinePage;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.PropertySheetPage;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
@@ -315,7 +315,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         if (IContentOutlinePage.class == adapter && mGraphicalEditor != null) {
 
             if (mOutline == null && mGraphicalEditor != null) {
-                mOutline = new OutlinePage2(mGraphicalEditor);
+                mOutline = new OutlinePage(mGraphicalEditor);
             }
 
             return mOutline;
@@ -323,7 +323,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
 
         if (IPropertySheetPage.class == adapter && mGraphicalEditor != null) {
             if (mPropertyPage == null) {
-                mPropertyPage = new PropertySheetPage2();
+                mPropertyPage = new PropertySheetPage();
             }
 
             return mPropertyPage;
