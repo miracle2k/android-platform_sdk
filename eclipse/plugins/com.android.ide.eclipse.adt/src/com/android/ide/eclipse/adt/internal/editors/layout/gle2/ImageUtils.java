@@ -17,10 +17,14 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.Rect;
 
+import org.eclipse.swt.graphics.Rectangle;
+
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Utilities related to image processing.
@@ -322,5 +326,29 @@ public class ImageUtils {
         g2.dispose();
 
         return image;
+    }
+
+    /**
+     * Returns a bounding rectangle for the given list of rectangles. If the list is
+     * empty, the bounding rectangle is null.
+     *
+     * @param items the list of rectangles to compute a bounding rectangle for (may not be
+     *            null)
+     * @return a bounding rectangle of the passed in rectangles, or null if the list is
+     *         empty
+     */
+    public static Rectangle getBoundingRectangle(List<Rectangle> items) {
+        Iterator<Rectangle> iterator = items.iterator();
+        if (!iterator.hasNext()) {
+            return null;
+        }
+
+        Rectangle bounds = iterator.next();
+        Rectangle union = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+        while (iterator.hasNext()) {
+            union.add(iterator.next());
+        }
+
+        return union;
     }
 }

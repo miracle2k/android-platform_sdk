@@ -391,9 +391,20 @@ public class GraphicalEditorPart extends EditorPart
         double s = mCanvasViewer.getCanvas().getScale();
 
         if (direction > 0) {
-            s = s * 2;
+            s = s * 1.2;
         } else {
-            s = s / 2;
+            s = s / 1.2;
+        }
+
+        // Some operations are faster if the zoom is EXACTLY 1.0 rather than ALMOST 1.0.
+        // (This is because there is a fast-path when image copying and the scale is 1.0;
+        // in that case it does not have to do any scaling).
+        //
+        // If you zoom out 10 times and then back in 10 times, small rounding errors mean
+        // that you end up with a scale=1.0000000000000004. In the cases, when you get close
+        // to 1.0, just make the zoom an exact 1.0.
+        if (Math.abs(s-1.0) < 0.0001) {
+            s = 1.0;
         }
 
         mCanvasViewer.getCanvas().setScale(s, true /*redraw*/);
@@ -1666,16 +1677,9 @@ public class GraphicalEditorPart extends EditorPart
         boolean isFrameworkResource = false;
         if (colon != -1) {
             // The URL contains a package name.
-
-            // FIXME: We should consult the package and Do The Right Thing.
-            // If the package is @android (which is by far the most common case),
-            // then maybe we can look up the corresponding file in the "data/" folder
-            // in the SDK.
-            // Otherwise, the package MAY be the same package as the current project,
-            // in which case we can just ignore it (because it will be exactly
-            // relative to the current project's folder), and otherwise we may
-            // have to look in other projects. Fortunately, this is not common.
-
+            // While the url format technically allows other package names,
+            // the platform apparently only supports @android for now (or if it does,
+            // there are no usages in the current code base so this is not common).
             String packageName = url.substring(typeBegin, colon);
             if ("android".equals(packageName)) {  //$NON-NLS-1$
                 isFrameworkResource = true;

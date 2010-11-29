@@ -33,6 +33,9 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.TypedEvent;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Rectangle;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -485,6 +488,8 @@ public class GestureManager {
          * {@inheritDoc}
          */
         public void dragStart(DragSourceEvent e) {
+            LayoutPoint p = LayoutPoint.create(mCanvas, e);
+
             // We need a selection (simple or multiple) to do any transfer.
             // If there's a selection *and* the cursor is over this selection,
             // use all the currently selected elements.
@@ -497,8 +502,6 @@ public class GestureManager {
 
             if (!selections.isEmpty()) {
                 // Is the cursor on top of a selected element?
-                LayoutPoint p = LayoutPoint.create(mCanvas, e);
-
                 boolean insideSelection = false;
 
                 for (CanvasSelection cs : selections) {
@@ -540,7 +543,6 @@ public class GestureManager {
 
             // If you are dragging a non-selected item, select it
             if (mDragSelection.isEmpty()) {
-                LayoutPoint p = ControlPoint.create(mCanvas, e).toLayout();
                 CanvasViewInfo vi = mCanvas.getViewHierarchy().findViewInfoAt(p);
                 if (vi != null && !vi.isRoot()) {
                     mCanvas.getSelectionManager().selectSingle(vi);
@@ -551,10 +553,11 @@ public class GestureManager {
             SelectionManager.sanitize(mDragSelection);
 
             e.doit = !mDragSelection.isEmpty();
+            int imageCount = mDragSelection.size();
             if (e.doit) {
                 mDragElements = CanvasSelection.getAsElements(mDragSelection);
                 GlobalCanvasDragInfo.getInstance().startDrag(mDragElements,
-                        mDragSelection.toArray(new CanvasSelection[mDragSelection.size()]),
+                        mDragSelection.toArray(new CanvasSelection[imageCount]),
                         mCanvas, new Runnable() {
                             public void run() {
                                 mCanvas.getClipboardSupport().deleteSelection("Remove",
@@ -565,7 +568,7 @@ public class GestureManager {
 
             // If you drag on the -background-, we make that into a marquee
             // selection
-            if (!e.doit || (mDragSelection.size() == 1 && mDragSelection.get(0).isRoot())) {
+            if (!e.doit || (imageCount == 1 && mDragSelection.get(0).isRoot())) {
                 boolean toggle = (mLastStateMask & (SWT.CTRL | SWT.SHIFT | SWT.COMMAND)) != 0;
                 startGesture(ControlPoint.create(mCanvas, e),
                         new MarqueeGesture(mCanvas, toggle), mLastStateMask);
@@ -575,6 +578,42 @@ public class GestureManager {
                 // Otherwise, the drag means you are moving something
                 mCanvas.showInvisibleViews(true);
                 startGesture(ControlPoint.create(mCanvas, e), new MoveGesture(mCanvas), 0);
+
+                // Render drag-images: Copy portions of the full screen render.
+                Image image = mCanvas.getImageOverlay().getImage();
+                if (image != null) {
+                    /**
+                     * Transparency of the dragged image ([0-255]). We're using 30%
+                     * translucency to make the image faint and not obscure the drag
+                     * feedback below it.
+                     */
+                    final byte DRAG_TRANSPARENCY = (byte) (0.3 * 255);
+
+                    List<Rectangle> rectangles = new ArrayList<Rectangle>(imageCount);
+                    if (imageCount > 0) {
+                        ImageData data = image.getImageData();
+                        Rectangle imageRectangle = new Rectangle(0, 0, data.width, data.height);
+                        for (CanvasSelection item : mDragSelection) {
+                            Rectangle bounds = item.getRect();
+                            // Some bounds can be outside the rendered rectangle (for
+                            // example, in an absolute layout, you can have negative
+                            // coordinates), so create the intersection of these bounds.
+                            Rectangle clippedBounds = imageRectangle.intersection(bounds);
+                            rectangles.add(clippedBounds);
+                        }
+                        Rectangle boundingBox = ImageUtils.getBoundingRectangle(rectangles);
+                        double scale = mCanvas.getHorizontalTransform().getScale();
+                        e.image = SwtUtils.drawRectangles(image, rectangles, boundingBox, scale,
+                                DRAG_TRANSPARENCY);
+
+                        // Set the image offset such that we preserve the relative
+                        // distance between the mouse pointer and the top left corner of
+                        // the dragged view
+                        int deltaX = (int) (scale * (boundingBox.x - p.x));
+                        int deltaY = (int) (scale * (boundingBox.y - p.y));
+                        SwtUtils.setDragImageOffsets(e, -deltaX, -deltaY);
+                    }
+                }
             }
 
             // No hover during drag (since no mouse over events are delivered
