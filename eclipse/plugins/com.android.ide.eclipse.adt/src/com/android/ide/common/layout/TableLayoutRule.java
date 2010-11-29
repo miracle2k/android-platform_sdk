@@ -15,6 +15,8 @@
  */
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.FQCN_TABLE_ROW;
+
 import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;

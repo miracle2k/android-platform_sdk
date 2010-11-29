@@ -15,6 +15,9 @@
  */
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+
 import com.android.ide.common.api.IAttributeInfo;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
@@ -50,7 +53,7 @@ public class TestNode implements INode {
     }
 
     public TestNode id(String id) {
-        return set(BaseView.ANDROID_URI, BaseView.ATTR_ID, id);
+        return set(ANDROID_URI, ATTR_ID, id);
     }
 
     public TestNode set(String uri, String name, String value) {

@@ -16,19 +16,22 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+
 import com.android.ide.common.api.DrawingStyle;
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IAttributeInfo;
+import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.IFeedbackPainter;
 import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.INode;
+import com.android.ide.common.api.INode.IAttribute;
 import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
-import com.android.ide.common.api.IAttributeInfo.Format;
-import com.android.ide.common.api.INode.IAttribute;
 
 import java.util.ArrayList;
 import java.util.Collections;

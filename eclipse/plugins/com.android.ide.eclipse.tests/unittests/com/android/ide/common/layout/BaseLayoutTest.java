@@ -16,6 +16,9 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+
 import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.Rect;
@@ -64,7 +67,7 @@ public class BaseLayoutTest extends LayoutTestBase {
      */
     public final void testCollectIds2() {
         IDragElement[] elements = TestDragElement.create(TestDragElement.create(
-                "android.widget.Button", new Rect(0, 0, 100, 80)).set("myuri", BaseView.ATTR_ID,
+                "android.widget.Button", new Rect(0, 0, 100, 80)).set("myuri", ATTR_ID,
                 "@+id/Button01"));
 
         Map<String, Pair<String, String>> idMap = new HashMap<String, Pair<String, String>>();
@@ -217,9 +220,9 @@ public class BaseLayoutTest extends LayoutTestBase {
     public final void testDefaultAttributeFilter() {
         assertEquals("true", BaseLayout.DEFAULT_ATTR_FILTER.replace("myuri", "layout_alignRight",
                 "true"));
-        assertEquals(null, BaseLayout.DEFAULT_ATTR_FILTER.replace(BaseLayout.ANDROID_URI,
+        assertEquals(null, BaseLayout.DEFAULT_ATTR_FILTER.replace(ANDROID_URI,
                 "layout_alignRight", "true"));
-        assertEquals("true", BaseLayout.DEFAULT_ATTR_FILTER.replace(BaseLayout.ANDROID_URI,
+        assertEquals("true", BaseLayout.DEFAULT_ATTR_FILTER.replace(ANDROID_URI,
                 "myproperty", "true"));
     }
 

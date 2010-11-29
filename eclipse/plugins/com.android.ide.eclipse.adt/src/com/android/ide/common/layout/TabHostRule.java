@@ -16,6 +16,18 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ORIENTATION;
+import static com.android.ide.common.layout.LayoutConstants.FQCN_FRAME_LAYOUT;
+import static com.android.ide.common.layout.LayoutConstants.FQCN_LINEAR_LAYOUT;
+import static com.android.ide.common.layout.LayoutConstants.FQCN_TAB_WIDGET;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_VERTICAL;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
+
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
@@ -41,8 +53,8 @@ public class TabHostRule extends IgnoredLayoutRule {
             INode linear = node.appendChild(FQCN_LINEAR_LAYOUT);
             linear.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
             linear.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
-            linear.setAttribute(ANDROID_URI, LinearLayoutRule.ATTR_ORIENTATION,
-                    LinearLayoutRule.VALUE_VERTICAL);
+            linear.setAttribute(ANDROID_URI, ATTR_ORIENTATION,
+                    VALUE_VERTICAL);
 
             INode tab = linear.appendChild(FQCN_TAB_WIDGET);
             tab.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);

@@ -16,15 +16,21 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ORIENTATION;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_HORIZONTAL;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_VERTICAL;
+
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.MenuAction;
+import com.android.ide.common.api.MenuAction.Choices;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
-import com.android.ide.common.api.MenuAction.Choices;
 
 import java.util.List;
 
@@ -84,7 +90,7 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
         rule.onDropped(targetNode, elements, feedback, dropPoint);
         assertEquals(1, targetNode.getChildren().length);
         assertEquals("@+id/Button01", targetNode.getChildren()[0].getStringAttr(
-                BaseView.ANDROID_URI, BaseView.ATTR_ID));
+                ANDROID_URI, ATTR_ID));
     }
 
     // Utility for other tests
@@ -92,9 +98,9 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
             int insertIndex, int currentIndex,
             String... graphicsFragments) {
         INode linearLayout = TestNode.create("android.widget.LinearLayout").id(
-                "@+id/LinearLayout01").bounds(new Rect(0, 0, 240, 480)).set(BaseView.ANDROID_URI,
-                LinearLayoutRule.ATTR_ORIENTATION,
-                vertical ? LinearLayoutRule.VALUE_VERTICAL : LinearLayoutRule.VALUE_HORIZONTAL)
+                "@+id/LinearLayout01").bounds(new Rect(0, 0, 240, 480)).set(ANDROID_URI,
+                ATTR_ORIENTATION,
+                vertical ? VALUE_VERTICAL : VALUE_HORIZONTAL)
                 .add(
                         TestNode.create("android.widget.Button").id("@+id/Button01").bounds(
                                 new Rect(0, 0, 100, 80)),
@@ -131,7 +137,7 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
         LinearLayoutRule rule = new LinearLayoutRule();
         INode node = TestNode.create("android.widget.Button").id("@+id/Button012");
 
-        assertNull(node.getStringAttr(BaseView.ANDROID_URI, LinearLayoutRule.ATTR_ORIENTATION));
+        assertNull(node.getStringAttr(ANDROID_URI, ATTR_ORIENTATION));
 
         List<MenuAction> contextMenu = rule.getContextMenu(node);
         assertEquals(4, contextMenu.size());
@@ -142,14 +148,14 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
 
         MenuAction.Choices choices = (Choices) orientationAction;
         IMenuCallback callback = choices.getCallback();
-        callback.action(orientationAction, LinearLayoutRule.VALUE_VERTICAL, true);
+        callback.action(orientationAction, VALUE_VERTICAL, true);
 
-        String orientation = node.getStringAttr(BaseView.ANDROID_URI,
-                LinearLayoutRule.ATTR_ORIENTATION);
-        assertEquals(LinearLayoutRule.VALUE_VERTICAL, orientation);
-        callback.action(orientationAction, LinearLayoutRule.VALUE_HORIZONTAL, true);
-        orientation = node.getStringAttr(BaseView.ANDROID_URI, LinearLayoutRule.ATTR_ORIENTATION);
-        assertEquals(LinearLayoutRule.VALUE_HORIZONTAL, orientation);
+        String orientation = node.getStringAttr(ANDROID_URI,
+                ATTR_ORIENTATION);
+        assertEquals(VALUE_VERTICAL, orientation);
+        callback.action(orientationAction, VALUE_HORIZONTAL, true);
+        orientation = node.getStringAttr(ANDROID_URI, ATTR_ORIENTATION);
+        assertEquals(VALUE_HORIZONTAL, orientation);
     }
 
     public void testDragInEmptyWithBounds() {

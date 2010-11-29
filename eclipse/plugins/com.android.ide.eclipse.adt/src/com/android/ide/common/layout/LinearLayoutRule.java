@@ -16,6 +16,14 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ORIENTATION;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_HORIZONTAL;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_VERTICAL;
+
 import com.android.ide.common.api.DrawingStyle;
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IDragElement;
@@ -25,12 +33,12 @@ import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.IViewMetadata;
+import com.android.ide.common.api.IViewMetadata.FillPreference;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
-import com.android.ide.common.api.IViewMetadata.FillPreference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,10 +49,6 @@ import java.util.Map;
  * classes.
  */
 public class LinearLayoutRule extends BaseLayout {
-    public static String ATTR_ORIENTATION = "orientation"; //$NON-NLS-1$
-    public static String VALUE_HORIZONTAL = "horizontal";  //$NON-NLS-1$
-    public static String VALUE_VERTICAL = "vertical";      //$NON-NLS-1$
-
     /**
      * Add an explicit Orientation toggle to the context menu.
      */

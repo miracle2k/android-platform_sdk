@@ -16,17 +16,21 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
+
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IAttributeInfo;
+import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.api.IClientRulesEngine;
 import com.android.ide.common.api.IDragElement;
+import com.android.ide.common.api.IDragElement.IDragAttribute;
 import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
-import com.android.ide.common.api.IAttributeInfo.Format;
-import com.android.ide.common.api.IDragElement.IDragAttribute;
 
 import java.util.Arrays;
 import java.util.HashMap;
