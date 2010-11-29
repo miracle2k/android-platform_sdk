@@ -94,6 +94,12 @@ public class ViewHierarchy {
      */
     private boolean mExplodedParents;
 
+    /**
+     * List of included view infos in the current view hierarchy.
+     */
+    private List<CanvasViewInfo> mIncluded;
+
+    /** The layout scene for the current view hierarchy */
     private LayoutScene mScene;
 
     /**
@@ -131,6 +137,7 @@ public class ViewHierarchy {
         mScene = scene;
         mIsResultValid = (scene != null && scene.getResult().isSuccess());
         mExplodedParents = false;
+        mIncluded = null;
 
         if (mIsResultValid && scene != null) {
             ViewInfo root = scene.getRootView();
@@ -140,7 +147,7 @@ public class ViewHierarchy {
                 mLastValidViewInfoRoot = new CanvasViewInfo(scene.getRootView());
             }
 
-            updateNodeProxies(mLastValidViewInfoRoot);
+            updateNodeProxies(mLastValidViewInfoRoot, null);
 
             // Update the data structures related to tracking invisible and exploded nodes.
             // We need to find the {@link CanvasViewInfo} objects that correspond to
@@ -166,7 +173,7 @@ public class ViewHierarchy {
      * This is a recursive call that updates the whole hierarchy starting at the given
      * view info.
      */
-    private void updateNodeProxies(CanvasViewInfo vi) {
+    private void updateNodeProxies(CanvasViewInfo vi, UiViewElementNode parentKey) {
         if (vi == null) {
             return;
         }
@@ -175,10 +182,18 @@ public class ViewHierarchy {
 
         if (key != null) {
             mCanvas.getNodeFactory().create(vi);
+
+            if (key != null && parentKey == null && vi.getParent() != null) {
+                // This is an included view root
+                if (mIncluded == null) {
+                    mIncluded = new ArrayList<CanvasViewInfo>();
+                }
+                mIncluded.add(vi);
+            }
         }
 
         for (CanvasViewInfo child : vi.getChildren()) {
-            updateNodeProxies(child);
+            updateNodeProxies(child, key);
         }
     }
 
@@ -578,5 +593,15 @@ public class ViewHierarchy {
         }
 
         return nodes;
+    }
+
+    /**
+     * Returns the list of included views in the current view hierarchy. Can be null
+     * when there are no included views.
+     *
+     * @return a list of included views, or null
+     */
+    public List<CanvasViewInfo> getIncluded() {
+        return mIncluded;
     }
 }

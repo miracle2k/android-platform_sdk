@@ -204,6 +204,8 @@ public class OutlinePage extends ContentOutlinePage
             Object[] expanded = tv.getExpandedElements();
             tv.refresh();
             tv.setExpandedElements(expanded);
+            // Ensure that the root is expanded
+            tv.expandToLevel(rootViewInfo, 2);
         }
     }
 
@@ -343,7 +345,7 @@ public class OutlinePage extends ContentOutlinePage
      * Label provider for the Outline model.
      * Objects are going to be {@link CanvasViewInfo}.
      */
-    private static class LabelProvider implements ILabelProvider {
+    private class LabelProvider implements ILabelProvider {
 
         /**
          * Returns the element's logo with a fallback on the android logo.
@@ -375,13 +377,18 @@ public class OutlinePage extends ContentOutlinePage
          * Uses UiElementNode.shortDescription for the label for this tree item.
          */
         public String getText(Object element) {
+            CanvasViewInfo vi = null;
             if (element instanceof CanvasViewInfo) {
-                element = ((CanvasViewInfo) element).getUiViewNode();
+                vi = (CanvasViewInfo) element;
+                element = vi.getUiViewNode();
             }
 
             if (element instanceof UiElementNode) {
                 UiElementNode node = (UiElementNode) element;
                 return node.getShortDescription();
+            } else if (element == null && vi != null) {
+                // It's an inclusion-context
+                return mGraphicalEditorPart.getIncludedWithinId();
             }
 
             return element == null ? "(null)" : element.toString();  //$NON-NLS-1$

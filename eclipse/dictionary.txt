@@ -29,7 +29,10 @@ codebase
 codename
 codenames
 combo
+combobox
+combos
 config
+configs
 configurability
 congrats
 coords
@@ -48,6 +51,7 @@ diff
 diffs
 dirs
 dpi
+ed
 editable
 enum
 enums
@@ -58,6 +62,7 @@ foo
 fqcn
 gen
 groovy
+guava
 hardcoded
 hotfix
 href
@@ -68,6 +73,7 @@ iff
 img
 infos
 init
+inits
 inline
 instanceof
 int
@@ -79,6 +85,7 @@ lifecycle
 linestyle
 linux
 locale
+locales
 logo
 luminance
 mac
@@ -87,6 +94,8 @@ marquee
 metadata
 min
 multi
+multimap
+multimaps
 namespace
 namespaces
 num
@@ -120,6 +129,7 @@ reparse
 reparses
 rescales
 residual
+sans
 scrollable
 scrollbar
 scrollbars
@@ -139,6 +149,7 @@ subclassing
 submenu
 supertype
 syncs
+thematically
 themed
 tmp
 tooltip
@@ -155,12 +166,15 @@ unset
 upcoming
 uri
 url
+urls
 validator
 varargs
 verbosity
 vs
 webtools
 workflow
+xdpi
 xml
 xmlns
+ydpi
 zipalign

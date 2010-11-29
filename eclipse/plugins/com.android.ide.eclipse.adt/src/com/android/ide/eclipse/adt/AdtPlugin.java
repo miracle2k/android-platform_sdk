@@ -23,6 +23,7 @@ import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.VersionCheck;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder;
 import com.android.ide.eclipse.adt.internal.editors.menu.MenuEditor;
 import com.android.ide.eclipse.adt.internal.editors.resources.ResourcesEditor;
 import com.android.ide.eclipse.adt.internal.editors.xml.XmlEditor;
@@ -249,6 +250,9 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
         // initialize editors
         startEditors();
 
+        // Listen on resource file edits for updates to file inclusion
+        IncludeFinder.start();
+
         // Ping the usage server and parse the SDK content.
         // This is deferred in separate jobs to avoid blocking the bundle start.
         // We also serialize them to avoid too many parallel jobs when Eclipse starts.
@@ -282,6 +286,7 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
         super.stop(context);
 
         stopEditors();
+        IncludeFinder.stop();
 
         mRed.dispose();
         synchronized (AdtPlugin.class) {

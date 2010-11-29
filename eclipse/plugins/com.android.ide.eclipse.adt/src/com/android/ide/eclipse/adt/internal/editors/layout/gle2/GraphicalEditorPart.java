@@ -69,6 +69,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.draw2d.geometry.Rectangle;
@@ -156,6 +157,20 @@ public class GraphicalEditorPart extends EditorPart
      *   which all listen to each others indirectly.
      */
 
+    /**
+     * Session-property on files which specifies the initial config state to be used on
+     * this file
+     */
+    public final static QualifiedName NAME_INITIAL_STATE =
+        new QualifiedName(AdtPlugin.PLUGIN_ID, "initialstate");//$NON-NLS-1$
+
+    /**
+     * Session-property on files which specifies the inclusion-context (name of another layout
+     * which should be "including" this layout) when the file is opened
+     */
+    public final static QualifiedName NAME_INCLUDE =
+        new QualifiedName(AdtPlugin.PLUGIN_ID, "includer");//$NON-NLS-1$
+
     /** Reference to the layout editor */
     private final LayoutEditor mLayoutEditor;
 
@@ -183,6 +198,12 @@ public class GraphicalEditorPart extends EditorPart
 
     /** Styled text displaying the most recent error in the error view. */
     private StyledText mErrorLabel;
+
+    /**
+     * The resource name of a file that should surround this file (e.g. include this file
+     * visually), or null if not applicable
+     */
+    private String mIncludedWithinId;
 
     private Map<String, Map<String, IResourceValue>> mConfiguredFrameworkRes;
     private Map<String, Map<String, IResourceValue>> mConfiguredProjectRes;
@@ -341,7 +362,25 @@ public class GraphicalEditorPart extends EditorPart
         };
 
         mConfigListener = new ConfigListener();
-        mConfigComposite = new ConfigurationComposite(mConfigListener, customButtons, parent, SWT.BORDER);
+
+        // Check whether somebody has requested an initial state for the newly opened file.
+        // The initial state is a serialized version of the state compatible with
+        // {@link ConfigurationComposite#CONFIG_STATE}.
+        String initialState = null;
+        if (mEditedFile != null) {
+            try {
+                initialState = (String) mEditedFile.getSessionProperty(NAME_INITIAL_STATE);
+                if (initialState != null) {
+                    // Only use once
+                    mEditedFile.setSessionProperty(NAME_INITIAL_STATE, null);
+                }
+            } catch (CoreException e) {
+                AdtPlugin.log(e, "Can't read session property %1$s", NAME_INITIAL_STATE);
+            }
+        }
+
+        mConfigComposite = new ConfigurationComposite(mConfigListener, customButtons, parent,
+                SWT.BORDER, initialState);
 
         mSashPalette = new SashForm(parent, SWT.HORIZONTAL);
         mSashPalette.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -825,6 +864,28 @@ public class GraphicalEditorPart extends EditorPart
         }
     }
 
+    /**
+     * Returns the currently edited file
+     *
+     * @return the currently edited file, or null
+     */
+    public IFile getEditedFile() {
+        return mEditedFile;
+    }
+
+    /**
+     * Returns the project for the currently edited file, or null
+     *
+     * @return the project containing the edited file, or null
+     */
+    public IProject getProject() {
+        if (mEditedFile != null) {
+            return mEditedFile.getProject();
+        } else {
+            return null;
+        }
+    }
+
     // ----------------
 
     /**
@@ -918,6 +979,20 @@ public class GraphicalEditorPart extends EditorPart
             mRulesEngine = new RulesEngine(this, mEditedFile.getProject());
             if (mCanvasViewer != null) {
                 mCanvasViewer.getCanvas().setRulesEngine(mRulesEngine);
+            }
+        }
+
+        // Pick up hand-off data: somebody requesting this file to be opened may have
+        // requested that it should be opened as included within another file
+        if (mEditedFile != null) {
+            try {
+                mIncludedWithinId = (String) mEditedFile.getSessionProperty(NAME_INCLUDE);
+                if (mIncludedWithinId != null) {
+                    // Only use once
+                    mEditedFile.setSessionProperty(NAME_INCLUDE, null);
+                }
+            } catch (CoreException e) {
+                AdtPlugin.log(e, "Can't access session property %1$s", NAME_INCLUDE);
             }
         }
     }
@@ -1315,10 +1390,12 @@ public class GraphicalEditorPart extends EditorPart
         // Abort the rendering if the resources are not found.
         if (configuredProjectRes == null) {
             displayError("Missing project resources for current configuration.");
+            return null;
         }
 
         if (frameworkResources == null) {
             displayError("Missing framework resources.");
+            return null;
         }
 
         // Lazily create the project callback the first time we need it
@@ -1368,6 +1445,7 @@ public class GraphicalEditorPart extends EditorPart
         String theme = mConfigComposite.getTheme();
         if (theme == null) {
             displayError("Missing theme.");
+            return null;
         }
 
         if (mUseExplodeMode) {
@@ -1396,32 +1474,31 @@ public class GraphicalEditorPart extends EditorPart
         IXmlPullParser topParser = modelParser;
 
         // Code to support editing included layout
-        // FIXME: refactor this somewhere else, and deal with edit workflow
-        if (false) {
-            // name of the top layout.
-            String contextLayoutName = "includes";
 
-            // find the layout file.
+        // Outer layout name:
+        String contextLayoutName = mIncludedWithinId;
+        if (contextLayoutName != null) {
+            // Find the layout file.
             Map<String, IResourceValue> layouts = configuredProjectRes.get(
                     ResourceType.LAYOUT.getName());
-
             IResourceValue contextLayout = layouts.get(contextLayoutName);
-            File layoutFile = new File(contextLayout.getValue());
-            if (layoutFile.isFile()) {
-                try {
-                    // get the name of the layout actually being edited, without the extension
-                    // as it's what IXmlPullParser.getParser(String) will receive.
-                    String queryLayoutName = mEditedFile.getName().substring(
-                            0, mEditedFile.getName().indexOf('.'));
+            if (contextLayout != null) {
+                String path = contextLayout.getValue();
 
-                    topParser = new ContextPullParser(queryLayoutName, modelParser);
-                    topParser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
-                    topParser.setInput(new FileReader(layoutFile));
-                } catch (XmlPullParserException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (FileNotFoundException e) {
-                    // this will not happen since we check above.
+                File layoutFile = new File(path);
+                if (layoutFile.isFile()) {
+                    try {
+                        // Get the name of the layout actually being edited, without the extension
+                        // as it's what IXmlPullParser.getParser(String) will receive.
+                        String queryLayoutName = getLayoutResourceName();
+                        topParser = new ContextPullParser(queryLayoutName, modelParser);
+                        topParser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
+                        topParser.setInput(new FileReader(layoutFile));
+                    } catch (XmlPullParserException e) {
+                        AdtPlugin.log(e, ""); //NON-NLS-1$
+                    } catch (FileNotFoundException e) {
+                        // this will not happen since we check above.
+                    }
                 }
             }
         }
@@ -1461,6 +1538,20 @@ public class GraphicalEditorPart extends EditorPart
         LayoutScene scene = layoutLib.getBridge().createScene(params);
 
         return scene;
+    }
+
+    /**
+     * Returns the resource name of this layout, NOT including the @layout/ prefix
+     *
+     * @return the resource name of this layout, NOT including the @layout/ prefix
+     */
+    public String getLayoutResourceName() {
+        String name = mEditedFile.getName();
+        int dotIndex = name.indexOf('.');
+        if (dotIndex != -1) {
+            name = name.substring(0, dotIndex);
+        }
+        return name;
     }
 
     /**
@@ -1923,4 +2014,26 @@ public class GraphicalEditorPart extends EditorPart
         }
     }
 
+    /**
+     * Reopens this file as included within the given file (this assumes that the given
+     * file has an include tag referencing this view, and the set of views that have this
+     * property can be found using the {@link IncludeFinder}.
+     *
+     * @param relativePath project-relative path to the file to open as a surrounding context,
+     *   or null to show the file standalone
+     */
+    public void showIn(String relativePath) {
+        mIncludedWithinId = relativePath;
+        recomputeLayout();
+    }
+
+    /**
+     * Returns the resource name of the file that is including this current layout, if any
+     * (may be null)
+     *
+     * @return the resource name of an including layout, or null
+     */
+    public String getIncludedWithinId() {
+        return mIncludedWithinId;
+    }
 }
