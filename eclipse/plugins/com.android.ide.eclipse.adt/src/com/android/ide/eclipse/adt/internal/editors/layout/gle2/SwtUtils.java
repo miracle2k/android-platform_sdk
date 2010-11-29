@@ -16,7 +16,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.Rect;
-import com.sun.tools.javac.util.Pair;
+import com.android.ide.common.layout.Pair;
 
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.graphics.Image;
