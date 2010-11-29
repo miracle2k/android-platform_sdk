@@ -90,6 +90,15 @@ public class ImageOverlay extends Overlay {
         return mImage;
     }
 
+    /**
+     * Returns the currently painted image, or null if none has been set
+     *
+     * @return the currently painted image or null
+     */
+    public Image getImage() {
+        return mImage;
+    }
+
     @Override
     public void paint(GC gc) {
         if (mImage != null) {

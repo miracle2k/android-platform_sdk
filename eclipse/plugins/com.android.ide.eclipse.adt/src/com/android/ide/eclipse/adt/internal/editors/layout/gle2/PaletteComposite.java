@@ -72,7 +72,6 @@ import org.w3c.dom.Element;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -630,22 +629,10 @@ public class PaletteComposite extends Composite {
                 // Shift the drag feedback image up such that it's centered under the
                 // mouse pointer
 
-                // Eclipse 3.4 does not support drag image offsets
-                // TODO: Replace by direct field access when we drop Eclipse 3.4 support.
-                try {
-                    Field xField = event.getClass().getDeclaredField("offsetX"); //$NON-NLS-1$
-                    Field yField = event.getClass().getDeclaredField("offsetY"); //$NON-NLS-1$
-
-                    Rectangle imageBounds = mImage.getBounds();
-                    int offsetX = imageBounds.width / 2;
-                    int offsetY = imageBounds.height / 2;
-                    xField.set(event, Integer.valueOf(offsetX));
-                    yField.set(event, Integer.valueOf(offsetY));
-                } catch (SecurityException e) {
-                } catch (NoSuchFieldException e) {
-                } catch (IllegalArgumentException e) {
-                } catch (IllegalAccessException e) {
-                }
+                Rectangle imageBounds = mImage.getBounds();
+                int offsetX = imageBounds.width / 2;
+                int offsetY = imageBounds.height / 2;
+                SwtUtils.setDragImageOffsets(event, offsetX, offsetY);
             }
         }
 

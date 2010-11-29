@@ -396,6 +396,15 @@ class LayoutCanvas extends Canvas {
     }
 
     /**
+     * Returns the current {@link ImageOverlay} painting the rendered result
+     *
+     * @return the image overlay responsible for painting the rendered result, never null
+     */
+    /* package */ ImageOverlay getImageOverlay() {
+        return mImageOverlay;
+    }
+
+    /**
      * Returns the horizontal {@link ScaleInfo} transform object, which can map
      * a layout point into a control point.
      *

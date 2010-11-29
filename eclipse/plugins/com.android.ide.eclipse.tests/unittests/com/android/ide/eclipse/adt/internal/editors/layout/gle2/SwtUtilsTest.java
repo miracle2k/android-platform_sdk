@@ -30,6 +30,9 @@ import org.eclipse.swt.widgets.Shell;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import junit.framework.TestCase;
 
@@ -217,4 +220,104 @@ public class SwtUtilsTest extends TestCase {
         assertEquals(30, r2.h);
     }
 
+    public final void testCropEmpty() {
+        Image image = createSampleImage(256, 256);
+        Image result = SwtUtils.drawRectangles(image, Collections.<Rectangle> emptyList(), null,
+                1.0, (byte) 121);
+        assertNull(result);
+    }
+
+    public final void testCrop1() {
+        Image image = createSampleImage(256, 256);
+
+        byte alpha = 121;
+        double scale = 1.0;
+
+        List<Rectangle> items = new ArrayList<Rectangle>();
+        items.add(new Rectangle(30, 60, 20, 20));
+        Image result =
+            SwtUtils.drawRectangles(image, items, ImageUtils.getBoundingRectangle(items),
+                    scale, alpha);
+
+        assertNotNull(result);
+        ImageData data = result.getImageData();
+        byte[] alphaData = data.alphaData;
+        assertNotNull(alphaData);
+        assertEquals(20, data.width);
+        assertEquals(20, data.height);
+        for (int y = 0; y < 20; y++) {
+            for (int x = 0; x < 20; x++) {
+                int r = y + 60;
+                int g = x + 30;
+                int expected = r << 16 | g << 8;
+                assertEquals(expected, data.getPixel(x, y));
+                assertEquals(alpha, alphaData[y*20+x]);
+            }
+        }
+    }
+
+    public final void testCrop2() {
+        Image image = createSampleImage(256, 256);
+
+        byte alpha = 121;
+        double scale = 1.0;
+
+        List<Rectangle> items = new ArrayList<Rectangle>();
+        items.add(new Rectangle(10, 10, 20, 20));
+        items.add(new Rectangle(110, 80, 20, 20));
+        Image result =
+            SwtUtils.drawRectangles(image, items, ImageUtils.getBoundingRectangle(items),
+                    scale, alpha);
+
+        assertNotNull(result);
+        ImageData data = result.getImageData();
+        byte[] alphaData = data.alphaData;
+        assertNotNull(alphaData);
+        assertEquals(120, data.width);
+        assertEquals(90, data.height);
+        for (int y = 0; y < 20; y++) {
+            for (int x = 0; x < 20; x++) {
+                int r = y + 10;
+                int g = x + 10;
+                int expected = r << 16 | g << 8;
+                assertEquals(expected, data.getPixel(x, y));
+                assertEquals(alpha, alphaData[y*120+x]);
+            }
+        }
+        for (int y = 70; y < 90; y++) {
+            for (int x = 100; x < 120; x++) {
+                int r = y + 10;
+                int g = x + 10;
+                int expected = r << 16 | g << 8;
+                assertEquals(expected, data.getPixel(x, y));
+                assertEquals(alpha, alphaData[y*120+x]);
+            }
+        }
+        assertEquals(0, alphaData[40]);
+    }
+
+    /**
+     * Crop test utility: Create a sample image patterned with red=y and green=x, suitable
+     * for checking that in image copying operations we've copied and scaled the right
+     * bits. (Obviously the red/green will be mod'ed with 256).
+     *
+     * @param imageWidth the width of the target image
+     * @param imageHeight the height of the target image
+     * @return a new image with a red/green pattern
+     */
+    private Image createSampleImage(int imageWidth, int imageHeight) {
+        Shell shell = new Shell();
+        Display display = shell.getDisplay();
+
+        ImageData data = new ImageData(imageWidth, imageHeight, 32, new PaletteData(0x00FF0000,
+                0x0000FF00, 0x000000FF));
+        for (int y = 0; y < imageHeight; y++) {
+            for (int x = 0; x < imageWidth; x++) {
+                int pixelValue = (y & 0xFF) << 16 | (x & 0xFF) << 8;
+                data.setPixel(x, y, pixelValue);
+            }
+        }
+        Image image = new Image(display, data);
+        return image;
+    }
 }

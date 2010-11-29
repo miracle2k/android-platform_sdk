@@ -16,7 +16,9 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.Rect;
+import com.sun.tools.javac.util.Pair;
 
+import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
@@ -26,6 +28,8 @@ import org.eclipse.swt.widgets.Display;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
+import java.lang.reflect.Field;
+import java.util.List;
 
 /**
  * Various generic SWT utilities such as image conversion.
@@ -36,9 +40,10 @@ public class SwtUtils {
     }
 
     /**
-     * Returns the {@link PaletteData} describing the ARGB ordering expected from
-     * integers representing pixels for AWT {@link BufferedImage}.
+     * Returns the {@link PaletteData} describing the ARGB ordering expected from integers
+     * representing pixels for AWT {@link BufferedImage}.
      *
+     * @param imageType the {@link BufferedImage#getType()} type
      * @return A new {@link PaletteData} suitable for AWT images.
      */
     public static PaletteData getAwtPaletteData(int imageType) {
@@ -165,6 +170,138 @@ public class SwtUtils {
         }
 
         return awtImage;
+    }
+
+    /**
+     * Sets the DragSourceEvent's offsetX and offsetY fields.
+     *
+     * @param event the {@link DragSourceEvent}
+     * @param offsetX the offset X value
+     * @param offsetY the offset Y value
+     */
+    public static void setDragImageOffsets(DragSourceEvent event, int offsetX, int offsetY) {
+        // Eclipse 3.4 does not support drag image offsets
+        //     event.offsetX = offsetX;
+        //     event.offsetY= offsetY;
+        // FIXME: Replace by direct field access when we drop Eclipse 3.4 support.
+        try {
+            Class<DragSourceEvent> clz = DragSourceEvent.class;
+            Field xField = clz.getDeclaredField("offsetX"); //$NON-NLS-1$
+            Field yField = clz.getDeclaredField("offsetY"); //$NON-NLS-1$
+            xField.set(event, Integer.valueOf(offsetX));
+            yField.set(event, Integer.valueOf(offsetY));
+        } catch (SecurityException e) {
+        } catch (NoSuchFieldException e) {
+        } catch (IllegalArgumentException e) {
+        } catch (IllegalAccessException e) {
+        }
+    }
+
+    /**
+     * Returns the DragSourceEvent's offsetX and offsetY fields.
+     *
+     * @param event the {@link DragSourceEvent}
+     * @return A pair of the offset X and Y values, or null if it fails (e.g. on Eclipse
+     *         3.4)
+     */
+    public static Pair<Integer,Integer> getDragImageOffsets(DragSourceEvent event) {
+        // Eclipse 3.4 does not support drag image offsets:
+        //     return Pair.of(event.offsetX, event.offsetY);
+        // FIXME: Replace by direct field access when we drop Eclipse 3.4 support.
+        try {
+            Class<DragSourceEvent> clz = DragSourceEvent.class;
+            Field xField = clz.getDeclaredField("offsetX"); //$NON-NLS-1$
+            Field yField = clz.getDeclaredField("offsetY"); //$NON-NLS-1$
+            int offsetX = xField.getInt(event);
+            int offsetY = yField.getInt(event);
+            return Pair.of(offsetX, offsetY);
+        } catch (SecurityException e) {
+        } catch (NoSuchFieldException e) {
+        } catch (IllegalArgumentException e) {
+        } catch (IllegalAccessException e) {
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates a new image from a source image where the contents from a given set of
+     * bounding boxes are copied into the new image and the rest is left transparent. A
+     * scale can be applied to make the resulting image larger or smaller than the source
+     * image. Note that the alpha channel in the original image is ignored, and the alpha
+     * values for the painted rectangles will be set to a specific value passed into this
+     * function.
+     *
+     * @param image the source image
+     * @param rectangles the set of rectangles (bounding boxes) to copy from the source
+     *            image
+     * @param boundingBox the bounding rectangle of the rectangle list, which can be
+     *            computed by {@link ImageUtils#getBoundingRectangle}
+     * @param scale a scale factor to apply to the result, e.g. 0.5 to shrink the
+     *            destination down 50%, 1.0 to leave it alone and 2.0 to zoom in by
+     *            doubling the image size
+     * @param alpha the alpha (in the range 0-255) that painted bits should be set to
+     * @return a pair of the rendered cropped image, and the location within the source
+     *         image that the crop begins (multiplied by the scale). May return null if
+     *         there are no selected items.
+     */
+    public static Image drawRectangles(Image image,
+            List<Rectangle> rectangles, Rectangle boundingBox, double scale, byte alpha) {
+
+        if (rectangles.size() == 0 || boundingBox == null || boundingBox.isEmpty()) {
+            return null;
+        }
+
+        ImageData srcData = image.getImageData();
+        int destWidth = (int) (scale * boundingBox.width);
+        int destHeight = (int) (scale * boundingBox.height);
+
+        ImageData destData = new ImageData(destWidth, destHeight, srcData.depth, srcData.palette);
+        byte[] alphaData = new byte[destHeight * destWidth];
+        destData.alphaData = alphaData;
+
+        for (Rectangle bounds : rectangles) {
+            int dx1 = bounds.x - boundingBox.x;
+            int dy1 = bounds.y - boundingBox.y;
+            int dx2 = dx1 + bounds.width;
+            int dy2 = dy1 + bounds.height;
+
+            dx1 *= scale;
+            dy1 *= scale;
+            dx2 *= scale;
+            dy2 *= scale;
+
+            int sx1 = bounds.x;
+            int sy1 = bounds.y;
+            int sx2 = sx1 + bounds.width;
+            int sy2 = sy1 + bounds.height;
+
+            if (scale == 1.0d) {
+                for (int dy = dy1, sy = sy1; dy < dy2; dy++, sy++) {
+                    for (int dx = dx1, sx = sx1; dx < dx2; dx++, sx++) {
+                        destData.setPixel(dx, dy, srcData.getPixel(sx, sy));
+                        alphaData[dy * destWidth + dx] = alpha;
+                    }
+                }
+            } else {
+                // Scaled copy.
+                int sxDelta = sx2 - sx1;
+                int dxDelta = dx2 - dx1;
+                int syDelta = sy2 - sy1;
+                int dyDelta = dy2 - dy1;
+                for (int dy = dy1, sy = sy1; dy < dy2; dy++, sy = (dy - dy1) * syDelta / dyDelta
+                        + sy1) {
+                    for (int dx = dx1, sx = sx1; dx < dx2; dx++, sx = (dx - dx1) * sxDelta
+                            / dxDelta + sx1) {
+                        assert sx < sx2 && sy < sy2;
+                        destData.setPixel(dx, dy, srcData.getPixel(sx, sy));
+                        alphaData[dy * destWidth + dx] = alpha;
+                    }
+                }
+            }
+        }
+
+        return new Image(image.getDevice(), destData);
     }
 
     /**
