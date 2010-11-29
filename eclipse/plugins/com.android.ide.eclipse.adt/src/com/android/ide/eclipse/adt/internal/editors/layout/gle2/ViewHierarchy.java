@@ -98,6 +98,17 @@ public class ViewHierarchy {
     private LayoutScene mScene;
 
     /**
+     * Disposes the view hierarchy content.
+     */
+    public void dispose() {
+        if (mScene != null) {
+            mScene.dispose();
+            mScene = null;
+        }
+    }
+
+
+    /**
      * Sets the result of the layout rendering. The result object indicates if the layout
      * rendering succeeded. If it did, it contains a bitmap and the objects rectangles.
      *
