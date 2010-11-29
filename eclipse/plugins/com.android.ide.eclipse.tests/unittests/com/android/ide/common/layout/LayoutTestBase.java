@@ -16,6 +16,8 @@
 
 
 package com.android.ide.common.layout;
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
 
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IDragElement;
@@ -35,9 +37,6 @@ import junit.framework.TestCase;
  * Common layout helpers from LayoutRule tests
  */
 public abstract class LayoutTestBase extends TestCase {
-    public static String ANDROID_URI = BaseView.ANDROID_URI;
-    public static String ATTR_ID = BaseView.ATTR_ID;
-
     /**
      * Helper function used by tests to drag a button into a canvas containing
      * the given children.
