@@ -16,43 +16,70 @@
 
 package com.android.layoutlib.api;
 
-
 /**
  * Scene result class.
  */
 public class SceneResult {
 
-    private final LayoutStatus mStatus;
+    private final SceneStatus mStatus;
     private final String mErrorMessage;
     private final Throwable mThrowable;
 
-    public enum LayoutStatus { SUCCESS, ERROR, NOT_IMPLEMENTED };
+    public enum SceneStatus {
+        SUCCESS,
+        NOT_IMPLEMENTED,
+        ERROR_TIMEOUT,
+        ERROR_LOCK_INTERRUPTED,
+        ERROR_UNKNOWN;
+
+        /**
+         * Returns a {@link SceneResult} object with this status.
+         * @return an instance of SceneResult;
+         */
+        public SceneResult getResult() {
+            // don't want to get generic error that way.
+            assert this != ERROR_UNKNOWN;
+
+            if (this == SUCCESS) {
+                return SceneResult.SUCCESS;
+            }
+
+            return new SceneResult(this);
+        }
+    }
 
     /**
      * Singleton SUCCESS {@link SceneResult} object.
      */
-    public static final SceneResult SUCCESS = new SceneResult(LayoutStatus.SUCCESS);
+    public static final SceneResult SUCCESS = new SceneResult(SceneStatus.SUCCESS);
 
     /**
-     * Creates an error {@link SceneResult} object with the given message.
+     * Creates a {@link SceneResult} object, with {@link SceneStatus#ERROR_UNKNOWN} status, and
+     * the given message.
      */
     public SceneResult(String errorMessage) {
-        mStatus = LayoutStatus.ERROR;
+        mStatus = SceneStatus.ERROR_UNKNOWN;
         mErrorMessage = errorMessage;
         mThrowable = null;
     }
 
     /**
-     * Creates an error {@link SceneResult} object with the given message and {@link Throwable}
+     * Creates a {@link SceneResult} object, with {@link SceneStatus#ERROR_UNKNOWN} status, and
+     * the given message and {@link Throwable}
      */
     public SceneResult(String errorMessage, Throwable t) {
-        mStatus = LayoutStatus.ERROR;
+        mStatus = SceneStatus.ERROR_UNKNOWN;
         mErrorMessage = errorMessage;
         mThrowable = t;
     }
 
-    /*package*/ SceneResult(LayoutStatus status) {
-        mStatus = LayoutStatus.NOT_IMPLEMENTED;
+    /**
+     * Creates a{@link SceneResult} object with the given SceneStatus.
+     *
+     * @param status the status
+     */
+    private SceneResult(SceneStatus status) {
+        mStatus = status;
         mErrorMessage = null;
         mThrowable = null;
     }
@@ -60,19 +87,21 @@ public class SceneResult {
     /**
      * Returns the status. This is never null.
      */
-    public LayoutStatus getStatus() {
+    public SceneStatus getStatus() {
         return mStatus;
     }
 
     /**
-     * Returns the error message. This can be null if the status is {@link LayoutStatus#SUCCESS}.
+     * Returns the error message. This is only non-null when {@link #getStatus()} returns
+     * {@link SceneStatus#ERROR_UNKNOWN}
      */
     public String getErrorMessage() {
         return mErrorMessage;
     }
 
     /**
-     * Returns the exception. This can be null.
+     * Returns the exception. This is only non-null when {@link #getStatus()} returns
+     * {@link SceneStatus#ERROR_UNKNOWN}
      */
     public Throwable getException() {
         return mThrowable;

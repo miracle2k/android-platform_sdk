@@ -16,7 +16,9 @@
 
 package com.android.layoutlib.api;
 
-import com.android.layoutlib.api.SceneResult.LayoutStatus;
+import static com.android.layoutlib.api.SceneResult.SceneStatus.NOT_IMPLEMENTED;
+
+import com.android.layoutlib.api.SceneResult.SceneStatus;
 
 import java.awt.image.BufferedImage;
 import java.util.Map;
@@ -41,19 +43,19 @@ public class LayoutScene {
         /**
          * Called when the animation is done playing.
          */
-        void done();
+        void done(SceneResult result);
 
         /**
          * Returns true if the animation is canceled.
          */
-        void isCanceled();
+        boolean isCanceled();
     }
 
     /**
      * Returns the last operation result.
      */
     public SceneResult getResult() {
-        return new SceneResult(LayoutStatus.NOT_IMPLEMENTED);
+        return NOT_IMPLEMENTED.getResult();
     }
 
     /**
@@ -61,7 +63,7 @@ public class LayoutScene {
      * <p>
      * This is reset to a new instance every time {@link #render()} is called and can be
      * <code>null</code> if the call failed (and the method returned a {@link SceneResult} with
-     * {@link LayoutStatus#ERROR} or {@link LayoutStatus#NOT_IMPLEMENTED}.
+     * {@link SceneStatus#ERROR_UNKNOWN} or {@link SceneStatus#NOT_IMPLEMENTED}.
      * <p/>
      * This can be safely modified by the caller.
      */
@@ -74,7 +76,7 @@ public class LayoutScene {
      * <p>
      * This is reset to a new instance every time {@link #render()} is called and can be
      * <code>null</code> if the call failed (and the method returned a {@link SceneResult} with
-     * {@link LayoutStatus#ERROR} or {@link LayoutStatus#NOT_IMPLEMENTED}.
+     * {@link SceneStatus#ERROR_UNKNOWN} or {@link SceneStatus#NOT_IMPLEMENTED}.
      * <p/>
      * This can be safely modified by the caller.
      */
@@ -98,10 +100,30 @@ public class LayoutScene {
      * In case of success, this should be followed by calls to {@link #getRootView()} and
      * {@link #getImage()} to access the result of the rendering.
      *
+     * This is equivalent to calling <code>render(SceneParams.DEFAULT_TIMEOUT)</code>
+     *
      * @return a {@link SceneResult} indicating the status of the action.
      */
     public SceneResult render() {
-        return new SceneResult(LayoutStatus.NOT_IMPLEMENTED);
+        return render(SceneParams.DEFAULT_TIMEOUT);
+    }
+
+    /**
+     * Re-renders the layout as-is, with a given timeout in case other renderings are being done.
+     * In case of success, this should be followed by calls to {@link #getRootView()} and
+     * {@link #getImage()} to access the result of the rendering.
+     *
+     * The {@link LayoutBridge} is only able to inflate or render one layout at a time. There
+     * is an internal lock object whenever such an action occurs. The timeout parameter is used
+     * when attempting to acquire the lock. If the timeout expires, the method will return
+     * SceneResult.sdfdsf
+     *
+     * @param timeout timeout for the rendering, in milliseconds.
+     *
+     * @return a {@link SceneResult} indicating the status of the action.
+     */
+    public SceneResult render(long timeout) {
+        return NOT_IMPLEMENTED.getResult();
     }
 
     /**
@@ -119,7 +141,7 @@ public class LayoutScene {
      * @return a {@link SceneResult} indicating the status of the action.
      */
     public SceneResult setProperty(int object, String propertyName, String propertyValue) {
-        return new SceneResult(LayoutStatus.NOT_IMPLEMENTED);
+        return NOT_IMPLEMENTED.getResult();
     }
 
     /**
@@ -133,7 +155,7 @@ public class LayoutScene {
      * @return a {@link SceneResult} indicating the status of the action.
      */
     public SceneResult insertChild() {
-        return new SceneResult(LayoutStatus.NOT_IMPLEMENTED);
+        return NOT_IMPLEMENTED.getResult();
     }
 
     /**
@@ -147,7 +169,7 @@ public class LayoutScene {
      * @return a {@link SceneResult} indicating the status of the action.
      */
     public SceneResult removeChild() {
-        return new SceneResult(LayoutStatus.NOT_IMPLEMENTED);
+        return NOT_IMPLEMENTED.getResult();
     }
 
     /**
@@ -156,10 +178,15 @@ public class LayoutScene {
      * The animation playback is asynchronous and the rendered frame is sent vi the
      * <var>listener</var>.
      *
+     * @param targetObject the view object to animate
+     * @param animationName the name of the animation (res/anim) to play.
+     * @param listener the listener callback.
+     *
      * @return a {@link SceneResult} indicating the status of the action.
      */
-    public SceneResult animate(int object, int animation, IAnimationListener listener) {
-        return new SceneResult(LayoutStatus.NOT_IMPLEMENTED);
+    public SceneResult animate(Object targetObject, String animationName,
+            boolean isFrameworkAnimation, IAnimationListener listener) {
+        return NOT_IMPLEMENTED.getResult();
     }
 
     /**
