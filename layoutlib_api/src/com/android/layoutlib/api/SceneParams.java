@@ -64,6 +64,8 @@ public class SceneParams {
     private int mCustomBackgroundColor;
     private long mTimeout;
 
+    private IImageFactory mImageFactory = null;
+
     /**
      *
      * @param layoutDescription the {@link IXmlPullParser} letting the LayoutLib Bridge visit the
@@ -136,6 +138,7 @@ public class SceneParams {
         mCustomBackgroundEnabled = params.mCustomBackgroundEnabled;
         mCustomBackgroundColor = params.mCustomBackgroundColor;
         mTimeout = params.mTimeout;
+        mImageFactory = params.mImageFactory;
     }
 
     public void setCustomBackgroundColor(int color) {
@@ -145,6 +148,10 @@ public class SceneParams {
 
     public void setCustomTimeout(long timeout) {
         mTimeout = timeout;
+    }
+
+    public void setImageFactory(IImageFactory imageFactory) {
+        mImageFactory = imageFactory;
     }
 
     public IXmlPullParser getLayoutDescription() {
@@ -213,5 +220,9 @@ public class SceneParams {
 
     public long getTimeout() {
         return mTimeout;
+    }
+
+    public IImageFactory getImageFactory() {
+        return mImageFactory;
     }
 }
