@@ -28,6 +28,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneResult;
 import com.android.layoutlib.api.LayoutScene.IAnimationListener;
@@ -86,8 +87,6 @@ import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.w3c.dom.Node;
 
 import java.awt.image.BufferedImage;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -726,31 +725,7 @@ class LayoutCanvas extends Canvas {
         IPath workspacePath = workspace.getLocation();
         IEditorSite editorSite = graphicalEditor.getEditorSite();
         if (workspacePath.isPrefixOf(filePath)) {
-            // This apparently doesn't work in 3.4:
-            //     IPath relativePath = filePath.makeRelativeTo(workspacePath);
-            // Use reflection as a build hotfix.
-            // FIXME: This won't work on 3.4 but we're talking about dropping 3.4 support
-            // shortly since most Eclipse users have migrated to 3.5 + 3.6.
-            IPath relativePath = null;
-            try {
-                Method method = IPath.class.getDeclaredMethod("makeRelativeTo", //$NON-NLS-1$
-                        new Class<?>[] {
-                            IPath.class
-                        });
-                relativePath = (IPath) method.invoke(filePath, new Object[] {
-                    workspacePath
-                });
-            } catch (SecurityException e) {
-            } catch (NoSuchMethodException e) {
-            } catch (IllegalArgumentException e) {
-            } catch (IllegalAccessException e) {
-            } catch (InvocationTargetException e) {
-            }
-
-            if (relativePath == null) {
-                return;
-            }
-
+            IPath relativePath = Sdk.makeRelativeTo(filePath, workspacePath);
             IResource xmlFile = workspace.findMember(relativePath);
             try {
                 EditorUtility.openInEditor(xmlFile, true);
