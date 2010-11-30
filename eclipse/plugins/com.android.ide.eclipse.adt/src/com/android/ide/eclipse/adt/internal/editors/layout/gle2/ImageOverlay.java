@@ -26,16 +26,8 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 
-import java.awt.Point;
-import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferByte;
-import java.awt.image.PixelInterleavedSampleModel;
-import java.awt.image.Raster;
-import java.awt.image.SampleModel;
+import java.awt.image.DataBufferInt;
 import java.awt.image.WritableRaster;
 
 /**
@@ -56,11 +48,6 @@ public class ImageOverlay extends Overlay implements IImageFactory {
 
     /** Horizontal scaling & scrollbar information. */
     private CanvasTransform mHScale;
-
-    /**
-     * A lazily instantiated SWT sample model
-     */
-    private PixelInterleavedSampleModel mSampleModel;
 
 
     /**
@@ -99,8 +86,8 @@ public class ImageOverlay extends Overlay implements IImageFactory {
      * @param awtImage The AWT image to be rendered as an SWT image.
      * @return The corresponding SWT image, or null.
      */
-    public Image setImage(BufferedImage awtImage) {
-        if (awtImage != mAwtImage) {
+    public synchronized Image setImage(BufferedImage awtImage) {
+        if (awtImage != mAwtImage || awtImage == null) {
             mAwtImage = null;
 
             if (mImage != null) {
@@ -113,21 +100,8 @@ public class ImageOverlay extends Overlay implements IImageFactory {
                 mImage = SwtUtils.convertToSwt(mCanvas.getDisplay(), awtImage, false, -1);
             }
         } else {
-            // The image being passed is the one that was created in #getImage(int,int),
-            // we can create an SWT image more efficiently.
-            WritableRaster awtRaster = mAwtImage.getRaster();
-            DataBufferByte byteBuffer = (DataBufferByte) awtRaster.getDataBuffer();
-            byte[] data = byteBuffer.getData();
-
-            ImageData imageData = new ImageData(mAwtImage.getWidth(), mAwtImage.getHeight(), 32,
-                        new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF));
-
-            // normally we'd use ImageData.setPixels() but it only accepts int[] for 32 bits image.
-            // However from #getImage(int, int), we know the raster data is the same exact format
-            // as the SWT image, so we just do a copy.
-            System.arraycopy(data, 0, imageData.data, 0, data.length);
-
-            mImage  = new Image(getDevice(), imageData);
+            assert awtImage instanceof SwtReadyBufferedImage;
+            mImage = ((SwtReadyBufferedImage)awtImage).getSwtImage();
         }
 
         return mImage;
@@ -143,7 +117,7 @@ public class ImageOverlay extends Overlay implements IImageFactory {
     }
 
     @Override
-    public void paint(GC gc) {
+    public synchronized void paint(GC gc) {
         if (mImage != null) {
             boolean valid = mCanvas.getViewHierarchy().isValid();
             if (!valid) {
@@ -223,47 +197,76 @@ public class ImageOverlay extends Overlay implements IImageFactory {
         }
     }
 
+    /**
+     * Custom {@link BufferedImage} class able to convert itself into an SWT {@link Image}
+     * efficiently.
+     *
+     * The BufferedImage also contains an instance of {@link ImageData} that's kept around
+     * and used to create new SWT {@link Image} objects in {@link #getSwtImage()}.
+     *
+     */
+    private static final class SwtReadyBufferedImage extends BufferedImage {
+
+        private final ImageData mImageData;
+        private final Device mDevice;
+
+        /**
+         * Creates the image with a given model, raster and SWT {@link ImageData}
+         * @param model the color model
+         * @param raster the image raster
+         * @param imageData the SWT image data.
+         * @param device the {@link Device} in which the SWT image will be painted.
+         */
+        private SwtReadyBufferedImage(int width, int height, ImageData imageData, Device device) {
+            super(width, height, BufferedImage.TYPE_INT_ARGB);
+            mImageData = imageData;
+            mDevice = device;
+        }
+
+        /**
+         * Returns a new {@link Image} object initialized with the content of the BufferedImage.
+         * @return the image object.
+         */
+        private Image getSwtImage() {
+            // transfer the content of the bufferedImage into the image data.
+            WritableRaster raster = getRaster();
+            int[] imageDataBuffer = ((DataBufferInt) raster.getDataBuffer()).getData();
+
+            mImageData.setPixels(0, 0, imageDataBuffer.length, imageDataBuffer, 0);
+
+            return new Image(mDevice, mImageData);
+        }
+
+        /**
+         * Creates a new {@link SwtReadyBufferedImage}.
+         * @param w the width of the image
+         * @param h the height of the image
+         * @param device the device in which the SWT image will be painted
+         * @return a new {@link SwtReadyBufferedImage} object
+         */
+        private static SwtReadyBufferedImage createImage(int w, int h, Device device) {
+            ImageData imageData = new ImageData(w, h, 32,
+                    new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF));
+
+            SwtReadyBufferedImage swtReadyImage = new SwtReadyBufferedImage(w, h,
+                    imageData, device);
+
+            return swtReadyImage;
+        }
+    }
+
+    /**
+     * Implementation of {@link IImageFactory#getImage(int, int)}.
+     */
     public BufferedImage getImage(int w, int h) {
         if (mAwtImage == null ||
                 mAwtImage.getWidth() != w ||
                 mAwtImage.getHeight() != h) {
 
-            ImageData imageData =
-                new ImageData(w, h, 32, new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF));
-            Image image = new Image(getDevice(), imageData);
-
-            // get the new imageData in case the host OS forced a different format.
-            imageData = image.getImageData();
-
-            // create a writable raster around the image data.
-            WritableRaster raster = (WritableRaster) Raster.createRaster(
-                    getSampleModel(imageData.palette, w, h),
-                    new DataBufferByte(imageData.data, imageData.data.length),
-                    new Point(0,0));
-
-            ColorModel colorModel = new ComponentColorModel(
-                    ColorSpace.getInstance(ColorSpace.CS_LINEAR_RGB),
-                    true /*hasAlpha*/, true /*isAlphaPremultiplied*/,
-                    ColorModel.TRANSLUCENT, DataBuffer.TYPE_BYTE);
-
-            mAwtImage = new BufferedImage(colorModel, raster, false, null);
+            mAwtImage = SwtReadyBufferedImage.createImage(w, h, getDevice());
         }
 
         return mAwtImage;
     }
 
-    private SampleModel getSampleModel(PaletteData palette, int w, int h) {
-        if (mSampleModel == null) {
-            return mSampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_BYTE, w, h,
-                    4 /*pixel stride*/, w * 4 /*scanlineStride*/,
-                    getBandOffset(palette));
-        }
-
-        return mSampleModel.createCompatibleSampleModel(w, h);
-    }
-
-    private int[] getBandOffset(PaletteData palette) {
-        // FIXME actually figure out the PixelInterleavedSampleModel's band offset from the image data palette.
-        return new int[] {3, 2, 1, 0};
-    }
 }
