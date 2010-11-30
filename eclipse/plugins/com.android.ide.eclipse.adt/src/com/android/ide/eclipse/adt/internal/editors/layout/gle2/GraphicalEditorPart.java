@@ -1436,12 +1436,17 @@ public class GraphicalEditorPart extends EditorPart
                 theme, isProjectTheme,
                 configuredProjectRes, frameworkResources, mProjectCallback,
                 mLogger);
+
         if (transparentBackground) {
             // It doesn't matter what the background color is as long as the alpha
             // is 0 (fully transparent). We're using red to make it more obvious if
             // for some reason the background is painted when it shouldn't be.
             params.setCustomBackgroundColor(0x00FF0000);
         }
+
+        // set the Image Overlay as the image factory.
+        params.setImageFactory(getCanvasControl().getImageOverlay());
+
         LayoutScene scene = layoutLib.getBridge().createScene(params);
 
         return scene;

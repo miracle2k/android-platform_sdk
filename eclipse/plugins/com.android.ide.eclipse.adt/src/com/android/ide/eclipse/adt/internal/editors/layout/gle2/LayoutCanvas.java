@@ -1025,14 +1025,12 @@ class LayoutCanvas extends Canvas {
                                  */
                                 public void drawImage() {
                                     // get last image
-                                    BufferedImage image;
                                     synchronized (this) {
-                                        image = mImage;
+                                        mImageOverlay.setImage(mImage);
                                         mImage = null;
                                         mPendingDrawing = false;
                                     }
 
-                                    mImageOverlay.setImage(image);
                                     redraw();
                                 }
                             });
