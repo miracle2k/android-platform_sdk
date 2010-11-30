@@ -46,11 +46,11 @@ public class SelectionOverlay extends Overlay {
      */
     public void paint(SelectionManager selectionManager, GCWrapper gcWrapper,
             RulesEngine rulesEngine) {
-        List<CanvasSelection> selections = selectionManager.getSelections();
+        List<SelectionItem> selections = selectionManager.getSelections();
         int n = selections.size();
         if (n > 0) {
             boolean isMultipleSelection = n > 1;
-            for (CanvasSelection s : selections) {
+            for (SelectionItem s : selections) {
                 if (s.isRoot()) {
                     // The root selection is never painted
                     continue;

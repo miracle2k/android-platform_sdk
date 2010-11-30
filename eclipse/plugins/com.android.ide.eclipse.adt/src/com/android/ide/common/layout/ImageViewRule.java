@@ -26,7 +26,7 @@ import com.android.ide.common.api.InsertType;
 /**
  * An {@link IViewRule} for android.widget.ImageViewRule.
  */
-public class ImageViewRule extends BaseView {
+public class ImageViewRule extends BaseViewRule {
 
     @Override
     public void onCreate(INode node, INode parent, InsertType insertType) {

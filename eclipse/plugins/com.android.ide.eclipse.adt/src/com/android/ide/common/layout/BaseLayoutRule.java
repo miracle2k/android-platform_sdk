@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class BaseLayout extends BaseView {
+public class BaseLayoutRule extends BaseViewRule {
 
     @Override
     public boolean onInitialize(String fqcn, IClientRulesEngine engine) {
@@ -258,7 +258,7 @@ public class BaseLayout extends BaseView {
     }
 
     /**
-     * For use by {@link BaseLayout#addAttributes} A filter should return a
+     * For use by {@link BaseLayoutRule#addAttributes} A filter should return a
      * valid replacement string.
      */
     public static interface AttributeFilter {

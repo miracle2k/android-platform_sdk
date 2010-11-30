@@ -83,7 +83,7 @@ public class ClipboardSupport {
      *            <b>this should be a copy already - this method will not make a
      *            copy</b>
      */
-    public void copySelectionToClipboard(List<CanvasSelection> selection) {
+    public void copySelectionToClipboard(List<SelectionItem> selection) {
         SelectionManager.sanitize(selection);
 
         if (selection.isEmpty()) {
@@ -91,8 +91,8 @@ public class ClipboardSupport {
         }
 
         Object[] data = new Object[] {
-                CanvasSelection.getAsElements(selection),
-                CanvasSelection.getAsText(mCanvas, selection)
+                SelectionItem.getAsElements(selection),
+                SelectionItem.getAsText(mCanvas, selection)
         };
 
         Transfer[] types = new Transfer[] {
@@ -116,7 +116,7 @@ public class ClipboardSupport {
      *            <b>this should be a copy already - this method will not make a
      *            copy</b>
      */
-    public void cutSelectionToClipboard(List<CanvasSelection> selection) {
+    public void cutSelectionToClipboard(List<SelectionItem> selection) {
         copySelectionToClipboard(selection);
         deleteSelection(
                 mCanvas.getCutLabel(),
@@ -134,7 +134,7 @@ public class ClipboardSupport {
      *            case nothing happens. The selection list will be sanitized so
      *            the caller should pass in a copy.
      */
-    public void deleteSelection(String verb, final List<CanvasSelection> selection) {
+    public void deleteSelection(String verb, final List<SelectionItem> selection) {
         SelectionManager.sanitize(selection);
 
         if (selection.isEmpty()) {
@@ -143,7 +143,7 @@ public class ClipboardSupport {
 
         // If all selected items have the same *kind* of parent, display that in the undo title.
         String title = null;
-        for (CanvasSelection cs : selection) {
+        for (SelectionItem cs : selection) {
             CanvasViewInfo vi = cs.getViewInfo();
             if (vi != null && vi.getParent() != null) {
                 if (title == null) {
@@ -180,7 +180,7 @@ public class ClipboardSupport {
         // resetting the selection.
         mCanvas.getLayoutEditor().wrapUndoEditXmlModel(title, new Runnable() {
             public void run() {
-                for (CanvasSelection cs : selection) {
+                for (SelectionItem cs : selection) {
                     CanvasViewInfo vi = cs.getViewInfo();
                     // You can't delete the root element
                     if (vi != null && !vi.isRoot()) {
@@ -202,7 +202,7 @@ public class ClipboardSupport {
      *            <b>this should be a copy already - this method will not make a
      *            copy</b>
      */
-    public void pasteSelection(List<CanvasSelection> selection) {
+    public void pasteSelection(List<SelectionItem> selection) {
 
         SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
         SimpleElement[] pasted = (SimpleElement[]) mClipboard.getContents(sxt);
@@ -224,7 +224,7 @@ public class ClipboardSupport {
         SelectionManager.sanitize(selection);
         CanvasViewInfo target = lastRoot;
         if (selection.size() > 0) {
-            CanvasSelection cs = selection.get(0);
+            SelectionItem cs = selection.get(0);
             target = cs.getViewInfo();
         }
 

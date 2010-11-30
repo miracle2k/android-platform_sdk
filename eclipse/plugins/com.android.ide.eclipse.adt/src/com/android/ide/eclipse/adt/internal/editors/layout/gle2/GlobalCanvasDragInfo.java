@@ -40,7 +40,7 @@ final class GlobalCanvasDragInfo {
     private static final GlobalCanvasDragInfo sInstance = new GlobalCanvasDragInfo();
 
     private SimpleElement[] mCurrentElements = null;
-    private CanvasSelection[] mCurrentSelection;
+    private SelectionItem[] mCurrentSelection;
     private Object mSourceCanvas = null;
     private Runnable mRemoveSourceHandler;
 
@@ -66,7 +66,7 @@ final class GlobalCanvasDragInfo {
      *            source. It should only be invoked if the drag operation is a
      *            move, not a copy.
      */
-    public void startDrag(SimpleElement[] elements, CanvasSelection[] selection,
+    public void startDrag(SimpleElement[] elements, SelectionItem[] selection,
             Object sourceCanvas, Runnable removeSourceHandler) {
         mCurrentElements = elements;
         mCurrentSelection = selection;
@@ -89,12 +89,12 @@ final class GlobalCanvasDragInfo {
     /** Returns the selection originally dragged.
      * Can be null if the drag did not start in a canvas.
      */
-    public CanvasSelection[] getCurrentSelection() {
+    public SelectionItem[] getCurrentSelection() {
         return mCurrentSelection;
     }
 
     /**
-     * Returns the object that call {@link #startDrag(SimpleElement[], CanvasSelection[], Object)}.
+     * Returns the object that call {@link #startDrag(SimpleElement[], SelectionItem[], Object)}.
      * Can be null.
      * This is not meant to access the object indirectly, it is just meant to compare if the
      * source and the destination of the drag'n'drop are the same, so object identity

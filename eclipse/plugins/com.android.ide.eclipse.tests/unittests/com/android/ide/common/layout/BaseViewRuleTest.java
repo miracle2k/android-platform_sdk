@@ -21,12 +21,12 @@ import java.util.Collections;
 
 import junit.framework.TestCase;
 
-public class BaseViewTest extends TestCase {
+public class BaseViewRuleTest extends TestCase {
     public final void testPrettyName() {
-        assertEquals(null, BaseView.prettyName(null));
-        assertEquals("", BaseView.prettyName(""));
-        assertEquals("Foo", BaseView.prettyName("foo"));
-        assertEquals("Foo bar", BaseView.prettyName("foo_bar"));
+        assertEquals(null, BaseViewRule.prettyName(null));
+        assertEquals("", BaseViewRule.prettyName(""));
+        assertEquals("Foo", BaseViewRule.prettyName("foo"));
+        assertEquals("Foo bar", BaseViewRule.prettyName("foo_bar"));
         // TODO: We should check this to capitalize each initial word
         // assertEquals("Foo Bar", BaseView.prettyName("foo_bar"));
         // TODO: We should also handle camelcase properties
@@ -34,9 +34,9 @@ public class BaseViewTest extends TestCase {
     }
 
     public final void testJoin() {
-        assertEquals("foo", BaseView.join('|', Arrays.asList("foo")));
-        assertEquals("", BaseView.join('|', Collections.<String>emptyList()));
-        assertEquals("foo,bar", BaseView.join(',', Arrays.asList("foo", "bar")));
-        assertEquals("foo|bar", BaseView.join('|', Arrays.asList("foo", "bar")));
+        assertEquals("foo", BaseViewRule.join('|', Arrays.asList("foo")));
+        assertEquals("", BaseViewRule.join('|', Collections.<String>emptyList()));
+        assertEquals("foo,bar", BaseViewRule.join(',', Arrays.asList("foo", "bar")));
+        assertEquals("foo|bar", BaseViewRule.join('|', Arrays.asList("foo", "bar")));
     }
 }

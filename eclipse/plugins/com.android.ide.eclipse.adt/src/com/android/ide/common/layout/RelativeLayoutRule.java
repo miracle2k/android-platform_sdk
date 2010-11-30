@@ -45,7 +45,7 @@ import java.util.Set;
  * An {@link IViewRule} for android.widget.RelativeLayout and all its derived
  * classes.
  */
-public class RelativeLayoutRule extends BaseLayout {
+public class RelativeLayoutRule extends BaseLayoutRule {
 
     // ==== Selection ====
 

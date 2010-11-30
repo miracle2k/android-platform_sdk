@@ -15,6 +15,8 @@
  */
 package com.android.ide.common.layout;
 
+import static junit.framework.Assert.fail;
+
 import com.android.ide.common.api.IAttributeInfo;
 
 /** Test/mock implementation of {@link IAttributeInfo} */
@@ -26,27 +28,27 @@ public class TestAttributeInfo implements IAttributeInfo {
     }
 
     public String getDeprecatedDoc() {
-        BaseLayoutTest.fail("Not supported yet in tests");
+        fail("Not supported yet in tests");
         return null;
     }
 
     public String[] getEnumValues() {
-        BaseLayoutTest.fail("Not supported yet in tests");
+        fail("Not supported yet in tests");
         return null;
     }
 
     public String[] getFlagValues() {
-        BaseLayoutTest.fail("Not supported yet in tests");
+        fail("Not supported yet in tests");
         return null;
     }
 
     public Format[] getFormats() {
-        BaseLayoutTest.fail("Not supported yet in tests");
+        fail("Not supported yet in tests");
         return null;
     }
 
     public String getJavaDoc() {
-        BaseLayoutTest.fail("Not supported yet in tests");
+        fail("Not supported yet in tests");
         return null;
     }
 

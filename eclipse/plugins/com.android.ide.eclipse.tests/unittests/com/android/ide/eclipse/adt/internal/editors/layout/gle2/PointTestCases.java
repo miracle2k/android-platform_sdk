@@ -66,24 +66,24 @@ public abstract class PointTestCases extends TestCase {
         }
 
         @Override
-        ScaleInfo getHorizontalTransform() {
+        CanvasTransform getHorizontalTransform() {
             ScrollBar scrollBar = new List(this, SWT.V_SCROLL|SWT.H_SCROLL).getHorizontalBar();
-            return new TestScaleInfo(scrollBar, mScaleX, mTranslateX);
+            return new TestCanvasTransform(scrollBar, mScaleX, mTranslateX);
         }
 
         @Override
-        ScaleInfo getVerticalTransform() {
+        CanvasTransform getVerticalTransform() {
             ScrollBar scrollBar = new List(this, SWT.V_SCROLL|SWT.H_SCROLL).getVerticalBar();
-            return new TestScaleInfo(scrollBar, mScaleY, mTranslateY);
+            return new TestCanvasTransform(scrollBar, mScaleY, mTranslateY);
         }
     }
 
-    static class TestScaleInfo extends ScaleInfo {
+    static class TestCanvasTransform extends CanvasTransform {
         float mScale;
 
         float mTranslate;
 
-        public TestScaleInfo(ScrollBar scrollBar, float scale, float translate) {
+        public TestCanvasTransform(ScrollBar scrollBar, float scale, float translate) {
             super(null, scrollBar);
             this.mScale = scale;
             this.mTranslate = translate;
