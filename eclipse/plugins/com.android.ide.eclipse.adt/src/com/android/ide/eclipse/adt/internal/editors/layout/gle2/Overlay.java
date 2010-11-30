@@ -26,6 +26,8 @@ import org.eclipse.swt.graphics.GC;
  * {@link MoveGesture}.
  */
 public abstract class Overlay {
+    private Device mDevice;
+
     /**
      * Construct the overlay, using the given graphics context for painting.
      */
@@ -41,6 +43,7 @@ public abstract class Overlay {
      *            to {@link #paint} will correspond to this device.
      */
     public void create(Device device) {
+        mDevice = device;
     }
 
     /**
@@ -58,5 +61,9 @@ public abstract class Overlay {
     public void paint(GC gc) {
         throw new IllegalArgumentException("paint() not implemented, probably done "
                 + "with specialized paint signature");
+    }
+
+    public Device getDevice() {
+        return mDevice;
     }
 }
