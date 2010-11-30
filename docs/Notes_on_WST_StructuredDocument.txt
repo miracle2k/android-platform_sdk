@@ -1,16 +1,18 @@
 Notes on WST StructuredDocument
 -------------------------------
 
-Created: 2010/11/26
+Created:    2010/11/26
 References: WST 3.1.x, Eclipse 3.5 Galileo
-
 
 To manipulate XML documents in refactorings, we sometimes use the WST/SEE
 "StructuredDocument" API. There isn't exactly a lot of documentation on
 this out there, so this is a short explanation of how it works, totally
 based on _empirical_ evidence. As such, it must be taken with a grain of salt.
 
+Examples of usage can be found in
+  sdk/eclipse/plugins/com.android.ide.eclipse.adt/src/com/android/ide/eclipse/adt/internal/refactorings/
 
+  
 1- Get a document instance
 --------------------------
 
