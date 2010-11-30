@@ -23,8 +23,8 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
-import com.android.sdklib.internal.avd.HardwareProperties;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo;
+import com.android.sdklib.internal.avd.HardwareProperties;
 import com.android.sdklib.internal.avd.HardwareProperties.HardwareProperty;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.io.FileWrapper;
@@ -73,8 +73,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 
 /**
@@ -109,6 +109,8 @@ final class AvdCreationDialog extends GridDialog {
     private Text mSdCardFile;
     private Button mBrowseSdCard;
     private Button mSdCardFileRadio;
+
+    private Button mSnapshotCheck;
 
     private Button mSkinListRadio;
     private Combo mSkinCombo;
@@ -345,6 +347,22 @@ final class AvdCreationDialog extends GridDialog {
 
         mSdCardSizeRadio.setSelection(true);
         enableSdCardWidgets(true);
+
+        // --- snapshot group
+
+        label = new Label(parent, SWT.NONE);
+        label.setText("Snapshot:");
+        label.setLayoutData(new GridData(GridData.BEGINNING, GridData.BEGINNING,
+            false, false));
+
+        final Group snapshotGroup = new Group(parent, SWT.NONE);
+        snapshotGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        snapshotGroup.setLayout(new GridLayout(3, false));
+
+        mSnapshotCheck = new Button(snapshotGroup, SWT.CHECK);
+        mSnapshotCheck.setText("Enabled");
+        mSnapshotCheck.setToolTipText(
+                "Emulator's state will be persisted between emulator executions");
 
         // --- skin group
         label = new Label(parent, SWT.NONE);
@@ -715,6 +733,11 @@ final class AvdCreationDialog extends GridDialog {
             }
         }
 
+        String snapshots = props.get(AvdManager.AVD_INI_SNAPSHOT_PRESENT);
+        if (snapshots != null && snapshots.length() > 0) {
+            mSnapshotCheck.setSelection(snapshots.equals("true"));
+        }
+
         mProperties.clear();
         mProperties.putAll(props);
 
@@ -723,6 +746,7 @@ final class AvdCreationDialog extends GridDialog {
         mProperties.remove(AvdManager.AVD_INI_SKIN_NAME);
         mProperties.remove(AvdManager.AVD_INI_SDCARD_SIZE);
         mProperties.remove(AvdManager.AVD_INI_SDCARD_PATH);
+        mProperties.remove(AvdManager.AVD_INI_SNAPSHOT_PRESENT);
         mProperties.remove(AvdManager.AVD_INI_IMAGES_1);
         mProperties.remove(AvdManager.AVD_INI_IMAGES_2);
         mHardwareViewer.refresh();
@@ -1138,6 +1162,7 @@ final class AvdCreationDialog extends GridDialog {
         }
 
         boolean force = mForceCreation.getSelection();
+        boolean snapshot = mSnapshotCheck.getSelection();
 
         boolean success = false;
         AvdInfo avdInfo = mAvdManager.createAvd(
@@ -1148,6 +1173,7 @@ final class AvdCreationDialog extends GridDialog {
                 sdName,
                 mProperties,
                 force,
+                snapshot,
                 log);
 
         success = avdInfo != null;

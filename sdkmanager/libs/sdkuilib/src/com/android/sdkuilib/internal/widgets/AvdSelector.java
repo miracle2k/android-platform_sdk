@@ -1037,8 +1037,16 @@ public final class AvdSelector {
             list.add(path);
             list.add("-avd");                             //$NON-NLS-1$
             list.add(avdName);
-            if (dialog.getWipeData()) {
+            if (dialog.hasWipeData()) {
                 list.add("-wipe-data");                   //$NON-NLS-1$
+            }
+            if (dialog.hasSnapshot()) {
+                if (!dialog.hasSnapshotLaunch()) {
+                    list.add("-no-snapshot-load");
+                }
+                if (!dialog.hasSnapshotSave()) {
+                    list.add("-no-snapshot-save");
+                }
             }
             float scale = dialog.getScale();
             if (scale != 0.f) {

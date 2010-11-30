@@ -24,7 +24,7 @@ import junit.framework.TestCase;
 public class SdkCommandLineTest extends TestCase {
 
     private StdSdkLog mLog;
-    
+
     /**
      * A mock version of the {@link SdkCommandLine} class that does not
      * exits and discards its stdout/stderr output.
@@ -32,7 +32,7 @@ public class SdkCommandLineTest extends TestCase {
     public static class MockSdkCommandLine extends SdkCommandLine {
         private boolean mExitCalled;
         private boolean mHelpCalled;
-        
+
         public MockSdkCommandLine(ISdkLog logger) {
             super(logger);
         }
@@ -48,12 +48,12 @@ public class SdkCommandLineTest extends TestCase {
         protected void exit() {
             mExitCalled = true;
         }
-        
+
         @Override
         protected void stdout(String format, Object... args) {
             // discard
         }
-        
+
         @Override
         protected void stderr(String format, Object... args) {
             // discard
@@ -62,7 +62,7 @@ public class SdkCommandLineTest extends TestCase {
         public boolean wasExitCalled() {
             return mExitCalled;
         }
-        
+
         public boolean wasHelpCalled() {
             return mHelpCalled;
         }
@@ -137,6 +137,32 @@ public class SdkCommandLineTest extends TestCase {
         assertEquals("list", c.getVerb());
         // we get the non-plural form
         assertEquals("target", c.getDirectObject());
+        assertFalse(c.isVerbose());
+    }
+
+    public final void testCreate_Avd() {
+        MockSdkCommandLine c = new MockSdkCommandLine(mLog);
+        c.parseArgs(new String[] { "create", "avd", "-t", "android-100", "-n", "myProject" });
+        assertFalse(c.wasHelpCalled());
+        assertFalse(c.wasExitCalled());
+        assertEquals("create", c.getVerb());
+        assertEquals("avd", c.getDirectObject());
+        assertFalse(c.getFlagSnapshot());
+        assertEquals("android-100", c.getParamTargetId());
+        assertEquals("myProject", c.getParamName());
+        assertFalse(c.isVerbose());
+    }
+
+    public final void testCreate_Avd_Snapshot() {
+        MockSdkCommandLine c = new MockSdkCommandLine(mLog);
+        c.parseArgs(new String[] { "create", "avd", "-t", "android-100", "-n", "myProject", "-a" });
+        assertFalse(c.wasHelpCalled());
+        assertFalse(c.wasExitCalled());
+        assertEquals("create", c.getVerb());
+        assertEquals("avd", c.getDirectObject());
+        assertTrue(c.getFlagSnapshot());
+        assertEquals("android-100", c.getParamTargetId());
+        assertEquals("myProject", c.getParamName());
         assertFalse(c.isVerbose());
     }
 }

@@ -56,13 +56,14 @@ import java.util.regex.Pattern;
  * <li>-wipe-data</li>
  * <li>-scale</li>
  * </ul>
- *
  * Values are stored (in the class as static field) to be reused while the app is still running.
- * The Monitor dpi is stored in the settings if availabe.
+ * The Monitor dpi is stored in the settings if available.
  */
 final class AvdStartDialog extends GridDialog {
     // static field to reuse values during the same session.
     private static boolean sWipeData = false;
+    private static boolean sSnapshotSave = true;
+    private static boolean sSnapshotLaunch = true;
     private static int sMonitorDpi = 72; // used if there's no setting controller.
     private static final Map<String, String> sSkinScaling = new HashMap<String, String>();
 
@@ -84,6 +85,10 @@ final class AvdStartDialog extends GridDialog {
     private String mSkinDisplay;
     private boolean mEnableScaling = true;
     private Label mScaleField;
+    private boolean mHasSnapshot = true;
+    private boolean mSnapshotSave = true;
+    private boolean mSnapshotLaunch = true;
+    private Button mSnapshotLaunchCheckbox;
 
     AvdStartDialog(Shell parentShell, AvdInfo avd, String sdkLocation,
             SettingsController settingsController) {
@@ -101,7 +106,7 @@ final class AvdStartDialog extends GridDialog {
         computeSkinData();
     }
 
-    public boolean getWipeData() {
+    public boolean hasWipeData() {
         return mWipeData;
     }
 
@@ -239,6 +244,36 @@ final class AvdStartDialog extends GridDialog {
             @Override
             public void widgetSelected(SelectionEvent arg0) {
                 mWipeData = wipeButton.getSelection();
+                updateSnapshotLaunchAvailability();
+            }
+        });
+
+        Map<String, String> prop = mAvd.getProperties();
+        String snapshotPresent = prop.get(AvdManager.AVD_INI_SNAPSHOT_PRESENT);
+        mHasSnapshot = (snapshotPresent != null) && snapshotPresent.equals("true");
+
+        mSnapshotLaunchCheckbox = new Button(parent, SWT.CHECK);
+        mSnapshotLaunchCheckbox.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
+        gd.horizontalSpan = 2;
+        mSnapshotLaunchCheckbox.setText("Launch from snapshot");
+        updateSnapshotLaunchAvailability();
+        mSnapshotLaunchCheckbox.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent arg0) {
+                mSnapshotLaunch = mSnapshotLaunchCheckbox.getSelection();
+            }
+        });
+
+        final Button snapshotSaveCheckbox = new Button(parent, SWT.CHECK);
+        snapshotSaveCheckbox.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
+        gd.horizontalSpan = 2;
+        snapshotSaveCheckbox.setText("Save to snapshot");
+        snapshotSaveCheckbox.setSelection((mSnapshotSave = sSnapshotSave) && mHasSnapshot);
+        snapshotSaveCheckbox.setEnabled(mHasSnapshot);
+        snapshotSaveCheckbox.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent arg0) {
+                mSnapshotSave = snapshotSaveCheckbox.getSelection();
             }
         });
 
@@ -302,6 +337,14 @@ final class AvdStartDialog extends GridDialog {
 
         // and then the wipe-data checkbox
         sWipeData = mWipeData;
+
+        // and the snapshot handling if those checkboxes are enabled.
+        if (mHasSnapshot) {
+            sSnapshotSave = mSnapshotSave;
+            if (!mWipeData) {
+                sSnapshotLaunch = mSnapshotLaunch;
+            }
+        }
 
         // finally continue with the ok action
         super.okPressed();
@@ -520,4 +563,36 @@ final class AvdStartDialog extends GridDialog {
 
         return false;
     }
+
+    /**
+     * @return Whether there's a snapshot file available.
+     */
+    public boolean hasSnapshot() {
+        return mHasSnapshot;
+    }
+
+    /**
+     * @return Whether to launch and load snapshot.
+     */
+    public boolean hasSnapshotLaunch() {
+        return mSnapshotLaunch && !hasWipeData();
+    }
+
+    /**
+     * @return Whether to preserve emulator state to snapshot.
+     */
+    public boolean hasSnapshotSave() {
+        return mSnapshotSave;
+    }
+
+    /**
+     * Updates snapshot launch availability, for when mWipeData value changes.
+     */
+    private void updateSnapshotLaunchAvailability() {
+        boolean enabled = !mWipeData && mHasSnapshot;
+        mSnapshotLaunchCheckbox.setEnabled(enabled);
+        mSnapshotLaunch = enabled && sSnapshotLaunch;
+        mSnapshotLaunchCheckbox.setSelection(mSnapshotLaunch);
+    }
+
 }

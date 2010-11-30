@@ -828,6 +828,7 @@ class CommandLineProcessor {
      * Internal helper to define a new argument for a give action.
      *
      * @param mode The {@link Mode} for the argument.
+     * @param mandatory The argument is required (never if {@link Mode.BOOLEAN})
      * @param verb The verb name. Can be #INTERNAL_VERB.
      * @param directObject The action name. Can be #NO_VERB_OBJECT or #INTERNAL_FLAG.
      * @param shortName The one-letter short argument name. Can be empty but not null.
