@@ -31,6 +31,7 @@ import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourceAttributes;
@@ -43,6 +44,9 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jdt.core.IBuffer;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.ToolFactory;
@@ -82,10 +86,14 @@ import org.w3c.dom.Node;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * This refactoring extracts a string from a file and replaces it by an Android resource ID
@@ -176,8 +184,13 @@ public class ExtractStringRefactoring extends Refactoring {
     /** The XML string value. Might be different than the initial selected string. */
     private String mXmlStringValue;
     /** The path of the XML file that will define {@link #mXmlStringId}, selected by the user
-     *  in the wizard. */
+     *  in the wizard. This is relative to the project, e.g. "/res/values/string.xml" */
     private String mTargetXmlFileWsPath;
+    /** True if we should find & replace in all Java files. */
+    private boolean mReplaceAllJava;
+    /** True if we should find & replace in all XML files of the same name in other res configs
+     * (other than the main {@link #mTargetXmlFileWsPath}.) */
+    private boolean mReplaceAllXml;
 
     /** The list of changes computed by {@link #checkFinalConditions(IProgressMonitor)} and
      *  used by {@link #createChange(IProgressMonitor)}. */
@@ -185,15 +198,29 @@ public class ExtractStringRefactoring extends Refactoring {
 
     private XmlStringFileHelper mXmlHelper = new XmlStringFileHelper();
 
-    private static final String KEY_MODE = "mode";              //$NON-NLS-1$
-    private static final String KEY_FILE = "file";              //$NON-NLS-1$
-    private static final String KEY_PROJECT = "proj";           //$NON-NLS-1$
-    private static final String KEY_SEL_START = "sel-start";    //$NON-NLS-1$
-    private static final String KEY_SEL_END = "sel-end";        //$NON-NLS-1$
-    private static final String KEY_TOK_ESC = "tok-esc";        //$NON-NLS-1$
-    private static final String KEY_XML_ATTR_NAME = "xml-attr-name";      //$NON-NLS-1$
+    private static final String KEY_MODE = "mode";                      //$NON-NLS-1$
+    private static final String KEY_FILE = "file";                      //$NON-NLS-1$
+    private static final String KEY_PROJECT = "proj";                   //$NON-NLS-1$
+    private static final String KEY_SEL_START = "sel-start";            //$NON-NLS-1$
+    private static final String KEY_SEL_END = "sel-end";                //$NON-NLS-1$
+    private static final String KEY_TOK_ESC = "tok-esc";                //$NON-NLS-1$
+    private static final String KEY_XML_ATTR_NAME = "xml-attr-name";    //$NON-NLS-1$
+    private static final String KEY_RPLC_ALL_JAVA = "rplc-all-java";    //$NON-NLS-1$
+    private static final String KEY_RPLC_ALL_XML  = "rplc-all-xml";     //$NON-NLS-1$
 
+    /**
+     * This constructor is solely used by {@link ExtractStringDescriptor},
+     * to replay a previous refactoring.
+     * <p/>
+     * To create a refactoring from code, please use one of the two other constructors.
+     *
+     * @param arguments A map previously created using {@link #createArgumentMap()}.
+     * @throws NullPointerException
+     */
     public ExtractStringRefactoring(Map<String, String> arguments) throws NullPointerException {
+
+        mReplaceAllJava = Boolean.parseBoolean(arguments.get(KEY_RPLC_ALL_JAVA));
+        mReplaceAllXml  = Boolean.parseBoolean(arguments.get(KEY_RPLC_ALL_XML));
         mMode = Mode.valueOf(arguments.get(KEY_MODE));
 
         IPath path = Path.fromPortableString(arguments.get(KEY_PROJECT));
@@ -219,6 +246,8 @@ public class ExtractStringRefactoring extends Refactoring {
 
     private Map<String, String> createArgumentMap() {
         HashMap<String, String> args = new HashMap<String, String>();
+        args.put(KEY_RPLC_ALL_JAVA, Boolean.toString(mReplaceAllJava));
+        args.put(KEY_RPLC_ALL_XML,  Boolean.toString(mReplaceAllXml));
         args.put(KEY_MODE,      mMode.name());
         args.put(KEY_PROJECT,   mProject.getFullPath().toPortableString());
         if (mMode == Mode.EDIT_SOURCE) {
@@ -253,10 +282,13 @@ public class ExtractStringRefactoring extends Refactoring {
     /**
      * Constructor to use when the Extract String refactoring is called without
      * any source file. Its purpose is then to create a new XML string ID.
+     * <p/>
+     * For example this is currently invoked by the ResourceChooser when
+     * the user wants to create a new string rather than select an existing one.
      *
      * @param project The project where the target XML file to modify is located. Cannot be null.
-     * @param enforceNew If true the XML ID must be a new one. If false, an existing ID can be
-     *  used.
+     * @param enforceNew If true the XML ID must be a new one.
+     *                   If false, an existing ID can be used.
      */
     public ExtractStringRefactoring(IProject project, boolean enforceNew) {
         mMode = enforceNew ? Mode.SELECT_NEW_ID : Mode.SELECT_ID;
@@ -264,6 +296,36 @@ public class ExtractStringRefactoring extends Refactoring {
         mEditor = null;
         mProject = project;
         mSelectionStart = mSelectionEnd = -1;
+    }
+
+    /**
+     * Sets the replacement string ID. Used by the wizard to set the user input.
+     */
+    public void setNewStringId(String newStringId) {
+        mXmlStringId = newStringId;
+    }
+
+    /**
+     * Sets the replacement string ID. Used by the wizard to set the user input.
+     */
+    public void setNewStringValue(String newStringValue) {
+        mXmlStringValue = newStringValue;
+    }
+
+    /**
+     * Sets the target file. This is a project path, e.g. "/res/values/strings.xml".
+     * Used by the wizard to set the user input.
+     */
+    public void setTargetFile(String targetXmlFileWsPath) {
+        mTargetXmlFileWsPath = targetXmlFileWsPath;
+    }
+
+    public void setReplaceAllJava(boolean replaceAllJava) {
+        mReplaceAllJava = replaceAllJava;
+    }
+
+    public void setReplaceAllXml(boolean replaceAllXml) {
+        mReplaceAllXml = replaceAllXml;
     }
 
     /**
@@ -785,7 +847,7 @@ public class ExtractStringRefactoring extends Refactoring {
         RefactoringStatus status = new RefactoringStatus();
 
         try {
-            monitor.beginTask("Checking post-conditions...", 3);
+            monitor.beginTask("Checking post-conditions...", 5);
 
             if (mXmlStringId == null || mXmlStringId.length() <= 0) {
                 // this is not supposed to happen
@@ -820,10 +882,10 @@ public class ExtractStringRefactoring extends Refactoring {
             mChanges = new ArrayList<Change>();
 
 
-            // Prepare the change for the XML file.
-
-            if (mXmlHelper.valueOfStringId(mProject, mTargetXmlFileWsPath, mXmlStringId) == null) {
-                // We actually change it only if the ID doesn't exist yet
+            // Prepare the change to create/edit the String ID in the res/values XML file.
+            if (!mXmlStringValue.equals(
+                    mXmlHelper.valueOfStringId(mProject, mTargetXmlFileWsPath, mXmlStringId))) {
+                // We actually change it only if the ID doesn't exist yet or has a different value
                 Change change = createXmlChange((IFile) targetXml, mXmlStringId, mXmlStringValue,
                         status, SubMonitor.convert(monitor, 1));
                 if (change != null) {
@@ -853,12 +915,154 @@ public class ExtractStringRefactoring extends Refactoring {
                 }
             }
 
+            if (mReplaceAllJava) {
+                SubMonitor submon = SubMonitor.convert(monitor, 1);
+                for (ICompilationUnit unit : findAllJavaUnits()) {
+                    // Only process Java compilation units that exist, are not derived
+                    // and are not read-only.
+                    if (unit == null || !unit.exists()) {
+                        continue;
+                    }
+                    IResource resource = unit.getResource();
+                    if (resource == null || resource.isDerived()) {
+                        continue;
+                    }
+                    ResourceAttributes attrs = resource.getResourceAttributes();
+                    if (attrs != null && attrs.isReadOnly()) {
+                        continue;
+                    }
+
+                    List<Change> changes = computeJavaChanges(
+                            unit, mXmlStringId, mTokenString,
+                            status, SubMonitor.convert(submon, 1));
+                    if (changes != null) {
+                        mChanges.addAll(changes);
+                    }
+                }
+            }
+
+            if (mReplaceAllXml) {
+                SubMonitor submon = SubMonitor.convert(monitor, 1);
+                for (IFile xmlFile : findAllResXmlFiles()) {
+                    if (xmlFile != null) {
+                        List<Change> changes = computeXmlSourceChanges(xmlFile,
+                                mXmlStringId, mTokenString, mXmlAttributeName,
+                                status, SubMonitor.convert(submon, 1));
+                        if (changes != null) {
+                            mChanges.addAll(changes);
+                        }
+                    }
+                }
+            }
+
             monitor.worked(1);
         } finally {
             monitor.done();
         }
 
         return status;
+    }
+
+    // --- XML changes ---
+
+    /**
+     * Returns a foreach-compatible iterator over all XML files in the project's
+     * /res folder, excluding the target XML file (the one where we'll write/edit
+     * the string id).
+     */
+    private Iterable<IFile> findAllResXmlFiles() {
+        return new Iterable<IFile>() {
+            public Iterator<IFile> iterator() {
+                return new Iterator<IFile>() {
+                    final Queue<IFile> mFiles = new LinkedList<IFile>();
+                    final Queue<IResource> mFolders = new LinkedList<IResource>();
+                    IPath mFilterPath1 = null;
+                    IPath mFilterPath2 = null;
+                    {
+                        // We want to process the manifest
+                        IResource man = mProject.findMember("AndroidManifest.xml"); // TODO find a constant
+                        if (man.exists() && man instanceof IFile) {
+                            mFiles.add((IFile) man);
+                        }
+
+                        // Add all /res folders (technically we don't need to process /res/values
+                        // XML files that contain resources/string elements, but it's easier to
+                        // not filter them out.)
+                        IFolder f = mProject.getFolder(AndroidConstants.WS_RESOURCES);
+                        if (f.exists()) {
+                            try {
+                                mFolders.addAll(
+                                        Arrays.asList(f.members(IContainer.EXCLUDE_DERIVED)));
+                            } catch (CoreException e) {
+                                // pass
+                            }
+                        }
+
+                        // Filter out the XML file where we'll be writing the XML string id.
+                        IResource filterRes = mProject.findMember(mTargetXmlFileWsPath);
+                        if (filterRes != null) {
+                            mFilterPath1 = filterRes.getFullPath();
+                        }
+                        // Filter out the XML source file, if any (e.g. typically a layout)
+                        if (mFile != null) {
+                            mFilterPath2 = mFile.getFullPath();
+                        }
+                    }
+
+                    public boolean hasNext() {
+                        if (!mFiles.isEmpty()) {
+                            return true;
+                        }
+
+                        while (!mFolders.isEmpty()) {
+                            IResource res = mFolders.poll();
+                            if (res.exists() && res instanceof IFolder) {
+                                IFolder f = (IFolder) res;
+                                try {
+                                    getFileList(f);
+                                    if (!mFiles.isEmpty()) {
+                                        return true;
+                                    }
+                                } catch (CoreException e) {
+                                    // pass
+                                }
+                            }
+                        }
+                        return false;
+                    }
+
+                    private void getFileList(IFolder folder) throws CoreException {
+                        for (IResource res : folder.members(IContainer.EXCLUDE_DERIVED)) {
+                            // Only accept file resources which are not derived and actually exist
+                            if (res.exists() && !res.isDerived() && res instanceof IFile) {
+                                IFile file = (IFile) res;
+                                // Must have an XML extension
+                                if (AndroidConstants.EXT_XML.equals(file.getFileExtension())) {
+                                    IPath p = file.getFullPath();
+                                    // And not be either paths we want to filter out
+                                    if ((mFilterPath1 != null && mFilterPath1.equals(p)) ||
+                                            (mFilterPath2 != null && mFilterPath2.equals(p))) {
+                                        continue;
+                                    }
+                                    mFiles.add(file);
+                                }
+                            }
+                        }
+                    }
+
+                    public IFile next() {
+                        IFile file = mFiles.poll();
+                        hasNext();
+                        return file;
+                    }
+
+                    public void remove() {
+                        throw new UnsupportedOperationException(
+                            "This iterator does not support removal");  //$NON-NLS-1$
+                    }
+                };
+            }
+        };
     }
 
     /**
@@ -881,7 +1085,7 @@ public class ExtractStringRefactoring extends Refactoring {
         TextFileChange xmlChange = new TextFileChange(getName(), targetXml);
         xmlChange.setTextType(AndroidConstants.EXT_XML);
 
-        String error = "";
+        String error = "";                  //$NON-NLS-1$
         TextEdit edit = null;
         TextEditGroup editGroup = null;
 
@@ -901,8 +1105,8 @@ public class ExtractStringRefactoring extends Refactoring {
 
         if (edit == null) {
             status.addFatalError(String.format("Failed to modify file %1$s%2$s",
-                    mTargetXmlFileWsPath,
-                    error == null ? "" : ": " + error)); //$NON-NLS-1$
+                    targetXml == null ? "" : targetXml.getFullPath(),   //$NON-NLS-1$
+                    error == null ? "" : ": " + error));                //$NON-NLS-1$
             return null;
         }
 
@@ -1288,7 +1492,8 @@ public class ExtractStringRefactoring extends Refactoring {
                                 // Remove " or ' quoting present in the attribute value
                                 text = unquoteAttrValue(text);
 
-                                if (xmlAttrName.equals(lastAttrName) && tokenString.equals(text)) {
+                                if (tokenString.equals(text) &&
+                                        (xmlAttrName == null || xmlAttrName.equals(lastAttrName))) {
 
                                     // Found an occurrence. Create a change for it.
                                     TextEdit edit = new ReplaceEdit(
@@ -1359,6 +1564,67 @@ public class ExtractStringRefactoring extends Refactoring {
         return '"' + attrValue + '"';
     }
 
+    // --- Java changes ---
+
+    /**
+     * Returns a foreach compatible iterator over all ICompilationUnit in the project.
+     */
+    private Iterable<ICompilationUnit> findAllJavaUnits() {
+        final IJavaProject javaProject = JavaCore.create(mProject);
+
+        return new Iterable<ICompilationUnit>() {
+            public Iterator<ICompilationUnit> iterator() {
+                return new Iterator<ICompilationUnit>() {
+                    final Queue<ICompilationUnit> mUnits = new LinkedList<ICompilationUnit>();
+                    final Queue<IPackageFragment> mFragments = new LinkedList<IPackageFragment>();
+                    {
+                        try {
+                            IPackageFragment[] tmpFrags = javaProject.getPackageFragments();
+                            if (tmpFrags != null && tmpFrags.length > 0) {
+                                mFragments.addAll(Arrays.asList(tmpFrags));
+                            }
+                        } catch (JavaModelException e) {
+                            // pass
+                        }
+                    }
+
+                    public boolean hasNext() {
+                        if (!mUnits.isEmpty()) {
+                            return true;
+                        }
+
+                        while (!mFragments.isEmpty()) {
+                            try {
+                                IPackageFragment fragment = mFragments.poll();
+                                if (fragment.getKind() == IPackageFragmentRoot.K_SOURCE) {
+                                    ICompilationUnit[] tmpUnits = fragment.getCompilationUnits();
+                                    if (tmpUnits != null && tmpUnits.length > 0) {
+                                        mUnits.addAll(Arrays.asList(tmpUnits));
+                                        return true;
+                                    }
+                                }
+                            } catch (JavaModelException e) {
+                                // pass
+                            }
+                        }
+                        return false;
+                    }
+
+                    public ICompilationUnit next() {
+                        ICompilationUnit unit = mUnits.poll();
+                        hasNext();
+                        return unit;
+                    }
+
+                    public void remove() {
+                        throw new UnsupportedOperationException(
+                                "This iterator does not support removal");  //$NON-NLS-1$
+                    }
+                };
+            }
+        };
+    }
+
     /**
      * Computes the changes to be made to Java file(s) and returns a list of {@link Change}.
      */
@@ -1394,23 +1660,6 @@ public class ExtractStringRefactoring extends Refactoring {
                             error));
             return null;
         }
-
-        // TODO in a future version we might want to collect various Java files that
-        // need to be updated in the same project and process them all together.
-        // To do that we need to use an ASTRequestor and parser.createASTs, kind of
-        // like this:
-        //
-        // ASTRequestor requestor = new ASTRequestor() {
-        //    @Override
-        //    public void acceptAST(ICompilationUnit sourceUnit, CompilationUnit astNode) {
-        //        super.acceptAST(sourceUnit, astNode);
-        //        // TODO process astNode
-        //    }
-        // };
-        // ...
-        // parser.createASTs(compilationUnits, bindingKeys, requestor, monitor)
-        //
-        // and then add multiple TextFileChange to the changes arraylist.
 
         // Right now the changes array will contain one TextFileChange at most.
         ArrayList<Change> changes = new ArrayList<Change>();
@@ -1471,7 +1720,11 @@ public class ExtractStringRefactoring extends Refactoring {
                 // Create TextEditChangeGroups which let the user turn changes on or off
                 // individually. This must be done after the change.setEdit() call above.
                 for (TextEditGroup editGroup : astEditGroups) {
-                    change.addTextEditChangeGroup(new TextEditChangeGroup(change, editGroup));
+                    TextEditChangeGroup group = new TextEditChangeGroup(change, editGroup);
+                    if (editGroup instanceof EnabledTextEditGroup) {
+                        group.setEnabled(((EnabledTextEditGroup) editGroup).isEnabled());
+                    }
+                    change.addTextEditChangeGroup(group);
                 }
 
                 changes.add(change);
@@ -1493,6 +1746,8 @@ public class ExtractStringRefactoring extends Refactoring {
         }
         return null;
     }
+
+    // ----
 
     /**
      * Step 3 of 3 of the refactoring: returns the {@link Change} that will be able to do the
@@ -1548,27 +1803,4 @@ public class ExtractStringRefactoring extends Refactoring {
         IResource resource = mProject.getFile(xmlFileWsPath);
         return resource;
     }
-
-    /**
-     * Sets the replacement string ID. Used by the wizard to set the user input.
-     */
-    public void setNewStringId(String newStringId) {
-        mXmlStringId = newStringId;
-    }
-
-    /**
-     * Sets the replacement string ID. Used by the wizard to set the user input.
-     */
-    public void setNewStringValue(String newStringValue) {
-        mXmlStringValue = newStringValue;
-    }
-
-    /**
-     * Sets the target file. This is a project path, e.g. "/res/values/strings.xml".
-     * Used by the wizard to set the user input.
-     */
-    public void setTargetFile(String targetXmlFileWsPath) {
-        mTargetXmlFileWsPath = targetXmlFileWsPath;
-    }
-
 }

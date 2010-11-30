@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.refactorings.extractstring;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -88,15 +89,16 @@ class ReplaceStringsVisitor extends ASTVisitor {
             // or if we should generate a Context.getString() call.
             boolean useGetResource = false;
             useGetResource = examineVariableDeclaration(node) ||
-                                examineMethodInvocation(node);
+                                examineMethodInvocation(node) ||
+                                examineAssignment(node);
 
             Name qualifierName = mAst.newName(mRQualifier + ".string");     //$NON-NLS-1$
             SimpleName idName = mAst.newSimpleName(mXmlId);
             ASTNode newNode = mAst.newQualifiedName(qualifierName, idName);
+            boolean disabledChange = false;
             String title = "Replace string by ID";
 
             if (useGetResource) {
-
                 Expression context = methodHasContextArgument(node);
                 if (context == null && !isClassDerivedFromContext(node)) {
                     // if we don't have a class that derives from Context and
@@ -106,8 +108,10 @@ class ReplaceStringsVisitor extends ASTVisitor {
 
                     if (context == null) {
                         // If not, let's  write Context.getString(), which is technically
-                        // invalid but makes it a good clue on how to fix it.
+                        // invalid but makes it a good clue on how to fix it. Since these
+                        // will not compile, we create a disabled change by default.
                         context = mAst.newSimpleName("Context");            //$NON-NLS-1$
+                        disabledChange = true;
                     }
                 }
 
@@ -120,7 +124,7 @@ class ReplaceStringsVisitor extends ASTVisitor {
                 title = "Replace string by Context.getString(R.string...)";
             }
 
-            TextEditGroup editGroup = new TextEditGroup(title);
+            TextEditGroup editGroup = new EnabledTextEditGroup(title, !disabledChange);
             mEditGroups.add(editGroup);
             mRewriter.replace(node, newNode, editGroup);
         }
@@ -128,8 +132,8 @@ class ReplaceStringsVisitor extends ASTVisitor {
     }
 
     /**
-     * Examines if the StringLiteral is part of of an assignment to a string,
-     * e.g. String foo = id.
+     * Examines if the StringLiteral is part of an assignment corresponding to the
+     * a string variable declaration, e.g. String foo = id.
      *
      * The parent fragment is of syntax "var = expr" or "var[] = expr".
      * We want the type of the variable, which is either held by a
@@ -155,6 +159,24 @@ class ReplaceStringsVisitor extends ASTVisitor {
             if (type instanceof SimpleType) {
                 return isJavaString(type.resolveBinding());
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * Examines if the StringLiteral is part of a assignment to a variable that
+     * is a string. We need to lookup the variable to find its type, either in the
+     * enclosing method or class type.
+     */
+    private boolean examineAssignment(StringLiteral node) {
+
+        Assignment assignment = findParentClass(node, Assignment.class);
+        if (assignment != null) {
+            Expression left = assignment.getLeftHandSide();
+
+            ITypeBinding typeBinding = left.resolveTypeBinding();
+            return isJavaString(typeBinding);
         }
 
         return false;
@@ -412,9 +434,11 @@ class ReplaceStringsVisitor extends ASTVisitor {
      */
     @SuppressWarnings("unchecked")
     private <T extends ASTNode> T findParentClass(ASTNode node, Class<T> clazz) {
-        for (node = node.getParent(); node != null; node = node.getParent()) {
-            if (node.getClass().equals(clazz)) {
-                return (T) node;
+        if (node != null) {
+            for (node = node.getParent(); node != null; node = node.getParent()) {
+                if (node.getClass().equals(clazz)) {
+                    return (T) node;
+                }
             }
         }
         return null;
