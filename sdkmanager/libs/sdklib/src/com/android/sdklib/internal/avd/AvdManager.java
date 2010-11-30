@@ -29,6 +29,7 @@ import com.android.sdklib.io.FileWrapper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
@@ -108,6 +109,13 @@ public final class AvdManager {
      * @see #AVD_INI_IMAGES_1
      */
     public final static String AVD_INI_IMAGES_2 = "image.sysdir.2"; //$NON-NLS-1$
+    /**
+     * AVD/config.ini key name representing the presence of the snapshots file.
+     * This property is for UI purposes only. It is not used by the emulator.
+     *
+     * @see #SNAPSHOTS_IMG
+     */
+    public final static String AVD_INI_SNAPSHOT_PRESENT = "snapshot.present"; //$NON-NLS-1$
 
     /**
      * Pattern to match pixel-sized skin "names", e.g. "320x480".
@@ -117,6 +125,7 @@ public final class AvdManager {
     private final static String USERDATA_IMG = "userdata.img"; //$NON-NLS-1$
     private final static String CONFIG_INI = "config.ini"; //$NON-NLS-1$
     private final static String SDCARD_IMG = "sdcard.img"; //$NON-NLS-1$
+    private final static String SNAPSHOTS_IMG = "snapshots.img"; //$NON-NLS-1$
 
     private final static String INI_EXTENSION = ".ini"; //$NON-NLS-1$
     private final static Pattern INI_NAME_PATTERN = Pattern.compile("(.+)\\" + //$NON-NLS-1$
@@ -486,6 +495,19 @@ public final class AvdManager {
     }
 
     /**
+     * Creates a new AVD, but with no snapshot.
+     *
+     * See {@link #createAvd(File, String, IAndroidTarget, String, String, Map, boolean, boolean, ISdkLog)}
+     **/
+    @Deprecated
+    public AvdInfo createAvd(File avdFolder, String name, IAndroidTarget target, String skinName,
+            String sdcard, Map<String, String> hardwareConfig, boolean removePrevious,
+            ISdkLog log) {
+        return createAvd(avdFolder, name, target, skinName, sdcard, hardwareConfig, removePrevious,
+                false, log);
+    }
+
+    /**
      * Creates a new AVD. It is expected that there is no existing AVD with this name already.
      *
      * @param avdFolder the data folder for the AVD. It will be created as needed.
@@ -496,13 +518,14 @@ public final class AvdManager {
      *        an existing sdcard image or a sdcard size (\d+, \d+K, \dM).
      * @param hardwareConfig the hardware setup for the AVD. Can be null to use defaults.
      * @param removePrevious If true remove any previous files.
+     * @param createSnapshot If true copy a blank snapshot image into the AVD.
      * @param log the log object to receive action logs. Cannot be null.
      * @return The new {@link AvdInfo} in case of success (which has just been added to the
      *         internal list) or null in case of failure.
      */
     public AvdInfo createAvd(File avdFolder, String name, IAndroidTarget target,
             String skinName, String sdcard, Map<String,String> hardwareConfig,
-            boolean removePrevious, ISdkLog log) {
+            boolean removePrevious, boolean createSnapshot, ISdkLog log) {
         if (log == null) {
             throw new IllegalArgumentException("log cannot be null");
         }
@@ -549,20 +572,9 @@ public final class AvdManager {
                 needCleanup = true;
                 return null;
             }
-
-            FileInputStream fis = new FileInputStream(userdataSrc);
-
             File userdataDest = new File(avdFolder, USERDATA_IMG);
-            FileOutputStream fos = new FileOutputStream(userdataDest);
 
-            byte[] buffer = new byte[4096];
-            int count;
-            while ((count = fis.read(buffer)) != -1) {
-                fos.write(buffer, 0, count);
-            }
-
-            fos.close();
-            fis.close();
+            copyImageFile(userdataSrc, userdataDest);
 
             // Config file.
             HashMap<String, String> values = new HashMap<String, String>();
@@ -570,6 +582,22 @@ public final class AvdManager {
             if (setImagePathProperties(target, values, log) == false) {
                 needCleanup = true;
                 return null;
+            }
+
+            // Create the snapshot file
+            if (createSnapshot) {
+                String toolsLib = mSdkManager.getLocation() + File.separator
+                        + SdkConstants.OS_SDK_TOOLS_LIB_EMULATOR_FOLDER;
+                File snapshotBlank = new File(toolsLib, SNAPSHOTS_IMG);
+                if (snapshotBlank.exists() == false) {
+                    log.error(null, "Unable to find a '%2$s%1$s' file to copy into the AVD folder.",
+                            SNAPSHOTS_IMG, toolsLib);
+                    needCleanup = true;
+                    return null;
+                }
+                File snapshotDest = new File(avdFolder, SNAPSHOTS_IMG);
+                copyImageFile(snapshotBlank, snapshotDest);
+                values.put(AVD_INI_SNAPSHOT_PRESENT, "true");
             }
 
             // Now the skin.
@@ -802,6 +830,28 @@ public final class AvdManager {
         }
 
         return null;
+    }
+
+    /** Copy the nominated file to the given destination.
+     * @param source
+     * @param destination
+     *
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+    private void copyImageFile(File source, File destination)
+            throws FileNotFoundException, IOException {
+        FileInputStream fis = new FileInputStream(source);
+        FileOutputStream fos = new FileOutputStream(destination);
+
+        byte[] buffer = new byte[4096];
+        int count;
+        while ((count = fis.read(buffer)) != -1) {
+            fos.write(buffer, 0, count);
+        }
+
+        fos.close();
+        fis.close();
     }
 
     /**
@@ -1202,6 +1252,8 @@ public final class AvdManager {
                 }
             }
         }
+
+        // TODO: What about missing sdcard, skins, etc?
 
         AvdStatus status;
 

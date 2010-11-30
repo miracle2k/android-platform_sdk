@@ -41,6 +41,7 @@ bin/zipalign     tools/zipalign
 
 # emulator
 bin/emulator     tools/emulator
+sdk/emulator/snapshot/snapshots.img tools/lib/emulator/snapshots.img
 
 # Java-Based SDK Tools
 bin/ddms            tools/ddms

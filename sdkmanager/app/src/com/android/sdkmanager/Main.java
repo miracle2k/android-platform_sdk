@@ -19,17 +19,17 @@ package com.android.sdkmanager;
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
-import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 import com.android.sdklib.internal.avd.AvdManager;
-import com.android.sdklib.internal.avd.HardwareProperties;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo;
+import com.android.sdklib.internal.avd.HardwareProperties;
 import com.android.sdklib.internal.avd.HardwareProperties.HardwareProperty;
 import com.android.sdklib.internal.project.ProjectCreator;
-import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectCreator.OutputLevel;
+import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.io.FileWrapper;
 import com.android.sdklib.repository.SdkRepoConstants;
@@ -131,6 +131,11 @@ public class Main {
                 System.out.printf(msgFormat, args);
             }
         };
+    }
+
+    /** For testing */
+    public void setLogger(ISdkLog logger) {
+        mSdkLog = logger;
     }
 
     /**
@@ -788,72 +793,84 @@ public class Main {
     }
 
     /**
+     * Displays the list of available AVDs for the given AvdManager.
+     *
+     * @param avdManager
+     */
+    public void displayAvdList(AvdManager avdManager) {
+        mSdkLog.printf("Available Android Virtual Devices:\n");
+
+        AvdInfo[] avds = avdManager.getValidAvds();
+        for (int index = 0 ; index < avds.length ; index++) {
+            AvdInfo info = avds[index];
+            if (index > 0) {
+                mSdkLog.printf("---------\n");
+            }
+            mSdkLog.printf("    Name: %s\n", info.getName());
+            mSdkLog.printf("    Path: %s\n", info.getPath());
+
+            // get the target of the AVD
+            IAndroidTarget target = info.getTarget();
+            if (target.isPlatform()) {
+                mSdkLog.printf("  Target: %s (API level %s)\n", target.getName(),
+                        target.getVersion().getApiString());
+            } else {
+                mSdkLog.printf("  Target: %s (%s)\n", target.getName(), target
+                        .getVendor());
+                mSdkLog.printf("          Based on Android %s (API level %s)\n",
+                        target.getVersionName(), target.getVersion().getApiString());
+            }
+
+            // display some extra values.
+            Map<String, String> properties = info.getProperties();
+            if (properties != null) {
+                String skin = properties.get(AvdManager.AVD_INI_SKIN_NAME);
+                if (skin != null) {
+                    mSdkLog.printf("    Skin: %s\n", skin);
+                }
+                String sdcard = properties.get(AvdManager.AVD_INI_SDCARD_SIZE);
+                if (sdcard == null) {
+                    sdcard = properties.get(AvdManager.AVD_INI_SDCARD_PATH);
+                }
+                if (sdcard != null) {
+                    mSdkLog.printf("  Sdcard: %s\n", sdcard);
+                }
+                String snapshot = properties.get(AvdManager.AVD_INI_SNAPSHOT_PRESENT);
+                if (snapshot != null) {
+                    mSdkLog.printf("Snapshot: %s\n", snapshot);
+                }
+            }
+        }
+
+        // Are there some unused AVDs?
+        AvdInfo[] badAvds = avdManager.getBrokenAvds();
+
+        if (badAvds.length == 0) {
+            return;
+        }
+
+        mSdkLog.printf("\nThe following Android Virtual Devices could not be loaded:\n");
+        boolean needSeparator = false;
+        for (AvdInfo info : badAvds) {
+            if (needSeparator) {
+                mSdkLog.printf("---------\n");
+            }
+            mSdkLog.printf("    Name: %s\n", info.getName() == null ? "--" : info.getName());
+            mSdkLog.printf("    Path: %s\n", info.getPath() == null ? "--" : info.getPath());
+
+            String error = info.getErrorMessage();
+            mSdkLog.printf("   Error: %s\n", error == null ? "Uknown error" : error);
+            needSeparator = true;
+        }
+    }
+
+    /**
      * Displays the list of available AVDs.
      */
     private void displayAvdList() {
         try {
             AvdManager avdManager = new AvdManager(mSdkManager, mSdkLog);
-
-            mSdkLog.printf("Available Android Virtual Devices:\n");
-
-            AvdInfo[] avds = avdManager.getValidAvds();
-            for (int index = 0 ; index < avds.length ; index++) {
-                AvdInfo info = avds[index];
-                if (index > 0) {
-                    mSdkLog.printf("---------\n");
-                }
-                mSdkLog.printf("    Name: %s\n", info.getName());
-                mSdkLog.printf("    Path: %s\n", info.getPath());
-
-                // get the target of the AVD
-                IAndroidTarget target = info.getTarget();
-                if (target.isPlatform()) {
-                    mSdkLog.printf("  Target: %s (API level %s)\n", target.getName(),
-                            target.getVersion().getApiString());
-                } else {
-                    mSdkLog.printf("  Target: %s (%s)\n", target.getName(), target
-                            .getVendor());
-                    mSdkLog.printf("          Based on Android %s (API level %s)\n",
-                            target.getVersionName(), target.getVersion().getApiString());
-                }
-
-                // display some extra values.
-                Map<String, String> properties = info.getProperties();
-                if (properties != null) {
-                    String skin = properties.get(AvdManager.AVD_INI_SKIN_NAME);
-                    if (skin != null) {
-                        mSdkLog.printf("    Skin: %s\n", skin);
-                    }
-                    String sdcard = properties.get(AvdManager.AVD_INI_SDCARD_SIZE);
-                    if (sdcard == null) {
-                        sdcard = properties.get(AvdManager.AVD_INI_SDCARD_PATH);
-                    }
-                    if (sdcard != null) {
-                        mSdkLog.printf("  Sdcard: %s\n", sdcard);
-                    }
-                }
-            }
-
-            // Are there some unused AVDs?
-            AvdInfo[] badAvds = avdManager.getBrokenAvds();
-
-            if (badAvds.length == 0) {
-                return;
-            }
-
-            mSdkLog.printf("\nThe following Android Virtual Devices could not be loaded:\n");
-            boolean needSeparator = false;
-            for (AvdInfo info : badAvds) {
-                if (needSeparator) {
-                    mSdkLog.printf("---------\n");
-                }
-                mSdkLog.printf("    Name: %s\n", info.getName() == null ? "--" : info.getName());
-                mSdkLog.printf("    Path: %s\n", info.getPath() == null ? "--" : info.getPath());
-
-                String error = info.getErrorMessage();
-                mSdkLog.printf("   Error: %s\n", error == null ? "Uknown error" : error);
-                needSeparator = true;
-            }
+            displayAvdList(avdManager);
         } catch (AndroidLocationException e) {
             errorAndExit(e.getMessage());
         }
@@ -972,6 +989,7 @@ public class Main {
                     mSdkCommandLine.getParamSdCard(),
                     hardwareConfig,
                     removePrevious,
+                    mSdkCommandLine.getFlagSnapshot(),
                     mSdkLog);
 
         } catch (AndroidLocationException e) {

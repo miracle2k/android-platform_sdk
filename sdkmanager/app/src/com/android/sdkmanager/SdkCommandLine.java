@@ -78,6 +78,7 @@ class SdkCommandLine extends CommandLineProcessor {
     public static final String KEY_PROXY_HOST   = "proxy-host";
     public static final String KEY_DRY_MODE     = "dry-mode";
     public static final String KEY_OBSOLETE     = "obsolete";
+    public static final String KEY_SNAPSHOT     = "snapshot";
 
     /**
      * Action definitions for SdkManager command line.
@@ -166,6 +167,9 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.BOOLEAN, false,
                 VERB_CREATE, OBJECT_AVD, "f", KEY_FORCE,
                 "Forces creation (overwrites an existing AVD)", false);
+        define(Mode.BOOLEAN, false,
+                VERB_CREATE, OBJECT_AVD, "a", KEY_SNAPSHOT,
+                "Place a snapshots file in the AVD, to enable persistence.", false);
 
         // --- delete avd ---
 
@@ -406,6 +410,11 @@ class SdkCommandLine extends CommandLineProcessor {
     /** Helper to retrieve the --force flag. */
     public boolean getFlagForce() {
         return ((Boolean) getValue(null, null, KEY_FORCE)).booleanValue();
+    }
+
+    /** Helper to retrieve the --snapshot flag. */
+    public boolean getFlagSnapshot() {
+        return ((Boolean) getValue(null, null, KEY_SNAPSHOT)).booleanValue();
     }
 
     // -- some helpers for avd action flags
