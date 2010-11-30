@@ -202,6 +202,8 @@ public class ConfigurationComposite extends Composite {
         DockMode dock = DockMode.NONE;
         /** night mode. Guaranteed to be non null */
         NightMode night = NightMode.NOTNIGHT;
+        /** the version being targeted for rendering */
+        IAndroidTarget target;
 
         String getData() {
             StringBuilder sb = new StringBuilder();
@@ -225,6 +227,10 @@ public class ConfigurationComposite extends Composite {
                 sb.append(SEP);
                 sb.append(night.getResourceValue());
                 sb.append(SEP);
+                if (target != null) {
+                    sb.append(targetToString(target));
+                    sb.append(SEP);
+                }
             }
 
             return sb.toString();
@@ -232,7 +238,7 @@ public class ConfigurationComposite extends Composite {
 
         boolean setData(String data) {
             String[] values = data.split(SEP);
-            if (values.length == 6) {
+            if (values.length == 6 || values.length == 7) {
                 for (LayoutDevice d : mDeviceList) {
                     if (d.getName().equals(values[0])) {
                         device = d;
@@ -259,6 +265,10 @@ public class ConfigurationComposite extends Composite {
                             night = NightMode.getEnum(values[5]);
                             if (night == null) {
                                 night = NightMode.NOTNIGHT;
+                            }
+
+                            if (values.length == 7 && mTargetList != null) {
+                                target = stringToTarget(values[6]);
                             }
 
                             return true;
@@ -294,7 +304,44 @@ public class ConfigurationComposite extends Composite {
             sb.append(night.getResourceValue());
             sb.append(SEP);
 
+            if (target != null) {
+                sb.append(targetToString(target));
+                sb.append(SEP);
+            }
+
             return sb.toString();
+        }
+
+        /**
+         * Returns a String id to represent an {@link IAndroidTarget} which can be translated
+         * back to an {@link IAndroidTarget} by the matching {@link #stringToTarget}. The id
+         * will never contain the {@link #SEP} character.
+         *
+         * @param target the target to return an id for
+         * @return an id for the given target; never null
+         */
+        private String targetToString(IAndroidTarget target) {
+            return target.getFullName().replace(SEP, "");  //$NON-NLS-1$
+        }
+
+        /**
+         * Returns an {@link IAndroidTarget} that corresponds to the given id that was
+         * originally returned by {@link #targetToString}. May be null, if the platform is no
+         * longer available, or if the platform list has not yet been initialized.
+         *
+         * @param id the id that corresponds to the desired platform
+         * @return an {@link IAndroidTarget} that matches the given id, or null
+         */
+        private IAndroidTarget stringToTarget(String id) {
+            if (mTargetList != null && mTargetList.size() > 0) {
+                for (IAndroidTarget target : mTargetList) {
+                    if (id.equals(targetToString(target))) {
+                        return target;
+                    }
+                }
+            }
+
+            return null;
         }
     }
 
@@ -595,7 +642,7 @@ public class ConfigurationComposite extends Composite {
 
     /**
      * Sets the reference to the file being edited.
-     * <p/>The UI is intialized in {@link #onXmlModelLoaded()} which is called as the XML model is
+     * <p/>The UI is initialized in {@link #onXmlModelLoaded()} which is called as the XML model is
      * loaded (or reloaded as the SDK/target changes).
      *
      * @param file the file being opened
@@ -790,11 +837,15 @@ public class ConfigurationComposite extends Composite {
 
                         mDockCombo.select(DockMode.getIndex(mState.dock));
                         mNightCombo.select(NightMode.getIndex(mState.night));
+                        mTargetCombo.select(mTargetList.indexOf(mState.target));
                     } else {
                         findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
 
                         mDockCombo.select(0);
                         mNightCombo.select(0);
+                        // We don't want the -first- combobox item, we want the
+                        // default one which is sometimes a different index
+                        //mTargetCombo.select(0);
                     }
 
                     // update the string showing the config value
@@ -1042,6 +1093,11 @@ public class ConfigurationComposite extends Composite {
             if (index != -1) {
                 mState.night = NightMode.getByIndex(index);
             }
+
+            index = mTargetCombo.getSelectionIndex();
+            if (index != -1) {
+                mState.target = mTargetList.get(index);
+            }
         }
     }
 
@@ -1050,7 +1106,7 @@ public class ConfigurationComposite extends Composite {
      */
     public void storeState() {
         try {
-            QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID, CONFIG_STATE); //$NON-NLS-1$
+            QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID, CONFIG_STATE);
             mEditedFile.setPersistentProperty(qname, mState.getData());
         } catch (CoreException e) {
             // pass
