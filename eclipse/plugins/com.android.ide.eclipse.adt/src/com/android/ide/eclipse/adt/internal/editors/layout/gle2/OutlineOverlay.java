@@ -33,22 +33,25 @@ public class OutlineOverlay extends Overlay {
     private Color mOutlineColor;
 
     /** Vertical scaling & scrollbar information. */
-    private ScaleInfo mVScale;
+    private CanvasTransform mVScale;
 
     /** Horizontal scaling & scrollbar information. */
-    private ScaleInfo mHScale;
+    private CanvasTransform mHScale;
 
     /**
      * Constructs a new {@link OutlineOverlay} linked to the given view
      * hierarchy.
      *
      * @param viewHierarchy The {@link ViewHierarchy} to render
-     * @param hScale The {@link ScaleInfo} to use to transfer horizontal layout
+     * @param hScale The {@link CanvasTransform} to use to transfer horizontal layout
      *            coordinates to screen coordinates
-     * @param vScale The {@link ScaleInfo} to use to transfer vertical layout
+     * @param vScale The {@link CanvasTransform} to use to transfer vertical layout
      *            coordinates to screen coordinates
      */
-    public OutlineOverlay(ViewHierarchy viewHierarchy, ScaleInfo hScale, ScaleInfo vScale) {
+    public OutlineOverlay(
+            ViewHierarchy viewHierarchy,
+            CanvasTransform hScale,
+            CanvasTransform vScale) {
         super();
         this.mViewHierarchy = viewHierarchy;
         this.mHScale = hScale;

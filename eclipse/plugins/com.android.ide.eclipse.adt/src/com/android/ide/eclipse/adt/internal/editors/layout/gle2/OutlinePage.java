@@ -76,7 +76,7 @@ import java.util.ArrayList;
  *
  * @since GLE2
  */
-public class OutlinePage2 extends ContentOutlinePage
+public class OutlinePage extends ContentOutlinePage
     implements ISelectionListener, INullSelectionListener {
 
     /**
@@ -108,7 +108,7 @@ public class OutlinePage2 extends ContentOutlinePage
      */
     private DropTarget mDropTarget;
 
-    public OutlinePage2(GraphicalEditorPart graphicalEditorPart) {
+    public OutlinePage(GraphicalEditorPart graphicalEditorPart) {
         super();
         mGraphicalEditorPart = graphicalEditorPart;
     }

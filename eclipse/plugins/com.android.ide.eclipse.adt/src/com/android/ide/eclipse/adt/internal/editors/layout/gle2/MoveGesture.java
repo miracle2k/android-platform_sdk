@@ -572,9 +572,9 @@ public class MoveGesture extends DropGesture {
                         // layout itself: a copy would be ok but not a move operation of the
                         // layout into himself.
 
-                        CanvasSelection[] selection = mGlobalDragInfo.getCurrentSelection();
+                        SelectionItem[] selection = mGlobalDragInfo.getCurrentSelection();
                         if (selection != null) {
-                            for (CanvasSelection cs : selection) {
+                            for (SelectionItem cs : selection) {
                                 if (cs.getViewInfo() == targetVi) {
                                     // The node that responded is one of the selection roots.
                                     // Simply invalidate the drop feedback and move on the

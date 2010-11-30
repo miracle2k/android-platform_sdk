@@ -29,7 +29,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.views.properties.PropertySheetEntry;
-import org.eclipse.ui.views.properties.PropertySheetPage;
 
 /**
  * A customized property sheet page for the graphical layout editor v2.
@@ -45,10 +44,10 @@ import org.eclipse.ui.views.properties.PropertySheetPage;
  *
  * @since GLE2
  */
-public class PropertySheetPage2 extends PropertySheetPage {
+public class PropertySheetPage extends org.eclipse.ui.views.properties.PropertySheetPage {
 
 
-    public PropertySheetPage2() {
+    public PropertySheetPage() {
         super();
     }
 

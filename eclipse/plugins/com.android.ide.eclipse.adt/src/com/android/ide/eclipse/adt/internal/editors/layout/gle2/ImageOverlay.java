@@ -35,10 +35,10 @@ public class ImageOverlay extends Overlay {
     private LayoutCanvas mCanvas;
 
     /** Vertical scaling & scrollbar information. */
-    private ScaleInfo mVScale;
+    private CanvasTransform mVScale;
 
     /** Horizontal scaling & scrollbar information. */
-    private ScaleInfo mHScale;
+    private CanvasTransform mHScale;
 
     /**
      * Constructs an {@link ImageOverlay} tied to the given canvas.
@@ -47,7 +47,7 @@ public class ImageOverlay extends Overlay {
      * @param hScale The horizontal scale information.
      * @param vScale The vertical scale information.
      */
-    public ImageOverlay(LayoutCanvas canvas, ScaleInfo hScale, ScaleInfo vScale) {
+    public ImageOverlay(LayoutCanvas canvas, CanvasTransform hScale, CanvasTransform vScale) {
         this.mCanvas = canvas;
         this.mHScale = hScale;
         this.mVScale = vScale;
@@ -107,8 +107,8 @@ public class ImageOverlay extends Overlay {
                 gc_setAlpha(gc, 128); // half-transparent
             }
 
-            ScaleInfo hi = mHScale;
-            ScaleInfo vi = mVScale;
+            CanvasTransform hi = mHScale;
+            CanvasTransform vi = mVScale;
 
             // we only anti-alias when reducing the image size.
             int oldAlias = -2;

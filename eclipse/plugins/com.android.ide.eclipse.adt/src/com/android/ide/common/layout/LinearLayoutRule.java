@@ -48,7 +48,7 @@ import java.util.Map;
  * An {@link IViewRule} for android.widget.LinearLayout and all its derived
  * classes.
  */
-public class LinearLayoutRule extends BaseLayout {
+public class LinearLayoutRule extends BaseLayoutRule {
     /**
      * Add an explicit Orientation toggle to the context menu.
      */

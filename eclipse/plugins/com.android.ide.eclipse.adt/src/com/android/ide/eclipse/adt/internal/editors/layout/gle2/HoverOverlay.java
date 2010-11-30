@@ -33,10 +33,10 @@ public class HoverOverlay extends Overlay {
     private Color mHoverFillColor;
 
     /** Vertical scaling & scrollbar information. */
-    private ScaleInfo mVScale;
+    private CanvasTransform mVScale;
 
     /** Horizontal scaling & scrollbar information. */
-    private ScaleInfo mHScale;
+    private CanvasTransform mHScale;
 
     /**
      * Current mouse hover border rectangle. Null when there's no mouse hover.
@@ -48,12 +48,12 @@ public class HoverOverlay extends Overlay {
     /**
      * Constructs a new {@link HoverOverlay} linked to the given view hierarchy.
      *
-     * @param hScale The {@link ScaleInfo} to use to transfer horizontal layout
+     * @param hScale The {@link CanvasTransform} to use to transfer horizontal layout
      *            coordinates to screen coordinates.
-     * @param vScale The {@link ScaleInfo} to use to transfer vertical layout
+     * @param vScale The {@link CanvasTransform} to use to transfer vertical layout
      *            coordinates to screen coordinates.
      */
-    public HoverOverlay(ScaleInfo hScale, ScaleInfo vScale) {
+    public HoverOverlay(CanvasTransform hScale, CanvasTransform vScale) {
         super();
         this.mHScale = hScale;
         this.mVScale = vScale;

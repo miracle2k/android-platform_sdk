@@ -31,7 +31,7 @@ import com.android.ide.common.api.InsertType;
 /**
  * An {@link IViewRule} for android.widget.DialerFilterRule.
  */
-public class DialerFilterRule extends BaseView {
+public class DialerFilterRule extends BaseViewRule {
 
     @Override
     public void onCreate(INode node, INode parent, InsertType insertType) {

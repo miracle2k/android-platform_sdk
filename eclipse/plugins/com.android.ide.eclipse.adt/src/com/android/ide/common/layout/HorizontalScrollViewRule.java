@@ -31,7 +31,7 @@ import com.android.ide.common.api.InsertType;
 /**
  * An {@link IViewRule} for android.widget.HorizontalScrollView.
  */
-public class HorizontalScrollViewRule extends BaseView {
+public class HorizontalScrollViewRule extends BaseViewRule {
 
     @Override
     public void onChildInserted(INode child, INode parent, InsertType insertType) {

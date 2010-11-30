@@ -48,7 +48,7 @@ import java.util.Set;
 /**
  * Common IViewRule processing to all view and layout classes.
  */
-public class BaseView implements IViewRule {
+public class BaseViewRule implements IViewRule {
     protected IClientRulesEngine mRulesEngine;
 
     // Cache of attributes. Key is FQCN of a node mixed with its view hierarchy
@@ -418,8 +418,8 @@ public class BaseView implements IViewRule {
             String parentFqcn = parent.getFqcn();
             IViewRule parentRule = mRulesEngine.loadRule(parentFqcn);
 
-            if (parentRule instanceof BaseLayout) {
-                ((BaseLayout) parentRule).onPasteBeforeChild(parent, targetNode, elements);
+            if (parentRule instanceof BaseLayoutRule) {
+                ((BaseLayoutRule) parentRule).onPasteBeforeChild(parent, targetNode, elements);
             }
         }
     }

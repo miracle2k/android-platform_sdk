@@ -22,7 +22,7 @@ import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
 import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.Rect;
-import com.android.ide.common.layout.BaseLayout.AttributeFilter;
+import com.android.ide.common.layout.BaseLayoutRule.AttributeFilter;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,7 +34,7 @@ import java.util.Set;
 // TODO: Check equals() but not == strings by using new String("") to prevent interning
 // TODO: Rename BaseLayout to BaseLayoutRule, and tests too of course
 
-public class BaseLayoutTest extends LayoutTestBase {
+public class BaseLayoutRuleTest extends LayoutTestBase {
 
     /** Provides test data used by other test cases */
     private IDragElement[] createSampleElements() {
@@ -51,18 +51,18 @@ public class BaseLayoutTest extends LayoutTestBase {
         return elements;
     }
 
-    /** Test {@link BaseLayout#collectIds}: Check that basic lookup of id works */
+    /** Test {@link BaseLayoutRule#collectIds}: Check that basic lookup of id works */
     public final void testCollectIds1() {
         IDragElement[] elements = TestDragElement.create(TestDragElement.create(
                 "android.widget.Button", new Rect(0, 0, 100, 80)).id("@+id/Button01"));
         Map<String, Pair<String, String>> idMap = new HashMap<String, Pair<String, String>>();
-        Map<String, Pair<String, String>> ids = new BaseLayout().collectIds(idMap, elements);
+        Map<String, Pair<String, String>> ids = new BaseLayoutRule().collectIds(idMap, elements);
         assertEquals(1, ids.size());
         assertEquals("@+id/Button01", ids.keySet().iterator().next());
     }
 
     /**
-     * Test {@link BaseLayout#collectIds}: Check that with the wrong URI we
+     * Test {@link BaseLayoutRule#collectIds}: Check that with the wrong URI we
      * don't pick up the ID
      */
     public final void testCollectIds2() {
@@ -71,42 +71,42 @@ public class BaseLayoutTest extends LayoutTestBase {
                 "@+id/Button01"));
 
         Map<String, Pair<String, String>> idMap = new HashMap<String, Pair<String, String>>();
-        Map<String, Pair<String, String>> ids = new BaseLayout().collectIds(idMap, elements);
+        Map<String, Pair<String, String>> ids = new BaseLayoutRule().collectIds(idMap, elements);
         assertEquals(0, ids.size());
     }
 
     /**
-     * Test {@link BaseLayout#normalizeId(String)}
+     * Test {@link BaseLayoutRule#normalizeId(String)}
      */
     public final void testNormalizeId() {
-        assertEquals("foo", new BaseLayout().normalizeId("foo"));
-        assertEquals("@+id/name", new BaseLayout().normalizeId("@id/name"));
-        assertEquals("@+id/name", new BaseLayout().normalizeId("@+id/name"));
+        assertEquals("foo", new BaseLayoutRule().normalizeId("foo"));
+        assertEquals("@+id/name", new BaseLayoutRule().normalizeId("@id/name"));
+        assertEquals("@+id/name", new BaseLayoutRule().normalizeId("@+id/name"));
     }
 
     /**
-     * Test {@link BaseLayout#collectExistingIds}
+     * Test {@link BaseLayoutRule#collectExistingIds}
      */
     public final void testCollectExistingIds1() {
         Set<String> existing = new HashSet<String>();
         INode node = TestNode.create("android.widget.Button").id("@+id/Button012").add(
                 TestNode.create("android.widget.Button").id("@+id/Button2"));
 
-        new BaseLayout().collectExistingIds(node, existing);
+        new BaseLayoutRule().collectExistingIds(node, existing);
 
         assertEquals(2, existing.size());
         assertContainsSame(Arrays.asList("@+id/Button2", "@+id/Button012"), existing);
     }
 
     /**
-     * Test {@link BaseLayout#collectIds}: Check that with multiple elements and
+     * Test {@link BaseLayoutRule#collectIds}: Check that with multiple elements and
      * some children we still pick up all the right id's
      */
     public final void testCollectIds3() {
         Map<String, Pair<String, String>> idMap = new HashMap<String, Pair<String, String>>();
 
         IDragElement[] elements = createSampleElements();
-        Map<String, Pair<String, String>> ids = new BaseLayout().collectIds(idMap, elements);
+        Map<String, Pair<String, String>> ids = new BaseLayoutRule().collectIds(idMap, elements);
         assertEquals(5, ids.size());
         assertContainsSame(Arrays.asList("@+id/Button01", "@+id/Button02", "@+id/Button011",
                 "@+id/Button012", "@+id/LinearLayout01"), ids.keySet());
@@ -119,11 +119,11 @@ public class BaseLayoutTest extends LayoutTestBase {
     }
 
     /**
-     * Test {@link BaseLayout#remapIds}: Ensure that it identifies a conflict
+     * Test {@link BaseLayoutRule#remapIds}: Ensure that it identifies a conflict
      */
     public final void testRemapIds1() {
         Map<String, Pair<String, String>> idMap = new HashMap<String, Pair<String, String>>();
-        BaseLayout baseLayout = new BaseLayout();
+        BaseLayoutRule baseLayout = new BaseLayoutRule();
         IDragElement[] elements = createSampleElements();
         baseLayout.collectIds(idMap, elements);
         INode node = TestNode.create("android.widget.Button").id("@+id/Button012").add(
@@ -142,10 +142,10 @@ public class BaseLayoutTest extends LayoutTestBase {
 
 
     /**
-     * Test {@link BaseLayout#getDropIdMap}
+     * Test {@link BaseLayoutRule#getDropIdMap}
      */
     public final void testGetDropIdMap() {
-        BaseLayout baseLayout = new BaseLayout();
+        BaseLayoutRule baseLayout = new BaseLayoutRule();
         IDragElement[] elements = createSampleElements();
         INode node = TestNode.create("android.widget.Button").id("@+id/Button012").add(
                 TestNode.create("android.widget.Button").id("@+id/Button2"));
@@ -160,7 +160,7 @@ public class BaseLayoutTest extends LayoutTestBase {
     }
 
     public final void testAddAttributes1() {
-        BaseLayout layout = new BaseLayout();
+        BaseLayoutRule layout = new BaseLayoutRule();
 
         // First try with no filter
         IDragElement oldElement = TestDragElement.create("a.w.B").id("@+id/foo");
@@ -178,7 +178,7 @@ public class BaseLayoutTest extends LayoutTestBase {
 
     public final void testAddAttributes2() {
         // Test filtering
-        BaseLayout layout = new BaseLayout();
+        BaseLayoutRule layout = new BaseLayoutRule();
 
         // First try with no filter
         IDragElement oldElement = TestDragElement.create("a.w.B").id("@+id/foo");
@@ -203,7 +203,7 @@ public class BaseLayoutTest extends LayoutTestBase {
     }
 
     public final void testFindNewId() {
-        BaseLayout baseLayout = new BaseLayout();
+        BaseLayoutRule baseLayout = new BaseLayoutRule();
         Set<String> existing = new HashSet<String>();
         assertEquals("@+id/Widget01", baseLayout.findNewId("a.w.Widget", existing));
 
@@ -218,11 +218,11 @@ public class BaseLayoutTest extends LayoutTestBase {
     }
 
     public final void testDefaultAttributeFilter() {
-        assertEquals("true", BaseLayout.DEFAULT_ATTR_FILTER.replace("myuri", "layout_alignRight",
+        assertEquals("true", BaseLayoutRule.DEFAULT_ATTR_FILTER.replace("myuri", "layout_alignRight",
                 "true"));
-        assertEquals(null, BaseLayout.DEFAULT_ATTR_FILTER.replace(ANDROID_URI,
+        assertEquals(null, BaseLayoutRule.DEFAULT_ATTR_FILTER.replace(ANDROID_URI,
                 "layout_alignRight", "true"));
-        assertEquals("true", BaseLayout.DEFAULT_ATTR_FILTER.replace(ANDROID_URI,
+        assertEquals("true", BaseLayoutRule.DEFAULT_ATTR_FILTER.replace(ANDROID_URI,
                 "myproperty", "true"));
     }
 
@@ -234,7 +234,7 @@ public class BaseLayoutTest extends LayoutTestBase {
                         "value2a").set("uri", "childprop2b", "value2b"));
         INode newNode = TestNode.create("a.w.B").id("@+id/foo");
         Map<String, Pair<String, String>> idMap = new HashMap<String, Pair<String, String>>();
-        BaseLayout layout = new BaseLayout();
+        BaseLayoutRule layout = new BaseLayoutRule();
         layout.addInnerElements(newNode, oldElement, idMap);
         assertEquals(2, newNode.getChildren().length);
 

@@ -53,9 +53,9 @@ public class MarqueeGesture extends Gesture {
         this.mCanvas = canvas;
 
         if (toggle) {
-            List<CanvasSelection> selection = canvas.getSelectionManager().getSelections();
+            List<SelectionItem> selection = canvas.getSelectionManager().getSelections();
             mInitialSelection = new ArrayList<CanvasViewInfo>(selection.size());
-            for (CanvasSelection item : selection) {
+            for (SelectionItem item : selection) {
                 mInitialSelection.add(item.getViewInfo());
             }
         } else {

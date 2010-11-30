@@ -35,7 +35,7 @@ import java.util.Map;
  * An {@link IViewRule} for android.widget.AbsoluteLayout and all its derived
  * classes.
  */
-public class AbsoluteLayoutRule extends BaseLayout {
+public class AbsoluteLayoutRule extends BaseLayoutRule {
 
     // ==== Drag'n'drop support ====
     // The AbsoluteLayout accepts any drag'n'drop anywhere on its surface.

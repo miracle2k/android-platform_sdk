@@ -23,7 +23,7 @@ import org.eclipse.swt.widgets.ScrollBar;
  * Helper class to convert between control pixel coordinates and canvas coordinates.
  * Takes care of the zooming and offset of the canvas.
  */
-public class ScaleInfo implements ICanvasTransform {
+public class CanvasTransform implements ICanvasTransform {
     /**
      * The canvas which controls the zooming.
      */
@@ -44,7 +44,7 @@ public class ScaleInfo implements ICanvasTransform {
     /** Scrollbar widget. */
     private ScrollBar mScrollbar;
 
-    public ScaleInfo(LayoutCanvas layoutCanvas, ScrollBar scrollbar) {
+    public CanvasTransform(LayoutCanvas layoutCanvas, ScrollBar scrollbar) {
         mCanvas = layoutCanvas;
         mScrollbar = scrollbar;
         mScale = 1.0;
@@ -55,7 +55,7 @@ public class ScaleInfo implements ICanvasTransform {
             public void widgetSelected(SelectionEvent e) {
                 // User requested scrolling. Changes translation and redraw canvas.
                 mTranslate = mScrollbar.getSelection();
-                ScaleInfo.this.mCanvas.redraw();
+                CanvasTransform.this.mCanvas.redraw();
             }
         });
     }

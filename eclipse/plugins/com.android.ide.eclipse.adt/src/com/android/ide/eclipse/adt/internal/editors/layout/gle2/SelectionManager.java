@@ -60,10 +60,10 @@ public class SelectionManager implements ISelectionProvider {
     private LayoutCanvas mCanvas;
 
     /** The current selection list. The list is never null, however it can be empty. */
-    private final LinkedList<CanvasSelection> mSelections = new LinkedList<CanvasSelection>();
+    private final LinkedList<SelectionItem> mSelections = new LinkedList<SelectionItem>();
 
     /** An unmodifiable view of {@link #mSelections}. */
-    private final List<CanvasSelection> mUnmodifiableSelection =
+    private final List<SelectionItem> mUnmodifiableSelection =
         Collections.unmodifiableList(mSelections);
 
     /** Barrier set when updating the selection to prevent from recursively
@@ -98,13 +98,13 @@ public class SelectionManager implements ISelectionProvider {
      }
 
     /**
-     * Returns the native {@link CanvasSelection} list.
+     * Returns the native {@link SelectionItem} list.
      *
-     * @return An immutable list of {@link CanvasSelection}. Can be empty but not null.
+     * @return An immutable list of {@link SelectionItem}. Can be empty but not null.
      * @see #getSelection() {@link #getSelection()} to retrieve a {@link TreeViewer}
      *                      compatible {@link ISelection}.
      */
-    /* package */ List<CanvasSelection> getSelections() {
+    /* package */ List<SelectionItem> getSelections() {
         return mUnmodifiableSelection;
     }
 
@@ -114,8 +114,8 @@ public class SelectionManager implements ISelectionProvider {
      *
      * @return A copy of the current selection. Never null.
      */
-    /* package */ List<CanvasSelection> getSnapshot() {
-        return new ArrayList<CanvasSelection>(mSelections);
+    /* package */ List<SelectionItem> getSnapshot() {
+        return new ArrayList<SelectionItem>(mSelections);
     }
 
     /**
@@ -129,7 +129,7 @@ public class SelectionManager implements ISelectionProvider {
 
         ArrayList<TreePath> paths = new ArrayList<TreePath>();
 
-        for (CanvasSelection cs : mSelections) {
+        for (SelectionItem cs : mSelections) {
             CanvasViewInfo vi = cs.getViewInfo();
             if (vi != null) {
                 ArrayList<Object> segments = new ArrayList<Object>();
@@ -184,7 +184,7 @@ public class SelectionManager implements ISelectionProvider {
 
                 // Create a list of all currently selected view infos
                 Set<CanvasViewInfo> oldSelected = new HashSet<CanvasViewInfo>();
-                for (CanvasSelection cs : mSelections) {
+                for (SelectionItem cs : mSelections) {
                     oldSelected.add(cs.getViewInfo());
                 }
 
@@ -263,7 +263,7 @@ public class SelectionManager implements ISelectionProvider {
             // Otherwise we select the item under the cursor.
 
             if (!isCycleClick && !isMultiClick) {
-                for (CanvasSelection cs : mSelections) {
+                for (SelectionItem cs : mSelections) {
                     if (cs.getRect().contains(p.x, p.y)) {
                         // The cursor is inside the selection. Don't change anything.
                         return;
@@ -395,7 +395,7 @@ public class SelectionManager implements ISelectionProvider {
 
     /** Returns true if the view hierarchy is showing exploded items. */
     private boolean hasExplodedItems() {
-        for (CanvasSelection item : mSelections) {
+        for (SelectionItem item : mSelections) {
             if (item.getViewInfo().isExploded()) {
                 return true;
             }
@@ -528,8 +528,8 @@ public class SelectionManager implements ISelectionProvider {
             return false;
         }
 
-        for (ListIterator<CanvasSelection> it = mSelections.listIterator(); it.hasNext(); ) {
-            CanvasSelection s = it.next();
+        for (ListIterator<SelectionItem> it = mSelections.listIterator(); it.hasNext(); ) {
+            SelectionItem s = it.next();
             if (canvasViewInfo == s.getViewInfo()) {
                 it.remove();
                 return true;
@@ -544,8 +544,8 @@ public class SelectionManager implements ISelectionProvider {
      * Callers are responsible for calling redraw() and updateOulineSelection() after.
      */
     private void deselectAll(List<CanvasViewInfo> canvasViewInfos) {
-        for (ListIterator<CanvasSelection> it = mSelections.listIterator(); it.hasNext(); ) {
-            CanvasSelection s = it.next();
+        for (ListIterator<SelectionItem> it = mSelections.listIterator(); it.hasNext(); ) {
+            SelectionItem s = it.next();
             if (canvasViewInfos.contains(s.getViewInfo())) {
                 it.remove();
             }
@@ -556,8 +556,8 @@ public class SelectionManager implements ISelectionProvider {
     /* package */ void sync(CanvasViewInfo lastValidViewInfoRoot) {
         // Check if the selection is still the same (based on the object keys)
         // and eventually recompute their bounds.
-        for (ListIterator<CanvasSelection> it = mSelections.listIterator(); it.hasNext(); ) {
-            CanvasSelection s = it.next();
+        for (ListIterator<SelectionItem> it = mSelections.listIterator(); it.hasNext(); ) {
+            SelectionItem s = it.next();
 
             // Check if the selected object still exists
             ViewHierarchy viewHierarchy = mCanvas.getViewHierarchy();
@@ -623,13 +623,13 @@ public class SelectionManager implements ISelectionProvider {
      *      given list is going to be altered and we should never alter the user-made selection.
      *      Instead the caller should provide its own copy.
      */
-    /* package */ static void sanitize(List<CanvasSelection> selection) {
+    /* package */ static void sanitize(List<SelectionItem> selection) {
         if (selection.isEmpty()) {
             return;
         }
 
-        for (Iterator<CanvasSelection> it = selection.iterator(); it.hasNext(); ) {
-            CanvasSelection cs = it.next();
+        for (Iterator<SelectionItem> it = selection.iterator(); it.hasNext(); ) {
+            SelectionItem cs = it.next();
             CanvasViewInfo vi = cs.getViewInfo();
             UiViewElementNode key = vi == null ? null : vi.getUiViewNode();
             Node node = key == null ? null : key.getXmlNode();
@@ -640,9 +640,9 @@ public class SelectionManager implements ISelectionProvider {
             }
 
             if (vi != null) {
-                for (Iterator<CanvasSelection> it2 = selection.iterator();
+                for (Iterator<SelectionItem> it2 = selection.iterator();
                      it2.hasNext(); ) {
-                    CanvasSelection cs2 = it2.next();
+                    SelectionItem cs2 = it2.next();
                     if (cs != cs2) {
                         CanvasViewInfo vi2 = cs2.getViewInfo();
                         if (vi.isParent(vi2)) {
@@ -665,8 +665,8 @@ public class SelectionManager implements ISelectionProvider {
         mCanvas.redraw();
     }
 
-    private CanvasSelection createSelection(CanvasViewInfo vi) {
-        return new CanvasSelection(vi, mCanvas.getRulesEngine(),
+    private SelectionItem createSelection(CanvasViewInfo vi) {
+        return new SelectionItem(vi, mCanvas.getRulesEngine(),
                 mCanvas.getNodeFactory());
     }
 }
