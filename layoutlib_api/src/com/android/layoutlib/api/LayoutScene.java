@@ -116,7 +116,7 @@ public class LayoutScene {
      * The {@link LayoutBridge} is only able to inflate or render one layout at a time. There
      * is an internal lock object whenever such an action occurs. The timeout parameter is used
      * when attempting to acquire the lock. If the timeout expires, the method will return
-     * SceneResult.sdfdsf
+     * {@link SceneStatus#ERROR_TIMEOUT}.
      *
      * @param timeout timeout for the rendering, in milliseconds.
      *
@@ -134,13 +134,13 @@ public class LayoutScene {
      * <p/>
      * Any amount of actions can be taken on the scene before {@link #render()} is called.
      *
-     * @param object
+     * @param objectView
      * @param propertyName
      * @param propertyValue
      *
      * @return a {@link SceneResult} indicating the status of the action.
      */
-    public SceneResult setProperty(int object, String propertyName, String propertyValue) {
+    public SceneResult setProperty(Object objectView, String propertyName, String propertyValue) {
         return NOT_IMPLEMENTED.getResult();
     }
 
@@ -154,7 +154,21 @@ public class LayoutScene {
      *
      * @return a {@link SceneResult} indicating the status of the action.
      */
-    public SceneResult insertChild() {
+    public SceneResult insertChild(Object parentView, IXmlPullParser childXml, int index) {
+        return NOT_IMPLEMENTED.getResult();
+    }
+
+    /**
+     * Inserts a new child in a ViewGroup object.
+     * <p/>
+     * This does nothing more than change the layouy. To render the scene in its new state, a
+     * call to {@link #render()} is required.
+     * <p/>
+     * Any amount of actions can be taken on the scene before {@link #render()} is called.
+     *
+     * @return a {@link SceneResult} indicating the status of the action.
+     */
+    public SceneResult moveChild(Object parentView, IXmlPullParser layoutParamsXml, int index) {
         return NOT_IMPLEMENTED.getResult();
     }
 
@@ -168,7 +182,7 @@ public class LayoutScene {
      *
      * @return a {@link SceneResult} indicating the status of the action.
      */
-    public SceneResult removeChild() {
+    public SceneResult removeChild(Object parentView, int index) {
         return NOT_IMPLEMENTED.getResult();
     }
 
