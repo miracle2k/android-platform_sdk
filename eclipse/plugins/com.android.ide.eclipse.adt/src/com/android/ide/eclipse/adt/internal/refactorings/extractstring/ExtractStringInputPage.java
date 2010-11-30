@@ -36,8 +36,10 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
@@ -70,6 +72,10 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
     private ConfigurationSelector mConfigSelector;
     /** The combo to display the existing XML files or enter a new one. */
     private Combo mResFileCombo;
+    /** Checkbox asking whether to replace in all Java files. */
+    private Button mReplaceAllJava;
+    /** Checkbox asking whether to replace in all XML files with same name but other res config */
+    private Button mReplaceAllXml;
 
     /** Regex pattern to read a valid res XML file path. It checks that the are 2 folders and
      *  a leaf file name ending with .xml */
@@ -86,6 +92,20 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
 
     private XmlStringFileHelper mXmlHelper = new XmlStringFileHelper();
 
+    private final OnConfigSelectorUpdated mOnConfigSelectorUpdated = new OnConfigSelectorUpdated();
+
+    private ModifyListener mValidateOnModify = new ModifyListener() {
+        public void modifyText(ModifyEvent e) {
+            validatePage();
+        }
+    };
+
+    private SelectionListener mValidateOnSelection = new SelectionAdapter() {
+        @Override
+        public void widgetSelected(SelectionEvent e) {
+            validatePage();
+        }
+    };
 
     public ExtractStringInputPage(IProject project) {
         super("ExtractStringInputPage");  //$NON-NLS-1$
@@ -97,17 +117,21 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
      * <p/>
      * Note that at that point the initial conditions have been checked in
      * {@link ExtractStringRefactoring}.
+     * <p/>
+     *
+     * Note: the special tag below defines this as the entry point for the WindowsDesigner Editor.
+     * @wbp.parser.entryPoint
      */
     public void createControl(Composite parent) {
         Composite content = new Composite(parent, SWT.NONE);
         GridLayout layout = new GridLayout();
-        layout.numColumns = 1;
         content.setLayout(layout);
 
         createStringGroup(content);
         createResFileGroup(content);
+        createOptionGroup(content);
 
-        validatePage();
+        initUi();
         setControl(content);
     }
 
@@ -123,10 +147,9 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
 
         Group group = new Group(content, SWT.NONE);
         group.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        group.setText("New String");
         if (ref.getMode() == ExtractStringRefactoring.Mode.EDIT_SOURCE) {
             group.setText("String Replacement");
-        } else {
-            group.setText("New String");
         }
 
         GridLayout layout = new GridLayout();
@@ -152,19 +175,14 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
             }
         });
 
-
-        // TODO provide an option to replace all occurences of this string instead of
-        // just the one.
-
         // line : Textfield for new ID
 
         label = new Label(group, SWT.NONE);
+        label.setText("ID &R.string.");
         if (ref.getMode() == ExtractStringRefactoring.Mode.EDIT_SOURCE) {
             label.setText("&Replace by R.string.");
         } else if (ref.getMode() == ExtractStringRefactoring.Mode.SELECT_NEW_ID) {
             label.setText("New &R.string.");
-        } else {
-            label.setText("ID &R.string.");
         }
 
         mStringIdCombo = new Combo(group, SWT.SINGLE | SWT.LEFT | SWT.BORDER | SWT.DROP_DOWN);
@@ -174,17 +192,8 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
 
         ref.setNewStringId(mStringIdCombo.getText().trim());
 
-        mStringIdCombo.addModifyListener(new ModifyListener() {
-            public void modifyText(ModifyEvent e) {
-                validatePage();
-            }
-        });
-        mStringIdCombo.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                validatePage();
-            }
-        });
+        mStringIdCombo.addModifyListener(mValidateOnModify);
+        mStringIdCombo.addSelectionListener(mValidateOnSelection);
     }
 
     /**
@@ -196,7 +205,9 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
     private void createResFileGroup(Composite content) {
 
         Group group = new Group(content, SWT.NONE);
-        group.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        GridData gd = new GridData(GridData.FILL_HORIZONTAL);
+        gd.grabExcessVerticalSpace = true;
+        group.setLayoutData(gd);
         group.setText("XML resource to edit");
 
         GridLayout layout = new GridLayout();
@@ -210,13 +221,12 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
         label.setText("&Configuration:");
 
         mConfigSelector = new ConfigurationSelector(group, SelectorMode.DEFAULT);
-        GridData gd = new GridData(GridData.GRAB_HORIZONTAL | GridData.GRAB_VERTICAL);
+        gd = new GridData(GridData.GRAB_HORIZONTAL | GridData.GRAB_VERTICAL);
         gd.horizontalSpan = 2;
         gd.widthHint = ConfigurationSelector.WIDTH_HINT;
         gd.heightHint = ConfigurationSelector.HEIGHT_HINT;
         mConfigSelector.setLayoutData(gd);
-        OnConfigSelectorUpdated onConfigSelectorUpdated = new OnConfigSelectorUpdated();
-        mConfigSelector.setOnChangeListener(onConfigSelectorUpdated);
+        mConfigSelector.setOnChangeListener(mOnConfigSelectorUpdated);
 
         // line: selection of the output file
 
@@ -226,15 +236,50 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
         mResFileCombo = new Combo(group, SWT.DROP_DOWN);
         mResFileCombo.select(0);
         mResFileCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        mResFileCombo.addModifyListener(onConfigSelectorUpdated);
+        mResFileCombo.addModifyListener(mOnConfigSelectorUpdated);
+    }
 
+    /**
+     * Creates the bottom option groups with a few checkboxes.
+     *
+     * @param content A composite with a 1-column grid layout
+     */
+    private void createOptionGroup(Composite content) {
+        Group options = new Group(content, SWT.NONE);
+        options.setText("Options");
+        GridData gd_Options = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
+        gd_Options.widthHint = 77;
+        options.setLayoutData(gd_Options);
+        options.setLayout(new GridLayout(1, false));
+
+        mReplaceAllJava = new Button(options, SWT.CHECK);
+        mReplaceAllJava.setToolTipText("When checked, the exact same string literal will be replaced in all Java files.");
+        mReplaceAllJava.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+        mReplaceAllJava.setText("Replace in all &Java files");
+        mReplaceAllJava.addSelectionListener(mValidateOnSelection);
+
+        mReplaceAllXml = new Button(options, SWT.CHECK);
+        mReplaceAllXml.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+        mReplaceAllXml.setToolTipText("When checked, string literals will be replaced in other XML resource files having the same name but located in different resource configuration folders.");
+        mReplaceAllXml.setText("Replace in all &XML files for different configuration");
+        mReplaceAllXml.addSelectionListener(mValidateOnSelection);
+    }
+
+    // -- Start of internal part ----------
+    // Hide everything down-below from WindowsDesigner Editor
+    //$hide>>$
+
+    /**
+     * Init UI just after it has been created the first time.
+     */
+    private void initUi() {
         // set output file name to the last one used
-
         String projPath = mProject.getFullPath().toPortableString();
         String filePath = sLastResFilePath.get(projPath);
 
         mResFileCombo.setText(filePath != null ? filePath : DEFAULT_RES_FILE_PATH);
-        onConfigSelectorUpdated.run();
+        mOnConfigSelectorUpdated.run();
+        validatePage();
     }
 
     /**
@@ -277,6 +322,9 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
         boolean success = true;
 
         ExtractStringRefactoring ref = getOurRefactoring();
+
+        ref.setReplaceAllJava(mReplaceAllJava.getSelection());
+        ref.setReplaceAllXml(mReplaceAllXml.isEnabled() && mReplaceAllXml.getSelection());
 
         // Analyze fatal errors.
 
@@ -372,7 +420,7 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
         }
     }
 
-    public class OnConfigSelectorUpdated implements Runnable, ModifyListener {
+    private class OnConfigSelectorUpdated implements Runnable, ModifyListener {
 
         /** Regex pattern to parse a valid res path: it reads (/res/folder-name/)+(filename). */
         private final Pattern mPathRegex = Pattern.compile(
@@ -422,9 +470,10 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
             mConfigSelector.getConfiguration(mTempConfig);
             StringBuffer sb = new StringBuffer(RES_FOLDER_ABS);
             sb.append(mTempConfig.getFolderName(ResourceFolderType.VALUES));
-            sb.append('/');
+            sb.append(AndroidConstants.WS_SEP);
 
             String newPath = sb.toString();
+
             if (newPath.equals(currPath) && newPath.equals(mLastFolderUsedInCombo)) {
                 // Path has not changed. No need to reload.
                 return;
@@ -545,5 +594,8 @@ class ExtractStringInputPage extends UserInputWizardPage implements IWizardPage 
             validatePage();
         }
     }
+
+    // End of hiding from SWT Designer
+    //$hide<<$
 
 }

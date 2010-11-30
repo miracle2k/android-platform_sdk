@@ -38,10 +38,13 @@ public enum ResourceFolderType {
         mName = name;
     }
 
+    /**
+     * Returns the folder name for this resource folder type.
+     */
     public String getName() {
         return mName;
     }
-    
+
     /**
      * Returns the enum by name.
      * @param name The enum string value.
@@ -55,7 +58,7 @@ public enum ResourceFolderType {
         }
         return null;
     }
-    
+
     /**
      * Returns the {@link ResourceFolderType} from the folder name
      * @param folderName The name of the folder. This must be a valid folder name in the format
