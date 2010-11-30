@@ -346,6 +346,8 @@ class LayoutCanvas extends Canvas {
             mImageOverlay.dispose();
             mImageOverlay = null;
         }
+
+        mViewHierarchy.dispose();
     }
 
     /** Returns the Rules Engine, associated with the current project. */
@@ -1004,7 +1006,8 @@ class LayoutCanvas extends Canvas {
         // Add test action
         // Don't add it at the top above (by the cut action) because the
         // dynamic context menu makes some assumptions about where things are
-        manager.add(new Action("Run My Test", IAction.AS_PUSH_BUTTON) {
+        // FIXME remove test.
+        manager.add(new Action("Play anim test", IAction.AS_PUSH_BUTTON) {
             @Override
             public void run() {
                 List<SelectionItem> selection = mSelectionManager.getSelections();
@@ -1017,14 +1020,21 @@ class LayoutCanvas extends Canvas {
 
                     scene.animate(viewObject, "testanim", false /*isFrameworkAnimation*/,
                             new IAnimationListener() {
+                                private int mCount = 0;
+                                private BufferedImage mImage;
+                                private boolean mPendingDrawing = false;
+                                public synchronized void onNewFrame(final BufferedImage image) {
+                                    mCount++;
+                                    mImage = image;
+                                    if (mPendingDrawing == false) {
+                                        getDisplay().asyncExec(new Runnable() {
+                                            public void run() {
+                                                drawImage();
+                                            }
+                                        });
 
-                                public void onNewFrame(final BufferedImage image) {
-                                    getDisplay().asyncExec(new Runnable() {
-                                        public void run() {
-                                            mImageOverlay.setImage(image);
-                                            redraw();
-                                        }
-                                    });
+                                        mPendingDrawing = true;
+                                    }
                                 }
 
                                 public boolean isCanceled() {
@@ -1032,6 +1042,23 @@ class LayoutCanvas extends Canvas {
                                 }
 
                                 public void done(SceneResult result) {
+                                    System.out.println("Animation count: " + mCount);
+                                }
+
+                                /**
+                                 * this is called from the UI thread from the asyncRunnable.
+                                 */
+                                public void drawImage() {
+                                    // get last image
+                                    BufferedImage image;
+                                    synchronized (this) {
+                                        image = mImage;
+                                        mImage = null;
+                                        mPendingDrawing = false;
+                                    }
+
+                                    mImageOverlay.setImage(image);
+                                    redraw();
                                 }
                             });
                 }
