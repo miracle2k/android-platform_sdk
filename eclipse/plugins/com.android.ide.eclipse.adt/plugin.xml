@@ -283,7 +283,7 @@
                label="Fix Project Properties"
                menubarPath="com.android.ide.eclipse.adt.AndroidTools/group3"/>
          <action
-               class="com.android.ide.eclipse.adt.internal.actions.RenamePackageAction"
+               class="com.android.ide.eclipse.adt.internal.refactorings.renamepackage.RenamePackageAction"
                enablesFor="1"
                id="com.android.ide.eclipse.adt.project.RenamePackageAction"
                label="Rename Application Package"

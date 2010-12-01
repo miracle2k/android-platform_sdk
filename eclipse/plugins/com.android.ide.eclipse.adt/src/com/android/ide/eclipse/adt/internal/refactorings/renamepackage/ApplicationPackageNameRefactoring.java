@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.actions;
+package com.android.ide.eclipse.adt.internal.refactorings.renamepackage;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
-import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -30,7 +28,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -47,29 +44,17 @@ import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.dialogs.IInputValidator;
-import org.eclipse.jface.dialogs.InputDialog;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.window.Window;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.Refactoring;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.TextEditChangeGroup;
 import org.eclipse.ltk.core.refactoring.TextFileChange;
-import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
-import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.text.edits.MalformedTreeException;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
 import org.eclipse.text.edits.TextEdit;
 import org.eclipse.text.edits.TextEditGroup;
-import org.eclipse.ui.IObjectActionDelegate;
-import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
@@ -82,31 +67,71 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 /**
- * Refactoring steps:
- * <ol>
- * <li>Update the "package" attribute of the &lt;manifest&gt; tag with the new
- * name.</li>
- * <li>Replace all values for the "android:name" attribute in the
- * &lt;application&gt; and "component class" (&lt;activity&gt;, &lt;service&gt;,
- * &lt;receiver&gt;, and &lt;provider&gt;) tags with the non-shorthand version
- * of the class name</li>
- * <li>Replace package resource imports (*.R) in .java files</li>
- * <li>Update package name in the namespace declarations (e.g. "xmlns:app")
- * used for custom styleable attributes in layout resource files</li>
- * </ol>
- * Caveat: Sometimes it is necessary to perform a project-wide
- * "Organize Imports" afterwards. (CTRL+SHIFT+O when a project has active
- * selection)
+ *  Wrapper class defining the stages of the refactoring process
  */
-public class RenamePackageAction implements IObjectActionDelegate {
+@SuppressWarnings("restriction")
+class ApplicationPackageNameRefactoring extends Refactoring {
 
-    private ISelection mSelection;
+    private final IProject mProject;
+    private final Name mOldPackageName;
+    private final Name mNewPackageName;
 
-    private Name mOldPackageName, mNewPackageName;
+    List<String> MAIN_COMPONENT_TYPES_LIST = Arrays.asList(MAIN_COMPONENT_TYPES);
+
+    public final static String ANDROID_NS_URI = SdkConstants.NS_RESOURCES;
+    public final static String NAMESPACE_DECLARATION_PREFIX = "xmlns:"; //$NON-NLS-1$
+
+
+    ApplicationPackageNameRefactoring(
+            IProject project,
+            Name oldPackageName,
+            Name newPackageName) {
+        mProject = project;
+        mOldPackageName = oldPackageName;
+        mNewPackageName = newPackageName;
+    }
+
+    @Override
+    public RefactoringStatus checkInitialConditions(IProgressMonitor pm)
+            throws CoreException, OperationCanceledException {
+
+        // Accurate refactoring of the "shorthand" names in
+        // AndroidManifest.xml depends on not having compilation errors.
+        if (mProject.findMaxProblemSeverity(
+                IMarker.PROBLEM,
+                true,
+                IResource.DEPTH_INFINITE) == IMarker.SEVERITY_ERROR) {
+            return RefactoringStatus
+            .createFatalErrorStatus("Fix the errors in your project, first.");
+        }
+
+        return new RefactoringStatus();
+    }
+
+    @Override
+    public RefactoringStatus checkFinalConditions(IProgressMonitor pm)
+            throws OperationCanceledException {
+
+        return new RefactoringStatus();
+    }
+
+    @Override
+    public Change createChange(IProgressMonitor pm) throws CoreException,
+    OperationCanceledException {
+
+        // Traverse all files in the project, building up a list of changes
+        JavaFileVisitor fileVisitor = new JavaFileVisitor();
+        mProject.accept(fileVisitor);
+        return fileVisitor.getChange();
+    }
+
+    @Override
+    public String getName() {
+        return "AndroidPackageNameRefactoring"; //$NON-NLS-1$
+    }
 
     public final static String[] MAIN_COMPONENT_TYPES = {
         AndroidManifest.NODE_ACTIVITY, AndroidManifest.NODE_SERVICE,
@@ -114,125 +139,12 @@ public class RenamePackageAction implements IObjectActionDelegate {
         AndroidManifest.NODE_APPLICATION
     };
 
-    List<String> MAIN_COMPONENT_TYPES_LIST = Arrays.asList(MAIN_COMPONENT_TYPES);
-
-    public final static String ANDROID_NS_URI = SdkConstants.NS_RESOURCES;
-
-    public final static String NAMESPACE_DECLARATION_PREFIX = "xmlns:"; //$NON-NLS-1$
-
-    IWorkbenchPart mTargetPart;
-
-    /**
-     * @see IObjectActionDelegate#setActivePart(IAction, IWorkbenchPart)
-     */
-    public void setActivePart(IAction action, IWorkbenchPart targetPart) {
-        mTargetPart = targetPart;
-    }
-
-    public void selectionChanged(IAction action, ISelection selection) {
-        mSelection = selection;
-    }
-
-    /**
-     * @see IWorkbenchWindowActionDelegate#init
-     */
-    public void init(IWorkbenchWindow window) {
-        // pass
-    }
-
-    public void run(IAction action) {
-
-        // Prompt for refactoring on the selected project
-        if (mSelection instanceof IStructuredSelection) {
-            for (Iterator<?> it = ((IStructuredSelection) mSelection).iterator(); it.hasNext();) {
-                Object element = it.next();
-                IProject project = null;
-                if (element instanceof IProject) {
-                    project = (IProject) element;
-                } else if (element instanceof IAdaptable) {
-                    project = (IProject) ((IAdaptable) element).getAdapter(IProject.class);
-                }
-                if (project != null) {
-                    // TODO/FIXME Uncomment this when support for Eclipse 3.4 is dropped!
-                    /*
-                    // It is advisable that the user saves before proceeding,
-                    // revealing any compilation errors. The following lines
-                    // enforce a save as a convenience.
-                    RefactoringSaveHelper save_helper = new RefactoringSaveHelper(
-                            RefactoringSaveHelper.SAVE_ALL_ALWAYS_ASK);
-                    if (save_helper.saveEditors(AdtPlugin.getDisplay().getActiveShell())) {
-                        promptNewName(project);
-                    }
-                     */
-
-                    promptNewName(project);
-                }
-            }
-        }
-    }
-
-    /*
-     * Validate the new package name and start the refactoring wizard
-     */
-    private void promptNewName(final IProject project) {
-
-        ManifestData manifestData = AndroidManifestHelper.parseForData(project);
-        if (manifestData == null) {
-            return;
-        }
-
-        final String old_package_name_string = manifestData.getPackage();
-
-        final AST ast_validator = AST.newAST(AST.JLS3);
-        mOldPackageName = ast_validator.newName(old_package_name_string);
-
-        IInputValidator validator = new IInputValidator() {
-
-            public String isValid(String newText) {
-                try {
-                    ast_validator.newName(newText);
-                } catch (IllegalArgumentException e) {
-                    return "Illegal package name.";
-                }
-
-                if (newText.equals(old_package_name_string))
-                    return "No change.";
-                else
-                    return null;
-            }
-        };
-
-        InputDialog dialog = new InputDialog(AdtPlugin.getDisplay().getActiveShell(),
-                "Rename Application Package", "Enter new package name:", old_package_name_string,
-                validator);
-
-        if (dialog.open() == Window.OK) {
-            mNewPackageName = ast_validator.newName(dialog.getValue());
-            initiateAndroidPackageRefactoring(project);
-        }
-    }
-
-
-    private void initiateAndroidPackageRefactoring(final IProject project) {
-
-        Refactoring package_name_refactoring = new ApplicationPackageNameRefactoring(project);
-
-        ApplicationPackageNameRefactoringWizard wizard =
-            new ApplicationPackageNameRefactoringWizard(package_name_refactoring);
-        RefactoringWizardOpenOperation op = new RefactoringWizardOpenOperation(wizard);
-        try {
-            op.run(AdtPlugin.getDisplay().getActiveShell(), package_name_refactoring.getName());
-        } catch (InterruptedException e) {
-            Status s = new Status(Status.ERROR, AdtPlugin.PLUGIN_ID, e.getMessage(), e);
-            AdtPlugin.getDefault().getLog().log(s);
-        }
-    }
 
     TextEdit updateJavaFileImports(CompilationUnit cu) {
 
-        ImportVisitor import_visitor = new ImportVisitor(cu.getAST());
-        cu.accept(import_visitor);
-        TextEdit rewritten_imports = import_visitor.getTextEdit();
+        ImportVisitor importVisitor = new ImportVisitor(cu.getAST());
+        cu.accept(importVisitor);
+        TextEdit rewrittenImports = importVisitor.getTextEdit();
 
         // If the import of R was potentially implicit, insert an import statement
         if (cu.getPackage().getName().getFullyQualifiedName()
@@ -243,7 +155,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
                     + AndroidConstants.FN_RESOURCE_BASE);
 
             try {
-                rewritten_imports.addChild( irw.rewriteImports(null) );
+                rewrittenImports.addChild( irw.rewriteImports(null) );
             } catch (MalformedTreeException e) {
                 Status s = new Status(Status.ERROR, AdtPlugin.PLUGIN_ID, e.getMessage(), e);
                 AdtPlugin.getDefault().getLog().log(s);
@@ -253,7 +165,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
             }
         }
 
-        return rewritten_imports;
+        return rewrittenImports;
     }
 
     // XML utility functions
@@ -292,6 +204,10 @@ public class RenamePackageAction implements IObjectActionDelegate {
             AdtPlugin.getDefault().getLog().log(s);
         }
 
+        if (sdoc == null) {
+            return null;
+        }
+
         TextFileChange xmlChange = new TextFileChange("XML resource file edit", file);
         xmlChange.setTextType(AndroidConstants.EXT_XML);
 
@@ -325,14 +241,16 @@ public class RenamePackageAction implements IObjectActionDelegate {
                 } else if (DOMRegionContext.XML_TAG_ATTRIBUTE_VALUE.equals(type)) {
                     // Check this is the attribute and the original string
 
-                    if (lastAttrName.startsWith(NAMESPACE_DECLARATION_PREFIX)) {
+                    if (lastAttrName != null &&
+                            lastAttrName.startsWith(NAMESPACE_DECLARATION_PREFIX)) {
 
                         String lastAttrValue = region.getText(subRegion);
                         if (oldAppNamespaceString.equals(stripQuotes(lastAttrValue))) {
 
                             // Found an occurrence. Create a change for it.
-                            TextEdit edit = new ReplaceEdit(region.getStartOffset()
-                                    + subRegion.getStart(), subRegion.getTextLength(),
+                            TextEdit edit = new ReplaceEdit(
+                                    region.getStartOffset() + subRegion.getStart(),
+                                    subRegion.getTextLength(),
                                     addQuotes(newAppNamespaceString));
                             TextEditGroup editGroup = new TextEditGroup(
                                     "Replace package name in custom namespace prefix", edit);
@@ -377,6 +295,10 @@ public class RenamePackageAction implements IObjectActionDelegate {
             AdtPlugin.getDefault().getLog().log(s);
         }
 
+        if (sdoc == null) {
+            return null;
+        }
+
         TextFileChange xmlChange = new TextFileChange("Make Manifest edits", file);
         xmlChange.setTextType(AndroidConstants.EXT_XML);
 
@@ -414,7 +336,8 @@ public class RenamePackageAction implements IObjectActionDelegate {
                 } else if (DOMRegionContext.XML_TAG_ATTRIBUTE_VALUE.equals(type)) {
 
                     String lastAttrValue = region.getText(subRegion);
-                    if (lastAttrName.startsWith(NAMESPACE_DECLARATION_PREFIX)) {
+                    if (lastAttrName != null &&
+                            lastAttrName.startsWith(NAMESPACE_DECLARATION_PREFIX)) {
 
                         // Resolves the android namespace prefix for this file
                         if (ANDROID_NS_URI.equals(stripQuotes(lastAttrValue))) {
@@ -423,9 +346,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
                             android_name_attribute = android_namespace_prefix + ':'
                                 + AndroidManifest.ATTRIBUTE_NAME;
                         }
-                    }
-
-                    else if (AndroidManifest.NODE_MANIFEST.equals(lastTagName)
+                    } else if (AndroidManifest.NODE_MANIFEST.equals(lastTagName)
                             && AndroidManifest.ATTRIBUTE_PACKAGE.equals(lastAttrName)) {
 
                         // Found an occurrence. Create a change for it.
@@ -437,6 +358,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
                         editGroups.add(new TextEditGroup("Change Android package name", edit));
 
                     } else if (MAIN_COMPONENT_TYPES_LIST.contains(lastTagName)
+                            && lastAttrName != null
                             && lastAttrName.equals(android_name_attribute)) {
 
                         String package_path = stripQuotes(lastAttrValue);
@@ -490,6 +412,7 @@ public class RenamePackageAction implements IObjectActionDelegate {
             return change;
         }
 
+        @SuppressWarnings("unused")
         public boolean visit(IResource resource) throws CoreException {
             if (resource instanceof IFile) {
                 IFile file = (IFile) resource;
@@ -524,16 +447,12 @@ public class RenamePackageAction implements IObjectActionDelegate {
                     } else {
 
                         // Currently we only support Android resource XML files,
-                        // so they must have a path
-                        // similar to
-                        // project/res/<type>[-<configuration>]/*.xml
-                        // There is no support for sub folders, so the segment
-                        // count must be 4.
+                        // so they must have a path similar to
+                        //   project/res/<type>[-<configuration>]/*.xml
+                        // There is no support for sub folders, so the segment count must be 4.
                         // We don't need to check the type folder name because
-                        // a/ we only accept
-                        // an AndroidXmlEditor source and b/ aapt generates a
-                        // compilation error for
-                        // unknown folders.
+                        // a/ we only accept an AndroidXmlEditor source and
+                        // b/ aapt generates a compilation error for unknown folders.
                         IPath path = file.getFullPath();
                         // check if we are inside the project/res/* folder.
                         if (path.segmentCount() == 4) {
@@ -585,81 +504,18 @@ public class RenamePackageAction implements IObjectActionDelegate {
         @Override
         public boolean visit(ImportDeclaration id) {
 
-            Name import_name = id.getName();
-            if (import_name.isQualifiedName()) {
-                QualifiedName qualified_import_name = (QualifiedName) import_name;
+            Name importName = id.getName();
+            if (importName.isQualifiedName()) {
+                QualifiedName qualifiedImportName = (QualifiedName) importName;
 
-                if (qualified_import_name.getName().getIdentifier()
+                if (qualifiedImportName.getName().getIdentifier()
                         .equals(AndroidConstants.FN_RESOURCE_BASE)) {
-                    mRewriter.replace(qualified_import_name.getQualifier(), mNewPackageName,
+                    mRewriter.replace(qualifiedImportName.getQualifier(), mNewPackageName,
                             null);
                 }
             }
 
             return true;
-        }
-    }
-
-    class ApplicationPackageNameRefactoringWizard extends RefactoringWizard {
-
-        public ApplicationPackageNameRefactoringWizard(Refactoring refactoring) {
-            super(refactoring, 0);
-        }
-
-        @Override
-        protected void addUserInputPages() {
-        }
-    }
-
-    /*
-     *  Wrapper class defining the stages of the refactoring process
-     */
-    class ApplicationPackageNameRefactoring extends Refactoring {
-
-        IProject mProject;
-
-        ApplicationPackageNameRefactoring(final IProject project) {
-            mProject = project;
-        }
-
-        @Override
-        public RefactoringStatus checkFinalConditions(IProgressMonitor pm) throws CoreException,
-        OperationCanceledException {
-
-            return new RefactoringStatus();
-        }
-
-        @Override
-        public RefactoringStatus checkInitialConditions(IProgressMonitor pm) throws CoreException,
-        OperationCanceledException {
-
-            // Accurate refactoring of the "shorthand" names in
-            // AndroidManifest.xml
-            // depends on not having compilation errors.
-            if (mProject.findMaxProblemSeverity(
-                    IMarker.PROBLEM,
-                    true,
-                    IResource.DEPTH_INFINITE) == IMarker.SEVERITY_ERROR) {
-                return RefactoringStatus
-                .createFatalErrorStatus("Fix the errors in your project, first.");
-            }
-
-            return new RefactoringStatus();
-        }
-
-        @Override
-        public Change createChange(IProgressMonitor pm) throws CoreException,
-        OperationCanceledException {
-
-            // Traverse all files in the project, building up a list of changes
-            JavaFileVisitor file_visitor = new JavaFileVisitor();
-            mProject.accept(file_visitor);
-            return file_visitor.getChange();
-        }
-
-        @Override
-        public String getName() {
-            return "AndroidPackageNameRefactoring"; //$NON-NLS-1$
         }
     }
 }
