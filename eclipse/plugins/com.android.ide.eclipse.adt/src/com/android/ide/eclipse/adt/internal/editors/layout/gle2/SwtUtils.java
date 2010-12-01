@@ -27,7 +27,7 @@ import org.eclipse.swt.widgets.Display;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
-import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -85,7 +85,7 @@ public class SwtUtils {
         int width = awtImage.getWidth();
         int height = awtImage.getHeight();
 
-        Raster raster = awtImage.getData(new java.awt.Rectangle(width, height));
+        WritableRaster raster = awtImage.getRaster();
         int[] imageDataBuffer = ((DataBufferInt) raster.getDataBuffer()).getData();
 
         ImageData imageData =

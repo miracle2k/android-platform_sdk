@@ -996,19 +996,20 @@ class LayoutCanvas extends Canvas {
                     scene.animate(viewObject, "testanim", false /*isFrameworkAnimation*/,
                             new IAnimationListener() {
                                 private int mCount = 0;
-                                private BufferedImage mImage;
                                 private boolean mPendingDrawing = false;
-                                public synchronized void onNewFrame(final BufferedImage image) {
+                                public void onNewFrame(final BufferedImage image) {
                                     mCount++;
-                                    mImage = image;
-                                    if (mPendingDrawing == false) {
-                                        getDisplay().asyncExec(new Runnable() {
-                                            public void run() {
-                                                drawImage();
-                                            }
-                                        });
+                                    mImageOverlay.setImage(image);
+                                    synchronized (this) {
+                                        if (mPendingDrawing == false) {
+                                            getDisplay().asyncExec(new Runnable() {
+                                                public void run() {
+                                                    drawImage();
+                                                }
+                                            });
 
-                                        mPendingDrawing = true;
+                                            mPendingDrawing = true;
+                                        }
                                     }
                                 }
 
@@ -1026,8 +1027,6 @@ class LayoutCanvas extends Canvas {
                                 public void drawImage() {
                                     // get last image
                                     synchronized (this) {
-                                        mImageOverlay.setImage(mImage);
-                                        mImage = null;
                                         mPendingDrawing = false;
                                     }
 
