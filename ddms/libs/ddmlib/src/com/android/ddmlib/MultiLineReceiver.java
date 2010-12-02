@@ -51,7 +51,7 @@ public abstract class MultiLineReceiver implements IShellOutputReceiver {
         if (isCancelled() == false) {
             String s = null;
             try {
-                s = new String(data, offset, length, "ISO-8859-1"); //$NON-NLS-1$
+                s = new String(data, offset, length, "UTF-8"); //$NON-NLS-1$
             } catch (UnsupportedEncodingException e) {
                 // normal encoding didn't work, try the default one
                 s = new String(data, offset,length);
