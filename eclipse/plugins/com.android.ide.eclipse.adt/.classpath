@@ -8,7 +8,7 @@
 	<classpathentry kind="lib" path="libs/kxml2-2.3.0.jar"/>
 	<classpathentry kind="lib" path="libs/layoutlib_api.jar"/>
 	<classpathentry kind="lib" path="libs/ide_common.jar" sourcepath="/ide_common"/>
-	<classpathentry kind="lib" path="libs/ninepatch.jar"/>
+	<classpathentry kind="lib" path="libs/ninepatch.jar" sourcepath="/ninepatch"/>
 	<classpathentry kind="lib" path="libs/sdklib.jar" sourcepath="/SdkLib"/>
 	<classpathentry kind="lib" path="libs/sdkstats.jar" sourcepath="/SdkStatsService"/>
 	<classpathentry kind="lib" path="libs/sdkuilib.jar" sourcepath="/SdkUiLib"/>
