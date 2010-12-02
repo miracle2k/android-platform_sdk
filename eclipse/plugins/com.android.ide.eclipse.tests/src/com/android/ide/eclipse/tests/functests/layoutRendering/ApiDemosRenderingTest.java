@@ -37,7 +37,6 @@ import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IXmlPullParser;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneParams;
-import com.android.layoutlib.api.SceneResult;
 import com.android.layoutlib.api.SceneParams.RenderingMode;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
@@ -217,7 +216,7 @@ public class ApiDemosRenderingTest extends SdkTestCase {
                     null //logger
                     ));
 
-            if (scene.getResult() != SceneResult.SUCCESS) {
+            if (scene.getResult().isSuccess() == false) {
                 if (projectCallBack.mCustomViewAttempt == false) {
                     System.out.println("FAILED");
                     fail(String.format("Rendering %1$s: %2$s", layout.getName(),

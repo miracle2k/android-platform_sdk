@@ -21,7 +21,6 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.layoutlib.api.LayoutScene;
-import com.android.layoutlib.api.SceneResult;
 import com.android.layoutlib.api.ViewInfo;
 
 import org.eclipse.swt.graphics.Rectangle;
@@ -130,7 +129,7 @@ public class ViewHierarchy {
         }
 
         mScene = scene;
-        mIsResultValid = (scene != null && scene.getResult() == SceneResult.SUCCESS);
+        mIsResultValid = (scene != null && scene.getResult().isSuccess());
         mExplodedParents = false;
 
         if (mIsResultValid && scene != null) {

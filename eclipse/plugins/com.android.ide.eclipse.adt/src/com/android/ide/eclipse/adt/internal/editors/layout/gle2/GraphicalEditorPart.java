@@ -53,8 +53,8 @@ import com.android.layoutlib.api.IXmlPullParser;
 import com.android.layoutlib.api.LayoutBridge;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneParams;
-import com.android.layoutlib.api.SceneResult;
 import com.android.layoutlib.api.SceneParams.RenderingMode;
+import com.android.layoutlib.api.SceneResult.SceneStatus;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
@@ -1018,8 +1018,8 @@ public class GraphicalEditorPart extends EditorPart
                 // no root view yet indicates success and then update the canvas with it.
 
                 mCanvasViewer.getCanvas().setResult(
-                        new BasicLayoutScene(SceneResult.SUCCESS, null /*rootViewInfo*/,
-                                null /*image*/),
+                        new BasicLayoutScene(SceneStatus.SUCCESS.getResult(),
+                                null /*rootViewInfo*/, null /*image*/),
                         null /*explodeNodes*/);
                 return;
             }
@@ -1274,7 +1274,7 @@ public class GraphicalEditorPart extends EditorPart
         canvas.setResult(scene, explodeNodes);
 
         // update the UiElementNode with the layout info.
-        if (scene.getResult() != SceneResult.SUCCESS) {
+        if (scene.getResult().isSuccess() == false) {
             // An error was generated. Print it.
             displayError(scene.getResult().getErrorMessage());
 

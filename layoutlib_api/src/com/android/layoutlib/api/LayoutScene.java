@@ -158,8 +158,8 @@ public class LayoutScene {
     /**
      * Inserts a new child in a ViewGroup object, and renders the result.
      * <p/>
-     * The child is first inflated and then added to its parent, before the given sibling.
-     * If the sibling is <code>null</code>, then it is added at the end of the ViewGroup.
+     * The child is first inflated and then added to its new parent, at the given <var>index<var>
+     * position. If the <var>index</var> is -1 then the child is added at the end of the parent.
      * <p/>
      * If an animation listener is passed then the rendering is done asynchronously and the
      * result is sent to the listener.
@@ -168,15 +168,18 @@ public class LayoutScene {
      * The child stays in the view hierarchy after the rendering is done. To remove it call
      * {@link #removeChild(Object, int)}.
      *
+     * The returned {@link SceneResult} object will contain the android.view.View object for
+     * the newly inflated child. It is accessible through {@link SceneResult#getData()}.
+     *
      * @param parentView the parent View object to receive the new child.
      * @param childXml an {@link IXmlPullParser} containing the content of the new child.
-     * @param beforeSibling the object in <var>parentView</var> to insert before. If
-     *             <code>null</code>, insert at the end.
+     * @param index the index at which position to add the new child into the parent. -1 means at
+     *             the end.
      * @param listener an optional {@link IAnimationListener}.
      *
      * @return a {@link SceneResult} indicating the status of the action.
      */
-    public SceneResult insertChild(Object parentView, IXmlPullParser childXml, Object beforeSibling,
+    public SceneResult insertChild(Object parentView, IXmlPullParser childXml, int index,
             IAnimationListener listener) {
         return NOT_IMPLEMENTED.getResult();
     }
@@ -184,9 +187,11 @@ public class LayoutScene {
     /**
      * Move a new child to a different ViewGroup object.
      * <p/>
-     * The child is first removed from its current parent, and then added to its new parent, before
-     * the given sibling. If the sibling is <code>null</code>, then it is added at the end
-     * of the ViewGroup.
+     * The child is first removed from its current parent, and then added to its new parent, at the
+     * given <var>index<var> position. In case the <var>parentView</var> is the current parent of
+     * <var>childView</var> then the index must be the value with the <var>childView</var> removed
+     * from its parent. If the <var>index</var> is -1 then the child is added at the end of
+     * the parent.
      * <p/>
      * If an animation listener is passed then the rendering is done asynchronously and the
      * result is sent to the listener.
@@ -198,13 +203,13 @@ public class LayoutScene {
      * @param parentView the parent View object to receive the child. Can be the current parent
      *             already.
      * @param childView the view to move.
-     * @param beforeSibling the object in <var>parentView</var> to insert before. If
-     *             <code>null</code>, insert at the end.
+     * @param index the index at which position to add the new child into the parent. -1 means at
+     *             the end.
      * @param listener an optional {@link IAnimationListener}.
      *
      * @return a {@link SceneResult} indicating the status of the action.
      */
-    public SceneResult moveChild(Object parentView, Object childView, Object beforeSibling,
+    public SceneResult moveChild(Object parentView, Object childView, int index,
             IAnimationListener listener) {
         return NOT_IMPLEMENTED.getResult();
     }

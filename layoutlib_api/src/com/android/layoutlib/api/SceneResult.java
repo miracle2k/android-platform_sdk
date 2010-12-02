@@ -24,6 +24,7 @@ public class SceneResult {
     private final SceneStatus mStatus;
     private final String mErrorMessage;
     private final Throwable mThrowable;
+    private Object mData;
 
     public enum SceneStatus {
         SUCCESS,
@@ -45,43 +46,25 @@ public class SceneResult {
             // don't want to get generic error that way.
             assert this != ERROR_UNKNOWN;
 
-            if (this == SUCCESS) {
-                return SceneResult.SUCCESS;
-            }
-
             return new SceneResult(this);
         }
     }
 
     /**
-     * Singleton SUCCESS {@link SceneResult} object.
+     * Creates a {@link SceneResult} object with the given SceneStatus.
+     *
+     * @param status the status. Must not be null.
      */
-    public static final SceneResult SUCCESS = new SceneResult(SceneStatus.SUCCESS);
-
-    /**
-     * Creates a {@link SceneResult} object, with {@link SceneStatus#ERROR_UNKNOWN} status, and
-     * the given message.
-     */
-    public SceneResult(String errorMessage) {
-        this(SceneStatus.ERROR_UNKNOWN, errorMessage, null);
-    }
-
-    /**
-     * Creates a {@link SceneResult} object, with {@link SceneStatus#ERROR_UNKNOWN} status, and
-     * the given message and {@link Throwable}
-     */
-    public SceneResult(String errorMessage, Throwable t) {
-        this(SceneStatus.ERROR_UNKNOWN, errorMessage, t);
+    public SceneResult(SceneStatus status) {
+        this(status, null, null);
     }
 
     /**
      * Creates a {@link SceneResult} object with the given SceneStatus, and the given message
      * and {@link Throwable}.
-     * <p>
-     * This should not be used to create {@link SceneResult} object with
-     * {@link SceneStatus#SUCCESS}. Use {@link SceneResult#SUCCESS} instead.
      *
-     * @param status the status
+     * @param status the status. Must not be null.
+     * @param errorMessage an optional error message.
      */
     public SceneResult(SceneStatus status, String errorMessage) {
         this(status, errorMessage, null);
@@ -90,31 +73,26 @@ public class SceneResult {
     /**
      * Creates a {@link SceneResult} object with the given SceneStatus, and the given message
      * and {@link Throwable}
-     * <p>
-     * This should not be used to create {@link SceneResult} object with
-     * {@link SceneStatus#SUCCESS}. Use {@link SceneResult#SUCCESS} instead.
      *
-     * @param status the status
+     * @param status the status. Must not be null.
+     * @param errorMessage an optional error message.
+     * @param t an optional exception.
      */
     public SceneResult(SceneStatus status, String errorMessage, Throwable t) {
-        assert status != SceneStatus.SUCCESS;
+        assert status != null;
         mStatus = status;
         mErrorMessage = errorMessage;
         mThrowable = t;
     }
 
     /**
-     * Creates a {@link SceneResult} object with the given SceneStatus.
+     * Returns whether the status is successful.
      * <p>
-     * This should not be used to create {@link SceneResult} object with
-     * {@link SceneStatus#SUCCESS}. Use {@link SceneResult#SUCCESS} instead.
-     *
-     * @param status the status
+     * This is the same as calling <code>getStatus() == SceneStatus.SUCCESS</code>
+     * @return <code>true</code> if the status is successful.
      */
-    public SceneResult(SceneStatus status) {
-        mStatus = status;
-        mErrorMessage = null;
-        mThrowable = null;
+    public boolean isSuccess() {
+        return mStatus == SceneStatus.SUCCESS;
     }
 
     /**
@@ -138,5 +116,21 @@ public class SceneResult {
      */
     public Throwable getException() {
         return mThrowable;
+    }
+
+    /**
+     * Sets an optional data bundle in the result object.
+     * @param data the data bundle
+     */
+    public void SetData(Object data) {
+        mData = data;
+    }
+
+    /**
+     * Returns the optional data bundle stored in the result object.
+     * @return the data bundle or <code>null</code> if none have been set.
+     */
+    public Object getData() {
+        return mData;
     }
 }

@@ -39,7 +39,6 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.layoutlib.api.LayoutBridge;
 import com.android.layoutlib.api.LayoutScene;
-import com.android.layoutlib.api.SceneResult;
 import com.android.layoutlib.api.ViewInfo;
 import com.android.sdklib.SdkConstants;
 
@@ -751,7 +750,7 @@ public class PaletteComposite extends Composite {
             }
 
             if (scene != null) {
-                if (scene.getResult() == SceneResult.SUCCESS) {
+                if (scene.getResult().isSuccess()) {
                     BufferedImage image = scene.getImage();
                     if (image != null) {
                         BufferedImage cropped;
