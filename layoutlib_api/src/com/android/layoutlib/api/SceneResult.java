@@ -122,7 +122,7 @@ public class SceneResult {
      * Sets an optional data bundle in the result object.
      * @param data the data bundle
      */
-    public void SetData(Object data) {
+    public void setData(Object data) {
         mData = data;
     }
 
