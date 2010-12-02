@@ -31,6 +31,7 @@ public class SceneResult {
         ERROR_TIMEOUT,
         ERROR_LOCK_INTERRUPTED,
         ERROR_INFLATION,
+        ERROR_VIEWGROUP_NO_CHILDREN,
         ERROR_NOT_INFLATED,
         ERROR_RENDER,
         ERROR_ANIM_NOT_FOUND,
