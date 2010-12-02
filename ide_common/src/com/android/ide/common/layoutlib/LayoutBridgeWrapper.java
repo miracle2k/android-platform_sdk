@@ -25,6 +25,7 @@ import com.android.layoutlib.api.SceneResult;
 import com.android.layoutlib.api.ViewInfo;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 import com.android.layoutlib.api.SceneParams.RenderingMode;
+import com.android.layoutlib.api.SceneResult.SceneStatus;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -146,10 +147,10 @@ class LayoutBridgeWrapper extends LayoutBridge {
         ViewInfo rootViewInfo;
 
         if (result.getSuccess() == ILayoutResult.SUCCESS) {
-            sceneResult = SceneResult.SUCCESS;
+            sceneResult = SceneStatus.SUCCESS.getResult();
             rootViewInfo = convertToViewInfo(result.getRootView());
         } else {
-            sceneResult = new SceneResult(result.getErrorMessage());
+            sceneResult = new SceneResult(SceneStatus.ERROR_UNKNOWN, result.getErrorMessage());
             rootViewInfo = null;
         }
 
