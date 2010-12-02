@@ -86,7 +86,6 @@ import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.w3c.dom.Node;
 
-import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -997,9 +996,9 @@ class LayoutCanvas extends Canvas {
                             new IAnimationListener() {
                                 private int mCount = 0;
                                 private boolean mPendingDrawing = false;
-                                public void onNewFrame(final BufferedImage image) {
+                                public void onNewFrame(LayoutScene scene) {
                                     mCount++;
-                                    mImageOverlay.setImage(image);
+                                    mImageOverlay.setImage(scene.getImage());
                                     synchronized (this) {
                                         if (mPendingDrawing == false) {
                                             getDisplay().asyncExec(new Runnable() {

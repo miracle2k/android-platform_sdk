@@ -30,6 +30,10 @@ public class SceneResult {
         NOT_IMPLEMENTED,
         ERROR_TIMEOUT,
         ERROR_LOCK_INTERRUPTED,
+        ERROR_INFLATION,
+        ERROR_NOT_INFLATED,
+        ERROR_RENDER,
+        ERROR_ANIM_NOT_FOUND,
         ERROR_UNKNOWN;
 
         /**
@@ -58,9 +62,7 @@ public class SceneResult {
      * the given message.
      */
     public SceneResult(String errorMessage) {
-        mStatus = SceneStatus.ERROR_UNKNOWN;
-        mErrorMessage = errorMessage;
-        mThrowable = null;
+        this(SceneStatus.ERROR_UNKNOWN, errorMessage, null);
     }
 
     /**
@@ -68,17 +70,47 @@ public class SceneResult {
      * the given message and {@link Throwable}
      */
     public SceneResult(String errorMessage, Throwable t) {
-        mStatus = SceneStatus.ERROR_UNKNOWN;
+        this(SceneStatus.ERROR_UNKNOWN, errorMessage, t);
+    }
+
+    /**
+     * Creates a {@link SceneResult} object with the given SceneStatus, and the given message
+     * and {@link Throwable}.
+     * <p>
+     * This should not be used to create {@link SceneResult} object with
+     * {@link SceneStatus#SUCCESS}. Use {@link SceneResult#SUCCESS} instead.
+     *
+     * @param status the status
+     */
+    public SceneResult(SceneStatus status, String errorMessage) {
+        this(status, errorMessage, null);
+    }
+
+    /**
+     * Creates a {@link SceneResult} object with the given SceneStatus, and the given message
+     * and {@link Throwable}
+     * <p>
+     * This should not be used to create {@link SceneResult} object with
+     * {@link SceneStatus#SUCCESS}. Use {@link SceneResult#SUCCESS} instead.
+     *
+     * @param status the status
+     */
+    public SceneResult(SceneStatus status, String errorMessage, Throwable t) {
+        assert status != SceneStatus.SUCCESS;
+        mStatus = status;
         mErrorMessage = errorMessage;
         mThrowable = t;
     }
 
     /**
-     * Creates a{@link SceneResult} object with the given SceneStatus.
+     * Creates a {@link SceneResult} object with the given SceneStatus.
+     * <p>
+     * This should not be used to create {@link SceneResult} object with
+     * {@link SceneStatus#SUCCESS}. Use {@link SceneResult#SUCCESS} instead.
      *
      * @param status the status
      */
-    private SceneResult(SceneStatus status) {
+    public SceneResult(SceneStatus status) {
         mStatus = status;
         mErrorMessage = null;
         mThrowable = null;
