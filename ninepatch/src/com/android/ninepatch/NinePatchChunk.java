@@ -353,7 +353,7 @@ public class NinePatchChunk implements Serializable {
         if (pairs.size() == 0) {
             return new Pair<Integer>(0, 0);
         } else if (pairs.size() == 1) {
-            if (pairs.get(0).mFirst == 1) {
+            if (pairs.get(0).mFirst == 0) {
                 return new Pair<Integer>(pairs.get(0).mSecond - pairs.get(0).mFirst, 0);
             } else {
                 return new Pair<Integer>(0, pairs.get(0).mSecond - pairs.get(0).mFirst);
