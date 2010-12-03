@@ -17,7 +17,13 @@
 package com.android.layoutlib.api;
 
 /**
- * Scene result class.
+ * Scene result class. This is an immutable class.
+ * <p/>
+ * This cannot be allocated directly, instead use
+ * {@link SceneStatus#getResult()},
+ * {@link SceneStatus#getResult(String, Throwable)},
+ * {@link SceneStatus#getResult(String)}
+ * {@link SceneStatus#getResult(Object)}
  */
 public class SceneResult {
 
@@ -26,6 +32,10 @@ public class SceneResult {
     private final Throwable mThrowable;
     private Object mData;
 
+    /**
+     * Scene Status enum.
+     * <p/>This indicates the status of all scene actions.
+     */
     public enum SceneStatus {
         SUCCESS,
         NOT_IMPLEMENTED,
@@ -38,6 +48,8 @@ public class SceneResult {
         ERROR_ANIM_NOT_FOUND,
         ERROR_UNKNOWN;
 
+        private SceneResult mResult;
+
         /**
          * Returns a {@link SceneResult} object with this status.
          * @return an instance of SceneResult;
@@ -46,7 +58,46 @@ public class SceneResult {
             // don't want to get generic error that way.
             assert this != ERROR_UNKNOWN;
 
-            return new SceneResult(this);
+            if (mResult == null) {
+                mResult = new SceneResult(this);
+            }
+
+            return mResult;
+        }
+
+        /**
+         * Returns a {@link SceneResult} object with this status, and the given data.
+         * @return an instance of SceneResult;
+         *
+         * @see SceneResult#getData()
+         */
+        public SceneResult getResult(Object data) {
+            SceneResult res = getResult();
+
+            if (data != null) {
+                res = res.getCopyWithData(data);
+            }
+
+            return res;
+        }
+
+        /**
+         * Returns a {@link #ERROR_UNKNOWN} result with the given message and throwable
+         * @param errorMessage the error message
+         * @param throwable the throwable
+         * @return an instance of SceneResult.
+         */
+        public SceneResult getResult(String errorMessage, Throwable throwable) {
+            return new SceneResult(this, errorMessage, throwable);
+        }
+
+        /**
+         * Returns a {@link #ERROR_UNKNOWN} result with the given message
+         * @param errorMessage the error message
+         * @return an instance of SceneResult.
+         */
+        public SceneResult getResult(String errorMessage) {
+            return new SceneResult(this, errorMessage, null /*throwable*/);
         }
     }
 
@@ -55,19 +106,8 @@ public class SceneResult {
      *
      * @param status the status. Must not be null.
      */
-    public SceneResult(SceneStatus status) {
+    private SceneResult(SceneStatus status) {
         this(status, null, null);
-    }
-
-    /**
-     * Creates a {@link SceneResult} object with the given SceneStatus, and the given message
-     * and {@link Throwable}.
-     *
-     * @param status the status. Must not be null.
-     * @param errorMessage an optional error message.
-     */
-    public SceneResult(SceneStatus status, String errorMessage) {
-        this(status, errorMessage, null);
     }
 
     /**
@@ -78,12 +118,31 @@ public class SceneResult {
      * @param errorMessage an optional error message.
      * @param t an optional exception.
      */
-    public SceneResult(SceneStatus status, String errorMessage, Throwable t) {
+    private SceneResult(SceneStatus status, String errorMessage, Throwable t) {
         assert status != null;
         mStatus = status;
         mErrorMessage = errorMessage;
         mThrowable = t;
     }
+
+    private SceneResult(SceneResult result) {
+        mStatus = result.mStatus;
+        mErrorMessage = result.mErrorMessage;
+        mThrowable = result.mThrowable;
+    }
+
+    /**
+     * Returns a copy of the current result with the added (or replaced) given data
+     * @param data the data bundle
+     *
+     * @return returns a new SceneResult instance.
+     */
+    public SceneResult getCopyWithData(Object data) {
+        SceneResult r = new SceneResult(this);
+        r.mData = data;
+        return r;
+    }
+
 
     /**
      * Returns whether the status is successful.
@@ -116,14 +175,6 @@ public class SceneResult {
      */
     public Throwable getException() {
         return mThrowable;
-    }
-
-    /**
-     * Sets an optional data bundle in the result object.
-     * @param data the data bundle
-     */
-    public void setData(Object data) {
-        mData = data;
     }
 
     /**

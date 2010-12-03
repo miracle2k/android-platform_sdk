@@ -150,7 +150,7 @@ class LayoutBridgeWrapper extends LayoutBridge {
             sceneResult = SceneStatus.SUCCESS.getResult();
             rootViewInfo = convertToViewInfo(result.getRootView());
         } else {
-            sceneResult = new SceneResult(SceneStatus.ERROR_UNKNOWN, result.getErrorMessage());
+            sceneResult = SceneStatus.ERROR_UNKNOWN.getResult(result.getErrorMessage());
             rootViewInfo = null;
         }
 
