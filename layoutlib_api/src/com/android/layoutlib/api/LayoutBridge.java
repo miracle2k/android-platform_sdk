@@ -16,6 +16,7 @@
 
 package com.android.layoutlib.api;
 
+import java.util.EnumSet;
 import java.util.Map;
 
 /**
@@ -33,6 +34,15 @@ public abstract class LayoutBridge {
      * will appear.
      */
     public abstract int getApiLevel();
+
+    /**
+     * Returns an {@link EnumSet} of the supported {@link Capabilities}.
+     * @return an {@link EnumSet} with the supported capabilities.
+     *
+     */
+    public EnumSet<Capabilities> getCapabilities() {
+        return EnumSet.noneOf(Capabilities.class);
+    }
 
     /**
      * Initializes the Bridge object.
