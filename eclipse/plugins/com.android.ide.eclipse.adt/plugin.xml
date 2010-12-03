@@ -806,4 +806,64 @@
              class="com.android.ide.eclipse.adt.SourceRevealer">
        </revealer>
     </extension>
+   <extension
+         point="org.eclipse.ltk.core.refactoring.renameParticipants">
+      <renameParticipant
+            class="com.android.ide.eclipse.adt.internal.refactoring.core.AndroidTypeRenameParticipant"
+            id="com.android.ide.eclipse.adt.internal.refactoring.core.AndroidTypeRenameParticipant"
+            name="Android Rename Type Participant">
+         <enablement>
+            <with
+                  variable="element">
+               <instanceof
+                     value="org.eclipse.jdt.core.IType">
+               </instanceof>
+            </with>
+            <with variable="affectedNatures">
+                <iterate operator="or">
+                  <equals value="com.android.ide.eclipse.adt.AndroidNature"/>
+                </iterate>
+            </with>
+         </enablement>
+      </renameParticipant>
+      <renameParticipant
+            class="com.android.ide.eclipse.adt.internal.refactoring.core.AndroidPackageRenameParticipant"
+            id="com.android.ide.eclipse.adt.internal.refactoring.core.AndroidPackageRenameParticipant"
+            name="Android Rename Package Participant">
+         <enablement>
+            <with
+                  variable="element">
+               <instanceof
+                     value="org.eclipse.jdt.core.IPackageFragment">
+               </instanceof>
+            </with>
+            <with variable="affectedNatures">
+                <iterate operator="or">
+                  <equals value="com.android.ide.eclipse.adt.AndroidNature"/>
+                </iterate>
+            </with>
+         </enablement>
+      </renameParticipant>
+  </extension>
+  <extension
+         point="org.eclipse.ltk.core.refactoring.moveParticipants">
+      <moveParticipant
+            class="com.android.ide.eclipse.adt.internal.refactoring.core.AndroidTypeMoveParticipant"
+            id="com.android.ide.eclipse.adt.internal.refactoring.core.androidTypeMoveParticipant"
+            name="Android Move Type Participant">
+         <enablement>
+            <with
+                  variable="element">
+               <instanceof
+                     value="org.eclipse.jdt.core.IType">
+               </instanceof>
+            </with>
+            <with variable="affectedNatures">
+                <iterate operator="or">
+                  <equals value="com.android.ide.eclipse.adt.AndroidNature"/>
+                </iterate>
+            </with>
+         </enablement>
+      </moveParticipant>
+   </extension>
 </plugin>

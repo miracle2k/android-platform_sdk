@@ -60,6 +60,9 @@ public final class AndroidManifest {
     public final static String ATTRIBUTE_MIN_SDK_VERSION = "minSdkVersion";
     public final static String ATTRIBUTE_TARGET_SDK_VERSION = "targetSdkVersion";
     public final static String ATTRIBUTE_TARGET_PACKAGE = "targetPackage";
+    public final static String ATTRIBUTE_TARGET_ACTIVITY = "targetActivity";
+    public final static String ATTRIBUTE_MANAGE_SPACE_ACTIVITY = "manageSpaceActivity";
+    public final static String NODE_ACTIVITY_ALIAS = "activity-alias";
     public final static String ATTRIBUTE_EXPORTED = "exported";
     public final static String ATTRIBUTE_RESIZEABLE = "resizeable";
     public final static String ATTRIBUTE_ANYDENSITY = "anyDensity";

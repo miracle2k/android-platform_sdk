@@ -329,6 +329,7 @@ public final class SdkConstants {
 
     /* Android Class Constants */
     public final static String CLASS_ACTIVITY = "android.app.Activity"; //$NON-NLS-1$
+    public final static String CLASS_APPLICATION = "android.app.Application"; //$NON-NLS-1$
     public final static String CLASS_SERVICE = "android.app.Service"; //$NON-NLS-1$
     public final static String CLASS_BROADCASTRECEIVER = "android.content.BroadcastReceiver"; //$NON-NLS-1$
     public final static String CLASS_CONTENTPROVIDER = "android.content.ContentProvider"; //$NON-NLS-1$
