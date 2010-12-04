@@ -866,4 +866,20 @@
          </enablement>
       </moveParticipant>
    </extension>
+   <extension
+         point="org.eclipse.ui.workbench.texteditor.hyperlinkDetectorTargets">
+      <target
+            id="com.android.ide.eclipse.xmlCode"
+            name="XML Hyperlink Target">
+            <context type="org.eclipse.ui.texteditor.ITextEditor"/>
+      </target>
+   </extension>
+   <extension point="org.eclipse.ui.workbench.texteditor.hyperlinkDetectors">
+      <hyperlinkDetector
+            class="com.android.ide.eclipse.adt.internal.editors.xml.XmlHyperlinkResolver"
+            id="com.android.ide.eclipse.xmlCodeResolver"
+            name="Android Hyperlink Detector"
+            targetId="com.android.ide.eclipse.xmlCode">
+      </hyperlinkDetector>
+   </extension>
 </plugin>

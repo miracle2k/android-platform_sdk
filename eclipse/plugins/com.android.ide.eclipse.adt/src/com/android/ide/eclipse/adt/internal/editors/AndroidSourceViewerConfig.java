@@ -30,6 +30,7 @@ import org.eclipse.wst.xml.core.text.IXMLPartitions;
 import org.eclipse.wst.xml.ui.StructuredTextViewerConfigurationXML;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Base Source Viewer Configuration for Android resources.
@@ -43,7 +44,7 @@ public class AndroidSourceViewerConfig extends StructuredTextViewerConfiguration
         super();
         mProcessor = processor;
     }
-    
+
     @Override
     public IContentAssistant getContentAssistant(ISourceViewer sourceViewer) {
         return super.getContentAssistant(sourceViewer);
@@ -52,7 +53,7 @@ public class AndroidSourceViewerConfig extends StructuredTextViewerConfiguration
     /**
      * Returns the content assist processors that will be used for content
      * assist in the given source viewer and for the given partition type.
-     * 
+     *
      * @param sourceViewer the source viewer to be configured by this
      *        configuration
      * @param partitionType the partition type for which the content assist
@@ -76,7 +77,7 @@ public class AndroidSourceViewerConfig extends StructuredTextViewerConfiguration
             IDocument doc = sourceViewer.getDocument();
             if (doc != null)
                 doc.toString();
-            
+
             processors.add(mProcessor);
         }
 
@@ -87,14 +88,14 @@ public class AndroidSourceViewerConfig extends StructuredTextViewerConfiguration
                 processors.add(p);
             }
         }
-        
+
         if (processors.size() > 0) {
             return processors.toArray(new IContentAssistProcessor[processors.size()]);
         } else {
             return null;
         }
     }
-    
+
     @Override
     public ITextHover getTextHover(ISourceViewer sourceViewer, String contentType) {
         // TODO text hover for android xml
@@ -107,10 +108,21 @@ public class AndroidSourceViewerConfig extends StructuredTextViewerConfiguration
         // TODO auto edit strategies for android xml
         return super.getAutoEditStrategies(sourceViewer, contentType);
     }
-    
+
     @Override
     public IContentFormatter getContentFormatter(ISourceViewer sourceViewer) {
         // TODO content formatter for android xml
         return super.getContentFormatter(sourceViewer);
     }
+
+    @Override
+    protected Map<String, ?> getHyperlinkDetectorTargets(final ISourceViewer sourceViewer) {
+        @SuppressWarnings("unchecked")
+        Map<String, ?> targets = super.getHyperlinkDetectorTargets(sourceViewer);
+        // If we want to look up more context in our HyperlinkDetector via the
+        // getAdapter method, we should place an IAdaptable object into the map here.
+        targets.put("com.android.ide.eclipse.xmlCode", null); //$NON-NLS-1$
+        return targets;
+    }
+
 }

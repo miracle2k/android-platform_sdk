@@ -923,7 +923,6 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      *            tree.
      * @return True if the node was shown.
      */
-    @SuppressWarnings("restriction") // Yes, this method relies a lot on restricted APIs
     public boolean show(Node xmlNode) {
         if (xmlNode instanceof IndexedRegion) {
             IndexedRegion region = (IndexedRegion)xmlNode;
@@ -943,6 +942,21 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
         }
 
         return false;
+    }
+
+    /**
+     * Selects and reveals the given range in the text editor
+     *
+     * @param start the beginning offset
+     * @param length the length of the region to show
+     */
+    public void show(int start, int length) {
+        IEditorPart textPage = getEditor(mTextPageIndex);
+        if (textPage instanceof StructuredTextEditor) {
+            StructuredTextEditor editor = (StructuredTextEditor) textPage;
+            setActivePage(AndroidXmlEditor.TEXT_EDITOR_ID);
+            editor.selectAndReveal(start, length);
+        }
     }
 
     /**
