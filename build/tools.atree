@@ -115,3 +115,9 @@ external/proguard/bin/proguard.sh                             tools/proguard/bin
 external/proguard/bin/proguardgui.sh                          tools/proguard/bin/proguardgui.sh
 external/proguard/bin/retrace.sh                              tools/proguard/bin/retrace.sh
 external/proguard/src/proguard/ant/task.properties            tools/proguard/ant/task.properties
+
+##############################################################################
+# Tests Component
+##############################################################################
+
+sdk/testapps            tests/testapps

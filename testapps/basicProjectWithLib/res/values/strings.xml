@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="basicLib_name">basicLib</string>
+    <string name="full_app_name">basicProjectWithLib</string>
 </resources>
