@@ -290,7 +290,7 @@ public class BaseViewRule implements IViewRule {
                         "1t", "True",       //$NON-NLS-1$
                         "2f", "False",      //$NON-NLS-1$
                         "3sep", MenuAction.Choices.SEPARATOR, //$NON-NLS-1$
-                        "4clr", "Clear"),   //$NON-NLS-1$
+                        "4clr", "Default"), //$NON-NLS-1$
                     value,
                     "properties",           //$NON-NLS-1$
                     onChange);
@@ -308,8 +308,7 @@ public class BaseViewRule implements IViewRule {
                         p.getChoices(),
                         mapify(
                             "~1sep", MenuAction.Choices.SEPARATOR,  //$NON-NLS-1$
-                            "~2clr",                                //$NON-NLS-1$
-                            "Clear " + (p.isFlag() ? "flag" : "enum")
+                            "~2clr", "Default"                      //$NON-NLS-1$
                         )
                     ),
                     current,
