@@ -118,7 +118,7 @@
     <property name="filter.abi" value="" />
 
     <!-- compilation options -->
-    <property name="java.encoding" value="ascii" />
+    <property name="java.encoding" value="UTF-8" />
     <property name="java.target" value="1.5" />
     <property name="java.source" value="1.5" />
 
