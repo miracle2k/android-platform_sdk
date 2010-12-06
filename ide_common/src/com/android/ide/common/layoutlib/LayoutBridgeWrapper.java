@@ -17,8 +17,10 @@
 package com.android.ide.common.layoutlib;
 
 import com.android.layoutlib.api.ILayoutBridge;
+import com.android.layoutlib.api.ILayoutLog;
 import com.android.layoutlib.api.ILayoutResult;
 import com.android.layoutlib.api.LayoutBridge;
+import com.android.layoutlib.api.LayoutLog;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneParams;
 import com.android.layoutlib.api.SceneResult;
@@ -78,6 +80,23 @@ class LayoutBridgeWrapper extends LayoutBridge {
     public LayoutScene createScene(SceneParams params) {
         int apiLevel = mBridge.getApiLevel();
 
+        // create a log wrapper since the older api requires a ILayoutLog
+        final LayoutLog log = params.getLog();
+        ILayoutLog logWrapper = new ILayoutLog() {
+
+            public void warning(String message) {
+                log.warning(null, message);
+            }
+
+            public void error(Throwable t) {
+                log.error(null, t);
+            }
+
+            public void error(String message) {
+                log.error(null, message);
+            }
+        };
+
         ILayoutResult result = null;
 
         if (apiLevel == 4) {
@@ -89,7 +108,7 @@ class LayoutBridgeWrapper extends LayoutBridge {
                     params.getDensity(), params.getXdpi(), params.getYdpi(),
                     params.getThemeName(), params.getIsProjectTheme(),
                     params.getProjectResources(), params.getFrameworkResources(),
-                    params.getProjectCallback(), params.getLogger());
+                    params.getProjectCallback(), logWrapper);
         } else if (apiLevel == 3) {
             // api 3 add density support.
             result = mBridge.computeLayout(
@@ -98,7 +117,7 @@ class LayoutBridgeWrapper extends LayoutBridge {
                     params.getDensity(), params.getXdpi(), params.getYdpi(),
                     params.getThemeName(), params.getIsProjectTheme(),
                     params.getProjectResources(), params.getFrameworkResources(),
-                    params.getProjectCallback(), params.getLogger());
+                    params.getProjectCallback(), logWrapper);
         } else if (apiLevel == 2) {
             // api 2 added boolean for separation of project/framework theme
             result = mBridge.computeLayout(
@@ -106,7 +125,7 @@ class LayoutBridgeWrapper extends LayoutBridge {
                     params.getScreenWidth(), params.getScreenHeight(),
                     params.getThemeName(), params.getIsProjectTheme(),
                     params.getProjectResources(), params.getFrameworkResources(),
-                    params.getProjectCallback(), params.getLogger());
+                    params.getProjectCallback(), logWrapper);
         } else {
             // First api with no density/dpi, and project theme boolean mixed
             // into the theme name.
@@ -123,7 +142,7 @@ class LayoutBridgeWrapper extends LayoutBridge {
                     params.getScreenWidth(), params.getScreenHeight(),
                     themeName,
                     params.getProjectResources(), params.getFrameworkResources(),
-                    params.getProjectCallback(), params.getLogger());
+                    params.getProjectCallback(), logWrapper);
         }
 
         // clean up that is not done by the ILayoutBridge itself
@@ -147,10 +166,10 @@ class LayoutBridgeWrapper extends LayoutBridge {
         ViewInfo rootViewInfo;
 
         if (result.getSuccess() == ILayoutResult.SUCCESS) {
-            sceneResult = SceneStatus.SUCCESS.getResult();
+            sceneResult = SceneStatus.SUCCESS.createResult();
             rootViewInfo = convertToViewInfo(result.getRootView());
         } else {
-            sceneResult = SceneStatus.ERROR_UNKNOWN.getResult(result.getErrorMessage());
+            sceneResult = SceneStatus.ERROR_UNKNOWN.createResult(result.getErrorMessage());
             rootViewInfo = null;
         }
 
