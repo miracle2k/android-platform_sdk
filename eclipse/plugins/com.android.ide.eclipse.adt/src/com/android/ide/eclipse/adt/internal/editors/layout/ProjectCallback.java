@@ -45,6 +45,7 @@ public final class ProjectCallback implements IProjectCallback {
     private final ProjectResources mProjectRes;
     private boolean mUsed = false;
     private String mNamespace;
+    private ProjectClassLoader mLoader = null;
 
     public ProjectCallback(ClassLoader classLoader, ProjectResources projectRes, IProject project) {
         mParentClassLoader = classLoader;
@@ -74,9 +75,12 @@ public final class ProjectCallback implements IProjectCallback {
         }
 
         // load the class.
-        ProjectClassLoader loader = new ProjectClassLoader(mParentClassLoader, mProject);
+
         try {
-            clazz = loader.loadClass(className);
+            if (mLoader == null) {
+                mLoader = new ProjectClassLoader(mParentClassLoader, mProject);
+            }
+            clazz = mLoader.loadClass(className);
 
             if (clazz != null) {
                 mUsed = true;
@@ -94,7 +98,7 @@ public final class ProjectCallback implements IProjectCallback {
         // Create a mock view instead. We don't cache it in the mLoadedClasses map.
         // If any exception is thrown, we'll return a CFN with the original class name instead.
         try {
-            clazz = loader.loadClass(SdkConstants.CLASS_MOCK_VIEW);
+            clazz = mLoader.loadClass(SdkConstants.CLASS_MOCK_VIEW);
             Object view = instantiateClass(clazz, constructorSignature, constructorParameters);
 
             // Set the text of the mock view to the simplified name of the custom class
