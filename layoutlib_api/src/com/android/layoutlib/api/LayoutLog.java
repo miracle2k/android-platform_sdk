@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,23 @@
 
 package com.android.layoutlib.api;
 
-/**
- * Callback interface to display warnings/errors that happened during the computation and
- * rendering of the layout.
- * @deprecated use {@link LayoutLog}.
- */
-@Deprecated
-public interface ILayoutLog {
+public class LayoutLog {
+
+    public void error(String tag, String message) {
+    }
+
+    public void error(String tag, Throwable t) {
+    }
+
+    public void warning(String tag, String message) {
+    }
 
     /**
-     * Logs a warning message.
+     * Logs an error message and a {@link Throwable}.
      * @param message the message to log.
+     * @param throwable the {@link Throwable} to log.
      */
-    void warning(String message);
+    public void error(String tag, String message, Throwable throwable) {
 
-    /**
-     * Logs an error message.
-     * @param message the message to log.
-     */
-    void error(String message);
-
-    /**
-     * Logs an exception
-     * @param t the {@link Throwable} to log.
-     */
-    void error(Throwable t);
+    }
 }
