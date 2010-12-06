@@ -23,17 +23,25 @@ public enum ResourceType {
     ANIM("anim", "Animation"), //$NON-NLS-1$
     ARRAY("array", "Array", "string-array", "integer-array"), //$NON-NLS-1$ //$NON-NLS-3$ //$NON-NLS-4$
     ATTR("attr", "Attr"), //$NON-NLS-1$
+    BOOL("bool", "Boolean"), //$NON-NLS-1$
     COLOR("color", "Color"), //$NON-NLS-1$
+    DECLARE_STYLEABLE("declare-styleable", "Declare Stylable"), //$NON-NLS-1$
     DIMEN("dimen", "Dimension"), //$NON-NLS-1$
     DRAWABLE("drawable", "Drawable"), //$NON-NLS-1$
+    FRACTION("fraction", "Fraction"), //$NON-NLS-1$
     ID("id", "ID"), //$NON-NLS-1$
+    INTEGER("integer", "Integer"), //$NON-NLS-1$
     LAYOUT("layout", "Layout"), //$NON-NLS-1$
     MENU("menu", "Menu"), //$NON-NLS-1$
+    PLURALS("plurals", "Plurals"), //$NON-NLS-1$
     RAW("raw", "Raw"), //$NON-NLS-1$
     STRING("string", "String"), //$NON-NLS-1$
     STYLE("style", "Style"), //$NON-NLS-1$
     STYLEABLE("styleable", "Styleable"), //$NON-NLS-1$
-    XML("xml", "XML"); //$NON-NLS-1$
+    XML("xml", "XML"), //$NON-NLS-1$
+    // this is not actually used. Only there because they get parsed and since we want to
+    // detect new resource type, we need to have this one exist.
+    PUBLIC("public", "###"); //$NON-NLS-1$ //$NON-NLS-2$
 
     private final String mName;
     private final String mDisplayName;
