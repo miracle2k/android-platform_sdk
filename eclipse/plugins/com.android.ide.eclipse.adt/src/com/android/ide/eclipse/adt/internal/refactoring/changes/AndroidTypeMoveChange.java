@@ -36,7 +36,6 @@ public class AndroidTypeMoveChange extends AndroidTypeRenameChange {
      * @param elements the elements
      * @param newName the new name
      * @param oldName the old name
-     * @param isPackage is the application package
      */
     public AndroidTypeMoveChange(IFile androidManifest, ITextFileBufferManager manager,
             IDocument document, Map<String, String> elements, String newName, String oldName) {

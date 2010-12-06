@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.refactoring.core;
 
+import com.android.ide.common.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.refactoring.changes.AndroidLayoutChange;
@@ -75,6 +76,7 @@ import java.util.Set;
  * Extensions to this extension point must therefore extend <code>org.eclipse.ltk.core.refactoring.participants.MoveParticipant</code>.
  * </p>
  */
+@SuppressWarnings("restriction")
 public class AndroidTypeMoveParticipant extends MoveParticipant {
 
     protected IFile mAndroidManifest;
@@ -93,25 +95,12 @@ public class AndroidTypeMoveParticipant extends MoveParticipant {
 
     private Set<AndroidLayoutFileChanges> mFileChanges = new HashSet<AndroidLayoutFileChanges>();
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * checkConditions(org.eclipse.core.runtime.IProgressMonitor,
-     * org.eclipse.ltk.core.refactoring.participants.CheckConditionsContext)
-     */
     @Override
     public RefactoringStatus checkConditions(IProgressMonitor pm, CheckConditionsContext context)
             throws OperationCanceledException {
         return new RefactoringStatus();
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * createChange(org.eclipse.core.runtime.IProgressMonitor)
-     */
     @Override
     public Change createChange(IProgressMonitor pm) throws CoreException,
             OperationCanceledException {
@@ -173,23 +162,11 @@ public class AndroidTypeMoveParticipant extends MoveParticipant {
         return mAndroidManifest;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * getName()
-     */
     @Override
     public String getName() {
         return "Android Type Move";
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * initialize(java.lang.Object)
-     */
     @Override
     protected boolean initialize(Object element) {
 
@@ -246,10 +223,10 @@ public class AndroidTypeMoveParticipant extends MoveParticipant {
     }
 
     /**
-     * (non-Javadoc) Adds layout changes for project
+     * Adds layout changes for project
      *
      * @param project the Android project
-     * @param classNames the layout classes
+     * @param className the layout classes
      *
      */
     private void addLayoutChanges(IProject project, String className) {
@@ -275,10 +252,10 @@ public class AndroidTypeMoveParticipant extends MoveParticipant {
     }
 
     /**
-     * (non-Javadoc) Searches the layout file for classes
+     * Searches the layout file for classes
      *
      * @param file the Android layout file
-     * @param classNames the layout classes
+     * @param className the layout classes
      *
      */
     private Set<AndroidLayoutChangeDescription> parse(IFile file, String className) {
@@ -303,14 +280,13 @@ public class AndroidTypeMoveParticipant extends MoveParticipant {
                 if (model != null) {
                     IDOMModel xmlModel = (IDOMModel) model;
                     IDOMDocument xmlDoc = xmlModel.getDocument();
-                    NodeList nodes = xmlDoc
-                            .getElementsByTagName(IConstants.ANDROID_LAYOUT_VIEW_ELEMENT);
+                    NodeList nodes = xmlDoc.getElementsByTagName(LayoutConstants.VIEW);
                     for (int i = 0; i < nodes.getLength(); i++) {
                         Node node = nodes.item(i);
                         NamedNodeMap attributes = node.getAttributes();
                         if (attributes != null) {
-                            Node attributeNode = attributes
-                                    .getNamedItem(IConstants.ANDROID_LAYOUT_CLASS_ARGUMENT);
+                            Node attributeNode =
+                                attributes.getNamedItem(LayoutConstants.ATTR_CLASS);
                             if (attributeNode != null || attributeNode instanceof Attr) {
                                 Attr attribute = (Attr) attributeNode;
                                 String value = attribute.getValue();
@@ -351,11 +327,10 @@ public class AndroidTypeMoveParticipant extends MoveParticipant {
     }
 
     /**
-     * (non-Javadoc) Returns the elements (activity, receiver, service ...)
+     * Returns the elements (activity, receiver, service ...)
      * which have to be renamed
      *
      * @return the android elements
-     *
      */
     private Map<String, String> addAndroidElements() {
         Map<String, String> androidElements = new HashMap<String, String>();
@@ -411,7 +386,7 @@ public class AndroidTypeMoveParticipant extends MoveParticipant {
     }
 
     /**
-     * (non-Javadoc) Adds the element  (activity, receiver, service ...) to the map
+     * Adds the element  (activity, receiver, service ...) to the map
      *
      * @param xmlDoc the document
      * @param androidElements the map

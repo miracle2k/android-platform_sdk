@@ -79,9 +79,6 @@ public class AndroidLayoutChangeDescription {
         return mType == STANDALONE_TYPE;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -92,9 +89,6 @@ public class AndroidLayoutChangeDescription {
         return result;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -119,9 +113,6 @@ public class AndroidLayoutChangeDescription {
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public String toString() {
         return "AndroidLayoutChangeDescription [className=" + mClassName + ", newName=" + mNewName

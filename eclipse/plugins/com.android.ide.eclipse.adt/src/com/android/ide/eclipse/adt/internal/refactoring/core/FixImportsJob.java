@@ -50,6 +50,7 @@ import org.eclipse.ui.progress.IProgressService;
  * The helper class which fixes the import errors after refactoring
  *
  */
+@SuppressWarnings("restriction")
 public class FixImportsJob extends WorkspaceJob {
 
     private IFile mAndroidManifest;
@@ -69,12 +70,6 @@ public class FixImportsJob extends WorkspaceJob {
         this.mJavaPackage = javaPackage;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.core.resources.WorkspaceJob#runInWorkspace(org.eclipse.core
-     * .runtime.IProgressMonitor)
-     */
     @Override
     public IStatus runInWorkspace(final IProgressMonitor monitor) throws CoreException {
         if (mJavaPackage == null || mAndroidManifest == null || !mAndroidManifest.exists()) {

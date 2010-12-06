@@ -18,7 +18,6 @@ package com.android.ide.eclipse.adt.internal.refactoring.changes;
 
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.XmlErrorHandler.BasicXmlErrorListener;
-import com.android.ide.eclipse.adt.internal.refactoring.core.IConstants;
 import com.android.ide.eclipse.adt.internal.refactoring.core.RefactoringUtil;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
@@ -44,13 +43,13 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
  * A text change that operates on android manifest using WTP SSE model.
  * It is base class for Rename Package and Rename Type changes
 */
+@SuppressWarnings("restriction")
 public class AndroidDocumentChange extends DocumentChange {
 
     protected IFile mAndroidManifest;
@@ -79,10 +78,7 @@ public class AndroidDocumentChange extends DocumentChange {
         super(SdkConstants.FN_ANDROID_MANIFEST_XML , document);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+     @Override
     public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException,
             OperationCanceledException {
         RefactoringStatus status = super.isValid(pm);
@@ -174,8 +170,7 @@ public class AndroidDocumentChange extends DocumentChange {
      * @return the model
      *
      */
-
-    protected IStructuredModel getModel(IDocument document) throws IOException, CoreException {
+    protected IStructuredModel getModel(IDocument document) {
         if (mModel != null) {
             return mModel;
         }
@@ -191,9 +186,6 @@ public class AndroidDocumentChange extends DocumentChange {
         return model;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void setTextType(String type) {
         super.setTextType(mAndroidManifest.getFileExtension());
@@ -268,8 +260,8 @@ public class AndroidDocumentChange extends DocumentChange {
      *
      * @param elementName the element name
      * @param attributeName the attribute name
-     * @param oldValue the old value
-     * @param newValue the new value
+     * @param oldName the old value
+     * @param newName the new value
      * @param combinePackage combine package ?
      *
      * @return the text change

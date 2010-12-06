@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.refactoring.changes;
 
 import com.android.ide.eclipse.adt.internal.refactoring.core.FixImportsJob;
-import com.android.ide.eclipse.adt.internal.refactoring.core.IConstants;
 import com.android.ide.eclipse.adt.internal.refactoring.core.RefactoringUtil;
 import com.android.sdklib.xml.AndroidManifest;
 
@@ -108,9 +107,6 @@ public class AndroidPackageRenameChange extends AndroidDocumentChange {
         setEdit(multiEdit);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Change perform(IProgressMonitor pm) throws CoreException {
         super.perform(pm);
@@ -118,9 +114,6 @@ public class AndroidPackageRenameChange extends AndroidDocumentChange {
                 mOldName, mNewName, mIsPackage);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void dispose() {
         super.dispose();
