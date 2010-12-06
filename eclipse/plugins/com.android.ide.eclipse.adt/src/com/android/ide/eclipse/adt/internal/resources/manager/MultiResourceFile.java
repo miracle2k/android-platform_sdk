@@ -136,6 +136,7 @@ public final class MultiResourceFile extends ResourceFile implements IValueResou
      */
     public void addResourceValue(String resType, ResourceValue value) {
         ResourceType type = ResourceType.getEnum(resType);
+        assert type != null;
         if (type != null) {
             HashMap<String, ResourceValue> list = mResourceItems.get(type);
 
