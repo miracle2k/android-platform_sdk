@@ -58,7 +58,7 @@ public class SceneParams {
     private Map<String, Map<String, IResourceValue>> mProjectResources;
     private Map<String, Map<String, IResourceValue>> mFrameworkResources;
     private IProjectCallback mProjectCallback;
-    private ILayoutLog mLogger;
+    private LayoutLog mLog;
 
     private boolean mCustomBackgroundEnabled;
     private int mCustomBackgroundColor;
@@ -89,7 +89,7 @@ public class SceneParams {
      * value is the resource value.
      * @param projectCallback The {@link IProjectCallback} object to get information from
      * the project.
-     * @param logger the object responsible for displaying warning/errors to the user.
+     * @param log the object responsible for displaying warning/errors to the user.
      */
     public SceneParams(IXmlPullParser layoutDescription,
             Object projectKey,
@@ -98,7 +98,7 @@ public class SceneParams {
             String themeName, boolean isProjectTheme,
             Map<String, Map<String, IResourceValue>> projectResources,
             Map<String, Map<String, IResourceValue>> frameworkResources,
-            IProjectCallback projectCallback, ILayoutLog logger) {
+            IProjectCallback projectCallback, LayoutLog log) {
         mLayoutDescription = layoutDescription;
         mProjectKey = projectKey;
         mScreenWidth = screenWidth;
@@ -112,7 +112,7 @@ public class SceneParams {
         mProjectResources = projectResources;
         mFrameworkResources = frameworkResources;
         mProjectCallback = projectCallback;
-        mLogger = logger;
+        mLog = log;
         mCustomBackgroundEnabled = false;
         mTimeout = DEFAULT_TIMEOUT;
     }
@@ -134,7 +134,7 @@ public class SceneParams {
         mProjectResources = params.mProjectResources;
         mFrameworkResources = params.mFrameworkResources;
         mProjectCallback = params.mProjectCallback;
-        mLogger = params.mLogger;
+        mLog = params.mLog;
         mCustomBackgroundEnabled = params.mCustomBackgroundEnabled;
         mCustomBackgroundColor = params.mCustomBackgroundColor;
         mTimeout = params.mTimeout;
@@ -206,8 +206,8 @@ public class SceneParams {
         return mProjectCallback;
     }
 
-    public ILayoutLog getLogger() {
-        return mLogger;
+    public LayoutLog getLog() {
+        return mLog;
     }
 
     public boolean isCustomBackgroundEnabled() {

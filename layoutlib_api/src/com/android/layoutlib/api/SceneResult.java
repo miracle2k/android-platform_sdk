@@ -54,7 +54,7 @@ public class SceneResult {
          * Returns a {@link SceneResult} object with this status.
          * @return an instance of SceneResult;
          */
-        public SceneResult getResult() {
+        public SceneResult createResult() {
             // don't want to get generic error that way.
             assert this != ERROR_UNKNOWN;
 
@@ -71,8 +71,8 @@ public class SceneResult {
          *
          * @see SceneResult#getData()
          */
-        public SceneResult getResult(Object data) {
-            SceneResult res = getResult();
+        public SceneResult createResult(Object data) {
+            SceneResult res = createResult();
 
             if (data != null) {
                 res = res.getCopyWithData(data);
@@ -87,7 +87,7 @@ public class SceneResult {
          * @param throwable the throwable
          * @return an instance of SceneResult.
          */
-        public SceneResult getResult(String errorMessage, Throwable throwable) {
+        public SceneResult createResult(String errorMessage, Throwable throwable) {
             return new SceneResult(this, errorMessage, throwable);
         }
 
@@ -96,7 +96,7 @@ public class SceneResult {
          * @param errorMessage the error message
          * @return an instance of SceneResult.
          */
-        public SceneResult getResult(String errorMessage) {
+        public SceneResult createResult(String errorMessage) {
             return new SceneResult(this, errorMessage, null /*throwable*/);
         }
     }

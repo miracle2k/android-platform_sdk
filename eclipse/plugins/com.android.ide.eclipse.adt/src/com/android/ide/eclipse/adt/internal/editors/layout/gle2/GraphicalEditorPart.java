@@ -47,10 +47,10 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
-import com.android.layoutlib.api.ILayoutLog;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IXmlPullParser;
 import com.android.layoutlib.api.LayoutBridge;
+import com.android.layoutlib.api.LayoutLog;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.SceneParams;
 import com.android.layoutlib.api.SceneParams.RenderingMode;
@@ -187,7 +187,7 @@ public class GraphicalEditorPart extends EditorPart
     private Map<String, Map<String, IResourceValue>> mConfiguredFrameworkRes;
     private Map<String, Map<String, IResourceValue>> mConfiguredProjectRes;
     private ProjectCallback mProjectCallback;
-    private ILayoutLog mLogger;
+    private LayoutLog mLog;
 
     private boolean mNeedsRecompute = false;
 
@@ -1018,7 +1018,7 @@ public class GraphicalEditorPart extends EditorPart
                 // no root view yet indicates success and then update the canvas with it.
 
                 mCanvasViewer.getCanvas().setResult(
-                        new BasicLayoutScene(SceneStatus.SUCCESS.getResult(),
+                        new BasicLayoutScene(SceneStatus.SUCCESS.createResult(),
                                 null /*rootViewInfo*/, null /*image*/),
                         null /*explodeNodes*/);
                 return;
@@ -1331,23 +1331,34 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         // Lazily create the logger the first time we need it
-        if (mLogger == null) {
-            mLogger = new ILayoutLog() {
-                public void error(String message) {
+        if (mLog == null) {
+            mLog = new LayoutLog() {
+                @Override
+                public void error(String tag, String message) {
                     AdtPlugin.printErrorToConsole(mEditedFile.getName(), message);
                 }
 
-                public void error(Throwable error) {
-                    String message = error.getMessage();
+                @Override
+                public void error(String tag, Throwable throwable) {
+                    String message = throwable.getMessage();
                     if (message == null) {
-                        message = error.getClass().getName();
+                        message = throwable.getClass().getName();
                     }
 
                     PrintStream ps = new PrintStream(AdtPlugin.getErrorStream());
-                    error.printStackTrace(ps);
+                    throwable.printStackTrace(ps);
                 }
 
-                public void warning(String message) {
+                @Override
+                public void error(String tag, String message, Throwable throwable) {
+                    AdtPlugin.printErrorToConsole(mEditedFile.getName(), message);
+
+                    PrintStream ps = new PrintStream(AdtPlugin.getErrorStream());
+                    throwable.printStackTrace(ps);
+                }
+
+                @Override
+                public void warning(String tag, String message) {
                     AdtPlugin.printToConsole(mEditedFile.getName(), message);
                 }
             };
@@ -1435,7 +1446,7 @@ public class GraphicalEditorPart extends EditorPart
                 density, xdpi, ydpi,
                 theme, isProjectTheme,
                 configuredProjectRes, frameworkResources, mProjectCallback,
-                mLogger);
+                mLog);
 
         if (transparentBackground) {
             // It doesn't matter what the background color is as long as the alpha

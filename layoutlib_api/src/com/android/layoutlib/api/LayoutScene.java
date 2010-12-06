@@ -65,7 +65,7 @@ public class LayoutScene {
      * Returns the last operation result.
      */
     public SceneResult getResult() {
-        return NOT_IMPLEMENTED.getResult();
+        return NOT_IMPLEMENTED.createResult();
     }
 
     /**
@@ -134,7 +134,7 @@ public class LayoutScene {
      * @return a {@link SceneResult} indicating the status of the action.
      */
     public SceneResult render(long timeout) {
-        return NOT_IMPLEMENTED.getResult();
+        return NOT_IMPLEMENTED.createResult();
     }
 
     /**
@@ -152,7 +152,7 @@ public class LayoutScene {
      * @return a {@link SceneResult} indicating the status of the action.
      */
     public SceneResult setProperty(Object objectView, String propertyName, String propertyValue) {
-        return NOT_IMPLEMENTED.getResult();
+        return NOT_IMPLEMENTED.createResult();
     }
 
     /**
@@ -182,7 +182,7 @@ public class LayoutScene {
      */
     public SceneResult insertChild(Object parentView, IXmlPullParser childXml, int index,
             IAnimationListener listener) {
-        return NOT_IMPLEMENTED.getResult();
+        return NOT_IMPLEMENTED.createResult();
     }
 
     /**
@@ -218,7 +218,7 @@ public class LayoutScene {
      */
     public SceneResult moveChild(Object parentView, Object childView, int index,
             Map<String, String> layoutParams, IAnimationListener listener) {
-        return NOT_IMPLEMENTED.getResult();
+        return NOT_IMPLEMENTED.createResult();
     }
 
     /**
@@ -235,7 +235,7 @@ public class LayoutScene {
      * @return a {@link SceneResult} indicating the status of the action.
      */
     public SceneResult removeChild(Object childView, IAnimationListener listener) {
-        return NOT_IMPLEMENTED.getResult();
+        return NOT_IMPLEMENTED.createResult();
     }
 
     /**
@@ -252,7 +252,7 @@ public class LayoutScene {
      */
     public SceneResult animate(Object targetObject, String animationName,
             boolean isFrameworkAnimation, IAnimationListener listener) {
-        return NOT_IMPLEMENTED.getResult();
+        return NOT_IMPLEMENTED.createResult();
     }
 
     /**
