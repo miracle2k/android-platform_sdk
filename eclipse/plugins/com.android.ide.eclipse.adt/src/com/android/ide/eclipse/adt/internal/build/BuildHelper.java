@@ -525,13 +525,15 @@ public class BuildHelper {
             // get the output and return code from the process
             execError = grabProcessOutput(mProject, process, results);
 
-            if (execError != 0) {
-                throw new ProguardResultException(execError,
-                        results.toArray(new String[results.size()]));
-            } else if (mVerbose) {
+            if (mVerbose) {
                 for (String resultString : results) {
                     mOutStream.println(resultString);
                 }
+            }
+
+            if (execError != 0) {
+                throw new ProguardResultException(execError,
+                        results.toArray(new String[results.size()]));
             }
 
         } catch (IOException e) {
@@ -687,16 +689,15 @@ public class BuildHelper {
             // get the output and return code from the process
             execError = grabProcessOutput(mProject, process, results);
 
-            if (execError != 0) {
-                throw new AaptResultException(execError,
-                        results.toArray(new String[results.size()]));
-            } else if (mVerbose) {
+            if (mVerbose) {
                 for (String resultString : results) {
                     mOutStream.println(resultString);
                 }
             }
-
-
+            if (execError != 0) {
+                throw new AaptResultException(execError,
+                        results.toArray(new String[results.size()]));
+            }
         } catch (IOException e) {
             String msg = String.format(Messages.AAPT_Exec_Error, command[0]);
             throw new AaptExecException(msg, e);
