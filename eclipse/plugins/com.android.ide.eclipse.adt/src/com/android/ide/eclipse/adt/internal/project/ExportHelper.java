@@ -20,12 +20,18 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.AndroidPrintStream;
 import com.android.ide.eclipse.adt.internal.build.BuildHelper;
+import com.android.ide.eclipse.adt.internal.build.DexException;
+import com.android.ide.eclipse.adt.internal.build.NativeLibInJarException;
+import com.android.ide.eclipse.adt.internal.build.ProguardExecException;
+import com.android.ide.eclipse.adt.internal.build.ProguardResultException;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.xml.AndroidManifest;
+import com.android.sdklib.build.ApkCreationException;
+import com.android.sdklib.build.DuplicateFileException;
 import com.android.sdklib.internal.project.ProjectProperties;
+import com.android.sdklib.xml.AndroidManifest;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -213,6 +219,38 @@ public final class ExportHelper {
             // success!
         } catch (CoreException e) {
             throw e;
+        } catch (ProguardResultException e) {
+            String msg = String.format("Proguard returned with error code %d. See console",
+                    e.getErrorCode());
+            AdtPlugin.printErrorToConsole(project, msg);
+            AdtPlugin.printErrorToConsole(project, (Object[]) e.getOutput());
+            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                    msg, e));
+        } catch (ProguardExecException e) {
+            String msg = String.format("Failed to run proguard: %s", e.getMessage());
+            AdtPlugin.printErrorToConsole(project, msg);
+            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                    msg, e));
+        } catch (DuplicateFileException e) {
+            String msg = String.format(
+                    "Found duplicate file for APK: %1$s\nOrigin 1: %2$s\nOrigin 2: %3$s",
+                    e.getArchivePath(), e.getFile1(), e.getFile2());
+            AdtPlugin.printErrorToConsole(project, msg);
+            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                    e.getMessage(), e));
+        } catch (NativeLibInJarException e) {
+            String msg = e.getMessage();
+
+            AdtPlugin.printErrorToConsole(project, msg);
+            AdtPlugin.printErrorToConsole(project, (Object[]) e.getAdditionalInfo());
+            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                    e.getMessage(), e));
+        } catch (DexException e) {
+            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                    e.getMessage(), e));
+        } catch (ApkCreationException e) {
+            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                    e.getMessage(), e));
         } catch (Exception e) {
             throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
                     "Failed to export application", e));
