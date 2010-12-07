@@ -44,4 +44,29 @@ class ExecResultException extends Exception {
     public int getErrorCode() {
         return mErrorCode;
     }
+
+    public String getLabel() {
+        return "Command-line";
+    }
+
+    @Override
+    public String toString() {
+        String result = String.format("%1$s Error %2$d", getLabel(), mErrorCode);
+        if (mOutput != null && mOutput.length > 0) {
+            // Note : the "error detail" window in Eclipse seem to ignore the \n,
+            // so we prefix them with a space. It's not optimal but it's slightly readable.
+            result += " \nOutput:";
+            for (String o : mOutput) {
+                if (o != null) {
+                    result += " \n" + o;
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public String getMessage() {
+        return toString();
+    }
 }
