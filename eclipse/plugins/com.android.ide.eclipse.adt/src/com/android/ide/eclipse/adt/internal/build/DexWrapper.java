@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -147,19 +146,24 @@ public final class DexWrapper {
             }
 
             return -1;
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
+            Throwable t = e;
+            while (t.getCause() != null) {
+                t = t.getCause();
+            }
+
+            String msg = t.getMessage();
+            if (msg == null) {
+                msg = String.format("%s. Check the Eclipse log for stack trace.",
+                        t.getClass().getName());
+            }
+
             throw new CoreException(createErrorStatus(
-                    String.format(Messages.DexWrapper_Unable_To_Execute_Dex_s, e.getMessage()), e));
-        } catch (InstantiationException e) {
-            throw new CoreException(createErrorStatus(
-                    String.format(Messages.DexWrapper_Unable_To_Execute_Dex_s, e.getMessage()), e));
-        } catch (InvocationTargetException e) {
-            throw new CoreException(createErrorStatus(
-                    String.format(Messages.DexWrapper_Unable_To_Execute_Dex_s, e.getMessage()), e));
+                    String.format(Messages.DexWrapper_Unable_To_Execute_Dex_s, msg), t));
         }
     }
 
-    private static IStatus createErrorStatus(String message, Exception e) {
+    private static IStatus createErrorStatus(String message, Throwable e) {
         AdtPlugin.log(e, message);
         AdtPlugin.printErrorToConsole(Messages.DexWrapper_Dex_Loader, message);
 
