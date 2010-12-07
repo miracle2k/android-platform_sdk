@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.refactoring.core;
 
+import com.android.ide.common.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.refactoring.changes.AndroidLayoutChange;
@@ -71,18 +72,13 @@ import java.util.Set;
  * Extensions to this extension point must therefore extend <code>org.eclipse.ltk.core.refactoring.participants.RenameParticipant</code>.
  * </p>
  */
+@SuppressWarnings("restriction")
 public class AndroidTypeRenameParticipant extends AndroidRenameParticipant {
 
     private Set<AndroidLayoutFileChanges> mFileChanges = new HashSet<AndroidLayoutFileChanges>();
 
     private String mLayoutNewName;
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * createChange(org.eclipse.core.runtime.IProgressMonitor)
-     */
     @Override
     public Change createChange(IProgressMonitor pm) throws CoreException,
             OperationCanceledException {
@@ -121,23 +117,11 @@ public class AndroidTypeRenameParticipant extends AndroidRenameParticipant {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * getName()
-     */
     @Override
     public String getName() {
         return "Android Type Rename";
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * initialize(java.lang.Object)
-     */
     @Override
     protected boolean initialize(Object element) {
 
@@ -200,10 +184,10 @@ public class AndroidTypeRenameParticipant extends AndroidRenameParticipant {
     }
 
     /**
-     * (non-Javadoc) Adds layout changes for project
+     * Adds layout changes for project
      *
      * @param project the Android project
-     * @param classNames the layout classes
+     * @param className the layout classes
      *
      */
     private void addLayoutChanges(IProject project, String className) {
@@ -229,10 +213,10 @@ public class AndroidTypeRenameParticipant extends AndroidRenameParticipant {
     }
 
     /**
-     * (non-Javadoc) Searches the layout file for classes
+     * Searches the layout file for classes
      *
      * @param file the Android layout file
-     * @param classNames the layout classes
+     * @param className the layout classes
      *
      */
     private Set<AndroidLayoutChangeDescription> parse(IFile file, String className) {
@@ -258,13 +242,13 @@ public class AndroidTypeRenameParticipant extends AndroidRenameParticipant {
                     IDOMModel xmlModel = (IDOMModel) model;
                     IDOMDocument xmlDoc = xmlModel.getDocument();
                     NodeList nodes = xmlDoc
-                            .getElementsByTagName(IConstants.ANDROID_LAYOUT_VIEW_ELEMENT);
+                            .getElementsByTagName(LayoutConstants.VIEW);
                     for (int i = 0; i < nodes.getLength(); i++) {
                         Node node = nodes.item(i);
                         NamedNodeMap attributes = node.getAttributes();
                         if (attributes != null) {
-                            Node attributeNode = attributes
-                                    .getNamedItem(IConstants.ANDROID_LAYOUT_CLASS_ARGUMENT);
+                            Node attributeNode =
+                                attributes.getNamedItem(LayoutConstants.ATTR_CLASS);
                             if (attributeNode != null || attributeNode instanceof Attr) {
                                 Attr attribute = (Attr) attributeNode;
                                 String value = attribute.getValue();
@@ -305,7 +289,7 @@ public class AndroidTypeRenameParticipant extends AndroidRenameParticipant {
     }
 
     /**
-     * (non-Javadoc) Returns the elements (activity, receiver, service ...)
+     * Returns the elements (activity, receiver, service ...)
      * which have to be renamed
      *
      * @return the android elements

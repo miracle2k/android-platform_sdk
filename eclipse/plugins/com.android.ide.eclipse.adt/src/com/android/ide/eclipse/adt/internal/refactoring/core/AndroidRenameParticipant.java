@@ -52,13 +52,6 @@ public abstract class AndroidRenameParticipant extends RenameParticipant {
 
     protected Map<String, String> mAndroidElements;
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * checkConditions(org.eclipse.core.runtime.IProgressMonitor,
-     * org.eclipse.ltk.core.refactoring.participants.CheckConditionsContext)
-     */
     @Override
     public RefactoringStatus checkConditions(IProgressMonitor pm, CheckConditionsContext context)
             throws OperationCanceledException {

@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.refactoring.changes;
 
-import com.android.ide.eclipse.adt.internal.refactoring.core.IConstants;
 import com.android.ide.eclipse.adt.internal.refactoring.core.RefactoringUtil;
 import com.android.sdklib.xml.AndroidManifest;
 
@@ -48,7 +47,6 @@ public class AndroidTypeRenameChange extends AndroidDocumentChange {
      * @param elements the elements
      * @param newName the new name
      * @param oldName the old name
-     * @param isPackage is the application package
      */
     public AndroidTypeRenameChange(IFile androidManifest, ITextFileBufferManager manager,
             IDocument document, Map<String, String> elements, String newName, String oldName) {
@@ -69,7 +67,7 @@ public class AndroidTypeRenameChange extends AndroidDocumentChange {
     }
 
     /**
-     * (non-Javadoc) Adds text edits for this change
+     * Adds text edits for this change
      */
     private void addEdits() {
         MultiTextEdit multiEdit = new MultiTextEdit();
@@ -97,9 +95,6 @@ public class AndroidTypeRenameChange extends AndroidDocumentChange {
         setEdit(multiEdit);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Change perform(IProgressMonitor pm) throws CoreException {
         super.perform(pm);
@@ -107,9 +102,6 @@ public class AndroidTypeRenameChange extends AndroidDocumentChange {
                 mOldName, mNewName);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void dispose() {
         super.dispose();
