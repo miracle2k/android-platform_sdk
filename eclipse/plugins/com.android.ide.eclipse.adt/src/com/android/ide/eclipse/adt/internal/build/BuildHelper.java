@@ -365,6 +365,7 @@ public class BuildHelper {
         String[] outputs = new String[1 + projectOutputs.length];
 
         outputs[0] = outputFolder.getLocation().toOSString();
+        System.arraycopy(projectOutputs, 0, outputs, 1, projectOutputs.length);
 
         return outputs;
     }
