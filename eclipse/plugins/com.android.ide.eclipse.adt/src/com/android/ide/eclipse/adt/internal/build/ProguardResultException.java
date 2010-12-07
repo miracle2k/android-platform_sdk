@@ -26,4 +26,9 @@ public final class ProguardResultException extends ExecResultException {
     ProguardResultException(int errorCode, String[] output) {
         super(errorCode, output);
     }
+
+    @Override
+    public String getLabel() {
+        return "Proguard";
+    }
 }
