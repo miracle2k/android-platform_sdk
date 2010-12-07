@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.refactoring.changes;
 
-import com.android.ide.eclipse.adt.internal.refactoring.core.IConstants;
+import com.android.ide.common.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.refactoring.core.RefactoringUtil;
 
 import org.eclipse.core.filebuffers.ITextFileBufferManager;
@@ -33,6 +33,7 @@ import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
 import org.eclipse.text.edits.TextEdit;
 import org.eclipse.wst.sse.core.StructuredModelManager;
+import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocumentRegion;
@@ -45,8 +46,6 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -55,6 +54,7 @@ import java.util.Set;
  * A text change that operates on android layout using WTP SSE model.
  * It is base class for Rename Package and Rename Type changes
 */
+@SuppressWarnings("restriction")
 public class AndroidLayoutChange extends DocumentChange {
 
     private IDocument mDocument;
@@ -74,15 +74,14 @@ public class AndroidLayoutChange extends DocumentChange {
      * @param document the document
      * @param manager the buffer manager
      * @param changes the list of changes
-     * @param androidLayoutChangeDescription
      */
     public AndroidLayoutChange(IFile file, IDocument document, ITextFileBufferManager manager,
             Set<AndroidLayoutChangeDescription> changes) {
         super("", document); //$NON-NLS-1$
-        this.mFile = file;
-        this.mDocument = document;
-        this.mManager = manager;
-        this.mChanges = changes;
+        mFile = file;
+        mDocument = document;
+        mManager = manager;
+        mChanges = changes;
         try {
             this.mModel = getModel(document);
         } catch (Exception ignore) {
@@ -92,6 +91,43 @@ public class AndroidLayoutChange extends DocumentChange {
         }
     }
 
+    @Override
+    public String getName() {
+        return mFile.getName();
+    }
+
+    @Override
+    public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException,
+            OperationCanceledException {
+        RefactoringStatus status = super.isValid(pm);
+        if (mModel == null) {
+            status.addFatalError("Invalid the " + getName() + " file.");
+        }
+        return status;
+    }
+
+    @Override
+    public void setTextType(String type) {
+        super.setTextType(mFile.getFileExtension());
+    }
+
+    @Override
+    public void dispose() {
+        super.dispose();
+        RefactoringUtil.fixModel(mModel, mDocument);
+
+        if (mManager != null) {
+            try {
+                mManager.disconnect(mFile.getFullPath(), LocationKind.NORMALIZE,
+                        new NullProgressMonitor());
+            } catch (CoreException e) {
+                RefactoringUtil.log(e);
+            }
+        }
+    }
+
+    // ----
+
     /**
      * Adds text edits for this change
      */
@@ -99,8 +135,9 @@ public class AndroidLayoutChange extends DocumentChange {
         MultiTextEdit multiEdit = new MultiTextEdit();
         for (AndroidLayoutChangeDescription change : mChanges) {
             if (!change.isStandalone()) {
-                TextEdit edit = createTextEdit(IConstants.ANDROID_LAYOUT_VIEW_ELEMENT,
-                        IConstants.ANDROID_LAYOUT_CLASS_ARGUMENT, change.getClassName(),
+                TextEdit edit = createTextEdit(LayoutConstants.VIEW,
+                        LayoutConstants.ATTR_CLASS,
+                        change.getClassName(),
                         change.getNewName());
                 if (edit != null) {
                     multiEdit.addChild(edit);
@@ -117,7 +154,7 @@ public class AndroidLayoutChange extends DocumentChange {
     }
 
     /**
-     * (non-Javadoc) Returns the text changes which change class (custom layout viewer) in layout file
+     * Returns the text changes which change class (custom layout viewer) in layout file
      *
      * @param className the class name
      * @param newName the new class name
@@ -153,7 +190,7 @@ public class AndroidLayoutChange extends DocumentChange {
      *
      * @return the attribute value
      */
-    protected IDOMDocument getDOMDocument() {
+    private IDOMDocument getDOMDocument() {
         IDOMModel xmlModel = (IDOMModel) mModel;
         IDOMDocument xmlDoc = xmlModel.getDocument();
         return xmlDoc;
@@ -167,7 +204,7 @@ public class AndroidLayoutChange extends DocumentChange {
      *
      * @return the text change
      */
-    protected TextEdit createTextEdit(Attr attribute, String newValue) {
+    private TextEdit createTextEdit(Attr attribute, String newValue) {
         if (attribute == null)
             return null;
 
@@ -187,13 +224,13 @@ public class AndroidLayoutChange extends DocumentChange {
      * Returns the text change that change the value of attribute from oldValue to newValue
      *
      * @param elementName the element name
-     * @param attributeName the attribute name
-     * @param oldValue the old value
-     * @param newValue the new value
+     * @param argumentName the attribute name
+     * @param oldName the old value
+     * @param newName the new value
      *
      * @return the text change
      */
-    protected TextEdit createTextEdit(String elementName, String argumentName, String oldName,
+    private TextEdit createTextEdit(String elementName, String argumentName, String oldName,
             String newName) {
         IDOMDocument xmlDoc = getDOMDocument();
         String name = null;
@@ -209,7 +246,7 @@ public class AndroidLayoutChange extends DocumentChange {
     }
 
     /**
-     * (non-Javadoc) Finds the attribute with values oldName
+     * Finds the attribute with values oldName
      *
      * @param xmlDoc the document
      * @param element the element
@@ -218,7 +255,7 @@ public class AndroidLayoutChange extends DocumentChange {
      *
      * @return the attribute
      */
-    public Attr findAttribute(IDOMDocument xmlDoc, String element, String attributeName,
+    private Attr findAttribute(IDOMDocument xmlDoc, String element, String attributeName,
             String oldValue) {
         NodeList nodes = xmlDoc.getElementsByTagName(element);
         for (int i = 0; i < nodes.getLength(); i++) {
@@ -238,70 +275,19 @@ public class AndroidLayoutChange extends DocumentChange {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getName() {
-        return mFile.getName();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException,
-            OperationCanceledException {
-        RefactoringStatus status = super.isValid(pm);
-        if (mModel == null) {
-            status.addFatalError("Invalid the " + getName() + " file.");
-        }
-        return status;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setTextType(String type) {
-        super.setTextType(mFile.getFileExtension());
-    }
-
-    /**
      * Returns the SSE model for a document
      *
      * @param document the document
-     *
      * @return the model
-     *
      */
-    protected IStructuredModel getModel(IDocument document) throws IOException, CoreException {
-        if (mModel != null) {
-            return mModel;
+    private IStructuredModel getModel(IDocument document) {
+
+        IModelManager manager = StructuredModelManager.getModelManager();
+        IStructuredModel model = manager.getExistingModelForRead(document);
+        if (model == null && document instanceof IStructuredDocument) {
+            model = manager.getModelForRead((IStructuredDocument) document);
         }
-        IStructuredModel model;
-        model = StructuredModelManager.getModelManager().getExistingModelForRead(document);
-        if (model == null) {
-            if (document instanceof IStructuredDocument) {
-                IStructuredDocument structuredDocument = (IStructuredDocument) document;
-                model = StructuredModelManager.getModelManager()
-                        .getModelForRead(structuredDocument);
-            }
-        }
+
         return model;
-    }
-
-    @Override
-    public void dispose() {
-        super.dispose();
-        RefactoringUtil.fixModel(mModel, mDocument);
-
-        if (mManager != null) {
-            try {
-                mManager.disconnect(mFile.getFullPath(), LocationKind.NORMALIZE,
-                        new NullProgressMonitor());
-            } catch (CoreException e) {
-                RefactoringUtil.log(e);
-            }
-        }
     }
 }

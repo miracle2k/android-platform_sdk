@@ -16,28 +16,34 @@
 
 package com.android.ide.eclipse.adt.internal.refactorings.extractstring;
 
-import com.android.sdklib.xml.AndroidXPathFactory;
+import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors;
 
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.ITextFileBuffer;
+import org.eclipse.core.filebuffers.ITextFileBufferManager;
+import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.wst.sse.core.StructuredModelManager;
+import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
+import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
+import org.eclipse.wst.xml.core.internal.provisional.document.IDOMDocument;
+import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-
 /**
  * An helper utility to get IDs out of an Android XML resource file.
  */
+@SuppressWarnings("restriction")
 class XmlStringFileHelper {
 
     /** A temporary cache of R.string IDs defined by a given xml file. The key is the
@@ -47,8 +53,6 @@ class XmlStringFileHelper {
      */
     private HashMap<String, Map<String, String>> mResIdCache =
         new HashMap<String, Map<String, String>>();
-    /** An instance of XPath, created lazily on demand. */
-    private XPath mXPath;
 
     public XmlStringFileHelper() {
     }
@@ -95,50 +99,95 @@ class XmlStringFileHelper {
      *   The returned set is always non null. It is empty if the file does not exist.
      */
     private Map<String, String> internalGetResIdsForFile(IProject project, String xmlFileWsPath) {
-        TreeMap<String, String> ids = new TreeMap<String, String>();
 
-        if (mXPath == null) {
-            mXPath = AndroidXPathFactory.newXPath();
-        }
+        TreeMap<String, String> ids = new TreeMap<String, String>();
 
         // Access the project that contains the resource that contains the compilation unit
         IResource resource = project.getFile(xmlFileWsPath);
 
         if (resource != null && resource.exists() && resource.getType() == IResource.FILE) {
-            InputSource source;
+            IStructuredModel smodel = null;
+
             try {
-                source = new InputSource(((IFile) resource).getContents());
+                IFile file = (IFile) resource;
+                IModelManager modelMan = StructuredModelManager.getModelManager();
+                smodel = modelMan.getExistingModelForRead(file);
+                if (smodel == null) {
+                    smodel = modelMan.getModelForRead(file);
+                }
 
-                // We want all the IDs in an XML structure like this:
-                // <resources>
-                //    <string name="ID">something</string>
-                // </resources>
+                if (smodel instanceof IDOMModel) {
+                    IDOMDocument doc = ((IDOMModel) smodel).getDocument();
 
-                String xpathExpr = "/resources/string";                         //$NON-NLS-1$
+                    // We want all the IDs in an XML structure like this:
+                    // <resources>
+                    //    <string name="ID">something</string>
+                    // </resources>
 
-                Object result = mXPath.evaluate(xpathExpr, source, XPathConstants.NODESET);
-                if (result instanceof NodeList) {
-                    NodeList list = (NodeList) result;
-                    for (int n = list.getLength() - 1; n >= 0; n--) {
-                        Node strNode = list.item(n);
-                        NamedNodeMap attrs = strNode.getAttributes();
-                        Node nameAttr = attrs.getNamedItem("name");             //$NON-NLS-1$
-                        if (nameAttr != null) {
-                            String id = nameAttr.getNodeValue();
-                            String text = strNode.getTextContent();
-                            ids.put(id, text);
+                    Node root = findChild(doc, null, ResourcesDescriptors.ROOT_ELEMENT);
+                    if (root != null) {
+                        for (Node strNode = findChild(root, null,
+                                                      ResourcesDescriptors.STRING_ELEMENT);
+                             strNode != null;
+                             strNode = findChild(null, strNode,
+                                                 ResourcesDescriptors.STRING_ELEMENT)) {
+                            NamedNodeMap attrs = strNode.getAttributes();
+                            Node nameAttr = attrs.getNamedItem(ResourcesDescriptors.NAME_ATTR);
+                            if (nameAttr != null) {
+                                String id = nameAttr.getNodeValue();
+
+                                // Find the TEXT node right after the element.
+                                // Whitespace matters so we don't try to normalize it.
+                                String text = "";                       //$NON-NLS-1$
+                                for (Node txtNode = strNode.getFirstChild();
+                                        txtNode != null && txtNode.getNodeType() == Node.TEXT_NODE;
+                                        txtNode = txtNode.getNextSibling()) {
+                                    text += txtNode.getNodeValue();
+                                }
+
+                                ids.put(id, text);
+                            }
                         }
                     }
                 }
 
-            } catch (CoreException e1) {
-                // IFile.getContents failed. Ignore.
-            } catch (XPathExpressionException e2) {
-                // mXPath.evaluate failed. Ignore.
+            } catch (Throwable e) {
+                AdtPlugin.log(e, "GetResIds failed in %1$s", xmlFileWsPath); //$NON-NLS-1$
+            } finally {
+                if (smodel != null) {
+                    smodel.releaseFromRead();
+                }
             }
         }
 
         return ids;
+    }
+
+    /**
+     * Utility method that finds the next node of the requested element name.
+     *
+     * @param parent The parent node. If not null, will to start searching its children.
+     *               Set to null when iterating through children.
+     * @param lastChild The last child returned. Use null when visiting a parent the first time.
+     * @param elementName The element name of the node to find.
+     * @return The next children or sibling nide with the requested element name or null.
+     */
+    private Node findChild(Node parent, Node lastChild, String elementName) {
+        if (lastChild == null && parent != null) {
+            lastChild = parent.getFirstChild();
+        } else if (lastChild != null) {
+            lastChild = lastChild.getNextSibling();
+        }
+
+        for ( ; lastChild != null ; lastChild = lastChild.getNextSibling()) {
+            if (lastChild.getNodeType() == Node.ELEMENT_NODE &&
+                    lastChild.getNamespaceURI() == null &&  // resources don't have any NS URI
+                    elementName.equals(lastChild.getLocalName())) {
+                return lastChild;
+            }
+        }
+
+        return null;
     }
 
 }

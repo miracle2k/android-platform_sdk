@@ -16,6 +16,8 @@
 
 package com.android.ide.common.layout;
 
+import com.android.sdklib.SdkConstants;
+
 /**
  * A bunch of constants that map to either:
  * <ul>
@@ -25,6 +27,13 @@ package com.android.ide.common.layout;
  * </ul>
  */
 public class LayoutConstants {
+    /** The element name in a <code>&lt;view class="..."&gt;</code> element. */
+    public static final String VIEW = "view";                           //$NON-NLS-1$
+
+    /** The attribute name in a <code>&lt;view class="..."&gt;</code> element. */
+    public static final String ATTR_CLASS = "class";                    //$NON-NLS-1$
+
+    // Some common layout element names
     public static final String RELATIVE_LAYOUT = "RelativeLayout";      //$NON-NLS-1$
     public static final String LINEAR_LAYOUT   = "LinearLayout";        //$NON-NLS-1$
     public static final String ABSOLUTE_LAYOUT = "AbsoluteLayout";      //$NON-NLS-1$
@@ -63,7 +72,7 @@ public class LayoutConstants {
      * Namespace for the Android resource XML, i.e.
      * "http://schemas.android.com/apk/res/android"
      */
-    public static String ANDROID_URI = "http://schemas.android.com/apk/res/android"; //$NON-NLS-1$
+    public static final String ANDROID_URI = SdkConstants.NS_RESOURCES;
 
     /** The fully qualified class name of an EditText view */
     public static final String FQCN_EDIT_TEXT = "android.widget.EditText"; //$NON-NLS-1$

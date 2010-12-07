@@ -37,6 +37,7 @@ public final class AndroidManifest {
     public final static String NODE_MANIFEST = "manifest";
     public final static String NODE_APPLICATION = "application";
     public final static String NODE_ACTIVITY = "activity";
+    public final static String NODE_ACTIVITY_ALIAS = "activity-alias";
     public final static String NODE_SERVICE = "service";
     public final static String NODE_RECEIVER = "receiver";
     public final static String NODE_PROVIDER = "provider";
@@ -62,7 +63,6 @@ public final class AndroidManifest {
     public final static String ATTRIBUTE_TARGET_PACKAGE = "targetPackage";
     public final static String ATTRIBUTE_TARGET_ACTIVITY = "targetActivity";
     public final static String ATTRIBUTE_MANAGE_SPACE_ACTIVITY = "manageSpaceActivity";
-    public final static String NODE_ACTIVITY_ALIAS = "activity-alias";
     public final static String ATTRIBUTE_EXPORTED = "exported";
     public final static String ATTRIBUTE_RESIZEABLE = "resizeable";
     public final static String ATTRIBUTE_ANYDENSITY = "anyDensity";

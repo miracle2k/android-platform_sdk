@@ -21,7 +21,6 @@ import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
@@ -36,6 +35,7 @@ import java.io.UnsupportedEncodingException;
  * The utility class for android refactoring
  *
  */
+@SuppressWarnings("restriction")
 public class RefactoringUtil {
 
     private static boolean sRefactorAppPackage = false;

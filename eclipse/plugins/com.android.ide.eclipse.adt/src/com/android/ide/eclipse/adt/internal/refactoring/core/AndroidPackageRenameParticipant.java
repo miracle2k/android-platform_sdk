@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.refactoring.core;
 
+import com.android.ide.common.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.refactoring.changes.AndroidLayoutChange;
@@ -84,6 +85,7 @@ import java.util.Set;
  * <code>org.eclipse.ltk.core.refactoring.participants.RenameParticipant</code>.
  * </p>
  */
+@SuppressWarnings("restriction")
 public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
 
     private IPackageFragment mPackageFragment;
@@ -92,12 +94,6 @@ public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
 
     private Set<AndroidLayoutFileChanges> mFileChanges = new HashSet<AndroidLayoutFileChanges>();
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * createChange(org.eclipse.core.runtime.IProgressMonitor)
-     */
     @Override
     public Change createChange(IProgressMonitor pm) throws CoreException,
             OperationCanceledException {
@@ -170,8 +166,8 @@ public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
         return null;
     }
 
-    /*
-     * (non-Javadoc) return the gen package fragment
+    /**
+     * Return the gen package fragment
      *
      */
     private IPackageFragment getGenPackageFragment() throws JavaModelException {
@@ -191,23 +187,11 @@ public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * getName()
-     */
     @Override
     public String getName() {
         return "Android Package Rename";
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant#
-     * initialize(java.lang.Object)
-     */
     @Override
     protected boolean initialize(final Object element) {
         mIsPackage = false;
@@ -300,11 +284,10 @@ public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
     }
 
     /**
-     * (non-Javadoc) Adds layout changes for project
+     * Adds layout changes for project
      *
      * @param project the Android project
      * @param classNames the layout classes
-     *
      */
     private void addLayoutChanges(IProject project, String[] classNames) {
         try {
@@ -341,11 +324,10 @@ public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
     }
 
     /**
-     * (non-Javadoc) Searches the layout file for classes
+     * Searches the layout file for classes
      *
      * @param file the Android layout file
      * @param classNames the layout classes
-     *
      */
     private Set<AndroidLayoutChangeDescription> parse(IFile file, String[] classNames) {
         Set<AndroidLayoutChangeDescription> changes =
@@ -372,14 +354,13 @@ public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
                 if (model != null) {
                     IDOMModel xmlModel = (IDOMModel) model;
                     IDOMDocument xmlDoc = xmlModel.getDocument();
-                    NodeList nodes = xmlDoc
-                            .getElementsByTagName(IConstants.ANDROID_LAYOUT_VIEW_ELEMENT);
+                    NodeList nodes = xmlDoc.getElementsByTagName(LayoutConstants.VIEW);
                     for (int i = 0; i < nodes.getLength(); i++) {
                         Node node = nodes.item(i);
                         NamedNodeMap attributes = node.getAttributes();
                         if (attributes != null) {
                             Node attributeNode = attributes
-                                    .getNamedItem(IConstants.ANDROID_LAYOUT_CLASS_ARGUMENT);
+                                    .getNamedItem(LayoutConstants.ATTR_CLASS);
                             if (attributeNode != null || attributeNode instanceof Attr) {
                                 Attr attribute = (Attr) attributeNode;
                                 String value = attribute.getValue();
@@ -432,11 +413,10 @@ public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
     }
 
     /**
-     * (non-Javadoc) Returns the new class name
+     * Returns the new class name
      *
      * @param className the class name
      * @return the new class name
-     *
      */
     private String getNewClassName(String className) {
         int lastDot = className.lastIndexOf("."); //$NON-NLS-1$
@@ -449,11 +429,10 @@ public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
     }
 
     /**
-     * (non-Javadoc) Returns the elements (activity, receiver, service ...)
+     * Returns the elements (activity, receiver, service ...)
      * which have to be renamed
      *
      * @return the android elements
-     *
      */
     private Map<String, String> addAndroidElements() {
         Map<String, String> androidElements = new HashMap<String, String>();
@@ -509,7 +488,7 @@ public class AndroidPackageRenameParticipant extends AndroidRenameParticipant {
     }
 
     /**
-     * (non-Javadoc) Adds the element  (activity, receiver, service ...) to the map
+     * Adds the element  (activity, receiver, service ...) to the map
      *
      * @param xmlDoc the document
      * @param androidElements the map
