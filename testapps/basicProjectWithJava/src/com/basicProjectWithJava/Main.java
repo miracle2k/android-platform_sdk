@@ -1,10 +1,7 @@
-package com.android.tests.basicprojectwithjar;
-
-import com.android.tests.basicjar.Foo;
+package com.basicProjectWithJava;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.widget.TextView;
 
 public class Main extends Activity {
     /** Called when the activity is first created. */
@@ -12,11 +9,6 @@ public class Main extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-
-        Foo foo = new Foo();
-        int a = foo.getRandomFoo();
-
-        TextView tv = (TextView) findViewById(R.id.text);
-        tv.setText("Random number from Jar: " + a);
     }
+    
 }
