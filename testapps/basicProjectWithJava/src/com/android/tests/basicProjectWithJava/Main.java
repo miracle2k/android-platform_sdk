@@ -1,6 +1,6 @@
-package com.android.tests.basicprojectwithjar;
+package com.android.tests.basicProjectWithJava;
 
-import com.android.tests.basicjar.Foo;
+import com.android.tests.basicJavaProject.Foo;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -14,9 +14,9 @@ public class Main extends Activity {
         setContentView(R.layout.main);
 
         Foo foo = new Foo();
-        int a = foo.getRandomFoo();
 
         TextView tv = (TextView) findViewById(R.id.text);
-        tv.setText("BasicProjectWithJar: Value from Jar: " + a);
+        tv.setText("basicProjectWithJava\nvalue from java project:" + foo.getRandomFoo());
     }
+
 }

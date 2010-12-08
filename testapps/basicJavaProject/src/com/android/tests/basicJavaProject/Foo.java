@@ -1,4 +1,4 @@
-package com.basicJavaProject;
+package com.android.tests.basicJavaProject;
 
 import java.util.Random;
 
