@@ -65,7 +65,6 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -76,7 +75,7 @@ import java.util.SortedSet;
  * A composite that displays the current configuration displayed in a Graphical Layout Editor.
  * <p/>
  * The composite has several entry points:<br>
- * - {@link #setFile(File)}<br>
+ * - {@link #setFile(IFile)}<br>
  *   Called after the constructor to set the file being edited. Nothing else is performed.<br>
  *<br>
  * - {@link #onXmlModelLoaded()}<br>
@@ -85,11 +84,11 @@ import java.util.SortedSet;
  *   to restore a configuration if one is found to have been saved in the file persistent storage.
  *   (see {@link #storeState()})<br>
  *<br>
- * - {@link #replaceFile(File)}<br>
+ * - {@link #replaceFile(IFile)}<br>
  *   Called when a file, representing the same resource but with a different config is opened<br>
  *   by the user.<br>
  *<br>
- * - {@link #changeFileOnNewConfig(FolderConfiguration)}<br>
+ * - {@link #changeFileOnNewConfig(IFile)}<br>
  *   Called when config change triggers the editing of a file with a different config.
  *<p/>
  * Additionally, the composite can handle the following events.<br>
@@ -99,7 +98,8 @@ import java.util.SortedSet;
  */
 public class ConfigurationComposite extends Composite {
 
-    private final static String CONFIG_STATE = "state";  //$NON-NLS-1$
+    public final static QualifiedName NAME_CONFIG_STATE =
+        new QualifiedName(AdtPlugin.PLUGIN_ID, "state");//$NON-NLS-1$
     private final static String THEME_SEPARATOR = "----------"; //$NON-NLS-1$
 
     private final static int LOCALE_LANG = 0;
@@ -147,7 +147,8 @@ public class ConfigurationComposite extends Composite {
     private IAndroidTarget mRenderingTarget;
     /** The {@link FolderConfiguration} being edited. */
     private FolderConfiguration mEditedConfig;
-
+    /** Serialized state to use when initializing the configuration after the SDK is loaded */
+    private String mInitialState;
 
     /**
      * Interface implemented by the part which owns a {@link ConfigurationComposite}.
@@ -486,12 +487,14 @@ public class ConfigurationComposite extends Composite {
      *          buttons to display at the top of the composite. Can be empty or null.
      * @param parent The parent composite.
      * @param style The style of this composite.
+     * @param initialState The initial state (serialized form) to use for the configuration
      */
     public ConfigurationComposite(IConfigListener listener,
             CustomButton[][] customButtons,
-            Composite parent, int style) {
+            Composite parent, int style, String initialState) {
         super(parent, style);
         mListener = listener;
+        mInitialState = initialState;
 
         if (customButtons == null) {
             customButtons = new CustomButton[0][0];
@@ -648,8 +651,8 @@ public class ConfigurationComposite extends Composite {
      * @param file the file being opened
      *
      * @see #onXmlModelLoaded()
-     * @see #replaceFile(FolderConfiguration)
-     * @see #changeFileOnNewConfig(FolderConfiguration)
+     * @see #replaceFile(IFile)
+     * @see #changeFileOnNewConfig(IFile)
      */
     public void setFile(IFile file) {
         mEditedFile = file;
@@ -663,10 +666,6 @@ public class ConfigurationComposite extends Composite {
      * <p/>This will NOT trigger a redraw event (will not call
      * {@link IConfigListener#onConfigurationChange()}.)
      * @param file the file being opened.
-     * @param fileConfig The {@link FolderConfiguration} of the opened file.
-     * @param target the {@link IAndroidTarget} of the file's project.
-     *
-     * @see #replaceFile(FolderConfiguration)
      */
     public void replaceFile(IFile file) {
         // if there is no previous selection, revert to default mode.
@@ -714,8 +713,7 @@ public class ConfigurationComposite extends Composite {
      * Updates the UI with a new file that was opened in response to a config change.
      * @param file the file being opened.
      *
-     * @see #openFile(FolderConfiguration, IAndroidTarget)
-     * @see #replaceFile(FolderConfiguration)
+     * @see #replaceFile(IFile)
      */
     public void changeFileOnNewConfig(IFile file) {
         mEditedFile = file;
@@ -759,7 +757,7 @@ public class ConfigurationComposite extends Composite {
      * <p>This initializes the UI, either with the first compatible configuration found,
      * or attempts to restore a configuration if one is found to have been saved in the file
      * persistent storage.
-     * <p>If the SDK or target are not loaded, nothing will happend (but the method must be called
+     * <p>If the SDK or target are not loaded, nothing will happened (but the method must be called
      * back when those are loaded).
      * <p>The method automatically handles being called the first time after editor creation, or
      * being called after during SDK/Target changes (as long as {@link #onSdkLoaded(IAndroidTarget)}
@@ -811,8 +809,12 @@ public class ConfigurationComposite extends Composite {
                     // get the file stored state
                     boolean loadedConfigData = false;
                     try {
-                        QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID, CONFIG_STATE);
-                        String data = mEditedFile.getPersistentProperty(qname);
+                        String data = mEditedFile.getPersistentProperty(NAME_CONFIG_STATE);
+
+                        if (mInitialState != null) {
+                            data = mInitialState;
+                            mInitialState = null;
+                        }
                         if (data != null) {
                             loadedConfigData = mState.setData(data);
                         }
@@ -1106,8 +1108,7 @@ public class ConfigurationComposite extends Composite {
      */
     public void storeState() {
         try {
-            QualifiedName qname = new QualifiedName(AdtPlugin.PLUGIN_ID, CONFIG_STATE);
-            mEditedFile.setPersistentProperty(qname, mState.getData());
+            mEditedFile.setPersistentProperty(NAME_CONFIG_STATE, mState.getData());
         } catch (CoreException e) {
             // pass
         }
@@ -1711,7 +1712,7 @@ public class ConfigurationComposite extends Composite {
     }
 
     /**
-     * fills the config combo with new values based on {@link #mCurrentState#device}.
+     * fills the config combo with new values based on {@link #mState}.device.
      * @param refName an optional name. if set the selection will match this name (if found)
      */
     private void fillConfigCombo(String refName) {

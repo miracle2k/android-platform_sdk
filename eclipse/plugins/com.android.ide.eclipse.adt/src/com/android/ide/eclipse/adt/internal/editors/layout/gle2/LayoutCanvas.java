@@ -22,6 +22,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
@@ -36,10 +37,13 @@ import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.jdt.internal.ui.javaeditor.EditorUtility;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -74,6 +78,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
@@ -195,6 +200,9 @@ class LayoutCanvas extends Canvas {
     /** The overlay which paints the rendered layout image. */
     private ImageOverlay mImageOverlay;
 
+    /** The overlay which paints masks hiding everything but included content. */
+    private IncludeOverlay mIncludeOverlay;
+
     /**
      * Gesture Manager responsible for identifying mouse, keyboard and drag and
      * drop events.
@@ -230,6 +238,7 @@ class LayoutCanvas extends Canvas {
         mSelectionOverlay = new SelectionOverlay();
         mSelectionOverlay.create(display);
         mImageOverlay = new ImageOverlay(this, mHScale, mVScale);
+        mIncludeOverlay = new IncludeOverlay(this);
         mImageOverlay.create(display);
 
         // --- Set up listeners
@@ -343,6 +352,11 @@ class LayoutCanvas extends Canvas {
         if (mImageOverlay != null) {
             mImageOverlay.dispose();
             mImageOverlay = null;
+        }
+
+        if (mIncludeOverlay != null) {
+            mIncludeOverlay.dispose();
+            mIncludeOverlay = null;
         }
 
         mViewHierarchy.dispose();
@@ -582,6 +596,8 @@ class LayoutCanvas extends Canvas {
             }
 
             mHoverOverlay.paint(gc);
+            mIncludeOverlay.paint(gc);
+
             mSelectionOverlay.paint(mSelectionManager, mGCWrapper, mRulesEngine);
             mGestureManager.paint(gc);
 
@@ -726,11 +742,40 @@ class LayoutCanvas extends Canvas {
         if (workspacePath.isPrefixOf(filePath)) {
             IPath relativePath = Sdk.makeRelativeTo(filePath, workspacePath);
             IResource xmlFile = workspace.findMember(relativePath);
-            try {
-                EditorUtility.openInEditor(xmlFile, true);
-                return;
-            } catch (PartInitException ex) {
-                AdtPlugin.log(ex, "Can't open %$1s", url); //$NON-NLS-1$
+            if (xmlFile != null) {
+                String nextName = getLayoutResourceName();
+                IFile leavingFile = graphicalEditor.getEditedFile();
+                try {
+                    // TODO - only consider this if we're going to open a new file...
+                    // And even then, whether the target version actually needs it...
+                    QualifiedName qname = ConfigurationComposite.NAME_CONFIG_STATE;
+                    String state = leavingFile.getPersistentProperty(qname);
+                    xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INITIAL_STATE, state);
+                } catch (CoreException e) {
+                    // pass
+                }
+
+                try {
+                    IEditorPart openAlready = EditorUtility.isOpenInEditor(xmlFile);
+                    if (openAlready != null) {
+                        if (openAlready instanceof LayoutEditor) {
+                            LayoutEditor editor = (LayoutEditor)openAlready;
+                            GraphicalEditorPart gEditor = editor.getGraphicalEditor();
+                            gEditor.showIn(nextName);
+                        }
+                    } else {
+                        try {
+                            xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INCLUDE, nextName);
+                        } catch (CoreException e) {
+                            // pass - worst that can happen is that we don't start with inclusion
+                        }
+                    }
+
+                    EditorUtility.openInEditor(xmlFile, true);
+                    return;
+                } catch (PartInitException ex) {
+                    AdtPlugin.log(ex, "Can't open %$1s", url); //$NON-NLS-1$
+                }
             }
         } else {
             // It's not a path in the workspace; look externally
@@ -756,6 +801,28 @@ class LayoutCanvas extends Canvas {
         status.setErrorMessage(message);
         getDisplay().beep();
     }
+
+    /**
+     * Returns the layout resource name of this layout
+     * @return
+     */
+    public String getLayoutResourceName() {
+        GraphicalEditorPart graphicalEditor = mLayoutEditor.getGraphicalEditor();
+        return graphicalEditor.getLayoutResourceName();
+    }
+
+    /**
+     * Returns the layout resource url of the current layout
+     *
+     * @return
+     */
+    /*
+    public String getMe() {
+        GraphicalEditorPart graphicalEditor = mLayoutEditor.getGraphicalEditor();
+        IFile editedFile = graphicalEditor.getEditedFile();
+        return editedFile.getProjectRelativePath().toOSString();
+    }
+     */
 
     /**
      * Show the XML element corresponding to the given {@link CanvasViewInfo} (unless it's

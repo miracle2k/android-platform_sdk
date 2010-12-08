@@ -133,6 +133,9 @@ public class AndroidConstants {
     /** Absolute path of the resource folder, e.g. "/assets".<br> This is a workspace path. */
     public final static String WS_ASSETS = WS_SEP + SdkConstants.FD_ASSETS;
 
+    /** Absolute path of the layout folder, e.g. "/res/layout".<br> This is a workspace path. */
+    public final static String WS_LAYOUTS = WS_RESOURCES + WS_SEP + SdkConstants.FD_LAYOUT;
+
     /** Leaf of the javaDoc folder. Does not start with a separator. */
     public final static String WS_JAVADOC_FOLDER_LEAF = SdkConstants.FD_DOCS + "/" + //$NON-NLS-1$
             SdkConstants.FD_DOCS_REFERENCE;

@@ -25,14 +25,18 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
+import org.eclipse.jface.action.IMenuCreator;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Menu;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,7 +74,7 @@ import java.util.regex.Pattern;
      * Creates a new helper responsible for adding and managing the dynamic menu items
      * contributed by the {@link IViewRule} instances, based on the current selection
      * on the {@link LayoutCanvas}.
-     *
+     * @param editor the editor owning the menu
      * @param canvas The {@link LayoutCanvas} providing the selection, the node factory and
      *   the rules engine.
      * @param rootMenu The root of the context menu displayed. In practice this may be the
@@ -201,6 +205,85 @@ import java.util.regex.Pattern;
                 }
             }
         }
+
+        insertShowIncludedMenu(endId);
+    }
+
+    /**
+     * Inserts a "Show Included In" context menu, if the current view is included in this
+     * view.
+     */
+    private void insertShowIncludedMenu(String beforeId) {
+        IProject project = mEditor.getProject();
+        String me = mCanvas.getLayoutResourceName();
+        final List<String> includedBy = IncludeFinder.get(project).getIncludedBy(me);
+
+        Action includeAction = new Action("Show Included In", IAction.AS_DROP_DOWN_MENU) {
+            @Override
+            public IMenuCreator getMenuCreator() {
+                return new IMenuCreator() {
+                    private Menu mMenu;
+
+                    public void dispose() {
+                        if (mMenu != null) {
+                            mMenu.dispose();
+                            mMenu = null;
+                        }
+                    }
+
+                    public Menu getMenu(Control parent) {
+                        return null;
+                    }
+
+                    public Menu getMenu(Menu parent) {
+                        mMenu = new Menu(parent);
+                        if (includedBy != null && includedBy.size() > 0) {
+                            for (final String s : includedBy) {
+                                String title = s;
+                                IAction action = new ShowWithinAction(title, s);
+                                new ActionContributionItem(action).fill(mMenu, -1);
+                            }
+                            new Separator().fill(mMenu, -1);
+                        }
+                        IAction action = new ShowWithinAction("Nothing", null);
+                        if (includedBy == null || includedBy.size() == 0) {
+                            action.setEnabled(false);
+                        }
+                        new ActionContributionItem(action).fill(mMenu, -1);
+
+                        return mMenu;
+                    }
+
+                };
+            }
+        };
+        mMenuManager.insertBefore(beforeId, includeAction);
+    }
+
+    private class ShowWithinAction extends Action {
+        private String mId;
+
+        public ShowWithinAction(String title, String id) {
+            super(title, IAction.AS_RADIO_BUTTON);
+            mId = id;
+        }
+
+        @Override
+        public boolean isChecked() {
+            String within = mEditor.getGraphicalEditor().getIncludedWithinId();
+            if (within == null) {
+                return mId == null;
+            } else {
+                return within.equals(mId);
+            }
+        }
+
+        @Override
+        public void run() {
+            if (!isChecked()) {
+                mEditor.getGraphicalEditor().showIn(mId);
+            }
+        }
     }
 
     /**
@@ -273,6 +356,9 @@ import java.util.regex.Pattern;
 
     /**
      * Returns the menu actions computed by the rule associated with this view.
+     *
+     * @param vi the canvas view info we need menu actions for
+     * @return a list of {@link MenuAction} objects applicable to the view info
      */
     public List<MenuAction> getMenuActions(CanvasViewInfo vi) {
         if (vi == null) {
