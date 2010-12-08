@@ -13,13 +13,13 @@ public class Main extends Activity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+        setContentView(R.layout.basiclibwithjar_main);
 
         Foo foo = new Foo();
         int a = foo.getRandomFoo();
 
         TextView tv = (TextView) findViewById(R.id.text);
-        tv.setText("Random number from Jar: " + a);
+        tv.setText("BasicLibWithJar: Value from Jar: " + a);
 
     }
 }
