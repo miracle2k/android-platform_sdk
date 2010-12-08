@@ -5,6 +5,10 @@
     - Rendering target can now be changed from the default (project target)
     - when choosing resources for rendering, the API level is properly handled
 
+8.0.1:
+- Fix compilation issue in Android projects referencing standard Java projects.
+- Better error reporting when exporting applications for release.
+
 8.0.0
 - New version number scheme following the SDK Tools revision number.
 - Support for true debug build. No need to change the value of debuggable in
