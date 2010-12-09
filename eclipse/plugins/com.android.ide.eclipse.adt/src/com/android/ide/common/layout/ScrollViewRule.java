@@ -20,7 +20,6 @@ import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.FQCN_LINEAR_LAYOUT;
-import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
 
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
@@ -36,8 +35,9 @@ public class ScrollViewRule extends FrameLayoutRule {
         super.onChildInserted(child, parent, insertType);
 
         // The child of the ScrollView should fill in both directions
-        child.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
-        child.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+        String fillParent = getFillParentValueName();
+        child.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
+        child.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, fillParent);
     }
 
     @Override

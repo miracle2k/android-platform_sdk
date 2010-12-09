@@ -20,7 +20,6 @@ import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ORIENTATION;
-import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_HORIZONTAL;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_VERTICAL;
 
@@ -33,12 +32,12 @@ import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.IViewMetadata;
-import com.android.ide.common.api.IViewMetadata.FillPreference;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
+import com.android.ide.common.api.IViewMetadata.FillPreference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -425,11 +424,12 @@ public class LinearLayoutRule extends BaseLayoutRule {
         if (metadata != null) {
             boolean vertical = isVertical(parent);
             FillPreference fill = metadata.getFillPreference();
+            String fillParent = getFillParentValueName();
             if (fill.fillHorizontally(vertical)) {
-                node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+                node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
             }
             if (fill.fillVertically(vertical)) {
-                node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+                node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, fillParent);
             }
         }
     }

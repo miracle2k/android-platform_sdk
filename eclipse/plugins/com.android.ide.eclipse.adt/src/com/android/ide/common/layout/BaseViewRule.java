@@ -100,9 +100,13 @@ public class BaseViewRule implements IViewRule {
         String custom_w = "Custom...";
         String curr_w = selectedNode.getStringAttr(ANDROID_URI, ATTR_LAYOUT_WIDTH);
 
-        if (VALUE_FILL_PARENT.equals(curr_w)) {
+        String fillParent = getFillParentValueName();
+        boolean canMatchParent = supportsMatchParent();
+        if (canMatchParent && VALUE_FILL_PARENT.equals(curr_w)) {
             curr_w = VALUE_MATCH_PARENT;
-        } else if (!VALUE_WRAP_CONTENT.equals(curr_w) && !VALUE_MATCH_PARENT.equals(curr_w)) {
+        } else if (!canMatchParent && VALUE_MATCH_PARENT.equals(curr_w)) {
+            curr_w = VALUE_FILL_PARENT;
+        } else if (!VALUE_WRAP_CONTENT.equals(curr_w) && !fillParent.equals(curr_w)) {
             curr_w = "zcustom"; //$NON-NLS-1$
             custom_w = "Custom: " + curr_w;
         }
@@ -110,9 +114,11 @@ public class BaseViewRule implements IViewRule {
         String custom_h = "Custom...";
         String curr_h = selectedNode.getStringAttr(ANDROID_URI, ATTR_LAYOUT_HEIGHT);
 
-        if (VALUE_FILL_PARENT.equals(curr_h)) {
+        if (canMatchParent && VALUE_FILL_PARENT.equals(curr_h)) {
             curr_h = VALUE_MATCH_PARENT;
-        } else if (!VALUE_WRAP_CONTENT.equals(curr_h) && !VALUE_MATCH_PARENT.equals(curr_h)) {
+        } else if (!canMatchParent && VALUE_MATCH_PARENT.equals(curr_h)) {
+            curr_h = VALUE_FILL_PARENT;
+        } else if (!VALUE_WRAP_CONTENT.equals(curr_h) && !fillParent.equals(curr_h)) {
             curr_h = "zcustom"; //$NON-NLS-1$
             custom_h = "Custom: " + curr_h;
         }
@@ -200,16 +206,18 @@ public class BaseViewRule implements IViewRule {
         List<MenuAction> list1 = Arrays.asList(new MenuAction[] {
             new MenuAction.Choices("layout_1width", "Layout Width", //$NON-NLS-1$
                     mapify(
-                      "wrap_content", "Wrap Content", //$NON-NLS-1$
-                      "match_parent", "Match Parent", //$NON-NLS-1$
+                      VALUE_WRAP_CONTENT, "Wrap Content",
+                      canMatchParent ? VALUE_MATCH_PARENT : VALUE_FILL_PARENT,
+                      canMatchParent ? "Match Parent" : "Fill Parent",
                       "zcustom", custom_w             //$NON-NLS-1$
                     ),
                     curr_w,
                     onChange ),
            new MenuAction.Choices("layout_2height", "Layout Height", //$NON-NLS-1$
                    mapify(
-                      "wrap_content", "Wrap Content", //$NON-NLS-1$
-                      "match_parent", "Match Parent", //$NON-NLS-1$
+                      VALUE_WRAP_CONTENT, "Wrap Content",
+                      canMatchParent ? VALUE_MATCH_PARENT : VALUE_FILL_PARENT,
+                      canMatchParent ? "Match Parent" : "Fill Parent",
                       "zcustom", custom_h             //$NON-NLS-1$
                    ),
                     curr_h,
@@ -319,6 +327,26 @@ public class BaseViewRule implements IViewRule {
         }
 
         return concatenate(list1, list2);
+    }
+
+    /**
+     * Returns fill_parent or match_parent, depending on whether the minimum supported
+     * platform supports match_parent or not
+     *
+     * @return match_parent or fill_parent depending on which is supported by the project
+     */
+    protected String getFillParentValueName() {
+        return supportsMatchParent() ? VALUE_MATCH_PARENT : VALUE_FILL_PARENT;
+    }
+
+    /**
+     * Returns true if the project supports match_parent instead of just fill_parent
+     *
+     * @return true if the project supports match_parent instead of just fill_parent
+     */
+    protected boolean supportsMatchParent() {
+        // fill_parent was renamed match_parent in API level 8
+        return mRulesEngine.getMinApiLevel() >= 8;
     }
 
     /** Join strings into a single string with the given delimiter */

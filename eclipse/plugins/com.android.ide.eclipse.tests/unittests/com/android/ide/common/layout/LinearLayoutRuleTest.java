@@ -28,9 +28,9 @@ import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.MenuAction;
-import com.android.ide.common.api.MenuAction.Choices;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
+import com.android.ide.common.api.MenuAction.Choices;
 
 import java.util.List;
 
@@ -41,6 +41,7 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
         boolean haveBounds = dragBounds.isValid();
 
         IViewRule rule = new LinearLayoutRule();
+
         INode targetNode = TestNode.create("android.widget.LinearLayout").id(
         "@+id/LinearLayout01").bounds(new Rect(0, 0, 240, 480));
         Point dropPoint = new Point(10, 5);
@@ -118,6 +119,7 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
     // Check that the context menu registers the expected menu items
     public void testContextMenu() {
         LinearLayoutRule rule = new LinearLayoutRule();
+        initialize(rule, "android.widget.LinearLayout");
         INode node = TestNode.create("android.widget.Button").id("@+id/Button012");
 
         List<MenuAction> contextMenu = rule.getContextMenu(node);
@@ -135,6 +137,7 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
     // Check that the context menu manipulates the orientation attribute
     public void testOrientation() {
         LinearLayoutRule rule = new LinearLayoutRule();
+        initialize(rule, "android.widget.LinearLayout");
         INode node = TestNode.create("android.widget.Button").id("@+id/Button012");
 
         assertNull(node.getStringAttr(ANDROID_URI, ATTR_ORIENTATION));

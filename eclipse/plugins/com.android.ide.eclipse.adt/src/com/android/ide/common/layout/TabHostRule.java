@@ -24,7 +24,6 @@ import static com.android.ide.common.layout.LayoutConstants.ATTR_ORIENTATION;
 import static com.android.ide.common.layout.LayoutConstants.FQCN_FRAME_LAYOUT;
 import static com.android.ide.common.layout.LayoutConstants.FQCN_LINEAR_LAYOUT;
 import static com.android.ide.common.layout.LayoutConstants.FQCN_TAB_WIDGET;
-import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_VERTICAL;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
 
@@ -45,25 +44,27 @@ public class TabHostRule extends IgnoredLayoutRule {
         super.onCreate(node, parent, insertType);
 
         if (insertType == InsertType.CREATE) {
+            String fillParent = getFillParentValueName();
+
             // Configure default Table setup as described in the Table tutorial
             node.setAttribute(ANDROID_URI, ATTR_ID, "@android:id/tabhost"); //$NON-NLS-1$
-            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
-            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
+            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, fillParent);
 
             INode linear = node.appendChild(FQCN_LINEAR_LAYOUT);
-            linear.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
-            linear.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+            linear.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
+            linear.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, fillParent);
             linear.setAttribute(ANDROID_URI, ATTR_ORIENTATION,
                     VALUE_VERTICAL);
 
             INode tab = linear.appendChild(FQCN_TAB_WIDGET);
-            tab.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+            tab.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
             tab.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_WRAP_CONTENT);
             tab.setAttribute(ANDROID_URI, ATTR_ID, "@android:id/tabs"); //$NON-NLS-1$
 
             INode frame = linear.appendChild(FQCN_FRAME_LAYOUT);
-            frame.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
-            frame.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, VALUE_FILL_PARENT);
+            frame.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
+            frame.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, fillParent);
             frame.setAttribute(ANDROID_URI, ATTR_ID, "@android:id/tabcontent"); //$NON-NLS-1$
         }
     }
