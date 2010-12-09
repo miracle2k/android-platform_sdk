@@ -101,7 +101,7 @@ Specify the package name --- and not the name of the application e.g., com.andro
   (interactive
    (list
     (read-from-minibuffer "Package: ")))
-  (compile (format "adb install -r %s" package)))
+  (compile (format "adb uninstall %s" package-name)))
 
 (defun android-start-activity (package class)
  "Start the activity PACKAGE/CLASS in the Android emulator. This expects the SDK tools directory to be in the current path."
