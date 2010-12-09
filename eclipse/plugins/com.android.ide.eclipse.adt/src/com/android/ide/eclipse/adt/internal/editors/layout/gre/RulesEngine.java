@@ -772,5 +772,15 @@ public class RulesEngine {
         public IViewMetadata getMetadata(final String fqcn) {
             return new ViewMetadata(mEditor.getLayoutEditor(), fqcn);
         }
+
+        public int getMinApiLevel() {
+            Sdk currentSdk = Sdk.getCurrent();
+            if (currentSdk != null) {
+                IAndroidTarget target = currentSdk.getTarget(mEditor.getProject());
+                return target.getVersion().getApiLevel();
+            }
+
+            return -1;
+        }
     }
 }
