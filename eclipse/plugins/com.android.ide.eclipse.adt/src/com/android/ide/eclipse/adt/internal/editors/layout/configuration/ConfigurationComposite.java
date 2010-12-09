@@ -1978,5 +1978,29 @@ public class ConfigurationComposite extends Composite {
 
         return false;
     }
+
+    /**
+     * Resets the configuration chooser to reflect the given file configuration. This is
+     * intended to be used by the "Show Included In" functionality where the user has
+     * picked a non-default configuration (such as a particular landscape layout) and the
+     * configuration chooser must be switched to a landscape layout. This method will
+     * trigger a model change.
+     * <p>
+     * This will NOT trigger a redraw event!
+     * <p>
+     * FIXME: We are currently setting the configuration file to be the configuration for
+     * the "outer" (the including) file, rather than the inner file, which is the file the
+     * user is actually editing. We need to refine this, possibly with a way for the user
+     * to choose which configuration they are editing. And in particular, we should be
+     * filtering the configuration chooser to only show options in the outer configuration
+     * that are compatible with the inner included file.
+     *
+     * @param file the file to be configured
+     */
+    public void resetConfigFor(IFile file) {
+        setFile(file);
+        mEditedConfig = null;
+        onXmlModelLoaded();
+    }
 }
 

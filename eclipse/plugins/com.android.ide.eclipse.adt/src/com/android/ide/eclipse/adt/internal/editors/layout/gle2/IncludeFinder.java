@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import static com.android.ide.eclipse.adt.AndroidConstants.EXT_XML;
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_LAYOUTS;
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_SEP;
+import static com.android.sdklib.SdkConstants.FD_LAYOUT;
 import static org.eclipse.core.resources.IResourceDelta.ADDED;
 import static org.eclipse.core.resources.IResourceDelta.CHANGED;
 import static org.eclipse.core.resources.IResourceDelta.CONTENT;
@@ -37,6 +38,8 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager.IR
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.io.IAbstractFile;
+import com.android.sdklib.io.StreamException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -74,6 +77,7 @@ import javax.xml.parsers.ParserConfigurationException;
  * The include finder finds other XML files that are including a given XML file, and does
  * so efficiently (caching results across IDE sessions etc).
  */
+@SuppressWarnings("restriction")
 public class IncludeFinder {
     /** Qualified name for the per-project persistent property include-map */
     private final static QualifiedName CONFIG_INCLUDES = new QualifiedName(AdtPlugin.PLUGIN_ID,
@@ -146,19 +150,47 @@ public class IncludeFinder {
      * @param includer the resource name to return included layouts for
      * @return the layouts included by the given resource
      */
-    public List<String> getIncludesFrom(String includer) {
+    private List<String> getIncludesFrom(String includer) {
         ensureInitialized();
 
         return mIncludes.get(includer);
     }
 
     /**
-     * Gets the list of all other layouts that are including the given layout
+     * Gets the list of all other layouts that are including the given layout. The
+     * returned Strings are user-readable references to files, which (for example) will
+     * omit the file extension suffix, as well as the layout prefix (unless it's not the
+     * base layout folder, such as layout-land). In order to get an actual
+     * project-relative path from this String, call {@link #getProjectRelativePath}.
      *
      * @param included the file that is included
      * @return the files that are including the given file, or null or empty
      */
-    public List<String> getIncludedBy(String included) {
+    public List<Reference> getIncludedBy(IResource included) {
+        ensureInitialized();
+        String mapKey = getMapKey(included);
+        List<String> result = mIncludedBy.get(mapKey);
+        if (result == null) {
+            String name = getResourceName(included);
+            if (!name.equals(mapKey)) {
+                result = mIncludedBy.get(name);
+            }
+        }
+
+        if (result != null && result.size() > 0) {
+            List<Reference> references = new ArrayList<Reference>(result.size());
+            for (String s : result) {
+                references.add(new Reference(mProject, s));
+            }
+            return references;
+        } else {
+            return null;
+        }
+    }
+
+    /** For test suite only -- do not call */
+    @VisibleForTesting
+    /* package */ List<String> getIncludedBy(String included) {
         ensureInitialized();
         return mIncludedBy.get(included);
     }
@@ -282,6 +314,9 @@ public class IncludeFinder {
                         }
 
                         if (c == '}') {
+                            if (i < end-1 && encoded.charAt(i+1) == ',') {
+                                i++;
+                            }
                             break;
                         }
                         assert c == ',';
@@ -381,31 +416,17 @@ public class IncludeFinder {
      * Scans the given {@link ResourceFile} and if it is a layout resource, updates the
      * includes in it.
      *
-     * @param resourceFile the {@link ResourceFile} to be scanned for includes
+     * @param resourceFile the {@link ResourceFile} to be scanned for includes (doesn't
+     *            have to be only layout XML files; this method will filter the type)
      * @param singleUpdate true if this is a single file being updated, false otherwise
      *            (e.g. during initial project scanning)
      * @return true if we updated the includes for the resource file
      */
-    @SuppressWarnings("restriction")
     private boolean updateFileIncludes(ResourceFile resourceFile, boolean singleUpdate) {
-        String folderName = resourceFile.getFolder().getFolder().getName();
-        if (!folderName.equals(SdkConstants.FD_LAYOUT)) {
-            // For now we only track layouts in the main layout/ folder;
-            // consider merging the various configurations and doing something
-            // clever in Show Include.
-            return false;
-        }
-
         ResourceType[] resourceTypes = resourceFile.getResourceTypes();
         for (ResourceType type : resourceTypes) {
             if (type == ResourceType.LAYOUT) {
                 ensureInitialized();
-
-                String name = resourceFile.getFile().getName();
-                int baseEnd = name.length() - EXT_XML.length() - 1; // -1: the dot
-                if (baseEnd > 0) {
-                    name = name.substring(0, baseEnd);
-                }
 
                 List<String> includes = Collections.emptyList();
                 if (resourceFile.getFile() instanceof IFileWrapper) {
@@ -441,13 +462,14 @@ public class IncludeFinder {
                     includes = findIncludes(xml);
                 }
 
-                if (includes.equals(getIncludesFrom(name))) {
+                String key = getMapKey(resourceFile);
+                if (includes.equals(getIncludesFrom(key))) {
                     // Common case -- so avoid doing settings flush etc
                     return false;
                 }
 
                 boolean detectCycles = singleUpdate;
-                setIncluded(name, includes, detectCycles);
+                setIncluded(key, includes, detectCycles);
 
                 if (singleUpdate) {
                     saveSettings();
@@ -607,6 +629,54 @@ public class IncludeFinder {
     public static void stop() {
         assert sListener != null;
         ResourceManager.getInstance().addListener(sListener);
+    }
+
+    private static String getMapKey(ResourceFile resourceFile) {
+        IAbstractFile file = resourceFile.getFile();
+        String name = file.getName();
+        String folderName = file.getParentFolder().getName();
+        return getMapKey(folderName, name);
+    }
+
+    private static String getMapKey(IResource resourceFile) {
+        String folderName = resourceFile.getParent().getName();
+        String name = resourceFile.getName();
+        return getMapKey(folderName, name);
+    }
+
+    private static String getResourceName(IResource resourceFile) {
+        String name = resourceFile.getName();
+        int baseEnd = name.length() - EXT_XML.length() - 1; // -1: the dot
+        if (baseEnd > 0) {
+            name = name.substring(0, baseEnd);
+        }
+
+        return name;
+    }
+
+    private static String getMapKey(String folderName, String name) {
+        int baseEnd = name.length() - EXT_XML.length() - 1; // -1: the dot
+        if (baseEnd > 0) {
+            name = name.substring(0, baseEnd);
+        }
+
+        // Create a map key for the given resource file
+        // This will map
+        //     /res/layout/foo.xml => "foo"
+        //     /res/layout-land/foo.xml => "-land/foo"
+
+        if (FD_LAYOUT.equals(folderName)) {
+            // Normal case -- keep just the basename
+            return name;
+        } else {
+            // Store the relative path from res/ on down, so
+            // /res/layout-land/foo.xml becomes "layout-land/foo"
+            //if (folderName.startsWith(FD_LAYOUT)) {
+            //    folderName = folderName.substring(FD_LAYOUT.length());
+            //}
+
+            return folderName + WS_SEP + name;
+        }
     }
 
     /** Listener of resource file saves, used to update layout inclusion data structures */
@@ -801,5 +871,145 @@ public class IncludeFinder {
         finder.mIncludes = new HashMap<String, List<String>>();
         finder.mIncludedBy = new HashMap<String, List<String>>();
         return finder;
+    }
+
+    /**
+     * Returns the project-relative path (such as res/layout/foo.xml) of a include
+     * reference (which may be "foo", or "layout-land/foo").
+     *
+     * @param reference the include reference, as returned by {@link #getIncludedBy}.
+     * @return a project relative path pointing to the actual XML file that contained the
+     *         given reference
+     */
+    public static String getProjectRelativePath(String reference) {
+        if (!reference.contains(WS_SEP)) { //NON-NLS-1$
+            reference = SdkConstants.FD_LAYOUT + WS_SEP + reference;
+        }
+        return SdkConstants.FD_RESOURCES + WS_SEP + reference + '.' + EXT_XML;
+    }
+
+    /** A reference to a particular file in the project */
+    public static class Reference {
+        /** The unique id referencing the file, such as (for res/layout-land/main.xml)
+         * "layout-land/main") */
+        private final String mId;
+
+        /** The project containing the file */
+        private final IProject mProject;
+
+        /** The resource name of the file, such as (for res/layout/main.xml) "main" */
+        private String mName;
+
+        /** Creates a new include reference */
+        private Reference(IProject project, String id) {
+            super();
+            mProject = project;
+            mId = id;
+        }
+
+        /**
+         * Returns the id identifying the given file within the project
+         *
+         * @return the id identifying the given file within the project
+         */
+        public String getId() {
+            return mId;
+        }
+
+        /**
+         * Returns the {@link IFile} in the project for the given file. May return null if
+         * there is an error in locating the file or if the file no longer exists.
+         *
+         * @return the project file, or null
+         */
+        public IFile getFile() {
+            String reference = mId;
+            if (!reference.contains(WS_SEP)) {
+                reference = SdkConstants.FD_LAYOUT + WS_SEP + reference;
+            }
+
+            String projectPath = SdkConstants.FD_RESOURCES + WS_SEP + reference + '.' + EXT_XML;
+            IResource member = mProject.findMember(projectPath);
+            if (member instanceof IFile) {
+                return (IFile) member;
+            }
+
+            return null;
+        }
+
+        /**
+         * Returns a description of this reference, suitable to be shown to the user
+         *
+         * @return a display name for the reference
+         */
+        public String getDisplayName() {
+            // The ID is deliberately kept in a pretty user-readable format but we could
+            // consider prepending layout/ on ids that don't have it (to make the display
+            // more uniform) or ripping out all layout[-constraint] prefixes out and
+            // instead prepending @ etc.
+            return mId;
+        }
+
+        /**
+         * Returns the name of the reference, suitable for resource lookup. For example,
+         * for "res/layout/main.xml", as well as for "res/layout-land/main.xml", this
+         * would be "main".
+         *
+         * @return the resource name of the reference
+         */
+        public String getName() {
+            if (mName == null) {
+                mName = mId;
+                int index = mName.lastIndexOf(WS_SEP);
+                if (index != -1) {
+                    mName = mName.substring(index + 1);
+                }
+            }
+
+            return mName;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((mId == null) ? 0 : mId.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Reference other = (Reference) obj;
+            if (mId == null) {
+                if (other.mId != null)
+                    return false;
+            } else if (!mId.equals(other.mId))
+                return false;
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "Reference [getId()=" + getId() // NON-NLS-1$
+                    + ", getDisplayName()=" + getDisplayName() // NON-NLS-1$
+                    + ", getName()=" + getName() // NON-NLS-1$
+                    + ", getFile()=" + getFile() + "]"; // NON-NLS-1$
+        }
+
+        /**
+         * Creates a reference to the given file
+         *
+         * @param file the file to create a reference for
+         * @return a reference to the given file
+         */
+        public static Reference create(IFile file) {
+            return new Reference(file.getProject(), getMapKey(file));
+        }
     }
 }

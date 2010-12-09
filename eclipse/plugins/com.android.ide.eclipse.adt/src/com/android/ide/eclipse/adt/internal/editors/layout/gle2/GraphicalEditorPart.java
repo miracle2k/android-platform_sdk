@@ -33,6 +33,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.configuration.Configu
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomButton;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -165,7 +166,7 @@ public class GraphicalEditorPart extends EditorPart
         new QualifiedName(AdtPlugin.PLUGIN_ID, "initialstate");//$NON-NLS-1$
 
     /**
-     * Session-property on files which specifies the inclusion-context (name of another layout
+     * Session-property on files which specifies the inclusion-context (reference to another layout
      * which should be "including" this layout) when the file is opened
      */
     public final static QualifiedName NAME_INCLUDE =
@@ -200,10 +201,10 @@ public class GraphicalEditorPart extends EditorPart
     private StyledText mErrorLabel;
 
     /**
-     * The resource name of a file that should surround this file (e.g. include this file
+     * The resource reference to a file that should surround this file (e.g. include this file
      * visually), or null if not applicable
      */
-    private String mIncludedWithinId;
+    private Reference mIncludedWithin;
 
     private Map<String, Map<String, ResourceValue>> mConfiguredFrameworkRes;
     private Map<String, Map<String, ResourceValue>> mConfiguredProjectRes;
@@ -986,8 +987,8 @@ public class GraphicalEditorPart extends EditorPart
         // requested that it should be opened as included within another file
         if (mEditedFile != null) {
             try {
-                mIncludedWithinId = (String) mEditedFile.getSessionProperty(NAME_INCLUDE);
-                if (mIncludedWithinId != null) {
+                mIncludedWithin = (Reference) mEditedFile.getSessionProperty(NAME_INCLUDE);
+                if (mIncludedWithin != null) {
                     // Only use once
                     mEditedFile.setSessionProperty(NAME_INCLUDE, null);
                 }
@@ -1480,16 +1481,15 @@ public class GraphicalEditorPart extends EditorPart
         // Code to support editing included layout
 
         // Outer layout name:
-        String contextLayoutName = mIncludedWithinId;
-        if (contextLayoutName != null) {
+        if (mIncludedWithin != null) {
+            String contextLayoutName = mIncludedWithin.getName();
+
             // Find the layout file.
             Map<String, ResourceValue> layouts = configuredProjectRes.get(
                     ResourceType.LAYOUT.getName());
             ResourceValue contextLayout = layouts.get(contextLayoutName);
             if (contextLayout != null) {
-                String path = contextLayout.getValue();
-
-                File layoutFile = new File(path);
+                File layoutFile = new File(contextLayout.getValue());
                 if (layoutFile.isFile()) {
                     try {
                         // Get the name of the layout actually being edited, without the extension
@@ -2023,11 +2023,20 @@ public class GraphicalEditorPart extends EditorPart
      * file has an include tag referencing this view, and the set of views that have this
      * property can be found using the {@link IncludeFinder}.
      *
-     * @param relativePath project-relative path to the file to open as a surrounding context,
+     * @param includeWithin reference to a file to include as a surrounding context,
      *   or null to show the file standalone
      */
-    public void showIn(String relativePath) {
-        mIncludedWithinId = relativePath;
+    public void showIn(Reference includeWithin) {
+        mIncludedWithin = includeWithin;
+
+        if (includeWithin != null) {
+            IFile file = includeWithin.getFile();
+
+            // Update configuration
+            if (file != null) {
+                mConfigComposite.resetConfigFor(file);
+            }
+        }
         recomputeLayout();
     }
 
@@ -2037,7 +2046,7 @@ public class GraphicalEditorPart extends EditorPart
      *
      * @return the resource name of an including layout, or null
      */
-    public String getIncludedWithinId() {
-        return mIncludedWithinId;
+    public Reference getIncludedWithin() {
+        return mIncludedWithin;
     }
 }
