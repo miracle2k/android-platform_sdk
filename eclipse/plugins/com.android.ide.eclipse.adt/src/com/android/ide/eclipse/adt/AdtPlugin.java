@@ -34,6 +34,7 @@ import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
@@ -44,6 +45,7 @@ import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.io.StreamException;
 import com.android.sdkstats.SdkStatsService;
 
 import org.eclipse.core.resources.IFile;
@@ -98,6 +100,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -399,6 +403,240 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
      */
     public static ImageDescriptor getImageDescriptor(String path) {
         return imageDescriptorFromPlugin(PLUGIN_ID, path);
+    }
+
+    /**
+     * Reads the contents of an {@link IFile} and return it as a String
+     *
+     * @param file the file to be read
+     * @return the String read from the file, or null if there was an error
+     */
+    public static String readFile(IFile file) {
+        InputStream contents = null;
+        try {
+            contents = file.getContents();
+            String charset = file.getCharset();
+            return readFile(new InputStreamReader(contents, charset));
+        } catch (CoreException e) {
+            // pass -- ignore files we can't read
+        } catch (UnsupportedEncodingException e) {
+            // pass -- ignore files we can't read
+        } finally {
+            try {
+                if (contents != null) {
+                    contents.close();
+                }
+            } catch (IOException e) {
+                AdtPlugin.log(e, "Can't read file %1$s", file); //NON-NLS-1$
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns true iff the given file contains the given String.
+     *
+     * @param file the file to look for the string in
+     * @param string the string to be searched for
+     * @return true if the file is found and contains the given string anywhere within it
+     */
+    public static boolean fileContains(IFile file, String string) {
+        InputStream contents = null;
+        try {
+            contents = file.getContents();
+            String charset = file.getCharset();
+            return streamContains(new InputStreamReader(contents, charset), string);
+        } catch (Exception e) {
+            AdtPlugin.log(e, "Can't read file %1$s", file); //NON-NLS-1$
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true iff the given input stream contains the given String.
+     *
+     * @param r the stream to look for the string in
+     * @param string the string to be searched for
+     * @return true if the file is found and contains the given string anywhere within it
+     */
+    public static boolean streamContains(Reader r, String string) {
+        if (string.length() == 0) {
+            return true;
+        }
+
+        PushbackReader reader = null;
+        try {
+            reader = new PushbackReader(r, string.length());
+            char first = string.charAt(0);
+            while (true) {
+                int c = reader.read();
+                if (c == -1) {
+                    return false;
+                } else if (c == first) {
+                    boolean matches = true;
+                    for (int i = 1; i < string.length(); i++) {
+                        c = reader.read();
+                        if (c == -1) {
+                            return false;
+                        } else if (string.charAt(i) != (char)c) {
+                            matches = false;
+                            // Back up the characters that did not match
+                            reader.backup(i-1);
+                            break;
+                        }
+                    }
+                    if (matches) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            AdtPlugin.log(e, "Can't read stream"); //NON-NLS-1$
+        } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                AdtPlugin.log(e, "Can't read stream"); //NON-NLS-1$
+            }
+        }
+
+        return false;
+
+    }
+
+    /**
+     * A special reader that allows backing up in the input (up to a predefined maximum
+     * number of characters)
+     * <p>
+     * NOTE: This class ONLY works with the {@link #read()} method!!
+     */
+    private static class PushbackReader extends BufferedReader {
+        /**
+         * Rolling/circular buffer. Can be a char rather than int since we never store EOF
+         * in it.
+         */
+        private char[] mStorage;
+
+        /** Points to the head of the queue. When equal to the tail, the queue is empty. */
+        private int mHead;
+
+        /**
+         * Points to the tail of the queue. This will move with each read of the actual
+         * wrapped reader, and the characters previous to it in the circular buffer are
+         * the most recently read characters.
+         */
+        private int mTail;
+
+        /**
+         * Creates a new reader with a given maximum number of backup characters
+         *
+         * @param reader the reader to wrap
+         * @param max the maximum number of characters to allow rollback for
+         */
+        public PushbackReader(Reader reader, int max) {
+            super(reader);
+            mStorage = new char[max + 1];
+        }
+
+        @Override
+        public int read() throws IOException {
+            // Have we backed up? If so we should serve characters
+            // from the storage
+            if (mHead != mTail) {
+                char c = mStorage[mHead];
+                mHead = (mHead + 1) % mStorage.length;
+                return c;
+            }
+            assert mHead == mTail;
+
+            // No backup -- read the next character, but stash it into storage
+            // as well such that we can retrieve it if we must.
+            int c = super.read();
+            mStorage[mHead] = (char) c;
+            mHead = mTail = (mHead + 1) % mStorage.length;
+            return c;
+        }
+
+        /**
+         * Backs up the reader a given number of characters. The next N reads will yield
+         * the N most recently read characters prior to this backup.
+         *
+         * @param n the number of characters to be backed up
+         */
+        public void backup(int n) {
+            if (n >= mStorage.length) {
+                throw new IllegalArgumentException("Exceeded backup limit");
+            }
+            assert n < mStorage.length;
+            mHead -= n;
+            if (mHead < 0) {
+                mHead += mStorage.length;
+            }
+        }
+    }
+
+    /**
+     * Reads the contents of a {@link ResourceFile} and returns it as a String
+     *
+     * @param file the file to be read
+     * @return the contents as a String, or null if reading failed
+     */
+    public static String readFile(ResourceFile file) {
+        InputStream contents = null;
+        try {
+            contents = file.getFile().getContents();
+            return readFile(new InputStreamReader(contents));
+        } catch (StreamException e) {
+            // pass -- ignore files we can't read
+        } finally {
+            try {
+                if (contents != null) {
+                    contents.close();
+                }
+            } catch (IOException e) {
+                AdtPlugin.log(e, "Can't read layout file"); //NON-NLS-1$
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Reads the contents of an {@link InputStreamReader} and return it as a String
+     *
+     * @param inputStream the input stream to be read from
+     * @return the String read from the stream, or null if there was an error
+     */
+    public static String readFile(Reader inputStream) {
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(inputStream);
+            StringBuilder sb = new StringBuilder(2000);
+            while (true) {
+                int c = reader.read();
+                if (c == -1) {
+                    return sb.toString();
+                } else {
+                    sb.append((char)c);
+                }
+            }
+        } catch (IOException e) {
+            // pass -- ignore files we can't read
+        } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                AdtPlugin.log(e, "Can't read input stream"); //NON-NLS-1$
+            }
+        }
+
+        return null;
     }
 
     /**

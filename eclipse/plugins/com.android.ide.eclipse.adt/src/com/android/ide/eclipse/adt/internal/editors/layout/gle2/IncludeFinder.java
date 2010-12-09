@@ -37,7 +37,6 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager.IR
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.annotations.VisibleForTesting;
-import com.android.sdklib.io.StreamException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -57,12 +56,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -438,11 +433,11 @@ public class IncludeFinder {
                     // If no XML model we have to read the XML contents and (possibly)
                     // parse it
                     if (!hadXmlModel) {
-                        String xml = readFile(file);
+                        String xml = AdtPlugin.readFile(file);
                         includes = findIncludes(xml);
                     }
                 } else {
-                    String xml = readFile(resourceFile);
+                    String xml = AdtPlugin.readFile(resourceFile);
                     includes = findIncludes(xml);
                 }
 
@@ -636,82 +631,6 @@ public class IncludeFinder {
         public void folderChanged(IProject project, ResourceFolder folder, int eventType) {
             // We only care about layout resource files
         }
-    }
-
-    // ----- I/O Utilities -----
-
-    /** Reads the contents of an {@link IFile} and return it as a String */
-    private static String readFile(IFile file) {
-        InputStream contents = null;
-        try {
-            contents = file.getContents();
-            String charset = file.getCharset();
-            return readFile(new InputStreamReader(contents, charset));
-        } catch (CoreException e) {
-            // pass -- ignore files we can't read
-        } catch (UnsupportedEncodingException e) {
-            // pass -- ignore files we can't read
-        } finally {
-            try {
-                if (contents != null) {
-                    contents.close();
-                }
-            } catch (IOException e) {
-                AdtPlugin.log(e, "Can't read layout file"); //NON-NLS-1$
-            }
-        }
-
-        return null;
-    }
-
-    /** Reads the contents of a {@link ResourceFile} and returns it as a String */
-    private static String readFile(ResourceFile file) {
-        InputStream contents = null;
-        try {
-            contents = file.getFile().getContents();
-            return readFile(new InputStreamReader(contents));
-        } catch (StreamException e) {
-            // pass -- ignore files we can't read
-        } finally {
-            try {
-                if (contents != null) {
-                    contents.close();
-                }
-            } catch (IOException e) {
-                AdtPlugin.log(e, "Can't read layout file"); //NON-NLS-1$
-            }
-        }
-
-        return null;
-    }
-
-    /** Reads the contents of an {@link InputStreamReader} and return it as a String */
-    private static String readFile(InputStreamReader is) {
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(is);
-            StringBuilder sb = new StringBuilder(2000);
-            while (true) {
-                int c = reader.read();
-                if (c == -1) {
-                    return sb.toString();
-                } else {
-                    sb.append((char) c);
-                }
-            }
-        } catch (IOException e) {
-            // pass -- ignore files we can't read
-        } finally {
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-            } catch (IOException e) {
-                AdtPlugin.log(e, "Can't read layout file"); //NON-NLS-1$
-            }
-        }
-
-        return null;
     }
 
     // ----- Cycle detection -----

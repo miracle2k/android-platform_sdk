@@ -15,6 +15,7 @@ apps
 avd
 avds
 basename
+basenames
 bitmask
 breadcrumb
 builtin
@@ -50,7 +51,9 @@ dexified
 diff
 diffs
 dirs
+ditto
 dpi
+drawables
 ed
 editable
 enum
@@ -67,6 +70,8 @@ hardcoded
 hotfix
 href
 http
+hyperlink
+hyperlinks
 ids
 ie
 iff
@@ -129,6 +134,7 @@ reparse
 reparses
 rescales
 residual
+rollback
 sans
 scrollable
 scrollbar
@@ -141,6 +147,7 @@ serializer
 settable
 spec
 standalone
+stash
 stateless
 stderr
 stdout
