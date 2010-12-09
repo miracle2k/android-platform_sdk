@@ -33,6 +33,8 @@ public interface IClientRulesEngine {
 
     /**
      * Returns the FQCN for which the rule was loaded.
+     *
+     * @return the fully qualified name of the rule
      */
     String getFqcn();
 
@@ -64,6 +66,8 @@ public interface IClientRulesEngine {
 
     /**
      * Displays the given message string in an alert dialog with an "OK" button.
+     *
+     * @param message the message to be shown
      */
     void displayAlert(String message);
 
@@ -80,5 +84,12 @@ public interface IClientRulesEngine {
      */
     @Nullable
     String displayInput(String message, @Nullable String value, @Nullable IValidator filter);
+
+    /**
+     * Returns the minimum API level that the current Android project is targeting.
+     *
+     * @return the minimum API level to be supported, or -1 if it cannot be determined
+     */
+    int getMinApiLevel();
 }
 

@@ -22,7 +22,6 @@ import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_BELOW;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
 import static com.android.ide.common.layout.LayoutConstants.FQCN_EDIT_TEXT;
-import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
 
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
@@ -39,17 +38,18 @@ public class DialerFilterRule extends BaseViewRule {
 
         // A DialerFilter requires a couple of nested EditTexts with fixed ids:
         if (insertType == InsertType.CREATE) {
+            String fillParent = getFillParentValueName();
             INode hint = node.appendChild(FQCN_EDIT_TEXT);
             hint.setAttribute(ANDROID_URI, ATTR_TEXT, "Hint");
             hint.setAttribute(ANDROID_URI, ATTR_ID, "@android:id/hint"); //$NON-NLS-1$
-            hint.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+            hint.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
 
             INode primary = node.appendChild(FQCN_EDIT_TEXT);
             primary.setAttribute(ANDROID_URI, ATTR_TEXT, "Primary");
             primary.setAttribute(ANDROID_URI, ATTR_ID, "@android:id/primary"); //$NON-NLS-1$
             primary.setAttribute(ANDROID_URI, ATTR_LAYOUT_BELOW,
                     "@android:id/hint"); //$NON-NLS-1$
-            primary.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+            primary.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
 
 
             // What do we initialize the icon to?

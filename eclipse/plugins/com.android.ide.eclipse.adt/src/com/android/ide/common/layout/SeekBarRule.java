@@ -18,7 +18,6 @@ package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
-import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
 
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
@@ -35,7 +34,7 @@ public class SeekBarRule extends BaseViewRule {
 
         // A SeekBar isn't useful with wrap_content because it packs itself down to
         // almost no usable width -- so just make it grow in all layouts
-        node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, VALUE_FILL_PARENT);
+        node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, getFillParentValueName());
     }
 
 }

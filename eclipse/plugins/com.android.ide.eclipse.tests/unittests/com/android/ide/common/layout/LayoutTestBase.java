@@ -20,8 +20,11 @@ import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
 
 import com.android.ide.common.api.DropFeedback;
+import com.android.ide.common.api.IClientRulesEngine;
 import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.INode;
+import com.android.ide.common.api.IValidator;
+import com.android.ide.common.api.IViewMetadata;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
@@ -177,5 +180,49 @@ public abstract class LayoutTestBase extends TestCase {
             }
             assertEquals("Collections differ; first difference:", expectedElement, actualElement);
         }
+    }
+
+    protected void initialize(IViewRule rule, String fqn) {
+        rule.onInitialize(fqn, new TestRulesEngine(fqn));
+    }
+
+    private static class TestRulesEngine implements IClientRulesEngine {
+        private final String mFqn;
+
+        protected TestRulesEngine(String fqn) {
+            mFqn = fqn;
+        }
+
+        public void debugPrintf(String msg, Object... params) {
+            fail("Not supported in tests yet");
+        }
+
+        public void displayAlert(String message) {
+            fail("Not supported in tests yet");
+        }
+
+        public String displayInput(String message, String value, IValidator filter) {
+            fail("Not supported in tests yet");
+            return null;
+        }
+
+        public String getFqcn() {
+            return mFqn;
+        }
+
+        public IViewMetadata getMetadata(String fqcn) {
+            fail("Not supported in tests yet");
+            return null;
+        }
+
+        public int getMinApiLevel() {
+            return 8;
+        }
+
+        public IViewRule loadRule(String fqcn) {
+            fail("Not supported in tests yet");
+            return null;
+        }
+
     }
 }
