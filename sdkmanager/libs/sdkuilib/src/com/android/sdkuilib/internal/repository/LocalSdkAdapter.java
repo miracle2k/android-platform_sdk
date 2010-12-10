@@ -84,7 +84,6 @@ class LocalSdkAdapter  {
 
         // Called when the input is set or changed on the provider
         public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-            assert newInput == LocalSdkAdapter.this;
         }
 
         /**
