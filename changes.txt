@@ -1,5 +1,9 @@
 Change log for Android SDK Tools.
 
+Revision 9:
+- fix packaging issue that broke draw9patch
+- Ant build rules will now check the Ant version
+
 Revision 8:
 - New SDK component: platform-tools. This makes all platforms use the same
   latest version of aapt/aidl/dx.
