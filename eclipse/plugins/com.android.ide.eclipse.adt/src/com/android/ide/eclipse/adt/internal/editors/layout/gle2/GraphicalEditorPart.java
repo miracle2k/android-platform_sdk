@@ -1307,6 +1307,8 @@ public class GraphicalEditorPart extends EditorPart
             return null;
         }
 
+        assert mConfigComposite.getDisplay().getThread() == Thread.currentThread();
+
         // attempt to get a target from the configuration selector.
         IAndroidTarget renderingTarget = mConfigComposite.getRenderingTarget();
         if (renderingTarget != null) {
@@ -1578,16 +1580,28 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     private class ReloadListener implements ILayoutReloadListener {
-        /*
+        /**
          * Called when the file changes triggered a redraw of the layout
          */
-        public void reloadLayout(ChangeFlags flags, boolean libraryChanged) {
-            boolean recompute = false;
+        public void reloadLayout(final ChangeFlags flags, final boolean libraryChanged) {
+            Display display = mConfigComposite.getDisplay();
+            display.asyncExec(new Runnable() {
+                public void run() {
+                    reloadLayoutSwt(flags, libraryChanged);
+                }
+            });
+        }
 
+        /** Reload layout. <b>Must be called on the SWT thread</b> */
+        private void reloadLayoutSwt(ChangeFlags flags, boolean libraryChanged) {
+            assert mConfigComposite.getDisplay().getThread() == Thread.currentThread();
+
+            boolean recompute = false;
             if (flags.rClass) {
                 recompute = true;
                 if (mEditedFile != null) {
-                    ProjectResources projectRes = ResourceManager.getInstance().getProjectResources(
+                    ResourceManager manager = ResourceManager.getInstance();
+                    ProjectResources projectRes = manager.getProjectResources(
                             mEditedFile.getProject());
 
                     if (projectRes != null) {
@@ -1602,11 +1616,7 @@ public class GraphicalEditorPart extends EditorPart
                 // However there's no recompute, as it could not be needed
                 // (for instance a new layout)
                 // If a resource that's not a layout changed this will trigger a recompute anyway.
-                mCanvasViewer.getControl().getDisplay().asyncExec(new Runnable() {
-                    public void run() {
-                        mConfigComposite.updateLocales();
-                    }
-                });
+                mConfigComposite.updateLocales();
             }
 
             // if a resources was modified.
@@ -1614,7 +1624,8 @@ public class GraphicalEditorPart extends EditorPart
             if (flags.resources || (libraryChanged && flags.layout)) {
                 recompute = true;
 
-                // TODO: differentiate between single and multi resource file changed, and whether the resource change affects the cache.
+                // TODO: differentiate between single and multi resource file changed, and whether
+                // the resource change affects the cache.
 
                 // force a reparse in case a value XML file changed.
                 mConfiguredProjectRes = null;
@@ -1637,15 +1648,11 @@ public class GraphicalEditorPart extends EditorPart
             }
 
             if (recompute) {
-                mCanvasViewer.getControl().getDisplay().asyncExec(new Runnable() {
-                    public void run() {
-                        if (mLayoutEditor.isGraphicalEditorActive()) {
-                            recomputeLayout();
-                        } else {
-                            mNeedsRecompute = true;
-                        }
-                    }
-                });
+                if (mLayoutEditor.isGraphicalEditorActive()) {
+                    recomputeLayout();
+                } else {
+                    mNeedsRecompute = true;
+                }
             }
         }
     }
