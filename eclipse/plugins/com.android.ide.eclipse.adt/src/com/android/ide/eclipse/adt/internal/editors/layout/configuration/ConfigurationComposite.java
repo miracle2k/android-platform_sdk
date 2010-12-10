@@ -39,8 +39,8 @@ import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
-import com.android.layoutlib.api.IResourceValue;
-import com.android.layoutlib.api.IStyleResourceValue;
+import com.android.layoutlib.api.ResourceValue;
+import com.android.layoutlib.api.StyleResourceValue;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.Density;
 import com.android.sdklib.resources.DockMode;
@@ -183,8 +183,8 @@ public class ConfigurationComposite extends Composite {
         ProjectResources getProjectResources();
         ProjectResources getFrameworkResources();
         ProjectResources getFrameworkResources(IAndroidTarget target);
-        Map<String, Map<String, IResourceValue>> getConfiguredProjectResources();
-        Map<String, Map<String, IResourceValue>> getConfiguredFrameworkResources();
+        Map<String, Map<String, ResourceValue>> getConfiguredProjectResources();
+        Map<String, Map<String, ResourceValue>> getConfiguredFrameworkResources();
     }
 
     /**
@@ -1221,17 +1221,17 @@ public class ConfigurationComposite extends Composite {
             // get the themes, and languages from the Framework.
             if (frameworkProject != null) {
                 // get the configured resources for the framework
-                Map<String, Map<String, IResourceValue>> frameworResources =
+                Map<String, Map<String, ResourceValue>> frameworResources =
                     frameworkProject.getConfiguredResources(getCurrentConfig());
 
                 if (frameworResources != null) {
                     // get the styles.
-                    Map<String, IResourceValue> styles = frameworResources.get(
+                    Map<String, ResourceValue> styles = frameworResources.get(
                             ResourceType.STYLE.getName());
 
 
                     // collect the themes out of all the styles.
-                    for (IResourceValue value : styles.values()) {
+                    for (ResourceValue value : styles.values()) {
                         String name = value.getName();
                         if (name.startsWith("Theme.") || name.equals("Theme")) {
                             themes.add(value.getName());
@@ -1256,18 +1256,18 @@ public class ConfigurationComposite extends Composite {
             // in cases where the opened file is not linked to a project, this could be null.
             if (project != null) {
                 // get the configured resources for the project
-                Map<String, Map<String, IResourceValue>> configuredProjectRes =
+                Map<String, Map<String, ResourceValue>> configuredProjectRes =
                     mListener.getConfiguredProjectResources();
 
                 if (configuredProjectRes != null) {
                     // get the styles.
-                    Map<String, IResourceValue> styleMap = configuredProjectRes.get(
+                    Map<String, ResourceValue> styleMap = configuredProjectRes.get(
                             ResourceType.STYLE.getName());
 
                     if (styleMap != null) {
                         // collect the themes out of all the styles, ie styles that extend,
                         // directly or indirectly a platform theme.
-                        for (IResourceValue value : styleMap.values()) {
+                        for (ResourceValue value : styleMap.values()) {
                             if (isTheme(value, styleMap)) {
                                 themes.add(value.getName());
                             }
@@ -1901,9 +1901,9 @@ public class ConfigurationComposite extends Composite {
      * @param styleMap the map of styles for the current project. Key is the style name.
      * @return True if the given <var>style</var> is a theme.
      */
-    private boolean isTheme(IResourceValue value, Map<String, IResourceValue> styleMap) {
-        if (value instanceof IStyleResourceValue) {
-            IStyleResourceValue style = (IStyleResourceValue)value;
+    private boolean isTheme(ResourceValue value, Map<String, ResourceValue> styleMap) {
+        if (value instanceof StyleResourceValue) {
+            StyleResourceValue style = (StyleResourceValue)value;
 
             boolean frameworkStyle = false;
             String parentStyle = style.getParentStyle();

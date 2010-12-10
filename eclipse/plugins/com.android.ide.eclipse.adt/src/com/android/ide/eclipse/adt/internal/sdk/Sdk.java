@@ -767,7 +767,7 @@ public final class Sdk  {
                         if (data != null) {
                             LayoutLibrary layoutLib = data.getLayoutLibrary();
                             if (layoutLib != null && layoutLib.getStatus() == LoadStatus.LOADED) {
-                                layoutLib.getBridge().clearCaches(project);
+                                layoutLib.clearCaches(project);
                             }
                         }
                     }

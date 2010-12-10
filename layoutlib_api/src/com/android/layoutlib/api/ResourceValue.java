@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.ide.common.layoutlib;
+package com.android.layoutlib.api;
 
-import com.android.layoutlib.api.IResourceValue;
-
+/**
+ * Represents an android resource with a name and a string value.
+ */
+@SuppressWarnings("deprecation")
 public class ResourceValue implements IResourceValue {
     private final String mType;
     private final String mName;
     private String mValue = null;
     private final boolean mIsFramwork;
-    
+
     public ResourceValue(String type, String name, boolean isFramwork) {
         mType = type;
         mName = name;
@@ -37,27 +39,49 @@ public class ResourceValue implements IResourceValue {
         mIsFramwork = isFramework;
     }
 
+    /**
+     * Returns the type of the resource. For instance "drawable", "color", etc...
+     */
     public String getType() {
         return mType;
     }
 
+    /**
+     * Returns the name of the resource, as defined in the XML.
+     */
     public final String getName() {
         return mName;
     }
-    
+
+    /**
+     * Returns the value of the resource, as defined in the XML. This can be <code>null</code>
+     */
     public final String getValue() {
         return mValue;
     }
-    
-    public final void setValue(String value) {
-        mValue = value;
-    }
-    
-    public void replaceWith(ResourceValue value) {
-        mValue = value.mValue;
+
+    /**
+     * Returns whether the resource is a framework resource (<code>true</code>) or a project
+     * resource (<code>false</false>).
+     */
+    public final boolean isFramework() {
+        return mIsFramwork;
     }
 
-    public boolean isFramework() {
-        return mIsFramwork;
+
+    /**
+     * Sets the value of the resource.
+     * @param value the new value
+     */
+    public void setValue(String value) {
+        mValue = value;
+    }
+
+    /**
+     * Sets the value from another resource.
+     * @param value the resource value
+     */
+    public void replaceWith(ResourceValue value) {
+        mValue = value.mValue;
     }
 }

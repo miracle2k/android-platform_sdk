@@ -16,12 +16,13 @@
 
 package com.android.layoutlib.api;
 
-
 /**
  * Represents an android style resources with a name and a list of children {@link IResourceValue}.
+ * @deprecated Use {@link StyleResourceValue}.
  */
+@Deprecated
 public interface IStyleResourceValue extends IResourceValue {
-    
+
     /**
      * Returns the parent style name or <code>null</code> if unknown.
      */
@@ -29,7 +30,9 @@ public interface IStyleResourceValue extends IResourceValue {
 
     /**
      * Find an item in the list by name
-     * @param name
+     * @param name the name of the resource
+     *
+     * @deprecated use {@link StyleResourceValue#findValue(String)}
      */
     IResourceValue findItem(String name);
 }

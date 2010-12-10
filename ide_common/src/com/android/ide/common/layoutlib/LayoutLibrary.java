@@ -18,17 +18,39 @@ package com.android.ide.common.layoutlib;
 
 import com.android.ide.common.log.ILogger;
 import com.android.ide.common.sdk.LoadStatus;
+import com.android.layoutlib.api.Capability;
 import com.android.layoutlib.api.ILayoutBridge;
+import com.android.layoutlib.api.ILayoutLog;
+import com.android.layoutlib.api.ILayoutResult;
+import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.LayoutBridge;
+import com.android.layoutlib.api.LayoutLog;
+import com.android.layoutlib.api.LayoutScene;
+import com.android.layoutlib.api.SceneParams;
+import com.android.layoutlib.api.SceneResult;
+import com.android.layoutlib.api.ViewInfo;
+import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
+import com.android.layoutlib.api.SceneParams.RenderingMode;
+import com.android.layoutlib.api.SceneResult.SceneStatus;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Map;
 
 /**
- * Class representing and allowing to load the layoutlib jar file.
+ * Class to use the Layout library.
+ * <p/>
+ * Use {@link #load(String, ILogger)} to load the jar file.
+ * <p/>
+ * Use the layout library with:
+ * {@link #init(String, Map)}, {@link #supports(Capability)}, {@link #createScene(SceneParams)},
+ * {@link #dispose()}, {@link #clearCaches(Object)}.
+ *
  */
 @SuppressWarnings("deprecation")
 public class LayoutLibrary {
@@ -37,23 +59,29 @@ public class LayoutLibrary {
 
     /** Link to the layout bridge */
     private final LayoutBridge mBridge;
+    /** Link to a ILayoutBridge in case loaded an older library */
+    private final ILayoutBridge mLegacyBridge;
     /** Status of the layoutlib.jar loading */
     private final LoadStatus mStatus;
+    /** Message associated with the {@link LoadStatus}. This is mostly used when
+     * {@link #getStatus()} returns {@link LoadStatus#FAILED}.
+     */
+    private final String mLoadMessage;
     /** classloader used to load the jar file */
     private final ClassLoader mClassLoader;
-
-    /**
-     * Returns the loaded {@link LayoutBridge} object or null if the loading failed.
-     */
-    public LayoutBridge getBridge() {
-        return mBridge;
-    }
 
     /**
      * Returns the {@link LoadStatus} of the loading of the layoutlib jar file.
      */
     public LoadStatus getStatus() {
         return mStatus;
+    }
+
+    /** Returns the message associated with the {@link LoadStatus}. This is mostly used when
+     * {@link #getStatus()} returns {@link LoadStatus#FAILED}.
+     */
+    public String getLoadMessage() {
+        return mLoadMessage;
     }
 
     /**
@@ -77,7 +105,9 @@ public class LayoutLibrary {
     public static LayoutLibrary load(String layoutLibJarOsPath, ILogger log) {
 
         LoadStatus status = LoadStatus.LOADING;
+        String message = null;
         LayoutBridge bridge = null;
+        ILayoutBridge legacyBridge = null;
         ClassLoader classLoader = null;
 
         try {
@@ -108,36 +138,327 @@ public class LayoutLibrary {
                         if (bridgeObject instanceof LayoutBridge) {
                             bridge = (LayoutBridge)bridgeObject;
                         } else if (bridgeObject instanceof ILayoutBridge) {
-                            bridge = new LayoutBridgeWrapper((ILayoutBridge) bridgeObject,
-                                    classLoader);
+                            legacyBridge = (ILayoutBridge) bridgeObject;
                         }
                     }
                 }
 
-                if (bridge == null) {
+                if (bridge == null && legacyBridge == null) {
                     status = LoadStatus.FAILED;
+                    message = "Failed to load " + CLASS_BRIDGE; //$NON-NLS-1$
                     if (log != null) {
-                        log.error(null, "Failed to load " + CLASS_BRIDGE); //$NON-NLS-1$
+                        log.error(null,
+                                "Failed to load " + //$NON-NLS-1$
+                                CLASS_BRIDGE +
+                                " from " +          //$NON-NLS-1$
+                                layoutLibJarOsPath);
                     }
                 } else {
-                    // mark the lib as loaded.
+                    // mark the lib as loaded, unless it's overridden below.
                     status = LoadStatus.LOADED;
+
+                    // check the API, only if it's not a legacy bridge
+                    if (bridge != null) {
+                        int api = bridge.getApiLevel();
+                        if (api > LayoutBridge.API_CURRENT) {
+                            status = LoadStatus.FAILED;
+                            message = "LayoutLib is too recent. Update your tool!";
+                        }
+                    }
                 }
             }
         } catch (Throwable t) {
             status = LoadStatus.FAILED;
+            Throwable cause = t;
+            while (cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            message = "Failed to load the LayoutLib: " + cause.getMessage();
             // log the error.
             if (log != null) {
-                log.error(t, "Failed to load the LayoutLib");
+                log.error(t, message);
             }
         }
 
-        return new LayoutLibrary(bridge, classLoader, status);
+        return new LayoutLibrary(bridge, legacyBridge, classLoader, status, message);
     }
 
-    private LayoutLibrary(LayoutBridge bridge, ClassLoader classLoader, LoadStatus status) {
+    // ------ Layout Lib API proxy
+
+    /**
+     * Returns whether the LayoutLibrary supports a given {@link Capability}.
+     * @return true if it supports it.
+     *
+     * @see LayoutBridge#getCapabilities()
+     *
+     */
+    public boolean supports(Capability capability) {
+        if (mBridge != null) {
+            return mBridge.getCapabilities().contains(capability);
+        }
+
+        if (mLegacyBridge != null) {
+            switch (capability) {
+                case UNBOUND_RENDERING:
+                    // legacy stops at 4. 5 is new API.
+                    return getLegacyApiLevel() == 4;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Initializes the Layout Library object. This must be called before any other action is taken
+     * on the instance.
+     *
+     * @param fontOsLocation the location of the fonts in the SDK target.
+     * @param enumValueMap map attrName => { map enumFlagName => Integer value }. This is typically
+     *          read from attrs.xml in the SDK target.
+     * @return true if success.
+     *
+     * @see LayoutBridge#init(String, Map)
+     */
+    public boolean init(String fontOsLocation, Map<String, Map<String, Integer>> enumValueMap) {
+        if (mBridge != null) {
+            return mBridge.init(fontOsLocation, enumValueMap);
+        } else if (mLegacyBridge != null) {
+            return mLegacyBridge.init(fontOsLocation, enumValueMap);
+        }
+
+        return false;
+    }
+
+    /**
+     * Prepares the layoutlib to unloaded.
+     *
+     * @see LayoutBridge#dispose()
+     */
+    public boolean dispose() {
+        if (mBridge != null) {
+            return mBridge.dispose();
+        }
+
+        return true;
+    }
+
+    /**
+     * Starts a layout session by inflating and rendering it. The method returns a
+     * {@link LayoutScene} on which further actions can be taken.
+     * <p/>
+     * Before taking further actions on the scene, it is recommended to use
+     * {@link #supports(Capability)} to check what the scene can do.
+     *
+     * @return a new {@link ILayoutScene} object that contains the result of the scene creation and
+     * first rendering or null if {@link #getStatus()} doesn't return {@link LoadStatus#LOADED}.
+     *
+     * @see LayoutBridge#createScene(SceneParams)
+     */
+    public LayoutScene createScene(SceneParams params) {
+        if (mBridge != null) {
+            return mBridge.createScene(params);
+        } else if (mLegacyBridge != null) {
+            return createLegacyScene(params);
+        }
+
+        return null;
+    }
+
+    /**
+     * Clears the resource cache for a specific project.
+     * <p/>This cache contains bitmaps and nine patches that are loaded from the disk and reused
+     * until this method is called.
+     * <p/>The cache is not configuration dependent and should only be cleared when a
+     * resource changes (at this time only bitmaps and 9 patches go into the cache).
+     *
+     * @param projectKey the key for the project.
+     *
+     * @see LayoutBridge#clearCaches(Object)
+     */
+    public void clearCaches(Object projectKey) {
+        if (mBridge != null) {
+            mBridge.clearCaches(projectKey);
+        } else if (mLegacyBridge != null) {
+            mLegacyBridge.clearCaches(projectKey);
+        }
+    }
+
+    // ------ Implementation
+
+    private LayoutLibrary(LayoutBridge bridge, ILayoutBridge legacyBridge, ClassLoader classLoader,
+            LoadStatus status, String message) {
         mBridge = bridge;
+        mLegacyBridge = legacyBridge;
         mClassLoader = classLoader;
         mStatus = status;
+        mLoadMessage = message;
+    }
+
+    /**
+     * Returns the API level of the legacy bridge.
+     * <p/>
+     * This handles the case where ILayoutBridge does not have a {@link ILayoutBridge#getApiLevel()}
+     * (at API level 1).
+     * <p/>
+     * {@link ILayoutBridge#getApiLevel()} should never called directly.
+     *
+     * @return the api level of {@link #mLegacyBridge}.
+     */
+    private int getLegacyApiLevel() {
+        int apiLevel = 1;
+        try {
+            apiLevel = mLegacyBridge.getApiLevel();
+        } catch (AbstractMethodError e) {
+            // the first version of the api did not have this method
+            // so this is 1
+        }
+
+        return apiLevel;
+    }
+
+    private LayoutScene createLegacyScene(SceneParams params) {
+        int apiLevel = mLegacyBridge.getApiLevel();
+
+        // create a log wrapper since the older api requires a ILayoutLog
+        final LayoutLog log = params.getLog();
+        ILayoutLog logWrapper = new ILayoutLog() {
+
+            public void warning(String message) {
+                log.warning(null, message);
+            }
+
+            public void error(Throwable t) {
+                log.error(null, t);
+            }
+
+            public void error(String message) {
+                log.error(null, message);
+            }
+        };
+
+        // convert the map of ResourceValue into IResourceValue. Super ugly but works.
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, IResourceValue>> projectMap =
+            (Map<String, Map<String, IResourceValue>>)(Map) params.getProjectResources();
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, IResourceValue>> frameworkMap =
+            (Map<String, Map<String, IResourceValue>>)(Map) params.getFrameworkResources();
+
+        ILayoutResult result = null;
+
+        if (apiLevel == 4) {
+            // Final ILayoutBridge API added support for "render full height"
+            result = mLegacyBridge.computeLayout(
+                    params.getLayoutDescription(), params.getProjectKey(),
+                    params.getScreenWidth(), params.getScreenHeight(),
+                    params.getRenderingMode() == RenderingMode.FULL_EXPAND ? true : false,
+                    params.getDensity(), params.getXdpi(), params.getYdpi(),
+                    params.getThemeName(), params.getIsProjectTheme(),
+                    projectMap, frameworkMap,
+                    params.getProjectCallback(), logWrapper);
+        } else if (apiLevel == 3) {
+            // api 3 add density support.
+            result = mLegacyBridge.computeLayout(
+                    params.getLayoutDescription(), params.getProjectKey(),
+                    params.getScreenWidth(), params.getScreenHeight(),
+                    params.getDensity(), params.getXdpi(), params.getYdpi(),
+                    params.getThemeName(), params.getIsProjectTheme(),
+                    projectMap, frameworkMap,
+                    params.getProjectCallback(), logWrapper);
+        } else if (apiLevel == 2) {
+            // api 2 added boolean for separation of project/framework theme
+            result = mLegacyBridge.computeLayout(
+                    params.getLayoutDescription(), params.getProjectKey(),
+                    params.getScreenWidth(), params.getScreenHeight(),
+                    params.getThemeName(), params.getIsProjectTheme(),
+                    projectMap, frameworkMap,
+                    params.getProjectCallback(), logWrapper);
+        } else {
+            // First api with no density/dpi, and project theme boolean mixed
+            // into the theme name.
+
+            // change the string if it's a custom theme to make sure we can
+            // differentiate them
+            String themeName = params.getThemeName();
+            if (params.getIsProjectTheme()) {
+                themeName = "*" + themeName; //$NON-NLS-1$
+            }
+
+            result = mLegacyBridge.computeLayout(
+                    params.getLayoutDescription(), params.getProjectKey(),
+                    params.getScreenWidth(), params.getScreenHeight(),
+                    themeName,
+                    projectMap, frameworkMap,
+                    params.getProjectCallback(), logWrapper);
+        }
+
+        // clean up that is not done by the ILayoutBridge itself
+        legacyCleanUp();
+
+        return convertToScene(result);
+    }
+
+    /**
+     * Converts a {@link ILayoutResult} to a {@link LayoutScene}.
+     */
+    private LayoutScene convertToScene(ILayoutResult result) {
+
+        SceneResult sceneResult;
+        ViewInfo rootViewInfo;
+
+        if (result.getSuccess() == ILayoutResult.SUCCESS) {
+            sceneResult = SceneStatus.SUCCESS.createResult();
+            rootViewInfo = convertToViewInfo(result.getRootView());
+        } else {
+            sceneResult = SceneStatus.ERROR_UNKNOWN.createResult(result.getErrorMessage());
+            rootViewInfo = null;
+        }
+
+        // create a BasicLayoutScene. This will return the given values but return the default
+        // implementation for all method.
+        // ADT should gracefully handle the default implementations of LayoutScene
+        return new BasicLayoutScene(sceneResult, rootViewInfo, result.getImage());
+    }
+
+    /**
+     * Converts a {@link ILayoutViewInfo} (and its children) to a {@link ViewInfo}.
+     */
+    private ViewInfo convertToViewInfo(ILayoutViewInfo view) {
+        // create the view info.
+        ViewInfo viewInfo = new ViewInfo(view.getName(), view.getViewKey(),
+                view.getLeft(), view.getTop(), view.getRight(), view.getBottom());
+
+        // then convert the children
+        ILayoutViewInfo[] children = view.getChildren();
+        if (children != null) {
+            ArrayList<ViewInfo> convertedChildren = new ArrayList<ViewInfo>(children.length);
+            for (ILayoutViewInfo child : children) {
+                convertedChildren.add(convertToViewInfo(child));
+            }
+            viewInfo.setChildren(convertedChildren);
+        }
+
+        return viewInfo;
+    }
+
+    /**
+     * Post rendering clean-up that must be done here because it's not done in any layoutlib using
+     * {@link ILayoutBridge}.
+     */
+    private void legacyCleanUp() {
+        try {
+            Class<?> looperClass = mClassLoader.loadClass("android.os.Looper"); //$NON-NLS-1$
+            Field threadLocalField = looperClass.getField("sThreadLocal"); //$NON-NLS-1$
+            if (threadLocalField != null) {
+                threadLocalField.setAccessible(true);
+                // get object. Field is static so no need to pass an object
+                ThreadLocal<?> threadLocal = (ThreadLocal<?>) threadLocalField.get(null);
+                if (threadLocal != null) {
+                    threadLocal.remove();
+                }
+            }
+        } catch (Exception e) {
+            // do nothing.
+        }
     }
 }

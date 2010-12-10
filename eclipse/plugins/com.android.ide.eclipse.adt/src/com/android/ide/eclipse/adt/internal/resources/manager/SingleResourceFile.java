@@ -16,12 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
-import com.android.ide.common.layoutlib.DensityBasedResourceValue;
-import com.android.ide.common.layoutlib.ResourceValue;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.PixelDensityQualifier;
-import com.android.layoutlib.api.IResourceValue;
-import com.android.layoutlib.api.IDensityBasedResourceValue.Density;
+import com.android.layoutlib.api.DensityBasedResourceValue;
+import com.android.layoutlib.api.ResourceDensity;
+import com.android.layoutlib.api.ResourceValue;
 import com.android.sdklib.io.IAbstractFile;
 
 import java.util.ArrayList;
@@ -56,7 +55,7 @@ public class SingleResourceFile extends ResourceFile {
 
     private String mResourceName;
     private ResourceType mType;
-    private IResourceValue mValue;
+    private ResourceValue mValue;
 
     public SingleResourceFile(IAbstractFile file, ResourceFolder folder) {
         super(file, folder);
@@ -80,7 +79,7 @@ public class SingleResourceFile extends ResourceFile {
                     mType.getName(),
                     getResourceName(mType),
                     file.getOsLocation(),
-                    Density.getEnum(qualifier.getValue().getDpiValue()),
+                    ResourceDensity.getEnum(qualifier.getValue().getDpiValue()),
                     isFramework());
         }
     }
@@ -124,7 +123,7 @@ public class SingleResourceFile extends ResourceFile {
      * The value returned is the full absolute path of the file in OS form.
      */
     @Override
-    public IResourceValue getValue(ResourceType type, String name) {
+    public ResourceValue getValue(ResourceType type, String name) {
         return mValue;
     }
 

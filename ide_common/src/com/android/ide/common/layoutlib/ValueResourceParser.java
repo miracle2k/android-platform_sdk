@@ -16,6 +16,9 @@
 
 package com.android.ide.common.layoutlib;
 
+import com.android.layoutlib.api.ResourceValue;
+import com.android.layoutlib.api.StyleResourceValue;
+
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -31,25 +34,25 @@ public final class ValueResourceParser extends DefaultHandler {
     private final static String ATTR_NAME = "name";
     private final static String ATTR_TYPE = "type";
     private final static String ATTR_PARENT = "parent";
-    
+
     // Resource type definition
     private final static String RES_STYLE = "style";
     private final static String RES_ATTR = "attr";
-    
+
     private final static String DEFAULT_NS_PREFIX = "android:";
     private final static int DEFAULT_NS_PREFIX_LEN = DEFAULT_NS_PREFIX.length();
-    
+
     public interface IValueResourceRepository {
         void addResourceValue(String resType, ResourceValue value);
     }
-    
+
     private boolean inResources = false;
     private int mDepth = 0;
     private StyleResourceValue mCurrentStyle = null;
     private ResourceValue mCurrentValue = null;
     private IValueResourceRepository mRepository;
     private final boolean mIsFramework;
-    
+
     public ValueResourceParser(IValueResourceRepository repository, boolean isFramework) {
         mRepository = repository;
         mIsFramework = isFramework;
@@ -60,7 +63,7 @@ public final class ValueResourceParser extends DefaultHandler {
         if (mCurrentValue != null) {
             mCurrentValue.setValue(trimXmlWhitespaces(mCurrentValue.getValue()));
         }
-        
+
         if (inResources && qName.equals(NODE_RESOURCES)) {
             inResources = false;
         } else if (mDepth == 2) {
@@ -69,7 +72,7 @@ public final class ValueResourceParser extends DefaultHandler {
         } else if (mDepth == 3) {
             mCurrentValue = null;
         }
-        
+
         mDepth--;
         super.endElement(uri, localName, qName);
     }
@@ -85,7 +88,7 @@ public final class ValueResourceParser extends DefaultHandler {
                 }
             } else if (mDepth == 2 && inResources == true) {
                 String type;
-                
+
                 // if the node is <item>, we get the type from the attribute "type"
                 if (NODE_ITEM.equals(qName)) {
                     type = attributes.getValue(ATTR_TYPE);
@@ -118,16 +121,16 @@ public final class ValueResourceParser extends DefaultHandler {
                     if (name.startsWith(DEFAULT_NS_PREFIX)) {
                         name = name.substring(DEFAULT_NS_PREFIX_LEN);
                     }
-    
+
                     mCurrentValue = new ResourceValue(null, name, mIsFramework);
-                    mCurrentStyle.addItem(mCurrentValue);
+                    mCurrentStyle.addValue(mCurrentValue);
                 }
             }
         } finally {
             super.startElement(uri, localName, qName, attributes);
         }
     }
-    
+
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
         if (mCurrentValue != null) {
@@ -139,7 +142,7 @@ public final class ValueResourceParser extends DefaultHandler {
             }
         }
     }
-    
+
     public static String trimXmlWhitespaces(String value) {
         if (value == null) {
             return null;
@@ -147,7 +150,7 @@ public final class ValueResourceParser extends DefaultHandler {
 
         // look for carriage return and replace all whitespace around it by just 1 space.
         int index;
-        
+
         while ((index = value.indexOf('\n')) != -1) {
             // look for whitespace on each side
             int left = index - 1;
@@ -158,7 +161,7 @@ public final class ValueResourceParser extends DefaultHandler {
                     break;
                 }
             }
-            
+
             int right = index + 1;
             int count = value.length();
             while (right < count) {
@@ -168,7 +171,7 @@ public final class ValueResourceParser extends DefaultHandler {
                     break;
                 }
             }
-            
+
             // remove all between left and right (non inclusive) and replace by a single space.
             String leftString = null;
             if (left >= 0) {
@@ -178,7 +181,7 @@ public final class ValueResourceParser extends DefaultHandler {
             if (right < count) {
                 rightString = value.substring(right);
             }
-            
+
             if (leftString != null) {
                 value = leftString;
                 if (rightString != null) {
@@ -188,21 +191,21 @@ public final class ValueResourceParser extends DefaultHandler {
                 value = rightString != null ? rightString : "";
             }
         }
-        
+
         // now we un-escape the string
         int length = value.length();
         char[] buffer = value.toCharArray();
-        
+
         for (int i = 0 ; i < length ; i++) {
             if (buffer[i] == '\\' && i + 1 < length) {
                 if (buffer[i+1] == 'u') {
                     if (i + 5 < length) {
                         // this is unicode char \u1234
                         int unicodeChar = Integer.parseInt(new String(buffer, i+2, 4), 16);
-                        
+
                         // put the unicode char at the location of the \
                         buffer[i] = (char)unicodeChar;
-    
+
                         // offset the rest of the buffer since we go from 6 to 1 char
                         if (i + 6 < buffer.length) {
                             System.arraycopy(buffer, i+6, buffer, i+1, length - i - 6);
@@ -214,14 +217,14 @@ public final class ValueResourceParser extends DefaultHandler {
                         // replace the 'n' char with \n
                         buffer[i+1] = '\n';
                     }
-                    
+
                     // offset the buffer to erase the \
                     System.arraycopy(buffer, i+1, buffer, i, length - i - 1);
                     length--;
                 }
             }
         }
-        
+
         return new String(buffer, 0, length);
     }
 }
