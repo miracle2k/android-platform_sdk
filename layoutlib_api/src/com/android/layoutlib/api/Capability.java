@@ -22,9 +22,18 @@ import com.android.layoutlib.api.LayoutScene.IAnimationListener;
  * Enum describing the layout bridge capabilities.
  *
  */
-public enum Capabilities {
+public enum Capability {
+    /** Ability to render at full size, as required by the layout, and unbound by the screen */
+    UNBOUND_RENDERING,
+    /** Ability to override the background of the rendering with transparency using
+     * {@link SceneParams#setCustomBackgroundColor(int)} */
+    TRANSPARENCY,
     /** Ability to call {@link LayoutScene#render()} and {@link LayoutScene#render(long)}. */
     RENDER,
+    /**
+     * Ability to control embedded layout parsers through {@link IXmlPullParser#getParser(String)}
+     */
+    EMBEDDED_LAYOUT,
     /** Ability to call<br>
      * {@link LayoutScene#insertChild(Object, IXmlPullParser, int, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
      * {@link LayoutScene#moveChild(Object, Object, int, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>

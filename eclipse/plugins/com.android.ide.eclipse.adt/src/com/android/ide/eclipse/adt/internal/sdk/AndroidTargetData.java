@@ -247,11 +247,11 @@ public class AndroidTargetData {
      * <p/>Valid {@link LayoutBridge} objects are always initialized before being returned.
      */
     public synchronized LayoutLibrary getLayoutLibrary() {
-        if (mLayoutBridgeInit == false && mLayoutLibrary.getBridge() != null) {
-            mLayoutLibrary.getBridge().init(mTarget.getPath(IAndroidTarget.FONTS),
-                    getEnumValueMap());
+        if (mLayoutBridgeInit == false && mLayoutLibrary.getStatus() == LoadStatus.LOADED) {
+            mLayoutLibrary.init(mTarget.getPath(IAndroidTarget.FONTS), getEnumValueMap());
             mLayoutBridgeInit = true;
         }
+
         return mLayoutLibrary;
     }
 

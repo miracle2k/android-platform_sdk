@@ -33,9 +33,9 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.tests.SdkTestCase;
 import com.android.layoutlib.api.IProjectCallback;
-import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IXmlPullParser;
 import com.android.layoutlib.api.LayoutScene;
+import com.android.layoutlib.api.ResourceValue;
 import com.android.layoutlib.api.SceneParams;
 import com.android.layoutlib.api.SceneParams.RenderingMode;
 import com.android.sdklib.IAndroidTarget;
@@ -154,8 +154,8 @@ public class ApiDemosRenderingTest extends SdkTestCase {
         }
 
         LayoutLibrary layoutLib = data.getLayoutLibrary();
-        if (layoutLib.getStatus() != LoadStatus.LOADED || layoutLib.getBridge() == null) {
-            fail("Fail to load the bridge");
+        if (layoutLib.getStatus() != LoadStatus.LOADED) {
+            fail("Fail to load the bridge: " + layoutLib.getLoadMessage());
         }
 
         FolderWrapper resFolder = new FolderWrapper(sampleProject, SdkConstants.FD_RES);
@@ -180,9 +180,9 @@ public class ApiDemosRenderingTest extends SdkTestCase {
         FolderConfiguration config = getConfiguration();
 
         // get the configured resources
-        Map<String, Map<String, IResourceValue>> configuredFramework =
+        Map<String, Map<String, ResourceValue>> configuredFramework =
                 framework.getConfiguredResources(config);
-        Map<String, Map<String, IResourceValue>> configuredProject =
+        Map<String, Map<String, ResourceValue>> configuredProject =
                 project.getConfiguredResources(config);
 
         boolean saveFiles = System.getenv("save_file") != null;
@@ -199,7 +199,7 @@ public class ApiDemosRenderingTest extends SdkTestCase {
 
             ProjectCallBack projectCallBack = new ProjectCallBack();
 
-            LayoutScene scene = layoutLib.getBridge().createScene(new SceneParams(
+            LayoutScene scene = layoutLib.createScene(new SceneParams(
                     parser,
                     null /*projectKey*/,
                     320,

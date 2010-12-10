@@ -16,11 +16,10 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
-import com.android.ide.common.layoutlib.ResourceValue;
 import com.android.ide.common.layoutlib.ValueResourceParser;
 import com.android.ide.common.layoutlib.ValueResourceParser.IValueResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
-import com.android.layoutlib.api.IResourceValue;
+import com.android.layoutlib.api.ResourceValue;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.StreamException;
 
@@ -160,7 +159,7 @@ public final class MultiResourceFile extends ResourceFile implements IValueResou
     }
 
     @Override
-    public IResourceValue getValue(ResourceType type, String name) {
+    public ResourceValue getValue(ResourceType type, String name) {
         update();
 
         // get the list for the given type

@@ -16,7 +16,6 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
-import com.android.ide.common.layoutlib.ResourceValue;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -27,7 +26,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQua
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
-import com.android.layoutlib.api.IResourceValue;
+import com.android.layoutlib.api.ResourceValue;
 import com.android.sdklib.io.IAbstractFolder;
 
 import org.eclipse.core.resources.IFolder;
@@ -372,11 +371,11 @@ public class ProjectResources implements IResourceRepository {
      * Returns the resources values matching a given {@link FolderConfiguration}.
      * @param referenceConfig the configuration that each value must match.
      */
-    public Map<String, Map<String, IResourceValue>> getConfiguredResources(
+    public Map<String, Map<String, ResourceValue>> getConfiguredResources(
             FolderConfiguration referenceConfig) {
 
-        Map<String, Map<String, IResourceValue>> map =
-            new HashMap<String, Map<String, IResourceValue>>();
+        Map<String, Map<String, ResourceValue>> map =
+            new HashMap<String, Map<String, ResourceValue>>();
 
         // if the project contains libraries, we need to add the libraries resources here
         // so that they are accessible to the layout rendering.
@@ -401,12 +400,12 @@ public class ProjectResources implements IResourceRepository {
 
                         // we don't want to simply replace the whole map, but instead merge the
                         // content of any sub-map
-                        Map<String, Map<String, IResourceValue>> libMap =
+                        Map<String, Map<String, ResourceValue>> libMap =
                                 libRes.getConfiguredResources(referenceConfig);
 
-                        for (Entry<String, Map<String, IResourceValue>> entry : libMap.entrySet()) {
+                        for (Entry<String, Map<String, ResourceValue>> entry : libMap.entrySet()) {
                             // get the map currently in the result map for this resource type
-                            Map<String, IResourceValue> tempMap = map.get(entry.getKey());
+                            Map<String, ResourceValue> tempMap = map.get(entry.getKey());
                             if (tempMap == null) {
                                 // since there's no current map for this type, just add the map
                                 // directly coming from the library resources
@@ -430,10 +429,10 @@ public class ProjectResources implements IResourceRepository {
         // in the XML files.
         if (mIdResourceList.size() > 0) {
             String idType = ResourceType.ID.getName();
-            Map<String, IResourceValue> idMap = map.get(idType);
+            Map<String, ResourceValue> idMap = map.get(idType);
 
             if (idMap == null) {
-                idMap = new HashMap<String, IResourceValue>();
+                idMap = new HashMap<String, ResourceValue>();
                 map.put(idType, idMap);
             }
             for (IdResourceItem id : mIdResourceList) {
@@ -449,12 +448,12 @@ public class ProjectResources implements IResourceRepository {
             // we don't process ID resources since we already did it above.
             if (key != ResourceType.ID) {
                 // get the local results
-                Map<String, IResourceValue> localResMap = getConfiguredResource(key,
+                Map<String, ResourceValue> localResMap = getConfiguredResource(key,
                         referenceConfig);
 
                 // check if a map for this type already exists
                 String resName = key.getName();
-                Map<String, IResourceValue> resMap = map.get(resName);
+                Map<String, ResourceValue> resMap = map.get(resName);
                 if (resMap == null) {
                     // just use the local results.
                     map.put(resName, localResMap);
@@ -601,13 +600,13 @@ public class ProjectResources implements IResourceRepository {
      * @param type the type of the resources.
      * @param referenceConfig the configuration to best match.
      */
-    private Map<String, IResourceValue> getConfiguredResource(ResourceType type,
+    private Map<String, ResourceValue> getConfiguredResource(ResourceType type,
             FolderConfiguration referenceConfig) {
         // get the resource item for the given type
         List<ProjectResourceItem> items = mResourceMap.get(type);
 
         // create the map
-        HashMap<String, IResourceValue> map = new HashMap<String, IResourceValue>();
+        HashMap<String, ResourceValue> map = new HashMap<String, ResourceValue>();
 
         for (ProjectResourceItem item : items) {
             // get the source files generating this resource
@@ -620,7 +619,7 @@ public class ProjectResources implements IResourceRepository {
                 ResourceFile matchResFile = (ResourceFile)match;
 
                 // get the value of this configured resource.
-                IResourceValue value = matchResFile.getValue(type, item.getName());
+                ResourceValue value = matchResFile.getValue(type, item.getName());
 
                 if (value != null) {
                     map.put(item.getName(), value);

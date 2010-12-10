@@ -37,7 +37,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElement
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.layoutlib.api.LayoutBridge;
+import com.android.layoutlib.api.Capability;
 import com.android.layoutlib.api.LayoutScene;
 import com.android.layoutlib.api.ViewInfo;
 import com.android.sdklib.SdkConstants;
@@ -725,10 +725,7 @@ public class PaletteComposite extends Composite {
             boolean hasTransparency = false;
             LayoutLibrary layoutLibrary = editor.getLayoutLibrary();
             if (layoutLibrary != null) {
-                LayoutBridge bridge = layoutLibrary.getBridge();
-                if (bridge != null) {
-                    hasTransparency = bridge.getApiLevel() >= 5;
-                }
+                hasTransparency = layoutLibrary.supports(Capability.TRANSPARENCY);
             }
 
             LayoutScene scene = null;
