@@ -2,14 +2,14 @@
 
 # build script for eclipse adt build on linux platform
 #
-# Usage: sdk/eclipse/scripts/build_plugins <build_version> 
+# Usage: sdk/eclipse/scripts/build_plugins <build_version>
 #
 # It expects environment variable ECLIPSE_HOME to be defined to point to _your_
 # version of Eclipse RCP (must have the WTP & GEF plugins available too.)
 #
 # If ECLIPSE_HOME is not provided, this script will _download_ a reference version
 # of Eclipse RCP and install it in a specific location.
-# 
+#
 # Other properties, ant scripts that drive the build are defined in ./buildConfig
 # Currently, this script will create an update site at ${user.home}/www/no_crawl/android-build
 # or at the directory specified using "-d"
@@ -19,13 +19,15 @@
 #   a clean state.)
 # - Script will fail if current absolute path has spaces in it.
 # - Only linux is supported for now
+# - Do NOT manually invoke this script. Instead use the build_server.sh wrapper
+#   which does some extra preliminary steps (it builds a few libs needed here.)
 
 
 set -e # abort this script early if any command fails
 
 #
 # -- Utility methods --
-# 
+#
 
 function printUsage() {
   echo "Usage: $0 <build_qualifier> [-i] [-d <destination-directory>] [-a <archivePrefix>] "
@@ -79,7 +81,7 @@ if [ -z "$ECLIPSE_HOME" ]; then
   fi
 
   # download the version if not available
-  VERSION="3.4.0"
+  VERSION="3.5.2"
   BASE_DIR="$BASE_DIR/$VERSION"
   scripts/setup_eclipse.sh -p "$BASE_DIR"
 
