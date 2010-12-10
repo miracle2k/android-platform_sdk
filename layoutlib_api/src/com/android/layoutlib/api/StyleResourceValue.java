@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.ide.common.layoutlib;
-
-import com.android.layoutlib.api.IResourceValue;
-import com.android.layoutlib.api.IStyleResourceValue;
+package com.android.layoutlib.api;
 
 import java.util.HashMap;
 
+/**
+ * Represents an android style resources with a name and a list of children {@link ResourceValue}.
+ */
+@SuppressWarnings("deprecation")
 public final class StyleResourceValue extends ResourceValue implements IStyleResourceValue {
 
     private String mParentStyle = null;
-    private HashMap<String, IResourceValue> mItems = new HashMap<String, IResourceValue>();
+    private HashMap<String, ResourceValue> mItems = new HashMap<String, ResourceValue>();
 
     public StyleResourceValue(String type, String name, boolean isFramework) {
         super(type, name, isFramework);
@@ -35,26 +36,42 @@ public final class StyleResourceValue extends ResourceValue implements IStyleRes
         mParentStyle = parentStyle;
     }
 
+    /**
+     * Returns the parent style name or <code>null</code> if unknown.
+     */
     public String getParentStyle() {
         return mParentStyle;
     }
-    
-    public IResourceValue findItem(String name) {
+
+    /**
+     * Finds a value in the list by name
+     * @param name the name of the resource
+     */
+    public ResourceValue findValue(String name) {
         return mItems.get(name);
     }
-    
-    public void addItem(IResourceValue value) {
+
+    public void addValue(ResourceValue value) {
         mItems.put(value.getName(), value);
     }
-    
+
     @Override
     public void replaceWith(ResourceValue value) {
+        assert value instanceof StyleResourceValue;
         super.replaceWith(value);
-        
+
         if (value instanceof StyleResourceValue) {
             mItems.clear();
             mItems.putAll(((StyleResourceValue)value).mItems);
         }
+    }
+
+    /**
+     * Legacy method.
+     * @deprecated use {@link #getValue()}
+     */
+    public IResourceValue findItem(String name) {
+        return mItems.get(name);
     }
 
 }

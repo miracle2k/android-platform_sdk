@@ -14,21 +14,31 @@
  * limitations under the License.
  */
 
-package com.android.ide.common.layoutlib;
+package com.android.layoutlib.api;
 
-import com.android.layoutlib.api.IDensityBasedResourceValue;
-
+@SuppressWarnings("deprecation")
 public class DensityBasedResourceValue extends ResourceValue implements IDensityBasedResourceValue {
 
-    private Density mDensity;
+    private ResourceDensity mDensity;
 
-    public DensityBasedResourceValue(String type, String name, String value, Density density,
-            boolean isFramework) {
+    public DensityBasedResourceValue(String type, String name, String value,
+            ResourceDensity density, boolean isFramework) {
         super(type, name, value, isFramework);
         mDensity = density;
     }
 
-    public Density getDensity() {
+    /**
+     * Returns the density for which this resource is configured.
+     * @return the density.
+     */
+    public ResourceDensity getResourceDensity() {
         return mDensity;
+    }
+
+    /** Legacy method, do not call
+     * @deprecated use {@link #getResourceDensity()} instead.
+     */
+    public Density getDensity() {
+        return Density.getEnum(mDensity.getDpi());
     }
 }

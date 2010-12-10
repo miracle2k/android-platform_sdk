@@ -36,12 +36,12 @@ public abstract class LayoutBridge {
     public abstract int getApiLevel();
 
     /**
-     * Returns an {@link EnumSet} of the supported {@link Capabilities}.
+     * Returns an {@link EnumSet} of the supported {@link Capability}.
      * @return an {@link EnumSet} with the supported capabilities.
      *
      */
-    public EnumSet<Capabilities> getCapabilities() {
-        return EnumSet.noneOf(Capabilities.class);
+    public EnumSet<Capability> getCapabilities() {
+        return EnumSet.noneOf(Capability.class);
     }
 
     /**

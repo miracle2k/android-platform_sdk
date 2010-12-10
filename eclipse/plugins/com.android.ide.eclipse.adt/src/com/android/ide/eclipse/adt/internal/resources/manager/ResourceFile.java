@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.resources.manager;
 
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
-import com.android.layoutlib.api.IResourceValue;
+import com.android.layoutlib.api.ResourceValue;
 import com.android.sdklib.io.IAbstractFile;
 
 import java.util.Collection;
@@ -95,7 +95,7 @@ public abstract class ResourceFile extends Resource {
      * @param type the type of the resource.
      * @param name the name of the resource.
      */
-    public abstract IResourceValue getValue(ResourceType type, String name);
+    public abstract ResourceValue getValue(ResourceType type, String name);
 
     @Override
     public String toString() {

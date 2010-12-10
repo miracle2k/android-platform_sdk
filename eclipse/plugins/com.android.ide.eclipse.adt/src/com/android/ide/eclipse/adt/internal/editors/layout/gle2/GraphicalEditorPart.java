@@ -47,11 +47,11 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
-import com.android.layoutlib.api.IResourceValue;
+import com.android.layoutlib.api.Capability;
 import com.android.layoutlib.api.IXmlPullParser;
-import com.android.layoutlib.api.LayoutBridge;
 import com.android.layoutlib.api.LayoutLog;
 import com.android.layoutlib.api.LayoutScene;
+import com.android.layoutlib.api.ResourceValue;
 import com.android.layoutlib.api.SceneParams;
 import com.android.layoutlib.api.SceneParams.RenderingMode;
 import com.android.layoutlib.api.SceneResult.SceneStatus;
@@ -205,8 +205,8 @@ public class GraphicalEditorPart extends EditorPart
      */
     private String mIncludedWithinId;
 
-    private Map<String, Map<String, IResourceValue>> mConfiguredFrameworkRes;
-    private Map<String, Map<String, IResourceValue>> mConfiguredProjectRes;
+    private Map<String, Map<String, ResourceValue>> mConfiguredFrameworkRes;
+    private Map<String, Map<String, ResourceValue>> mConfiguredProjectRes;
     private ProjectCallback mProjectCallback;
     private LayoutLog mLog;
 
@@ -623,7 +623,7 @@ public class GraphicalEditorPart extends EditorPart
             preRenderingTargetChangeCleanUp(oldTarget);
         }
 
-        public Map<String, Map<String, IResourceValue>> getConfiguredFrameworkResources() {
+        public Map<String, Map<String, ResourceValue>> getConfiguredFrameworkResources() {
             if (mConfiguredFrameworkRes == null && mConfigComposite != null) {
                 ProjectResources frameworkRes = getFrameworkResources();
 
@@ -639,7 +639,7 @@ public class GraphicalEditorPart extends EditorPart
             return mConfiguredFrameworkRes;
         }
 
-        public Map<String, Map<String, IResourceValue>> getConfiguredProjectResources() {
+        public Map<String, Map<String, ResourceValue>> getConfiguredProjectResources() {
             if (mConfiguredProjectRes == null && mConfigComposite != null) {
                 ProjectResources project = getProjectResources();
 
@@ -1023,7 +1023,7 @@ public class GraphicalEditorPart extends EditorPart
         AndroidTargetData targetData = mConfigComposite.onXmlModelLoaded();
         if (targetData != null) {
             LayoutLibrary layoutLib = targetData.getLayoutLibrary();
-            setClippingSupport(layoutLib.getBridge().getApiLevel() >= 4);
+            setClippingSupport(layoutLib.supports(Capability.UNBOUND_RENDERING));
         }
 
         mConfigListener.onConfigurationChange();
@@ -1240,7 +1240,7 @@ public class GraphicalEditorPart extends EditorPart
                 if (data != null) {
                     LayoutLibrary layoutLib = data.getLayoutLibrary();
 
-                    if (layoutLib.getBridge() != null) { // layoutLib can never be null.
+                    if (layoutLib.getStatus() == LoadStatus.LOADED) {
                         return layoutLib;
                     } else if (displayError) { // getBridge() == null
                         // SDK is loaded but not the layout library!
@@ -1250,7 +1250,9 @@ public class GraphicalEditorPart extends EditorPart
                             displayError("Eclipse is loading framework information and the layout library from the SDK folder.\n%1$s will refresh automatically once the process is finished.",
                                          mEditedFile.getName());
                         } else {
-                            displayError("Eclipse failed to load the framework information and the layout library!");
+                            String message = layoutLib.getLoadMessage();
+                            displayError("Eclipse failed to load the framework information and the layout library!" +
+                                    message != null ? "\n" + message : "");
                         }
                     }
                 } else { // data == null
@@ -1382,11 +1384,11 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         // Get the resources of the file's project.
-        Map<String, Map<String, IResourceValue>> configuredProjectRes =
+        Map<String, Map<String, ResourceValue>> configuredProjectRes =
             mConfigListener.getConfiguredProjectResources();
 
         // Get the framework resources
-        Map<String, Map<String, IResourceValue>> frameworkResources =
+        Map<String, Map<String, ResourceValue>> frameworkResources =
             mConfigListener.getConfiguredFrameworkResources();
 
         // Abort the rendering if the resources are not found.
@@ -1481,9 +1483,9 @@ public class GraphicalEditorPart extends EditorPart
         String contextLayoutName = mIncludedWithinId;
         if (contextLayoutName != null) {
             // Find the layout file.
-            Map<String, IResourceValue> layouts = configuredProjectRes.get(
+            Map<String, ResourceValue> layouts = configuredProjectRes.get(
                     ResourceType.LAYOUT.getName());
-            IResourceValue contextLayout = layouts.get(contextLayoutName);
+            ResourceValue contextLayout = layouts.get(contextLayoutName);
             if (contextLayout != null) {
                 String path = contextLayout.getValue();
 
@@ -1537,7 +1539,7 @@ public class GraphicalEditorPart extends EditorPart
         // set the Image Overlay as the image factory.
         params.setImageFactory(getCanvasControl().getImageOverlay());
 
-        LayoutScene scene = layoutLib.getBridge().createScene(params);
+        LayoutScene scene = layoutLib.createScene(params);
 
         return scene;
     }
@@ -1569,10 +1571,7 @@ public class GraphicalEditorPart extends EditorPart
                 LayoutLibrary layoutLib = data.getLayoutLibrary();
 
                 // layoutLib can never be null.
-                LayoutBridge bridge = layoutLib.getBridge();
-                if (bridge != null) {
-                    bridge.clearCaches(mEditedFile.getProject());
-                }
+                layoutLib.clearCaches(mEditedFile.getProject());
             }
         }
 
@@ -1633,9 +1632,7 @@ public class GraphicalEditorPart extends EditorPart
                 // clear the cache in the bridge in case a bitmap/9-patch changed.
                 LayoutLibrary layoutLib = getReadyLayoutLib(true /*displayError*/);
                 if (layoutLib != null) {
-                    if (layoutLib.getBridge() != null) {
-                        layoutLib.getBridge().clearCaches(mEditedFile.getProject());
-                    }
+                    layoutLib.clearCaches(mEditedFile.getProject());
                 }
             }
 
@@ -1742,16 +1739,16 @@ public class GraphicalEditorPart extends EditorPart
         // There is code to handle this, but it's in layoutlib; we should
         // expose that and use it here.
 
-        Map<String, Map<String, IResourceValue>> map;
+        Map<String, Map<String, ResourceValue>> map;
         map = isFrameworkResource ? mConfiguredFrameworkRes : mConfiguredProjectRes;
         if (map == null) {
             // Not yet configured
             return null;
         }
 
-        Map<String, IResourceValue> layoutMap = map.get(type.getName());
+        Map<String, ResourceValue> layoutMap = map.get(type.getName());
         if (layoutMap != null) {
-            IResourceValue value = layoutMap.get(name);
+            ResourceValue value = layoutMap.get(name);
             if (value != null) {
                 String valueStr = value.getValue();
                 if (valueStr.startsWith("?")) { //$NON-NLS-1$

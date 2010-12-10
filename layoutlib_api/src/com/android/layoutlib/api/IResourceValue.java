@@ -18,9 +18,11 @@ package com.android.layoutlib.api;
 
 /**
  * Represents an android resource with a name and a string value.
+ * @deprecated use {@link ResourceValue}.
  */
+@Deprecated
 public interface IResourceValue {
-    
+
     /**
      * Returns the type of the resource. For instance "drawable", "color", etc...
      */
@@ -35,7 +37,7 @@ public interface IResourceValue {
      * Returns the value of the resource, as defined in the XML. This can be <code>null</code>
      */
     String getValue();
-    
+
     /**
      * Returns whether the resource is a framework resource (<code>true</code>) or a project
      * resource (<code>false</false>).

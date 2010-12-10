@@ -55,8 +55,8 @@ public class SceneParams {
     private float mYdpi;
     private String mThemeName;
     private boolean mIsProjectTheme;
-    private Map<String, Map<String, IResourceValue>> mProjectResources;
-    private Map<String, Map<String, IResourceValue>> mFrameworkResources;
+    private Map<String, Map<String, ResourceValue>> mProjectResources;
+    private Map<String, Map<String, ResourceValue>> mFrameworkResources;
     private IProjectCallback mProjectCallback;
     private LayoutLog mLog;
 
@@ -96,8 +96,8 @@ public class SceneParams {
             int screenWidth, int screenHeight, RenderingMode renderingMode,
             int density, float xdpi, float ydpi,
             String themeName, boolean isProjectTheme,
-            Map<String, Map<String, IResourceValue>> projectResources,
-            Map<String, Map<String, IResourceValue>> frameworkResources,
+            Map<String, Map<String, ResourceValue>> projectResources,
+            Map<String, Map<String, ResourceValue>> frameworkResources,
             IProjectCallback projectCallback, LayoutLog log) {
         mLayoutDescription = layoutDescription;
         mProjectKey = projectKey;
@@ -194,11 +194,11 @@ public class SceneParams {
         return mIsProjectTheme;
     }
 
-    public Map<String, Map<String, IResourceValue>> getProjectResources() {
+    public Map<String, Map<String, ResourceValue>> getProjectResources() {
         return mProjectResources;
     }
 
-    public Map<String, Map<String, IResourceValue>> getFrameworkResources() {
+    public Map<String, Map<String, ResourceValue>> getFrameworkResources() {
         return mFrameworkResources;
     }
 
