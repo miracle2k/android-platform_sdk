@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.ui.ErrorImageComposite;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -388,7 +389,10 @@ public class OutlinePage extends ContentOutlinePage
                 return node.getShortDescription();
             } else if (element == null && vi != null) {
                 // It's an inclusion-context
-                return mGraphicalEditorPart.getIncludedWithinId();
+                Reference includedWithin = mGraphicalEditorPart.getIncludedWithin();
+                if (includedWithin != null) {
+                    return includedWithin.getDisplayName();
+                }
             }
 
             return element == null ? "(null)" : element.toString();  //$NON-NLS-1$

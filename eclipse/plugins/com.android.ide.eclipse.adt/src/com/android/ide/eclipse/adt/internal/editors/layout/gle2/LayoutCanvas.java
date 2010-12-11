@@ -24,6 +24,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDe
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
@@ -743,7 +744,6 @@ class LayoutCanvas extends Canvas {
             IPath relativePath = Sdk.makeRelativeTo(filePath, workspacePath);
             IResource xmlFile = workspace.findMember(relativePath);
             if (xmlFile != null) {
-                String nextName = getLayoutResourceName();
                 IFile leavingFile = graphicalEditor.getEditedFile();
                 try {
                     // TODO - only consider this if we're going to open a new file...
@@ -755,17 +755,19 @@ class LayoutCanvas extends Canvas {
                     // pass
                 }
 
+                Reference next = Reference.create(graphicalEditor.getEditedFile());
+
                 try {
                     IEditorPart openAlready = EditorUtility.isOpenInEditor(xmlFile);
                     if (openAlready != null) {
                         if (openAlready instanceof LayoutEditor) {
                             LayoutEditor editor = (LayoutEditor)openAlready;
                             GraphicalEditorPart gEditor = editor.getGraphicalEditor();
-                            gEditor.showIn(nextName);
+                            gEditor.showIn(next);
                         }
                     } else {
                         try {
-                            xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INCLUDE, nextName);
+                            xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INCLUDE, next);
                         } catch (CoreException e) {
                             // pass - worst that can happen is that we don't start with inclusion
                         }

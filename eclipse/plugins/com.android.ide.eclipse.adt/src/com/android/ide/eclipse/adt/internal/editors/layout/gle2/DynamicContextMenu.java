@@ -22,9 +22,11 @@ import com.android.ide.common.api.MenuAction;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -214,9 +216,9 @@ import java.util.regex.Pattern;
      * view.
      */
     private void insertShowIncludedMenu(String beforeId) {
-        IProject project = mEditor.getProject();
-        String me = mCanvas.getLayoutResourceName();
-        final List<String> includedBy = IncludeFinder.get(project).getIncludedBy(me);
+        IFile file = mEditor.getGraphicalEditor().getEditedFile();
+        IProject project = file.getProject();
+        final List<Reference> includedBy = IncludeFinder.get(project).getIncludedBy(file);
 
         Action includeAction = new Action("Show Included In", IAction.AS_DROP_DOWN_MENU) {
             @Override
@@ -238,9 +240,9 @@ import java.util.regex.Pattern;
                     public Menu getMenu(Menu parent) {
                         mMenu = new Menu(parent);
                         if (includedBy != null && includedBy.size() > 0) {
-                            for (final String s : includedBy) {
-                                String title = s;
-                                IAction action = new ShowWithinAction(title, s);
+                            for (final Reference reference : includedBy) {
+                                String title = reference.getDisplayName();
+                                IAction action = new ShowWithinAction(title, reference);
                                 new ActionContributionItem(action).fill(mMenu, -1);
                             }
                             new Separator().fill(mMenu, -1);
@@ -261,27 +263,27 @@ import java.util.regex.Pattern;
     }
 
     private class ShowWithinAction extends Action {
-        private String mId;
+        private Reference mReference;
 
-        public ShowWithinAction(String title, String id) {
+        public ShowWithinAction(String title, Reference reference) {
             super(title, IAction.AS_RADIO_BUTTON);
-            mId = id;
+            mReference = reference;
         }
 
         @Override
         public boolean isChecked() {
-            String within = mEditor.getGraphicalEditor().getIncludedWithinId();
+            Reference within = mEditor.getGraphicalEditor().getIncludedWithin();
             if (within == null) {
-                return mId == null;
+                return mReference == null;
             } else {
-                return within.equals(mId);
+                return within.equals(mReference);
             }
         }
 
         @Override
         public void run() {
             if (!isChecked()) {
-                mEditor.getGraphicalEditor().showIn(mId);
+                mEditor.getGraphicalEditor().showIn(mReference);
             }
         }
     }
