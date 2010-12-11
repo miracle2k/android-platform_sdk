@@ -42,6 +42,12 @@ public class IncludeFinderTest extends TestCase {
                 IncludeFinder.decodeMap(s).get("foo").toString());
     }
 
+    public void testNoBlanks() throws Exception {
+        // Make sure we skip the },
+        String s = "foo=>{bar,baz},bar";
+        assertNull(IncludeFinder.decodeMap(s).get(""));
+    }
+
     public void testEncodeDecode2() throws Exception {
         // Test ending with just a key
         String s = "bar,key1=>{value1,value2},key2=>{value3,value4}";
