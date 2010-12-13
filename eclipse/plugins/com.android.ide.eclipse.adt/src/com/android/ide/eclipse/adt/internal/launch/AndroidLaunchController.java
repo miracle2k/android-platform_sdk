@@ -280,7 +280,7 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
      * @param apk the resource to the apk to launch.
      * @param packageName the Android package name of the app
      * @param debugPackageName the Android package name to debug
-     * @param debuggable the debuggable value of the app, or null if not set.
+     * @param debuggable the debuggable value of the app's manifest, or null if not set.
      * @param requiredApiVersionNumber the api version required by the app, or null if none.
      * @param launchAction the action to perform after app sync
      * @param config the launch configuration
@@ -769,26 +769,16 @@ public final class AndroidLaunchController implements IDebugBridgeChangeListener
                 }
             }
 
-
             // now checks that the device/app can be debugged (if needed)
             if (device.isEmulator() == false && launchInfo.isDebugMode()) {
                 String debuggableDevice = device.getProperty(IDevice.PROP_DEBUGGABLE);
                 if (debuggableDevice != null && debuggableDevice.equals("0")) { //$NON-NLS-1$
                     // the device is "secure" and requires apps to declare themselves as debuggable!
-                    if (launchInfo.getDebuggable() == null) {
-                        String message1 = String.format(
-                                "Device '%1$s' requires that applications explicitely declare themselves as debuggable in their manifest.",
-                                device.getSerialNumber());
-                        String message2 = String.format("Application '%1$s' does not have the attribute 'debuggable' set to TRUE in its manifest and cannot be debugged.",
-                                launchInfo.getPackageName());
-                        AdtPlugin.printErrorToConsole(launchInfo.getProject(), message1, message2);
-
-                        // because am -D does not check for ro.debuggable and the
-                        // 'debuggable' attribute, it is important we do not use the -D option
-                        // in this case or the app will wait for a debugger forever and never
-                        // really launch.
-                        launchInfo.setDebugMode(false);
-                    } else if (launchInfo.getDebuggable() == Boolean.FALSE) {
+                    // launchInfo.getDebuggable() will return null if the manifest doesn't declare
+                    // anything. In this case this is fine since the build system does insert
+                    // debuggable=true. The only case to look for is if false is manually set
+                    // in the manifest.
+                    if (launchInfo.getDebuggable() == Boolean.FALSE) {
                         String message = String.format("Application '%1$s' has its 'debuggable' attribute set to FALSE and cannot be debugged.",
                                 launchInfo.getPackageName());
                         AdtPlugin.printErrorToConsole(launchInfo.getProject(), message);
