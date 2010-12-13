@@ -84,7 +84,7 @@ public final class DelayedLaunchInfo {
      * @param debugPackageName the package name of the Andriod app to debug
      * @param launchAction action to perform after app install
      * @param pack IFile to the package (.apk) file
-     * @param debuggable debuggable attribute of the app's manifest file.
+     * @param debuggable the debuggable value of the app's manifest, or null if not set.
      * @param requiredApiVersionNumber required SDK version by the app. null means no requirements.
      * @param launch the launch object
      * @param monitor progress monitor for launch
@@ -150,7 +150,9 @@ public final class DelayedLaunchInfo {
     }
 
     /**
-     * @return true if Android app is marked as debuggable in its manifest
+     * Returns the value of the manifest debuggable attribute. If the attribute was not set,
+     * then the method returns null.
+     * @return the manifest debuggable attribute.
      */
     public Boolean getDebuggable() {
         return mDebuggable;
