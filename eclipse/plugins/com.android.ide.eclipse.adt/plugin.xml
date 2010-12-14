@@ -876,10 +876,30 @@
    </extension>
    <extension point="org.eclipse.ui.workbench.texteditor.hyperlinkDetectors">
       <hyperlinkDetector
-            class="com.android.ide.eclipse.adt.internal.editors.xml.XmlHyperlinkResolver"
+            class="com.android.ide.eclipse.adt.internal.editors.xml.Hyperlinks$XmlResolver"
             id="com.android.ide.eclipse.xmlCodeResolver"
-            name="Android Hyperlink Detector"
+            name="Android XML Hyperlink Detector"
             targetId="com.android.ide.eclipse.xmlCode">
+      </hyperlinkDetector>
+      <hyperlinkDetector
+            class="com.android.ide.eclipse.adt.internal.editors.xml.Hyperlinks$JavaResolver"
+            id="com.android.ide.eclipse.javaCodeResolver"
+            name="Android Java Hyperlink Detector"
+            targetId="org.eclipse.jdt.ui.javaCode">
+      </hyperlinkDetector>
+      <!--
+      Register this hyperlink provider TWICE, once without any modifier keys, and
+      once with Modifier1+Modifier2. The one without (which will pick up the default
+      of M1) will typically duel with the builtin Java hyperlink resolver, so the
+      user gets a popup and must choose our resolver with the arrow key or mouse
+      action. The second registration adds a quick bypass for that.
+      -->
+      <hyperlinkDetector
+            class="com.android.ide.eclipse.adt.internal.editors.xml.Hyperlinks$JavaResolver"
+            id="com.android.ide.eclipse.javaCodeResolver2"
+            modifierKeys="M1+M2"
+            name="Android Java Hyperlink Detector (Extra Modifier Key)"
+            targetId="org.eclipse.jdt.ui.javaCode">
       </hyperlinkDetector>
    </extension>
 </plugin>
