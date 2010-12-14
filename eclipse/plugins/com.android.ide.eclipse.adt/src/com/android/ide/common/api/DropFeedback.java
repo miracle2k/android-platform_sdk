@@ -87,12 +87,29 @@ public class DropFeedback {
     public boolean isCopy;
 
     /**
+     * The bounds of the drag, relative to the starting mouse position. For example, if
+     * you have a rectangular view of size 100x80, and you start dragging at position
+     * (15,20) from the top left corner of this rectangle, then the drag bounds would be
+     * (-15,-20, 100x80).
+     * <p>
+     * NOTE: The coordinate units will be in layout/view coordinates. In other words, they
+     * are unaffected by the canvas zoom.
+     */
+    public Rect dragBounds;
+
+    /**
      * Set to true when the drag'n'drop starts and ends in the same canvas of the
      * same Eclipse instance.
      * <p/>
      * Filled by the engine, read by view rule.
      */
     public boolean sameCanvas;
+
+    /**
+     * Density scale for pixels. To compute the dip (device independent pixel) in the
+     * view from a layout coordinate, apply this scale.
+     */
+    public double dipScale = 1.0;
 
     /**
      * Initializes the drop feedback with the given user data and paint

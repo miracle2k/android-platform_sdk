@@ -192,7 +192,7 @@ public class RulesEngine {
                 return rule.getDisplayName();
 
             } catch (Exception e) {
-                logError("%s.getDisplayName() failed: %s",
+                AdtPlugin.log(e, "%s.getDisplayName() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -218,7 +218,7 @@ public class RulesEngine {
                 return rule.getContextMenu(selectedNode);
 
             } catch (Exception e) {
-                logError("%s.getContextMenu() failed: %s",
+                AdtPlugin.log(e, "%s.getContextMenu() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -244,7 +244,7 @@ public class RulesEngine {
                 return rule.getSelectionHint(parentNode, childNode);
 
             } catch (Exception e) {
-                logError("%getSelectionHint() failed: %s",
+                AdtPlugin.log(e, "%getSelectionHint() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -269,7 +269,7 @@ public class RulesEngine {
                 return rule.onDropEnter(targetNode, elements);
 
             } catch (Exception e) {
-                logError("%s.onDropEnter() failed: %s",
+                AdtPlugin.log(e, "%s.onDropEnter() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -295,7 +295,7 @@ public class RulesEngine {
                 return rule.onDropMove(targetNode, elements, feedback, where);
 
             } catch (Exception e) {
-                logError("%s.onDropMove() failed: %s",
+                AdtPlugin.log(e, "%s.onDropMove() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -318,7 +318,7 @@ public class RulesEngine {
                 rule.onDropLeave(targetNode, elements, feedback);
 
             } catch (Exception e) {
-                logError("%s.onDropLeave() failed: %s",
+                AdtPlugin.log(e, "%s.onDropLeave() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -342,7 +342,7 @@ public class RulesEngine {
                 rule.onDropped(targetNode, elements, feedback, where);
 
             } catch (Exception e) {
-                logError("%s.onDropped() failed: %s",
+                AdtPlugin.log(e, "%s.onDropped() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -359,7 +359,7 @@ public class RulesEngine {
             try {
                 feedback.painter.paint(gc, targetNode, feedback);
             } catch (Exception e) {
-                logError("DropFeedback.painter failed: %s",
+                AdtPlugin.log(e, "DropFeedback.painter failed: %s",
                         e.toString());
             }
         }
@@ -381,7 +381,7 @@ public class RulesEngine {
                 rule.onPaste(targetNode, pastedElements);
 
             } catch (Exception e) {
-                logError("%s.onPaste() failed: %s",
+                AdtPlugin.log(e, "%s.onPaste() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -490,7 +490,7 @@ public class RulesEngine {
                 try {
                     rule.onDispose();
                 } catch (Exception e) {
-                    logError("%s.onDispose() failed: %s",
+                    AdtPlugin.log(e, "%s.onDispose() failed: %s",
                             rule.getClass().getSimpleName(),
                             e.toString());
                 }
@@ -649,10 +649,10 @@ public class RulesEngine {
             // class.
         } catch (InstantiationException e) {
             // This is NOT an expected error: fail.
-            logError("load rule error (%s): %s", realFqcn, e.toString());
+            AdtPlugin.log(e, "load rule error (%s): %s", realFqcn, e.toString());
         } catch (IllegalAccessException e) {
             // This is NOT an expected error: fail.
-            logError("load rule error (%s): %s", realFqcn, e.toString());
+            AdtPlugin.log(e, "load rule error (%s): %s", realFqcn, e.toString());
         }
 
         // Memorize in the cache that we couldn't find a rule for this real FQCN
@@ -687,24 +687,12 @@ public class RulesEngine {
                 rule.onDispose();
             }
         } catch (Exception e) {
-            logError("%s.onInit() failed: %s",
+            AdtPlugin.log(e, "%s.onInit() failed: %s",
                     rule.getClass().getSimpleName(),
                     e.toString());
         }
 
         return null;
-    }
-
-    /**
-     * Logs an error to the console.
-     *
-     * @param format A format string following the format specified by
-     *            {@link String#format}
-     * @param params An optional set of parameters to the format string
-     */
-    public void logError(String format, Object...params) {
-        String s = String.format(format, params);
-        AdtPlugin.printErrorToConsole(mProject, s);
     }
 
     /**
@@ -750,7 +738,7 @@ public class RulesEngine {
                         try {
                             return filter.validate(newText);
                         } catch (Exception e) {
-                            logError("Custom validator failed: %s", e.toString());
+                            AdtPlugin.log(e, "Custom validator failed: %s", e.toString());
                             return ""; //$NON-NLS-1$
                         }
                     }

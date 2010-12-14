@@ -510,12 +510,16 @@ public class PaletteComposite extends Composite {
             Rect bounds = null;
             DragSource dragSource = mItem.getDragSource();
             DragSourceEffect dragSourceEffect = dragSource.getDragSourceEffect();
+            Rect dragBounds = null;
             if (dragSourceEffect instanceof PreviewDragSourceEffect) {
                 PreviewDragSourceEffect preview = (PreviewDragSourceEffect) dragSourceEffect;
                 Image previewImage = preview.getPreviewImage();
                 if (previewImage != null && !preview.isPlaceholder()) {
                     ImageData data = previewImage.getImageData();
-                    bounds = new Rect(0, 0, data.width, data.height);
+                    int width = data.width;
+                    int height = data.height;
+                    bounds = new Rect(0, 0, width, height);
+                    dragBounds = new Rect(-width / 2, -height / 2, width, height);
                 }
             }
 
@@ -527,11 +531,13 @@ public class PaletteComposite extends Composite {
             mElements = new SimpleElement[] { se };
 
             // Register this as the current dragged data
-            GlobalCanvasDragInfo.getInstance().startDrag(
+            GlobalCanvasDragInfo dragInfo = GlobalCanvasDragInfo.getInstance();
+            dragInfo.startDrag(
                     mElements,
                     null /* selection */,
                     null /* canvas */,
                     null /* removeSource */);
+            dragInfo.setDragBounds(dragBounds);
         }
 
         public void dragSetData(DragSourceEvent e) {

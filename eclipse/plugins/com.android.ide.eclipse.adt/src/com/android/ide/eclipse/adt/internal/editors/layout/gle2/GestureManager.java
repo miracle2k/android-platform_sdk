@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSource;
@@ -612,6 +614,16 @@ public class GestureManager {
                         int deltaX = (int) (scale * (boundingBox.x - p.x));
                         int deltaY = (int) (scale * (boundingBox.y - p.y));
                         SwtUtils.setDragImageOffsets(e, -deltaX, -deltaY);
+
+                        // View rules may need to know it as well
+                        GlobalCanvasDragInfo dragInfo = GlobalCanvasDragInfo.getInstance();
+                        Rect dragBounds = null;
+                        if (dragInfo != null) {
+                            int width = (int) (scale * boundingBox.width);
+                            int height = (int) (scale * boundingBox.height);
+                            dragBounds = new Rect(deltaX, deltaY, width, height);
+                            dragInfo.setDragBounds(dragBounds);
+                        }
                     }
                 }
             }
