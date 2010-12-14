@@ -16,7 +16,13 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_MATCH_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
+
 import com.android.layoutlib.api.IXmlPullParser;
+import com.android.sdklib.SdkConstants;
 
 import org.kxml2.io.KXmlParser;
 
@@ -50,5 +56,23 @@ public class ContextPullParser extends KXmlParser implements IXmlPullParser {
 
     public Object getViewKey() {
         return null; // never any key to return
+    }
+
+    // --- KXMLParser override
+
+    @Override
+    public String getAttributeValue(String namespace, String localName) {
+        String value = super.getAttributeValue(namespace, localName);
+
+        // on the fly convert match_parent to fill_parent for compatibility with older
+        // platforms.
+        if (VALUE_MATCH_PARENT.equals(value) &&
+                (ATTR_LAYOUT_WIDTH.equals(localName) ||
+                        ATTR_LAYOUT_HEIGHT.equals(localName)) &&
+                SdkConstants.NS_RESOURCES.equals(namespace)) {
+            return VALUE_FILL_PARENT;
+        }
+
+        return value;
     }
 }

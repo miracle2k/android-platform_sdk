@@ -1,9 +1,15 @@
 Change log for Android SDK Tools.
 
-Revision 9:
+Revision 10:
 - Default proguard config file changes:
    * ignore classes extending android.preference.Preference
    * ignore classes extending android.app.backup.BackupAgentHelper
+- Ant lib rules now allow for overriding java.encoding, java.source, and java.target
+- Default encoding for Ant javac is now UTF-8
+
+Revision 9:
+- fix packaging issue that broke draw9patch
+- Ant build rules will now check the Ant version
 
 Revision 8:
 - New SDK component: platform-tools. This makes all platforms use the same
