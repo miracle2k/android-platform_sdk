@@ -77,6 +77,38 @@ public class NinePatchChunk implements Serializable {
     }
 
     public void draw(BufferedImage image, Graphics2D graphics2D, int x, int y, int scaledWidth,
+            int scaledHeight, int destDensity, int srcDensity) {
+
+        boolean scaling = destDensity != srcDensity && destDensity != 0 && srcDensity != 0;
+
+        if (scaling) {
+            try {
+                graphics2D = (Graphics2D) graphics2D.create();
+
+                // scale and transform
+                float densityScale = (float) destDensity / srcDensity;
+
+                // translate/rotate the canvas.
+                graphics2D.translate(x, y);
+                graphics2D.scale(densityScale, densityScale);
+
+                // sets the new drawing bounds.
+                scaledWidth /= densityScale;
+                scaledHeight /= densityScale;
+                x = y = 0;
+
+                // draw
+                draw(image, graphics2D, x, y, scaledWidth, scaledHeight);
+            } finally {
+                graphics2D.dispose();
+            }
+        } else {
+            // non density-scaled rendering
+            draw(image, graphics2D, x, y, scaledWidth, scaledHeight);
+        }
+    }
+
+    private void draw(BufferedImage image, Graphics2D graphics2D, int x, int y, int scaledWidth,
             int scaledHeight) {
         if (scaledWidth <= 1 || scaledHeight <= 1) {
             return;
