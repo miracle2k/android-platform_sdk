@@ -23,7 +23,6 @@ import com.android.ide.common.api.Rect;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -114,6 +113,7 @@ public class SelectionOverlay extends Overlay {
         gc.fillRect(r);
         gc.drawRect(r);
 
+        /* Label hidden pending selection visual design
         if (displayName == null || isMultipleSelection) {
             return;
         }
@@ -125,5 +125,6 @@ public class SelectionOverlay extends Overlay {
         }
         gc.useStyle(DrawingStyle.HELP);
         gc.drawBoxedStrings(xs, ys, Collections.singletonList(displayName));
+        */
     }
 }

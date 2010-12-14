@@ -207,7 +207,11 @@ import java.util.regex.Pattern;
             }
         }
 
-        insertShowIncludedMenu(endId);
+        // Not yet enabled because we need to backport layoutlib changes to Android 2.0, 2.1, 2.2
+        // first:
+        if (System.getenv("ADT_TEST") != null) { //NON-NLS-1$
+            insertShowIncludedMenu(endId);
+        }
     }
 
     /**
