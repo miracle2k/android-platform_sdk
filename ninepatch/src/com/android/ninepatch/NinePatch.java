@@ -173,7 +173,7 @@ public class NinePatch {
      * @param scaledHeight
      */
     public void draw(Graphics2D graphics2D, int x, int y, int scaledWidth, int scaledHeight) {
-        mChunk.draw(mImage, graphics2D, x, y, scaledWidth, scaledHeight);
+        mChunk.draw(mImage, graphics2D, x, y, scaledWidth, scaledHeight, 0 , 0);
     }
 
     private NinePatch(BufferedImage image) {
