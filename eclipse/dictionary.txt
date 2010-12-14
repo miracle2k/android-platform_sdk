@@ -53,6 +53,7 @@ diffs
 dirs
 ditto
 dpi
+drawable
 drawables
 ed
 editable
@@ -81,6 +82,7 @@ init
 inits
 inline
 instanceof
+instantiatable
 int
 javadoc
 layoutlib
@@ -88,6 +90,7 @@ leaky
 lib
 lifecycle
 linestyle
+linkable
 linux
 locale
 locales

@@ -17,24 +17,24 @@ package com.android.ide.eclipse.adt.internal.editors.xml;
 
 import junit.framework.TestCase;
 
-public class XmlHyperlinkResolverTest extends TestCase {
+public class HyperlinksTest extends TestCase {
     public void testFqnRegexp() throws Exception {
-        assertTrue(XmlHyperlinkResolver.CLASS_PATTERN.matcher("com.android.Foo").matches());
-        assertTrue(XmlHyperlinkResolver.CLASS_PATTERN.matcher("com.android.pk_g.Foo_Bar1").
+        assertTrue(Hyperlinks.CLASS_PATTERN.matcher("com.android.Foo").matches());
+        assertTrue(Hyperlinks.CLASS_PATTERN.matcher("com.android.pk_g.Foo_Bar1").
                 matches());
-        assertTrue(XmlHyperlinkResolver.CLASS_PATTERN.matcher("com.android.Foo$Inner").matches());
+        assertTrue(Hyperlinks.CLASS_PATTERN.matcher("com.android.Foo$Inner").matches());
 
         // Should we allow non-standard packages and class names?
         // For now, we're allowing it -- see how this works out in practice.
         //assertFalse(XmlHyperlinkResolver.CLASS_PATTERN.matcher("Foo.bar").matches());
-        assertTrue(XmlHyperlinkResolver.CLASS_PATTERN.matcher("Foo.bar").matches());
+        assertTrue(Hyperlinks.CLASS_PATTERN.matcher("Foo.bar").matches());
 
-        assertFalse(XmlHyperlinkResolver.CLASS_PATTERN.matcher("LinearLayout").matches());
-        assertFalse(XmlHyperlinkResolver.CLASS_PATTERN.matcher(".").matches());
-        assertFalse(XmlHyperlinkResolver.CLASS_PATTERN.matcher(".F").matches());
-        assertFalse(XmlHyperlinkResolver.CLASS_PATTERN.matcher("f.").matches());
-        assertFalse(XmlHyperlinkResolver.CLASS_PATTERN.matcher("Foo").matches());
-        assertFalse(XmlHyperlinkResolver.CLASS_PATTERN.matcher("com.android.1Foo").matches());
-        assertFalse(XmlHyperlinkResolver.CLASS_PATTERN.matcher("1com.Foo").matches());
+        assertFalse(Hyperlinks.CLASS_PATTERN.matcher("LinearLayout").matches());
+        assertFalse(Hyperlinks.CLASS_PATTERN.matcher(".").matches());
+        assertFalse(Hyperlinks.CLASS_PATTERN.matcher(".F").matches());
+        assertFalse(Hyperlinks.CLASS_PATTERN.matcher("f.").matches());
+        assertFalse(Hyperlinks.CLASS_PATTERN.matcher("Foo").matches());
+        assertFalse(Hyperlinks.CLASS_PATTERN.matcher("com.android.1Foo").matches());
+        assertFalse(Hyperlinks.CLASS_PATTERN.matcher("1com.Foo").matches());
     }
 }
