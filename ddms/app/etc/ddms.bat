@@ -24,6 +24,9 @@ rem Change current directory and drive to where the script is, to avoid
 rem issues with directories containing whitespaces.
 cd /d %~dp0
 
+rem Get the CWD as a full path with short names only (without spaces)
+for %%i in ("%cd%") do set prog_dir=%%~fsi
+
 rem Check we have a valid Java.exe in the path.
 set java_exe=
 call lib\find_java.bat
@@ -65,5 +68,5 @@ if exist %swt_path% goto SetPath
 :SetPath
 set javaextdirs=%swt_path%;%frameworkdir%
 
-call %java_exe% %java_debug% -Dcom.android.ddms.bindir= -classpath "%jarpath%;%swt_path%\swt.jar" com.android.ddms.Main %*
+call %java_exe% %java_debug% -Dcom.android.ddms.bindir=%prog_dir% -classpath "%jarpath%;%swt_path%\swt.jar" com.android.ddms.Main %*
 
