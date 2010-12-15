@@ -19,11 +19,10 @@ package com.android.layoutlib.api;
 import java.awt.image.BufferedImage;
 
 /**
- * The result of a layout computation through
- * {@link ILayoutLibBridge#computeLayout(IXmlPullParser, int, int, String, java.util.Map, java.util.Map, java.util.Map, IFontLoader, ILayoutLibLog, ICustomViewLoader)}
+ * The result of a layout computation through {@link ILayoutBridge}.
  *
  * @since 1
- * @deprecated use {@link ILayoutScene} as returned by {@link ILayoutBridge#startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, java.util.Map, java.util.Map, IProjectCallback, ILayoutLog)}
+ * @deprecated use {@link LayoutScene} as returned by {@link LayoutBridge#createScene(SceneParams)}
  */
 public interface ILayoutResult {
     /**
@@ -33,7 +32,7 @@ public interface ILayoutResult {
 
     /**
      * Error return code, in which case an error message is guaranteed to be defined.
-     * @See {@link #getErrorMessage()}
+     * @see #getErrorMessage()
      */
     final static int ERROR = 1;
 

@@ -166,7 +166,7 @@ public class LayoutScene {
      * If the listener is null, then the rendering is done synchronously.
      * <p/>
      * The child stays in the view hierarchy after the rendering is done. To remove it call
-     * {@link #removeChild(Object, int)}.
+     * {@link #removeChild(Object, IAnimationListener)}
      * <p/>
      * The returned {@link SceneResult} object will contain the android.view.View object for
      * the newly inflated child. It is accessible through {@link SceneResult#getData()}.
@@ -199,7 +199,7 @@ public class LayoutScene {
      * If the listener is null, then the rendering is done synchronously.
      * <p/>
      * The child stays in the view hierarchy after the rendering is done. To remove it call
-     * {@link #removeChild(Object, int)}.
+     * {@link #removeChild(Object, IAnimationListener)}
      * <p/>
      * The returned {@link SceneResult} object will contain the android.view.ViewGroup.LayoutParams
      * object created from the <var>layoutParams</var> map if it was non <code>null</code>.

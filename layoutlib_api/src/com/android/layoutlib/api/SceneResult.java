@@ -20,10 +20,10 @@ package com.android.layoutlib.api;
  * Scene result class. This is an immutable class.
  * <p/>
  * This cannot be allocated directly, instead use
- * {@link SceneStatus#getResult()},
- * {@link SceneStatus#getResult(String, Throwable)},
- * {@link SceneStatus#getResult(String)}
- * {@link SceneStatus#getResult(Object)}
+ * {@link SceneStatus#createResult()},
+ * {@link SceneStatus#createResult(String, Throwable)},
+ * {@link SceneStatus#createResult(String)}
+ * {@link SceneStatus#createResult(Object)}
  */
 public class SceneResult {
 
