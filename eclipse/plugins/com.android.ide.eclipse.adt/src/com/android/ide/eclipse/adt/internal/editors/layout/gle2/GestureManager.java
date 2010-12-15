@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSource;
@@ -47,6 +49,9 @@ import java.util.List;
  * gestures and in order to update the gestures along the way.
  */
 public class GestureManager {
+    /** Drag source data key */
+    private static String KEY_DRAG_PREVIEW = "dragpreview"; //NON-NLS-1$
+
     /** The canvas which owns this GestureManager. */
     private final LayoutCanvas mCanvas;
 
@@ -466,6 +471,28 @@ public class GestureManager {
     }
 
     /**
+     * Sets whether the given drag source is enabled for drag previews.
+     * The default for a drag source is false.
+     *
+     * @param source the drag source in question
+     * @param enable true to enable drag previews
+     */
+    public static void setDragPreviewEnabled(DragSource source, boolean enable) {
+        source.setData(KEY_DRAG_PREVIEW, enable ? KEY_DRAG_PREVIEW : null);
+    }
+
+    /**
+     * Returns true if the given drag source is enabled for drag previews.
+     * The default for a drag source is false.
+     *
+     * @param source the drag source in question
+     * @return true if the drag source allows drag previews
+     */
+    public static boolean isDragPreviewEnabled(DragSource source) {
+        return source.getData(KEY_DRAG_PREVIEW) != null;
+    }
+
+    /**
      * Our canvas {@link DragSourceListener}. Handles drag being started and
      * finished and generating the drag data.
      */
@@ -581,7 +608,12 @@ public class GestureManager {
 
                 // Render drag-images: Copy portions of the full screen render.
                 Image image = mCanvas.getImageOverlay().getImage();
-                if (image != null) {
+                boolean enabled = false;
+                if (e.widget instanceof DragSource) {
+                    DragSource ds = (DragSource) e.widget;
+                    enabled = isDragPreviewEnabled(ds);
+                }
+                if (enabled && image != null) {
                     /**
                      * Transparency of the dragged image ([0-255]). We're using 30%
                      * translucency to make the image faint and not obscure the drag
@@ -612,6 +644,16 @@ public class GestureManager {
                         int deltaX = (int) (scale * (boundingBox.x - p.x));
                         int deltaY = (int) (scale * (boundingBox.y - p.y));
                         SwtUtils.setDragImageOffsets(e, -deltaX, -deltaY);
+
+                        // View rules may need to know it as well
+                        GlobalCanvasDragInfo dragInfo = GlobalCanvasDragInfo.getInstance();
+                        Rect dragBounds = null;
+                        if (dragInfo != null) {
+                            int width = (int) (scale * boundingBox.width);
+                            int height = (int) (scale * boundingBox.height);
+                            dragBounds = new Rect(deltaX, deltaY, width, height);
+                            dragInfo.setDragBounds(dragBounds);
+                        }
                     }
                 }
             }

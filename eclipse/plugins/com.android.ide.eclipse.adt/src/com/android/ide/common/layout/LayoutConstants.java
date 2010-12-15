@@ -68,6 +68,25 @@ public class LayoutConstants {
     public static final String VALUE_TRUE = "true";                             //$NON-NLS-1$
     public static final String VALUE_N_DIP = "%ddip";                           //$NON-NLS-1$
 
+    public static final String VALUE_CENTER_VERTICAL = "centerVertical";        //$NON-NLS-1$
+    public static final String VALUE_CENTER_IN_PARENT = "centerInParent";       //$NON-NLS-1$
+    public static final String VALUE_CENTER_HORIZONTAL = "centerHorizontal";    //$NON-NLS-1$
+    public static final String VALUE_ALIGN_PARENT_RIGHT = "alignParentRight";    //$NON-NLS-1$
+    public static final String VALUE_ALIGN_PARENT_LEFT = "alignParentLeft";      //$NON-NLS-1$
+    public static final String VALUE_ALIGN_PARENT_BOTTOM = "alignParentBottom";  //$NON-NLS-1$
+    public static final String VALUE_ALIGN_PARENT_TOP = "alignParentTop";        //$NON-NLS-1$
+    public static final String VALUE_ALIGN_RIGHT = "alignRight";                 //$NON-NLS-1$
+    public static final String VALUE_ALIGN_LEFT = "alignLeft";                   //$NON-NLS-1$
+    public static final String VALUE_ALIGN_BOTTOM = "alignBottom";               //$NON-NLS-1$
+    public static final String VALUE_ALIGN_TOP = "alignTop";                     //$NON-NLS-1$
+    public static final String VALUE_ALIGN_BASELINE = "alignBaseline";           //$NON-NLS-1$
+    public static final String VAUE_TO_RIGHT_OF = "toRightOf";                   //$NON-NLS-1$
+    public static final String VALUE_TO_LEFT_OF = "toLeftOf";                    //$NON-NLS-1$
+    public static final String VALUE_BELOW = "below";                            //$NON-NLS-1$
+    public static final String VALUE_ABOVE = "above";                            //$NON-NLS-1$
+    public static final String VALUE_ALIGN_WITH_PARENT_MISSING =
+        "alignWithParentMissing"; //$NON-NLS-1$
+
     /**
      * Namespace for the Android resource XML, i.e.
      * "http://schemas.android.com/apk/res/android"

@@ -18,20 +18,37 @@ package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ABOVE;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_BASELINE;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_BOTTOM;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_LEFT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_PARENT_BOTTOM;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_PARENT_LEFT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_PARENT_RIGHT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_PARENT_TOP;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_RIGHT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_TOP;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_WITH_PARENT_MISSING;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_BELOW;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_CENTER_HORIZONTAL;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_CENTER_IN_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_CENTER_VERTICAL;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_TO_LEFT_OF;
+import static com.android.ide.common.layout.LayoutConstants.VAUE_TO_RIGHT_OF;
 
 import com.android.ide.common.api.DrawingStyle;
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IAttributeInfo;
-import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.IFeedbackPainter;
 import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.INode;
-import com.android.ide.common.api.INode.IAttribute;
 import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
+import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.common.api.INode.IAttribute;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,23 +69,23 @@ public class RelativeLayoutRule extends BaseLayoutRule {
     @Override
     public List<String> getSelectionHint(INode parentNode, INode childNode) {
         List<String> infos = new ArrayList<String>(18);
-        addAttr("above", childNode, infos);                   //$NON-NLS-1$
-        addAttr("below", childNode, infos);                   //$NON-NLS-1$
-        addAttr("toLeftOf", childNode, infos);                //$NON-NLS-1$
-        addAttr("toRightOf", childNode, infos);               //$NON-NLS-1$
-        addAttr("alignBaseline", childNode, infos);           //$NON-NLS-1$
-        addAttr("alignTop", childNode, infos);                //$NON-NLS-1$
-        addAttr("alignBottom", childNode, infos);             //$NON-NLS-1$
-        addAttr("alignLeft", childNode, infos);               //$NON-NLS-1$
-        addAttr("alignRight", childNode, infos);              //$NON-NLS-1$
-        addAttr("alignParentTop", childNode, infos);          //$NON-NLS-1$
-        addAttr("alignParentBottom", childNode, infos);       //$NON-NLS-1$
-        addAttr("alignParentLeft", childNode, infos);         //$NON-NLS-1$
-        addAttr("alignParentRight", childNode, infos);        //$NON-NLS-1$
-        addAttr("alignWithParentMissing", childNode, infos);  //$NON-NLS-1$
-        addAttr("centerHorizontal", childNode, infos);        //$NON-NLS-1$
-        addAttr("centerInParent", childNode, infos);          //$NON-NLS-1$
-        addAttr("centerVertical", childNode, infos);          //$NON-NLS-1$
+        addAttr(VALUE_ABOVE, childNode, infos);
+        addAttr(VALUE_BELOW, childNode, infos);
+        addAttr(VALUE_TO_LEFT_OF, childNode, infos);
+        addAttr(VAUE_TO_RIGHT_OF, childNode, infos);
+        addAttr(VALUE_ALIGN_BASELINE, childNode, infos);
+        addAttr(VALUE_ALIGN_TOP, childNode, infos);
+        addAttr(VALUE_ALIGN_BOTTOM, childNode, infos);
+        addAttr(VALUE_ALIGN_LEFT, childNode, infos);
+        addAttr(VALUE_ALIGN_RIGHT, childNode, infos);
+        addAttr(VALUE_ALIGN_PARENT_TOP, childNode, infos);
+        addAttr(VALUE_ALIGN_PARENT_BOTTOM, childNode, infos);
+        addAttr(VALUE_ALIGN_PARENT_LEFT, childNode, infos);
+        addAttr(VALUE_ALIGN_PARENT_RIGHT, childNode, infos);
+        addAttr(VALUE_ALIGN_WITH_PARENT_MISSING, childNode, infos);
+        addAttr(VALUE_CENTER_HORIZONTAL, childNode, infos);
+        addAttr(VALUE_CENTER_IN_PARENT, childNode, infos);
+        addAttr(VALUE_CENTER_VERTICAL, childNode, infos);
 
         return infos;
     }
@@ -185,8 +202,7 @@ public class RelativeLayoutRule extends BaseLayoutRule {
                 data.setIndex(-1);
                 data.setCurr(null);
 
-                DropZone zone = computeBorderDropZone(targetNode.getBounds(), p);
-
+                DropZone zone = computeBorderDropZone(targetNode, p, feedback);
                 if (zone == null) {
                     data.setZones(null);
                 } else {
@@ -207,6 +223,24 @@ public class RelativeLayoutRule extends BaseLayoutRule {
                     break;
                 }
             }
+
+            // Look to see if there's a border match if we didn't find anything better;
+            // a border match isn't required to have the mouse cursor within it since we
+            // do edge matching in the code which -adds- the border zones.
+            if (currZone == null && feedback.dragBounds != null) {
+                for (DropZone zone : data.getZones()) {
+                    if (zone.isBorderZone()) {
+                        currZone = zone;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Look for border match when there are no children: always offer one in this case
+        if (currZone == null && targetNode.getChildren().length == 0 && data.getZones() != null
+                && data.getZones().size() > 0) {
+            currZone = data.getZones().get(0);
         }
 
         if (currZone != data.getCurr()) {
@@ -286,7 +320,8 @@ public class RelativeLayoutRule extends BaseLayoutRule {
         return ids;
     }
 
-    private DropZone computeBorderDropZone(Rect bounds, Point p) {
+    private DropZone computeBorderDropZone(INode targetNode, Point p, DropFeedback feedback) {
+        Rect bounds = targetNode.getBounds();
         int x = p.x;
         int y = p.y;
 
@@ -297,34 +332,50 @@ public class RelativeLayoutRule extends BaseLayoutRule {
         int x2 = x1 + w;
         int y2 = y1 + h;
 
+        // Default border zone size
         int n = 10;
-        int n2 = n * 2;
+        int n2 = 2*n;
+
+        // Size of -matched- border zone (not painted, but we detect edge overlaps here)
+        int hn = 0;
+        int vn = 0;
+        if (feedback.dragBounds != null) {
+            hn = feedback.dragBounds.w / 2;
+            vn = feedback.dragBounds.h / 2;
+        }
         boolean vertical = false;
 
         Rect r = null;
         String attr = null;
 
-        if (x <= x1 + n && y >= y1 && y <= y2) {
+        if (x <= x1 + n + hn && y >= y1 && y <= y2) {
             r = new Rect(x1 - n, y1, n2, h);
-            attr = "alignParentLeft";              //$NON-NLS-1$
+            attr = VALUE_ALIGN_PARENT_LEFT;
             vertical = true;
 
-        } else if (x >= x2 - n && y >= y1 && y <= y2) {
+        } else if (x >= x2 - hn - n && y >= y1 && y <= y2) {
             r = new Rect(x2 - n, y1, n2, h);
-            attr = "alignParentRight";             //$NON-NLS-1$
+            attr = VALUE_ALIGN_PARENT_RIGHT;
             vertical = true;
 
-        } else if (y <= y1 + n && x >= x1 && x <= x2) {
+        } else if (y <= y1 + n + vn && x >= x1 && x <= x2) {
             r = new Rect(x1, y1 - n, w, n2);
-            attr = "alignParentTop";               //$NON-NLS-1$
+            attr = VALUE_ALIGN_PARENT_TOP;
 
-        } else if (y >= y2 - n && x >= x1 && x <= x2) {
+        } else if (y >= y2 - vn - n && x >= x1 && x <= x2) {
             r = new Rect(x1, y2 - n, w, n2);
-            attr = "alignParentBottom";            //$NON-NLS-1$
+            attr = VALUE_ALIGN_PARENT_BOTTOM;
 
         } else {
-            // we're nowhere near a border
-            return null;
+            // We're nowhere near a border.
+            // If there are no children, we will offer one anyway:
+            if (targetNode.getChildren().length == 0) {
+                r = new Rect(x1 - n, y1, n2, h);
+                attr = VALUE_ALIGN_PARENT_LEFT;
+                vertical = true;
+            } else {
+                return null;
+            }
         }
 
         return new DropZone(r, Collections.singletonList(attr), r.getCenter(), vertical);
@@ -371,41 +422,41 @@ public class RelativeLayoutRule extends BaseLayoutRule {
         Rect bounds = new Rect(x1, y1, wt, ht);
 
         List<DropZone> zones = new ArrayList<DropZone>(16);
-        String a = "above"; //$NON-NLS-1$
+        String a = VALUE_ABOVE;
         int x = x1;
         int y = y1;
 
-        x = addx(w1, a, x, y, h1, zones, "toLeftOf");   //$NON-NLS-1$
-        x = addx(w2, a, x, y, h1, zones, "alignLeft");  //$NON-NLS-1$
-        x = addx(w2, a, x, y, h1, zones, "alignLeft", "alignRight"); //$NON-NLS-1$ //$NON-NLS-2$
-        x = addx(w2, a, x, y, h1, zones, "alignRight"); //$NON-NLS-1$
-        x = addx(w1, a, x, y, h1, zones, "toRightOf");  //$NON-NLS-1$
+        x = addx(w1, a, x, y, h1, zones, VALUE_TO_LEFT_OF);
+        x = addx(w2, a, x, y, h1, zones, VALUE_ALIGN_LEFT);
+        x = addx(w2, a, x, y, h1, zones, VALUE_ALIGN_LEFT, VALUE_ALIGN_RIGHT);
+        x = addx(w2, a, x, y, h1, zones, VALUE_ALIGN_RIGHT);
+        x = addx(w1, a, x, y, h1, zones, VAUE_TO_RIGHT_OF);
 
-        a = "below"; //$NON-NLS-1$
+        a = VALUE_BELOW;
         x = x1;
         y = y1 + ht - h1;
 
-        x = addx(w1, a, x, y, h1, zones, "toLeftOf");    //$NON-NLS-1$
-        x = addx(w2, a, x, y, h1, zones, "alignLeft");   //$NON-NLS-1$
-        x = addx(w2, a, x, y, h1, zones, "alignLeft", "alignRight"); //$NON-NLS-1$ //$NON-NLS-2$
-        x = addx(w2, a, x, y, h1, zones, "alignRight");  //$NON-NLS-1$
-        x = addx(w1, a, x, y, h1, zones, "toRightOf");   //$NON-NLS-1$
+        x = addx(w1, a, x, y, h1, zones, VALUE_TO_LEFT_OF);
+        x = addx(w2, a, x, y, h1, zones, VALUE_ALIGN_LEFT);
+        x = addx(w2, a, x, y, h1, zones, VALUE_ALIGN_LEFT, VALUE_ALIGN_RIGHT);
+        x = addx(w2, a, x, y, h1, zones, VALUE_ALIGN_RIGHT);
+        x = addx(w1, a, x, y, h1, zones, VAUE_TO_RIGHT_OF);
 
-        a = "toLeftOf"; //$NON-NLS-1$
+        a = VALUE_TO_LEFT_OF;
         x = x1;
         y = y1 + h1;
 
-        y = addy(h2, a, x, y, w1, zones, "alignTop");    //$NON-NLS-1$
-        y = addy(h2, a, x, y, w1, zones, "alignTop", "alignBottom"); //$NON-NLS-1$ //$NON-NLS-2$
-        y = addy(h2, a, x, y, w1, zones, "alignBottom"); //$NON-NLS-1$
+        y = addy(h2, a, x, y, w1, zones, VALUE_ALIGN_TOP);
+        y = addy(h2, a, x, y, w1, zones, VALUE_ALIGN_TOP, VALUE_ALIGN_BOTTOM);
+        y = addy(h2, a, x, y, w1, zones, VALUE_ALIGN_BOTTOM);
 
-        a = "toRightOf"; //$NON-NLS-1$
+        a = VAUE_TO_RIGHT_OF;
         x = x1 + wt - w1;
         y = y1 + h1;
 
-        y = addy(h2, a, x, y, w1, zones, "alignTop");    //$NON-NLS-1$
-        y = addy(h2, a, x, y, w1, zones, "alignTop", "alignBottom"); //$NON-NLS-1$ //$NON-NLS-2$
-        y = addy(h2, a, x, y, w1, zones, "alignBottom"); //$NON-NLS-1$
+        y = addy(h2, a, x, y, w1, zones, VALUE_ALIGN_TOP);
+        y = addy(h2, a, x, y, w1, zones, VALUE_ALIGN_TOP, VALUE_ALIGN_BOTTOM);
+        y = addy(h2, a, x, y, w1, zones, VALUE_ALIGN_BOTTOM);
 
         return Pair.of(bounds, zones);
     }
@@ -511,20 +562,20 @@ public class RelativeLayoutRule extends BaseLayoutRule {
                 int offsetX = x - be.x;
                 int offsetY = y - be.y;
 
-                if (data.getCurr().getAttr().contains("alignTop")                    //$NON-NLS-1$
-                        && data.getCurr().getAttr().contains("alignBottom")) {       //$NON-NLS-1$
+                if (data.getCurr().getAttr().contains(VALUE_ALIGN_TOP)
+                        && data.getCurr().getAttr().contains(VALUE_ALIGN_BOTTOM)) {
                     offsetY -= be.h / 2;
-                } else if (data.getCurr().getAttr().contains("above")                //$NON-NLS-1$
-                        || data.getCurr().getAttr().contains("alignTop")             //$NON-NLS-1$
-                        || data.getCurr().getAttr().contains("alignParentBottom")) { //$NON-NLS-1$
+                } else if (data.getCurr().getAttr().contains(VALUE_ABOVE)
+                        || data.getCurr().getAttr().contains(VALUE_ALIGN_TOP)
+                        || data.getCurr().getAttr().contains(VALUE_ALIGN_PARENT_BOTTOM)) {
                     offsetY -= be.h;
                 }
-                if (data.getCurr().getAttr().contains("alignRight")                  //$NON-NLS-1$
-                        && data.getCurr().getAttr().contains("alignLeft")) {         //$NON-NLS-1$
+                if (data.getCurr().getAttr().contains(VALUE_ALIGN_RIGHT)
+                        && data.getCurr().getAttr().contains(VALUE_ALIGN_LEFT)) {
                     offsetX -= be.w / 2;
-                } else if (data.getCurr().getAttr().contains("toLeftOft")            //$NON-NLS-1$
-                        || data.getCurr().getAttr().contains("alignLeft")            //$NON-NLS-1$
-                        || data.getCurr().getAttr().contains("alignParentRight")) {  //$NON-NLS-1$
+                } else if (data.getCurr().getAttr().contains(VALUE_TO_LEFT_OF)
+                        || data.getCurr().getAttr().contains(VALUE_ALIGN_LEFT)
+                        || data.getCurr().getAttr().contains(VALUE_ALIGN_PARENT_RIGHT)) {
                     offsetX -= be.w;
                 }
 
@@ -718,6 +769,10 @@ public class RelativeLayoutRule extends BaseLayoutRule {
 
         private boolean isVertical() {
             return mVertical;
+        }
+
+        private boolean isBorderZone() {
+            return mMark != null;
         }
     }
 }

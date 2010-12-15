@@ -24,7 +24,6 @@ import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
-import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -425,10 +424,11 @@ import java.util.regex.Pattern;
                                 IMenuCallback c = ((MenuAction.Action) a2).getCallback();
                                 if (c != null) {
                                     try {
-                                        c.action(a2, null /* no valueId for a toggle */, !isChecked);
+                                        c.action(a2, null /* no valueId for a toggle */,
+                                                !isChecked);
                                     } catch (Exception e) {
-                                        RulesEngine gre = mCanvas.getRulesEngine();
-                                        gre.logError("XML edit operation failed: %s", e.toString());
+                                        AdtPlugin.log(e, "XML edit operation failed: %s",
+                                                e.toString());
                                     }
                                 }
                             }
@@ -488,8 +488,8 @@ import java.util.regex.Pattern;
                                         // Values do not apply for plain actions
                                         c.action(a2, null /* valueId */, null /* newValue */);
                                     } catch (Exception e) {
-                                        RulesEngine gre = mCanvas.getRulesEngine();
-                                        gre.logError("XML edit operation failed: %s", e.toString());
+                                        AdtPlugin.log(e, "XML edit operation failed: %s",
+                                                e.toString());
                                     }
                                 }
                             }
@@ -614,8 +614,8 @@ import java.util.regex.Pattern;
                                         ((MenuAction.Action) a2).getCallback().action(a2, key,
                                             !isChecked);
                                     } catch (Exception e) {
-                                        RulesEngine gre = mCanvas.getRulesEngine();
-                                        gre.logError("XML edit operation failed: %s", e.toString());
+                                        AdtPlugin.log(e, "XML edit operation failed: %s",
+                                                e.toString());
                                     }
                                 }
                             }

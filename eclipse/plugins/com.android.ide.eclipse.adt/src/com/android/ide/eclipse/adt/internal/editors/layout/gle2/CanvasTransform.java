@@ -58,6 +58,7 @@ public class CanvasTransform implements ICanvasTransform {
                 CanvasTransform.this.mCanvas.redraw();
             }
         });
+        mScrollbar.setIncrement(20);
     }
 
     /**
