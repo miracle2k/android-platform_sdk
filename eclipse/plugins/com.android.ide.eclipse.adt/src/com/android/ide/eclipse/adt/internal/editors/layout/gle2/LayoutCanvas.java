@@ -284,6 +284,7 @@ class LayoutCanvas extends Canvas {
 
         mDropTarget = createDropTarget(this);
         mDragSource = createDragSource(this);
+        GestureManager.setDragPreviewEnabled(mDragSource, true);
         mGestureManager.registerListeners(mDragSource, mDropTarget);
 
         if (mLayoutEditor == null) {
