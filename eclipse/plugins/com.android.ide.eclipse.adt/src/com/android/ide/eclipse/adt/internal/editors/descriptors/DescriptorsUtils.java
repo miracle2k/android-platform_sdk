@@ -38,8 +38,8 @@ import org.eclipse.swt.graphics.Image;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -416,7 +416,7 @@ public final class DescriptorsUtils {
                 needBreak = true;
             } else if (s != null) {
                 if (needBreak && s.trim().length() > 0) {
-                    sb.append('\r');
+                    sb.append('\n');
                 }
                 sb.append(s);
                 needBreak = false;
