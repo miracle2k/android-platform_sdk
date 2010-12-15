@@ -39,7 +39,6 @@ import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.annotations.VisibleForTesting;
 import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.StreamException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -438,7 +437,7 @@ public class IncludeFinder {
                     IStructuredModel model = null;
                     try {
                         IModelManager modelManager = StructuredModelManager.getModelManager();
-                        model = modelManager.getExistingModelForEdit(file);
+                        model = modelManager.getExistingModelForRead(file);
                         if (model instanceof IDOMModel) {
                             IDOMModel domModel = (IDOMModel) model;
                             Document document = domModel.getDocument();
