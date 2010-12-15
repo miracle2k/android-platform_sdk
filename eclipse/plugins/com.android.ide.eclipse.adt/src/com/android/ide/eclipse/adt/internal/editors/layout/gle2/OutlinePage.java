@@ -32,6 +32,8 @@ import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.IElementComparer;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
@@ -56,8 +58,11 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.INullSelectionListener;
+import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.ISelectionListener;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.views.contentoutline.ContentOutlinePage;
 
@@ -153,6 +158,17 @@ public class OutlinePage extends ContentOutlinePage
                     return a.equals(b);
                 }
                 return false;
+            }
+        });
+        tv.addDoubleClickListener(new IDoubleClickListener() {
+            public void doubleClick(DoubleClickEvent event) {
+                // Front properties panel; its selection is already linked
+                IWorkbenchPage page = getSite().getPage();
+                try {
+                    page.showView(IPageLayout.ID_PROP_SHEET, null, IWorkbenchPage.VIEW_ACTIVATE);
+                } catch (PartInitException e) {
+                    AdtPlugin.log(e, "Could not activate property sheet");
+                }
             }
         });
 
