@@ -32,8 +32,6 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.layoutlib.api.LayoutScene;
-import com.android.layoutlib.api.SceneResult;
-import com.android.layoutlib.api.LayoutScene.IAnimationListener;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.filesystem.EFS;
@@ -1054,62 +1052,63 @@ class LayoutCanvas extends Canvas {
         // Add test action
         // Don't add it at the top above (by the cut action) because the
         // dynamic context menu makes some assumptions about where things are
-        // FIXME remove test.
-        manager.add(new Action("Play anim test", IAction.AS_PUSH_BUTTON) {
-            @Override
-            public void run() {
-                List<SelectionItem> selection = mSelectionManager.getSelections();
-                SelectionItem canvasSelection = selection.get(0);
-                CanvasViewInfo info = canvasSelection.getViewInfo();
-
-                Object viewObject = info.getViewObject();
-                if (viewObject != null) {
-                    LayoutScene scene = mViewHierarchy.getScene();
-
-                    scene.animate(viewObject, "testanim", false /*isFrameworkAnimation*/,
-                            new IAnimationListener() {
-                                private int mCount = 0;
-                                private boolean mPendingDrawing = false;
-                                public void onNewFrame(LayoutScene scene) {
-                                    mCount++;
-                                    mImageOverlay.setImage(scene.getImage());
-                                    synchronized (this) {
-                                        if (mPendingDrawing == false) {
-                                            getDisplay().asyncExec(new Runnable() {
-                                                public void run() {
-                                                    drawImage();
-                                                }
-                                            });
-
-                                            mPendingDrawing = true;
-                                        }
-                                    }
-                                }
-
-                                public boolean isCanceled() {
-                                    return false;
-                                }
-
-                                public void done(SceneResult result) {
-                                    System.out.println("Animation count: " + mCount);
-                                }
-
-                                /**
-                                 * this is called from the UI thread from the asyncRunnable.
-                                 */
-                                public void drawImage() {
-                                    // get last image
-                                    synchronized (this) {
-                                        mPendingDrawing = false;
-                                    }
-
-                                    redraw();
-                                }
-                            });
-                }
-            }
-        });
-
+        //// FIXME remove test.
+        //import com.android.layoutlib.api.SceneResult;
+        //import com.android.layoutlib.api.LayoutScene.IAnimationListener;
+        //manager.add(new Action("Play anim test", IAction.AS_PUSH_BUTTON) {
+        //    @Override
+        //    public void run() {
+        //        List<SelectionItem> selection = mSelectionManager.getSelections();
+        //        SelectionItem canvasSelection = selection.get(0);
+        //        CanvasViewInfo info = canvasSelection.getViewInfo();
+        //
+        //        Object viewObject = info.getViewObject();
+        //        if (viewObject != null) {
+        //            LayoutScene scene = mViewHierarchy.getScene();
+        //
+        //            scene.animate(viewObject, "testanim", false /*isFrameworkAnimation*/,
+        //                    new IAnimationListener() {
+        //                        private int mCount = 0;
+        //                        private boolean mPendingDrawing = false;
+        //                        public void onNewFrame(LayoutScene scene) {
+        //                            mCount++;
+        //                            mImageOverlay.setImage(scene.getImage());
+        //                            synchronized (this) {
+        //                                if (mPendingDrawing == false) {
+        //                                    getDisplay().asyncExec(new Runnable() {
+        //                                        public void run() {
+        //                                            drawImage();
+        //                                        }
+        //                                    });
+        //
+        //                                    mPendingDrawing = true;
+        //                                }
+        //                            }
+        //                        }
+        //
+        //                        public boolean isCanceled() {
+        //                            return false;
+        //                        }
+        //
+        //                        public void done(SceneResult result) {
+        //                            System.out.println("Animation count: " + mCount);
+        //                        }
+        //
+        //                        /**
+        //                         * this is called from the UI thread from the asyncRunnable.
+        //                         */
+        //                        public void drawImage() {
+        //                            // get last image
+        //                            synchronized (this) {
+        //                                mPendingDrawing = false;
+        //                            }
+        //
+        //                            redraw();
+        //                        }
+        //                    });
+        //        }
+        //    }
+        //});
 
         manager.add(new Separator());
 
