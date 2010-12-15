@@ -18,11 +18,9 @@ package com.android.layoutlib.api;
 
 import org.xmlpull.v1.XmlPullParser;
 
-import java.util.Map;
-
 /**
  * Extended version of {@link XmlPullParser} to use with
- * {@link ILayoutLibBridge#startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+ * {@link LayoutBridge#createScene(SceneParams)}
  */
 public interface IXmlPullParser extends XmlPullParser {
 

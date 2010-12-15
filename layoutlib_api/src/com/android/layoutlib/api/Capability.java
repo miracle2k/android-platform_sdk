@@ -16,8 +16,6 @@
 
 package com.android.layoutlib.api;
 
-import com.android.layoutlib.api.LayoutScene.IAnimationListener;
-
 /**
  * Enum describing the layout bridge capabilities.
  *
@@ -36,7 +34,7 @@ public enum Capability {
     EMBEDDED_LAYOUT,
     /** Ability to call<br>
      * {@link LayoutScene#insertChild(Object, IXmlPullParser, int, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
-     * {@link LayoutScene#moveChild(Object, Object, int, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
+     * {@link LayoutScene#moveChild(Object, Object, int, java.util.Map, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
      * {@link LayoutScene#removeChild(Object, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
      * {@link LayoutScene#setProperty(Object, String, String)}
      * */
@@ -44,6 +42,6 @@ public enum Capability {
     /** Ability to call<br>
      * {@link LayoutScene#animate(Object, String, boolean, com.android.layoutlib.api.LayoutScene.IAnimationListener)}
      * <p>If the bridge also supports {@link #VIEW_MANIPULATION} then those methods can use
-     * an {@link IAnimationListener}, otherwise they won't. */
+     * an {@link com.android.layoutlib.api.LayoutScene.IAnimationListener}, otherwise they won't. */
     ANIMATE;
 }
