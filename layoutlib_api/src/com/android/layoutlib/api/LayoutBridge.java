@@ -66,7 +66,7 @@ public abstract class LayoutBridge {
      * Starts a layout session by inflating and rendering it. The method returns a
      * {@link LayoutScene} on which further actions can be taken.
      *
-     * @return a new {@link ILayoutScene} object that contains the result of the scene creation and
+     * @return a new {@link LayoutScene} object that contains the result of the scene creation and
      * first rendering.
      */
     public LayoutScene createScene(SceneParams params) {

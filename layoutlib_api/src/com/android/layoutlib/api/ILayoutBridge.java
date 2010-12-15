@@ -44,7 +44,7 @@ import java.util.Map;
  * <li>new render method: {@link #computeLayout(IXmlPullParser, Object, int, int, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}</li>
  * <li>deprecated {@link #computeLayout(IXmlPullParser, Object, int, int, String, Map, Map, IProjectCallback, ILayoutLog)}</li>
  * </ul>
- * @Deprecated Extend {@link LayoutBridge} instead.
+ * @deprecated Extend {@link LayoutBridge} instead.
  */
 @Deprecated
 public interface ILayoutBridge {
@@ -76,7 +76,7 @@ public interface ILayoutBridge {
 
     /**
      * Starts a layout session by inflating and rendering it. The method returns a
-     * {@link ILayoutScene} on which further actions can be taken.
+     * {@link ILayoutResult} on which further actions can be taken.
      *
      * @param layoutDescription the {@link IXmlPullParser} letting the LayoutLib Bridge visit the
      * layout file.
@@ -102,7 +102,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+     * @deprecated use {@link LayoutBridge#createScene(SceneParams)}
      * @since 4
      */
     @Deprecated
@@ -139,7 +139,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+     * @deprecated use {@link LayoutBridge#createScene(SceneParams)}
      * @since 3
      */
     @Deprecated
@@ -172,7 +172,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+     * @deprecated use {@link LayoutBridge#createScene(SceneParams)}
      * @since 2
      */
     @Deprecated
@@ -204,7 +204,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated use {@link #startLayout(IXmlPullParser, Object, int, int, boolean, int, float, float, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}
+     * @deprecated use {@link LayoutBridge#createScene(SceneParams)}
      * @since 1
      */
     @Deprecated
