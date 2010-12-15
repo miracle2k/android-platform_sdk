@@ -255,6 +255,10 @@ class LayoutCanvas extends Canvas {
                 super.controlResized(e);
                 mHScale.setClientSize(getClientArea().width);
                 mVScale.setClientSize(getClientArea().height);
+
+                Rectangle canvasBounds = LayoutCanvas.this.getBounds();
+                getHorizontalBar().setPageIncrement(canvasBounds.width);
+                getVerticalBar().setPageIncrement(canvasBounds.height);
             }
         });
 
