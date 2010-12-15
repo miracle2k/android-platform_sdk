@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static com.android.sdklib.resources.Density.DEFAULT_DENSITY;
+
 import com.android.ide.common.layoutlib.BasicLayoutScene;
 import com.android.ide.common.layoutlib.LayoutLibrary;
 import com.android.ide.common.sdk.LoadStatus;
@@ -1176,7 +1178,15 @@ public class GraphicalEditorPart extends EditorPart
         return mConfigComposite.getScreenBounds();
     }
 
-
+    /**
+     * Returns the scale to multiply pixels in the layout coordinate space with to obtain
+     * the corresponding dip (device independent pixel)
+     *
+     * @return the scale to multiple layout coordinates with to obtain the dip position
+     */
+    public float getDipScale() {
+        return DEFAULT_DENSITY / (float) mConfigComposite.getDensity().getDpiValue();
+    }
 
     // --- private methods ---
 

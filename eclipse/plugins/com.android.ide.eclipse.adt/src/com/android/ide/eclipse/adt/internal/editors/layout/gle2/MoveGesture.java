@@ -446,6 +446,28 @@ public class MoveGesture extends DropGesture {
         }
         df.sameCanvas = mCanvas == mGlobalDragInfo.getSourceCanvas();
         df.invalidTarget = false;
+        df.dipScale = mCanvas.getLayoutEditor().getGraphicalEditor().getDipScale();
+
+        // Set the drag bounds, after converting it from control coordinates to
+        // layout coordinates
+        GlobalCanvasDragInfo dragInfo = GlobalCanvasDragInfo.getInstance();
+        Rect dragBounds = null;
+        if (dragInfo != null) {
+            Rect controlDragBounds = dragInfo.getDragBounds();
+            if (controlDragBounds != null) {
+                CanvasTransform ht = mCanvas.getHorizontalTransform();
+                CanvasTransform vt = mCanvas.getVerticalTransform();
+                double horizScale = ht.getScale();
+                double verticalScale = vt.getScale();
+                int x = (int) (controlDragBounds.x / horizScale);
+                int y = (int) (controlDragBounds.y / verticalScale);
+                int w = (int) (controlDragBounds.w / horizScale);
+                int h = (int) (controlDragBounds.h / verticalScale);
+
+                dragBounds = new Rect(x, y, w, h);
+            }
+        }
+        df.dragBounds = dragBounds;
     }
 
     /**
@@ -560,6 +582,7 @@ public class MoveGesture extends DropGesture {
                         // guideline computations in onDropMove (since only onDropMove is handed
                         // the -position- of the mouse), and we want this computation to happen
                         // before we ask the view to draw its feedback.
+                        updateDropFeedback(df, event);
                         df = mCanvas.getRulesEngine().callOnDropMove(targetNode,
                                 mCurrentDragElements, df, new Point(p.x, p.y));
                     }

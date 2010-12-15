@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
+
 
 /**
  * This singleton is used to keep track of drag'n'drops initiated within this
@@ -43,6 +45,7 @@ final class GlobalCanvasDragInfo {
     private SelectionItem[] mCurrentSelection;
     private Object mSourceCanvas = null;
     private Runnable mRemoveSourceHandler;
+    private Rect mDragBounds;
 
     /** Private constructor. Use {@link #getInstance()} to retrieve the singleton. */
     private GlobalCanvasDragInfo() {
@@ -113,5 +116,31 @@ final class GlobalCanvasDragInfo {
             mRemoveSourceHandler.run();
             mRemoveSourceHandler = null;
         }
+    }
+
+    /**
+     * Get the bounds of the drag, relative to the starting mouse position. For example,
+     * if you have a rectangular view of size 100x80, and you start dragging at position
+     * (15,20) from the top left corner of this rectangle, then the drag bounds would be
+     * (-15,-20, 100x80).
+     * <p>
+     * NOTE: The coordinate units will be in SWT/control pixels, not Android view pixels.
+     * In other words, they are affected by the canvas zoom: If you zoom the view and the
+     * bounds of a view grow, the drag bounds will be larger.
+     *
+     * @return the drag bounds, or null if there are no bounds for the current drag
+     */
+    public Rect getDragBounds() {
+        return mDragBounds;
+    }
+
+    /**
+     * Set the bounds of the drag, relative to the starting mouse position. See
+     * {@link #getDragBounds()} for details on the semantics of the drag bounds.
+     *
+     * @param dragBounds the new drag bounds, or null if there are no drag bounds
+     */
+    public void setDragBounds(Rect dragBounds) {
+        mDragBounds = dragBounds;
     }
 }

@@ -86,8 +86,8 @@ public class AbsoluteLayoutRule extends BaseLayoutRule {
             // At least the first element has a bound. Draw rectangles
             // for all dropped elements with valid bounds, offset at
             // the drop point.
-            int offsetX = x - be.x - be.w / 2;
-            int offsetY = y - be.y - be.h / 2;
+            int offsetX = x - be.x + (feedback.dragBounds != null ? feedback.dragBounds.x : 0);
+            int offsetY = y - be.y + (feedback.dragBounds != null ? feedback.dragBounds.y : 0);
             gc.useStyle(DrawingStyle.DROP_PREVIEW);
             for (IDragElement element : elements) {
                 drawElement(gc, element, offsetX, offsetY);
@@ -152,8 +152,11 @@ public class AbsoluteLayoutRule extends BaseLayoutRule {
                     // Copy all the attributes, modifying them as needed.
                     addAttributes(newChild, element, idMap, DEFAULT_ATTR_FILTER);
 
-                    int x = p.x - b.x - (be.isValid() ? be.w / 2 : 0);
-                    int y = p.y - b.y - (be.isValid() ? be.h / 2 : 0);
+                    int deltaX = (feedback.dragBounds != null ? feedback.dragBounds.x : 0);
+                    int deltaY = (feedback.dragBounds != null ? feedback.dragBounds.y : 0);
+
+                    int x = p.x - b.x + deltaX;
+                    int y = p.y - b.y + deltaY;
 
                     if (first) {
                         first = false;
@@ -166,6 +169,12 @@ public class AbsoluteLayoutRule extends BaseLayoutRule {
                     } else {
                         x += 10;
                         y += be.isValid() ? be.h : 10;
+                    }
+
+                    double scale = feedback.dipScale;
+                    if (scale != 1.0) {
+                        x *= scale;
+                        y *= scale;
                     }
 
                     newChild.setAttribute(ANDROID_URI, "layout_x", //$NON-NLS-1$
