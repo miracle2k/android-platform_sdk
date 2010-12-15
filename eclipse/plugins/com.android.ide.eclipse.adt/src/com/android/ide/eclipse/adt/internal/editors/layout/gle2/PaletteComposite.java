@@ -236,14 +236,20 @@ public class PaletteComposite extends Composite {
             // Thumb size is the ratio between root view and visible height.
             float ft = ry > 0 ? (float)vy / ry : 1;
             int thumb = (int) Math.ceil(y * ft);
+            if (thumb < 1) {
+                thumb = 1;
+            }
             y += thumb;
 
 
             if (y != max) {
+                int minimum = mVBar.getMinimum();
                 mVBar.setEnabled(y > 0);
-                mVBar.setMaximum(y < 0 ? 1 : y);
-                mVBar.setSelection((int) (y * current));
-                mVBar.setThumb(thumb);
+                int maximum = y < 0 ? 1 : y;
+                int selection = (int) (y * current);
+                int increment = 20;
+                int pageIncrement = thumb;
+                mVBar.setValues(selection, minimum, maximum, thumb, increment, pageIncrement);
                 scrollScrollbar();
                 return true;
             }
