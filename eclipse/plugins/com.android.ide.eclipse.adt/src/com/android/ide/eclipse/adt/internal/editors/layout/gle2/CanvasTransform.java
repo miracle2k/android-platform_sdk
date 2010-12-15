@@ -108,6 +108,7 @@ public class CanvasTransform implements ICanvasTransform {
     /** Changes the size of the client size. Recomputes scrollbars. */
     public void setClientSize(int clientSize) {
         mClientSize = clientSize;
+        mScrollbar.setPageIncrement(clientSize);
         resizeScrollbar();
     }
 
@@ -119,14 +120,26 @@ public class CanvasTransform implements ICanvasTransform {
         int cx = mClientSize - 2 * IMAGE_MARGIN;
 
         if (sx < cx) {
+            mTranslate = 0;
             mScrollbar.setEnabled(false);
         } else {
             mScrollbar.setEnabled(true);
 
-            // max scroll value is the scaled image size
-            // thumb value is the actual viewable area out of the scaled img size
-            mScrollbar.setMaximum(sx);
-            mScrollbar.setThumb(cx);
+            int selection = mScrollbar.getSelection();
+            int thumb = cx;
+            int maximum = sx;
+
+            if (selection + thumb > maximum) {
+                selection = maximum - thumb;
+                if (selection < 0) {
+                    selection = 0;
+                }
+            }
+
+            mScrollbar.setValues(selection, mScrollbar.getMinimum(), maximum, thumb, mScrollbar
+                    .getIncrement(), mScrollbar.getPageIncrement());
+
+            mTranslate = selection;
         }
     }
 
