@@ -50,7 +50,7 @@ import java.util.List;
  */
 public class GestureManager {
     /** Drag source data key */
-    private static String KEY_DRAG_PREVIEW = "dragpreview"; //NON-NLS-1$
+    private static String KEY_DRAG_PREVIEW = "dragpreview"; //$NON-NLS-1$
 
     /** The canvas which owns this GestureManager. */
     private final LayoutCanvas mCanvas;
