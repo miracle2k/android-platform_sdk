@@ -127,7 +127,7 @@ public class Hyperlinks {
     /** Regular expression matching a FQCN for a view class */
     @VisibleForTesting
     /* package */ static final Pattern CLASS_PATTERN = Pattern.compile(
-        "(([a-zA-Z_\\$][a-zA-Z0-9_\\$]*)+\\.)+[a-zA-Z_\\$][a-zA-Z0-9_\\$]*"); //NON-NLS-1$
+        "(([a-zA-Z_\\$][a-zA-Z0-9_\\$]*)+\\.)+[a-zA-Z_\\$][a-zA-Z0-9_\\$]*"); //$NON-NLS-1$
 
     /** Determines whether the given attribute <b>name</b> is linkable */
     private static boolean isAttributeNameLink(@SuppressWarnings("unused") XmlContext context) {
@@ -158,7 +158,7 @@ public class Hyperlinks {
         }
 
         String value = attribute.getValue();
-        if (value.startsWith("@+")) { //NON-NLS-1$
+        if (value.startsWith("@+")) { //$NON-NLS-1$
             // It's a value -declaration-, nowhere else to jump
             // (though we could consider jumping to the R-file; would that
             // be helpful?)
@@ -494,7 +494,7 @@ public class Hyperlinks {
                         if (valueStr.startsWith("?")) { //$NON-NLS-1$
                             // FIXME: It's a reference. We should resolve this properly.
                             return false;
-                        } else if (valueStr.startsWith("@")) { //NON-NLS-1$
+                        } else if (valueStr.startsWith("@")) { //$NON-NLS-1$
                             // Refers to a different resource; resolve it iteratively
                             if (seen.contains(valueStr)) {
                                 return false;
@@ -534,7 +534,7 @@ public class Hyperlinks {
 
         // Handle inner classes
         if (fqcn.indexOf('$') != -1) {
-            fqcn = fqcn.replaceAll("\\$", "."); //NON-NLS-1$ //NON-NLS-2$
+            fqcn = fqcn.replaceAll("\\$", "."); //$NON-NLS-1$ //$NON-NLS-2$
         }
 
         try {
@@ -546,7 +546,7 @@ public class Hyperlinks {
                 }
             }
         } catch (Throwable e) {
-            AdtPlugin.log(e, "Can't open class %1$s", fqcn); //NON-NLS-1$
+            AdtPlugin.log(e, "Can't open class %1$s", fqcn); //$NON-NLS-1$
         }
 
         return false;
@@ -616,7 +616,7 @@ public class Hyperlinks {
                 }
             }
         } catch (CoreException e) {
-            AdtPlugin.log(e, ""); //NON-NLS-1$
+            AdtPlugin.log(e, ""); //$NON-NLS-1$
         }
 
         return null;
@@ -651,7 +651,7 @@ public class Hyperlinks {
                     }
                 }
             } catch (CoreException e) {
-                AdtPlugin.log(e, ""); //NON-NLS-1$
+                AdtPlugin.log(e, ""); //$NON-NLS-1$
             }
         }
 
@@ -689,7 +689,7 @@ public class Hyperlinks {
                     }
                 }
             } catch (CoreException e) {
-                AdtPlugin.log(e, ""); //NON-NLS-1$
+                AdtPlugin.log(e, ""); //$NON-NLS-1$
             }
         }
         return null;
@@ -715,9 +715,9 @@ public class Hyperlinks {
                 return findValueInDocument(type, name, file, document);
             }
         } catch (IOException e) {
-            AdtPlugin.log(e, "Can't parse %1$s", file); //NON-NLS-1$
+            AdtPlugin.log(e, "Can't parse %1$s", file); //$NON-NLS-1$
         } catch (CoreException e) {
-            AdtPlugin.log(e, "Can't parse %1$s", file); //NON-NLS-1$
+            AdtPlugin.log(e, "Can't parse %1$s", file); //$NON-NLS-1$
         } finally {
             if (model != null) {
                 model.releaseFromRead();
@@ -733,7 +733,7 @@ public class Hyperlinks {
         String targetTag = type.getName();
         if (type == ResourceType.ID) {
             // Ids are recorded in <item> tags instead of <id> tags
-            targetTag = "item"; //NON-NLS-1$
+            targetTag = "item"; //$NON-NLS-1$
         }
         Element root = document.getDocumentElement();
         if (root.getTagName().equals(ROOT_ELEMENT)) {
@@ -782,9 +782,9 @@ public class Hyperlinks {
                 return findIdInDocument(id, file, document);
             }
         } catch (IOException e) {
-            AdtPlugin.log(e, "Can't parse %1$s", file); //NON-NLS-1$
+            AdtPlugin.log(e, "Can't parse %1$s", file); //$NON-NLS-1$
         } catch (CoreException e) {
-            AdtPlugin.log(e, "Can't parse %1$s", file); //NON-NLS-1$
+            AdtPlugin.log(e, "Can't parse %1$s", file); //$NON-NLS-1$
         } finally {
             if (model != null) {
                 model.releaseFromRead();
@@ -797,7 +797,7 @@ public class Hyperlinks {
     /** Looks within an XML DOM document for the given resource name and returns it */
     private static Pair<IFile, IRegion> findIdInDocument(String id, IFile file,
             Document document) {
-        String targetAttribute = "@+id/" + id; //NON-NLS-1$
+        String targetAttribute = "@+id/" + id; //$NON-NLS-1$
         return findIdInElement(document.getDocumentElement(), file, targetAttribute);
     }
 
@@ -852,7 +852,7 @@ public class Hyperlinks {
         int nameBegin = typeEnd + 1;
 
         // Skip @ and @+
-        int typeBegin = url.startsWith("@+") ? 2 : 1; //NON-NLS-1$
+        int typeBegin = url.startsWith("@+") ? 2 : 1; //$NON-NLS-1$
 
         int colon = url.lastIndexOf(':', typeEnd);
         if (colon != -1) {
@@ -955,7 +955,7 @@ public class Hyperlinks {
                     IJavaElement element = elements[0];
                     if (element.getElementType() == IJavaElement.FIELD) {
                         IJavaElement unit = element.getAncestor(IJavaElement.COMPILATION_UNIT);
-                        if ("R.java".equals(unit.getElementName())) { // NON-NLS-1$
+                        if ("R.java".equals(unit.getElementName())) { //$NON-NLS-1$
                             // Yes, we're in an R class. Offer hyperlink navigation to XML
                             // resource
                             // files for the various definitions
@@ -1141,7 +1141,7 @@ public class Hyperlinks {
                     }
                 }
             } catch (BadLocationException e) {
-                AdtPlugin.log(e, ""); //NON-NLS-1$
+                AdtPlugin.log(e, ""); //$NON-NLS-1$
             }
             return new Region(start, length);
         }

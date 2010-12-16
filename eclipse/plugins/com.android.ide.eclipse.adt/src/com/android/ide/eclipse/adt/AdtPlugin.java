@@ -427,7 +427,7 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
                     contents.close();
                 }
             } catch (IOException e) {
-                AdtPlugin.log(e, "Can't read file %1$s", file); //NON-NLS-1$
+                AdtPlugin.log(e, "Can't read file %1$s", file); //$NON-NLS-1$
             }
         }
 
@@ -448,7 +448,7 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
             String charset = file.getCharset();
             return streamContains(new InputStreamReader(contents, charset), string);
         } catch (Exception e) {
-            AdtPlugin.log(e, "Can't read file %1$s", file); //NON-NLS-1$
+            AdtPlugin.log(e, "Can't read file %1$s", file); //$NON-NLS-1$
         }
 
         return false;
@@ -493,14 +493,14 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
                 }
             }
         } catch (Exception e) {
-            AdtPlugin.log(e, "Can't read stream"); //NON-NLS-1$
+            AdtPlugin.log(e, "Can't read stream"); //$NON-NLS-1$
         } finally {
             try {
                 if (reader != null) {
                     reader.close();
                 }
             } catch (IOException e) {
-                AdtPlugin.log(e, "Can't read stream"); //NON-NLS-1$
+                AdtPlugin.log(e, "Can't read stream"); //$NON-NLS-1$
             }
         }
 
@@ -598,7 +598,7 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
                     contents.close();
                 }
             } catch (IOException e) {
-                AdtPlugin.log(e, "Can't read layout file"); //NON-NLS-1$
+                AdtPlugin.log(e, "Can't read layout file"); //$NON-NLS-1$
             }
         }
 
@@ -632,7 +632,7 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
                     reader.close();
                 }
             } catch (IOException e) {
-                AdtPlugin.log(e, "Can't read input stream"); //NON-NLS-1$
+                AdtPlugin.log(e, "Can't read input stream"); //$NON-NLS-1$
             }
         }
 

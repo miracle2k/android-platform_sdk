@@ -487,7 +487,7 @@ public class IncludeFinder {
      * if it detects the string &lt;include in the file.
      */
     private List<String> findIncludes(String xml) {
-        int index = xml.indexOf("<include"); //NON-NLS-1$
+        int index = xml.indexOf("<include"); //$NON-NLS-1$
         if (index != -1) {
             return findIncludesInXml(xml);
         }
@@ -569,7 +569,7 @@ public class IncludeFinder {
             }
 
             typeBegin = colon + 1;
-            assert "layout".equals(url.substring(typeBegin, typeEnd)); //NON-NLS-1$
+            assert "layout".equals(url.substring(typeBegin, typeEnd)); //$NON-NLS-1$
         }
 
         return url.substring(nameBegin);
@@ -720,7 +720,7 @@ public class IncludeFinder {
     }
 
     /** Format to chain include cycles in: a=>b=>c=>d etc */
-    private final String CHAIN_FORMAT = "%1$s=>%2$s"; //NON-NLS-1$
+    private final String CHAIN_FORMAT = "%1$s=>%2$s"; //$NON-NLS-1$
 
     private String dfs(String from, Set<String> seen) {
         seen.add(from);
@@ -881,7 +881,7 @@ public class IncludeFinder {
      *         given reference
      */
     public static String getProjectRelativePath(String reference) {
-        if (!reference.contains(WS_SEP)) { //NON-NLS-1$
+        if (!reference.contains(WS_SEP)) { //$NON-NLS-1$
             reference = SdkConstants.FD_LAYOUT + WS_SEP + reference;
         }
         return SdkConstants.FD_RESOURCES + WS_SEP + reference + '.' + EXT_XML;
@@ -995,10 +995,10 @@ public class IncludeFinder {
 
         @Override
         public String toString() {
-            return "Reference [getId()=" + getId() // NON-NLS-1$
-                    + ", getDisplayName()=" + getDisplayName() // NON-NLS-1$
-                    + ", getName()=" + getName() // NON-NLS-1$
-                    + ", getFile()=" + getFile() + "]"; // NON-NLS-1$
+            return "Reference [getId()=" + getId() //$NON-NLS-1$
+                    + ", getDisplayName()=" + getDisplayName() //$NON-NLS-1$
+                    + ", getName()=" + getName() //$NON-NLS-1$
+                    + ", getFile()=" + getFile() + "]"; //$NON-NLS-1$
         }
 
         /**

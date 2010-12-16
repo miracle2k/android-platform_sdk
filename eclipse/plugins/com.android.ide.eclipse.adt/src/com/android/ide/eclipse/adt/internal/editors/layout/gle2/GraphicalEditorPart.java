@@ -1515,7 +1515,7 @@ public class GraphicalEditorPart extends EditorPart
                         topParser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
                         topParser.setInput(new FileReader(layoutFile));
                     } catch (XmlPullParserException e) {
-                        AdtPlugin.log(e, ""); //NON-NLS-1$
+                        AdtPlugin.log(e, ""); //$NON-NLS-1$
                     } catch (FileNotFoundException e) {
                         // this will not happen since we check above.
                     }
