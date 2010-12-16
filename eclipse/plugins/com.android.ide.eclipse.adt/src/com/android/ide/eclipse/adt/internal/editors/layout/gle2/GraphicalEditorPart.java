@@ -22,6 +22,7 @@ import com.android.ide.common.layoutlib.BasicLayoutScene;
 import com.android.ide.common.layoutlib.LayoutLibrary;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IPageImageProvider;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.ContextPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.ExplodedRenderingHelper;
@@ -95,6 +96,7 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -141,7 +143,7 @@ import java.util.Set;
  * @since GLE2
  */
 public class GraphicalEditorPart extends EditorPart
-    implements ISelectionListener, INullSelectionListener {
+    implements IPageImageProvider, ISelectionListener, INullSelectionListener {
 
     /*
      * Useful notes:
@@ -260,6 +262,10 @@ public class GraphicalEditorPart extends EditorPart
             throw new PartInitException("Input is not of type FileEditorInput: " +  //$NON-NLS-1$
                     input == null ? "null" : input.toString());                     //$NON-NLS-1$
         }
+    }
+
+    public Image getPageImage() {
+        return IconFactory.getInstance().getIcon("editor_page_design");  //$NON-NLS-1$
     }
 
     @Override

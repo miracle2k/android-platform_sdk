@@ -212,7 +212,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         } catch (PartInitException e) {
             AdtPlugin.log(e, "Error creating nested page"); //$NON-NLS-1$
         }
-     }
+    }
 
     @Override
     protected void postCreatePages() {

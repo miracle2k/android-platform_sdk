@@ -17,9 +17,12 @@
 package com.android.ide.eclipse.adt.internal.editors.xml;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IPageImageProvider;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiTreeBlock;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.forms.IManagedForm;
 import org.eclipse.ui.forms.editor.FormPage;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
@@ -27,7 +30,7 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
 /**
  * Page for the xml form editor.
  */
-public final class XmlTreePage extends FormPage {
+public final class XmlTreePage extends FormPage implements IPageImageProvider {
     /** Page id used for switching tabs programmatically */
     public final static String PAGE_ID = "xml_tree_page"; //$NON-NLS-1$
 
@@ -39,9 +42,13 @@ public final class XmlTreePage extends FormPage {
         mEditor = editor;
     }
 
+    public Image getPageImage() {
+        return IconFactory.getInstance().getIcon("editor_page_design");  //$NON-NLS-1$
+    }
+
     /**
      * Creates the content in the form hosted in this page.
-     * 
+     *
      * @param managedForm the form hosted in this page.
      */
     @Override

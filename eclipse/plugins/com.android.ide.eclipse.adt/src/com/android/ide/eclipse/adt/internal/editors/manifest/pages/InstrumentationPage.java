@@ -17,12 +17,15 @@
 package com.android.ide.eclipse.adt.internal.editors.manifest.pages;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IPageImageProvider;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.ManifestEditor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiTreeBlock;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.forms.IManagedForm;
 import org.eclipse.ui.forms.editor.FormPage;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
@@ -30,7 +33,7 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
 /**
  * Page for instrumentation settings, part of the AndroidManifest form editor.
  */
-public final class InstrumentationPage extends FormPage {
+public final class InstrumentationPage extends FormPage implements IPageImageProvider {
     /** Page id used for switching tabs programmatically */
     public final static String PAGE_ID = "instrumentation_page"; //$NON-NLS-1$
 
@@ -44,9 +47,15 @@ public final class InstrumentationPage extends FormPage {
         mEditor = editor;
     }
 
+    public Image getPageImage() {
+        return IconFactory.getInstance().getIcon(getTitle(),
+                                                 IconFactory.COLOR_GREEN,
+                                                 IconFactory.SHAPE_RECT);
+    }
+
     /**
      * Creates the content in the form hosted in this page.
-     * 
+     *
      * @param managedForm the form hosted in this page.
      */
     @Override
@@ -73,7 +82,7 @@ public final class InstrumentationPage extends FormPage {
                 "List of instrumentations defined in the manifest");
         mTreeBlock.createContent(managedForm);
     }
-    
+
     /**
      * Changes and refreshes the Application UI node handled by the sub parts.
      */
