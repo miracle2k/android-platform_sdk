@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.legacy;
 
-public class LayoutLog {
+import com.android.ide.common.rendering.api.IProjectCallback;
 
-    public void error(String tag, String message) {
-    }
-
-    public void error(String tag, Throwable t) {
-    }
-
-    public void warning(String tag, String message) {
-    }
-
-    /**
-     * Logs an error message and a {@link Throwable}.
-     * @param message the message to log.
-     * @param throwable the {@link Throwable} to log.
-     */
-    public void error(String tag, String message, Throwable throwable) {
-
-    }
+/**
+ * Intermediary interface extending both old and new project call back from the layout lib API.
+ *
+ * Clients should use this instead of {@link IProjectCallback} to target both old and new
+ * Layout Libraries.
+ *
+ */
+@SuppressWarnings("deprecation")
+public interface ILegacyCallback extends com.android.ide.common.rendering.api.IProjectCallback,
+        com.android.layoutlib.api.IProjectCallback {
 }

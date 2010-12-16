@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ddmlib.IDevice;
-import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;

@@ -19,8 +19,16 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import static com.android.ide.eclipse.adt.AndroidConstants.ANDROID_PKG;
 import static com.android.sdklib.resources.Density.DEFAULT_DENSITY;
 
-import com.android.ide.common.layoutlib.BasicLayoutScene;
-import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.rendering.LayoutLibrary;
+import com.android.ide.common.rendering.StaticRenderSession;
+import com.android.ide.common.rendering.api.Capability;
+import com.android.ide.common.rendering.api.ILayoutPullParser;
+import com.android.ide.common.rendering.api.LayoutLog;
+import com.android.ide.common.rendering.api.Params;
+import com.android.ide.common.rendering.api.RenderSession;
+import com.android.ide.common.rendering.api.ResourceValue;
+import com.android.ide.common.rendering.api.Result;
+import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IPageImageProvider;
@@ -53,14 +61,6 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
-import com.android.layoutlib.api.Capability;
-import com.android.layoutlib.api.IXmlPullParser;
-import com.android.layoutlib.api.LayoutLog;
-import com.android.layoutlib.api.LayoutScene;
-import com.android.layoutlib.api.ResourceValue;
-import com.android.layoutlib.api.SceneParams;
-import com.android.layoutlib.api.SceneParams.RenderingMode;
-import com.android.layoutlib.api.SceneResult.SceneStatus;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
@@ -1123,8 +1123,9 @@ public class GraphicalEditorPart extends EditorPart
                 // For that purpose, create a special LayoutScene that has no image,
                 // no root view yet indicates success and then update the canvas with it.
 
-                mCanvasViewer.getCanvas().setResult(
-                        new BasicLayoutScene(SceneStatus.SUCCESS.createResult(),
+                mCanvasViewer.getCanvas().setSession(
+                        new StaticRenderSession(
+                                Result.Status.SUCCESS.createResult(),
                                 null /*rootViewInfo*/, null /*image*/),
                         null /*explodeNodes*/);
                 return;
@@ -1171,7 +1172,7 @@ public class GraphicalEditorPart extends EditorPart
      *            background using a fully transparent background color
      * @return the resulting rendered image wrapped in an {@link LayoutScene}
      */
-    public LayoutScene render(UiDocumentNode model, int width, int height,
+    public RenderSession render(UiDocumentNode model, int width, int height,
             Set<UiElementNode> explodeNodes, boolean transparentBackground) {
         if (!ensureFileValid()) {
             return null;
@@ -1403,15 +1404,15 @@ public class GraphicalEditorPart extends EditorPart
         int width = rect.width;
         int height = rect.height;
 
-        LayoutScene scene = renderWithBridge(iProject, model, layoutLib, width, height,
+        RenderSession session = renderWithBridge(iProject, model, layoutLib, width, height,
                 explodeNodes, false);
 
-        canvas.setResult(scene, explodeNodes);
+        canvas.setSession(session, explodeNodes);
 
         // update the UiElementNode with the layout info.
-        if (scene.getResult().isSuccess() == false) {
+        if (session.getResult().isSuccess() == false) {
             // An error was generated. Print it.
-            displayError(scene.getResult().getErrorMessage());
+            displayError(session.getResult().getErrorMessage());
 
         } else {
             // Success means there was no exception. But we might have detected
@@ -1428,7 +1429,7 @@ public class GraphicalEditorPart extends EditorPart
         model.refreshUi();
     }
 
-    private LayoutScene renderWithBridge(IProject iProject, UiDocumentNode model,
+    private RenderSession renderWithBridge(IProject iProject, UiDocumentNode model,
             LayoutLibrary layoutLib, int width, int height, Set<UiElementNode> explodeNodes,
             boolean transparentBackground) {
         ResourceManager resManager = ResourceManager.getInstance();
@@ -1498,6 +1499,11 @@ public class GraphicalEditorPart extends EditorPart
                 public void warning(String tag, String message) {
                     AdtPlugin.printToConsole(mEditedFile.getName(), message);
                 }
+
+                @Override
+                public void fidelityWarning(String tag, String message, Throwable throwable) {
+                    AdtPlugin.printToConsole(mEditedFile.getName(), message);
+                }
             };
         }
 
@@ -1529,9 +1535,9 @@ public class GraphicalEditorPart extends EditorPart
         float ydpi = mConfigComposite.getYDpi();
         boolean isProjectTheme = mConfigComposite.isProjectTheme();
 
-        IXmlPullParser modelParser = new UiElementPullParser(model,
+        ILayoutPullParser modelParser = new UiElementPullParser(model,
                 mUseExplodeMode, explodeNodes, density, xdpi, iProject);
-        IXmlPullParser topParser = modelParser;
+        ILayoutPullParser topParser = modelParser;
 
         // Code to support editing included layout
 
@@ -1574,7 +1580,7 @@ public class GraphicalEditorPart extends EditorPart
             }
         }
 
-        SceneParams params = new SceneParams(
+        Params params = new Params(
                 topParser,
                 iProject /* projectKey */,
                 width, height,
@@ -1588,15 +1594,13 @@ public class GraphicalEditorPart extends EditorPart
             // It doesn't matter what the background color is as long as the alpha
             // is 0 (fully transparent). We're using red to make it more obvious if
             // for some reason the background is painted when it shouldn't be.
-            params.setCustomBackgroundColor(0x00FF0000);
+            params.setOverrideBgColor(0x00FF0000);
         }
 
         // set the Image Overlay as the image factory.
         params.setImageFactory(getCanvasControl().getImageOverlay());
 
-        LayoutScene scene = layoutLib.createScene(params);
-
-        return scene;
+        return layoutLib.createSession(params);
     }
 
     /**

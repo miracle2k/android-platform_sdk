@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
 
-import static com.android.layoutlib.api.SceneResult.SceneStatus.NOT_IMPLEMENTED;
+import static com.android.ide.common.rendering.api.Result.Status.NOT_IMPLEMENTED;
 
-import com.android.layoutlib.api.SceneResult.SceneStatus;
+import com.android.ide.common.rendering.api.Result.Status;
 
 import java.awt.image.BufferedImage;
 import java.util.Map;
@@ -26,45 +26,18 @@ import java.util.Map;
 /**
  * An object allowing interaction with an Android layout.
  *
- * This is returned by {@link LayoutBridge#createScene(SceneParams)}.
+ * This is returned by {@link Bridge#createScene(Params)}.
  * and can then be used for subsequent actions on the layout.
  *
  * @since 5
  *
  */
-public class LayoutScene {
-
-    public interface IAnimationListener {
-        /**
-         * Called when a new animation frame is available for display.
-         *
-         * <p>The {@link LayoutScene} object is provided as a convenience. It should be queried
-         * for the image through {@link LayoutScene#getImage()}.
-         *
-         * <p>If no {@link IImageFactory} is used, then each new animation frame will be rendered
-         * in its own new {@link BufferedImage} object. However if an image factory is used, and it
-         * always re-use the same object, then the image is only guaranteed to be valid during
-         * this method call. As soon as this method return the image content will be overridden
-         * with new drawing.
-         *
-         */
-        void onNewFrame(LayoutScene scene);
-
-        /**
-         * Called when the animation is done playing.
-         */
-        void done(SceneResult result);
-
-        /**
-         * Return true to cancel the animation.
-         */
-        boolean isCanceled();
-    }
+public class RenderSession {
 
     /**
      * Returns the last operation result.
      */
-    public SceneResult getResult() {
+    public Result getResult() {
         return NOT_IMPLEMENTED.createResult();
     }
 
@@ -73,8 +46,8 @@ public class LayoutScene {
      * <p>
      *
      * This is reset to a new instance every time {@link #render()} is called and can be
-     * <code>null</code> if the call failed (and the method returned a {@link SceneResult} with
-     * {@link SceneStatus#ERROR_UNKNOWN} or {@link SceneStatus#NOT_IMPLEMENTED}.
+     * <code>null</code> if the call failed (and the method returned a {@link Result} with
+     * {@link Status#ERROR_UNKNOWN} or {@link Status#NOT_IMPLEMENTED}.
      * <p/>
      * This can be safely modified by the caller.
      */
@@ -86,8 +59,8 @@ public class LayoutScene {
      * Returns the rendering of the full layout.
      * <p>
      * This is reset to a new instance every time {@link #render()} is called and can be
-     * <code>null</code> if the call failed (and the method returned a {@link SceneResult} with
-     * {@link SceneStatus#ERROR_UNKNOWN} or {@link SceneStatus#NOT_IMPLEMENTED}.
+     * <code>null</code> if the call failed (and the method returned a {@link Result} with
+     * {@link Status#ERROR_UNKNOWN} or {@link Status#NOT_IMPLEMENTED}.
      * <p/>
      * This can be safely modified by the caller.
      */
@@ -102,7 +75,7 @@ public class LayoutScene {
      * @param viewObject the view object.
      * @return a map of the default property values or null.
      */
-    public Map<String, String> getDefaultViewPropertyValues(Object viewObject) {
+    public Map<String, String> getDefaultProperties(Object viewObject) {
         return null;
     }
 
@@ -113,10 +86,10 @@ public class LayoutScene {
      *
      * This is equivalent to calling <code>render(SceneParams.DEFAULT_TIMEOUT)</code>
      *
-     * @return a {@link SceneResult} indicating the status of the action.
+     * @return a {@link Result} indicating the status of the action.
      */
-    public SceneResult render() {
-        return render(SceneParams.DEFAULT_TIMEOUT);
+    public Result render() {
+        return render(Params.DEFAULT_TIMEOUT);
     }
 
     /**
@@ -124,16 +97,16 @@ public class LayoutScene {
      * In case of success, this should be followed by calls to {@link #getRootView()} and
      * {@link #getImage()} to access the result of the rendering.
      *
-     * The {@link LayoutBridge} is only able to inflate or render one layout at a time. There
+     * The {@link Bridge} is only able to inflate or render one layout at a time. There
      * is an internal lock object whenever such an action occurs. The timeout parameter is used
      * when attempting to acquire the lock. If the timeout expires, the method will return
-     * {@link SceneStatus#ERROR_TIMEOUT}.
+     * {@link Status#ERROR_TIMEOUT}.
      *
      * @param timeout timeout for the rendering, in milliseconds.
      *
-     * @return a {@link SceneResult} indicating the status of the action.
+     * @return a {@link Result} indicating the status of the action.
      */
-    public SceneResult render(long timeout) {
+    public Result render(long timeout) {
         return NOT_IMPLEMENTED.createResult();
     }
 
@@ -149,9 +122,29 @@ public class LayoutScene {
      * @param propertyName
      * @param propertyValue
      *
-     * @return a {@link SceneResult} indicating the status of the action.
+     * @return a {@link Result} indicating the status of the action.
+     *
+     * @throws IllegalArgumentException if the view object is not an android.view.View
      */
-    public SceneResult setProperty(Object objectView, String propertyName, String propertyValue) {
+    public Result setProperty(Object objectView, String propertyName, String propertyValue) {
+        return NOT_IMPLEMENTED.createResult();
+    }
+
+    /**
+     * returns the value of a given property on a given object.
+     * <p/>
+     * This returns a {@link Result} object. If the operation of querying the object for its
+     * property was successful (check {@link Result#isSuccess()}), then the property value
+     * is set in the result and can be accessed through {@link Result#getData()}.
+     *
+     * @param objectView
+     * @param propertyName
+     *
+     * @return a {@link Result} indicating the status of the action.
+     *
+     * @throws IllegalArgumentException if the view object is not an android.view.View
+     */
+    public Result getProperty(Object objectView, String propertyName) {
         return NOT_IMPLEMENTED.createResult();
     }
 
@@ -168,19 +161,19 @@ public class LayoutScene {
      * The child stays in the view hierarchy after the rendering is done. To remove it call
      * {@link #removeChild(Object, IAnimationListener)}
      * <p/>
-     * The returned {@link SceneResult} object will contain the android.view.View object for
-     * the newly inflated child. It is accessible through {@link SceneResult#getData()}.
+     * The returned {@link Result} object will contain the android.view.View object for
+     * the newly inflated child. It is accessible through {@link Result#getData()}.
      *
      * @param parentView the parent View object to receive the new child.
-     * @param childXml an {@link IXmlPullParser} containing the content of the new child, including
-     *             ViewGroup.LayoutParams attributes.
+     * @param childXml an {@link ILayoutPullParser} containing the content of the new child,
+     *             including ViewGroup.LayoutParams attributes.
      * @param index the index at which position to add the new child into the parent. -1 means at
      *             the end.
      * @param listener an optional {@link IAnimationListener}.
      *
-     * @return a {@link SceneResult} indicating the status of the action.
+     * @return a {@link Result} indicating the status of the action.
      */
-    public SceneResult insertChild(Object parentView, IXmlPullParser childXml, int index,
+    public Result insertChild(Object parentView, ILayoutPullParser childXml, int index,
             IAnimationListener listener) {
         return NOT_IMPLEMENTED.createResult();
     }
@@ -201,7 +194,7 @@ public class LayoutScene {
      * The child stays in the view hierarchy after the rendering is done. To remove it call
      * {@link #removeChild(Object, IAnimationListener)}
      * <p/>
-     * The returned {@link SceneResult} object will contain the android.view.ViewGroup.LayoutParams
+     * The returned {@link Result} object will contain the android.view.ViewGroup.LayoutParams
      * object created from the <var>layoutParams</var> map if it was non <code>null</code>.
      *
      * @param parentView the parent View object to receive the child. Can be the current parent
@@ -214,9 +207,9 @@ public class LayoutScene {
      *             be inflated and set with the content of the map.
      * @param listener an optional {@link IAnimationListener}.
      *
-     * @return a {@link SceneResult} indicating the status of the action.
+     * @return a {@link Result} indicating the status of the action.
      */
-    public SceneResult moveChild(Object parentView, Object childView, int index,
+    public Result moveChild(Object parentView, Object childView, int index,
             Map<String, String> layoutParams, IAnimationListener listener) {
         return NOT_IMPLEMENTED.createResult();
     }
@@ -232,9 +225,9 @@ public class LayoutScene {
      * @param childView the view object to remove from its parent
      * @param listener an optional {@link IAnimationListener}.
      *
-     * @return a {@link SceneResult} indicating the status of the action.
+     * @return a {@link Result} indicating the status of the action.
      */
-    public SceneResult removeChild(Object childView, IAnimationListener listener) {
+    public Result removeChild(Object childView, IAnimationListener listener) {
         return NOT_IMPLEMENTED.createResult();
     }
 
@@ -248,9 +241,9 @@ public class LayoutScene {
      * @param animationName the name of the animation (res/anim) to play.
      * @param listener the listener callback.
      *
-     * @return a {@link SceneResult} indicating the status of the action.
+     * @return a {@link Result} indicating the status of the action.
      */
-    public SceneResult animate(Object targetObject, String animationName,
+    public Result animate(Object targetObject, String animationName,
             boolean isFrameworkAnimation, IAnimationListener listener) {
         return NOT_IMPLEMENTED.createResult();
     }

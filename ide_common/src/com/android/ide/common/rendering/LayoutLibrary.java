@@ -14,24 +14,29 @@
  * limitations under the License.
  */
 
-package com.android.ide.common.layoutlib;
+package com.android.ide.common.rendering;
 
 import com.android.ide.common.log.ILogger;
+import com.android.ide.common.rendering.api.Bridge;
+import com.android.ide.common.rendering.api.Capability;
+import com.android.ide.common.rendering.api.ILayoutPullParser;
+import com.android.ide.common.rendering.api.LayoutLog;
+import com.android.ide.common.rendering.api.Params;
+import com.android.ide.common.rendering.api.RenderSession;
+import com.android.ide.common.rendering.api.Result;
+import com.android.ide.common.rendering.api.ViewInfo;
+import com.android.ide.common.rendering.api.Params.RenderingMode;
+import com.android.ide.common.rendering.api.Result.Status;
+import com.android.ide.common.rendering.legacy.ILegacyCallback;
+import com.android.ide.common.rendering.legacy.ILegacyPullParser;
 import com.android.ide.common.sdk.LoadStatus;
-import com.android.layoutlib.api.Capability;
 import com.android.layoutlib.api.ILayoutBridge;
 import com.android.layoutlib.api.ILayoutLog;
 import com.android.layoutlib.api.ILayoutResult;
+import com.android.layoutlib.api.IProjectCallback;
 import com.android.layoutlib.api.IResourceValue;
-import com.android.layoutlib.api.LayoutBridge;
-import com.android.layoutlib.api.LayoutLog;
-import com.android.layoutlib.api.LayoutScene;
-import com.android.layoutlib.api.SceneParams;
-import com.android.layoutlib.api.SceneResult;
-import com.android.layoutlib.api.ViewInfo;
+import com.android.layoutlib.api.IXmlPullParser;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
-import com.android.layoutlib.api.SceneParams.RenderingMode;
-import com.android.layoutlib.api.SceneResult.SceneStatus;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -48,9 +53,16 @@ import java.util.Map;
  * Use {@link #load(String, ILogger)} to load the jar file.
  * <p/>
  * Use the layout library with:
- * {@link #init(String, Map)}, {@link #supports(Capability)}, {@link #createScene(SceneParams)},
+ * {@link #init(String, Map)}, {@link #supports(Capability)}, {@link #createSession(Params)},
  * {@link #dispose()}, {@link #clearCaches(Object)}.
  *
+ * <p/>
+ * For client wanting to access both new and old (pre API level 5) layout libraries, it is
+ * important that the following interfaces be used:<br>
+ * {@link ILegacyPullParser} instead of {@link ILayoutPullParser}<br>
+ * {@link ILegacyCallback} instead of{@link com.android.ide.common.rendering.api.IProjectCallback}.
+ * <p/>
+ * These interfaces will ensure that both new and older Layout libraries can be accessed.
  */
 @SuppressWarnings("deprecation")
 public class LayoutLibrary {
@@ -58,7 +70,7 @@ public class LayoutLibrary {
     public final static String CLASS_BRIDGE = "com.android.layoutlib.bridge.Bridge"; //$NON-NLS-1$
 
     /** Link to the layout bridge */
-    private final LayoutBridge mBridge;
+    private final Bridge mBridge;
     /** Link to a ILayoutBridge in case loaded an older library */
     private final ILayoutBridge mLegacyBridge;
     /** Status of the layoutlib.jar loading */
@@ -106,7 +118,7 @@ public class LayoutLibrary {
 
         LoadStatus status = LoadStatus.LOADING;
         String message = null;
-        LayoutBridge bridge = null;
+        Bridge bridge = null;
         ILayoutBridge legacyBridge = null;
         ClassLoader classLoader = null;
 
@@ -135,8 +147,8 @@ public class LayoutLibrary {
                     Constructor<?> constructor = clazz.getConstructor();
                     if (constructor != null) {
                         Object bridgeObject = constructor.newInstance();
-                        if (bridgeObject instanceof LayoutBridge) {
-                            bridge = (LayoutBridge)bridgeObject;
+                        if (bridgeObject instanceof Bridge) {
+                            bridge = (Bridge)bridgeObject;
                         } else if (bridgeObject instanceof ILayoutBridge) {
                             legacyBridge = (ILayoutBridge) bridgeObject;
                         }
@@ -160,7 +172,7 @@ public class LayoutLibrary {
                     // check the API, only if it's not a legacy bridge
                     if (bridge != null) {
                         int api = bridge.getApiLevel();
-                        if (api > LayoutBridge.API_CURRENT) {
+                        if (api > Bridge.API_CURRENT) {
                             status = LoadStatus.FAILED;
                             message = "LayoutLib is too recent. Update your tool!";
                         }
@@ -189,7 +201,7 @@ public class LayoutLibrary {
      * Returns whether the LayoutLibrary supports a given {@link Capability}.
      * @return true if it supports it.
      *
-     * @see LayoutBridge#getCapabilities()
+     * @see Bridge#getCapabilities()
      *
      */
     public boolean supports(Capability capability) {
@@ -212,18 +224,18 @@ public class LayoutLibrary {
      * Initializes the Layout Library object. This must be called before any other action is taken
      * on the instance.
      *
-     * @param fontOsLocation the location of the fonts in the SDK target.
+     * @param fontLocation the location of the fonts in the SDK target.
      * @param enumValueMap map attrName => { map enumFlagName => Integer value }. This is typically
      *          read from attrs.xml in the SDK target.
      * @return true if success.
      *
-     * @see LayoutBridge#init(String, Map)
+     * @see Bridge#init(String, Map)
      */
-    public boolean init(String fontOsLocation, Map<String, Map<String, Integer>> enumValueMap) {
+    public boolean init(File fontLocation, Map<String, Map<String, Integer>> enumValueMap) {
         if (mBridge != null) {
-            return mBridge.init(fontOsLocation, enumValueMap);
+            return mBridge.init(fontLocation, enumValueMap);
         } else if (mLegacyBridge != null) {
-            return mLegacyBridge.init(fontOsLocation, enumValueMap);
+            return mLegacyBridge.init(fontLocation.getAbsolutePath(), enumValueMap);
         }
 
         return false;
@@ -232,7 +244,7 @@ public class LayoutLibrary {
     /**
      * Prepares the layoutlib to unloaded.
      *
-     * @see LayoutBridge#dispose()
+     * @see Bridge#dispose()
      */
     public boolean dispose() {
         if (mBridge != null) {
@@ -244,7 +256,7 @@ public class LayoutLibrary {
 
     /**
      * Starts a layout session by inflating and rendering it. The method returns a
-     * {@link LayoutScene} on which further actions can be taken.
+     * {@link RenderSession} on which further actions can be taken.
      * <p/>
      * Before taking further actions on the scene, it is recommended to use
      * {@link #supports(Capability)} to check what the scene can do.
@@ -252,13 +264,13 @@ public class LayoutLibrary {
      * @return a new {@link ILayoutScene} object that contains the result of the scene creation and
      * first rendering or null if {@link #getStatus()} doesn't return {@link LoadStatus#LOADED}.
      *
-     * @see LayoutBridge#createScene(SceneParams)
+     * @see Bridge#createSession(Params)
      */
-    public LayoutScene createScene(SceneParams params) {
+    public RenderSession createSession(Params params) {
         if (mBridge != null) {
-            return mBridge.createScene(params);
+            return mBridge.createSession(params);
         } else if (mLegacyBridge != null) {
-            return createLegacyScene(params);
+            return createLegacySession(params);
         }
 
         return null;
@@ -273,7 +285,7 @@ public class LayoutLibrary {
      *
      * @param projectKey the key for the project.
      *
-     * @see LayoutBridge#clearCaches(Object)
+     * @see Bridge#clearCaches(Object)
      */
     public void clearCaches(Object projectKey) {
         if (mBridge != null) {
@@ -285,7 +297,7 @@ public class LayoutLibrary {
 
     // ------ Implementation
 
-    private LayoutLibrary(LayoutBridge bridge, ILayoutBridge legacyBridge, ClassLoader classLoader,
+    private LayoutLibrary(Bridge bridge, ILayoutBridge legacyBridge, ClassLoader classLoader,
             LoadStatus status, String message) {
         mBridge = bridge;
         mLegacyBridge = legacyBridge;
@@ -316,8 +328,16 @@ public class LayoutLibrary {
         return apiLevel;
     }
 
-    private LayoutScene createLegacyScene(SceneParams params) {
-        int apiLevel = mLegacyBridge.getApiLevel();
+    private RenderSession createLegacySession(Params params) {
+        if (params.getLayoutDescription() instanceof IXmlPullParser == false) {
+            throw new IllegalArgumentException("Parser must be of type ILegacyPullParser");
+        }
+        if (params.getProjectCallback() instanceof
+                com.android.layoutlib.api.IProjectCallback == false) {
+            throw new IllegalArgumentException("Project callback must be of type ILegacyCallback");
+        }
+
+        int apiLevel = getLegacyApiLevel();
 
         // create a log wrapper since the older api requires a ILayoutLog
         final LayoutLog log = params.getLog();
@@ -349,30 +369,32 @@ public class LayoutLibrary {
         if (apiLevel == 4) {
             // Final ILayoutBridge API added support for "render full height"
             result = mLegacyBridge.computeLayout(
-                    params.getLayoutDescription(), params.getProjectKey(),
+                    (IXmlPullParser) params.getLayoutDescription(),
+                    params.getProjectKey(),
                     params.getScreenWidth(), params.getScreenHeight(),
                     params.getRenderingMode() == RenderingMode.FULL_EXPAND ? true : false,
                     params.getDensity(), params.getXdpi(), params.getYdpi(),
-                    params.getThemeName(), params.getIsProjectTheme(),
+                    params.getThemeName(), params.isProjectTheme(),
                     projectMap, frameworkMap,
-                    params.getProjectCallback(), logWrapper);
+                    (IProjectCallback) params.getProjectCallback(),
+                    logWrapper);
         } else if (apiLevel == 3) {
             // api 3 add density support.
             result = mLegacyBridge.computeLayout(
-                    params.getLayoutDescription(), params.getProjectKey(),
+                    (IXmlPullParser) params.getLayoutDescription(), params.getProjectKey(),
                     params.getScreenWidth(), params.getScreenHeight(),
                     params.getDensity(), params.getXdpi(), params.getYdpi(),
-                    params.getThemeName(), params.getIsProjectTheme(),
+                    params.getThemeName(), params.isProjectTheme(),
                     projectMap, frameworkMap,
-                    params.getProjectCallback(), logWrapper);
+                    (IProjectCallback) params.getProjectCallback(), logWrapper);
         } else if (apiLevel == 2) {
             // api 2 added boolean for separation of project/framework theme
             result = mLegacyBridge.computeLayout(
-                    params.getLayoutDescription(), params.getProjectKey(),
+                    (IXmlPullParser) params.getLayoutDescription(), params.getProjectKey(),
                     params.getScreenWidth(), params.getScreenHeight(),
-                    params.getThemeName(), params.getIsProjectTheme(),
+                    params.getThemeName(), params.isProjectTheme(),
                     projectMap, frameworkMap,
-                    params.getProjectCallback(), logWrapper);
+                    (IProjectCallback) params.getProjectCallback(), logWrapper);
         } else {
             // First api with no density/dpi, and project theme boolean mixed
             // into the theme name.
@@ -380,16 +402,16 @@ public class LayoutLibrary {
             // change the string if it's a custom theme to make sure we can
             // differentiate them
             String themeName = params.getThemeName();
-            if (params.getIsProjectTheme()) {
+            if (params.isProjectTheme()) {
                 themeName = "*" + themeName; //$NON-NLS-1$
             }
 
             result = mLegacyBridge.computeLayout(
-                    params.getLayoutDescription(), params.getProjectKey(),
+                    (IXmlPullParser) params.getLayoutDescription(), params.getProjectKey(),
                     params.getScreenWidth(), params.getScreenHeight(),
                     themeName,
                     projectMap, frameworkMap,
-                    params.getProjectCallback(), logWrapper);
+                    (IProjectCallback) params.getProjectCallback(), logWrapper);
         }
 
         // clean up that is not done by the ILayoutBridge itself
@@ -399,25 +421,25 @@ public class LayoutLibrary {
     }
 
     /**
-     * Converts a {@link ILayoutResult} to a {@link LayoutScene}.
+     * Converts a {@link ILayoutResult} to a {@link RenderSession}.
      */
-    private LayoutScene convertToScene(ILayoutResult result) {
+    private RenderSession convertToScene(ILayoutResult result) {
 
-        SceneResult sceneResult;
+        Result sceneResult;
         ViewInfo rootViewInfo;
 
         if (result.getSuccess() == ILayoutResult.SUCCESS) {
-            sceneResult = SceneStatus.SUCCESS.createResult();
+            sceneResult = Status.SUCCESS.createResult();
             rootViewInfo = convertToViewInfo(result.getRootView());
         } else {
-            sceneResult = SceneStatus.ERROR_UNKNOWN.createResult(result.getErrorMessage());
+            sceneResult = Status.ERROR_UNKNOWN.createResult(result.getErrorMessage());
             rootViewInfo = null;
         }
 
         // create a BasicLayoutScene. This will return the given values but return the default
         // implementation for all method.
         // ADT should gracefully handle the default implementations of LayoutScene
-        return new BasicLayoutScene(sceneResult, rootViewInfo, result.getImage());
+        return new StaticRenderSession(sceneResult, rootViewInfo, result.getImage());
     }
 
     /**

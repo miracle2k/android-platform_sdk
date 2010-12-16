@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.configuration;
 
+import com.android.ide.common.rendering.api.ResourceValue;
+import com.android.ide.common.rendering.api.StyleResourceValue;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -39,8 +41,6 @@ import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
-import com.android.layoutlib.api.ResourceValue;
-import com.android.layoutlib.api.StyleResourceValue;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.Density;
 import com.android.sdklib.resources.DockMode;

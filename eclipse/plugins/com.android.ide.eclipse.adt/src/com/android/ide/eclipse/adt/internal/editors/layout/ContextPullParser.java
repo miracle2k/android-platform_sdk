@@ -18,27 +18,27 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
-import static com.android.ide.common.layout.LayoutConstants.VALUE_MATCH_PARENT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_MATCH_PARENT;
 
-import com.android.layoutlib.api.IXmlPullParser;
+import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.sdklib.SdkConstants;
 
 import org.kxml2.io.KXmlParser;
 
 /**
- * Modified {@link KXmlParser} that adds the methods of {@link IXmlPullParser}.
+ * Modified {@link KXmlParser} that adds the methods of {@link ILayoutPullParser}.
  * <p/>
  * It will return a given parser when queried for one through
  * {@link IXmlPullParser#getParser(String)} for a given name.
  *
  */
-public class ContextPullParser extends KXmlParser implements IXmlPullParser {
+public class ContextPullParser extends KXmlParser implements ILayoutPullParser {
 
     private final String mName;
-    private final IXmlPullParser mEmbeddedParser;
+    private final ILayoutPullParser mEmbeddedParser;
 
-    public ContextPullParser(String name, IXmlPullParser embeddedParser) {
+    public ContextPullParser(String name, ILayoutPullParser embeddedParser) {
         super();
         mName = name;
         mEmbeddedParser = embeddedParser;
@@ -46,7 +46,7 @@ public class ContextPullParser extends KXmlParser implements IXmlPullParser {
 
     // --- Layout lib API methods
 
-    public IXmlPullParser getParser(String layoutName) {
+    public ILayoutPullParser getParser(String layoutName) {
         if (mName.equals(layoutName)) {
             return mEmbeddedParser;
         }
@@ -54,7 +54,7 @@ public class ContextPullParser extends KXmlParser implements IXmlPullParser {
         return null;
     }
 
-    public Object getViewKey() {
+    public Object getViewCookie() {
         return null; // never any key to return
     }
 

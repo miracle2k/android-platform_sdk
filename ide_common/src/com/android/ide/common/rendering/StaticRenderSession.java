@@ -14,35 +14,38 @@
  * limitations under the License.
  */
 
-package com.android.ide.common.layoutlib;
+package com.android.ide.common.rendering;
 
-import com.android.layoutlib.api.LayoutScene;
-import com.android.layoutlib.api.SceneResult;
-import com.android.layoutlib.api.ViewInfo;
+import com.android.ide.common.rendering.api.RenderSession;
+import com.android.ide.common.rendering.api.Result;
+import com.android.ide.common.rendering.api.ViewInfo;
 
 import java.awt.image.BufferedImage;
 
 /**
- * Basic LayoutScene returning a given {@link SceneResult}, {@link ViewInfo} and
+ * Static {@link RenderSession} returning a given {@link Result}, {@link ViewInfo} and
  * {@link BufferedImage}.
  * <p/>
  * All other methods are untouched from the base implementation provided by the API.
+ * <p/>
+ * This is meant to be used as a wrapper around the static results. No further operations are
+ * possible.
  *
  */
-public class BasicLayoutScene extends LayoutScene {
+public class StaticRenderSession extends RenderSession {
 
-    private final SceneResult mResult;
+    private final Result mResult;
     private final ViewInfo mRootViewInfo;
     private final BufferedImage mImage;
 
-    public BasicLayoutScene(SceneResult result, ViewInfo rootViewInfo, BufferedImage image) {
+    public StaticRenderSession(Result result, ViewInfo rootViewInfo, BufferedImage image) {
         mResult = result;
         mRootViewInfo = rootViewInfo;
         mImage = image;
     }
 
     @Override
-    public SceneResult getResult() {
+    public Result getResult() {
         return mResult;
     }
 

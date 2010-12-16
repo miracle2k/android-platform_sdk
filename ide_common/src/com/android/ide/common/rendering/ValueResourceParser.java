@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.ide.common.layoutlib;
+package com.android.ide.common.rendering;
 
-import com.android.layoutlib.api.ResourceValue;
-import com.android.layoutlib.api.StyleResourceValue;
+import com.android.ide.common.rendering.api.ResourceValue;
+import com.android.ide.common.rendering.api.StyleResourceValue;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;

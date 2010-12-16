@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
 
 /**
  * Enum representing the density class of Android resources.
