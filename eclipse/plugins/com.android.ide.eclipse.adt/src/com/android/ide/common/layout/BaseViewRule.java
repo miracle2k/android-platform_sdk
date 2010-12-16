@@ -49,6 +49,8 @@ import java.util.Set;
  * Common IViewRule processing to all view and layout classes.
  */
 public class BaseViewRule implements IViewRule {
+    private static final String ZCUSTOM = "zcustom"; //$NON-NLS-1$
+
     protected IClientRulesEngine mRulesEngine;
 
     // Cache of attributes. Key is FQCN of a node mixed with its view hierarchy
@@ -97,7 +99,7 @@ public class BaseViewRule implements IViewRule {
         }
         final String key = keySb.toString();
 
-        String custom_w = "Custom...";
+        String custom_w = null;
         String curr_w = selectedNode.getStringAttr(ANDROID_URI, ATTR_LAYOUT_WIDTH);
 
         String fillParent = getFillParentValueName();
@@ -107,11 +109,10 @@ public class BaseViewRule implements IViewRule {
         } else if (!canMatchParent && VALUE_MATCH_PARENT.equals(curr_w)) {
             curr_w = VALUE_FILL_PARENT;
         } else if (!VALUE_WRAP_CONTENT.equals(curr_w) && !fillParent.equals(curr_w)) {
-            curr_w = "zcustom"; //$NON-NLS-1$
-            custom_w = "Custom: " + curr_w;
+            custom_w = curr_w;
         }
 
-        String custom_h = "Custom...";
+        String custom_h = null;
         String curr_h = selectedNode.getStringAttr(ANDROID_URI, ATTR_LAYOUT_HEIGHT);
 
         if (canMatchParent && VALUE_FILL_PARENT.equals(curr_h)) {
@@ -119,9 +120,10 @@ public class BaseViewRule implements IViewRule {
         } else if (!canMatchParent && VALUE_MATCH_PARENT.equals(curr_h)) {
             curr_h = VALUE_FILL_PARENT;
         } else if (!VALUE_WRAP_CONTENT.equals(curr_h) && !fillParent.equals(curr_h)) {
-            curr_h = "zcustom"; //$NON-NLS-1$
-            custom_h = "Custom: " + curr_h;
+            custom_h = curr_h;
         }
+        final String customWidth = custom_w;
+        final String customHeight = custom_h;
 
         IMenuCallback onChange = new IMenuCallback() {
 
@@ -135,19 +137,22 @@ public class BaseViewRule implements IViewRule {
                 final INode node = selectedNode;
 
                 if (fullActionId.equals("layout_1width")) { //$NON-NLS-1$
-                    if (!valueId.startsWith("z")) {         //$NON-NLS-1$
+                    final String newAttrValue = getValue(valueId, customWidth);
+                    if (newAttrValue != null) {
                         node.editXml("Change attribute " + ATTR_LAYOUT_WIDTH, new INodeHandler() {
                             public void handle(INode n) {
-                                n.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, valueId);
+                                n.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, newAttrValue);
                             }
                         });
                     }
                     return;
                 } else if (fullActionId.equals("layout_2height")) { //$NON-NLS-1$
-                    if (!valueId.startsWith("z")) {                 //$NON-NLS-1$
+                    // Ask the user
+                    final String newAttrValue = getValue(valueId, customHeight);
+                    if (newAttrValue != null) {
                         node.editXml("Change attribute " + ATTR_LAYOUT_HEIGHT, new INodeHandler() {
                             public void handle(INode n) {
-                                n.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, valueId);
+                                n.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, newAttrValue);
                             }
                         });
                     }
@@ -201,6 +206,28 @@ public class BaseViewRule implements IViewRule {
                     }
                 }
             }
+
+            /**
+             * Returns the value (which will ask the user if the value is the special
+             * {@link #ZCUSTOM} marker
+             */
+            private String getValue(String valueId, String defaultValue) {
+                if (valueId.equals(ZCUSTOM)) {
+                    if (defaultValue == null) {
+                        defaultValue = "";
+                    }
+                    String value = mRulesEngine.displayInput(
+                            "Set custom layout attribute value (example: 50dip)",
+                            defaultValue, null);
+                    if (value != null && value.trim().length() > 0) {
+                        return value.trim();
+                    } else {
+                        return null;
+                    }
+                }
+
+                return valueId;
+            }
         };
 
         List<MenuAction> list1 = Arrays.asList(new MenuAction[] {
@@ -209,7 +236,8 @@ public class BaseViewRule implements IViewRule {
                       VALUE_WRAP_CONTENT, "Wrap Content",
                       canMatchParent ? VALUE_MATCH_PARENT : VALUE_FILL_PARENT,
                       canMatchParent ? "Match Parent" : "Fill Parent",
-                      "zcustom", custom_w             //$NON-NLS-1$
+                      custom_w, custom_w,
+                      ZCUSTOM, "Other..."
                     ),
                     curr_w,
                     onChange ),
@@ -218,7 +246,8 @@ public class BaseViewRule implements IViewRule {
                       VALUE_WRAP_CONTENT, "Wrap Content",
                       canMatchParent ? VALUE_MATCH_PARENT : VALUE_FILL_PARENT,
                       canMatchParent ? "Match Parent" : "Fill Parent",
-                      "zcustom", custom_h             //$NON-NLS-1$
+                      custom_h, custom_h,
+                      ZCUSTOM, "Other..."
                    ),
                     curr_h,
                     onChange ),
@@ -387,7 +416,12 @@ public class BaseViewRule implements IViewRule {
     static Map<String, String> mapify(String... values) {
         Map<String, String> map = new HashMap<String, String>(values.length / 2);
         for (int i = 0; i < values.length; i += 2) {
-            map.put(values[i], values[i + 1]);
+            String key = values[i];
+            if (key == null) {
+                continue;
+            }
+            String value = values[i + 1];
+            map.put(key, value);
         }
 
         return map;
