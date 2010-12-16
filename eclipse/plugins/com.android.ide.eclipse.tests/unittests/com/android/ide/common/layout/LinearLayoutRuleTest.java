@@ -18,6 +18,8 @@ package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ORIENTATION;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_HORIZONTAL;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_VERTICAL;
@@ -33,6 +35,7 @@ import com.android.ide.common.api.Rect;
 import com.android.ide.common.api.MenuAction.Choices;
 
 import java.util.List;
+import java.util.Map;
 
 /** Test the {@link LinearLayoutRule} */
 public class LinearLayoutRuleTest extends LayoutTestBase {
@@ -132,6 +135,27 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
         MenuAction propertiesMenu = contextMenu.get(2);
         assertTrue(propertiesMenu.getClass().getName(), propertiesMenu instanceof MenuAction.Group);
         // TODO: Test Properties-list
+    }
+
+    public void testContextMenuCustom() {
+        LinearLayoutRule rule = new LinearLayoutRule();
+        initialize(rule, "android.widget.LinearLayout");
+        INode node = TestNode.create("android.widget.Button").id("@+id/Button012")
+            .set(ANDROID_URI, ATTR_LAYOUT_WIDTH, "42dip")
+            .set(ANDROID_URI, ATTR_LAYOUT_HEIGHT, "50sp");
+
+        List<MenuAction> contextMenu = rule.getContextMenu(node);
+        assertEquals(4, contextMenu.size());
+        assertEquals("Layout Width", contextMenu.get(0).getTitle());
+        MenuAction menuAction = contextMenu.get(0);
+        assertTrue(menuAction instanceof MenuAction.Choices);
+        MenuAction.Choices choices = (Choices) menuAction;
+        Map<String, String> items = choices.getChoices();
+        assertTrue(items.containsKey("42dip"));
+        assertTrue(items.containsValue("42dip"));
+        assertEquals("Other...", items.get("zcustom"));
+        assertEquals("Match Parent", items.get("match_parent"));
+        assertEquals("42dip", choices.getCurrent());
     }
 
     // Check that the context menu manipulates the orientation attribute
