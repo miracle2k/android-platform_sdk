@@ -85,7 +85,7 @@ public class PropertySheetPage extends org.eclipse.ui.views.properties.PropertyS
                             // Strip out newlines to make this a single line entry
                             help = help.replace('\n', ' ');
                             // Remove repeated spaces in case there were trailing spaces
-                            help = help.replaceAll("  ", " "); //NON-NLS-1$ //NON-NLS-2$
+                            help = help.replaceAll("  ", " "); //$NON-NLS-1$ //$NON-NLS-2$
                             IActionBars actionBars = getSite().getActionBars();
                             IStatusLineManager status = actionBars.getStatusLineManager();
                             status.setMessage(help);
