@@ -193,7 +193,7 @@ public class GraphicalEditorPart extends EditorPart
     private SashForm mSashError;
 
     /** The palette displayed on the left of the sash. */
-    private PaletteComposite mPalette;
+    private PaletteControl mPalette;
 
     /** The layout canvas displayed to the right of the sash. */
     private LayoutCanvasViewer mCanvasViewer;
@@ -394,7 +394,7 @@ public class GraphicalEditorPart extends EditorPart
         mSashPalette = new SashForm(parent, SWT.HORIZONTAL);
         mSashPalette.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        mPalette = new PaletteComposite(mSashPalette, this);
+        mPalette = new PaletteControl(mSashPalette, this);
 
         mSashError = new SashForm(mSashPalette, SWT.VERTICAL | SWT.BORDER);
         mSashError.setLayoutData(new GridData(GridData.FILL_BOTH));
