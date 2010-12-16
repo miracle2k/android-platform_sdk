@@ -17,6 +17,8 @@
 package com.android.ide.eclipse.adt.internal.editors.manifest.pages;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IPageImageProvider;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.ManifestEditor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
@@ -24,6 +26,7 @@ import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiTreeBlock;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.forms.IManagedForm;
@@ -42,7 +45,7 @@ import java.util.HashSet;
  * <a href="http://www.eclipse.org/articles/Article-Forms/article.html">
  *   http://www.eclipse.org/articles/Article-Forms/article.html</a>
  */
-public final class OverviewPage extends FormPage {
+public final class OverviewPage extends FormPage implements IPageImageProvider {
 
     /** Page id used for switching tabs programmatically */
     final static String PAGE_ID = "overview_page"; //$NON-NLS-1$
@@ -59,6 +62,10 @@ public final class OverviewPage extends FormPage {
     public OverviewPage(ManifestEditor editor) {
         super(editor, PAGE_ID, "Manifest");  // tab's label, user visible, keep it short
         mEditor = editor;
+    }
+
+    public Image getPageImage() {
+        return IconFactory.getInstance().getIcon("editor_page_design");  //$NON-NLS-1$
     }
 
     /**

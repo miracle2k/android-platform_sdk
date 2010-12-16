@@ -233,6 +233,36 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
     }
 
     /**
+     * {@inheritDoc}
+     * <p/>
+     * If the page is an instance of {@link IPageImageProvider}, the image returned by
+     * by {@link IPageImageProvider#getPageImage()} will be set on the page's tab.
+     */
+    @Override
+    public int addPage(IFormPage page) throws PartInitException {
+        int index = super.addPage(page);
+        if (page instanceof IPageImageProvider) {
+            setPageImage(index, ((IPageImageProvider) page).getPageImage());
+        }
+        return index;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p/>
+     * If the editor is an instance of {@link IPageImageProvider}, the image returned by
+     * by {@link IPageImageProvider#getPageImage()} will be set on the page's tab.
+     */
+    @Override
+    public int addPage(IEditorPart editor, IEditorInput input) throws PartInitException {
+        int index = super.addPage(editor, input);
+        if (editor instanceof IPageImageProvider) {
+            setPageImage(index, ((IPageImageProvider) editor).getPageImage());
+        }
+        return index;
+    }
+
+    /**
      * Creates undo redo actions for the editor site (so that it works for any page of this
      * multi-page editor) by re-using the actions defined by the {@link StructuredTextEditor}
      * (aka the XML text editor.)
@@ -578,6 +608,8 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
             int index = addPage(mTextEditor, getEditorInput());
             mTextPageIndex = index;
             setPageText(index, mTextEditor.getTitle());
+            setPageImage(index,
+                    IconFactory.getInstance().getIcon("editor_page_source")); //$NON-NLS-1$
 
             if (!(mTextEditor.getTextViewer().getDocument() instanceof IStructuredDocument)) {
                 Status status = new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,

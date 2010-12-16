@@ -17,12 +17,15 @@
 package com.android.ide.eclipse.adt.internal.editors.manifest.pages;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IPageImageProvider;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.ManifestEditor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiTreeBlock;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.forms.IManagedForm;
 import org.eclipse.ui.forms.editor.FormPage;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
@@ -34,7 +37,7 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
  * <a href="http://www.eclipse.org/articles/Article-Forms/article.html">
  *   http://www.eclipse.org/articles/Article-Forms/article.html</a>
  */
-public final class PermissionPage extends FormPage {
+public final class PermissionPage extends FormPage implements IPageImageProvider {
     /** Page id used for switching tabs programmatically */
     public final static String PAGE_ID = "permission_page"; //$NON-NLS-1$
 
@@ -48,9 +51,15 @@ public final class PermissionPage extends FormPage {
         mEditor = editor;
     }
 
+    public Image getPageImage() {
+        return IconFactory.getInstance().getIcon(getTitle(),
+                                                 IconFactory.COLOR_RED,
+                                                 IconFactory.SHAPE_RECT);
+    }
+
     /**
      * Creates the content in the form hosted in this page.
-     * 
+     *
      * @param managedForm the form hosted in this page.
      */
     @Override
@@ -62,7 +71,7 @@ public final class PermissionPage extends FormPage {
 
         UiElementNode manifest = mEditor.getUiRootNode();
         AndroidManifestDescriptors manifestDescriptor = mEditor.getManifestDescriptors();
-        
+
         ElementDescriptor[] descriptorFilters = null;
         if (manifestDescriptor != null) {
             descriptorFilters = new ElementDescriptor[] {

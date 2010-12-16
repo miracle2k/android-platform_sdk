@@ -17,6 +17,8 @@
 package com.android.ide.eclipse.adt.internal.editors.manifest.pages;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IPageImageProvider;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.ManifestEditor;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
@@ -24,6 +26,7 @@ import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiTreeBlock;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.forms.IManagedForm;
@@ -39,7 +42,7 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
  * <a href="http://www.eclipse.org/articles/Article-Forms/article.html">
  *   http://www.eclipse.org/articles/Article-Forms/article.html</a>
  */
-public final class ApplicationPage extends FormPage {
+public final class ApplicationPage extends FormPage implements IPageImageProvider {
     /** Page id used for switching tabs programmatically */
     public final static String PAGE_ID = "application_page"; //$NON-NLS-1$
 
@@ -47,7 +50,7 @@ public final class ApplicationPage extends FormPage {
     ManifestEditor mEditor;
     /** The Application Toogle part */
     private ApplicationToggle mTooglePart;
-    /** The Application Attributes part */ 
+    /** The Application Attributes part */
     private ApplicationAttributesPart mAttrPart;
     /** The tree view block */
     private UiTreeBlock mTreeBlock;
@@ -57,9 +60,15 @@ public final class ApplicationPage extends FormPage {
         mEditor = editor;
     }
 
+    public Image getPageImage() {
+        return IconFactory.getInstance().getIcon(getTitle(),
+                                                 IconFactory.COLOR_BLUE,
+                                                 IconFactory.SHAPE_RECT);
+    }
+
     /**
      * Creates the content in the form hosted in this page.
-     * 
+     *
      * @param managedForm the form hosted in this page.
      */
     @Override
@@ -73,7 +82,7 @@ public final class ApplicationPage extends FormPage {
 
         Composite body = form.getBody();
         FormToolkit toolkit = managedForm.getToolkit();
-        
+
         // We usually prefer to have a ColumnLayout here. However
         // MasterDetailsBlock.createContent() below will reset the body's layout to a grid layout.
         mTooglePart = new ApplicationToggle(body, toolkit, mEditor, appUiNode);
