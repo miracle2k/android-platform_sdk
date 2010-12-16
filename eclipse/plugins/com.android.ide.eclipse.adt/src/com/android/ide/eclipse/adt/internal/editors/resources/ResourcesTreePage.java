@@ -17,12 +17,15 @@
 package com.android.ide.eclipse.adt.internal.editors.resources;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IPageImageProvider;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.ui.tree.UiTreeBlock;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.forms.IManagedForm;
 import org.eclipse.ui.forms.editor.FormPage;
@@ -32,7 +35,7 @@ import org.eclipse.ui.part.FileEditorInput;
 /**
  * Page for instrumentation settings, part of the AndroidManifest form editor.
  */
-public final class ResourcesTreePage extends FormPage {
+public final class ResourcesTreePage extends FormPage implements IPageImageProvider {
     /** Page id used for switching tabs programmatically */
     public final static String PAGE_ID = "res_tree_page"; //$NON-NLS-1$
 
@@ -44,28 +47,32 @@ public final class ResourcesTreePage extends FormPage {
         mEditor = editor;
     }
 
+    public Image getPageImage() {
+        return IconFactory.getInstance().getIcon("editor_page_design");  //$NON-NLS-1$
+    }
+
     /**
      * Creates the content in the form hosted in this page.
-     * 
+     *
      * @param managedForm the form hosted in this page.
      */
     @Override
     protected void createFormContent(IManagedForm managedForm) {
         super.createFormContent(managedForm);
         ScrolledForm form = managedForm.getForm();
-        
+
         String configText = null;
         IEditorInput input = mEditor.getEditorInput();
         if (input instanceof FileEditorInput) {
             FileEditorInput fileInput = (FileEditorInput)input;
             IFile iFile = fileInput.getFile();
-            
+
             ResourceFolder resFolder = ResourceManager.getInstance().getResourceFolder(iFile);
             if (resFolder != null) {
                 configText = resFolder.getConfiguration().toDisplayString();
             }
         }
-        
+
         if (configText != null) {
             form.setText(String.format("Android Resources (%1$s)", configText));
         } else {
