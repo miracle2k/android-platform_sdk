@@ -658,7 +658,7 @@ public class SelectionManager implements ISelectionProvider {
 
     private void updateMenuActions() {
         boolean hasSelection = !mSelections.isEmpty();
-        mCanvas.updateMenuActions(hasSelection);
+        mCanvas.updateMenuActionState(hasSelection);
     }
 
     private void redraw() {

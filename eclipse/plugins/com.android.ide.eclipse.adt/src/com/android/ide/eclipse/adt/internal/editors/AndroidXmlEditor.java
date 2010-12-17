@@ -649,6 +649,15 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
     }
 
     /**
+     * Return the {@link StructuredTextEditor} associated with this XML editor
+     *
+     * @return the associated {@link StructuredTextEditor}
+     */
+    public StructuredTextEditor getStructuredTextEditor() {
+        return mTextEditor;
+    }
+
+    /**
      * Returns the {@link IStructuredDocument} used by the StructuredTextEditor (aka Source
      * Editor) or null if not available.
      */
