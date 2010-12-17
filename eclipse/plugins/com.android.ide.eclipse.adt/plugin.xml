@@ -507,6 +507,7 @@
       </editor>
       <editor
             class="com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor"
+            contributorClass="com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditorActionContributor"
             default="false"
             extensions="xml"
             icon="icons/android_file.png"
