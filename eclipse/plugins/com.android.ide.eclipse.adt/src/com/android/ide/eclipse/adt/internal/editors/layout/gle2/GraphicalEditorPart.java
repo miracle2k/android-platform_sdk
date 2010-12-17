@@ -111,6 +111,8 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
+import org.eclipse.ui.part.IPage;
+import org.eclipse.ui.part.PageBookView;
 import org.w3c.dom.Node;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -430,6 +432,19 @@ public class GraphicalEditorPart extends EditorPart
      */
     public void selectionChanged(IWorkbenchPart part, ISelection selection) {
         if (!(part instanceof LayoutEditor)) {
+            if (part instanceof PageBookView) {
+                PageBookView pbv = (PageBookView) part;
+                IPage currentPage = pbv.getCurrentPage();
+                if (currentPage instanceof OutlinePage) {
+                    LayoutCanvas canvas = getCanvasControl();
+                    if (canvas != null && canvas.getOutlinePage() != currentPage) {
+                        // The notification is not for this view; ignore
+                        // (can happen when there are multiple pages simultaneously
+                        // visible)
+                        return;
+                    }
+                }
+            }
             mCanvasViewer.setSelection(selection);
         }
     }

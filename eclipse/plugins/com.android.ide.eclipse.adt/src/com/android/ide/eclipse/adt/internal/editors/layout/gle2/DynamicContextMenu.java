@@ -558,6 +558,13 @@ import java.util.regex.Pattern;
             for (MenuAction a2 : actions) {
                 MenuAction.Choices choice = (MenuAction.Choices) a2;
                 String current = choice.getCurrent();
+                if (current == null) {
+                    // None of the choices were selected. This can for example happen if
+                    // the user does not have an attribute for "layout_width" set on the element
+                    // and the context menu is opened to see the width choices.
+                    numOff++;
+                    continue;
+                }
                 boolean found = false;
 
                 if (current.indexOf(MenuAction.Choices.CHOICE_SEP) >= 0) {

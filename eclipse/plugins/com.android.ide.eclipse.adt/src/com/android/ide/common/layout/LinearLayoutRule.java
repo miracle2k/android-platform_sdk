@@ -41,7 +41,6 @@ import com.android.ide.common.api.IViewMetadata.FillPreference;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * An {@link IViewRule} for android.widget.LinearLayout and all its derived
@@ -383,35 +382,7 @@ public class LinearLayoutRule extends BaseLayoutRule {
 
         LinearDropData data = (LinearDropData) feedback.userData;
         final int initialInsertPos = data.getInsertPos();
-
-        // Collect IDs from dropped elements and remap them to new IDs
-        // if this is a copy or from a different canvas.
-        final Map<String, Pair<String, String>> idMap = getDropIdMap(targetNode, elements,
-                feedback.isCopy || !feedback.sameCanvas);
-
-        targetNode.editXml("Add elements to LinearLayout", new INodeHandler() {
-
-            public void handle(INode node) {
-                // Now write the new elements.
-                int insertPos = initialInsertPos;
-                for (IDragElement element : elements) {
-                    String fqcn = element.getFqcn();
-
-                    INode newChild = targetNode.insertChildAt(fqcn, insertPos);
-
-                    // insertPos==-1 means to insert at the end. Otherwise
-                    // increment the insertion position.
-                    if (insertPos >= 0) {
-                        insertPos++;
-                    }
-
-                    // Copy all the attributes, modifying them as needed.
-                    addAttributes(newChild, element, idMap, DEFAULT_ATTR_FILTER);
-
-                    addInnerElements(newChild, element, idMap);
-                }
-            }
-        });
+        insertAt(targetNode, elements, feedback.isCopy || !feedback.sameCanvas, initialInsertPos);
     }
 
     @Override

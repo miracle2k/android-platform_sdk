@@ -561,6 +561,8 @@ public class PaletteControl extends Composite {
                     null /* canvas */,
                     null /* removeSource */);
             dragInfo.setDragBounds(dragBounds);
+
+            e.doit = true;
         }
 
         public void dragSetData(DragSourceEvent e) {
@@ -666,6 +668,8 @@ public class PaletteControl extends Composite {
                 int offsetY = imageBounds.height / 2;
                 SwtUtils.setDragImageOffsets(event, offsetX, offsetY);
             }
+
+            event.doit = true;
         }
 
         @Override
