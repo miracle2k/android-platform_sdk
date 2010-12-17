@@ -1054,7 +1054,12 @@ public class GraphicalEditorPart extends EditorPart
         return mRulesEngine;
     }
 
-    /* package */ LayoutCanvas getCanvasControl() {
+    /**
+     * Return the {@link LayoutCanvas} associated with this editor
+     *
+     * @return the associated {@link LayoutCanvas}
+     */
+    public LayoutCanvas getCanvasControl() {
         if (mCanvasViewer != null) {
             return mCanvasViewer.getCanvas();
         }

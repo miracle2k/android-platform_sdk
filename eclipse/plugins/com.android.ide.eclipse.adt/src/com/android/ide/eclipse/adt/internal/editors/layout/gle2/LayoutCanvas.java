@@ -83,10 +83,10 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.actions.ContributionItemFactory;
-import org.eclipse.ui.actions.TextActionHandler;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
+import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.w3c.dom.Node;
 
@@ -108,7 +108,7 @@ import java.util.Set;
  * @since GLE2
  */
 @SuppressWarnings("restriction") // For WorkBench "Show In" support
-class LayoutCanvas extends Canvas {
+public class LayoutCanvas extends Canvas {
 
     private static final boolean DEBUG = false;
 
@@ -891,11 +891,6 @@ class LayoutCanvas extends Canvas {
      * accelerators will do what one would expect.
      */
     private void setupGlobalActionHandlers() {
-        // Get the global action bar for this editor (i.e. the menu bar)
-        IActionBars actionBars = mLayoutEditor.getEditorSite().getActionBars();
-
-        TextActionHandler tah = new TextActionHandler(actionBars);
-
         mCutAction = new Action() {
             @Override
             public void run() {
@@ -903,7 +898,6 @@ class LayoutCanvas extends Canvas {
             }
         };
 
-        tah.setCutAction(mCutAction);
         copyActionAttributes(mCutAction, ActionFactory.CUT);
 
         mCopyAction = new Action() {
@@ -913,7 +907,6 @@ class LayoutCanvas extends Canvas {
             }
         };
 
-        tah.setCopyAction(mCopyAction);
         copyActionAttributes(mCopyAction, ActionFactory.COPY);
 
         mPasteAction = new Action() {
@@ -923,7 +916,6 @@ class LayoutCanvas extends Canvas {
             }
         };
 
-        tah.setPasteAction(mPasteAction);
         copyActionAttributes(mPasteAction, ActionFactory.PASTE);
 
         mDeleteAction = new Action() {
@@ -935,7 +927,6 @@ class LayoutCanvas extends Canvas {
             }
         };
 
-        tah.setDeleteAction(mDeleteAction);
         copyActionAttributes(mDeleteAction, ActionFactory.DELETE);
 
         mSelectAllAction = new Action() {
@@ -945,7 +936,6 @@ class LayoutCanvas extends Canvas {
             }
         };
 
-        tah.setSelectAllAction(mSelectAllAction);
         copyActionAttributes(mSelectAllAction, ActionFactory.SELECT_ALL);
     }
 
@@ -963,7 +953,7 @@ class LayoutCanvas extends Canvas {
      *
      * @param hasSelection True iff we have a non-empty selection
      */
-    /* package */ void updateMenuActions(boolean hasSelection) {
+    /* package */ void updateMenuActionState(boolean hasSelection) {
         mCutAction.setEnabled(hasSelection);
         mCopyAction.setEnabled(hasSelection);
         mDeleteAction.setEnabled(hasSelection);
@@ -973,6 +963,27 @@ class LayoutCanvas extends Canvas {
         // We do not currently support pasting random text (e.g. XML). Maybe later.
         boolean hasSxt = mClipboardSupport.hasSxtOnClipboard();
         mPasteAction.setEnabled(hasSxt);
+    }
+
+    /**
+     * Update the actions when this editor is activated
+     *
+     * @param bars the action bar for this canvas
+     */
+    public void updateGlobalActions(IActionBars bars) {
+        bars.setGlobalActionHandler(ActionFactory.CUT.getId(), mCutAction);
+        bars.setGlobalActionHandler(ActionFactory.COPY.getId(), mCopyAction);
+        bars.setGlobalActionHandler(ActionFactory.PASTE.getId(), mPasteAction);
+        bars.setGlobalActionHandler(ActionFactory.DELETE.getId(), mDeleteAction);
+        bars.setGlobalActionHandler(ActionFactory.SELECT_ALL.getId(), mSelectAllAction);
+
+        ITextEditor editor = mLayoutEditor.getStructuredTextEditor();
+        IAction undoAction = editor.getAction(ActionFactory.UNDO.getId());
+        bars.setGlobalActionHandler(ActionFactory.UNDO.getId(), undoAction);
+        IAction redoAction = editor.getAction(ActionFactory.REDO.getId());
+        bars.setGlobalActionHandler(ActionFactory.REDO.getId(), redoAction);
+
+        bars.updateActionBars();
     }
 
     /**
@@ -997,6 +1008,7 @@ class LayoutCanvas extends Canvas {
         action.setImageDescriptor(wa.getImageDescriptor());
         action.setHoverImageDescriptor(wa.getHoverImageDescriptor());
         action.setDisabledImageDescriptor(wa.getDisabledImageDescriptor());
+        action.setHelpListener(wa.getHelpListener());
     }
 
     /**
