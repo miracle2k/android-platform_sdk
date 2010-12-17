@@ -38,6 +38,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.configuration.Configu
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
+import com.android.ide.eclipse.adt.internal.editors.ui.DecorComposite;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
@@ -394,7 +395,9 @@ public class GraphicalEditorPart extends EditorPart
         mSashPalette = new SashForm(parent, SWT.HORIZONTAL);
         mSashPalette.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        mPalette = new PaletteControl(mSashPalette, this);
+        DecorComposite paleteDecor = new DecorComposite(mSashPalette, SWT.BORDER);
+        paleteDecor.setContent(new PaletteControl.PaletteDecor(this));
+        mPalette = (PaletteControl) paleteDecor.getContentControl();
 
         mSashError = new SashForm(mSashPalette, SWT.VERTICAL | SWT.BORDER);
         mSashError.setLayoutData(new GridData(GridData.FILL_BOTH));

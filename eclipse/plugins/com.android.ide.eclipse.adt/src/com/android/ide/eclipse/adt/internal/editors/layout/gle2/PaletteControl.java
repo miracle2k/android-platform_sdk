@@ -25,6 +25,7 @@ import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.Rect;
 import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -34,6 +35,10 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDes
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
+import com.android.ide.eclipse.adt.internal.editors.ui.DecorComposite;
+import com.android.ide.eclipse.adt.internal.editors.ui.GridDataBuilder;
+import com.android.ide.eclipse.adt.internal.editors.ui.GridLayoutBuilder;
+import com.android.ide.eclipse.adt.internal.editors.ui.IDecorContent;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
@@ -61,7 +66,6 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -106,6 +110,33 @@ import javax.xml.parsers.ParserConfigurationException;
  */
 public class PaletteControl extends Composite {
 
+    /**
+     * Wrapper to create a {@link PaletteControl} into a {@link DecorComposite}.
+     */
+    public static class PaletteDecor implements IDecorContent {
+        private final GraphicalEditorPart mEditorPart;
+        private Control mControl;
+
+        public PaletteDecor(GraphicalEditorPart editor) {
+            mEditorPart = editor;
+        }
+
+        public String getTitle() {
+            return "Palette";
+        }
+
+        public Image getImage() {
+            return IconFactory.getInstance().getIcon("editor_palette");  //$NON-NLS-1$
+        }
+
+        public void createControl(Composite parent) {
+            mControl = new PaletteControl(parent, mEditorPart);
+        }
+
+        public Control getControl() {
+            return mControl;
+        }
+    }
 
     /** The parent grid layout that contains all the {@link Toggle} and {@link Item} widgets. */
     private Composite mRoot;
@@ -120,7 +151,7 @@ public class PaletteControl extends Composite {
      * @param editor An editor associated with this palette.
      */
     public PaletteControl(Composite parent, GraphicalEditorPart editor) {
-        super(parent, SWT.BORDER | SWT.V_SCROLL);
+        super(parent, SWT.V_SCROLL);
 
         mEditor = editor;
         mVBar = getVerticalBar();
@@ -183,10 +214,10 @@ public class PaletteControl extends Composite {
             c.dispose();
         }
 
-        setGridLayout(this, 2);
+        GridLayoutBuilder.create(this).columns(1).columnsEqual().hSpacing(0).noMargins();
 
         mRoot = new Composite(this, SWT.NONE);
-        setGridLayout(mRoot, 0);
+        GridLayoutBuilder.create(mRoot).columns(1).columnsEqual().spacing(0).noMargins();
 
         if (targetData != null) {
             addGroup(mRoot, "Views", targetData.getLayoutDescriptors().getViewDescriptors());
@@ -266,25 +297,12 @@ public class PaletteControl extends Composite {
         }
     }
 
-    private void setGridLayout(Composite parent, int spacing) {
-        GridLayout gl = new GridLayout(1, false);
-        gl.horizontalSpacing = 0;
-        gl.verticalSpacing = 0;
-        gl.marginHeight = spacing;
-        gl.marginBottom = spacing;
-        gl.marginLeft = spacing;
-        gl.marginRight = spacing;
-        gl.marginTop = spacing;
-        gl.marginBottom = spacing;
-        parent.setLayout(gl);
-    }
-
     private void addGroup(Composite parent,
             String uiName,
             List<ElementDescriptor> descriptors) {
 
         Composite group = new Composite(parent, SWT.NONE);
-        setGridLayout(group, 0);
+        GridLayoutBuilder.create(group).columns(1).columnsEqual().spacing(0).noMargins();
 
         Toggle toggle = new Toggle(group, uiName);
 
@@ -298,8 +316,7 @@ public class PaletteControl extends Composite {
 
             Item item = new Item(group, this, desc);
             toggle.addItem(item);
-            GridData gd = new GridData();
-            item.setLayoutData(gd);
+            GridDataBuilder.create(item);
         }
     }
 
