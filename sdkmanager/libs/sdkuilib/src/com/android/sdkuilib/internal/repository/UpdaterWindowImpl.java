@@ -143,9 +143,7 @@ public class UpdaterWindowImpl {
         mStackLayout = new StackLayout();
         mPagesRootComposite.setLayout(mStackLayout);
 
-        mAvdManagerPage = new AvdManagerPage(mPagesRootComposite, mUpdaterData);
-        mLocalPackagePage = new LocalPackagesPage(mPagesRootComposite, mUpdaterData);
-        mRemotePackagesPage = new RemotePackagesPage(mPagesRootComposite, mUpdaterData);
+        createPages();
 
         mSashForm.setWeights(new int[] {150, 576});
     }
@@ -210,6 +208,20 @@ public class UpdaterWindowImpl {
 
     // --- Internals & UI Callbacks -----------
 
+
+    /**
+     * Called by {@link #createContents()} to generate the pages that can be
+     * displayed in the window.
+     * <p/>
+     * Implementation detail: This is extracted from {@link #createContents()}
+     * so that we can skip it when using WindowsBuilder, since {@link #mUpdaterData}
+     * will then be null.
+     */
+    private void createPages() {
+        mAvdManagerPage = new AvdManagerPage(mPagesRootComposite, mUpdaterData);
+        mLocalPackagePage = new LocalPackagesPage(mPagesRootComposite, mUpdaterData);
+        mRemotePackagesPage = new RemotePackagesPage(mPagesRootComposite, mUpdaterData);
+    }
 
     /**
      * Helper to return the SWT shell.
