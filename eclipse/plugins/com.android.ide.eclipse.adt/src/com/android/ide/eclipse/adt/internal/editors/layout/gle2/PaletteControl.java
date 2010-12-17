@@ -83,7 +83,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 /**
- * A palette composite for the {@link GraphicalEditorPart}.
+ * A palette control for the {@link GraphicalEditorPart}.
  * <p/>
  * The palette contains several groups, each with a UI name (e.g. layouts and views) and each
  * with a list of element descriptors.
@@ -104,7 +104,7 @@ import javax.xml.parsers.ParserConfigurationException;
  *     - This would only be useful with meaningful icons. Out current 1-letter icons are not enough
  *       to get rid of text labels.
  */
-public class PaletteComposite extends Composite {
+public class PaletteControl extends Composite {
 
 
     /** The parent grid layout that contains all the {@link Toggle} and {@link Item} widgets. */
@@ -119,7 +119,7 @@ public class PaletteComposite extends Composite {
      * @param parent The parent composite.
      * @param editor An editor associated with this palette.
      */
-    public PaletteComposite(Composite parent, GraphicalEditorPart editor) {
+    public PaletteControl(Composite parent, GraphicalEditorPart editor) {
         super(parent, SWT.BORDER | SWT.V_SCROLL);
 
         mEditor = editor;
@@ -428,9 +428,9 @@ public class PaletteComposite extends Composite {
         private boolean mMouseIn;
         private DragSource mSource;
         private final ElementDescriptor mDesc;
-        public PaletteComposite mPalette;
+        public PaletteControl mPalette;
 
-        public Item(Composite parent, PaletteComposite palette, ElementDescriptor desc) {
+        public Item(Composite parent, PaletteControl palette, ElementDescriptor desc) {
             super(parent, SWT.NONE);
             mPalette = palette;
             mDesc = desc;
