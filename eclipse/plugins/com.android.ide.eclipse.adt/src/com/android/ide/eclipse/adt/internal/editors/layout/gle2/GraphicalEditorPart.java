@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static com.android.ide.eclipse.adt.AndroidConstants.ANDROID_PKG;
 import static com.android.sdklib.resources.Density.DEFAULT_DENSITY;
 
 import com.android.ide.common.layoutlib.BasicLayoutScene;
@@ -1812,7 +1813,7 @@ public class GraphicalEditorPart extends EditorPart
             // the platform apparently only supports @android for now (or if it does,
             // there are no usages in the current code base so this is not common).
             String packageName = url.substring(typeBegin, colon);
-            if ("android".equals(packageName)) {  //$NON-NLS-1$
+            if (ANDROID_PKG.equals(packageName)) {
                 isFrameworkResource = true;
             }
 

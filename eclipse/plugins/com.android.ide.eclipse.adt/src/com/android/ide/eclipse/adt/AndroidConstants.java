@@ -167,6 +167,9 @@ public class AndroidConstants {
     // another CL.
     public final static String NS_CUSTOM_RESOURCES = "http://schemas.android.com/apk/res/%1$s"; //$NON-NLS-1$
 
+    /** The package "android" as used in resource urls etc */
+    public static final String ANDROID_PKG = "android"; //$NON-NLS-1$
+
     /** The old common plug-in ID. Please do not use for new features. */
     private static final String LEGACY_PLUGIN_ID = "com.android.ide.eclipse.common"; //$NON-NLS-1$
 
