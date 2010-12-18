@@ -180,6 +180,13 @@ public class ConfigurationComposite extends Composite {
          */
         void onRenderingTargetPreChange(IAndroidTarget oldTarget);
 
+        /**
+         * Called after the rendering target changes.
+         *
+         * @param target the new rendering target
+         */
+        void onRenderingTargetPostChange(IAndroidTarget target);
+
         ProjectResources getProjectResources();
         ProjectResources getFrameworkResources();
         ProjectResources getFrameworkResources(IAndroidTarget target);
@@ -840,6 +847,8 @@ public class ConfigurationComposite extends Composite {
                         mDockCombo.select(DockMode.getIndex(mState.dock));
                         mNightCombo.select(NightMode.getIndex(mState.night));
                         mTargetCombo.select(mTargetList.indexOf(mState.target));
+
+                        targetData = Sdk.getCurrent().getTargetData(mState.target);
                     } else {
                         findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
 
@@ -1807,6 +1816,10 @@ public class ConfigurationComposite extends Composite {
         // since the state is saved in computeCurrentConfig, we need to resave it since theme
         // change could have impacted it.
         saveState();
+
+        if (mListener != null && mRenderingTarget != null) {
+            mListener.onRenderingTargetPostChange(mRenderingTarget);
+        }
 
         if (computeOk &&  mListener != null) {
             mListener.onConfigurationChange();
