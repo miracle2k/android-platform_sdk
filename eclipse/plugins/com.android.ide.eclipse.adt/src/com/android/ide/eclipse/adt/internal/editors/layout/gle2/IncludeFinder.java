@@ -450,15 +450,20 @@ public class IncludeFinder {
                         }
                     }
 
-                    // If no XML model we have to read the XML contents and (possibly)
-                    // parse it
+                    // If no XML model we have to read the XML contents and (possibly) parse it.
+                    // The actual file may not exist anymore (e.g. when deleting a layout file
+                    // or when the workspace is out of sync.)
                     if (!hadXmlModel) {
                         String xml = AdtPlugin.readFile(file);
-                        includes = findIncludes(xml);
+                        if (xml != null) {
+                            includes = findIncludes(xml);
+                        }
                     }
                 } else {
                     String xml = AdtPlugin.readFile(resourceFile);
-                    includes = findIncludes(xml);
+                    if (xml != null) {
+                        includes = findIncludes(xml);
+                    }
                 }
 
                 String key = getMapKey(resourceFile);
