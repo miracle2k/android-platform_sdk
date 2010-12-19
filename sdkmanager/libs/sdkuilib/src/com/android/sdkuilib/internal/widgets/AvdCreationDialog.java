@@ -589,6 +589,10 @@ final class AvdCreationDialog extends GridDialog {
         mHardwareViewer.setInput(mProperties);
     }
 
+    // -- Start of internal part ----------
+    // Hide everything down-below from SWT designer
+    //$hide>>$
+
     @Override
     protected Button createButton(Composite parent, int id, String label, boolean defaultButton) {
         if (id == IDialogConstants.OK_ID) {
@@ -1008,4 +1012,7 @@ final class AvdCreationDialog extends GridDialog {
         }
         return success;
     }
+
+    // End of hiding from SWT Designer
+    //$hide<<$
 }
