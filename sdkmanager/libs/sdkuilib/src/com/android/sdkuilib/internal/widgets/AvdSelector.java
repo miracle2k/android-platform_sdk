@@ -84,6 +84,7 @@ public final class AvdSelector {
     private Button mDeleteButton;
     private Button mDetailsButton;
     private Button mNewButton;
+    private Button mEditButton;
     private Button mRefreshButton;
     private Button mManagerButton;
     private Button mRepairButton;
@@ -254,6 +255,17 @@ public final class AvdSelector {
                 @Override
                 public void widgetSelected(SelectionEvent arg0) {
                     onNew();
+                }
+            });
+
+            mEditButton = new Button(buttons, SWT.PUSH | SWT.FLAT);
+            mEditButton.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+            mEditButton.setText("Edit...");
+            mEditButton.setToolTipText("Edit an existing AVD.");
+            mEditButton.addSelectionListener(new SelectionAdapter() {
+                @Override
+                public void widgetSelected(SelectionEvent arg0) {
+                    onEdit();
                 }
             });
 
@@ -813,6 +825,9 @@ public final class AvdSelector {
             mDetailsButton.setEnabled(false);
             mStartButton.setEnabled(false);
 
+            if (mEditButton != null) {
+                mEditButton.setEnabled(false);
+            }
             if (mDeleteButton != null) {
                 mDeleteButton.setEnabled(false);
             }
@@ -828,6 +843,9 @@ public final class AvdSelector {
                     hasSelection &&
                     selection.getStatus() == AvdStatus.OK);
 
+            if (mEditButton != null) {
+                mEditButton.setEnabled(hasSelection);
+            }
             if (mDeleteButton != null) {
                 mDeleteButton.setEnabled(hasSelection);
             }
@@ -841,7 +859,22 @@ public final class AvdSelector {
         AvdCreationDialog dlg = new AvdCreationDialog(mTable.getShell(),
                 mAvdManager,
                 mImageFactory,
-                mSdkLog);
+                mSdkLog,
+                null);
+
+        if (dlg.open() == Window.OK) {
+            refresh(false /*reload*/);
+        }
+    }
+
+    private void onEdit() {
+        AvdInfo avdInfo = getTableSelection();
+
+        AvdCreationDialog dlg = new AvdCreationDialog(mTable.getShell(),
+                mAvdManager,
+                mImageFactory,
+                mSdkLog,
+                avdInfo);
 
         if (dlg.open() == Window.OK) {
             refresh(false /*reload*/);
@@ -849,7 +882,7 @@ public final class AvdSelector {
     }
 
     private void onDetails() {
-        final AvdInfo avdInfo = getTableSelection();
+        AvdInfo avdInfo = getTableSelection();
 
         AvdDetailsDialog dlg = new AvdDetailsDialog(mTable.getShell(), avdInfo);
         dlg.open();

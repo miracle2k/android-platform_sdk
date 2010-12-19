@@ -29,6 +29,7 @@ import org.eclipse.swt.widgets.Display;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 
 /**
@@ -38,7 +39,7 @@ import java.util.Iterator;
 public class ImageFactory {
 
     private final Display mDisplay;
-    private final HashMap<String, Image> mImages = new HashMap<String, Image>();
+    private final Map<String, Image> mImages = new HashMap<String, Image>();
 
     public ImageFactory(Display display) {
         mDisplay = display;
@@ -47,6 +48,7 @@ public class ImageFactory {
     /**
      * Loads an image given its filename (with its extension).
      * Might return null if the image cannot be loaded.
+     * The image is cached. Successive calls will return the <em>same</em> object.
      *
      * @param imageName The filename (with extension) of the image to load.
      * @return A new or existing {@link Image}. The caller must NOT dispose the image (the
@@ -79,11 +81,12 @@ public class ImageFactory {
 
     /**
      * Loads and returns the appropriate image for a given package, archive or source object.
+     * The image is cached. Successive calls will return the <em>same</em> object.
      *
      * @param object A {@link SdkSource} or {@link Package} or {@link Archive}.
      * @return A new or existing {@link Image}. The caller must NOT dispose the image (the
      *  image will disposed by {@link #dispose()}). The returned image can be null if the
-     *  expected file is missing.
+     *  object is of an unknown type.
      */
     public Image getImageForObject(Object object) {
 
