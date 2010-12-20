@@ -57,7 +57,7 @@ public class DmTraceReader extends TraceReader {
     // A regex for matching the thread "id name" lines in the .key file
     private static final Pattern mIdNamePattern = Pattern.compile("(\\d+)\t(.*)");  //$NON-NLS-1$
 
-    DmTraceReader(String traceFileName, boolean regression) {
+    public DmTraceReader(String traceFileName, boolean regression) {
         mTraceFileName = traceFileName;
         mRegression = regression;
         mMethodMap = new HashMap<Integer, MethodData>();

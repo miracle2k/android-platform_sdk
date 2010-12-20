@@ -12,6 +12,9 @@
    <feature url="features/com.android.ide.eclipse.hierarchyviewer_10.0.0.qualifier.jar" id="com.android.ide.eclipse.hierarchyviewer" version="10.0.0.qualifier">
       <category name="developer"/>
    </feature>
+   <feature url="features/com.android.ide.eclipse.traceview_10.0.0.qualifier.jar" id="com.android.ide.eclipse.traceview" version="10.0.0.qualifier">
+      <category name="developer"/>
+   </feature>
    <category-def name="developer" label="Developer Tools">
       <description>
          Features that add Android support to Eclipse for application developers.

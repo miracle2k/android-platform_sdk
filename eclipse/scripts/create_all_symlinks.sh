@@ -25,5 +25,7 @@ echo ; echo "### BRIDGE ###" ; echo
 $DEST/create_bridge_symlinks.sh "$*"
 echo ; echo "### HIERARCHYVIEWER ###" ; echo
 $DEST/create_hierarchyviewer_symlinks.sh "$*"
+echo ; echo "### TRACEVIEW ###" ; echo
+$DEST/create_traceview_symlinks.sh "$*"
 
 echo "### $0 done"
