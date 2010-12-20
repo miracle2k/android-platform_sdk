@@ -478,10 +478,7 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
     @Override
     public void dispose() {
         super.dispose();
-        if (mTabIcon != null) {
-            mTabIcon.dispose();
-            mTabIcon = null;
-        }
+        mTabIcon = null;
         mJavaElementLabelProvider.dispose();
     }
 
