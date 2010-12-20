@@ -24,6 +24,7 @@ import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
+import com.android.layoutlib.api.Capability;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -207,9 +208,8 @@ import java.util.regex.Pattern;
             }
         }
 
-        // Not yet enabled because we need to backport layoutlib changes to Android 2.0, 2.1, 2.2
-        // first:
-        if (System.getenv("ADT_TEST") != null) { //$NON-NLS-1$
+        // Showing includes is not supported for all the targeted platforms
+        if (mEditor.getGraphicalEditor().renderingSupports(Capability.EMBEDDED_LAYOUT)) {
             insertShowIncludedMenu(endId);
         }
     }

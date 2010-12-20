@@ -88,7 +88,6 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.ui.actions.OpenNewClassWizardAction;
 import org.eclipse.jdt.ui.wizards.NewClassWizardPage;
-import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.window.Window;
@@ -624,7 +623,7 @@ public class GraphicalEditorPart extends EditorPart
         public void onCreate() {
             LayoutCreatorDialog dialog = new LayoutCreatorDialog(mConfigComposite.getShell(),
                     mEditedFile.getName(), mConfigComposite.getCurrentConfig());
-            if (dialog.open() == Dialog.OK) {
+            if (dialog.open() == Window.OK) {
                 final FolderConfiguration config = new FolderConfiguration();
                 dialog.getConfiguration(config);
 
@@ -634,6 +633,11 @@ public class GraphicalEditorPart extends EditorPart
 
         public void onRenderingTargetPreChange(IAndroidTarget oldTarget) {
             preRenderingTargetChangeCleanUp(oldTarget);
+        }
+
+        public void onRenderingTargetPostChange(IAndroidTarget target) {
+            AndroidTargetData targetData = Sdk.getCurrent().getTargetData(target);
+            updateCapabilities(targetData);
         }
 
         public Map<String, Map<String, ResourceValue>> getConfiguredFrameworkResources() {
@@ -1034,12 +1038,21 @@ public class GraphicalEditorPart extends EditorPart
      */
     public void onTargetChange() {
         AndroidTargetData targetData = mConfigComposite.onXmlModelLoaded();
+        updateCapabilities(targetData);
+
+        mConfigListener.onConfigurationChange();
+    }
+
+    /** Updates the capabilities for the given target data (which may be null) */
+    private void updateCapabilities(AndroidTargetData targetData) {
         if (targetData != null) {
             LayoutLibrary layoutLib = targetData.getLayoutLibrary();
             setClippingSupport(layoutLib.supports(Capability.UNBOUND_RENDERING));
-        }
 
-        mConfigListener.onConfigurationChange();
+            if (mIncludedWithin != null &&  !layoutLib.supports(Capability.EMBEDDED_LAYOUT)) {
+                showIn(null);
+            }
+        }
     }
 
     public LayoutEditor getLayoutEditor() {
@@ -1349,6 +1362,23 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         return null;
+    }
+
+    /**
+     * Returns whether the current rendering target supports the given capability
+     *
+     * @param capability the capability to be looked up
+     * @return true if the current rendering target supports the given capability
+     */
+    public boolean renderingSupports(Capability capability) {
+        IAndroidTarget target = getRenderingTarget();
+        if (target != null) {
+            AndroidTargetData targetData = Sdk.getCurrent().getTargetData(target);
+            LayoutLibrary layoutLib = targetData.getLayoutLibrary();
+            return layoutLib.supports(capability);
+        }
+
+        return false;
     }
 
     private boolean ensureModelValid(UiDocumentNode model) {
