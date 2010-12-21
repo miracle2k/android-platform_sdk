@@ -16,6 +16,8 @@
 
 package com.android.layoutlib.api;
 
+import com.android.ide.common.rendering.api.Bridge;
+
 import java.util.Map;
 
 /**
@@ -26,7 +28,7 @@ import java.util.Map;
  * <p/>
  * Changes in API level 5:
  * <ul>
- * <li>Bridge should extend {@link LayoutBridge} instead of implementing {@link ILayoutBridge}.</li>
+ * <li>Bridge should extend {@link Bridge} instead of implementing {@link ILayoutBridge}.</li>
  * </ul>
  * Changes in API level 4:
  * <ul>
@@ -44,7 +46,7 @@ import java.util.Map;
  * <li>new render method: {@link #computeLayout(IXmlPullParser, Object, int, int, String, boolean, Map, Map, IProjectCallback, ILayoutLog)}</li>
  * <li>deprecated {@link #computeLayout(IXmlPullParser, Object, int, int, String, Map, Map, IProjectCallback, ILayoutLog)}</li>
  * </ul>
- * @deprecated Extend {@link LayoutBridge} instead.
+ * @deprecated Extend {@link Bridge} instead.
  */
 @Deprecated
 public interface ILayoutBridge {
@@ -102,7 +104,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated use {@link LayoutBridge#createScene(SceneParams)}
+     * @deprecated use {@link Bridge#createScene(SceneParams)}
      * @since 4
      */
     @Deprecated
@@ -139,7 +141,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated use {@link LayoutBridge#createScene(SceneParams)}
+     * @deprecated use {@link Bridge#createScene(SceneParams)}
      * @since 3
      */
     @Deprecated
@@ -172,7 +174,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated use {@link LayoutBridge#createScene(SceneParams)}
+     * @deprecated use {@link Bridge#createScene(SceneParams)}
      * @since 2
      */
     @Deprecated
@@ -204,7 +206,7 @@ public interface ILayoutBridge {
      * the project.
      * @param logger the object responsible for displaying warning/errors to the user.
      * @return a new {@link ILayoutResult} object that contains the result of the layout.
-     * @deprecated use {@link LayoutBridge#createScene(SceneParams)}
+     * @deprecated use {@link Bridge#createScene(SceneParams)}
      * @since 1
      */
     @Deprecated

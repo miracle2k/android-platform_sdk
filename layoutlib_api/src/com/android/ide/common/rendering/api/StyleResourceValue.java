@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
+
+import com.android.layoutlib.api.IResourceValue;
+import com.android.layoutlib.api.IStyleResourceValue;
 
 import java.util.HashMap;
 

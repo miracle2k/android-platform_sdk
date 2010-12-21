@@ -19,12 +19,12 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.MenuAction;
+import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
-import com.android.layoutlib.api.Capability;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;

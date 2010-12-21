@@ -16,7 +16,13 @@
 
 package com.android.ide.eclipse.tests.functests.layoutRendering;
 
-import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.rendering.LayoutLibrary;
+import com.android.ide.common.rendering.api.ILayoutPullParser;
+import com.android.ide.common.rendering.api.IProjectCallback;
+import com.android.ide.common.rendering.api.Params;
+import com.android.ide.common.rendering.api.RenderSession;
+import com.android.ide.common.rendering.api.ResourceValue;
+import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier;
@@ -32,12 +38,6 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.tests.SdkTestCase;
-import com.android.layoutlib.api.IProjectCallback;
-import com.android.layoutlib.api.IXmlPullParser;
-import com.android.layoutlib.api.LayoutScene;
-import com.android.layoutlib.api.ResourceValue;
-import com.android.layoutlib.api.SceneParams;
-import com.android.layoutlib.api.SceneParams.RenderingMode;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.FolderWrapper;
@@ -68,16 +68,16 @@ public class ApiDemosRenderingTest extends SdkTestCase {
      * Custom parser that implements {@link IXmlPullParser} (which itself extends
      * {@link XmlPullParser}).
      */
-    private final static class TestParser extends KXmlParser implements IXmlPullParser {
+    private final static class TestParser extends KXmlParser implements ILayoutPullParser {
         /**
          * Since we're not going to go through the result of the rendering/layout, we can return
          * null for the View Key.
          */
-        public Object getViewKey() {
+        public Object getViewCookie() {
             return null;
         }
 
-        public IXmlPullParser getParser(String layoutName) {
+        public ILayoutPullParser getParser(String layoutName) {
             return null;
         }
     }
@@ -199,7 +199,7 @@ public class ApiDemosRenderingTest extends SdkTestCase {
 
             ProjectCallBack projectCallBack = new ProjectCallBack();
 
-            LayoutScene scene = layoutLib.createScene(new SceneParams(
+            RenderSession session = layoutLib.createSession(new Params(
                     parser,
                     null /*projectKey*/,
                     320,
@@ -216,18 +216,18 @@ public class ApiDemosRenderingTest extends SdkTestCase {
                     null //logger
                     ));
 
-            if (scene.getResult().isSuccess() == false) {
+            if (session.getResult().isSuccess() == false) {
                 if (projectCallBack.mCustomViewAttempt == false) {
                     System.out.println("FAILED");
                     fail(String.format("Rendering %1$s: %2$s", layout.getName(),
-                            scene.getResult().getErrorMessage()));
+                            session.getResult().getErrorMessage()));
                 } else {
                     System.out.println("Ignore custom views for now");
                 }
             } else {
                 if (saveFiles) {
                     File tmp = File.createTempFile(layout.getName(), ".png");
-                    ImageIO.write(scene.getImage(), "png", tmp);
+                    ImageIO.write(session.getImage(), "png", tmp);
                 }
                 System.out.println("Success!");
             }

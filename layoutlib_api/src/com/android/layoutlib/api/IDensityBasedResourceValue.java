@@ -16,6 +16,9 @@
 
 package com.android.layoutlib.api;
 
+import com.android.ide.common.rendering.api.DensityBasedResourceValue;
+import com.android.ide.common.rendering.api.ResourceDensity;
+
 /**
  * Represents an Android Resources that has a density info attached to it.
  * @deprecated use {@link DensityBasedResourceValue}.

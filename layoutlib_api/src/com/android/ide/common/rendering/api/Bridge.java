@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
 
+
+import java.io.File;
 import java.util.EnumSet;
 import java.util.Map;
 
 /**
- * Entry point of the Layout Lib. Extensions of this class provide a method to compute
+ * Entry point of the Layout Library. Extensions of this class provide a method to compute
  * and render a layout.
  */
-public abstract class LayoutBridge {
+public abstract class Bridge {
 
     public final static int API_CURRENT = 5;
 
@@ -32,6 +34,7 @@ public abstract class LayoutBridge {
      * <p/>
      * While no methods will ever be removed, some may become deprecated, and some new ones
      * will appear.
+     * <p/>All Layout libraries based on {@link Bridge} return at minimum an API level of 5.
      */
     public abstract int getApiLevel();
 
@@ -47,11 +50,11 @@ public abstract class LayoutBridge {
     /**
      * Initializes the Bridge object.
      *
-     * @param fontOsLocation the location of the fonts.
+     * @param fontLocation the location of the fonts.
      * @param enumValueMap map attrName => { map enumFlagName => Integer value }.
      * @return true if success.
      */
-    public boolean init(String fontOsLocation, Map<String, Map<String, Integer>> enumValueMap) {
+    public boolean init(File fontLocation, Map<String, Map<String, Integer>> enumValueMap) {
         return false;
     }
 
@@ -64,12 +67,12 @@ public abstract class LayoutBridge {
 
     /**
      * Starts a layout session by inflating and rendering it. The method returns a
-     * {@link LayoutScene} on which further actions can be taken.
+     * {@link RenderSession} on which further actions can be taken.
      *
-     * @return a new {@link LayoutScene} object that contains the result of the scene creation and
+     * @return a new {@link RenderSession} object that contains the result of the scene creation and
      * first rendering.
      */
-    public LayoutScene createScene(SceneParams params) {
+    public RenderSession createSession(Params params) {
         return null;
     }
 
@@ -79,6 +82,8 @@ public abstract class LayoutBridge {
      * until this method is called.
      * <p/>The cache is not configuration dependent and should only be cleared when a
      * resource changes (at this time only bitmaps and 9 patches go into the cache).
+     * <p/>
+     * The project key provided must be similar to the one passed in {@link Params}.
      *
      * @param projectKey the key for the project.
      */

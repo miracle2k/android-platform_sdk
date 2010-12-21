@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
-import com.android.layoutlib.api.IXmlPullParser;
+import com.android.ide.common.rendering.legacy.ILegacyPullParser;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -24,26 +24,26 @@ import java.io.InputStream;
 import java.io.Reader;
 
 /**
- * Base implementation of an {@link IXmlPullParser} for cases where the parser is not sitting
+ * Base implementation of an {@link ILegacyPullParser} for cases where the parser is not sitting
  * on top of an actual XML file.
  * <p/>It's designed to work on layout files, and will most likely not work on other resource
  * files.
  */
-public abstract class BasePullParser implements IXmlPullParser {
-    
+public abstract class BasePullParser implements ILegacyPullParser {
+
     protected int mParsingState = START_DOCUMENT;
-    
+
     public BasePullParser() {
     }
-    
+
     // --- new methods to override ---
-    
+
     public abstract void onNextFromStartDocument();
     public abstract void onNextFromStartTag();
     public abstract void onNextFromEndTag();
-    
+
     // --- basic implementation of IXmlPullParser ---
-    
+
     public void setFeature(String name, boolean state) throws XmlPullParserException {
         if (FEATURE_PROCESS_NAMESPACES.equals(name) && state) {
             return;
@@ -137,7 +137,7 @@ public abstract class BasePullParser implements IXmlPullParser {
     public boolean isWhitespace() {
         return false;
     }
-    
+
     public int next() throws XmlPullParserException {
         switch (mParsingState) {
             case END_DOCUMENT:
@@ -173,7 +173,7 @@ public abstract class BasePullParser implements IXmlPullParser {
                 // not used
                 break;
         }
-        
+
         return mParsingState;
     }
 

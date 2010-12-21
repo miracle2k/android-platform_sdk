@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
+
+import com.android.layoutlib.api.IResourceValue;
 
 /**
  * Represents an android resource with a name and a string value.

@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
 
 /**
  * Scene result class. This is an immutable class.
  * <p/>
  * This cannot be allocated directly, instead use
- * {@link SceneStatus#createResult()},
- * {@link SceneStatus#createResult(String, Throwable)},
- * {@link SceneStatus#createResult(String)}
- * {@link SceneStatus#createResult(Object)}
+ * {@link Status#createResult()},
+ * {@link Status#createResult(String, Throwable)},
+ * {@link Status#createResult(String)}
+ * {@link Status#createResult(Object)}
  */
-public class SceneResult {
+public class Result {
 
-    private final SceneStatus mStatus;
+    private final Status mStatus;
     private final String mErrorMessage;
     private final Throwable mThrowable;
     private Object mData;
@@ -36,7 +36,7 @@ public class SceneResult {
      * Scene Status enum.
      * <p/>This indicates the status of all scene actions.
      */
-    public enum SceneStatus {
+    public enum Status {
         SUCCESS,
         NOT_IMPLEMENTED,
         ERROR_TIMEOUT,
@@ -48,31 +48,31 @@ public class SceneResult {
         ERROR_ANIM_NOT_FOUND,
         ERROR_UNKNOWN;
 
-        private SceneResult mResult;
+        private Result mResult;
 
         /**
-         * Returns a {@link SceneResult} object with this status.
+         * Returns a {@link Result} object with this status.
          * @return an instance of SceneResult;
          */
-        public SceneResult createResult() {
+        public Result createResult() {
             // don't want to get generic error that way.
             assert this != ERROR_UNKNOWN;
 
             if (mResult == null) {
-                mResult = new SceneResult(this);
+                mResult = new Result(this);
             }
 
             return mResult;
         }
 
         /**
-         * Returns a {@link SceneResult} object with this status, and the given data.
+         * Returns a {@link Result} object with this status, and the given data.
          * @return an instance of SceneResult;
          *
-         * @see SceneResult#getData()
+         * @see Result#getData()
          */
-        public SceneResult createResult(Object data) {
-            SceneResult res = createResult();
+        public Result createResult(Object data) {
+            Result res = createResult();
 
             if (data != null) {
                 res = res.getCopyWithData(data);
@@ -87,8 +87,8 @@ public class SceneResult {
          * @param throwable the throwable
          * @return an instance of SceneResult.
          */
-        public SceneResult createResult(String errorMessage, Throwable throwable) {
-            return new SceneResult(this, errorMessage, throwable);
+        public Result createResult(String errorMessage, Throwable throwable) {
+            return new Result(this, errorMessage, throwable);
         }
 
         /**
@@ -96,36 +96,36 @@ public class SceneResult {
          * @param errorMessage the error message
          * @return an instance of SceneResult.
          */
-        public SceneResult createResult(String errorMessage) {
-            return new SceneResult(this, errorMessage, null /*throwable*/);
+        public Result createResult(String errorMessage) {
+            return new Result(this, errorMessage, null /*throwable*/);
         }
     }
 
     /**
-     * Creates a {@link SceneResult} object with the given SceneStatus.
+     * Creates a {@link Result} object with the given SceneStatus.
      *
      * @param status the status. Must not be null.
      */
-    private SceneResult(SceneStatus status) {
+    private Result(Status status) {
         this(status, null, null);
     }
 
     /**
-     * Creates a {@link SceneResult} object with the given SceneStatus, and the given message
+     * Creates a {@link Result} object with the given SceneStatus, and the given message
      * and {@link Throwable}
      *
      * @param status the status. Must not be null.
      * @param errorMessage an optional error message.
      * @param t an optional exception.
      */
-    private SceneResult(SceneStatus status, String errorMessage, Throwable t) {
+    private Result(Status status, String errorMessage, Throwable t) {
         assert status != null;
         mStatus = status;
         mErrorMessage = errorMessage;
         mThrowable = t;
     }
 
-    private SceneResult(SceneResult result) {
+    private Result(Result result) {
         mStatus = result.mStatus;
         mErrorMessage = result.mErrorMessage;
         mThrowable = result.mThrowable;
@@ -137,8 +137,8 @@ public class SceneResult {
      *
      * @return returns a new SceneResult instance.
      */
-    public SceneResult getCopyWithData(Object data) {
-        SceneResult r = new SceneResult(this);
+    public Result getCopyWithData(Object data) {
+        Result r = new Result(this);
         r.mData = data;
         return r;
     }
@@ -151,19 +151,19 @@ public class SceneResult {
      * @return <code>true</code> if the status is successful.
      */
     public boolean isSuccess() {
-        return mStatus == SceneStatus.SUCCESS;
+        return mStatus == Status.SUCCESS;
     }
 
     /**
      * Returns the status. This is never null.
      */
-    public SceneStatus getStatus() {
+    public Status getStatus() {
         return mStatus;
     }
 
     /**
      * Returns the error message. This is only non-null when {@link #getStatus()} returns
-     * {@link SceneStatus#ERROR_UNKNOWN}
+     * {@link Status#ERROR_UNKNOWN}
      */
     public String getErrorMessage() {
         return mErrorMessage;
@@ -171,7 +171,7 @@ public class SceneResult {
 
     /**
      * Returns the exception. This is only non-null when {@link #getStatus()} returns
-     * {@link SceneStatus#ERROR_UNKNOWN}
+     * {@link Status#ERROR_UNKNOWN}
      */
     public Throwable getException() {
         return mThrowable;

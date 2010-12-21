@@ -16,21 +16,20 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
-import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
-import static com.android.ide.common.layout.LayoutConstants.VALUE_MATCH_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_MATCH_PARENT;
 
-
+import com.android.ide.common.rendering.api.ILayoutPullParser;
+import com.android.ide.common.rendering.api.ResourceDensity;
+import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.layoutlib.api.IXmlPullParser;
-import com.android.layoutlib.api.ResourceDensity;
-import com.android.layoutlib.api.ViewInfo;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 
@@ -48,7 +47,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * {@link IXmlPullParser} implementation on top of {@link UiElementNode}.
+ * {@link ILayoutPullParser} implementation on top of {@link UiElementNode}.
  * <p/>
  * It's designed to work on layout files, and will most likely not work on other resource files.
  * <p/>
@@ -193,15 +192,22 @@ public final class UiElementPullParser extends BasePullParser {
      * - private method GraphicalLayoutEditor#updateNodeWithBounds(ILayoutViewInfo).
      * - private constructor of LayoutCanvas.CanvasViewInfo.
      */
-    public Object getViewKey() {
+    public Object getViewCookie() {
         return getCurrentNode();
+    }
+
+    /**
+     * Legacy method required by {@link com.android.layoutlib.api.IXmlPullParser}
+     */
+    public Object getViewKey() {
+        return getViewCookie();
     }
 
     /**
      * This implementation does nothing for now as all the embedded XML will use a normal KXML
      * parser.
      */
-    public IXmlPullParser getParser(String layoutName) {
+    public ILayoutPullParser getParser(String layoutName) {
         return null;
     }
 

@@ -16,13 +16,16 @@
 
 package com.android.layoutlib.api;
 
+import com.android.ide.common.rendering.api.Bridge;
+import com.android.ide.common.rendering.api.RenderSession;
+
 import java.awt.image.BufferedImage;
 
 /**
  * The result of a layout computation through {@link ILayoutBridge}.
  *
  * @since 1
- * @deprecated use {@link LayoutScene} as returned by {@link LayoutBridge#createScene(SceneParams)}
+ * @deprecated use {@link RenderSession} as returned by {@link Bridge#createScene(SceneParams)}
  */
 public interface ILayoutResult {
     /**

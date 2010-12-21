@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.sdk;
 
-import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.resources.platform.AttrsXmlParser;
 import com.android.ide.common.resources.platform.DeclareStyleableInfo;
 import com.android.ide.common.resources.platform.ViewClassInfo;

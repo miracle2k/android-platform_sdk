@@ -16,6 +16,8 @@
 
 package com.android.layoutlib.api;
 
+import com.android.ide.common.rendering.api.StyleResourceValue;
+
 /**
  * Represents an android style resources with a name and a list of children {@link IResourceValue}.
  * @deprecated Use {@link StyleResourceValue}.

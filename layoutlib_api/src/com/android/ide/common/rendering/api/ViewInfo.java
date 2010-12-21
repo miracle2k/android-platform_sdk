@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Layout information for a specific view object
  */
-public final class ViewInfo {
+public class ViewInfo {
 
     private final Object mCookie;
     private final String mName;
@@ -72,7 +72,7 @@ public final class ViewInfo {
     /**
      * Returns the cookie associated with the XML node. Can be null.
      *
-     * @see IXmlPullParser#getViewKey()
+     * @see ILayoutPullParser#getViewKey()
      */
     public Object getCookie() {
         return mCookie;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.legacy;
 
-import org.xmlpull.v1.XmlPullParser;
+import com.android.ide.common.rendering.api.ILayoutPullParser;
+import com.android.layoutlib.api.IXmlPullParser;
 
 /**
- * @deprecated
+ * Intermediary interface extending both old and new project pull parsers from the layout lib API.
+ *
+ * Clients should use this instead of {@link ILayoutPullParser} or {@link IXmlPullParser}.
+ *
  */
-public interface IXmlPullParser extends XmlPullParser {
+@SuppressWarnings("deprecation")
+public interface ILegacyPullParser extends ILayoutPullParser, IXmlPullParser {
 
-    /**
-     * Returns a key for the current XML node.
-     * <p/>This key will be passed back in the {@link ViewInfo} objects, allowing association
-     * of a particular XML node with its result from the layout computation.
-     */
-    Object getViewKey();
 }

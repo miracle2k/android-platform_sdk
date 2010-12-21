@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 The Android Open Source Project
+ * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
 
 /**
- *
- * @deprecated
- *
+ * Callback for project information needed by the Layout Library.
+ * Classes implementing this interface provide methods giving access to some project data, like
+ * resource resolution, namespace information, and instantiation of custom view.
  */
-public interface IProjectCallback  {
+public interface IProjectCallback {
 
     /**
      * Loads a custom view with the given constructor signature and arguments.
@@ -70,4 +70,5 @@ public interface IProjectCallback  {
      * @return an Integer containing the resource Id, or <code>null</code> if not found.
      */
     Integer getResourceValue(String type, String name);
+
 }

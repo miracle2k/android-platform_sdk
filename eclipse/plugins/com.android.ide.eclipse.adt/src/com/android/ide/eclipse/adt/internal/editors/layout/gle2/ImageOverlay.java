@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.layoutlib.api.IImageFactory;
+import com.android.ide.common.rendering.api.IImageFactory;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;

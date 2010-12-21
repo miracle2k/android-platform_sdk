@@ -17,11 +17,11 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.INode;
+import com.android.ide.common.rendering.api.RenderSession;
+import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.layoutlib.api.LayoutScene;
-import com.android.layoutlib.api.ViewInfo;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.w3c.dom.Node;
@@ -99,16 +99,16 @@ public class ViewHierarchy {
      */
     private List<CanvasViewInfo> mIncluded;
 
-    /** The layout scene for the current view hierarchy */
-    private LayoutScene mScene;
+    /** The render session for the current view hierarchy */
+    private RenderSession mSession;
 
     /**
      * Disposes the view hierarchy content.
      */
     public void dispose() {
-        if (mScene != null) {
-            mScene.dispose();
-            mScene = null;
+        if (mSession != null) {
+            mSession.dispose();
+            mSession = null;
         }
     }
 
@@ -121,30 +121,30 @@ public class ViewHierarchy {
      * allocated ILayourResult. That means we can keep this result and hold on to it
      * when it is valid.
      *
-     * @param scene The new result, either valid or not.
+     * @param session The new session, either valid or not.
      * @param explodedNodes The set of individual nodes the layout computer was asked to
      *            explode. Note that these are independent of the explode-all mode where
      *            all views are exploded; this is used only for the mode (
      *            {@link LayoutCanvas#showInvisibleViews}) where individual invisible
      *            nodes are padded during certain interactions.
      */
-    /* package */ void setResult(LayoutScene scene, Set<UiElementNode> explodedNodes) {
+    /* package */ void setSession(RenderSession session, Set<UiElementNode> explodedNodes) {
         // replace the previous scene, so the previous scene must be disposed.
-        if (mScene != null) {
-            mScene.dispose();
+        if (mSession != null) {
+            mSession.dispose();
         }
 
-        mScene = scene;
-        mIsResultValid = (scene != null && scene.getResult().isSuccess());
+        mSession = session;
+        mIsResultValid = (session != null && session.getResult().isSuccess());
         mExplodedParents = false;
         mIncluded = null;
 
-        if (mIsResultValid && scene != null) {
-            ViewInfo root = scene.getRootView();
+        if (mIsResultValid && session != null) {
+            ViewInfo root = session.getRootView();
             if (root == null) {
                 mLastValidViewInfoRoot = null;
             } else {
-                mLastValidViewInfoRoot = new CanvasViewInfo(scene.getRootView());
+                mLastValidViewInfoRoot = new CanvasViewInfo(session.getRootView());
             }
 
             updateNodeProxies(mLastValidViewInfoRoot, null);
@@ -235,11 +235,11 @@ public class ViewHierarchy {
     }
 
     /**
-     * Returns the current {@link LayoutScene}.
-     * @return the scene or null if none have been set.
+     * Returns the current {@link RenderSession}.
+     * @return the session or null if none have been set.
      */
-    public LayoutScene getScene() {
-        return mScene;
+    public RenderSession getSession() {
+        return mSession;
     }
 
     /**
