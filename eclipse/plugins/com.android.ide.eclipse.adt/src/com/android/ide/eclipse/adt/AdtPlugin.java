@@ -96,6 +96,8 @@ import org.osgi.framework.Version;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -435,6 +437,22 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
     }
 
     /**
+     * Reads the contents of an {@link File} and return it as a String
+     *
+     * @param file the file to be read
+     * @return the String read from the file, or null if there was an error
+     */
+    public static String readFile(File file) {
+        try {
+            return readFile(new FileReader(file));
+        } catch (FileNotFoundException e) {
+            AdtPlugin.log(e, "Can't read file %1$s", file); //$NON-NLS-1$
+        }
+
+        return null;
+    }
+
+    /**
      * Returns true iff the given file contains the given String.
      *
      * @param file the file to look for the string in
@@ -447,6 +465,23 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
             contents = file.getContents();
             String charset = file.getCharset();
             return streamContains(new InputStreamReader(contents, charset), string);
+        } catch (Exception e) {
+            AdtPlugin.log(e, "Can't read file %1$s", file); //$NON-NLS-1$
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true iff the given file contains the given String.
+     *
+     * @param file the file to look for the string in
+     * @param string the string to be searched for
+     * @return true if the file is found and contains the given string anywhere within it
+     */
+    public static boolean fileContains(File file, String string) {
+        try {
+            return streamContains(new FileReader(file), string);
         } catch (Exception e) {
             AdtPlugin.log(e, "Can't read file %1$s", file); //$NON-NLS-1$
         }

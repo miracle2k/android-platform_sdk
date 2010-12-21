@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
 
 import java.util.Map;
 
-public class SceneParams {
+public class Params {
 
     public final static long DEFAULT_TIMEOUT = 250; //ms
 
@@ -45,7 +45,7 @@ public class SceneParams {
         }
     }
 
-    private IXmlPullParser mLayoutDescription;
+    private ILayoutPullParser mLayoutDescription;
     private Object mProjectKey;
     private int mScreenWidth;
     private int mScreenHeight;
@@ -68,7 +68,7 @@ public class SceneParams {
 
     /**
      *
-     * @param layoutDescription the {@link IXmlPullParser} letting the LayoutLib Bridge visit the
+     * @param layoutDescription the {@link ILayoutPullParser} letting the LayoutLib Bridge visit the
      * layout file.
      * @param projectKey An Object identifying the project. This is used for the cache mechanism.
      * @param screenWidth the screen width
@@ -81,17 +81,17 @@ public class SceneParams {
      * @param isProjectTheme true if the theme is a project theme, false if it is a framework theme.
      * @param projectResources the resources of the project. The map contains (String, map) pairs
      * where the string is the type of the resource reference used in the layout file, and the
-     * map contains (String, {@link IResourceValue}) pairs where the key is the resource name,
+     * map contains (String, {@link ResourceValue}) pairs where the key is the resource name,
      * and the value is the resource value.
      * @param frameworkResources the framework resources. The map contains (String, map) pairs
      * where the string is the type of the resource reference used in the layout file, and the map
-     * contains (String, {@link IResourceValue}) pairs where the key is the resource name, and the
+     * contains (String, {@link ResourceValue}) pairs where the key is the resource name, and the
      * value is the resource value.
      * @param projectCallback The {@link IProjectCallback} object to get information from
      * the project.
      * @param log the object responsible for displaying warning/errors to the user.
      */
-    public SceneParams(IXmlPullParser layoutDescription,
+    public Params(ILayoutPullParser layoutDescription,
             Object projectKey,
             int screenWidth, int screenHeight, RenderingMode renderingMode,
             int density, float xdpi, float ydpi,
@@ -120,7 +120,7 @@ public class SceneParams {
     /**
      * Copy constructor.
      */
-    public SceneParams(SceneParams params) {
+    public Params(Params params) {
         mLayoutDescription = params.mLayoutDescription;
         mProjectKey = params.mProjectKey;
         mScreenWidth = params.mScreenWidth;
@@ -141,12 +141,12 @@ public class SceneParams {
         mImageFactory = params.mImageFactory;
     }
 
-    public void setCustomBackgroundColor(int color) {
+    public void setOverrideBgColor(int color) {
         mCustomBackgroundEnabled = true;
         mCustomBackgroundColor = color;
     }
 
-    public void setCustomTimeout(long timeout) {
+    public void setTimeout(long timeout) {
         mTimeout = timeout;
     }
 
@@ -154,7 +154,7 @@ public class SceneParams {
         mImageFactory = imageFactory;
     }
 
-    public IXmlPullParser getLayoutDescription() {
+    public ILayoutPullParser getLayoutDescription() {
         return mLayoutDescription;
     }
 
@@ -190,7 +190,7 @@ public class SceneParams {
         return mThemeName;
     }
 
-    public boolean getIsProjectTheme() {
+    public boolean isProjectTheme() {
         return mIsProjectTheme;
     }
 
@@ -210,11 +210,11 @@ public class SceneParams {
         return mLog;
     }
 
-    public boolean isCustomBackgroundEnabled() {
+    public boolean isBgColorOverridden() {
         return mCustomBackgroundEnabled;
     }
 
-    public int getCustomBackgroundColor() {
+    public int getOverrideBgColor() {
         return mCustomBackgroundColor;
     }
 

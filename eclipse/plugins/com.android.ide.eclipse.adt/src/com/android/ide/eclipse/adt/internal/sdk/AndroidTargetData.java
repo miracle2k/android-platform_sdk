@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.sdk;
 
-import com.android.ide.common.layoutlib.LayoutLibrary;
+import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvider;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
@@ -26,10 +26,10 @@ import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.Resour
 import com.android.ide.eclipse.adt.internal.editors.xml.descriptors.XmlDescriptors;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
-import com.android.layoutlib.api.LayoutBridge;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Map;
@@ -248,7 +248,7 @@ public class AndroidTargetData {
      */
     public synchronized LayoutLibrary getLayoutLibrary() {
         if (mLayoutBridgeInit == false && mLayoutLibrary.getStatus() == LoadStatus.LOADED) {
-            mLayoutLibrary.init(mTarget.getPath(IAndroidTarget.FONTS), getEnumValueMap());
+            mLayoutLibrary.init(new File(mTarget.getPath(IAndroidTarget.FONTS)), getEnumValueMap());
             mLayoutBridgeInit = true;
         }
 

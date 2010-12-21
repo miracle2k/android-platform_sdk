@@ -14,19 +14,32 @@
  * limitations under the License.
  */
 
-package com.android.layoutlib.api;
+package com.android.ide.common.rendering.api;
 
 import org.xmlpull.v1.XmlPullParser;
 
 /**
- * @deprecated
+ * Extended version of {@link XmlPullParser} to use with
+ * {@link Bridge#createScene(SceneParams)}
  */
-public interface IXmlPullParser extends XmlPullParser {
+public interface ILayoutPullParser extends XmlPullParser {
 
     /**
-     * Returns a key for the current XML node.
-     * <p/>This key will be passed back in the {@link ViewInfo} objects, allowing association
+     * Returns a cookie for the current XML node.
+     * <p/>This cookie will be passed back in the {@link ViewInfo} objects, allowing association
      * of a particular XML node with its result from the layout computation.
+     *
+     * @see ViewInfo#getCookie()
      */
-    Object getViewKey();
+    Object getViewCookie();
+
+    /**
+     * Returns a custom parser for the layout of the given name.
+     * @param layoutName the name of the layout.
+     * @return returns a custom parser or null if no custom parsers are needed.
+     *
+     * @since 5
+     */
+    ILayoutPullParser getParser(String layoutName);
 }
+

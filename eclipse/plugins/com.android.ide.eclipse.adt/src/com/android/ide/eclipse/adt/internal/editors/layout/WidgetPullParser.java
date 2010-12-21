@@ -16,16 +16,15 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
+import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
-import com.android.layoutlib.api.IXmlPullParser;
-import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 import com.android.sdklib.SdkConstants;
 
 import org.xmlpull.v1.XmlPullParserException;
 
 /**
- * {@link IXmlPullParser} implementation to render android widget bitmap.
+ * {@link ILayoutPullParser} implementation to render android widget bitmap.
  * <p/>
  * The parser emulates a layout that contains just one widget, described by the
  * {@link ViewElementDescriptor} passed in the constructor.
@@ -48,12 +47,19 @@ public class WidgetPullParser extends BasePullParser {
         mAttributes[0][1] = segments[segments.length-1];
     }
 
-    public Object getViewKey() {
+    public Object getViewCookie() {
         // we need a viewKey or the ILayoutResult will not contain any ILayoutViewInfo
         return mDescriptor;
     }
 
-    public IXmlPullParser getParser(String layoutName) {
+    /**
+     * Legacy method required by {@link com.android.layoutlib.api.IXmlPullParser}
+     */
+    public Object getViewKey() {
+        return getViewCookie();
+    }
+
+    public ILayoutPullParser getParser(String layoutName) {
         // there's no embedded layout for a single widget.
         return null;
     }

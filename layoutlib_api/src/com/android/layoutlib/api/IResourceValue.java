@@ -16,6 +16,8 @@
 
 package com.android.layoutlib.api;
 
+import com.android.ide.common.rendering.api.ResourceValue;
+
 /**
  * Represents an android resource with a name and a string value.
  * @deprecated use {@link ResourceValue}.

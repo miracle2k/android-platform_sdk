@@ -18,10 +18,10 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.Rect;
+import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.CanvasViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
-import com.android.layoutlib.api.ViewInfo;
 
 import java.util.Arrays;
 

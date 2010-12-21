@@ -18,6 +18,8 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.Point;
+import com.android.ide.common.rendering.api.Capability;
+import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
@@ -31,7 +33,6 @@ import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElement
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.layoutlib.api.LayoutScene;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.filesystem.EFS;
@@ -481,20 +482,20 @@ public class LayoutCanvas extends Canvas {
      * allocated ILayourResult. That means we can keep this result and hold on to it
      * when it is valid.
      *
-     * @param scene The new scene, either valid or not.
+     * @param session The new scene, either valid or not.
      * @param explodedNodes The set of individual nodes the layout computer was asked to
      *            explode. Note that these are independent of the explode-all mode where
      *            all views are exploded; this is used only for the mode (
      *            {@link #showInvisibleViews(boolean)}) where individual invisible nodes
      *            are padded during certain interactions.
      */
-    /* package */ void setResult(LayoutScene scene, Set<UiElementNode> explodedNodes) {
+    /* package */ void setSession(RenderSession session, Set<UiElementNode> explodedNodes) {
         // disable any hover
         clearHover();
 
-        mViewHierarchy.setResult(scene, explodedNodes);
-        if (mViewHierarchy.isValid() && scene != null) {
-            Image image = mImageOverlay.setImage(scene.getImage());
+        mViewHierarchy.setSession(session, explodedNodes);
+        if (mViewHierarchy.isValid() && session != null) {
+            Image image = mImageOverlay.setImage(session.getImage());
 
             mOutlinePage.setModel(mViewHierarchy.getRoot());
 
@@ -744,31 +745,38 @@ public class LayoutCanvas extends Canvas {
             IResource xmlFile = workspace.findMember(relativePath);
             if (xmlFile != null) {
                 IFile leavingFile = graphicalEditor.getEditedFile();
-                try {
-                    // TODO - only consider this if we're going to open a new file...
-                    // And even then, whether the target version actually needs it...
-                    QualifiedName qname = ConfigurationComposite.NAME_CONFIG_STATE;
-                    String state = leavingFile.getPersistentProperty(qname);
-                    xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INITIAL_STATE, state);
-                } catch (CoreException e) {
-                    // pass
-                }
-
                 Reference next = Reference.create(graphicalEditor.getEditedFile());
 
                 try {
                     IEditorPart openAlready = EditorUtility.isOpenInEditor(xmlFile);
+
+                    // Show the included file as included within this click source?
                     if (openAlready != null) {
                         if (openAlready instanceof LayoutEditor) {
                             LayoutEditor editor = (LayoutEditor)openAlready;
                             GraphicalEditorPart gEditor = editor.getGraphicalEditor();
-                            gEditor.showIn(next);
+                            if (gEditor.renderingSupports(Capability.EMBEDDED_LAYOUT)) {
+                                gEditor.showIn(next);
+                            }
                         }
                     } else {
                         try {
-                            xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INCLUDE, next);
+                            // Set initial state of a new file
+                            // TODO: Only set rendering target portion of the state
+                            QualifiedName qname = ConfigurationComposite.NAME_CONFIG_STATE;
+                            String state = leavingFile.getPersistentProperty(qname);
+                            xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INITIAL_STATE, state);
                         } catch (CoreException e) {
-                            // pass - worst that can happen is that we don't start with inclusion
+                            // pass
+                        }
+
+                        if (graphicalEditor.renderingSupports(Capability.EMBEDDED_LAYOUT)) {
+                            try {
+                                xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INCLUDE, next);
+                            } catch (CoreException e) {
+                                // pass - worst that can happen is that we don't
+                                //start with inclusion
+                            }
                         }
                     }
 

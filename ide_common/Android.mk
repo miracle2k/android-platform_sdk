@@ -19,7 +19,8 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(call all-java-files-under,src)
 
 LOCAL_JAVA_LIBRARIES := \
-	layoutlib_api
+	layoutlib_api \
+	kxml2-2.3.0
 
 LOCAL_MODULE := ide_common
 

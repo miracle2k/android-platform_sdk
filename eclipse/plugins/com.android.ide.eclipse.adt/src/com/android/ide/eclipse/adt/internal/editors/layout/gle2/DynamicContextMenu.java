@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.MenuAction;
+import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
@@ -207,9 +208,8 @@ import java.util.regex.Pattern;
             }
         }
 
-        // Not yet enabled because we need to backport layoutlib changes to Android 2.0, 2.1, 2.2
-        // first:
-        if (System.getenv("ADT_TEST") != null) { //$NON-NLS-1$
+        // Showing includes is not supported for all the targeted platforms
+        if (mEditor.getGraphicalEditor().renderingSupports(Capability.EMBEDDED_LAYOUT)) {
             insertShowIncludedMenu(endId);
         }
     }

@@ -24,8 +24,11 @@ import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
 
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.Rect;
-import com.android.ide.common.layoutlib.LayoutLibrary;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
+import com.android.ide.common.rendering.LayoutLibrary;
+import com.android.ide.common.rendering.api.Capability;
+import com.android.ide.common.rendering.api.RenderSession;
+import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -42,9 +45,6 @@ import com.android.ide.eclipse.adt.internal.editors.ui.IDecorContent;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.layoutlib.api.Capability;
-import com.android.layoutlib.api.LayoutScene;
-import com.android.layoutlib.api.ViewInfo;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.SWT;
@@ -757,7 +757,7 @@ public class PaletteControl extends Composite {
                 hasTransparency = layoutLibrary.supports(Capability.TRANSPARENCY);
             }
 
-            LayoutScene scene = null;
+            RenderSession session = null;
             try {
                 // Use at most the size of the screen for the preview render.
                 // This is important since when we fill the size of certain views (like
@@ -767,7 +767,7 @@ public class PaletteControl extends Composite {
                 int renderWidth = Math.min(screenBounds.width, MAX_RENDER_WIDTH);
                 int renderHeight = Math.min(screenBounds.height, MAX_RENDER_HEIGHT);
 
-                scene = editor.render(model, renderWidth, renderHeight,
+                session = editor.render(model, renderWidth, renderHeight,
                     null /* explodeNodes */, hasTransparency);
             } catch (Throwable t) {
                 // Previews can fail for a variety of reasons -- let's not bug
@@ -775,13 +775,13 @@ public class PaletteControl extends Composite {
                 return null;
             }
 
-            if (scene != null) {
-                if (scene.getResult().isSuccess()) {
-                    BufferedImage image = scene.getImage();
+            if (session != null) {
+                if (session.getResult().isSuccess()) {
+                    BufferedImage image = session.getImage();
                     if (image != null) {
                         BufferedImage cropped;
                         Rect initialCrop = null;
-                        ViewInfo viewInfo = scene.getRootView();
+                        ViewInfo viewInfo = session.getRootView();
                         if (viewInfo != null) {
                             int x1 = viewInfo.getLeft();
                             int x2 = viewInfo.getRight();
@@ -829,7 +829,7 @@ public class PaletteControl extends Composite {
                     }
                 }
 
-                scene.dispose();
+                session.dispose();
             }
 
             return null;

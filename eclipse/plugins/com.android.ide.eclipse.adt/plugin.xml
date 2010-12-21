@@ -871,7 +871,7 @@
          point="org.eclipse.ui.workbench.texteditor.hyperlinkDetectorTargets">
       <target
             id="com.android.ide.eclipse.xmlCode"
-            name="XML Hyperlink Target">
+            name="XML Editor">
             <context type="org.eclipse.ui.texteditor.ITextEditor"/>
       </target>
    </extension>
@@ -898,7 +898,7 @@
       <hyperlinkDetector
             class="com.android.ide.eclipse.adt.internal.editors.xml.Hyperlinks$JavaResolver"
             id="com.android.ide.eclipse.javaCodeResolver2"
-            modifierKeys="M1+M2"
+            modifierKeys="M1+M2+M3"
             name="Android Java Hyperlink Detector (Extra Modifier Key)"
             targetId="org.eclipse.jdt.ui.javaCode">
       </hyperlinkDetector>

@@ -16,6 +16,8 @@
 
 package com.android.layoutlib.api;
 
+import com.android.ide.common.rendering.api.LayoutLog;
+
 /**
  * Callback interface to display warnings/errors that happened during the computation and
  * rendering of the layout.

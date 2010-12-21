@@ -19,7 +19,10 @@ package com.android.ide.eclipse.adt.internal.editors.xml;
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_CLASS;
 import static com.android.ide.common.layout.LayoutConstants.VIEW;
+import static com.android.ide.eclipse.adt.AndroidConstants.ANDROID_PKG;
 import static com.android.ide.eclipse.adt.AndroidConstants.EXT_XML;
+import static com.android.ide.eclipse.adt.AndroidConstants.FN_RESOURCE_BASE;
+import static com.android.ide.eclipse.adt.AndroidConstants.FN_RESOURCE_CLASS;
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_RESOURCES;
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_SEP;
 import static com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors.NAME_ATTR;
@@ -30,6 +33,7 @@ import static com.android.sdklib.xml.AndroidManifest.NODE_ACTIVITY;
 import static com.android.sdklib.xml.AndroidManifest.NODE_SERVICE;
 
 import com.android.ide.common.layout.Pair;
+import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
@@ -43,11 +47,17 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
-import com.android.layoutlib.api.ResourceValue;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.annotations.VisibleForTesting;
 
+import org.apache.xerces.parsers.DOMParser;
+import org.apache.xerces.xni.Augmentations;
+import org.apache.xerces.xni.NamespaceContext;
+import org.apache.xerces.xni.QName;
+import org.apache.xerces.xni.XMLAttributes;
+import org.apache.xerces.xni.XMLLocator;
+import org.apache.xerces.xni.XNIException;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IFile;
@@ -87,6 +97,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.encoding.util.Logger;
@@ -95,6 +106,7 @@ import org.eclipse.wst.sse.core.internal.provisional.IndexedRegion;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocumentRegion;
 import org.eclipse.wst.sse.core.internal.provisional.text.ITextRegion;
+import org.eclipse.wst.sse.ui.StructuredTextEditor;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 import org.eclipse.wst.xml.core.internal.regions.DOMRegionContext;
 import org.w3c.dom.Attr;
@@ -103,8 +115,11 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -409,7 +424,7 @@ public class Hyperlinks {
     }
 
     /** Opens a path (which may not be in the workspace) */
-    private static void openPath(IPath filePath, IRegion region) {
+    private static void openPath(IPath filePath, IRegion region, int offset) {
         IEditorPart sourceEditor = getEditor();
         IWorkbenchPage page = sourceEditor.getEditorSite().getPage();
         IWorkspaceRoot workspace = ResourcesPlugin.getWorkspace().getRoot();
@@ -433,7 +448,22 @@ public class Hyperlinks {
                 IFileStore fileStore = EFS.getLocalFileSystem().getStore(filePath);
                 if (!fileStore.fetchInfo().isDirectory() && fileStore.fetchInfo().exists()) {
                     try {
-                        IDE.openEditorOnFileStore(page, fileStore);
+                        IEditorPart target = IDE.openEditorOnFileStore(page, fileStore);
+                        if (target instanceof MultiPageEditorPart) {
+                            MultiPageEditorPart part = (MultiPageEditorPart) target;
+                            IEditorPart[] editors = part.findEditors(target.getEditorInput());
+                            if (editors != null) {
+                                for (IEditorPart editor : editors) {
+                                    if (editor instanceof StructuredTextEditor) {
+                                        StructuredTextEditor ste = (StructuredTextEditor) editor;
+                                        part.setActiveEditor(editor);
+                                        ste.selectAndReveal(offset, 0);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
                         return;
                     } catch (PartInitException ex) {
                         AdtPlugin.log(ex, "Can't open %$1s", filePath); //$NON-NLS-1$
@@ -449,26 +479,33 @@ public class Hyperlinks {
     }
 
 
-    /** Opens a framework resource */
+    /**
+     * Opens a framework resource's declaration
+     *
+     * @param project project to look up the framework for
+     * @param url the resource url, such as @android:string/ok, to open the declaration
+     *            for
+     * @return true if the url was successfully opened.
+     */
     private static boolean openAndroidResource(IProject project, String url) {
         Pair<ResourceType,String> parsedUrl = parseResource(url);
         if (parsedUrl == null) {
             return false;
         }
 
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk == null) {
+            return false;
+        }
+        IAndroidTarget target = currentSdk.getTarget(project);
+        if (target == null) {
+            return false;
+        }
         ResourceType type = parsedUrl.getFirst();
         String name = parsedUrl.getSecond();
 
         // Attempt to open files, such as layouts and drawables in @android?
         if (isFileResource(type)) {
-            Sdk currentSdk = Sdk.getCurrent();
-            if (currentSdk == null) {
-                return false;
-            }
-            IAndroidTarget target = currentSdk.getTarget(project);
-            if (target == null) {
-                return false;
-            }
             AndroidTargetData data = currentSdk.getTargetData(target);
             if (data == null) {
                 return false;
@@ -510,15 +547,27 @@ public class Hyperlinks {
                             // string value of @android:string/cancel => "Cancel").
                             if (new File(valueStr).exists()) {
                                 Path path = new Path(valueStr);
-                                openPath(path, null);
+                                openPath(path, null, -1);
+                                return true;
                             }
-                            return true;
+                            break;
                         }
                     } else {
-                        return false;
+                        break;
                     }
                 } else {
-                    return false;
+                    break;
+                }
+            }
+        } else if (isValueResource(type)) {
+            File values = new File(target.getPath(IAndroidTarget.RESOURCES),
+                    SdkConstants.FD_VALUES);
+            if (values.exists()) {
+                Pair<File, Integer> match = findValueDefinition(values, type, name);
+                if (match != null) {
+                    Path path = new Path(match.getFirst().getPath());
+                    openPath(path, null, match.getSecond());
+                    return true;
                 }
             }
         }
@@ -868,6 +917,91 @@ public class Hyperlinks {
         return Pair.of(type, name);
     }
 
+    /**
+     * Searches for a resource of a "multi-file" type (like @string) where the value can
+     * be found in any file within the folder containing resource of that type (in the
+     * case of @string, "values", and in the case of @color, "colors", etc).
+     * <p>
+     * This method operates on plain {@link File} objects and is intended for searches in
+     * the Android platform files; for project-relative searches use
+     * {@link #findValueDefinition(File, ResourceType, String)}.
+     */
+    private static Pair<File, Integer> findValueDefinition(File resourceDir, ResourceType type,
+            String name) {
+        // Search within the files in the values folder and find the value which defines
+        // the given resource. To be efficient, we will only parse XML files that contain
+        // a string match of the given token name.
+
+        // Check XML files in values/
+        File[] children = resourceDir.listFiles();
+        if (children == null) {
+            return null;
+        }
+        for (File resource : children) {
+            // Must have an XML extension
+            if (resource.getName().endsWith(EXT_XML)) {
+                Pair<File, Integer> target = findValueInXml(type, name, resource);
+                if (target != null) {
+                    return target;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** Parses the given file and locates a definition of the given resource */
+    private static Pair<File, Integer> findValueInXml(ResourceType type, String name, File file) {
+        // We can't use the StructureModelManager on files outside projects
+        // There is no open or cached model for the file; see if the file looks
+        // like it's interesting (content contains the String name we are looking for)
+        if (AdtPlugin.fileContains(file, name)) {
+            try {
+                InputSource is = new InputSource(new FileInputStream(file));
+                OffsetTrackingParser parser = new OffsetTrackingParser();
+                parser.parse(is);
+                Document document = parser.getDocument();
+
+                return findValueInDocument(type, name, file, parser, document);
+            } catch (SAXException e) {
+                // pass -- ignore files we can't parse
+            } catch (IOException e) {
+                // pass -- ignore files we can't parse
+            }
+        }
+
+        return null;
+    }
+
+    /** Looks within an XML DOM document for the given resource name and returns it */
+    private static Pair<File, Integer> findValueInDocument(ResourceType type, String name,
+            File file, OffsetTrackingParser parser, Document document) {
+        String targetTag = type.getName();
+        if (type == ResourceType.ID) {
+            // Ids are recorded in <item> tags instead of <id> tags
+            targetTag = "item"; //$NON-NLS-1$
+        }
+        Element root = document.getDocumentElement();
+        if (root.getTagName().equals(ROOT_ELEMENT)) {
+            NodeList children = root.getChildNodes();
+            for (int i = 0, n = children.getLength(); i < n; i++) {
+                Node child = children.item(i);
+                if (child.getNodeType() == Node.ELEMENT_NODE) {
+                    Element element = (Element) child;
+                    if (element.getTagName().equals(targetTag)) {
+                        String elementName = element.getAttribute(NAME_ATTR);
+                        if (elementName.equals(name)) {
+
+                            return Pair.of(file, parser.getOffset(element));
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     /** Detector for finding Android references in XML files */
    public static class XmlResolver extends AbstractHyperlinkDetector {
 
@@ -955,19 +1089,26 @@ public class Hyperlinks {
                     IJavaElement element = elements[0];
                     if (element.getElementType() == IJavaElement.FIELD) {
                         IJavaElement unit = element.getAncestor(IJavaElement.COMPILATION_UNIT);
-                        if ("R.java".equals(unit.getElementName())) { //$NON-NLS-1$
-                            // Yes, we're in an R class. Offer hyperlink navigation to XML
-                            // resource
-                            // files for the various definitions
+                        if (unit == null) {
+                            // Probably in a binary; see if this is an android.R resource
+                            IJavaElement type = element.getAncestor(IJavaElement.TYPE);
+                            if (type != null && type.getParent() != null) {
+                                IJavaElement parentType = type.getParent();
+                                if (parentType.getElementType() == IJavaElement.CLASS_FILE) {
+                                    String pn = parentType.getElementName();
+                                    String prefix = FN_RESOURCE_BASE + "$"; //$NON-NLS-1$
+                                    if (pn.startsWith(prefix)) {
+                                        return createTypeLink(element, type, wordRegion, true);
+                                    }
+                                }
+                            }
+                        } else if (FN_RESOURCE_CLASS.equals(unit.getElementName())) {
+                            // Yes, we're referencing the project R class.
+                            // Offer hyperlink navigation to XML resource files for
+                            // the various definitions
                             IJavaElement type = element.getAncestor(IJavaElement.TYPE);
                             if (type != null) {
-                                String typeName = type.getElementName();
-                                // typeName will be "id", "layout", "string", etc
-                                String elementName = element.getElementName();
-                                String url = '@' + typeName + '/' + elementName;
-                                return new IHyperlink[] {
-                                    new DeferredResolutionLink(url, null, wordRegion)
-                                };
+                                return createTypeLink(element, type, wordRegion, false);
                             }
                         }
                     }
@@ -977,6 +1118,20 @@ public class Hyperlinks {
             } catch (JavaModelException e) {
                 return null;
             }
+        }
+
+        private IHyperlink[] createTypeLink(IJavaElement element, IJavaElement type,
+                IRegion wordRegion, boolean isFrameworkResource) {
+            String typeName = type.getElementName();
+            // typeName will be "id", "layout", "string", etc
+            if (isFrameworkResource) {
+                typeName = ANDROID_PKG + ':' + typeName;
+            }
+            String elementName = element.getElementName();
+            String url = '@' + typeName + '/' + elementName;
+            return new IHyperlink[] {
+                new DeferredResolutionLink(url, null, wordRegion)
+            };
         }
     }
 
@@ -1197,6 +1352,57 @@ public class Hyperlinks {
             }
 
             return null;
+        }
+    }
+
+    /**
+     * DOM parser which records offsets in the element nodes such that it can return
+     * offsets for elements later
+     */
+    private static final class OffsetTrackingParser extends DOMParser {
+
+        private static final String KEY_OFFSET = "offset"; //$NON-NLS-1$
+
+        private static final String KEY_NODE =
+            "http://apache.org/xml/properties/dom/current-element-node"; //$NON-NLS-1$
+
+        private XMLLocator mLocator;
+
+        public OffsetTrackingParser() throws SAXException {
+            this.setFeature("http://apache.org/xml/features/dom/defer-node-expansion",//$NON-NLS-1$
+                    false);
+        }
+
+        public int getOffset(Node node) {
+            Integer offset = (Integer) node.getUserData(KEY_OFFSET);
+            if (offset != null) {
+                return offset;
+            }
+
+            return -1;
+        }
+
+        @Override
+        public void startElement(QName elementQName, XMLAttributes attrList, Augmentations augs)
+                throws XNIException {
+            int offset = mLocator.getCharacterOffset();
+            super.startElement(elementQName, attrList, augs);
+
+            try {
+                Node node = (Node) this.getProperty(KEY_NODE);
+                if (node != null) {
+                    node.setUserData(KEY_OFFSET, offset, null);
+                }
+            } catch (org.xml.sax.SAXException ex) {
+                AdtPlugin.log(ex, ""); //$NON-NLS-1$
+            }
+        }
+
+        @Override
+        public void startDocument(XMLLocator locator, String encoding,
+                NamespaceContext namespaceContext, Augmentations augs) throws XNIException {
+            super.startDocument(locator, encoding, namespaceContext, augs);
+            mLocator = locator;
         }
     }
 }

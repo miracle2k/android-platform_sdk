@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.configuration;
 
+import com.android.ide.common.rendering.api.ResourceValue;
+import com.android.ide.common.rendering.api.StyleResourceValue;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
@@ -39,8 +41,6 @@ import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
-import com.android.layoutlib.api.ResourceValue;
-import com.android.layoutlib.api.StyleResourceValue;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.Density;
 import com.android.sdklib.resources.DockMode;
@@ -179,6 +179,13 @@ public class ConfigurationComposite extends Composite {
          * @param oldTarget the old rendering target
          */
         void onRenderingTargetPreChange(IAndroidTarget oldTarget);
+
+        /**
+         * Called after the rendering target changes.
+         *
+         * @param target the new rendering target
+         */
+        void onRenderingTargetPostChange(IAndroidTarget target);
 
         ProjectResources getProjectResources();
         ProjectResources getFrameworkResources();
@@ -840,6 +847,8 @@ public class ConfigurationComposite extends Composite {
                         mDockCombo.select(DockMode.getIndex(mState.dock));
                         mNightCombo.select(NightMode.getIndex(mState.night));
                         mTargetCombo.select(mTargetList.indexOf(mState.target));
+
+                        targetData = Sdk.getCurrent().getTargetData(mState.target);
                     } else {
                         findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
 
@@ -1807,6 +1816,10 @@ public class ConfigurationComposite extends Composite {
         // since the state is saved in computeCurrentConfig, we need to resave it since theme
         // change could have impacted it.
         saveState();
+
+        if (mListener != null && mRenderingTarget != null) {
+            mListener.onRenderingTargetPostChange(mRenderingTarget);
+        }
 
         if (computeOk &&  mListener != null) {
             mListener.onConfigurationChange();

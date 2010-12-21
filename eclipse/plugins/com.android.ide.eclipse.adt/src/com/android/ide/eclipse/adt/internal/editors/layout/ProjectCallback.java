@@ -16,12 +16,13 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
+import com.android.ide.common.rendering.api.IProjectCallback;
+import com.android.ide.common.rendering.legacy.ILegacyCallback;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectClassLoader;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
-import com.android.layoutlib.api.IProjectCallback;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.ManifestData;
 
@@ -35,8 +36,10 @@ import java.util.TreeSet;
 
 /**
  * Loader for Android Project class in order to use them in the layout editor.
+ * <p/>This implements {@link IProjectCallback} for the old and new API through
+ * {@link ILegacyCallback}
  */
-public final class ProjectCallback implements IProjectCallback {
+public final class ProjectCallback implements ILegacyCallback {
 
     private final HashMap<String, Class<?>> mLoadedClasses = new HashMap<String, Class<?>>();
     private final Set<String> mMissingClasses = new TreeSet<String>();
