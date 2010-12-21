@@ -456,6 +456,15 @@ public class RulesEngine {
         }
     }
 
+    /**
+     * Set the type of insert currently in progress
+     *
+     * @param insertType the insert type to use for the next operation
+     */
+    public void setInsertType(InsertType insertType) {
+        mInsertType = insertType;
+    }
+
     // ---- private ---
 
     /**

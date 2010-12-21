@@ -15,6 +15,7 @@
  */
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.INode;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.sdklib.SdkConstants;
 
@@ -656,6 +657,26 @@ public class SelectionManager implements ISelectionProvider {
         }
     }
 
+    /**
+     * Selects the given list of nodes in the canvas, and returns true iff the
+     * attempt to select was successful.
+     *
+     * @param nodes The collection of nodes to be selected
+     * @return True if and only if all nodes were successfully selected
+     */
+    public boolean selectDropped(Collection<INode> nodes) {
+        final Collection<CanvasViewInfo> newChildren = new ArrayList<CanvasViewInfo>();
+        for (INode node : nodes) {
+            CanvasViewInfo viewInfo = mCanvas.getViewHierarchy().findViewInfoFor(node);
+            if (viewInfo != null) {
+                newChildren.add(viewInfo);
+            }
+        }
+        mCanvas.getSelectionManager().selectMultiple(newChildren);
+
+        return nodes.size() == newChildren.size();
+    }
+
     private void updateMenuActions() {
         boolean hasSelection = !mSelections.isEmpty();
         mCanvas.updateMenuActionState(hasSelection);
@@ -665,7 +686,7 @@ public class SelectionManager implements ISelectionProvider {
         mCanvas.redraw();
     }
 
-    private SelectionItem createSelection(CanvasViewInfo vi) {
+    /* package */ SelectionItem createSelection(CanvasViewInfo vi) {
         return new SelectionItem(vi, mCanvas.getRulesEngine(),
                 mCanvas.getNodeFactory());
     }
