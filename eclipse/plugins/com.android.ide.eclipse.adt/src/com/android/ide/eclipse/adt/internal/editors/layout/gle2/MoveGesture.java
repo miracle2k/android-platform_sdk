@@ -32,7 +32,6 @@ import org.eclipse.swt.widgets.Display;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -346,7 +345,8 @@ public class MoveGesture extends DropGesture {
             }
         }
         // Select the newly dropped nodes
-        if (!selectDropped(added)) {
+        final SelectionManager selectionManager = mCanvas.getSelectionManager();
+        if (!selectionManager.selectDropped(added)) {
             // In some scenarios we can't find the actual view infos yet; this
             // seems to happen when you drag from one canvas to another (see the
             // related comment next to the setFocus() call below). In that case
@@ -354,7 +354,7 @@ public class MoveGesture extends DropGesture {
             // date.
             Display.getDefault().asyncExec(new Runnable() {
                 public void run() {
-                    selectDropped(added);
+                    selectionManager.selectDropped(added);
                 }
             });
         }
@@ -368,26 +368,6 @@ public class MoveGesture extends DropGesture {
     }
 
     /**
-     * Selects the given list of nodes in the canvas, and returns true iff the
-     * attempt to select was successful.
-     *
-     * @param nodes The collection of nodes to be selected
-     * @return True if and only if all nodes were successfully selected
-     */
-    private boolean selectDropped(Collection<INode> nodes) {
-        final Collection<CanvasViewInfo> newChildren = new ArrayList<CanvasViewInfo>();
-        for (INode node : nodes) {
-            CanvasViewInfo viewInfo = mCanvas.getViewHierarchy().findViewInfoFor(node);
-            if (viewInfo != null) {
-                newChildren.add(viewInfo);
-            }
-        }
-        mCanvas.getSelectionManager().selectMultiple(newChildren);
-
-        return nodes.size() == newChildren.size();
-    }
-
-    /**
      * Computes a suitable Undo label to use for a drop operation, such as
      * "Drop Button in LinearLayout" and "Move Widgets in RelativeLayout".
      *
@@ -396,7 +376,8 @@ public class MoveGesture extends DropGesture {
      * @param detail The DnD mode, as used in {@link DropTargetEvent#detail}.
      * @return A string suitable as an undo-label for the drop event
      */
-    private String computeUndoLabel(NodeProxy targetNode, SimpleElement[] elements, int detail) {
+    public static String computeUndoLabel(NodeProxy targetNode,
+            SimpleElement[] elements, int detail) {
         // Decide whether it's a move or a copy; we'll label moves specifically
         // as a move and consider everything else a "Drop"
         String verb = (detail == DND.DROP_MOVE) ? "Move" : "Drop";
@@ -425,7 +406,7 @@ public class MoveGesture extends DropGesture {
      * @param fqcn The fqcn to reduce
      * @return The base name of the fqcn
      */
-    private String getSimpleName(String fqcn) {
+    public static String getSimpleName(String fqcn) {
         // Note that the following works even when there is no dot, since
         // lastIndexOf will return -1 so we get fcqn.substring(-1+1) =
         // fcqn.substring(0) = fqcn
@@ -452,20 +433,18 @@ public class MoveGesture extends DropGesture {
         // layout coordinates
         GlobalCanvasDragInfo dragInfo = GlobalCanvasDragInfo.getInstance();
         Rect dragBounds = null;
-        if (dragInfo != null) {
-            Rect controlDragBounds = dragInfo.getDragBounds();
-            if (controlDragBounds != null) {
-                CanvasTransform ht = mCanvas.getHorizontalTransform();
-                CanvasTransform vt = mCanvas.getVerticalTransform();
-                double horizScale = ht.getScale();
-                double verticalScale = vt.getScale();
-                int x = (int) (controlDragBounds.x / horizScale);
-                int y = (int) (controlDragBounds.y / verticalScale);
-                int w = (int) (controlDragBounds.w / horizScale);
-                int h = (int) (controlDragBounds.h / verticalScale);
+        Rect controlDragBounds = dragInfo.getDragBounds();
+        if (controlDragBounds != null) {
+            CanvasTransform ht = mCanvas.getHorizontalTransform();
+            CanvasTransform vt = mCanvas.getVerticalTransform();
+            double horizScale = ht.getScale();
+            double verticalScale = vt.getScale();
+            int x = (int) (controlDragBounds.x / horizScale);
+            int y = (int) (controlDragBounds.y / verticalScale);
+            int w = (int) (controlDragBounds.w / horizScale);
+            int h = (int) (controlDragBounds.h / verticalScale);
 
-                dragBounds = new Rect(x, y, w, h);
-            }
+            dragBounds = new Rect(x, y, w, h);
         }
         df.dragBounds = dragBounds;
     }
@@ -477,7 +456,7 @@ public class MoveGesture extends DropGesture {
      *
      * @return True if the data type is accepted.
      */
-    private boolean checkDataType(DropTargetEvent event) {
+    private static boolean checkDataType(DropTargetEvent event) {
 
         SimpleXmlTransfer sxt = SimpleXmlTransfer.getInstance();
 

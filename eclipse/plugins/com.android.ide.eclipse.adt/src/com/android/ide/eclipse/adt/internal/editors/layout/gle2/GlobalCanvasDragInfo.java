@@ -80,8 +80,14 @@ final class GlobalCanvasDragInfo {
     /** Unregisters elements being dragged. */
     public void stopDrag() {
         mCurrentElements = null;
+        mCurrentSelection = null;
         mSourceCanvas = null;
         mRemoveSourceHandler = null;
+        mDragBounds = null;
+    }
+
+    public boolean isDragging() {
+        return mCurrentElements != null;
     }
 
     /** Returns the elements being dragged. */

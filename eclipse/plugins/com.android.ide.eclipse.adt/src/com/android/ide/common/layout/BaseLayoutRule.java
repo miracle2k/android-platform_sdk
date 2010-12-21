@@ -22,15 +22,16 @@ import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
 
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IAttributeInfo;
-import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.api.IClientRulesEngine;
 import com.android.ide.common.api.IDragElement;
-import com.android.ide.common.api.IDragElement.IDragAttribute;
 import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.INode;
+import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
+import com.android.ide.common.api.IAttributeInfo.Format;
+import com.android.ide.common.api.IDragElement.IDragAttribute;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -134,7 +135,7 @@ public class BaseLayoutRule extends BaseViewRule {
      * old-id => tuple (String new-id, String fqcn) where fqcn is the FQCN of
      * the element.
      */
-    protected Map<String, Pair<String, String>> getDropIdMap(INode targetNode,
+    protected static Map<String, Pair<String, String>> getDropIdMap(INode targetNode,
             IDragElement[] elements, boolean createNewIds) {
         Map<String, Pair<String, String>> idMap = new HashMap<String, Pair<String, String>>();
 
@@ -154,7 +155,8 @@ public class BaseLayoutRule extends BaseViewRule {
      *
      * @see #getDropIdMap
      */
-    protected Map<String, Pair<String, String>> collectIds(Map<String, Pair<String, String>> idMap,
+    protected static Map<String, Pair<String, String>> collectIds(
+            Map<String, Pair<String, String>> idMap,
             IDragElement[] elements) {
         for (IDragElement element : elements) {
             IDragAttribute attr = element.getAttribute(ANDROID_URI, ATTR_ID);
@@ -174,7 +176,7 @@ public class BaseLayoutRule extends BaseViewRule {
     /**
      * Used by #getDropIdMap to find new IDs in case of conflict.
      */
-    protected Map<String, Pair<String, String>> remapIds(INode node,
+    protected static Map<String, Pair<String, String>> remapIds(INode node,
             Map<String, Pair<String, String>> idMap) {
         // Visit the document to get a list of existing ids
         Set<String> existingIdSet = new HashSet<String>();
@@ -208,7 +210,7 @@ public class BaseLayoutRule extends BaseViewRule {
     /**
      * Used by #remapIds to find a new ID for a conflicting element.
      */
-    protected String findNewId(String fqcn, Set<String> existingIdSet) {
+    protected static String findNewId(String fqcn, Set<String> existingIdSet) {
         // Get the last component of the FQCN (e.g. "android.view.Button" =>
         // "Button")
         String name = fqcn.substring(fqcn.lastIndexOf('.') + 1);
@@ -228,7 +230,7 @@ public class BaseLayoutRule extends BaseViewRule {
     /**
      * Used by #getDropIdMap to find existing IDs recursively.
      */
-    protected void collectExistingIds(INode root, Set<String> existingIdSet) {
+    protected static void collectExistingIds(INode root, Set<String> existingIdSet) {
         if (root == null) {
             return;
         }
@@ -250,7 +252,7 @@ public class BaseLayoutRule extends BaseViewRule {
     /**
      * Transforms @id/name into @+id/name to treat both forms the same way.
      */
-    protected String normalizeId(String id) {
+    protected static String normalizeId(String id) {
         if (id.indexOf("@+") == -1) { //$NON-NLS-1$
             id = id.replaceFirst("@", "@+"); //$NON-NLS-1$ //$NON-NLS-2$
         }
@@ -261,7 +263,7 @@ public class BaseLayoutRule extends BaseViewRule {
      * For use by {@link BaseLayoutRule#addAttributes} A filter should return a
      * valid replacement string.
      */
-    public static interface AttributeFilter {
+    protected static interface AttributeFilter {
         String replace(String attributeUri, String attributeName, String attributeValue);
     }
 
@@ -316,7 +318,7 @@ public class BaseLayoutRule extends BaseViewRule {
      * transform the value of all attributes of Format.REFERENCE. If filter is
      * non-null, it's a filter that can rewrite the attribute string.
      */
-    protected void addAttributes(INode newNode, IDragElement oldElement,
+    protected static void addAttributes(INode newNode, IDragElement oldElement,
             Map<String, Pair<String, String>> idMap, AttributeFilter filter) {
 
         // A little trick here: when creating new UI widgets by dropping them
@@ -376,7 +378,7 @@ public class BaseLayoutRule extends BaseViewRule {
      * Attributes are adjusted by calling addAttributes with idMap as necessary,
      * with no closure filter.
      */
-    protected void addInnerElements(INode newNode, IDragElement oldElement,
+    protected static void addInnerElements(INode newNode, IDragElement oldElement,
             Map<String, Pair<String, String>> idMap) {
 
         for (IDragElement element : oldElement.getInnerElements()) {
@@ -386,5 +388,46 @@ public class BaseLayoutRule extends BaseViewRule {
             addAttributes(childNode, element, idMap, null /* filter */);
             addInnerElements(childNode, element, idMap);
         }
+    }
+
+    /**
+     * Insert the given elements into the given node at the given position
+     *
+     * @param targetNode the node to insert into
+     * @param elements the elements to insert
+     * @param createNewIds if true, generate new ids when there is a conflict
+     * @param initialInsertPos index among targetnode's children which to insert the
+     *            children
+     */
+    public static void insertAt(final INode targetNode, final IDragElement[] elements,
+            final boolean createNewIds, final int initialInsertPos) {
+
+        // Collect IDs from dropped elements and remap them to new IDs
+        // if this is a copy or from a different canvas.
+        final Map<String, Pair<String, String>> idMap = getDropIdMap(targetNode, elements,
+                createNewIds);
+
+        targetNode.editXml("Insert Elements", new INodeHandler() {
+
+            public void handle(INode node) {
+                // Now write the new elements.
+                int insertPos = initialInsertPos;
+                for (IDragElement element : elements) {
+                    String fqcn = element.getFqcn();
+
+                    INode newChild = targetNode.insertChildAt(fqcn, insertPos);
+
+                    // insertPos==-1 means to insert at the end. Otherwise
+                    // increment the insertion position.
+                    if (insertPos >= 0) {
+                        insertPos++;
+                    }
+
+                    // Copy all the attributes, modifying them as needed.
+                    addAttributes(newChild, element, idMap, DEFAULT_ATTR_FILTER);
+                    addInnerElements(newChild, element, idMap);
+                }
+            }
+        });
     }
 }

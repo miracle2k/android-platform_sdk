@@ -56,9 +56,7 @@ import org.eclipse.jface.action.Separator;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSource;
-import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.DropTarget;
-import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.ControlAdapter;
@@ -279,7 +277,6 @@ public class LayoutCanvas extends Canvas {
 
         mDropTarget = createDropTarget(this);
         mDragSource = createDragSource(this);
-        GestureManager.setDragPreviewEnabled(mDragSource, true);
         mGestureManager.registerListeners(mDragSource, mDropTarget);
 
         if (mLayoutEditor == null) {
@@ -382,22 +379,6 @@ public class LayoutCanvas extends Canvas {
     }
 
     /**
-     * Returns our {@link DragSourceListener}.
-     * This is used by {@link OutlinePage} to delegate drag source events.
-     */
-    /* package */ DragSourceListener getDragListener() {
-        return mGestureManager.getDragSourceListener();
-    }
-
-    /**
-     * Returns our {@link DropTargetListener}.
-     * This is used by {@link OutlinePage} to delegate drop target events.
-     */
-    /* package */ DropTargetListener getDropListener() {
-        return mGestureManager.getDropTargetListener();
-    }
-
-    /**
      * Returns the GCWrapper used to paint view rules.
      *
      * @return The GCWrapper used to paint view rules
@@ -442,6 +423,15 @@ public class LayoutCanvas extends Canvas {
      */
     /* package */ CanvasTransform getVerticalTransform() {
         return mVScale;
+    }
+
+    /**
+     * Returns the {@link OutlinePage} associated with this canvas
+     *
+     * @return the {@link OutlinePage} associated with this canvas
+     */
+    public OutlinePage getOutlinePage() {
+        return mOutlinePage;
     }
 
     /**
@@ -765,7 +755,8 @@ public class LayoutCanvas extends Canvas {
                             // TODO: Only set rendering target portion of the state
                             QualifiedName qname = ConfigurationComposite.NAME_CONFIG_STATE;
                             String state = leavingFile.getPersistentProperty(qname);
-                            xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INITIAL_STATE, state);
+                            xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INITIAL_STATE,
+                                    state);
                         } catch (CoreException e) {
                             // pass
                         }
