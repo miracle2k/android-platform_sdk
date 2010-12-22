@@ -160,12 +160,14 @@ public class UiElementNodeTest extends TestCase {
         assertEquals("application", application.getDescriptor().getXmlName());
         assertEquals(0, application.getUiChildren().size());
         assertEquals(0, application.getUiAttributes().size());
+        assertEquals(0, application.getUiSiblingIndex());
 
         // get /manifest/permission
         UiElementNode first_permission = ui_child_it.next();
         assertEquals("permission", first_permission.getDescriptor().getXmlName());
         assertEquals(0, first_permission.getUiChildren().size());
         assertEquals(0, first_permission.getUiAttributes().size());
+        assertEquals(1, first_permission.getUiSiblingIndex());
     }
 
     public void testLoadFrom_NewTree_N_Nodes() {

@@ -31,6 +31,8 @@ import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IWorkbenchPartSite;
 import org.w3c.dom.Node;
 
 import java.util.ArrayList;
@@ -675,6 +677,25 @@ public class SelectionManager implements ISelectionProvider {
         mCanvas.getSelectionManager().selectMultiple(newChildren);
 
         return nodes.size() == newChildren.size();
+    }
+
+    /**
+     * Update the outline selection to select the given nodes, asynchronously.
+     * @param nodes The nodes to be selected
+     */
+    public void updateOutlineSelection(final List<INode> nodes) {
+        Display.getDefault().asyncExec(new Runnable() {
+            public void run() {
+                selectDropped(nodes);
+                OutlinePage outlinePage = mCanvas.getOutlinePage();
+                IWorkbenchPartSite site = outlinePage.getEditor().getSite();
+                ISelectionProvider selectionProvider = site.getSelectionProvider();
+                ISelection selection = selectionProvider.getSelection();
+                if (selection != null) {
+                    outlinePage.setSelection(selection);
+                }
+            }
+        });
     }
 
     private void updateMenuActions() {

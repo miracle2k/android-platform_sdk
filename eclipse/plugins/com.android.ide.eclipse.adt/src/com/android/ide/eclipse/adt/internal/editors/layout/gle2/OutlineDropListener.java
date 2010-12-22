@@ -27,7 +27,6 @@ import org.eclipse.jface.viewers.ViewerDropAdapter;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.TransferData;
-import org.eclipse.swt.widgets.Display;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -157,18 +156,7 @@ import java.util.Set;
         }
         // Select the newly dropped nodes
         final SelectionManager selectionManager = canvas.getSelectionManager();
-        if (!selectionManager.selectDropped(added)) {
-            // In some scenarios we can't find the actual view infos yet; this
-            // seems to happen when you drag from one canvas to another (see the
-            // related comment next to the setFocus() call below). In that case
-            // defer selection briefly until the view hierarchy etc is up to
-            // date.
-            Display.getDefault().asyncExec(new Runnable() {
-                public void run() {
-                    selectionManager.selectDropped(added);
-                }
-            });
-        }
+        selectionManager.updateOutlineSelection(added);
 
         canvas.redraw();
 
