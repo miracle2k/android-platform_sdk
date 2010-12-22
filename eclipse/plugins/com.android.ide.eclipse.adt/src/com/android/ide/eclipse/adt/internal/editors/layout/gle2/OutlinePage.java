@@ -16,13 +16,21 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static org.eclipse.jface.action.IAction.AS_PUSH_BUTTON;
+
+import com.android.ide.common.api.INode;
+import com.android.ide.common.api.InsertType;
+import com.android.ide.common.layout.BaseLayoutRule;
+import com.android.ide.common.layout.Pair;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.ui.ErrorImageComposite;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.sdklib.annotations.VisibleForTesting;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -48,8 +56,14 @@ import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
+import org.eclipse.swt.events.MenuDetectEvent;
+import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.INullSelectionListener;
 import org.eclipse.ui.IPageLayout;
@@ -61,6 +75,9 @@ import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.views.contentoutline.ContentOutlinePage;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * An outline page for the layout canvas view.
@@ -83,7 +100,7 @@ public class OutlinePage extends ContentOutlinePage
     private final GraphicalEditorPart mGraphicalEditorPart;
 
     /**
-     * RootWrapper is a workaround: we can't set the input of the treeview to its root
+     * RootWrapper is a workaround: we can't set the input of the TreeView to its root
      * element, so we introduce a fake parent.
      */
     private final RootWrapper mRootWrapper = new RootWrapper();
@@ -105,6 +122,44 @@ public class OutlinePage extends ContentOutlinePage
         @Override
         public String getId() {
             return ActionFactory.SELECT_ALL.getId();
+        }
+    };
+
+    /** Action for moving items up in the tree */
+    private Action mMoveUpAction = new Action("Move Up\t-", AS_PUSH_BUTTON) {
+
+        @Override
+        public String getId() {
+            return "adt.outline.moveup"; //$NON-NLS-1$
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return canMove(false);
+        }
+
+        @Override
+        public void run() {
+            move(false);
+        }
+    };
+
+    /** Action for moving items down in the tree */
+    private Action mMoveDownAction = new Action("Move Down\t+", AS_PUSH_BUTTON) {
+
+        @Override
+        public String getId() {
+            return "adt.outline.movedown"; //$NON-NLS-1$
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return canMove(true);
+        }
+
+        @Override
+        public void run() {
+            move(true);
         }
     };
 
@@ -182,6 +237,25 @@ public class OutlinePage extends ContentOutlinePage
 
             public void widgetDisposed(DisposeEvent e) {
                 dispose();
+            }
+        });
+
+        Tree tree = tv.getTree();
+        tree.addKeyListener(new KeyListener() {
+
+            public void keyPressed(KeyEvent e) {
+                if (e.character == '-') {
+                    if (mMoveUpAction.isEnabled()) {
+                        mMoveUpAction.run();
+                    }
+                } else if (e.character == '+') {
+                    if (mMoveDownAction.isEnabled()) {
+                        mMoveDownAction.run();
+                    }
+                }
+            }
+
+            public void keyReleased(KeyEvent e) {
             }
         });
     }
@@ -442,6 +516,10 @@ public class OutlinePage extends ContentOutlinePage
         mMenuManager = new MenuManager();
         mMenuManager.removeAll();
 
+        mMenuManager.add(mMoveUpAction);
+        mMenuManager.add(mMoveDownAction);
+        mMenuManager.add(new Separator());
+
         final String prefix = LayoutCanvas.PREFIX_CANVAS_ACTION;
         mMenuManager.add(new DelegateAction(prefix + ActionFactory.CUT.getId()));
         mMenuManager.add(new DelegateAction(prefix + ActionFactory.COPY.getId()));
@@ -472,6 +550,13 @@ public class OutlinePage extends ContentOutlinePage
                 mMenuManager);
 
         getControl().setMenu(mMenuManager.createContextMenu(getControl()));
+
+        // Update Move Up/Move Down state only when the menu is opened
+        getControl().addMenuDetectListener(new MenuDetectListener() {
+            public void menuDetected(MenuDetectEvent e) {
+                mMenuManager.update(IAction.ENABLED);
+            }
+        });
     }
 
     /**
@@ -518,7 +603,11 @@ public class OutlinePage extends ContentOutlinePage
             super.run();
         }
 
-        /** Updates this action to delegate to its counterpart in the given editor part */
+        /**
+         * Updates this action to delegate to its counterpart in the given editor part
+         *
+         * @param editorPart The editor being updated
+         */
         public void updateFromEditorPart(GraphicalEditorPart editorPart) {
             LayoutCanvas canvas = editorPart == null ? null : editorPart.getCanvasControl();
             if (canvas == null) {
@@ -563,5 +652,196 @@ public class OutlinePage extends ContentOutlinePage
         // include selecting the root etc)
         actionBars.setGlobalActionHandler(mTreeSelectAllAction.getId(), mTreeSelectAllAction);
         actionBars.updateActionBars();
+    }
+
+    // ---- Move Up/Down Support ----
+
+    /** Returns true if the current selected item can be moved */
+    private boolean canMove(boolean forward) {
+        CanvasViewInfo viewInfo = getSingleSelectedItem();
+        if (viewInfo != null) {
+            UiViewElementNode node = viewInfo.getUiViewNode();
+            if (forward) {
+                return findNext(node) != null;
+            } else {
+                return findPrevious(node) != null;
+            }
+        }
+
+        return false;
+    }
+
+    /** Moves the current selected item down (forward) or up (not forward) */
+    private void move(boolean forward) {
+        CanvasViewInfo viewInfo = getSingleSelectedItem();
+        if (viewInfo != null) {
+            final Pair<UiViewElementNode, Integer> target;
+            UiViewElementNode selected = viewInfo.getUiViewNode();
+            if (forward) {
+                target = findNext(selected);
+            } else {
+                target = findPrevious(selected);
+            }
+            if (target != null) {
+                final LayoutCanvas canvas = mGraphicalEditorPart.getCanvasControl();
+                final SelectionManager selectionManager = canvas.getSelectionManager();
+                final ArrayList<SelectionItem> dragSelection = new ArrayList<SelectionItem>();
+                dragSelection.add(selectionManager.createSelection(viewInfo));
+                SelectionManager.sanitize(dragSelection);
+
+                if (!dragSelection.isEmpty()) {
+                    final SimpleElement[] elements = SelectionItem.getAsElements(dragSelection);
+                    UiViewElementNode parentNode = target.getFirst();
+                    final NodeProxy targetNode = canvas.getNodeFactory().create(parentNode);
+
+                    // Record children of the target right before the drop (such that we
+                    // can find out after the drop which exact children were inserted)
+                    Set<INode> children = new HashSet<INode>();
+                    for (INode node : targetNode.getChildren()) {
+                        children.add(node);
+                    }
+
+                    String label = MoveGesture.computeUndoLabel(targetNode,
+                            elements, DND.DROP_MOVE);
+                    canvas.getLayoutEditor().wrapUndoEditXmlModel(label, new Runnable() {
+                        public void run() {
+                            canvas.getRulesEngine().setInsertType(InsertType.MOVE);
+                            int index = target.getSecond();
+                            BaseLayoutRule.insertAt(targetNode, elements, false, index);
+                            canvas.getClipboardSupport().deleteSelection("Remove", dragSelection);
+                        }
+                    });
+
+                    // Now find out which nodes were added, and look up their
+                    // corresponding CanvasViewInfos
+                    final List<INode> added = new ArrayList<INode>();
+                    for (INode node : targetNode.getChildren()) {
+                        if (!children.contains(node)) {
+                            added.add(node);
+                        }
+                    }
+
+                    selectionManager.updateOutlineSelection(added);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns the {@link CanvasViewInfo} for the currently selected item, or null if
+     * there are no or multiple selected items
+     *
+     * @return the current selected item if there is exactly one item selected
+     */
+    private CanvasViewInfo getSingleSelectedItem() {
+        TreeItem[] selection = getTreeViewer().getTree().getSelection();
+        if (selection.length == 1) {
+            return getViewInfo(selection[0].getData());
+        }
+
+        return null;
+    }
+
+
+    /** Returns the pair [parent,index] of the next node (when iterating forward) */
+    @VisibleForTesting
+    /* package */ static Pair<UiViewElementNode, Integer> findNext(UiViewElementNode node) {
+        UiElementNode parent = node.getUiParent();
+        if (parent == null) {
+            return null;
+        }
+
+        UiElementNode next = node.getUiNextSibling();
+        if (next != null) {
+            if (next.getDescriptor().hasChildren()) {
+                return getFirstPosition(next);
+            } else {
+                return getPositionAfter(next);
+            }
+        }
+
+        next = parent.getUiNextSibling();
+        if (next != null) {
+            return getPositionBefore(next);
+        } else {
+            UiElementNode grandParent = parent.getUiParent();
+            if (grandParent != null) {
+                return getLastPosition(grandParent);
+            }
+        }
+
+        return null;
+    }
+
+    /** Returns the pair [parent,index] of the previous node (when iterating backward) */
+    @VisibleForTesting
+    /* package */ static Pair<UiViewElementNode, Integer> findPrevious(UiViewElementNode node) {
+        UiElementNode prev = node.getUiPreviousSibling();
+        if (prev != null) {
+            UiElementNode curr = prev;
+            while (true) {
+                List<UiElementNode> children = curr.getUiChildren();
+                if (children.size() > 0) {
+                    curr = children.get(children.size() - 1);
+                    continue;
+                }
+                if (curr.getDescriptor().hasChildren()) {
+                    return getFirstPosition(curr);
+                } else {
+                    if (curr == prev) {
+                        return getPositionBefore(curr);
+                    } else {
+                        return getPositionAfter(curr);
+                    }
+                }
+            }
+        }
+
+        return getPositionBefore(node.getUiParent());
+    }
+
+    /** Returns the pair [parent,index] of the position immediately before the given node  */
+    private static Pair<UiViewElementNode, Integer> getPositionBefore(UiElementNode node) {
+        if (node != null) {
+            UiElementNode parent = node.getUiParent();
+            if (parent != null && parent instanceof UiViewElementNode) {
+                return Pair.of((UiViewElementNode) parent, node.getUiSiblingIndex());
+            }
+        }
+
+        return null;
+    }
+
+    /** Returns the pair [parent,index] of the position immediately following the given node  */
+    private static Pair<UiViewElementNode, Integer> getPositionAfter(UiElementNode node) {
+        if (node != null) {
+            UiElementNode parent = node.getUiParent();
+            if (parent != null && parent instanceof UiViewElementNode) {
+                return Pair.of((UiViewElementNode) parent, node.getUiSiblingIndex() + 1);
+            }
+        }
+
+        return null;
+    }
+
+    /** Returns the pair [parent,index] of the first position inside the given parent */
+    private static Pair<UiViewElementNode, Integer> getFirstPosition(UiElementNode parent) {
+        if (parent != null && parent instanceof UiViewElementNode) {
+            return Pair.of((UiViewElementNode) parent, 0);
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the pair [parent,index] of the last position after the given node's
+     * children
+     */
+    private static Pair<UiViewElementNode, Integer> getLastPosition(UiElementNode parent) {
+        if (parent != null && parent instanceof UiViewElementNode) {
+            return Pair.of((UiViewElementNode) parent, parent.getUiChildren().size());
+        }
+
+        return null;
     }
 }
