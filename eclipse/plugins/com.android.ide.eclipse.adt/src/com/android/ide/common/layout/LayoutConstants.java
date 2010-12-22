@@ -40,6 +40,7 @@ public class LayoutConstants {
     public static final String LIST_VIEW = "ListView";                  //$NON-NLS-1$
     public static final String GALLERY = "Gallery";                     //$NON-NLS-1$
     public static final String GRID_VIEW = "GridView";                  //$NON-NLS-1$
+    public static final String SCROLL_VIEW = "ScrollView";              //$NON-NLS-1$
     public static final String EXPANDABLE_LIST_VIEW = "ExpandableListView";//$NON-NLS-1$
 
     public static final String ATTR_TEXT = "text";                      //$NON-NLS-1$

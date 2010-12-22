@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static com.android.ide.common.layout.LayoutConstants.SCROLL_VIEW;
 import static com.android.ide.eclipse.adt.AndroidConstants.ANDROID_PKG;
 import static com.android.sdklib.resources.Density.DEFAULT_DENSITY;
 
@@ -1591,7 +1592,7 @@ public class GraphicalEditorPart extends EditorPart
             // FIXME set the rendering mode using ViewRule or something.
             List<UiElementNode> children = model.getUiChildren();
             if (children.size() > 0 &&
-                    children.get(0).getDescriptor().getXmlLocalName().equals("ScrollView")) {
+                    children.get(0).getDescriptor().getXmlLocalName().equals(SCROLL_VIEW)) {
                 renderingMode = RenderingMode.V_SCROLL;
             }
         }
@@ -1616,7 +1617,13 @@ public class GraphicalEditorPart extends EditorPart
         // set the Image Overlay as the image factory.
         params.setImageFactory(getCanvasControl().getImageOverlay());
 
-        return layoutLib.createSession(params);
+        try {
+            return layoutLib.createSession(params);
+        } catch (RuntimeException t) {
+            // Exceptions from the bridge
+            displayError(t.getLocalizedMessage());
+            throw t;
+        }
     }
 
     /**
