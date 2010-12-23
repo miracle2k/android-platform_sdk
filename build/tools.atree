@@ -28,6 +28,9 @@ sdk/files/tools_source.properties tools/source.properties
 # copy plugin.prop from sdk.git
 sdk/files/plugin.prop tools/lib/plugin.prop
 
+# readme regarding adb move to platform-tools
+sdk/files/adb_has_moved.txt tools/adb_has_moved.txt
+
 # native host tools from out/host/$(HOST_OS)-$(HOST_ARCH)/
 bin/sqlite3      tools/sqlite3
 bin/dmtracedump  tools/dmtracedump
