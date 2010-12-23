@@ -16,13 +16,12 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import static org.eclipse.jface.action.IAction.AS_PUSH_BUTTON;
-
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.layout.BaseLayoutRule;
 import com.android.ide.common.layout.Pair;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
@@ -126,7 +125,8 @@ public class OutlinePage extends ContentOutlinePage
     };
 
     /** Action for moving items up in the tree */
-    private Action mMoveUpAction = new Action("Move Up\t-", AS_PUSH_BUTTON) {
+    private Action mMoveUpAction = new Action("Move Up\t-",
+            IconFactory.getInstance().getImageDescriptor("up")) { //$NON-NLS-1$
 
         @Override
         public String getId() {
@@ -145,7 +145,8 @@ public class OutlinePage extends ContentOutlinePage
     };
 
     /** Action for moving items down in the tree */
-    private Action mMoveDownAction = new Action("Move Down\t+", AS_PUSH_BUTTON) {
+    private Action mMoveDownAction = new Action("Move Down\t+",
+            IconFactory.getInstance().getImageDescriptor("down")) { //$NON-NLS-1$
 
         @Override
         public String getId() {
