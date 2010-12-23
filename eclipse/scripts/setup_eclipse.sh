@@ -3,7 +3,8 @@
 # Quick script used to setup Eclipse for the ADT plugin build.
 #
 # usage:
-#   setup_eclipse.sh <dest_dir>
+#   setup_eclipse.sh [-p] <dest_dir>
+#   -p: run Eclipse in the background and print its PID in dest_dir/eclipse.pid
 #
 # Workflow:
 # - downloads & unpack Eclipse if necessary
@@ -43,11 +44,11 @@ BASE_DIR="$1"
 
 [[ -n "$1" ]] || die "Usage: $0 <dest-dir>"
 
-# URL for 3.4.0 RCP Linux 32 Bits. Includes GEF, WTP as needed.
-DOWNLOAD_URL="http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/ganymede/SR2/eclipse-rcp-ganymede-SR2-linux-gtk.tar.gz"
+# URL for 3.5.2 RCP Linux 32 Bits. Includes GEF, WTP as needed.
+DOWNLOAD_URL="http://download.eclipse.org/technology/epp/downloads/release/galileo/SR2/eclipse-rcp-galileo-SR2-linux-gtk.tar.gz"
 
 BIN="$BASE_DIR/eclipse/eclipse"           # path to installed binary
-TARGZ="$BASE_DIR/eclipse-rcp-ganymede-linux-gtk.tar.gz"
+TARGZ="$BASE_DIR/${DOWNLOAD_URL##*/}"     # base dir + filename of the download URL
 
 if [[ ! -f "$BIN" ]]; then
   echo "Downloading and installing Eclipse in $BASE_DIR."
