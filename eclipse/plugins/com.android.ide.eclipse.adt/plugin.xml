@@ -453,18 +453,6 @@
             categoryId="org.eclipse.debug.ui.category.run"
             id="com.android.ide.eclipse.adt.launch.LaunchShortcut.run">
       </command>
-      <keyBinding
-            keySequence="M3+M2+A D"
-            contextId="org.eclipse.ui.globalScope"
-            commandId="com.android.ide.eclipse.adt.launch.LaunchShortcut.debug"
-            keyConfigurationId="org.eclipse.ui.defaultAcceleratorConfiguration">
-      </keyBinding>
-      <keyBinding
-            keySequence="M3+M2+A R"
-            contextId="org.eclipse.ui.globalScope"
-            commandId="com.android.ide.eclipse.adt.launch.LaunchShortcut.run"
-            keyConfigurationId="org.eclipse.ui.defaultAcceleratorConfiguration">
-      </keyBinding>
    </extension>
    <extension
          point="org.eclipse.ui.decorators">
@@ -765,12 +753,6 @@
             id="com.android.ide.eclipse.adt.refactoring.extract.string"
             name="Extract Android String">
       </command>
-      <keyBinding
-            commandId="com.android.ide.eclipse.adt.refactoring.extract.string"
-            contextId="org.eclipse.ui.globalScope"
-            keyConfigurationId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            keySequence="M3+M2+A S">
-      </keyBinding>
    </extension>
    <extension
          point="org.eclipse.ltk.core.refactoring.refactoringContributions">
@@ -902,5 +884,22 @@
             name="Android Java Hyperlink Detector (Extra Modifier Key)"
             targetId="org.eclipse.jdt.ui.javaCode">
       </hyperlinkDetector>
+   </extension>
+   <extension point="org.eclipse.ui.bindings">
+      <key
+            sequence="M3+M2+A S"
+            contextId="org.eclipse.ui.contexts.window"
+            commandId="com.android.ide.eclipse.adt.refactoring.extract.string"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+      <key
+            sequence="M3+M2+A D"
+            contextId="org.eclipse.ui.contexts.window"
+            commandId="com.android.ide.eclipse.adt.launch.LaunchShortcut.debug"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+      <key
+            sequence="M3+M2+A R"
+            contextId="org.eclipse.ui.contexts.window"
+            commandId="com.android.ide.eclipse.adt.launch.LaunchShortcut.run"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
    </extension>
 </plugin>

@@ -425,6 +425,27 @@ public class UiElementNode implements IPropertySource {
     }
 
     /**
+     * Returns the index of this sibling (where the first child has index 0, the second child
+     * has index 1, and so on.)
+     *
+     * @return The sibling index of this node
+     */
+    public int getUiSiblingIndex() {
+        if (mUiParent != null) {
+            int index = 0;
+            for (UiElementNode node : mUiParent.getUiChildren()) {
+                if (node == this) {
+                    break;
+                }
+                index++;
+            }
+            return index;
+        }
+
+        return 0;
+    }
+
+    /**
      * Returns the previous UI sibling of this UI node. If the node does not have a previous
      * sibling, returns null.
      *
