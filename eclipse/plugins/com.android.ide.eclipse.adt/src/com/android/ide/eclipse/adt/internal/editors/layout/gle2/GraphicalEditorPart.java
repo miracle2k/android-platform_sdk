@@ -1433,10 +1433,11 @@ public class GraphicalEditorPart extends EditorPart
             // Success means there was no exception. But we might have detected
             // some missing classes and swapped them by a mock view.
             Set<String> missingClasses = mProjectCallback.getMissingClasses();
-            if (missingClasses.size() > 0) {
-                displayMissingClasses(missingClasses);
+            Set<String> brokenClasses = mProjectCallback.getUninstantiatableClasses();
+            if (missingClasses.size() > 0 || brokenClasses.size() > 0) {
+                displayFailingClasses(missingClasses, brokenClasses);
             } else {
-                // Nope, no missing classes. Clear success, congrats!
+                // Nope, no missing or broken classes. Clear success, congrats!
                 hideError();
             }
         }
@@ -1755,13 +1756,39 @@ public class GraphicalEditorPart extends EditorPart
      * Switches the sash to display the error label to show a list of
      * missing classes and give options to create them.
      */
-    private void displayMissingClasses(Set<String> missingClasses) {
+    private void displayFailingClasses(Set<String> missingClasses, Set<String> brokenClasses) {
         mErrorLabel.setText("");
-        addText(mErrorLabel, "The following classes could not be found:\n");
-        for (String clazz : missingClasses) {
-            addText(mErrorLabel, "- ");
-            addClassLink(mErrorLabel, clazz);
-            addText(mErrorLabel, "\n");
+        if (missingClasses.size() > 0) {
+            addText(mErrorLabel, "The following classes could not be found:\n");
+            for (String clazz : missingClasses) {
+                addText(mErrorLabel, "- ");
+                addClassLink(mErrorLabel, clazz);
+                addText(mErrorLabel, "\n");
+            }
+        }
+        if (brokenClasses.size() > 0) {
+            addText(mErrorLabel, "The following classes could not be instantiated:\n");
+
+            // Do we have a custom class (not an Android or add-ons class)
+            boolean haveCustomClass = false;
+
+            for (String clazz : brokenClasses) {
+                addText(mErrorLabel, "- ");
+                addClassLink(mErrorLabel, clazz);
+                addText(mErrorLabel, "\n");
+
+                if (!(clazz.startsWith("android.") || //$NON-NLS-1$
+                        clazz.startsWith("com.google."))) { //$NON-NLS-1$
+                    haveCustomClass = true;
+                }
+            }
+
+            addText(mErrorLabel, "See the Error Log (Window > Show View) for more details.\n");
+
+            if (haveCustomClass) {
+                addText(mErrorLabel, "Tip: Use View.isInEditMode() in your custom views "
+                        + "to skip code when shown in Eclipse");
+            }
         }
 
         mSashError.setMaximizedControl(null);
