@@ -76,11 +76,11 @@ function build_plugin {
 
   # Compute the final directory name and remove any leftovers from previous
   # runs if any.
-  BUILD_PREFIX="android-eclipse"  
+  BUILD_PREFIX="android-eclipse"
   if [ "$INTERNAL_BUILD" ]; then
     # append 'eng' signifier to end of archive name to denote internal build
     BUILD_PREFIX="${BUILD_PREFIX}-eng"
-  fi  
+  fi
 
   # exclude date from build-zip name so it can be auto-calculated by continuous
   # test process unless there's no build number, in which case the date is
