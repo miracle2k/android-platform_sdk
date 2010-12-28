@@ -613,7 +613,8 @@ public class GestureManager {
                         // the dragged view
                         int deltaX = (int) (scale * (boundingBox.x - p.x));
                         int deltaY = (int) (scale * (boundingBox.y - p.y));
-                        SwtUtils.setDragImageOffsets(e, -deltaX, -deltaY);
+                        e.offsetX = -deltaX;
+                        e.offsetY = -deltaY;
 
                         // View rules may need to know it as well
                         GlobalCanvasDragInfo dragInfo = GlobalCanvasDragInfo.getInstance();

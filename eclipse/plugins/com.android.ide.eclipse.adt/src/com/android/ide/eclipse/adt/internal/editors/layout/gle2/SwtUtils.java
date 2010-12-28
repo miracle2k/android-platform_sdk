@@ -16,9 +16,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.Rect;
-import com.android.ide.common.layout.Pair;
 
-import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
@@ -28,7 +26,6 @@ import org.eclipse.swt.widgets.Display;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.WritableRaster;
-import java.lang.reflect.Field;
 import java.util.List;
 
 /**
@@ -170,58 +167,6 @@ public class SwtUtils {
         }
 
         return awtImage;
-    }
-
-    /**
-     * Sets the DragSourceEvent's offsetX and offsetY fields.
-     *
-     * @param event the {@link DragSourceEvent}
-     * @param offsetX the offset X value
-     * @param offsetY the offset Y value
-     */
-    public static void setDragImageOffsets(DragSourceEvent event, int offsetX, int offsetY) {
-        // Eclipse 3.4 does not support drag image offsets
-        //     event.offsetX = offsetX;
-        //     event.offsetY= offsetY;
-        // FIXME: Replace by direct field access when we drop Eclipse 3.4 support.
-        try {
-            Class<DragSourceEvent> clz = DragSourceEvent.class;
-            Field xField = clz.getDeclaredField("offsetX"); //$NON-NLS-1$
-            Field yField = clz.getDeclaredField("offsetY"); //$NON-NLS-1$
-            xField.set(event, Integer.valueOf(offsetX));
-            yField.set(event, Integer.valueOf(offsetY));
-        } catch (SecurityException e) {
-        } catch (NoSuchFieldException e) {
-        } catch (IllegalArgumentException e) {
-        } catch (IllegalAccessException e) {
-        }
-    }
-
-    /**
-     * Returns the DragSourceEvent's offsetX and offsetY fields.
-     *
-     * @param event the {@link DragSourceEvent}
-     * @return A pair of the offset X and Y values, or null if it fails (e.g. on Eclipse
-     *         3.4)
-     */
-    public static Pair<Integer,Integer> getDragImageOffsets(DragSourceEvent event) {
-        // Eclipse 3.4 does not support drag image offsets:
-        //     return Pair.of(event.offsetX, event.offsetY);
-        // FIXME: Replace by direct field access when we drop Eclipse 3.4 support.
-        try {
-            Class<DragSourceEvent> clz = DragSourceEvent.class;
-            Field xField = clz.getDeclaredField("offsetX"); //$NON-NLS-1$
-            Field yField = clz.getDeclaredField("offsetY"); //$NON-NLS-1$
-            int offsetX = xField.getInt(event);
-            int offsetY = yField.getInt(event);
-            return Pair.of(offsetX, offsetY);
-        } catch (SecurityException e) {
-        } catch (NoSuchFieldException e) {
-        } catch (IllegalArgumentException e) {
-        } catch (IllegalAccessException e) {
-        }
-
-        return null;
     }
 
     /**
