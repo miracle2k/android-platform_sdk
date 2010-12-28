@@ -21,6 +21,11 @@ import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_BELOW;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
+import static com.android.ide.common.layout.LayoutConstants.EXPANDABLE_LIST_VIEW;
+import static com.android.ide.common.layout.LayoutConstants.FQCN_ADAPTER_VIEW;
+import static com.android.ide.common.layout.LayoutConstants.GALLERY;
+import static com.android.ide.common.layout.LayoutConstants.GRID_VIEW;
+import static com.android.ide.common.layout.LayoutConstants.LIST_VIEW;
 import static com.android.ide.common.layout.LayoutConstants.RELATIVE_LAYOUT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
@@ -836,4 +841,48 @@ public final class DescriptorsUtils {
         return (String) params[2];
     }
 
+    /**
+     * Returns true if the given descriptor represents a view that not only can have
+     * children but which allows us to <b>insert</b> children. Some views, such as
+     * ListView (and in general all AdapterViews), disallow children to be inserted except
+     * through the dedicated AdapterView interface to do it.
+     *
+     * @param descriptor the descriptor for the view in question
+     * @param viewObject an actual instance of the view, or null if not available
+     * @return true if the descriptor describes a view which allows insertion of child
+     *         views
+     */
+    public static boolean canInsertChildren(ElementDescriptor descriptor, Object viewObject) {
+        if (descriptor.hasChildren()) {
+            if (viewObject != null) {
+                // We have a view object; see if it derives from an AdapterView
+                Class<?> clz = viewObject.getClass();
+                while (clz != null) {
+                    if (clz.getName().equals(FQCN_ADAPTER_VIEW)) {
+                        return false;
+                    }
+                    clz = clz.getSuperclass();
+                }
+            } else {
+                // No view object, so we can't easily look up the class and determine
+                // whether it's an AdapterView; instead, look at the fixed list of builtin
+                // concrete subclasses of AdapterView
+                String viewName = descriptor.getXmlLocalName();
+                if (viewName.equals(LIST_VIEW) || viewName.equals(EXPANDABLE_LIST_VIEW)
+                        || viewName.equals(GALLERY) || viewName.equals(GRID_VIEW)) {
+
+                    // We should really also enforce that
+                    // LayoutConstants.ANDROID_URI.equals(descriptor.getNameSpace())
+                    // here and if not, return true, but it turns out the getNameSpace()
+                    // for elements are often "".
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
 }

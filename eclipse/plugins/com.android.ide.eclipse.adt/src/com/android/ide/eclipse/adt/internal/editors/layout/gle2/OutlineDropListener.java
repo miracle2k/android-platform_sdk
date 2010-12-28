@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.layout.BaseLayoutRule;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -188,7 +189,8 @@ import java.util.Set;
         if (location == LOCATION_ON) {
             // Targeting the middle of an item means to add it as a new child
             // of the given element. This is only allowed on some types of nodes.
-            if (!parentNode.getDescriptor().hasChildren()) {
+            if (!DescriptorsUtils.canInsertChildren(parentNode.getDescriptor(),
+                    parent.getViewObject())) {
                 return false;
             }
         }
