@@ -664,9 +664,9 @@ public class PaletteControl extends Composite {
                 // mouse pointer
 
                 Rectangle imageBounds = mImage.getBounds();
-                int offsetX = imageBounds.width / 2;
-                int offsetY = imageBounds.height / 2;
-                SwtUtils.setDragImageOffsets(event, offsetX, offsetY);
+                event.offsetX = imageBounds.width / 2;
+                event.offsetY = imageBounds.height / 2;
+
             }
 
             event.doit = true;
