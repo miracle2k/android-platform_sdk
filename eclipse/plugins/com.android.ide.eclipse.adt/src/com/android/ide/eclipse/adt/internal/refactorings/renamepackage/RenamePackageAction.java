@@ -25,6 +25,7 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.ui.refactoring.RefactoringSaveHelper;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.InputDialog;
@@ -93,8 +94,6 @@ public class RenamePackageAction implements IObjectActionDelegate {
                     project = (IProject) ((IAdaptable) element).getAdapter(IProject.class);
                 }
                 if (project != null) {
-                    // TODO/FIXME Uncomment this when support for Eclipse 3.4 is dropped!
-                    /*
                     // It is advisable that the user saves before proceeding,
                     // revealing any compilation errors. The following lines
                     // enforce a save as a convenience.
@@ -103,9 +102,6 @@ public class RenamePackageAction implements IObjectActionDelegate {
                     if (save_helper.saveEditors(AdtPlugin.getDisplay().getActiveShell())) {
                         promptNewName(project);
                     }
-                     */
-
-                    promptNewName(project);
                 }
             }
         }
