@@ -43,6 +43,7 @@ public final class ProjectCallback implements ILegacyCallback {
 
     private final HashMap<String, Class<?>> mLoadedClasses = new HashMap<String, Class<?>>();
     private final Set<String> mMissingClasses = new TreeSet<String>();
+    private final Set<String> mBrokenClasses = new TreeSet<String>();
     private final IProject mProject;
     private final ClassLoader mParentClassLoader;
     private final ProjectResources mProjectRes;
@@ -58,6 +59,10 @@ public final class ProjectCallback implements ILegacyCallback {
 
     public Set<String> getMissingClasses() {
         return mMissingClasses;
+    }
+
+    public Set<String> getUninstantiatableClasses() {
+        return mBrokenClasses;
     }
 
     /**
@@ -84,18 +89,33 @@ public final class ProjectCallback implements ILegacyCallback {
                 mLoader = new ProjectClassLoader(mParentClassLoader, mProject);
             }
             clazz = mLoader.loadClass(className);
+        } catch (Exception e) {
+            // Log this error with the class name we're trying to load
+            AdtPlugin.log(e, "ProjectCallback.loadView failed to find class %1$s", //$NON-NLS-1$
+                    className);
 
+            // Add the missing class to the list so that the renderer can print them later.
+            mMissingClasses.add(className);
+        }
+
+        try {
             if (clazz != null) {
                 mUsed = true;
                 mLoadedClasses.put(className, clazz);
                 return instantiateClass(clazz, constructorSignature, constructorParameters);
             }
-        } catch (Exception e) {
-            // Log this error with the class name we're trying to load and abort.
-            AdtPlugin.log(e, "ProjectCallback.loadView failed to find class %1$s", className); //$NON-NLS-1$
+        } catch (Throwable e) {
+            // Find root cause
+            while (e.getCause() != null) {
+                e = e.getCause();
+            }
+
+            AdtPlugin.log(e,
+                    "ProjectCallback.loadView failed to instantiate class %1$s", //$NON-NLS-1$
+                    className);
 
             // Add the missing class to the list so that the renderer can print them later.
-            mMissingClasses.add(className);
+            mBrokenClasses.add(className);
         }
 
         // Create a mock view instead. We don't cache it in the mLoadedClasses map.
