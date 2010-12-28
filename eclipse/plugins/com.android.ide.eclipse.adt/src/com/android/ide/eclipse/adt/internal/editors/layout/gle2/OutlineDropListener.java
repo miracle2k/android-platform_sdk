@@ -28,8 +28,6 @@ import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.TransferData;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +55,7 @@ import java.util.Set;
 
     @Override
     public boolean performDrop(Object data) {
-        final DropTargetEvent event = getEvent();
+        final DropTargetEvent event = getCurrentEvent();
         if (event == null) {
             return false;
         }
@@ -166,7 +164,7 @@ import java.util.Set;
     @Override
     public boolean validateDrop(Object target, int operation,
             TransferData transferType) {
-        DropTargetEvent event = getEvent();
+        DropTargetEvent event = getCurrentEvent();
         if (event == null) {
             return false;
         }
@@ -218,24 +216,5 @@ import java.util.Set;
             child = child.getUiParent();
         }
         return false;
-    }
-
-    // Eclipse 3.4 workaround for lack of #getCurrentEvent()
-    private DropTargetEvent getEvent() {
-        // Eclipse 3.4 does not provide ViewerDropAdapter#getCurrentEvent
-        // FIXME: Replace the below code with just "getCurrentEvent()" when
-        // we drop Eclipse 3.4 support.
-        try {
-            Class<ViewerDropAdapter> clz = ViewerDropAdapter.class;
-            Method m = clz.getDeclaredMethod("getCurrentEvent"); //$NON-NLS-1$
-            return (DropTargetEvent) m.invoke(this, (Object[]) null);
-        } catch (SecurityException e) {
-        } catch (IllegalArgumentException e) {
-        } catch (IllegalAccessException e) {
-        } catch (NoSuchMethodException e) {
-        } catch (InvocationTargetException e) {
-        }
-
-        return null;
     }
 }
