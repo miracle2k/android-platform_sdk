@@ -421,15 +421,22 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
             return readFile(new InputStreamReader(contents, charset));
         } catch (CoreException e) {
             // pass -- ignore files we can't read
-        } catch (UnsupportedEncodingException e) {
-            // pass -- ignore files we can't read
+        } catch (IOException e) {
+            // pass -- ignore files we can't read.
+
+            // Note that IFile.getContents() indicates it throws a CoreException but
+            // experience shows that if the file does not exists it really throws
+            // IOException.
+            // New InputStreamReader() throws UnsupportedEncodingException
+            // which is handled by this IOException catch.
+
         } finally {
             try {
                 if (contents != null) {
                     contents.close();
                 }
             } catch (IOException e) {
-                AdtPlugin.log(e, "Can't read file %1$s", file); //$NON-NLS-1$
+                // ignore
             }
         }
 
