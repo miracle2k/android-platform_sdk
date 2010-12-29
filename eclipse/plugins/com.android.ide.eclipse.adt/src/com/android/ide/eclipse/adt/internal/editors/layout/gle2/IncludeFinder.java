@@ -713,8 +713,8 @@ public class IncludeFinder {
         // Perform DFS on the include graph and look for a cycle; if we find one, produce
         // a chain of includes on the way back to show to the user
         if (mIncludes.size() > 0) {
-            Set<String> seen = new HashSet<String>(mIncludes.size());
-            String chain = dfs(from, seen);
+            Set<String> visiting = new HashSet<String>(mIncludes.size());
+            String chain = dfs(from, visiting);
             if (chain != null) {
                 addError(from, chain);
             } else {
@@ -727,21 +727,23 @@ public class IncludeFinder {
     /** Format to chain include cycles in: a=>b=>c=>d etc */
     private final String CHAIN_FORMAT = "%1$s=>%2$s"; //$NON-NLS-1$
 
-    private String dfs(String from, Set<String> seen) {
-        seen.add(from);
+    private String dfs(String from, Set<String> visiting) {
+        visiting.add(from);
 
         List<String> includes = mIncludes.get(from);
         if (includes != null && includes.size() > 0) {
             for (String include : includes) {
-                if (seen.contains(include)) {
+                if (visiting.contains(include)) {
                     return String.format(CHAIN_FORMAT, from, include);
                 }
-                String chain = dfs(include, seen);
+                String chain = dfs(include, visiting);
                 if (chain != null) {
                     return String.format(CHAIN_FORMAT, from, chain);
                 }
             }
         }
+
+        visiting.remove(from);
 
         return null;
     }
