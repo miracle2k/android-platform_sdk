@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,9 @@ import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 
 /**
@@ -88,7 +90,7 @@ public class ArchiveInstaller {
             if (unarchive(archive, osSdkRoot, archiveFile, sdkManager, monitor)) {
                 monitor.setResult("Installed %1$s", name);
                 // Delete the temp archive if it exists, only on success
-                deleteFileOrFolder(archiveFile);
+                OsHelper.deleteFileOrFolder(archiveFile);
                 return true;
             }
         }
@@ -147,7 +149,7 @@ public class ArchiveInstaller {
         File tmpFolder = getTempFolder(osSdkRoot);
         if (!tmpFolder.isDirectory()) {
             if (tmpFolder.isFile()) {
-                deleteFileOrFolder(tmpFolder);
+                OsHelper.deleteFileOrFolder(tmpFolder);
             }
             if (!tmpFolder.mkdirs()) {
                 monitor.setResult("Failed to create directory %1$s", tmpFolder.getPath());
@@ -176,7 +178,7 @@ public class ArchiveInstaller {
             // Existing file is either of different size or content.
             // TODO: continue download when we support continue mode.
             // Right now, let's simply remove the file and start over.
-            deleteFileOrFolder(tmpFile);
+            OsHelper.deleteFileOrFolder(tmpFile);
         }
 
         if (fetchUrl(archive, tmpFile, link, desc, monitor)) {
@@ -184,8 +186,8 @@ public class ArchiveInstaller {
             return tmpFile;
         } else {
             // Delete the temp file if we aborted the download
-            // TODO: disable this when we want to support partial downloads!
-            deleteFileOrFolder(tmpFile);
+            // TODO: disable this when we want to support partial downloads.
+            OsHelper.deleteFileOrFolder(tmpFile);
             return null;
         }
     }
@@ -391,45 +393,42 @@ public class ArchiveInstaller {
         monitor.setDescription(pkgDesc);
         monitor.setResult(pkgDesc);
 
-        // We always unzip in a temp folder which name depends on the package type
-        // (e.g. addon, tools, etc.) and then move the folder to the destination folder.
+        // Ideally we want to always unzip in a temp folder which name depends on the package
+        // type (e.g. addon, tools, etc.) and then move the folder to the destination folder.
         // If the destination folder exists, it will be renamed and deleted at the very
-        // end if everything succeeded.
+        // end if everything succeeded. This provides a nice atomic swap and should leave the
+        // original folder untouched in case something wrong (e.g. program crash) in the
+        // middle of the unzip operation.
+        //
+        // However that doesn't work on Windows, we always end up not being able to move the
+        // new folder. There are actually 2 cases:
+        // A- A process such as a the explorer is locking the *old* folder or a file inside
+        //    (e.g. adb.exe)
+        //    In this case we really shouldn't be tried to work around it and we need to let
+        //    the user know and let it close apps that access that folder.
+        // B- A process is locking the *new* folder. Very often this turns to be a file indexer
+        //    or an anti-virus that is busy scanning the new folder that we just unzipped.
+        //
+        // So we're going to change the strategy:
+        // 1- Try to move the old folder to a temp/old folder. This might fail in case of issue A.
+        //    Note: for platform-tools, we can try killing adb first.
+        //    If it still fails, we do nothing and ask the user to terminate apps that can be
+        //    locking that folder.
+        // 2- Once the old folder is out of the way, we unzip the archive directly into the
+        //    optimal new location. We no longer unzip it in a temp folder and move it since we
+        //    know that's what fails in most of the cases.
+        // 3- If the unzip fails, remove everything and try to restore the old folder by doing
+        //    a *copy* in place and not a folder move (which will likely fail too).
 
         String pkgKind = pkg.getClass().getSimpleName();
 
         File destFolder = null;
-        File unzipDestFolder = null;
         File oldDestFolder = null;
 
         try {
-            // Find a new temp folder that doesn't exist yet
-            unzipDestFolder = createTempFolder(osSdkRoot, pkgKind, "new");  //$NON-NLS-1$
+            // -0- Compute destination directory and check install pre-conditions
 
-            if (unzipDestFolder == null) {
-                // this should not seriously happen.
-                monitor.setResult("Failed to find a temp directory in %1$s.", osSdkRoot);
-                return false;
-            }
-
-            if (!unzipDestFolder.mkdirs()) {
-                monitor.setResult("Failed to create directory %1$s", unzipDestFolder.getPath());
-                return false;
-            }
-
-            String[] zipRootFolder = new String[] { null };
-            if (!unzipFolder(archiveFile, archive.getSize(),
-                    unzipDestFolder, pkgDesc,
-                    zipRootFolder, monitor)) {
-                return false;
-            }
-
-            if (!generateSourceProperties(archive, unzipDestFolder)) {
-                return false;
-            }
-
-            // Compute destination directory
-            destFolder = pkg.getInstallFolder(osSdkRoot, zipRootFolder[0], sdkManager);
+            destFolder = pkg.getInstallFolder(osSdkRoot, sdkManager);
 
             if (destFolder == null) {
                 // this should not seriously happen.
@@ -442,105 +441,142 @@ public class ArchiveInstaller {
                 return false;
             }
 
-            // Swap the old folder by the new one.
-            // We have 2 "folder rename" (aka moves) to do.
-            // They must both succeed in the right order.
-            boolean move1done = false;
-            boolean move2done = false;
-            while (!move1done || !move2done) {
-                File renameFailedForDir = null;
+            // -1- move old folder.
 
-                // Case where the dest dir already exists
-                if (!move1done) {
-                    if (destFolder.isDirectory()) {
-                        // Create a new temp/old dir
-                        if (oldDestFolder == null) {
-                            oldDestFolder = createTempFolder(osSdkRoot, pkgKind, "old");  //$NON-NLS-1$
-                        }
-                        if (oldDestFolder == null) {
-                            // this should not seriously happen.
-                            monitor.setResult("Failed to find a temp directory in %1$s.", osSdkRoot);
-                            return false;
-                        }
-
-                        // try to move the current dest dir to the temp/old one
-                        if (!destFolder.renameTo(oldDestFolder)) {
-                            monitor.setResult("Failed to rename directory %1$s to %2$s.",
-                                    destFolder.getPath(), oldDestFolder.getPath());
-                            renameFailedForDir = destFolder;
-                        }
-                    }
-
-                    move1done = (renameFailedForDir == null);
+            if (destFolder.exists()) {
+                // Create a new temp/old dir
+                if (oldDestFolder == null) {
+                    oldDestFolder = getNewTempFolder(osSdkRoot, pkgKind, "old");  //$NON-NLS-1$
                 }
-
-                // Case where there's no dest dir or we successfully moved it to temp/old
-                // We now try to move the temp/unzip to the dest dir
-                if (move1done && !move2done) {
-                    if (renameFailedForDir == null && !unzipDestFolder.renameTo(destFolder)) {
-                        monitor.setResult("Failed to rename directory %1$s to %2$s",
-                                unzipDestFolder.getPath(), destFolder.getPath());
-                        renameFailedForDir = unzipDestFolder;
-                    }
-
-                    move2done = (renameFailedForDir == null);
-                }
-
-                if (renameFailedForDir != null) {
-                    if (SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_WINDOWS) {
-
-                        String msg = String.format(
-                                "-= Warning ! =-\n" +
-                                "A folder failed to be renamed or moved. On Windows this " +
-                                "typically means that a program is using that folder (for example " +
-                                "Windows Explorer or your anti-virus software.)\n" +
-                                "Please momentarily deactivate your anti-virus software.\n" +
-                                "Please also close any running programs that may be accessing " +
-                                "the directory '%1$s'.\n" +
-                                "When ready, press YES to try again.",
-                                renameFailedForDir.getPath());
-
-                        if (monitor.displayPrompt("SDK Manager: failed to install", msg)) {
-                            // loop, trying to rename the temp dir into the destination
-                            continue;
-                        }
-
-                    }
+                if (oldDestFolder == null) {
+                    // this should not seriously happen.
+                    monitor.setResult("Failed to find a temp directory in %1$s.", osSdkRoot);
                     return false;
                 }
-                break;
+
+                // Try to move the current dest dir to the temp/old one. Tell the user if it failed.
+                while(true) {
+                    if (!moveFolder(destFolder, oldDestFolder)) {
+                        monitor.setResult("Failed to rename directory %1$s to %2$s.",
+                                destFolder.getPath(), oldDestFolder.getPath());
+
+                        if (SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_WINDOWS) {
+                            String msg = String.format(
+                                    "-= Warning ! =-\n" +
+                                    "A folder failed to be moved. On Windows this " +
+                                    "typically means that a program is using that folder (for " +
+                                    "example Windows Explorer or your anti-virus software.)\n" +
+                                    "Please momentarily deactivate your anti-virus software or " +
+                                    "close any running programs that may be accessing the " +
+                                    "directory '%1$s'.\n" +
+                                    "When ready, press YES to try again.",
+                                    destFolder.getPath());
+
+                            if (monitor.displayPrompt("SDK Manager: failed to install", msg)) {
+                                // loop, trying to rename the temp dir into the destination
+                                continue;
+                            } else {
+                                return false;
+                            }
+                        }
+                    }
+                    break;
+                }
             }
 
-            unzipDestFolder = null;
+            assert !destFolder.exists();
+
+            // -2- Unzip new content directly in place.
+
+            if (!destFolder.mkdirs()) {
+                monitor.setResult("Failed to create directory %1$s", destFolder.getPath());
+                return false;
+            }
+
+            if (!unzipFolder(archiveFile, archive.getSize(), destFolder, pkgDesc, monitor)) {
+                return false;
+            }
+
+            if (!generateSourceProperties(archive, destFolder)) {
+                monitor.setResult("Failed to generate source.properties in directory %1$s",
+                        destFolder.getPath());
+                return false;
+            }
+
             success = true;
             pkg.postInstallHook(archive, monitor, destFolder);
             return true;
 
         } finally {
-            // Cleanup if the unzip folder is still set.
-            deleteFileOrFolder(oldDestFolder);
-            deleteFileOrFolder(unzipDestFolder);
-
-            // In case of failure, we call the postInstallHool with a null directory
             if (!success) {
+                // In case of failure, we try to restore the old folder content.
+                if (oldDestFolder != null) {
+                    restoreFolder(oldDestFolder, destFolder);
+                }
+
+                // We also call the postInstallHool with a null directory to give a chance
+                // to the archive to cleanup after preInstallHook.
                 pkg.postInstallHook(archive, monitor, null /*installDir*/);
             }
+
+            // Cleanup if the unzip folder is still set.
+            OsHelper.deleteFileOrFolder(oldDestFolder);
         }
+    }
+
+    /**
+     * Tries to rename/move a folder.
+     * <p/>
+     * Contract:
+     * <ul>
+     * <li> When we start, oldDir must exist and be a directory. newDir must not exist. </li>
+     * <li> On successful completion, oldDir must not exists.
+     *      newDir must exist and have the same content. </li>
+     * <li> On failure completion, oldDir must have the same content as before.
+     *      newDir must not exist. </li>
+     * </ul>
+     * <p/>
+     * The simple "rename" operation on a folder can typically fail on Windows for a variety
+     * of reason, in fact as soon as a single process holds a reference on a directory. The
+     * most common case are the Explorer, the system's file indexer, Tortoise SVN cache or
+     * an anti-virus that are busy indexing a new directory having been created.
+     *
+     * @param oldDir The old location to move. It must exist and be a directory.
+     * @param newDir The new location where to move. It must not exist.
+     * @return True if the move succeeded. On failure, we try hard to not have touched the old
+     *  directory in order not to loose its content.
+     */
+    private boolean moveFolder(File oldDir, File newDir) {
+        // This is a simple folder rename that works on Linux/Mac all the time.
+        //
+        // On Windows this might fail if an indexer is busy looking at a new directory
+        // (e.g. right after we unzip our archive), so it fails let's be nice and give
+        // it a bit of time to succeed.
+        for (int i = 0; i < 5; i++) {
+            if (oldDir.renameTo(newDir)) {
+                return true;
+            }
+            try {
+                Thread.sleep(500 /*ms*/);
+            } catch (InterruptedException e) {
+                // ignore
+            }
+        }
+
+        return false;
     }
 
     /**
      * Unzips a zip file into the given destination directory.
      *
-     * The archive file MUST have a unique "root" folder. This root folder is skipped when
-     * unarchiving. However we return that root folder name to the caller, as it can be used
-     * as a template to know what destination directory to use in the Add-on case.
+     * The archive file MUST have a unique "root" folder.
+     * This root folder is skipped when unarchiving.
      */
     @SuppressWarnings("unchecked")
     private boolean unzipFolder(File archiveFile,
             long compressedSize,
             File unzipDestFolder,
             String description,
-            String[] outZipRootFolder,
             ITaskMonitor monitor) {
 
         description += " (%1$d%%)";
@@ -549,8 +585,9 @@ public class ArchiveInstaller {
         try {
             zipFile = new ZipFile(archiveFile);
 
-            // figure if we'll need to set the unix permission
-            boolean usingUnixPerm = SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_DARWIN ||
+            // figure if we'll need to set the unix permissions
+            boolean usingUnixPerm =
+                    SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_DARWIN ||
                     SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_LINUX;
 
             // To advance the percent and the progress bar, we don't know the number of
@@ -581,9 +618,6 @@ public class ArchiveInstaller {
                 if (pos < 0 || pos == name.length() - 1) {
                     continue;
                 } else {
-                    if (outZipRootFolder[0] == null && pos > 0) {
-                        outZipRootFolder[0] = name.substring(0, pos);
-                    }
                     name = name.substring(pos + 1);
                 }
 
@@ -632,7 +666,7 @@ public class ArchiveInstaller {
                     // get the mode and test if it contains the executable bit
                     int mode = entry.getUnixMode();
                     if ((mode & 0111) != 0) {
-                        setExecutablePermission(destFile);
+                        OsHelper.setExecutablePermission(destFile);
                     }
                 }
 
@@ -671,7 +705,10 @@ public class ArchiveInstaller {
     }
 
     /**
-     * Creates a temp folder in the form of osBasePath/temp/prefix.suffixNNN.
+     * Returns an unused temp folder path in the form of osBasePath/temp/prefix.suffixNNN.
+     * <p/>
+     * This does not actually <em>create</em> the folder. It just scan the base path for
+     * a free folder name to use and returns the file to use to reference it.
      * <p/>
      * This operation is not atomic so there's no guarantee the folder can't get
      * created in between. This is however unlikely and the caller can assume the
@@ -680,12 +717,12 @@ public class ArchiveInstaller {
      * Returns null if no such folder can be found (e.g. if all candidates exist,
      * which is rather unlikely) or if the base temp folder cannot be created.
      */
-    private File createTempFolder(String osBasePath, String prefix, String suffix) {
+    private File getNewTempFolder(String osBasePath, String prefix, String suffix) {
         File baseTempFolder = getTempFolder(osBasePath);
 
         if (!baseTempFolder.isDirectory()) {
             if (baseTempFolder.isFile()) {
-                deleteFileOrFolder(baseTempFolder);
+                OsHelper.deleteFileOrFolder(baseTempFolder);
             }
             if (!baseTempFolder.mkdirs()) {
                 return null;
@@ -703,31 +740,14 @@ public class ArchiveInstaller {
     }
 
     /**
-     * Returns the temp folder used by the SDK Manager.
+     * Returns the single fixed "temp" folder used by the SDK Manager.
      * This folder is always at osBasePath/temp.
+     * <p/>
+     * This does not actually <em>create</em> the folder.
      */
     private File getTempFolder(String osBasePath) {
         File baseTempFolder = new File(osBasePath, RepoConstants.FD_TEMP);
         return baseTempFolder;
-    }
-
-    /**
-     * Deletes a file or a directory.
-     * Directories are deleted recursively.
-     * The argument can be null.
-     */
-    /*package*/ void deleteFileOrFolder(File fileOrFolder) {
-        if (fileOrFolder != null) {
-            if (fileOrFolder.isDirectory()) {
-                // Must delete content recursively first
-                for (File item : fileOrFolder.listFiles()) {
-                    deleteFileOrFolder(item);
-                }
-            }
-            if (!fileOrFolder.delete()) {
-                fileOrFolder.deleteOnExit();
-            }
-        }
     }
 
     /**
@@ -769,13 +789,81 @@ public class ArchiveInstaller {
     }
 
     /**
-     * Sets the executable Unix permission (0777) on a file or folder.
-     * @param file The file to set permissions on.
-     * @throws IOException If an I/O error occurs
+     * Recursively restore srcFolder into destFolder by performing a copy of the file
+     * content rather than rename/moves.
+     *
+     * @param srcFolder The source folder to restore.
+     * @param destFolder The destination folder where to restore.
+     * @return True if the folder was successfully restored, false if it was not at all or
+     *         only partially restored.
      */
-    private void setExecutablePermission(File file) throws IOException {
-        Runtime.getRuntime().exec(new String[] {
-           "chmod", "777", file.getAbsolutePath()
-        });
+    private boolean restoreFolder(File srcFolder, File destFolder) {
+        boolean result = true;
+
+        // Process sub-folders first
+        File[] srcFiles = srcFolder.listFiles();
+        if (srcFiles == null) {
+            // Source does not exist. That is quite odd.
+            return false;
+        }
+
+        if (destFolder.isFile()) {
+            if (!destFolder.delete()) {
+                // There's already a file in there where we want a directory and
+                // we can't delete it. This is rather unexpected. Just give up on
+                // that folder.
+                return false;
+            }
+        } else if (!destFolder.isDirectory()) {
+            destFolder.mkdirs();
+        }
+
+        // Get all the files and dirs of the current destination. We are not going
+        // to clean up the destination first. Instead we'll copy over and just remove
+        // any remaining files or directories.
+        File[] files = destFolder.listFiles();
+        Set<File> destDirs = new HashSet<File>();
+        Set<File> destFiles = new HashSet<File>();
+        for (File f : files) {
+            if (f.isDirectory()) {
+                destDirs.add(f);
+            } else {
+                destFiles.add(f);
+            }
+        }
+
+        // First restore all source directories.
+        for (File dir : srcFiles) {
+            if (dir.isDirectory()) {
+                File d = new File(destFolder, dir.getName());
+                destDirs.remove(d);
+                if (!restoreFolder(dir, d)) {
+                    result = false;
+                }
+            }
+        }
+
+        // Remove any remaining directories not processed above.
+        for (File dir : destDirs) {
+            OsHelper.deleteFileOrFolder(dir);
+        }
+
+        // Copy any source files over to the destination.
+        for (File file : srcFiles) {
+            if (file.isFile()) {
+                File f = new File(destFolder, file.getName());
+                destFiles.remove(f);
+                if (!OsHelper.copyFile(file, f)) {
+                    result = false;
+                }
+            }
+        }
+
+        // Remove any remaining files not processed above.
+        for (File file : destFiles) {
+            OsHelper.deleteFileOrFolder(file);
+        }
+
+        return result;
     }
 }

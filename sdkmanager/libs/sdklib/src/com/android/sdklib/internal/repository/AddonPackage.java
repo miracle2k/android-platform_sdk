@@ -242,13 +242,11 @@ public class AddonPackage extends Package
      * has this add-ons installed, we'll use that one.
      *
      * @param osSdkRoot The OS path of the SDK root folder.
-     * @param suggestedDir A suggestion for the installation folder name, based on the root
-     *                     folder used in the zip archive.
      * @param sdkManager An existing SDK manager to list current platforms and addons.
      * @return A new {@link File} corresponding to the directory to use to install this package.
      */
     @Override
-    public File getInstallFolder(String osSdkRoot, String suggestedDir, SdkManager sdkManager) {
+    public File getInstallFolder(String osSdkRoot, SdkManager sdkManager) {
         File addons = new File(osSdkRoot, SdkConstants.FD_ADDONS);
 
         // First find if this add-on is already installed. If so, reuse the same directory.
