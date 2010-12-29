@@ -62,7 +62,7 @@ if not "%1"=="" goto EndTempCopy
 
     rem jar_path and swt_path are relative to PWD so we don't need to adjust them, just change dirs.
     set tools_dir=%cd%
-    cd %tmp_dir%
+    cd /d %tmp_dir%
 
 :EndTempCopy
 
