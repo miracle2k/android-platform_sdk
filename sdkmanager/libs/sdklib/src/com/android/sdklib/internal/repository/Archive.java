@@ -364,7 +364,7 @@ public class Archive implements IDescription, Comparable<Archive> {
      */
     public void deleteLocal() {
         if (isLocal()) {
-            new ArchiveInstaller().deleteFileOrFolder(new File(getLocalOsPath()));
+            OsHelper.deleteFileOrFolder(new File(getLocalOsPath()));
         }
     }
 

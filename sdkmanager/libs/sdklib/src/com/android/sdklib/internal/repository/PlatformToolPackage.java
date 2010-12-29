@@ -107,13 +107,11 @@ public class PlatformToolPackage extends Package {
      * A "tool" package should always be located in SDK/tools.
      *
      * @param osSdkRoot The OS path of the SDK root folder.
-     * @param suggestedDir A suggestion for the installation folder name, based on the root
-     *                     folder used in the zip archive.
      * @param sdkManager An existing SDK manager to list current platforms and addons.
      * @return A new {@link File} corresponding to the directory to use to install this package.
      */
     @Override
-    public File getInstallFolder(String osSdkRoot, String suggestedDir, SdkManager sdkManager) {
+    public File getInstallFolder(String osSdkRoot, SdkManager sdkManager) {
         return new File(osSdkRoot, SdkConstants.FD_PLATFORM_TOOLS);
     }
 
@@ -121,6 +119,27 @@ public class PlatformToolPackage extends Package {
     public boolean sameItemAs(Package pkg) {
         // only one platform-tool package so any platform-tool package is the same item.
         return pkg instanceof PlatformToolPackage;
+    }
+
+    /**
+     * Hook called right before an archive is installed.
+     * This is used here to stop ADB before trying to replace the platform-tool package.
+     *
+     * @param archive The archive that will be installed
+     * @param monitor The {@link ITaskMonitor} to display errors.
+     * @param osSdkRoot The OS path of the SDK root folder.
+     * @param installFolder The folder where the archive will be installed. Note that this
+     *                      is <em>not</em> the folder where the archive was temporary
+     *                      unzipped. The installFolder, if it exists, contains the old
+     *                      archive that will soon be replaced by the new one.
+     * @return True if installing this archive shall continue, false if it should be skipped.
+     */
+    @Override
+    public boolean preInstallHook(Archive archive, ITaskMonitor monitor,
+            String osSdkRoot, File installFolder) {
+        AdbWrapper aw = new AdbWrapper(osSdkRoot, monitor);
+        aw.stopAdb();
+        return super.preInstallHook(archive, monitor, osSdkRoot, installFolder);
     }
 
 }
