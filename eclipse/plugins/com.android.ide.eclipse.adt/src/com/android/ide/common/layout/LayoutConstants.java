@@ -37,6 +37,10 @@ public class LayoutConstants {
     public static final String RELATIVE_LAYOUT = "RelativeLayout";      //$NON-NLS-1$
     public static final String LINEAR_LAYOUT   = "LinearLayout";        //$NON-NLS-1$
     public static final String ABSOLUTE_LAYOUT = "AbsoluteLayout";      //$NON-NLS-1$
+    public static final String LIST_VIEW = "ListView";                  //$NON-NLS-1$
+    public static final String GALLERY = "Gallery";                     //$NON-NLS-1$
+    public static final String GRID_VIEW = "GridView";                  //$NON-NLS-1$
+    public static final String EXPANDABLE_LIST_VIEW = "ExpandableListView";//$NON-NLS-1$
 
     public static final String ATTR_TEXT = "text";                      //$NON-NLS-1$
     public static final String ATTR_ID = "id";                          //$NON-NLS-1$
@@ -107,6 +111,9 @@ public class LayoutConstants {
 
     /** The fully qualified class name of a TabWidget view */
     public static final String FQCN_TAB_WIDGET = "android.widget.TabWidget"; //$NON-NLS-1$
+
+    /** The fully qualified class name of an AdapterView */
+    public static final String FQCN_ADAPTER_VIEW = "android.widget.AdapterView"; //$NON-NLS-1$
 
     public static final String ATTR_SRC = "src"; //$NON-NLS-1$
 
