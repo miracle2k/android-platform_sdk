@@ -32,18 +32,6 @@ public class UpdaterWindow {
     private UpdaterWindowImpl mWindow;
 
     /**
-     * Interface for listeners on SDK modifications (ie new installed compoments, or deleted
-     * components)
-     */
-    public interface ISdkListener {
-        /**
-         * Sent when the content of the SDK changed.
-         * @param init whether this is called on the initial load of the SDK.
-         */
-        void onSdkChange(boolean init);
-    }
-
-    /**
      * Creates a new window. Caller must call open(), which will block.
      *
      * @param parentShell Parent shell.
@@ -91,15 +79,15 @@ public class UpdaterWindow {
     /**
      * Adds a new listener to be notified when a change is made to the content of the SDK.
      */
-    public void addListeners(ISdkListener listener) {
-        mWindow.addListeners(listener);
+    public void addListener(ISdkChangeListener listener) {
+        mWindow.addListener(listener);
     }
 
     /**
      * Removes a new listener to be notified anymore when a change is made to the content of
      * the SDK.
      */
-    public void removeListener(ISdkListener listener) {
+    public void removeListener(ISdkChangeListener listener) {
         mWindow.removeListener(listener);
     }
 

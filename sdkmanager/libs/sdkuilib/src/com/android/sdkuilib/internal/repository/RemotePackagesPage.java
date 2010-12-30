@@ -23,7 +23,7 @@ import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.SdkAddonSource;
 import com.android.sdklib.internal.repository.SdkSource;
 import com.android.sdklib.internal.repository.SdkSourceCategory;
-import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
+import com.android.sdkuilib.repository.ISdkChangeListener;
 
 import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.InputDialog;
@@ -53,7 +53,7 @@ import org.eclipse.swt.widgets.TreeColumn;
 import java.util.ArrayList;
 
 
-public class RemotePackagesPage extends Composite implements ISdkListener {
+public class RemotePackagesPage extends Composite implements ISdkChangeListener {
 
     private final UpdaterData mUpdaterData;
 
@@ -188,14 +188,6 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
     @Override
     protected void checkSubclass() {
         // Disable the check that prevents subclassing of SWT components
-    }
-
-    public void onSdkChange(boolean init) {
-        RepoSourcesAdapter sources = mUpdaterData.getSourcesAdapter();
-        mTreeViewerSources.setContentProvider(sources.getContentProvider());
-        mTreeViewerSources.setLabelProvider(  sources.getLabelProvider());
-        mTreeViewerSources.setInput(sources);
-        onTreeSelected();
     }
 
     // -- Start of internal part ----------
@@ -474,6 +466,28 @@ public class RemotePackagesPage extends Composite implements ISdkListener {
 
         // set value on the show only update checkbox
         mUpdateOnlyCheckBox.setSelection(mUpdaterData.getSettingsController().getShowUpdateOnly());
+    }
+
+    // --- Implementation of ISdkChangeListener ---
+
+    public void onSdkLoaded() {
+        onSdkReload();
+    }
+
+    public void onSdkReload() {
+        RepoSourcesAdapter sources = mUpdaterData.getSourcesAdapter();
+        mTreeViewerSources.setContentProvider(sources.getContentProvider());
+        mTreeViewerSources.setLabelProvider(  sources.getLabelProvider());
+        mTreeViewerSources.setInput(sources);
+        onTreeSelected();
+    }
+
+    public void preInstallHook() {
+        // nothing to be done for now.
+    }
+
+    public void postInstallHook() {
+        // nothing to be done for now.
     }
 
     // End of hiding from SWT Designer
