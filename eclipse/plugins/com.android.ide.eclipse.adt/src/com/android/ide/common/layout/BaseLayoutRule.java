@@ -32,6 +32,7 @@ import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.api.IDragElement.IDragAttribute;
+import com.android.sdklib.util.Pair;
 
 import java.util.Arrays;
 import java.util.HashMap;

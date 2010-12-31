@@ -19,7 +19,6 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.layout.BaseLayoutRule;
-import com.android.ide.common.layout.Pair;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
@@ -31,6 +30,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElement
 import com.android.ide.eclipse.adt.internal.editors.ui.ErrorImageComposite;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.util.Pair;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
