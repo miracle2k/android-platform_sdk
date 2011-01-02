@@ -68,7 +68,22 @@ public class DocPackage extends Package implements IPackageVersion {
      * <p/>
      * By design, this creates a package with one and only one archive.
      */
-    DocPackage(SdkSource source,
+    static Package create(SdkSource source,
+            Properties props,
+            int apiLevel,
+            String codename,
+            int revision,
+            String license,
+            String description,
+            String descUrl,
+            Os archiveOs,
+            Arch archiveArch,
+            String archiveOsPath) {
+        return new DocPackage(source, props, apiLevel, codename, revision, license, description,
+                descUrl, archiveOs, archiveArch, archiveOsPath);
+    }
+
+    private DocPackage(SdkSource source,
             Properties props,
             int apiLevel,
             String codename,
