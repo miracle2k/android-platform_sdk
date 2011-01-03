@@ -26,8 +26,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.resources.manager.SingleResourceFile;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
-import com.android.ide.eclipse.mock.FileMock;
-import com.android.ide.eclipse.mock.FolderMock;
+import com.android.ide.eclipse.mock.Mocks;
 import com.android.sdklib.io.IAbstractFolder;
 import com.android.sdklib.resources.DockMode;
 import com.android.sdklib.resources.Keyboard;
@@ -37,6 +36,9 @@ import com.android.sdklib.resources.NavigationState;
 import com.android.sdklib.resources.NightMode;
 import com.android.sdklib.resources.ScreenOrientation;
 import com.android.sdklib.resources.TouchScreen;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -74,14 +76,14 @@ public class ConfigMatchTest extends TestCase {
 
         // create 2 arrays of IResource. one with the filename being looked up, and one without.
         // Since the required API uses IResource, we can use MockFolder for them.
-        FileMock[] validMemberList = new FileMock[] {
-                new FileMock(MISC1_FILENAME),
-                new FileMock(SEARCHED_FILENAME),
-                new FileMock(MISC2_FILENAME),
+        IFile[] validMemberList = new IFile[] {
+                Mocks.createFile(MISC1_FILENAME),
+                Mocks.createFile(SEARCHED_FILENAME),
+                Mocks.createFile(MISC2_FILENAME),
         };
-        FileMock[] invalidMemberList = new FileMock[] {
-                new FileMock(MISC1_FILENAME),
-                new FileMock(MISC2_FILENAME),
+        IFile[] invalidMemberList = new IFile[] {
+                Mocks.createFile(MISC1_FILENAME),
+                Mocks.createFile(MISC2_FILENAME),
         };
 
         // add multiple ResourceFolder to the project resource.
@@ -256,19 +258,19 @@ public class ConfigMatchTest extends TestCase {
      * @param memberList the list of files for the folder.
      */
     private void addFolder(ProjectResources resources, FolderConfiguration config,
-            FileMock[] memberList) throws Exception {
+            IFile[] memberList) throws Exception {
 
         // figure out the folder name based on the configuration
         String folderName = config.getFolderName(ResourceFolderType.LAYOUT);
 
         // create the folder mock
-        FolderMock folder = new FolderMock(folderName, memberList);
+        IFolder folder = Mocks.createFolder(folderName, memberList);
 
         // add it to the resource, and get back a ResourceFolder object.
         ResourceFolder resFolder = _addProjectResourceFolder(resources, config, folder);
 
         // and fill it with files from the list.
-        for (FileMock file : memberList) {
+        for (IFile file : memberList) {
             resFolder.addFile(new SingleResourceFile(new IFileWrapper(file), resFolder));
         }
     }
@@ -279,7 +281,7 @@ public class ConfigMatchTest extends TestCase {
      * if they are in the same declared package as the accessor
      */
     private ResourceFolder _addProjectResourceFolder(ProjectResources resources,
-            FolderConfiguration config, FolderMock folder) throws Exception {
+            FolderConfiguration config, IFolder folder) throws Exception {
 
         Method addMethod = ProjectResources.class.getDeclaredMethod("add",
                 ResourceFolderType.class, FolderConfiguration.class,

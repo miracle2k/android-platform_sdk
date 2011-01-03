@@ -1,4 +1,5 @@
 aapt
+accessor
 adb
 addon
 adt
@@ -188,4 +189,5 @@ xdpi
 xml
 xmlns
 ydpi
+zip
 zipalign

@@ -16,13 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.project;
 
-import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.mock.ClasspathEntryMock;
-import com.android.ide.eclipse.mock.JavaProjectMock;
+import com.android.ide.eclipse.mock.Mocks;
 
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.IClasspathEntry;
-import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.IJavaProject;
 
 import junit.framework.TestCase;
 
@@ -35,7 +33,7 @@ public class ProjectHelperTest extends TestCase {
     /** The container id for the android framework jar file */
     private final static String CONTAINER_ID =
         "com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"; //$NON-NLS-1$
-    
+
     @Override
     public void setUp() throws Exception {
         // pass for now
@@ -45,20 +43,20 @@ public class ProjectHelperTest extends TestCase {
     public void tearDown() throws Exception {
         // pass for now
     }
-    
-    public final void testFixProjectClasspathEntriesFromOldContainer() throws JavaModelException {
+
+    public final void testFixProjectClasspathEntriesFromOldContainer() throws Exception {
         // create a project with a path to an android .zip
-        JavaProjectMock javaProject = new JavaProjectMock(
+        IJavaProject javaProject = Mocks.createProject(
                 new IClasspathEntry[] {
-                        new ClasspathEntryMock(new Path("Project/src"), //$NON-NLS-1$
+                        Mocks.createClasspathEntry(new Path("Project/src"), //$NON-NLS-1$
                                 IClasspathEntry.CPE_SOURCE),
-                        new ClasspathEntryMock(new Path(OLD_CONTAINER_ID),
+                        Mocks.createClasspathEntry(new Path(OLD_CONTAINER_ID),
                                 IClasspathEntry.CPE_CONTAINER),
                 },
                 new Path("Project/bin"));
-        
+
         ProjectHelper.fixProjectClasspathEntries(javaProject);
-        
+
         IClasspathEntry[] fixedEntries = javaProject.getRawClasspath();
         assertEquals(3, fixedEntries.length);
         assertEquals("Project/src", fixedEntries[0].getPath().toString());

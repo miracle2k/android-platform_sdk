@@ -99,4 +99,9 @@ public abstract class PointTestCases extends TestCase {
             return (int) (value * mScale + mTranslate);
         }
     }
+
+    public void testDummy() {
+        // To avoid JUnit warning that this class contains no tests, even though
+        // this is an abstract class and JUnit shouldn't try
+    }
 }
