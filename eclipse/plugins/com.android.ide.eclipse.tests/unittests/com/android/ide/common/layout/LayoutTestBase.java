@@ -225,4 +225,9 @@ public abstract class LayoutTestBase extends TestCase {
         }
 
     }
+
+    public void testDummy() {
+        // To avoid JUnit warning that this class contains no tests, even though
+        // this is an abstract class and JUnit shouldn't try
+    }
 }
