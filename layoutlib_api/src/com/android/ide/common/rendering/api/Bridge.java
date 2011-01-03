@@ -51,10 +51,13 @@ public abstract class Bridge {
      * Initializes the Bridge object.
      *
      * @param fontLocation the location of the fonts.
-     * @param enumValueMap map attrName => { map enumFlagName => Integer value }.
+     * @param enumValueMap map attrName => { map enumFlagName => Integer value }. This is typically
+     *          read from attrs.xml in the SDK target.
+     * @param log a {@link LayoutLog} object. Can be null.
      * @return true if success.
      */
-    public boolean init(File fontLocation, Map<String, Map<String, Integer>> enumValueMap) {
+    public boolean init(File fontLocation, Map<String, Map<String, Integer>> enumValueMap,
+            LayoutLog log) {
         return false;
     }
 

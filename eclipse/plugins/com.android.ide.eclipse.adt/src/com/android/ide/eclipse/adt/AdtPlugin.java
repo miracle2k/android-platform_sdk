@@ -103,7 +103,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -867,6 +866,10 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
      * {@link String#format(String, Object...)}.
      */
     public static void log(int severity, String format, Object ... args) {
+        if (format == null) {
+            return;
+        }
+
         String message = String.format(format, args);
         Status status = new Status(severity, PLUGIN_ID, message);
 
@@ -890,7 +893,12 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
      * {@link String#format(String, Object...)}.
      */
     public static void log(Throwable exception, String format, Object ... args) {
-        String message = String.format(format, args);
+        String message = null;
+        if (format != null) {
+            message = String.format(format, args);
+        } else {
+            message = "";
+        }
         Status status = new Status(IStatus.ERROR, PLUGIN_ID, message, exception);
 
         if (getDefault() != null) {
