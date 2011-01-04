@@ -314,7 +314,7 @@ public class RepoSourcesAdapter {
      */
     private Package[] filterUpdateOnlyPackages(Package[] remotePackages) {
         // get the installed packages
-        Package[] installedPackages = mUpdaterData.getInstalledPackage();
+        Package[] installedPackages = mUpdaterData.getInstalledPackages();
 
         ArrayList<Package> filteredList = new ArrayList<Package>();
 
