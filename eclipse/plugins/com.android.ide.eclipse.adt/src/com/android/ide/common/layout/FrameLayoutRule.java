@@ -26,6 +26,7 @@ import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
+import com.android.sdklib.util.Pair;
 
 import java.util.Map;
 
