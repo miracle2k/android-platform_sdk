@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.xml;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_CLASS;
+import static com.android.ide.common.layout.LayoutConstants.NEW_ID_PREFIX;
 import static com.android.ide.common.layout.LayoutConstants.VIEW;
 import static com.android.ide.eclipse.adt.AndroidConstants.ANDROID_PKG;
 import static com.android.ide.eclipse.adt.AndroidConstants.EXT_XML;
@@ -846,7 +847,7 @@ public class Hyperlinks {
     /** Looks within an XML DOM document for the given resource name and returns it */
     private static Pair<IFile, IRegion> findIdInDocument(String id, IFile file,
             Document document) {
-        String targetAttribute = "@+id/" + id; //$NON-NLS-1$
+        String targetAttribute = NEW_ID_PREFIX + id;
         return findIdInElement(document.getDocumentElement(), file, targetAttribute);
     }
 

@@ -92,6 +92,9 @@ public class LayoutConstants {
     public static final String VALUE_ALIGN_WITH_PARENT_MISSING =
         "alignWithParentMissing"; //$NON-NLS-1$
 
+    /** The default prefix used for the {@link #ANDROID_URI} name space */
+    public static final String ANDROID_NS_PREFIX = "android"; //$NON-NLS-1$
+
     /**
      * Namespace for the Android resource XML, i.e.
      * "http://schemas.android.com/apk/res/android"
@@ -127,4 +130,9 @@ public class LayoutConstants {
 
     public static String VALUE_VERTICAL = "vertical"; //$NON-NLS-1$
 
+    /** The prefix for new id attribute values, @+id/ */
+    public static String NEW_ID_PREFIX = "@+id/"; //$NON-NLS-1$
+
+    /** The prefix for existing id attribute values, @id/ */
+    public static String ID_PREFIX = "@id/"; //$NON-NLS-1$
 }

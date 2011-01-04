@@ -39,6 +39,12 @@ public final class XmlnsAttributeDescriptor extends AttributeDescriptor {
      */
     public final static String XMLNS_URI = "http://www.w3.org/2000/xmlns/"; //$NON-NLS-1$
 
+    /** The "xmlns" attribute name */
+    public static final String XMLNS = "xmlns"; //$NON-NLS-1$
+
+    /** The "xmlns:" attribute prefix used for namespace declarations */
+    public static final String XMLNS_COLON = "xmlns:"; //$NON-NLS-1$
+
     private String mValue;
 
 
@@ -60,7 +66,7 @@ public final class XmlnsAttributeDescriptor extends AttributeDescriptor {
      * This is defined by the XML specification.
      */
     public String getXmlNsPrefix() {
-        return "xmlns"; //$NON-NLS-1$
+        return XmlnsAttributeDescriptor.XMLNS;
     }
 
     /**

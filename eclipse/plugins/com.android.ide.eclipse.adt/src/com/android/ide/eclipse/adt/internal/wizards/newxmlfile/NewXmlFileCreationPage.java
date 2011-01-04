@@ -329,7 +329,6 @@ class NewXmlFileCreationPage extends WizardPage {
     private boolean mInternalConfigSelectorUpdate;
     private ProjectChooserHelper mProjectChooserHelper;
     private TargetChangeListener mSdkTargetChangeListener;
-
     private TypeInfo mCurrentTypeInfo;
 
     // --- UI creation ---
@@ -867,7 +866,7 @@ class NewXmlFileCreationPage extends WizardPage {
 
                     if (data == null) {
                         // We should have both a target and its data.
-                        // However if the wizard is invoked while the platform is still being
+                        // However if the wizard is invoked whilst the platform is still being
                         // loaded we can end up in a weird case where we have a target but it
                         // doesn't have any data yet.
                         // Lets log a warning and silently ignore this root.
@@ -1234,11 +1233,7 @@ class NewXmlFileCreationPage extends WizardPage {
         // -- validate filename
         if (error == null) {
             String fileName = getFileName();
-            if (fileName == null || fileName.length() == 0) {
-                error = "A destination file name is required.";
-            } else if (!fileName.endsWith(AndroidConstants.DOT_XML)) {
-                error = String.format("The filename must end with %1$s.", AndroidConstants.DOT_XML);
-            }
+            error = ResourceNameValidator.create(true).isValid(fileName);
         }
 
         // -- validate type

@@ -217,7 +217,7 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
         //   String prefix = node.lookupPrefix(SdkConstants.NS_RESOURCES);
 
         if (XmlnsAttributeDescriptor.XMLNS_URI.equals(nsUri)) {
-            return "xmlns"; //$NON-NLS-1$
+            return XmlnsAttributeDescriptor.XMLNS;
         }
 
         HashSet<String> visited = new HashSet<String>();
@@ -230,7 +230,7 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
             NamedNodeMap attrs = node.getAttributes();
             for (int n = attrs.getLength() - 1; n >= 0; --n) {
                 Node attr = attrs.item(n);
-                if ("xmlns".equals(attr.getPrefix())) {  //$NON-NLS-1$
+                if (XmlnsAttributeDescriptor.XMLNS.equals(attr.getPrefix())) {
                     String uri = attr.getNodeValue();
                     if (SdkConstants.NS_RESOURCES.equals(uri)) {
                         return attr.getLocalName();

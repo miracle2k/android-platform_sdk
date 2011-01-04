@@ -212,6 +212,20 @@ import java.util.regex.Pattern;
         if (mEditor.getGraphicalEditor().renderingSupports(Capability.EMBEDDED_LAYOUT)) {
             insertShowIncludedMenu(endId);
         }
+
+        insertExtractAsInclude(endId);
+    }
+
+    private void insertExtractAsInclude(String endId) {
+        // Extract As <include> refactoring.
+        // Only include the menu item if you are not right clicking on a root,
+        // or on an included view, or on a non-contiguous selection
+        IAction extractIncludeAction = new ExtractIncludeAction(mCanvas);
+        if (extractIncludeAction.isEnabled()) {
+            mMenuManager.insertBefore(endId, new Separator());
+            mMenuManager.insertBefore(endId, extractIncludeAction);
+            mMenuManager.insertBefore(endId, new Separator());
+        }
     }
 
     /**
