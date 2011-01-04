@@ -25,6 +25,7 @@ import com.android.ide.eclipse.adt.internal.wizards.newxmlfile.NewXmlFileCreatio
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -52,7 +53,7 @@ import java.io.UnsupportedEncodingException;
 public class NewXmlFileWizard extends Wizard implements INewWizard {
 
     private static final String PROJECT_LOGO_LARGE = "android_large"; //$NON-NLS-1$
-    
+
     protected static final String MAIN_PAGE_NAME = "newAndroidXmlFilePage"; //$NON-NLS-1$
 
     private NewXmlFileCreationPage mMainPage;
@@ -67,7 +68,7 @@ public class NewXmlFileWizard extends Wizard implements INewWizard {
         mMainPage.setDescription("Creates a new Android XML file.");
         mMainPage.setInitialSelection(selection);
     }
-    
+
     /**
      * Creates the wizard page.
      * <p/>
@@ -126,7 +127,7 @@ public class NewXmlFileWizard extends Wizard implements INewWizard {
     }
 
     // -- Custom Methods --
-    
+
     private IFile createXmlFile() {
         IFile file = mMainPage.getDestinationFile();
         String name = file.getFullPath().toString();
@@ -142,7 +143,7 @@ public class NewXmlFileWizard extends Wizard implements INewWizard {
         } else {
             createWsParentDirectory(file.getParent());
         }
-        
+
         TypeInfo type = mMainPage.getSelectedType();
         if (type == null) {
             // this is not expected to happen
@@ -157,20 +158,20 @@ public class NewXmlFileWizard extends Wizard implements INewWizard {
                     file.toString());
             return null;
         }
-        
+
         StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");   //$NON-NLS-1$
 
         sb.append('<').append(root);
         if (xmlns != null) {
             sb.append('\n').append("  xmlns:android=\"").append(xmlns).append("\"");  //$NON-NLS-1$ //$NON-NLS-2$
         }
-        
-        String attrs = type.getDefaultAttrs();
+
+        String attrs = type.getDefaultAttrs(mMainPage.getProject());
         if (attrs != null) {
             sb.append("\n  ");                       //$NON-NLS-1$
             sb.append(attrs.replace("\n", "\n  "));  //$NON-NLS-1$ //$NON-NLS-2$
         }
-        
+
         sb.append(">\n");                            //$NON-NLS-1$
         sb.append("</").append(root).append(">\n");  //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -180,9 +181,9 @@ public class NewXmlFileWizard extends Wizard implements INewWizard {
             byte[] buf = result.getBytes("UTF8");
             InputStream stream = new ByteArrayInputStream(buf);
             if (need_delete) {
-                file.delete(IFile.KEEP_HISTORY | IFile.FORCE, null /*monitor*/);
+                file.delete(IResource.KEEP_HISTORY | IResource.FORCE, null /*monitor*/);
             }
-            file.create(stream, true /*force*/, null /*progres*/);
+            file.create(stream, true /*force*/, null /*progress*/);
             return file;
         } catch (UnsupportedEncodingException e) {
             error = e.getMessage();
@@ -196,7 +197,7 @@ public class NewXmlFileWizard extends Wizard implements INewWizard {
     }
 
     private boolean createWsParentDirectory(IContainer wsPath) {
-        if (wsPath.getType() == IContainer.FOLDER) {
+        if (wsPath.getType() == IResource.FOLDER) {
             if (wsPath == null || wsPath.exists()) {
                 return true;
             }
@@ -211,7 +212,7 @@ public class NewXmlFileWizard extends Wizard implements INewWizard {
                 e.printStackTrace();
             }
         }
-        
+
         return false;
     }
 

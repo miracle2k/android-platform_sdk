@@ -48,6 +48,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
@@ -75,6 +76,16 @@ import java.util.HashSet;
  * This page is used to select the project, the resource folder, resource type and file name.
  */
 class NewXmlFileCreationPage extends WizardPage {
+
+    @Override
+    public void setVisible(boolean visible) {
+        super.setVisible(visible);
+        // Ensure the initial focus is in the Name field; you usually don't need
+        // to edit the default text field (the project name)
+        if (visible && mFileNameTextField != null) {
+            mFileNameTextField.setFocus();
+        }
+    }
 
     /**
      * Information on one type of resource that can be created (e.g. menu, pref, layout, etc.)
@@ -183,13 +194,17 @@ class NewXmlFileCreationPage extends WizardPage {
         /**
          * When not null, this represent extra attributes that must be specified in the
          * root element of the generated XML file. When null, no extra attributes are inserted.
+         *
+         * @param project the project to get the attributes for
          */
-        String getDefaultAttrs() {
+        String getDefaultAttrs(IProject project) {
             return mDefaultAttrs;
         }
 
         /**
          * The minimum API level required by the current SDK target to support this feature.
+         *
+         * @return the minimum API level
          */
         public int getTargetApiLevel() {
             return mTargetApiLevel;
@@ -207,10 +222,28 @@ class NewXmlFileCreationPage extends WizardPage {
                 AndroidTargetData.DESCRIPTOR_LAYOUT,                        // root seed
                 "LinearLayout",                                             // default root
                 SdkConstants.NS_RESOURCES,                                  // xmlns
-                "android:layout_width=\"fill_parent\"\n" + //$NON-NLS-1$    // default attributes
-                "android:layout_height=\"fill_parent\"",   //$NON-NLS-1$
+                "",                                                         // not used, see below
                 1                                                           // target API level
-                ),
+                ) {
+                // The default attributes must be determined dynamically since whether
+                // we use match_parent or fill_parent depends on the API level of the
+                // project
+                @Override
+                String getDefaultAttrs(IProject project) {
+                    Sdk currentSdk = Sdk.getCurrent();
+                    if (currentSdk != null) {
+                        IAndroidTarget target = currentSdk.getTarget(project);
+                        // fill_parent was renamed match_parent in API level 8
+                        if (target != null && target.getVersion().getApiLevel() >= 8) {
+                            return "android:layout_width=\"match_parent\"\n"    //$NON-NLS-1$
+                                    + "android:layout_height=\"match_parent\""; //$NON-NLS-1$
+                        }
+                    }
+
+                    return "android:layout_width=\"fill_parent\"\n"    //$NON-NLS-1$
+                            + "android:layout_height=\"fill_parent\""; //$NON-NLS-1$
+                }
+        },
         new TypeInfo("Values",                                              // UI name
                 "An XML file with simple values: colors, strings, dimensions, etc.", // tooltip
                 ResourceFolderType.VALUES,                                  // folder type
@@ -389,9 +422,21 @@ class NewXmlFileCreationPage extends WizardPage {
 
     /**
      * Returns the destination filename or an empty string.
+     *
+     * @return the filename, never null.
      */
     public String getFileName() {
-        return mFileNameTextField == null ? "" : mFileNameTextField.getText();         //$NON-NLS-1$
+        String fileName;
+        if (mFileNameTextField == null) {
+            fileName = ""; //$NON-NLS-1$
+        } else {
+            fileName = mFileNameTextField.getText().trim();
+            if (fileName.length() > 0 && fileName.indexOf('.') == -1) {
+                fileName = fileName + AndroidConstants.DOT_XML;
+            }
+        }
+
+        return fileName;
     }
 
     /**
@@ -718,6 +763,7 @@ class NewXmlFileCreationPage extends WizardPage {
 
                 IPath wsFolderPath = null;
                 String fileName = null;
+                assert res != null; // Eclipse incorrectly thinks res could be null, so tell it no
                 if (res.getType() == IResource.FOLDER) {
                     wsFolderPath = res.getProjectRelativePath();
                 } else if (res.getType() == IResource.FILE) {
@@ -821,7 +867,7 @@ class NewXmlFileCreationPage extends WizardPage {
 
                     if (data == null) {
                         // We should have both a target and its data.
-                        // However if the wizard is invoked whilst the platform is still being
+                        // However if the wizard is invoked while the platform is still being
                         // loaded we can end up in a weird case where we have a target but it
                         // doesn't have any data yet.
                         // Lets log a warning and silently ignore this root.
@@ -1012,7 +1058,7 @@ class NewXmlFileCreationPage extends WizardPage {
      */
     private void onRadioTypeUpdated(Button typeWidget) {
         // Do nothing if this is an internal modification or if the widget has been
-        // de-selected.
+        // deselected.
         if (mInternalTypeUpdate || !typeWidget.getSelection()) {
             return;
         }
@@ -1253,9 +1299,9 @@ class NewXmlFileCreationPage extends WizardPage {
         // -- update UI & enable finish if there's no error
         setPageComplete(error == null);
         if (error != null) {
-            setMessage(error, WizardPage.ERROR);
+            setMessage(error, IMessageProvider.ERROR);
         } else if (warning != null) {
-            setMessage(warning, WizardPage.WARNING);
+            setMessage(warning, IMessageProvider.WARNING);
         } else {
             setErrorMessage(null);
             setMessage(null);
