@@ -20,7 +20,7 @@ import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdkuilib.internal.widgets.AvdSelector;
 import com.android.sdkuilib.internal.widgets.AvdSelector.DisplayMode;
-import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
+import com.android.sdkuilib.repository.ISdkChangeListener;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -28,7 +28,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
-public class AvdManagerPage extends Composite implements ISdkListener {
+public class AvdManagerPage extends Composite implements ISdkChangeListener {
 
     private AvdSelector mAvdSelector;
 
@@ -93,8 +93,22 @@ public class AvdManagerPage extends Composite implements ISdkListener {
         // nothing to be done for now.
     }
 
-    public void onSdkChange(boolean init) {
+    // --- Implementation of ISdkChangeListener ---
+
+    public void onSdkLoaded() {
+        onSdkReload();
+    }
+
+    public void onSdkReload() {
         mAvdSelector.refresh(false /*reload*/);
+    }
+
+    public void preInstallHook() {
+        // nothing to be done for now.
+    }
+
+    public void postInstallHook() {
+        // nothing to be done for now.
     }
 
     // End of hiding from SWT Designer
