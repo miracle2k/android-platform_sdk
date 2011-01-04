@@ -24,6 +24,7 @@ import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.repository.AddonPackage;
 import com.android.sdklib.internal.repository.AddonsListFetcher;
 import com.android.sdklib.internal.repository.Archive;
+import com.android.sdklib.internal.repository.ArchiveInstaller;
 import com.android.sdklib.internal.repository.ITask;
 import com.android.sdklib.internal.repository.ITaskFactory;
 import com.android.sdklib.internal.repository.ITaskMonitor;
@@ -404,7 +405,7 @@ class UpdaterData implements IUpdaterData {
         mTaskFactory.start("Installing Archives", new ITask() {
             public void run(ITaskMonitor monitor) {
 
-                final int progressPerArchive = 2 * Archive.NUM_MONITOR_INC;
+                final int progressPerArchive = 2 * ArchiveInstaller.NUM_MONITOR_INC;
                 monitor.setProgressMax(result.size() * progressPerArchive);
                 monitor.setDescription("Preparing to install archives");
 
@@ -457,7 +458,12 @@ class UpdaterData implements IUpdaterData {
                             }
                         }
 
-                        if (archive.install(mOsSdkRoot, forceHttp, mSdkManager, monitor)) {
+                        ArchiveInstaller installer = new ArchiveInstaller();
+                        if (installer.install(archive,
+                                              mOsSdkRoot,
+                                              forceHttp,
+                                              mSdkManager,
+                                              monitor)) {
                             // We installed this archive.
                             installedArchives.add(archive);
                             numInstalled++;
