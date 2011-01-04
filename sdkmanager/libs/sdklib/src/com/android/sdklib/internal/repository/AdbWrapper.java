@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.sdkuilib.internal.repository;
+package com.android.sdklib.internal.repository;
 
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.internal.repository.ITaskMonitor;
 
 import java.io.BufferedReader;
 import java.io.File;

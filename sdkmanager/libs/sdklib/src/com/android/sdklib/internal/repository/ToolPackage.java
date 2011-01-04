@@ -166,13 +166,11 @@ public class ToolPackage extends Package implements IMinPlatformToolsDependency 
      * A "tool" package should always be located in SDK/tools.
      *
      * @param osSdkRoot The OS path of the SDK root folder.
-     * @param suggestedDir A suggestion for the installation folder name, based on the root
-     *                     folder used in the zip archive.
      * @param sdkManager An existing SDK manager to list current platforms and addons.
      * @return A new {@link File} corresponding to the directory to use to install this package.
      */
     @Override
-    public File getInstallFolder(String osSdkRoot, String suggestedDir, SdkManager sdkManager) {
+    public File getInstallFolder(String osSdkRoot, SdkManager sdkManager) {
         return new File(osSdkRoot, SdkConstants.FD_TOOLS);
     }
 
@@ -210,9 +208,9 @@ public class ToolPackage extends Package implements IMinPlatformToolsDependency 
         }
 
         String scriptName = "post_tools_install";   //$NON-NLS-1$
-        String shell = "";
+        String shell = "";                          //$NON-NLS-1$
         if (SdkConstants.currentPlatform() == SdkConstants.PLATFORM_WINDOWS) {
-            shell = "cmd.exe /c ";
+            shell = "cmd.exe /c ";                  //$NON-NLS-1$
             scriptName += ".bat";                   //$NON-NLS-1$
         } else {
             scriptName += ".sh";                    //$NON-NLS-1$
