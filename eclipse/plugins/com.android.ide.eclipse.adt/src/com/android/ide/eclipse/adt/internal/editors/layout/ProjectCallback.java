@@ -140,12 +140,12 @@ public final class ProjectCallback implements ILegacyCallback {
     private String getShortClassName(String fqcn) {
         // The name is typically a fully-qualified class name. Let's make it a tad shorter.
 
-        if (fqcn.startsWith("android.")) {                                      // $NON-NLS-1$
+        if (fqcn.startsWith("android.")) {                                      //$NON-NLS-1$
             // For android classes, convert android.foo.Name to android...Name
             int first = fqcn.indexOf('.');
             int last = fqcn.lastIndexOf('.');
             if (last > first) {
-                return fqcn.substring(0, first) + ".." + fqcn.substring(last);   // $NON-NLS-1$
+                return fqcn.substring(0, first) + ".." + fqcn.substring(last);   //$NON-NLS-1$
             }
         } else {
             // For custom non-android classes, it's best to keep the 2 first segments of
@@ -154,7 +154,7 @@ public final class ProjectCallback implements ILegacyCallback {
             first = fqcn.indexOf('.', first + 1);
             int last = fqcn.lastIndexOf('.');
             if (last > first) {
-                return fqcn.substring(0, first) + ".." + fqcn.substring(last);   // $NON-NLS-1$
+                return fqcn.substring(0, first) + ".." + fqcn.substring(last);   //$NON-NLS-1$
             }
         }
 

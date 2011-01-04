@@ -200,7 +200,7 @@ public final class ResourcesDescriptors implements IDescriptorProvider {
                                 null /* nsUri */,
                                 "The mandatory name used in referring to this theme.",
                                 nameAttrInfo),
-                        new TextAttributeDescriptor("parent", // $NON-NLS-1$
+                        new TextAttributeDescriptor("parent", //$NON-NLS-1$
                                 "Parent",
                                 null /* nsUri */,
                                 "An optional parent theme. All values from the specified theme will be inherited into this theme. Any values with identical names that you specify will override inherited values.",

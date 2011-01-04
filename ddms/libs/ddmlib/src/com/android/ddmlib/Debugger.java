@@ -71,7 +71,7 @@ class Debugger {
         mListenChannel.configureBlocking(false);        // required for Selector
 
         InetSocketAddress addr = new InetSocketAddress(
-                InetAddress.getByName("localhost"), // $NON-NLS-1$
+                InetAddress.getByName("localhost"), //$NON-NLS-1$
                 listenPort);
         mListenChannel.socket().setReuseAddress(true);  // enable SO_REUSEADDR
         mListenChannel.socket().bind(addr);

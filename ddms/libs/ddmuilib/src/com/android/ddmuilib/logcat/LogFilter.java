@@ -124,7 +124,7 @@ public class LogFilter {
     }
 
     public boolean loadFromString(String string) {
-        String[] segments = string.split(":"); // $NON-NLS-1$
+        String[] segments = string.split(":"); //$NON-NLS-1$
         int index = 0;
 
         // get the name
@@ -460,11 +460,11 @@ public class LogFilter {
             mUnreadCount += mNewMessages.size();
             totalCount = mTable.getItemCount();
             if (mUnreadCount > 0) {
-                mTabItem.setText(mName + " (" // $NON-NLS-1$
+                mTabItem.setText(mName + " (" //$NON-NLS-1$
                         + (mUnreadCount > totalCount ? totalCount : mUnreadCount)
-                        + ")");  // $NON-NLS-1$
+                        + ")");  //$NON-NLS-1$
             } else {
-                mTabItem.setText(mName);  // $NON-NLS-1$
+                mTabItem.setText(mName);  //$NON-NLS-1$
             }
         }
         

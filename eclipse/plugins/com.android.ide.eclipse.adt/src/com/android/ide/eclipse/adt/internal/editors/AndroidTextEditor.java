@@ -78,7 +78,7 @@ public abstract class AndroidTextEditor extends FormEditor implements IResourceC
     private static final String PREF_CURRENT_PAGE = "_current_page";
 
     /** Id string used to create the Android SDK browser */
-    private static String BROWSER_ID = "android"; // $NON-NLS-1$
+    private static String BROWSER_ID = "android"; //$NON-NLS-1$
 
     /** Page id of the XML source editor, used for switching tabs programmatically */
     public final static String TEXT_EDITOR_ID = "editor_part"; //$NON-NLS-1$

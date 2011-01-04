@@ -163,7 +163,7 @@ public final class SyncService {
             // target a specific device
             AdbHelper.setDevice(mChannel, mDevice);
 
-            byte[] request = AdbHelper.formAdbRequest("sync:"); // $NON-NLS-1$
+            byte[] request = AdbHelper.formAdbRequest("sync:"); //$NON-NLS-1$
             AdbHelper.write(mChannel, request, -1, DdmPreferences.getTimeOut());
 
             AdbResponse resp = AdbHelper.readAdbResponse(mChannel, false /* readDiagString */);
