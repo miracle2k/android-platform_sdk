@@ -415,13 +415,10 @@ public abstract class Package implements IDescription, Comparable<Package> {
      * existing or new folder depending on the current content of the SDK.
      *
      * @param osSdkRoot The OS path of the SDK root folder.
-     * @param suggestedDir A suggestion for the installation folder name, based on the root
-     *                     folder used in the zip archive.
      * @param sdkManager An existing SDK manager to list current platforms and addons.
      * @return A new {@link File} corresponding to the directory to use to install this package.
      */
-    public abstract File getInstallFolder(
-            String osSdkRoot, String suggestedDir, SdkManager sdkManager);
+    public abstract File getInstallFolder(String osSdkRoot, SdkManager sdkManager);
 
     /**
      * Hook called right before an archive is installed. The archive has already
@@ -454,7 +451,8 @@ public abstract class Package implements IDescription, Comparable<Package> {
      * @param archive The archive that has been installed.
      * @param monitor The {@link ITaskMonitor} to display errors.
      * @param installFolder The folder where the archive was successfully installed.
-     *                      Null if the installation failed.
+     *                      Null if the installation failed, in case the archive needs to
+     *                      do some cleanup after <code>preInstallHook</code>.
      */
     public void postInstallHook(Archive archive, ITaskMonitor monitor, File installFolder) {
         // Nothing to do in base class.

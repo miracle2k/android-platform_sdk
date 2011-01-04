@@ -209,13 +209,11 @@ public class SamplePackage extends MinToolsPackage
      * version installed, we'll use that one.
      *
      * @param osSdkRoot The OS path of the SDK root folder.
-     * @param suggestedDir A suggestion for the installation folder name, based on the root
-     *                     folder used in the zip archive.
      * @param sdkManager An existing SDK manager to list current platforms and addons.
      * @return A new {@link File} corresponding to the directory to use to install this package.
      */
     @Override
-    public File getInstallFolder(String osSdkRoot, String suggestedDir, SdkManager sdkManager) {
+    public File getInstallFolder(String osSdkRoot, SdkManager sdkManager) {
 
         // The /samples dir at the root of the SDK
         File samplesRoot = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
@@ -326,12 +324,10 @@ public class SamplePackage extends MinToolsPackage
     public void postInstallHook(Archive archive, ITaskMonitor monitor, File installFolder) {
         super.postInstallHook(archive, monitor, installFolder);
 
-        if (installFolder == null) {
-            return;
+        if (installFolder != null) {
+            String h = computeContentHash(installFolder);
+            saveContentHash(installFolder, h);
         }
-
-        String h = computeContentHash(installFolder);
-        saveContentHash(installFolder, h);
     }
 
     /**

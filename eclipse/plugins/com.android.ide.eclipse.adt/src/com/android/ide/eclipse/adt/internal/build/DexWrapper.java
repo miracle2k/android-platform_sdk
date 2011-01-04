@@ -114,7 +114,28 @@ public final class DexWrapper {
     }
 
     /**
+     * Removes any reference to the dex library.
+     * <p/>
+     * {@link #loadDex(String)} must be called on the wrapper
+     * before {@link #run(String, String[], boolean, PrintStream, PrintStream)} can
+     * be used again.
+     */
+    public synchronized void unload() {
+        mRunMethod = null;
+        mArgConstructor = null;
+        mArgOutName = null;
+        mArgJarOutput = null;
+        mArgFileNames = null;
+        mArgVerbose = null;
+        mConsoleOut = null;
+        mConsoleErr = null;
+        System.gc();
+    }
+
+    /**
      * Runs the dex command.
+     * The wrapper must have been initialized via {@link #loadDex(String)} first.
+     *
      * @param osOutFilePath the OS path to the outputfile (classes.dex
      * @param osFilenames list of input source files (.class and .jar files)
      * @param verbose verbose mode.
@@ -125,6 +146,22 @@ public final class DexWrapper {
      */
     public synchronized int run(String osOutFilePath, String[] osFilenames,
             boolean verbose, PrintStream outStream, PrintStream errStream) throws CoreException {
+
+        assert mRunMethod != null;
+        assert mArgConstructor != null;
+        assert mArgOutName != null;
+        assert mArgJarOutput != null;
+        assert mArgFileNames != null;
+        assert mArgVerbose != null;
+        assert mConsoleOut != null;
+        assert mConsoleErr != null;
+
+        if (mRunMethod == null) {
+            throw new CoreException(createErrorStatus(
+                    String.format(Messages.DexWrapper_Unable_To_Execute_Dex_s,
+                            "wrapper was not properly loaded first"),
+                    null /*exception*/));
+        }
 
         try {
             // set the stream

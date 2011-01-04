@@ -1279,7 +1279,7 @@ public final class Sdk  {
         String validName = name.replaceAll("[^0-9a-zA-Z]+", "_"); //$NON-NLS-1$ //$NON-NLS-2$
 
         //ensure the valid is not negative as - is not a valid char
-        long hash = (long)name.hashCode() & 0x00000000ffffffffL;
+        long hash = name.hashCode() & 0x00000000ffffffffL;
         return "_android_" + validName + "_" + Long.toString(hash, 16) ;  //$NON-NLS-1$ //$NON-NLS-2$
     }
 
@@ -1685,7 +1685,7 @@ public final class Sdk  {
 
     /**
      * Computes a new IPath targeting a given target, but relative to a given base.
-     * <p/>{@link IPath#makeRelativeTo(IPath, IPath)} is only available in 3.5 and later.
+     * <p/>{@link IPath#makeRelativeTo(IPath)} is only available in 3.5 and later.
      * <p/>This is based on the implementation {@link Path#makeRelativeTo(IPath)}.
      * @param target the target of the IPath
      * @param base the IPath to base the relative path on.

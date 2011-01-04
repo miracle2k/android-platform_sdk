@@ -21,6 +21,7 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
+import com.android.sdklib.internal.repository.AdbWrapper;
 import com.android.sdklib.internal.repository.AddonPackage;
 import com.android.sdklib.internal.repository.AddonsListFetcher;
 import com.android.sdklib.internal.repository.Archive;
@@ -42,7 +43,7 @@ import com.android.sdklib.repository.SdkAddonConstants;
 import com.android.sdklib.repository.SdkAddonsListConstants;
 import com.android.sdklib.repository.SdkRepoConstants;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
-import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
+import com.android.sdkuilib.repository.ISdkChangeListener;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
@@ -79,7 +80,7 @@ class UpdaterData implements IUpdaterData {
 
     private final SettingsController mSettingsController;
 
-    private final ArrayList<ISdkListener> mListeners = new ArrayList<ISdkListener>();
+    private final ArrayList<ISdkChangeListener> mListeners = new ArrayList<ISdkChangeListener>();
 
     private Shell mWindowShell;
 
@@ -162,15 +163,15 @@ class UpdaterData implements IUpdaterData {
         return mSettingsController;
     }
 
-    /** Adds a listener ({@link ISdkListener}) that is notified when the SDK is reloaded. */
-    public void addListeners(ISdkListener listener) {
+    /** Adds a listener ({@link ISdkChangeListener}) that is notified when the SDK is reloaded. */
+    public void addListeners(ISdkChangeListener listener) {
         if (mListeners.contains(listener) == false) {
             mListeners.add(listener);
         }
     }
 
-    /** Removes a listener ({@link ISdkListener}) that is notified when the SDK is reloaded. */
-    public void removeListener(ISdkListener listener) {
+    /** Removes a listener ({@link ISdkChangeListener}) that is notified when the SDK is reloaded. */
+    public void removeListener(ISdkChangeListener listener) {
         mListeners.remove(listener);
     }
 
@@ -242,7 +243,7 @@ class UpdaterData implements IUpdaterData {
         }
 
         // notify listeners.
-        notifyListeners(false /*init*/);
+        broadcastOnSdkReload();
     }
 
     /**
@@ -250,7 +251,7 @@ class UpdaterData implements IUpdaterData {
      * <p/>
      * This also reloads the AVDs in case their status changed.
      * <p/>
-     * This does not notify the listeners ({@link ISdkListener}).
+     * This does not notify the listeners ({@link ISdkChangeListener}).
      */
     public void reloadSdk() {
         // reload SDK
@@ -265,12 +266,10 @@ class UpdaterData implements IUpdaterData {
             }
         }
 
-        // notify adapters?
         mLocalSdkParser.clearPackages();
-        // TODO
 
         // notify listeners
-        notifyListeners(false /*init*/);
+        broadcastOnSdkReload();
     }
 
     /**
@@ -365,30 +364,6 @@ class UpdaterData implements IUpdaterData {
 
         return packages;
     }
-
-    /**
-     * Notify the listeners ({@link ISdkListener}) that the SDK was reloaded.
-     * <p/>
-     * This can be called from any thread.
-     *
-     * @param init whether the SDK loaded for the first time.
-     */
-    public void notifyListeners(final boolean init) {
-        if (mWindowShell != null && mListeners.size() > 0) {
-            mWindowShell.getDisplay().syncExec(new Runnable() {
-                public void run() {
-                    for (ISdkListener listener : mListeners) {
-                        try {
-                            listener.onSdkChange(init);
-                        } catch (Throwable t) {
-                            mSdkLog.error(t, null);
-                        }
-                    }
-                }
-            });
-        }
-    }
-
     /**
      * Install the list of given {@link Archive}s. This is invoked by the user selecting some
      * packages in the remote page and then clicking "install selected".
@@ -412,6 +387,7 @@ class UpdaterData implements IUpdaterData {
                 boolean installedAddon = false;
                 boolean installedTools = false;
                 boolean installedPlatformTools = false;
+                boolean preInstallHookInvoked = false;
 
                 // Mark all current local archives as already installed.
                 HashSet<Archive> installedArchives = new HashSet<Archive>();
@@ -456,6 +432,11 @@ class UpdaterData implements IUpdaterData {
                                     continue nextArchive;
                                 }
                             }
+                        }
+
+                        if (!preInstallHookInvoked) {
+                            preInstallHookInvoked = true;
+                            broadcastPreInstallHook();
                         }
 
                         ArchiveInstaller installer = new ArchiveInstaller();
@@ -520,6 +501,10 @@ class UpdaterData implements IUpdaterData {
                         mSdkLog.error(e, "Update ADB failed");
                         monitor.setResult("failed to update adb to support the USB devices declared in the SDK add-ons.");
                     }
+                }
+
+                if (preInstallHookInvoked) {
+                    broadcastPostInstallHook();
                 }
 
                 if (installedAddon || installedPlatformTools) {
@@ -906,6 +891,86 @@ class UpdaterData implements IUpdaterData {
 
                 mStateFetchRemoteAddonsList = 1;
             }
+        }
+    }
+
+    /**
+     * Safely invoke all the registered {@link ISdkChangeListener#onSdkLoaded()}.
+     * This can be called from any thread.
+     */
+    /*package*/ void broadcastOnSdkLoaded() {
+        if (mWindowShell != null && mListeners.size() > 0) {
+            mWindowShell.getDisplay().syncExec(new Runnable() {
+                public void run() {
+                    for (ISdkChangeListener listener : mListeners) {
+                        try {
+                            listener.onSdkLoaded();
+                        } catch (Throwable t) {
+                            mSdkLog.error(t, null);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Safely invoke all the registered {@link ISdkChangeListener#onSdkReload()}.
+     * This can be called from any thread.
+     */
+    private void broadcastOnSdkReload() {
+        if (mWindowShell != null && mListeners.size() > 0) {
+            mWindowShell.getDisplay().syncExec(new Runnable() {
+                public void run() {
+                    for (ISdkChangeListener listener : mListeners) {
+                        try {
+                            listener.onSdkReload();
+                        } catch (Throwable t) {
+                            mSdkLog.error(t, null);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Safely invoke all the registered {@link ISdkChangeListener#preInstallHook()}.
+     * This can be called from any thread.
+     */
+    private void broadcastPreInstallHook() {
+        if (mWindowShell != null && mListeners.size() > 0) {
+            mWindowShell.getDisplay().syncExec(new Runnable() {
+                public void run() {
+                    for (ISdkChangeListener listener : mListeners) {
+                        try {
+                            listener.preInstallHook();
+                        } catch (Throwable t) {
+                            mSdkLog.error(t, null);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Safely invoke all the registered {@link ISdkChangeListener#postInstallHook()}.
+     * This can be called from any thread.
+     */
+    private void broadcastPostInstallHook() {
+        if (mWindowShell != null && mListeners.size() > 0) {
+            mWindowShell.getDisplay().syncExec(new Runnable() {
+                public void run() {
+                    for (ISdkChangeListener listener : mListeners) {
+                        try {
+                            listener.postInstallHook();
+                        } catch (Throwable t) {
+                            mSdkLog.error(t, null);
+                        }
+                    }
+                }
+            });
         }
     }
 

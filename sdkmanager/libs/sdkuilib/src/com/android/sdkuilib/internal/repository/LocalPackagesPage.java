@@ -19,7 +19,7 @@ package com.android.sdkuilib.internal.repository;
 import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.IDescription;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
+import com.android.sdkuilib.repository.ISdkChangeListener;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
@@ -42,7 +42,7 @@ import org.eclipse.swt.widgets.TableColumn;
 
 import java.io.File;
 
-public class LocalPackagesPage extends Composite implements ISdkListener {
+public class LocalPackagesPage extends Composite implements ISdkChangeListener {
 
     private final UpdaterData mUpdaterData;
 
@@ -276,12 +276,26 @@ public class LocalPackagesPage extends Composite implements ISdkListener {
         updateButtonsState();
     }
 
-    public void onSdkChange(boolean init) {
+    // --- Implementation of ISdkChangeListener ---
+
+    public void onSdkLoaded() {
+        onSdkReload();
+    }
+
+    public void onSdkReload() {
         LocalSdkAdapter localSdkAdapter = mUpdaterData.getLocalSdkAdapter();
         mTableViewerPackages.setLabelProvider(  localSdkAdapter.getLabelProvider());
         mTableViewerPackages.setContentProvider(localSdkAdapter.getContentProvider());
         mTableViewerPackages.setInput(localSdkAdapter);
         onTreeSelected();
+    }
+
+    public void preInstallHook() {
+        // nothing to be done for now.
+    }
+
+    public void postInstallHook() {
+        // nothing to be done for now.
     }
 
     // End of hiding from SWT Designer

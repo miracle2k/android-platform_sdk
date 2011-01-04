@@ -21,7 +21,7 @@ import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 import com.android.sdkuilib.internal.tasks.ProgressTaskFactory;
-import com.android.sdkuilib.repository.UpdaterWindow.ISdkListener;
+import com.android.sdkuilib.repository.ISdkChangeListener;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
@@ -194,7 +194,7 @@ public class UpdaterWindowImpl {
     /**
      * Adds a new listener to be notified when a change is made to the content of the SDK.
      */
-    public void addListeners(ISdkListener listener) {
+    public void addListener(ISdkChangeListener listener) {
         mUpdaterData.addListeners(listener);
     }
 
@@ -202,7 +202,7 @@ public class UpdaterWindowImpl {
      * Removes a new listener to be notified anymore when a change is made to the content of
      * the SDK.
      */
-    public void removeListener(ISdkListener listener) {
+    public void removeListener(ISdkChangeListener listener) {
         mUpdaterData.removeListener(listener);
     }
 
@@ -297,7 +297,7 @@ public class UpdaterWindowImpl {
             return false;
         }
 
-        mUpdaterData.notifyListeners(true /*init*/);
+        mUpdaterData.broadcastOnSdkLoaded();
 
         if (mRequestAutoUpdate) {
             mUpdaterData.updateOrInstallAll_WithGUI(
@@ -403,7 +403,7 @@ public class UpdaterWindowImpl {
      */
     private void setupSources() {
         mUpdaterData.setupDefaultSources();
-        mRemotePackagesPage.onSdkChange(false /*init*/);
+        mRemotePackagesPage.onSdkReload();
     }
 
     /**
