@@ -269,10 +269,18 @@ public class SettingsController {
      */
     public void applySettings() {
         Properties props = System.getProperties();
-        props.setProperty(ISettingsPage.KEY_HTTP_PROXY_HOST,
-                mProperties.getProperty(ISettingsPage.KEY_HTTP_PROXY_HOST, "")); //$NON-NLS-1$
-        props.setProperty(ISettingsPage.KEY_HTTP_PROXY_PORT,
-                mProperties.getProperty(ISettingsPage.KEY_HTTP_PROXY_PORT, ""));   //$NON-NLS-1$
-    }
+
+        // Get the configured HTTP proxy settings
+        String proxyHost = mProperties.getProperty(ISettingsPage.KEY_HTTP_PROXY_HOST,
+                ""); //$NON-NLS-1$
+        String proxyPort = mProperties.getProperty(ISettingsPage.KEY_HTTP_PROXY_PORT,
+                ""); //$NON-NLS-1$
+
+        // Set both the HTTP and HTTPS proxy system properties
+        props.setProperty(ISettingsPage.KEY_HTTP_PROXY_HOST, proxyHost);
+        props.setProperty(ISettingsPage.KEY_HTTP_PROXY_PORT, proxyPort);
+        props.setProperty("https.proxyHost", proxyHost); //$NON-NLS-1$
+        props.setProperty("https.proxyPort", proxyPort); //$NON-NLS-1$
+     }
 
 }
