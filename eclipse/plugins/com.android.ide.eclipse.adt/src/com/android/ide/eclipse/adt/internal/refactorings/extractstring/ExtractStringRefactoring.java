@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.refactorings.extractstring;
 
+import static com.android.ide.common.layout.LayoutConstants.STRING_PREFIX;
+
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
@@ -1556,7 +1558,7 @@ public class ExtractStringRefactoring extends Refactoring {
                 xmlChange = new TextFileChange(getName(), file);
                 xmlChange.setTextType("xml");   //$NON-NLS-1$
 
-                String quotedReplacement = quotedAttrValue("@string/" + xmlStringId); //$NON-NLS-1$
+                String quotedReplacement = quotedAttrValue(STRING_PREFIX + xmlStringId);
 
                 // Prepare the change set
                 for (IStructuredDocumentRegion regions : sdoc.getStructuredDocumentRegions()) {

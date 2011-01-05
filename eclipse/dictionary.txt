@@ -27,6 +27,7 @@ bytecode
 callback
 callbacks
 carlo
+cf
 changeset
 checkbox
 classloader
@@ -178,6 +179,7 @@ submenu
 supertype
 syncs
 temp
+textfields
 thematically
 themed
 tmp

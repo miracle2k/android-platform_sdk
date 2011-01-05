@@ -44,6 +44,7 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.ui.views.properties.IPropertyDescriptor;
 import org.eclipse.ui.views.properties.IPropertySource;
 import org.w3c.dom.Attr;
@@ -214,8 +215,17 @@ public class UiElementNode implements IPropertySource {
      * @return A short string describing the UI node suitable for tree views.
      */
     public String getShortDescription() {
-        if (mXmlNode != null && mXmlNode instanceof Element && mXmlNode.hasAttributes()) {
+        String attr = getDescAttribute();
+        if (attr != null) {
+            return String.format("%1$s (%2$s)", attr, mDescriptor.getUiName());
+        }
 
+        return mDescriptor.getUiName();
+    }
+
+    /** Returns the key attribute that can be used to describe this node, or null */
+    private String getDescAttribute() {
+        if (mXmlNode != null && mXmlNode instanceof Element && mXmlNode.hasAttributes()) {
             // Application and Manifest nodes have a special treatment: they are unique nodes
             // so we don't bother trying to differentiate their strings and we fall back to
             // just using the UI name below.
@@ -254,11 +264,41 @@ public class UiElementNode implements IPropertySource {
                 }
             }
             if (attr != null && attr.length() > 0) {
-                return String.format("%1$s (%2$s)", attr, mDescriptor.getUiName());
+                return attr;
             }
         }
 
-        return String.format("%1$s", mDescriptor.getUiName());
+        return null;
+    }
+
+    /**
+     * Computes a styled string describing the UI node suitable for tree views.
+     * Similar to {@link #getShortDescription()} but styles the Strings.
+     *
+     * @return A styled string describing the UI node suitable for tree views.
+     */
+    public StyledString getStyledDescription() {
+        String uiName = mDescriptor.getUiName();
+
+        StyledString styledString = new StyledString();
+        String attr = getDescAttribute();
+        if (attr != null) {
+            // Don't append the two when it's a repeat, e.g. Button01 (Button),
+            // only when the ui name is not part of the attribute
+            if (attr.indexOf(uiName) == -1) {
+                styledString.append(attr);
+                styledString.append(String.format(" (%1$s)", uiName),
+                        StyledString.DECORATIONS_STYLER);
+            } else {
+                styledString.append(attr);
+            }
+        }
+
+        if (styledString.length() == 0) {
+            styledString.append(uiName);
+        }
+
+        return styledString;
     }
 
     /**
@@ -880,7 +920,7 @@ public class UiElementNode implements IPropertySource {
         }
 
         // If we get here and parentXmlNode is null, the node is to be created
-        // as the root node of the document (which can't be null, cf check above).
+        // as the root node of the document (which can't be null, cf. check above).
         if (parentXmlNode == null) {
             parentXmlNode = doc;
         }
@@ -1308,7 +1348,7 @@ public class UiElementNode implements IPropertySource {
         // Clone the current list of unknown attributes. We'll then remove from this list when
         // we still attributes which are still unknown. What will be left are the old unknown
         // attributes that have been deleted in the current XML attribute list.
-        @SuppressWarnings("unchecked") //$NON-NLS-1$
+        @SuppressWarnings("unchecked")
         HashSet<UiAttributeNode> deleted = (HashSet<UiAttributeNode>) mUnknownUiAttributes.clone();
 
         // We need to ignore hidden attributes.
