@@ -389,7 +389,7 @@ public class OutlinePage extends ContentOutlinePage
                 }
             }
             if (element instanceof CanvasViewInfo) {
-                ArrayList<CanvasViewInfo> children = ((CanvasViewInfo) element).getChildren();
+                List<CanvasViewInfo> children = ((CanvasViewInfo) element).getChildren();
                 if (children != null) {
                     return children.toArray();
                 }
@@ -406,7 +406,7 @@ public class OutlinePage extends ContentOutlinePage
 
         public boolean hasChildren(Object element) {
             if (element instanceof CanvasViewInfo) {
-                ArrayList<CanvasViewInfo> children = ((CanvasViewInfo) element).getChildren();
+                List<CanvasViewInfo> children = ((CanvasViewInfo) element).getChildren();
                 if (children != null) {
                     return children.size() > 0;
                 }

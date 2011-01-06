@@ -137,7 +137,7 @@ public class DescriptorsUtilsTest extends TestCase {
                 DescriptorsUtils.getFreeWidgetId(uiRoot, "LinearLayout"));
     }
 
-    private static ElementDescriptor createDesc(String name, String fqn, boolean hasChildren) {
+    private static ViewElementDescriptor createDesc(String name, String fqn, boolean hasChildren) {
         if (hasChildren) {
             return new ViewElementDescriptor(name, name, fqn, "", "", new AttributeDescriptor[0],
                     new AttributeDescriptor[0], new ElementDescriptor[1], false);

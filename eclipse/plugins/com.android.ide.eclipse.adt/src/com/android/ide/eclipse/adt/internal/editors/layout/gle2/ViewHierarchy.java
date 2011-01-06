@@ -95,9 +95,9 @@ public class ViewHierarchy {
     private boolean mExplodedParents;
 
     /**
-     * List of included view infos in the current view hierarchy.
+     * Bounds of included views in the current view hierarchy when rendered in other context
      */
-    private List<CanvasViewInfo> mIncluded;
+    private List<Rectangle> mIncludedBounds;
 
     /** The render session for the current view hierarchy */
     private RenderSession mSession;
@@ -137,14 +137,14 @@ public class ViewHierarchy {
         mSession = session;
         mIsResultValid = (session != null && session.getResult().isSuccess());
         mExplodedParents = false;
-        mIncluded = null;
+        mIncludedBounds = null;
 
         if (mIsResultValid && session != null) {
             ViewInfo root = session.getRootView();
             if (root == null) {
                 mLastValidViewInfoRoot = null;
             } else {
-                mLastValidViewInfoRoot = new CanvasViewInfo(session.getRootView());
+                mLastValidViewInfoRoot = CanvasViewInfo.create(root);
             }
 
             updateNodeProxies(mLastValidViewInfoRoot, null);
@@ -183,12 +183,12 @@ public class ViewHierarchy {
         if (key != null) {
             mCanvas.getNodeFactory().create(vi);
 
-            if (key != null && parentKey == null && vi.getParent() != null) {
+            if (parentKey == null && vi.getParent() != null) {
                 // This is an included view root
-                if (mIncluded == null) {
-                    mIncluded = new ArrayList<CanvasViewInfo>();
+                if (mIncludedBounds == null) {
+                    mIncludedBounds = new ArrayList<Rectangle>();
                 }
-                mIncluded.add(vi);
+                mIncludedBounds.add(vi.getAbsRect());
             }
         }
 
@@ -243,8 +243,8 @@ public class ViewHierarchy {
     }
 
     /**
-     * Returns true when the last {@link #setResult} provided a valid
-     * {@link LayoutScene}.
+     * Returns true when the last {@link #setSession} provided a valid
+     * {@link RenderSession}.
      * <p/>
      * When false this means the canvas is displaying an out-dated result image & bounds and some
      * features should be disabled accordingly such a drag'n'drop.
@@ -596,12 +596,13 @@ public class ViewHierarchy {
     }
 
     /**
-     * Returns the list of included views in the current view hierarchy. Can be null
+     * Returns the list of bounds for included views in the current view hierarchy. Can be null
      * when there are no included views.
      *
-     * @return a list of included views, or null
+     * @return a list of included view bounds, or null
      */
-    public List<CanvasViewInfo> getIncluded() {
-        return mIncluded;
+    public List<Rectangle> getIncludedBounds() {
+        return mIncludedBounds;
     }
+
 }

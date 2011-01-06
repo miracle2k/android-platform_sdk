@@ -23,6 +23,7 @@ breadcrumb
 builtin
 callback
 callbacks
+carlo
 checkbox
 classloader
 classpath
@@ -86,6 +87,7 @@ inline
 instanceof
 instantiatable
 int
+javac
 javadoc
 layoutlib
 leaky
@@ -103,6 +105,7 @@ macs
 marquee
 metadata
 min
+monte
 multi
 multimap
 multimaps
@@ -147,6 +150,7 @@ scrollbars
 sdk
 se
 searchable
+selectable
 semi
 serializer
 settable
