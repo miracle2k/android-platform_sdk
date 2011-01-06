@@ -274,6 +274,10 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
         // re-create or reload the pages with the default page shown as the previous active page.
         createAndroidPages();
         selectDefaultPage(Integer.toString(currentPage));
+
+        // When changing an input file of an the editor, the titlebar is not refreshed to
+        // show the new path/to/file being edited. So we force a refresh
+        firePropertyChange(IWorkbenchPart.PROP_TITLE);
     }
 
     /**
