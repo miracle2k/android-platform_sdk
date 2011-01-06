@@ -428,14 +428,16 @@ public class LayoutLibrary {
     private RenderSession convertToScene(ILayoutResult result) {
 
         Result sceneResult;
-        ViewInfo rootViewInfo;
+        ViewInfo rootViewInfo = null;
 
         if (result.getSuccess() == ILayoutResult.SUCCESS) {
             sceneResult = Status.SUCCESS.createResult();
-            rootViewInfo = convertToViewInfo(result.getRootView());
+            ILayoutViewInfo oldRootView = result.getRootView();
+            if (oldRootView != null) {
+                rootViewInfo = convertToViewInfo(oldRootView);
+            }
         } else {
             sceneResult = Status.ERROR_UNKNOWN.createResult(result.getErrorMessage());
-            rootViewInfo = null;
         }
 
         // create a BasicLayoutScene. This will return the given values but return the default
