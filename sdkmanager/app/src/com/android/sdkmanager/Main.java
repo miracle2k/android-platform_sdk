@@ -321,6 +321,8 @@ public class Main {
         boolean useHttp = mSdkCommandLine.getFlagNoHttps();
         boolean dryMode = mSdkCommandLine.getFlagDryMode();
         boolean obsolete = mSdkCommandLine.getFlagObsolete();
+        String proxyHost = mSdkCommandLine.getProxyHost();
+        String proxyPort = mSdkCommandLine.getProxyPort();
 
         // Check filter types.
         ArrayList<String> pkgFilter = new ArrayList<String>();
@@ -350,7 +352,8 @@ public class Main {
             }
         }
 
-        UpdateNoWindow upd = new UpdateNoWindow(mOsSdkFolder, mSdkManager, mSdkLog, force, useHttp);
+        UpdateNoWindow upd = new UpdateNoWindow(mOsSdkFolder, mSdkManager, mSdkLog,
+                force, useHttp, proxyHost, proxyPort);
         upd.updateAll(pkgFilter, obsolete, dryMode);
     }
 
