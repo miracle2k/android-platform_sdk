@@ -16,13 +16,16 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.sdklib.annotations.VisibleForTesting;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Rectangle;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -48,8 +51,9 @@ public class IncludeOverlay extends Overlay {
 
     @Override
     public void paint(GC gc) {
-        List<CanvasViewInfo> included = mCanvas.getViewHierarchy().getIncluded();
-        if (included == null || included.size() != 1) {
+        ViewHierarchy viewHierarchy = mCanvas.getViewHierarchy();
+        List<Rectangle> includedBounds = viewHierarchy.getIncludedBounds();
+        if (includedBounds == null || includedBounds.size() == 0) {
             // We don't support multiple included children yet. When that works,
             // this code should use a BSP tree to figure out which regions to paint
             // to leave holes in the mask.
@@ -60,52 +64,87 @@ public class IncludeOverlay extends Overlay {
         if (image == null) {
             return;
         }
-        ImageData data = image.getImageData();
-
-        Rectangle hole = included.get(0).getAbsRect();
 
         int oldAlpha = gc.getAlpha();
         gc.setAlpha(MASK_TRANSPARENCY);
         Color bg = gc.getDevice().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
         gc.setBackground(bg);
 
-        ControlPoint topLeft = LayoutPoint.create(mCanvas, hole.x, hole.y).toControl();
-        ControlPoint bottomRight = LayoutPoint.create(mCanvas, hole.x + hole.width,
-                hole.y + hole.height).toControl();
-        CanvasTransform hi = mCanvas.getHorizontalTransform();
-        CanvasTransform vi = mCanvas.getVerticalTransform();
-        int deltaX = hi.translate(0);
-        int deltaY = vi.translate(0);
-        int x1 = topLeft.x;
-        int y1 = topLeft.y;
-        int x2 = bottomRight.x;
-        int y2 = bottomRight.y;
-        int width = data.width;
-        int height = data.height;
+        CanvasViewInfo root = viewHierarchy.getRoot();
+        Rectangle whole = root.getAbsRect();
+        whole = new Rectangle(whole.x, whole.y, whole.width + 1, whole.height + 1);
+        Collection<Rectangle> masks = subtractRectangles(whole, includedBounds);
 
-        width = hi.getScalledImgSize();
-        height = vi.getScalledImgSize();
+        for (Rectangle mask : masks) {
+            ControlPoint topLeft = LayoutPoint.create(mCanvas, mask.x, mask.y).toControl();
+            ControlPoint bottomRight = LayoutPoint.create(mCanvas, mask.x + mask.width,
+                    mask.y + mask.height).toControl();
+            int x1 = topLeft.x;
+            int y1 = topLeft.y;
+            int x2 = bottomRight.x;
+            int y2 = bottomRight.y;
 
-        if (y1 > deltaX) {
-            // Top
-            gc.fillRectangle(deltaX, deltaY, width, y1 - deltaY);
-        }
-
-        if (y2 < height) {
-            // Bottom
-            gc.fillRectangle(deltaX, y2, width, height - y2 + deltaY);
-        }
-
-        if (x1 > deltaX) {
-            // Left
-            gc.fillRectangle(deltaX, y1, x1 - deltaX, y2 - y1);
-        }
-
-        if (x2 < width) {
-            // Right
-            gc.fillRectangle(x2, y1, width - x2 + deltaX, y2 - y1);
+            gc.fillRectangle(x1, y1, x2 - x1, y2 - y1);
         }
 
         gc.setAlpha(oldAlpha);
+    }
+
+    /**
+     * Given a Rectangle, remove holes from it (specified as a collection of Rectangles) such
+     * that the result is a list of rectangles that cover everything that is not a hole.
+     *
+     * @param rectangle the rectangle to subtract from
+     * @param holes the holes to subtract from the rectangle
+     * @return a list of sub rectangles that remain after subtracting out the given list of holes
+     */
+    @VisibleForTesting
+    static Collection<Rectangle> subtractRectangles(
+            Rectangle rectangle, Collection<Rectangle> holes) {
+        List<Rectangle> result = new ArrayList<Rectangle>();
+        result.add(rectangle);
+
+        for (Rectangle hole : holes) {
+            List<Rectangle> tempResult = new ArrayList<Rectangle>();
+            for (Rectangle r : result) {
+                if (hole.intersects(r)) {
+                    // Clip the hole to fit the rectangle bounds
+                    Rectangle h = hole.intersection(r);
+
+                    // Split the rectangle
+
+                    // Above (includes the NW and NE corners)
+                    if (h.y > r.y) {
+                        tempResult.add(new Rectangle(r.x, r.y, r.width, h.y - r.y));
+                    }
+
+                    // Left (not including corners)
+                    if (h.x > r.x) {
+                        tempResult.add(new Rectangle(r.x, h.y, h.x - r.x, h.height));
+                    }
+
+                    int hx2 = h.x + h.width;
+                    int hy2 = h.y + h.height;
+                    int rx2 = r.x + r.width;
+                    int ry2 = r.y + r.height;
+
+                    // Below (includes the SW and SE corners)
+                    if (hy2 < ry2) {
+                        tempResult.add(new Rectangle(r.x, hy2, r.width, ry2 - hy2));
+                    }
+
+                    // Right (not including corners)
+                    if (hx2 < rx2) {
+                        tempResult.add(new Rectangle(hx2, h.y, rx2 - hx2, h.height));
+                    }
+                } else {
+                    tempResult.add(r);
+                }
+            }
+
+            result = tempResult;
+        }
+
+        return result;
     }
 }
