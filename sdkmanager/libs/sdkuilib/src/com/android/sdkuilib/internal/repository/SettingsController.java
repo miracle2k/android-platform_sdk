@@ -258,7 +258,7 @@ public class SettingsController {
         String newHttpsSetting = mProperties.getProperty(ISettingsPage.KEY_FORCE_HTTP,
                 Boolean.FALSE.toString());
         if (!newHttpsSetting.equals(oldHttpsSetting)) {
-            // In case the HTTP/HTTPS setting change, force sources to be reloaded
+            // In case the HTTP/HTTPS setting changes, force sources to be reloaded
             // (this only refreshes sources that the user has already tried to open.)
             mUpdaterData.refreshSources(false /*forceFetching*/);
         }
@@ -276,11 +276,18 @@ public class SettingsController {
         String proxyPort = mProperties.getProperty(ISettingsPage.KEY_HTTP_PROXY_PORT,
                 ""); //$NON-NLS-1$
 
-        // Set both the HTTP and HTTPS proxy system properties
-        props.setProperty(ISettingsPage.KEY_HTTP_PROXY_HOST, proxyHost);
-        props.setProperty(ISettingsPage.KEY_HTTP_PROXY_PORT, proxyPort);
-        props.setProperty("https.proxyHost", proxyHost); //$NON-NLS-1$
-        props.setProperty("https.proxyPort", proxyPort); //$NON-NLS-1$
+        // Set both the HTTP and HTTPS proxy system properties.
+        // The system property constants can be found in the Java SE documentation at
+        // http://download.oracle.com/javase/6/docs/technotes/guides/net/proxies.html
+        final String JAVA_PROP_HTTP_PROXY_HOST =  "http.proxyHost";      //$NON-NLS-1$
+        final String JAVA_PROP_HTTP_PROXY_PORT =  "http.proxyPort";      //$NON-NLS-1$
+        final String JAVA_PROP_HTTPS_PROXY_HOST = "https.proxyHost";     //$NON-NLS-1$
+        final String JAVA_PROP_HTTPS_PROXY_PORT = "https.proxyPort";     //$NON-NLS-1$
+
+        props.setProperty(JAVA_PROP_HTTP_PROXY_HOST,  proxyHost);
+        props.setProperty(JAVA_PROP_HTTP_PROXY_PORT,  proxyPort);
+        props.setProperty(JAVA_PROP_HTTPS_PROXY_HOST, proxyHost);
+        props.setProperty(JAVA_PROP_HTTPS_PROXY_PORT, proxyPort);
      }
 
 }
