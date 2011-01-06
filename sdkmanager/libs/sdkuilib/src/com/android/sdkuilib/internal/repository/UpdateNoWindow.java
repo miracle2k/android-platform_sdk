@@ -24,6 +24,7 @@ import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.repository.SdkRepoConstants;
 
 import java.util.ArrayList;
+import java.util.Properties;
 
 /**
  * Performs an update using only a non-interactive console output with no GUI.
@@ -53,20 +54,26 @@ public class UpdateNoWindow {
      * @param force The reply to any question asked by the update process. Currently this will
      *   be yes/no for ability to replace modified samples or restart ADB.
      * @param useHttp True to force using HTTP instead of HTTPS for downloads.
+     * @param proxyPort An optional HTTP/HTTPS proxy port. Can be null.
+     * @param proxyHost An optional HTTP/HTTPS proxy host. Can be null.
      */
     public UpdateNoWindow(String osSdkRoot,
             SdkManager sdkManager,
             ISdkLog sdkLog,
             boolean force,
-            boolean useHttp) {
+            boolean useHttp,
+            String proxyHost,
+            String proxyPort) {
         mSdkLog = sdkLog;
         mForce = force;
         mUpdaterData = new UpdaterData(osSdkRoot, sdkLog);
 
         // Read and apply settings from settings file, so that http/https proxy is set
+        // and let the command line args override them as necessary.
         SettingsController settingsController = mUpdaterData.getSettingsController();
         settingsController.loadSettings();
         settingsController.applySettings();
+        setupProxy(proxyHost, proxyPort);
 
         // Change the in-memory settings to force the http/https mode
         settingsController.setSetting(ISettingsPage.KEY_FORCE_HTTP, useHttp);
@@ -86,7 +93,6 @@ public class UpdateNoWindow {
         mUpdaterData.setupDefaultSources();
 
         mUpdaterData.getLocalSdkParser().parseSdk(osSdkRoot, sdkManager, sdkLog);
-
     }
 
     /**
@@ -103,6 +109,33 @@ public class UpdateNoWindow {
             boolean includeObsoletes,
             boolean dryMode) {
         mUpdaterData.updateOrInstallAll_NoGUI(pkgFilter, includeObsoletes, dryMode);
+    }
+
+    // -----
+
+    /**
+     * Sets both the HTTP and HTTPS proxy system properties, overriding the ones
+     * from the settings with these values if they are defined.
+     */
+    private void setupProxy(String proxyHost, String proxyPort) {
+
+        // The system property constants can be found in the Java SE documentation at
+        // http://download.oracle.com/javase/6/docs/technotes/guides/net/proxies.html
+        final String JAVA_PROP_HTTP_PROXY_HOST =  "http.proxyHost";      //$NON-NLS-1$
+        final String JAVA_PROP_HTTP_PROXY_PORT =  "http.proxyPort";      //$NON-NLS-1$
+        final String JAVA_PROP_HTTPS_PROXY_HOST = "https.proxyHost";     //$NON-NLS-1$
+        final String JAVA_PROP_HTTPS_PROXY_PORT = "https.proxyPort";     //$NON-NLS-1$
+
+        Properties props = System.getProperties();
+
+        if (proxyHost != null && proxyHost.length() > 0) {
+            props.setProperty(JAVA_PROP_HTTP_PROXY_HOST,  proxyHost);
+            props.setProperty(JAVA_PROP_HTTPS_PROXY_HOST, proxyHost);
+        }
+        if (proxyPort != null && proxyPort.length() > 0) {
+            props.setProperty(JAVA_PROP_HTTP_PROXY_PORT,  proxyPort);
+            props.setProperty(JAVA_PROP_HTTPS_PROXY_PORT, proxyPort);
+        }
     }
 
     /**

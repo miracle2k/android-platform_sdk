@@ -74,6 +74,8 @@ class SdkCommandLine extends CommandLineProcessor {
     public static final String KEY_MAIN_PROJECT = "main";
     public static final String KEY_NO_UI        = "no-ui";
     public static final String KEY_NO_HTTPS     = "no-https";
+    public static final String KEY_PROXY_PORT   = "proxy-port";
+    public static final String KEY_PROXY_HOST   = "proxy-host";
     public static final String KEY_DRY_MODE     = "dry-mode";
     public static final String KEY_OBSOLETE     = "obsolete";
 
@@ -199,6 +201,16 @@ class SdkCommandLine extends CommandLineProcessor {
                 VERB_UPDATE, OBJECT_SDK, "s", KEY_NO_HTTPS,
                 "Uses HTTP instead of HTTPS (the default) for downloads", false);
 
+        define(Mode.STRING, false,
+                VERB_UPDATE, OBJECT_SDK, "", KEY_PROXY_PORT,
+                "HTTP/HTTPS proxy port (overrides settings if defined)",
+                null);
+
+        define(Mode.STRING, false,
+                VERB_UPDATE, OBJECT_SDK, "", KEY_PROXY_HOST,
+                "HTTP/HTTPS proxy host (overrides settings if defined)",
+                null);
+
         define(Mode.BOOLEAN, false,
                 VERB_UPDATE, OBJECT_SDK, "f", KEY_FORCE,
                 "Forces replacement of a package or its parts, even if something has been modified",
@@ -207,7 +219,7 @@ class SdkCommandLine extends CommandLineProcessor {
         define(Mode.STRING, false,
                 VERB_UPDATE, OBJECT_SDK, "t", KEY_FILTER,
                 "A filter that limits the update to the specified types of packages in the form of\n" +
-                "                a comma-separated list of " + Arrays.toString(SdkRepoConstants.NODES),
+                "a comma-separated list of " + Arrays.toString(SdkRepoConstants.NODES),
                 null);
 
         define(Mode.BOOLEAN, false,
@@ -466,5 +478,15 @@ class SdkCommandLine extends CommandLineProcessor {
     /** Helper to retrieve the --filter value. */
     public String getParamFilter() {
         return ((String) getValue(null, null, KEY_FILTER));
+    }
+
+    /** Helper to retrieve the --proxy-host value. */
+    public String getProxyHost() {
+        return ((String) getValue(null, null, KEY_PROXY_HOST));
+    }
+
+    /** Helper to retrieve the --proxy-port value. */
+    public String getProxyPort() {
+        return ((String) getValue(null, null, KEY_PROXY_PORT));
     }
 }
