@@ -536,6 +536,18 @@ class CommandLineProcessor {
      */
     protected void listOptions(String verb, String directObject) {
         int numOptions = 0;
+        int longArgLen = 8;
+
+        for (Entry<String, Arg> entry : mArguments.entrySet()) {
+            Arg arg = entry.getValue();
+            if (arg.getVerb().equals(verb) && arg.getDirectObject().equals(directObject)) {
+                int n = arg.getLongArg().length();
+                if (n > longArgLen) {
+                    longArgLen = n;
+                }
+            }
+        }
+
         for (Entry<String, Arg> entry : mArguments.entrySet()) {
             Arg arg = entry.getValue();
             if (arg.getVerb().equals(verb) && arg.getDirectObject().equals(directObject)) {
@@ -564,10 +576,25 @@ class CommandLineProcessor {
                     }
                 }
 
-                stdout("  -%1$s %2$-10s %3$s%4$s%5$s",
-                        arg.getShortArg(),
-                        "--" + arg.getLongArg(),
-                        arg.getDescription(),
+                // Java doesn't support * for printf variable width, so we'll insert the long arg
+                // width "manually" in the printf format string.
+                String longArgWidth = Integer.toString(longArgLen + 2);
+
+                // For multi-line descriptions, pad new lines with the necessary whitespace.
+                String desc = arg.getDescription();
+                desc = desc.replaceAll("\n",                                           //$NON-NLS-1$
+                        String.format("\n      %" + longArgWidth + "s", " ")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+                // Print a line in the form " -1_letter_arg --long_arg description"
+                // where either the 1-letter arg or the long arg are optional.
+                stdout("  %1$-2s %2$-" + longArgWidth + "s %3$s%4$s%5$s",              //$NON-NLS-1$
+                        arg.getShortArg().length() > 0 ?
+                                "-" + arg.getShortArg() :                              //$NON-NLS-1$
+                                "",                                                    //$NON-NLS-1$
+                        arg.getLongArg().length() > 0 ?
+                                "--" + arg.getLongArg() :                              //$NON-NLS-1$
+                                "",                                                    //$NON-NLS-1$
+                        desc,
                         value,
                         required);
                 numOptions++;
@@ -707,8 +734,8 @@ class CommandLineProcessor {
          * @param mode The {@link Mode} for the argument.
          * @param mandatory True if this argument is mandatory for this action.
          * @param directObject The action name. Can be #NO_VERB_OBJECT or #INTERNAL_FLAG.
-         * @param shortName The one-letter short argument name. Cannot be empty nor null.
-         * @param longName The long argument name. Cannot be empty nor null.
+         * @param shortName The one-letter short argument name. Can be empty but not null.
+         * @param longName The long argument name. Can be empty but not null.
          * @param description The description. Cannot be null.
          * @param defaultValue The default value (or values), which depends on the selected {@link Mode}.
          */
@@ -803,8 +830,8 @@ class CommandLineProcessor {
      * @param mode The {@link Mode} for the argument.
      * @param verb The verb name. Can be #INTERNAL_VERB.
      * @param directObject The action name. Can be #NO_VERB_OBJECT or #INTERNAL_FLAG.
-     * @param shortName The one-letter short argument name. Cannot be empty nor null.
-     * @param longName The long argument name. Cannot be empty nor null.
+     * @param shortName The one-letter short argument name. Can be empty but not null.
+     * @param longName The long argument name. Can be empty but not null.
      * @param description The description. Cannot be null.
      * @param defaultValue The default value (or values), which depends on the selected {@link Mode}.
      */
@@ -815,6 +842,11 @@ class CommandLineProcessor {
             String shortName, String longName,
             String description, Object defaultValue) {
         assert(!(mandatory && mode == Mode.BOOLEAN)); // a boolean mode cannot be mandatory
+
+        // We should always have at least a short or long name, ideally both but never none.
+        assert shortName != null;
+        assert longName != null;
+        assert shortName.length() > 0 || longName.length()  > 0;
 
         if (directObject == null) {
             directObject = NO_VERB_OBJECT;
