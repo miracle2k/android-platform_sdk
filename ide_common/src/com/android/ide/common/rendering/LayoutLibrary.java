@@ -227,13 +227,15 @@ public class LayoutLibrary {
      * @param fontLocation the location of the fonts in the SDK target.
      * @param enumValueMap map attrName => { map enumFlagName => Integer value }. This is typically
      *          read from attrs.xml in the SDK target.
+     * @param log a {@link LayoutLog} object. Can be null.
      * @return true if success.
      *
      * @see Bridge#init(String, Map)
      */
-    public boolean init(File fontLocation, Map<String, Map<String, Integer>> enumValueMap) {
+    public boolean init(File fontLocation, Map<String, Map<String, Integer>> enumValueMap,
+            LayoutLog log) {
         if (mBridge != null) {
-            return mBridge.init(fontLocation, enumValueMap);
+            return mBridge.init(fontLocation, enumValueMap, log);
         } else if (mLegacyBridge != null) {
             return mLegacyBridge.init(fontLocation.getAbsolutePath(), enumValueMap);
         }

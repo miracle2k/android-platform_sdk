@@ -17,7 +17,9 @@
 package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ide.common.rendering.LayoutLibrary;
+import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.sdk.LoadStatus;
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvider;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.manifest.descriptors.AndroidManifestDescriptors;
@@ -28,6 +30,8 @@ import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
+
+import org.eclipse.core.runtime.IStatus;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -248,7 +252,31 @@ public class AndroidTargetData {
      */
     public synchronized LayoutLibrary getLayoutLibrary() {
         if (mLayoutBridgeInit == false && mLayoutLibrary.getStatus() == LoadStatus.LOADED) {
-            mLayoutLibrary.init(new File(mTarget.getPath(IAndroidTarget.FONTS)), getEnumValueMap());
+            mLayoutLibrary.init(
+                    new File(mTarget.getPath(IAndroidTarget.FONTS)),
+                    getEnumValueMap(),
+                    new LayoutLog() {
+
+                        @Override
+                        public void error(String tag, String message, Throwable throwable) {
+                            AdtPlugin.log(throwable, message);
+                        }
+
+                        @Override
+                        public void error(String tag, String message) {
+                            AdtPlugin.log(IStatus.ERROR, message);
+                        }
+
+                        @Override
+                        public void error(String tag, Throwable throwable) {
+                            AdtPlugin.log(throwable, null);
+                        }
+
+                        @Override
+                        public void warning(String tag, String message) {
+                            AdtPlugin.log(IStatus.WARNING, message);
+                        }
+                    });
             mLayoutBridgeInit = true;
         }
 
