@@ -126,13 +126,15 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
         INode node = TestNode.create("android.widget.Button").id("@+id/Button012");
 
         List<MenuAction> contextMenu = rule.getContextMenu(node);
-        assertEquals(4, contextMenu.size());
-        assertEquals("Layout Width", contextMenu.get(0).getTitle());
-        assertEquals("Layout Height", contextMenu.get(1).getTitle());
-        assertEquals("Properties", contextMenu.get(2).getTitle());
-        assertEquals("Orientation", contextMenu.get(3).getTitle());
+        assertEquals(6, contextMenu.size());
+        assertNull(contextMenu.get(0)); // Edit Text... not available
+        assertEquals("Edit ID...", contextMenu.get(1).getTitle());
+        assertEquals("Layout Width", contextMenu.get(2).getTitle());
+        assertEquals("Layout Height", contextMenu.get(3).getTitle());
+        assertEquals("Properties", contextMenu.get(4).getTitle());
+        assertEquals("Orientation", contextMenu.get(5).getTitle());
 
-        MenuAction propertiesMenu = contextMenu.get(2);
+        MenuAction propertiesMenu = contextMenu.get(4);
         assertTrue(propertiesMenu.getClass().getName(), propertiesMenu instanceof MenuAction.Group);
         // TODO: Test Properties-list
     }
@@ -145,9 +147,9 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
             .set(ANDROID_URI, ATTR_LAYOUT_HEIGHT, "50sp");
 
         List<MenuAction> contextMenu = rule.getContextMenu(node);
-        assertEquals(4, contextMenu.size());
-        assertEquals("Layout Width", contextMenu.get(0).getTitle());
-        MenuAction menuAction = contextMenu.get(0);
+        assertEquals(6, contextMenu.size());
+        assertEquals("Layout Width", contextMenu.get(2).getTitle());
+        MenuAction menuAction = contextMenu.get(2);
         assertTrue(menuAction instanceof MenuAction.Choices);
         MenuAction.Choices choices = (Choices) menuAction;
         Map<String, String> items = choices.getChoices();
@@ -167,8 +169,8 @@ public class LinearLayoutRuleTest extends LayoutTestBase {
         assertNull(node.getStringAttr(ANDROID_URI, ATTR_ORIENTATION));
 
         List<MenuAction> contextMenu = rule.getContextMenu(node);
-        assertEquals(4, contextMenu.size());
-        MenuAction orientationAction = contextMenu.get(3);
+        assertEquals(6, contextMenu.size());
+        MenuAction orientationAction = contextMenu.get(5);
 
         assertTrue(orientationAction.getClass().getName(),
                 orientationAction instanceof MenuAction.Choices);

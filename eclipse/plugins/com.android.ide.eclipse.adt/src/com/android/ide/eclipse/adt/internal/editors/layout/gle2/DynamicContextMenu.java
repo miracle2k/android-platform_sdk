@@ -245,6 +245,14 @@ import java.util.regex.Pattern;
 
             boolean foundAction = false;
             for (MenuAction action : viewActions) {
+
+                // Allow nulls - ignore these. Make it easier to define action lists
+                // literals where some items may not be included (because their references
+                // are null).
+                if (action == null) {
+                    continue;
+                }
+
                 if (action.getId() == null || action.getTitle() == null) {
                     // TODO Log verbose error for invalid action.
                     continue;

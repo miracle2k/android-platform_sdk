@@ -91,5 +91,22 @@ public interface IClientRulesEngine {
      * @return the minimum API level to be supported, or -1 if it cannot be determined
      */
     int getMinApiLevel();
+
+    /**
+     * Returns a resource name validator for the current project
+     *
+     * @return an {@link IValidator} for validating new resource name in the current
+     *         project
+     */
+    IValidator getResourceValidator();
+
+    /**
+     * Displays an input dialog where the user can enter an Android reference value
+     *
+     * @param currentValue the current reference to select
+     * @return the reference selected by the user, or null
+     */
+    String displayReferenceInput(String currentValue);
+
 }
 

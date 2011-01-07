@@ -224,6 +224,16 @@ public abstract class LayoutTestBase extends TestCase {
             return null;
         }
 
+        public String displayReferenceInput(String currentValue) {
+            fail("Not supported in tests yet");
+            return null;
+        }
+
+        public IValidator getResourceValidator() {
+            fail("Not supported in tests yet");
+            return null;
+        }
+
     }
 
     public void testDummy() {

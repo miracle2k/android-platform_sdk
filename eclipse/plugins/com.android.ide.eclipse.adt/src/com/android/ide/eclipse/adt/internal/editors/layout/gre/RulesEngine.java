@@ -35,9 +35,12 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewEleme
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleElement;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
+import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.internal.ui.ReferenceChooserDialog;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.internal.project.ProjectProperties;
 
@@ -47,6 +50,7 @@ import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
+import org.eclipse.swt.widgets.Shell;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -778,6 +782,39 @@ public class RulesEngine {
             }
 
             return -1;
+        }
+
+        public IValidator getResourceValidator() {
+            // When https://review.source.android.com/#change,20168 is integrated,
+            // change this to
+            //return ResourceNameValidator.create(false, mEditor.getProject(), ResourceType.ID);
+            return null;
+        }
+
+        public String displayReferenceInput(String currentValue) {
+            AndroidXmlEditor editor = mEditor.getLayoutEditor();
+            IProject project = editor.getProject();
+            if (project != null) {
+                // get the resource repository for this project and the system resources.
+                IResourceRepository projectRepository =
+                    ResourceManager.getInstance().getProjectResources(project);
+                Shell shell = AdtPlugin.getDisplay().getActiveShell();
+                if (shell == null) {
+                    return null;
+                }
+                ReferenceChooserDialog dlg = new ReferenceChooserDialog(
+                        project,
+                        projectRepository,
+                        shell);
+
+                dlg.setCurrentResource(currentValue);
+
+                if (dlg.open() == Window.OK) {
+                    return dlg.getCurrentResource();
+                }
+            }
+
+            return null;
         }
     }
 }
