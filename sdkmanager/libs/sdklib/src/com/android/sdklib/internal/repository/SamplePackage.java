@@ -91,7 +91,11 @@ public class SamplePackage extends MinToolsPackage
      * <p/>
      * By design, this creates a package with one and only one archive.
      */
-    SamplePackage(IAndroidTarget target, Properties props) {
+    static Package create(IAndroidTarget target, Properties props) {
+        return new SamplePackage(target, props);
+    }
+
+    private SamplePackage(IAndroidTarget target, Properties props) {
         super(  null,                                   //source
                 props,                                  //properties
                 0,                                      //revision will be taken from props
@@ -121,7 +125,11 @@ public class SamplePackage extends MinToolsPackage
      * @throws AndroidVersionException if the {@link AndroidVersion} can't be restored
      *                                 from properties.
      */
-    SamplePackage(String archiveOsPath, Properties props) throws AndroidVersionException {
+    static Package create(String archiveOsPath, Properties props) throws AndroidVersionException {
+        return new SamplePackage(archiveOsPath, props);
+    }
+
+    private SamplePackage(String archiveOsPath, Properties props) throws AndroidVersionException {
         super(null,                                   //source
               props,                                  //properties
               0,                                      //revision will be taken from props

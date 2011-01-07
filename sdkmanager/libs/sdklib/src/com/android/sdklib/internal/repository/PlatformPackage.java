@@ -20,6 +20,8 @@ import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
+import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.annotations.VisibleForTesting.Visibility;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
 import com.android.sdklib.repository.SdkRepoConstants;
@@ -73,7 +75,12 @@ public class PlatformPackage extends MinToolsPackage implements IPackageVersion 
      * <p/>
      * By design, this creates a package with one and only one archive.
      */
-    PlatformPackage(IAndroidTarget target, Properties props) {
+    static Package create(IAndroidTarget target, Properties props) {
+        return new PlatformPackage(target, props);
+    }
+
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected PlatformPackage(IAndroidTarget target, Properties props) {
         super(  null,                       //source
                 props,                      //properties
                 target.getRevision(),       //revision

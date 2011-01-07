@@ -22,6 +22,7 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
+import com.android.sdklib.util.Pair;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -102,13 +104,12 @@ public class LocalSdkParser {
 
         // for platforms, add-ons and samples, rely on the SdkManager parser
         for(IAndroidTarget target : sdkManager.getTargets()) {
-
             Properties props = parseProperties(new File(target.getLocation(),
                     SdkConstants.FN_SOURCE_PROP));
 
             try {
                 if (target.isPlatform()) {
-                    pkg = new PlatformPackage(target, props);
+                    pkg = PlatformPackage.create(target, props);
 
                     if (samplesRoot.isDirectory()) {
                         // Get the samples dir for a platform if it is located in the new
@@ -119,14 +120,14 @@ public class LocalSdkParser {
                             Properties samplesProps = parseProperties(
                                     new File(samplesDir, SdkConstants.FN_SOURCE_PROP));
                             if (samplesProps != null) {
-                                SamplePackage pkg2 = new SamplePackage(target, samplesProps);
+                                Package pkg2 = SamplePackage.create(target, samplesProps);
                                 packages.add(pkg2);
                             }
                             visited.add(samplesDir);
                         }
                     }
                 } else {
-                    pkg = new AddonPackage(target, props);
+                    pkg = AddonPackage.create(target, props);
                 }
             } catch (Exception e) {
                 log.error(e, null);
@@ -138,6 +139,7 @@ public class LocalSdkParser {
             }
         }
 
+        scanMissingAddons(sdkManager, visited, packages, log);
         scanMissingSamples(osSdkRoot, visited, packages, log);
         scanExtras(osSdkRoot, visited, packages, log);
 
@@ -167,7 +169,7 @@ public class LocalSdkParser {
                 Properties props = parseProperties(new File(dir, SdkConstants.FN_SOURCE_PROP));
                 if (props != null) {
                     try {
-                        ExtraPackage pkg = new ExtraPackage(
+                        Package pkg = ExtraPackage.create(
                                 null,                       //source
                                 props,                      //properties
                                 null,                       //vendor
@@ -181,11 +183,8 @@ public class LocalSdkParser {
                                 dir.getPath()               //archiveOsPath
                                 );
 
-                        // We only accept this as an extra package if it has a valid local path.
-                        if (pkg.isPathValid()) {
-                            packages.add(pkg);
-                            visited.add(dir);
-                        }
+                        packages.add(pkg);
+                        visited.add(dir);
                     } catch (Exception e) {
                         log.error(e, null);
                     }
@@ -217,12 +216,48 @@ public class LocalSdkParser {
                 Properties props = parseProperties(new File(dir, SdkConstants.FN_SOURCE_PROP));
                 if (props != null) {
                     try {
-                        SamplePackage pkg = new SamplePackage(dir.getAbsolutePath(), props);
+                        Package pkg = SamplePackage.create(dir.getAbsolutePath(), props);
                         packages.add(pkg);
                         visited.add(dir);
                     } catch (Exception e) {
                         log.error(e, null);
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * The sdk manager only lists valid addons. However here we also want to find "broken"
+     * addons, i.e. addons that failed to load for some reason.
+     * <p/>
+     * Find any other sub-directories under the /add-ons root that hasn't been visited yet
+     * and assume they contain broken addons.
+     */
+    private void scanMissingAddons(SdkManager sdkManager,
+            HashSet<File> visited,
+            ArrayList<Package> packages,
+            ISdkLog log) {
+        File addons = new File(new File(sdkManager.getLocation()), SdkConstants.FD_ADDONS);
+
+        if (!addons.isDirectory()) {
+            // It makes listFiles() return null so let's avoid it.
+            return;
+        }
+
+        for (File dir : addons.listFiles()) {
+            if (dir.isDirectory() && !visited.contains(dir)) {
+                Pair<Map<String, String>, String> infos =
+                    SdkManager.parseAddonProperties(dir, sdkManager.getTargets(), log);
+
+                Map<String, String> props = infos.getFirst();
+                String error = infos.getSecond();
+                try {
+                    Package pkg = AddonPackage.create(dir.getAbsolutePath(), props, error);
+                    packages.add(pkg);
+                    visited.add(dir);
+                } catch (Exception e) {
+                    log.error(e, null);
                 }
             }
         }
@@ -252,7 +287,7 @@ public class LocalSdkParser {
 
         // Create our package. use the properties if we found any.
         try {
-            ToolPackage pkg = new ToolPackage(
+            Package pkg = ToolPackage.create(
                     null,                       //source
                     props,                      //properties
                     0,                          //revision
@@ -289,20 +324,9 @@ public class LocalSdkParser {
             return null;
         }
 
-        Set<String> names = new HashSet<String>();
-        for (File file : platformToolsFolder.listFiles()) {
-            names.add(file.getName());
-        }
-        if (!names.contains(SdkConstants.FN_ADB) ||
-                !names.contains(SdkConstants.FN_AAPT) ||
-                !names.contains(SdkConstants.FN_AIDL) ||
-                !names.contains(SdkConstants.FN_DX)) {
-            return null;
-        }
-
         // Create our package. use the properties if we found any.
         try {
-            PlatformToolPackage pkg = new PlatformToolPackage(
+            Package pkg = PlatformToolPackage.create(
                     null,                           //source
                     props,                          //properties
                     0,                              //revision
@@ -333,7 +357,7 @@ public class LocalSdkParser {
         // We don't actually check the content of the file.
         if (new File(docFolder, "index.html").isFile()) {
             try {
-                DocPackage pkg = new DocPackage(
+                Package pkg = DocPackage.create(
                         null,                       //source
                         props,                      //properties
                         0,                          //apiLevel
