@@ -249,7 +249,7 @@ public class StaticPortEditDialog extends Dialog {
     private void validate() {
         // first we reset the warning dialog. This allows us to latter
         // display warnings.
-        mWarning.setText(""); // $NON-NLS-1$
+        mWarning.setText(""); //$NON-NLS-1$
 
         // check the device name field is not empty
         if (mDeviceSn == null || mDeviceSn.length() == 0) {
@@ -269,9 +269,9 @@ public class StaticPortEditDialog extends Dialog {
 
         // validate the package name as well. It must be a fully qualified
         // java package.
-        String[] packageSegments = mAppName.split("\\."); // $NON-NLS-1$
+        String[] packageSegments = mAppName.split("\\."); //$NON-NLS-1$
         for (String p : packageSegments) {
-            if (p.matches("^[a-zA-Z][a-zA-Z0-9]*") == false) { // $NON-NLS-1$
+            if (p.matches("^[a-zA-Z][a-zA-Z0-9]*") == false) { //$NON-NLS-1$
                 mWarning.setText(packageError);
                 mOkButton.setEnabled(false);
                 return;
@@ -279,7 +279,7 @@ public class StaticPortEditDialog extends Dialog {
 
             // lets also display a warning if the package contains upper case
             // letters.
-            if (p.matches("^[a-z][a-z0-9]*") == false) { // $NON-NLS-1$
+            if (p.matches("^[a-z][a-z0-9]*") == false) { //$NON-NLS-1$
                 mWarning.setText("Lower case is recommended for Java packages.");
             }
         }
@@ -300,7 +300,7 @@ public class StaticPortEditDialog extends Dialog {
         }
 
         // then we check it only contains digits.
-        if (mPortNumber.matches("[0-9]*") == false) { // $NON-NLS-1$
+        if (mPortNumber.matches("[0-9]*") == false) { //$NON-NLS-1$
             mWarning.setText("Port Number invalid.");
             mOkButton.setEnabled(false);
             return;

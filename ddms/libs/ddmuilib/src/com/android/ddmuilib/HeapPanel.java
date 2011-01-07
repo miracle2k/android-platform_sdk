@@ -430,7 +430,7 @@ public final class HeapPanel extends BaseHeapPanel {
             l.setText("Zoom:");
             mZoom = new Combo(zoomComposite, SWT.READ_ONLY);
             for (int z : ZOOMS) {
-                mZoom.add(String.format("%1$d%%", z)); // $NON-NLS-1$
+                mZoom.add(String.format("%1$d%%", z)); //$NON-NLS-1$
             }
 
             mZoom.select(0);
@@ -503,27 +503,27 @@ public final class HeapPanel extends BaseHeapPanel {
         col.pack();
 
         col = new TableColumn(tab, SWT.RIGHT);
-        col.setText("000.000WW"); // $NON-NLS-1$
+        col.setText("000.000WW"); //$NON-NLS-1$
         col.pack();
         col.setText("Heap Size");
 
         col = new TableColumn(tab, SWT.RIGHT);
-        col.setText("000.000WW"); // $NON-NLS-1$
+        col.setText("000.000WW"); //$NON-NLS-1$
         col.pack();
         col.setText("Allocated");
 
         col = new TableColumn(tab, SWT.RIGHT);
-        col.setText("000.000WW"); // $NON-NLS-1$
+        col.setText("000.000WW"); //$NON-NLS-1$
         col.pack();
         col.setText("Free");
 
         col = new TableColumn(tab, SWT.RIGHT);
-        col.setText("000.00%"); // $NON-NLS-1$
+        col.setText("000.00%"); //$NON-NLS-1$
         col.pack();
         col.setText("% Used");
 
         col = new TableColumn(tab, SWT.RIGHT);
-        col.setText("000,000,000"); // $NON-NLS-1$
+        col.setText("000,000,000"); //$NON-NLS-1$
         col.pack();
         col.setText("# Objects");
 

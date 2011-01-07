@@ -535,8 +535,8 @@ public class EmulatorControlPanel extends SelectionDependentPanel {
         createManualLocationControl(manualLocationComp);
 
         ImageLoader loader = ImageLoader.getDdmUiLibLoader();
-        mPlayImage = loader.loadImage("play.png", mParent.getDisplay()); // $NON-NLS-1$
-        mPauseImage = loader.loadImage("pause.png", mParent.getDisplay()); // $NON-NLS-1$
+        mPlayImage = loader.loadImage("play.png", mParent.getDisplay()); //$NON-NLS-1$
+        mPauseImage = loader.loadImage("pause.png", mParent.getDisplay()); //$NON-NLS-1$
 
         Composite gpxLocationComp = new Composite(mLocationFolders, SWT.NONE);
         item = new TabItem(mLocationFolders, SWT.NONE);
@@ -836,11 +836,11 @@ public class EmulatorControlPanel extends SelectionDependentPanel {
 
         ImageLoader loader = ImageLoader.getDdmUiLibLoader();
         mGpxBackwardButton = new Button(mGpxPlayControls, SWT.TOGGLE | SWT.FLAT);
-        mGpxBackwardButton.setImage(loader.loadImage("backward.png", mParent.getDisplay())); // $NON-NLS-1$
+        mGpxBackwardButton.setImage(loader.loadImage("backward.png", mParent.getDisplay())); //$NON-NLS-1$
         mGpxBackwardButton.setSelection(false);
         mGpxBackwardButton.addSelectionListener(mDirectionButtonAdapter);
         mGpxForwardButton = new Button(mGpxPlayControls, SWT.TOGGLE | SWT.FLAT);
-        mGpxForwardButton.setImage(loader.loadImage("forward.png", mParent.getDisplay())); // $NON-NLS-1$
+        mGpxForwardButton.setImage(loader.loadImage("forward.png", mParent.getDisplay())); //$NON-NLS-1$
         mGpxForwardButton.setSelection(true);
         mGpxForwardButton.addSelectionListener(mDirectionButtonAdapter);
 
@@ -974,11 +974,11 @@ public class EmulatorControlPanel extends SelectionDependentPanel {
 
         ImageLoader loader = ImageLoader.getDdmUiLibLoader();
         mKmlBackwardButton = new Button(mKmlPlayControls, SWT.TOGGLE | SWT.FLAT);
-        mKmlBackwardButton.setImage(loader.loadImage("backward.png", mParent.getDisplay())); // $NON-NLS-1$
+        mKmlBackwardButton.setImage(loader.loadImage("backward.png", mParent.getDisplay())); //$NON-NLS-1$
         mKmlBackwardButton.setSelection(false);
         mKmlBackwardButton.addSelectionListener(mDirectionButtonAdapter);
         mKmlForwardButton = new Button(mKmlPlayControls, SWT.TOGGLE | SWT.FLAT);
-        mKmlForwardButton.setImage(loader.loadImage("forward.png", mParent.getDisplay())); // $NON-NLS-1$
+        mKmlForwardButton.setImage(loader.loadImage("forward.png", mParent.getDisplay())); //$NON-NLS-1$
         mKmlForwardButton.setSelection(true);
         mKmlForwardButton.addSelectionListener(mDirectionButtonAdapter);
 

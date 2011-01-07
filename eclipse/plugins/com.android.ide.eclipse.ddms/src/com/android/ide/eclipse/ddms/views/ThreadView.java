@@ -23,7 +23,7 @@ import org.eclipse.swt.widgets.Composite;
 public class ThreadView extends TableView {
 
     public static final String ID =
-        "com.android.ide.eclipse.ddms.views.ThreadView"; // $NON-NLS-1$
+        "com.android.ide.eclipse.ddms.views.ThreadView"; //$NON-NLS-1$
     private ThreadPanel mPanel;
 
     public ThreadView() {

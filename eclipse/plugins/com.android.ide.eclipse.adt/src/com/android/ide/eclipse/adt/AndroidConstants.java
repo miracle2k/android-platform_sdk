@@ -48,7 +48,7 @@ public class AndroidConstants {
      * The old Editors Plugin ID. It is still used in some places for compatibility.
      * Please do not use for new features.
      */
-    public static final String EDITORS_NAMESPACE = "com.android.ide.eclipse.editors"; // $NON-NLS-1$
+    public static final String EDITORS_NAMESPACE = "com.android.ide.eclipse.editors"; //$NON-NLS-1$
 
     /** Nature of default Android projects */
     public final static String NATURE_DEFAULT = "com.android.ide.eclipse.adt.AndroidNature"; //$NON-NLS-1$
@@ -232,5 +232,5 @@ public class AndroidConstants {
     /** The base URL where to find the Android class & manifest documentation */
     public static final String CODESITE_BASE_URL = "http://code.google.com/android";  //$NON-NLS-1$
 
-    public static final String LIBRARY_TEST_RUNNER = "android.test.runner"; // $NON-NLS-1$
+    public static final String LIBRARY_TEST_RUNNER = "android.test.runner"; //$NON-NLS-1$
 }

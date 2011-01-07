@@ -88,12 +88,12 @@ public class SdkStatsService {
 
     /** List of Linux browser commands to try, in order (see openUrl). */
     private static final String[] LINUX_BROWSERS = new String[] {
-        "firefox -remote openurl(%URL%,new-window)",  // $NON-NLS-1$ running FF
-        "mozilla -remote openurl(%URL%,new-window)",  // $NON-NLS-1$ running Moz
-        "firefox %URL%",                              // $NON-NLS-1$ new FF
-        "mozilla %URL%",                              // $NON-NLS-1$ new Moz
-        "kfmclient openURL %URL%",                    // $NON-NLS-1$ Konqueror
-        "opera -newwindow %URL%",                     // $NON-NLS-1$ Opera
+        "firefox -remote openurl(%URL%,new-window)",  //$NON-NLS-1$ running FF
+        "mozilla -remote openurl(%URL%,new-window)",  //$NON-NLS-1$ running Moz
+        "firefox %URL%",                              //$NON-NLS-1$ new FF
+        "mozilla %URL%",                              //$NON-NLS-1$ new Moz
+        "kfmclient openURL %URL%",                    //$NON-NLS-1$ Konqueror
+        "opera -newwindow %URL%",                     //$NON-NLS-1$ Opera
     };
 
     public final static String PING_OPT_IN = "pingOptIn"; //$NON-NLS-1$
@@ -201,7 +201,7 @@ public class SdkStatsService {
         }
 
         // If the last ping *for this app* was too recent, do nothing.
-        String timePref = PING_TIME + "." + app;  // $NON-NLS-1$
+        String timePref = PING_TIME + "." + app;  //$NON-NLS-1$
         long now = System.currentTimeMillis();
         long then = prefs.getLong(timePref);
         if (now - then < PING_INTERVAL_MSEC) {
@@ -245,21 +245,21 @@ public class SdkStatsService {
     private static void actuallySendPing(String app, String version, long id)
                 throws IOException {
         // Detect and report the host OS.
-        String os = System.getProperty("os.name");          // $NON-NLS-1$
-        if (os.startsWith("Mac OS")) {                      // $NON-NLS-1$
-            os = "mac";                                     // $NON-NLS-1$
+        String os = System.getProperty("os.name");          //$NON-NLS-1$
+        if (os.startsWith("Mac OS")) {                      //$NON-NLS-1$
+            os = "mac";                                     //$NON-NLS-1$
             String osVers = getVersion();
             if (osVers != null) {
-                os = os + "-" + osVers;                     // $NON-NLS-1$
+                os = os + "-" + osVers;                     //$NON-NLS-1$
             }
-        } else if (os.startsWith("Windows")) {              // $NON-NLS-1$
-            os = "win";                                     // $NON-NLS-1$
+        } else if (os.startsWith("Windows")) {              //$NON-NLS-1$
+            os = "win";                                     //$NON-NLS-1$
             String osVers = getVersion();
             if (osVers != null) {
-                os = os + "-" + osVers;                     // $NON-NLS-1$
+                os = os + "-" + osVers;                     //$NON-NLS-1$
             }
-        } else if (os.startsWith("Linux")) {                // $NON-NLS-1$
-            os = "linux";                                   // $NON-NLS-1$
+        } else if (os.startsWith("Linux")) {                //$NON-NLS-1$
+            os = "linux";                                   //$NON-NLS-1$
         } else {
             // Unknown -- surprising -- send it verbatim so we can see it.
             os = URLEncoder.encode(os);
@@ -269,12 +269,12 @@ public class SdkStatsService {
         // Share the user ID for all apps, to allow unified activity reports.
 
         URL url = new URL(
-            "http",                                         // $NON-NLS-1$
-            "tools.google.com",                             // $NON-NLS-1$
-            "/service/update?as=androidsdk_" + app +        // $NON-NLS-1$
-                "&id=" + Long.toHexString(id) +             // $NON-NLS-1$
-                "&version=" + version +                     // $NON-NLS-1$
-                "&os=" + os);                               // $NON-NLS-1$
+            "http",                                         //$NON-NLS-1$
+            "tools.google.com",                             //$NON-NLS-1$
+            "/service/update?as=androidsdk_" + app +        //$NON-NLS-1$
+                "&id=" + Long.toHexString(id) +             //$NON-NLS-1$
+                "&version=" + version +                     //$NON-NLS-1$
+                "&os=" + os);                               //$NON-NLS-1$
 
         // Discard the actual response, but make sure it reads OK
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -284,7 +284,7 @@ public class SdkStatsService {
         if (conn.getResponseCode() != HttpURLConnection.HTTP_OK &&
             conn.getResponseCode() != HttpURLConnection.HTTP_NOT_FOUND) {
             throw new IOException(
-                conn.getResponseMessage() + ": " + url);    // $NON-NLS-1$
+                conn.getResponseMessage() + ": " + url);    //$NON-NLS-1$
         }
     }
 
@@ -296,11 +296,11 @@ public class SdkStatsService {
      * This method removes any exiting micro versions.
      */
     private static String getVersion() {
-        Pattern p = Pattern.compile("(\\d+)\\.(\\d+).*"); // $NON-NLS-1$
-        String osVers = System.getProperty("os.version"); // $NON-NLS-1$
+        Pattern p = Pattern.compile("(\\d+)\\.(\\d+).*"); //$NON-NLS-1$
+        String osVers = System.getProperty("os.version"); //$NON-NLS-1$
         Matcher m = p.matcher(osVers);
         if (m.matches()) {
-            return m.group(1) + "." + m.group(2);         // $NON-NLS-1$
+            return m.group(1) + "." + m.group(2);         //$NON-NLS-1$
         }
 
         return null;
@@ -426,7 +426,7 @@ public class SdkStatsService {
                 @Override
                 public void run() {
                     for (String cmd : LINUX_BROWSERS) {
-                        cmd = cmd.replaceAll("%URL%", url);  // $NON-NLS-1$
+                        cmd = cmd.replaceAll("%URL%", url);  //$NON-NLS-1$
                         try {
                             Process proc = Runtime.getRuntime().exec(cmd);
                             if (proc.waitFor() == 0) break;  // Success!

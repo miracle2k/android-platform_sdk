@@ -153,23 +153,23 @@ public class TimeLineView extends Composite implements Observer {
         mColorZoomSelection = new Color(display, 230, 230, 230);
 
         mFontRegistry = new FontRegistry(display);
-        mFontRegistry.put("small",  // $NON-NLS-1$
-                new FontData[] { new FontData("Arial", 8, SWT.NORMAL) });  // $NON-NLS-1$
-        mFontRegistry.put("courier8",  // $NON-NLS-1$
-                new FontData[] { new FontData("Courier New", 8, SWT.BOLD) });  // $NON-NLS-1$
-        mFontRegistry.put("medium",  // $NON-NLS-1$
-                new FontData[] { new FontData("Courier New", 10, SWT.NORMAL) });  // $NON-NLS-1$
+        mFontRegistry.put("small",  //$NON-NLS-1$
+                new FontData[] { new FontData("Arial", 8, SWT.NORMAL) });  //$NON-NLS-1$
+        mFontRegistry.put("courier8",  //$NON-NLS-1$
+                new FontData[] { new FontData("Courier New", 8, SWT.BOLD) });  //$NON-NLS-1$
+        mFontRegistry.put("medium",  //$NON-NLS-1$
+                new FontData[] { new FontData("Courier New", 10, SWT.NORMAL) });  //$NON-NLS-1$
 
         Image image = new Image(display, new Rectangle(100, 100, 100, 100));
         GC gc = new GC(image);
         if (mSetFonts) {
-            gc.setFont(mFontRegistry.get("small"));  // $NON-NLS-1$
+            gc.setFont(mFontRegistry.get("small"));  //$NON-NLS-1$
         }
         mSmallFontWidth = gc.getFontMetrics().getAverageCharWidth();
         mSmallFontHeight = gc.getFontMetrics().getHeight();
 
         if (mSetFonts) {
-            gc.setFont(mFontRegistry.get("medium"));  // $NON-NLS-1$
+            gc.setFont(mFontRegistry.get("medium"));  //$NON-NLS-1$
         }
         mMediumFontWidth = gc.getFontMetrics().getAverageCharWidth();
 
@@ -318,7 +318,7 @@ public class TimeLineView extends Composite implements Observer {
 
     public void update(Observable objservable, Object arg) {
         // Ignore updates from myself
-        if (arg == "TimeLineView")  // $NON-NLS-1$
+        if (arg == "TimeLineView")  //$NON-NLS-1$
             return;
         // System.out.printf("timeline update from %s\n", arg);
         boolean foundHighlight = false;
@@ -330,14 +330,14 @@ public class TimeLineView extends Composite implements Observer {
                 continue;
             String name = selection.getName();
             // System.out.printf(" timeline highlight %s from %s\n", name, arg);
-            if (name == "MethodData") {  // $NON-NLS-1$
+            if (name == "MethodData") {  //$NON-NLS-1$
                 foundHighlight = true;
                 mHighlightMethodData = (MethodData) selection.getValue();
                 // System.out.printf(" method %s\n",
                 // highlightMethodData.getName());
                 mHighlightCall = null;
                 startHighlighting();
-            } else if (name == "Call") {  // $NON-NLS-1$
+            } else if (name == "Call") {  //$NON-NLS-1$
                 foundHighlight = true;
                 mHighlightCall = (Call) selection.getValue();
                 // System.out.printf(" call %s\n", highlightCall.getName());
@@ -354,13 +354,13 @@ public class TimeLineView extends Composite implements Observer {
             records = new ArrayList<Record>();
 
         if (false) {
-            System.out.println("TimelineView() list of records:");  // $NON-NLS-1$
+            System.out.println("TimelineView() list of records:");  //$NON-NLS-1$
             for (Record r : records) {
-                System.out.printf("row '%s' block '%s' [%d, %d]\n", r.row  // $NON-NLS-1$
+                System.out.printf("row '%s' block '%s' [%d, %d]\n", r.row  //$NON-NLS-1$
                         .getName(), r.block.getName(), r.block.getStartTime(),
                         r.block.getEndTime());
                 if (r.block.getStartTime() > r.block.getEndTime()) {
-                    System.err.printf("Error: block startTime > endTime\n");  // $NON-NLS-1$
+                    System.err.printf("Error: block startTime > endTime\n");  //$NON-NLS-1$
                     System.exit(1);
                 }
             }
@@ -569,7 +569,7 @@ public class TimeLineView extends Composite implements Observer {
             // Set up the off-screen gc
             GC gcImage = new GC(image);
             if (mSetFonts)
-                gcImage.setFont(mFontRegistry.get("medium"));  // $NON-NLS-1$
+                gcImage.setFont(mFontRegistry.get("medium"));  //$NON-NLS-1$
 
             if (mNumRows > 2) {
                 // Draw the row background stripes
@@ -702,7 +702,7 @@ public class TimeLineView extends Composite implements Observer {
             // Set up the off-screen gc
             GC gcImage = new GC(image);
             if (mSetFonts)
-                gcImage.setFont(mFontRegistry.get("medium"));  // $NON-NLS-1$
+                gcImage.setFont(mFontRegistry.get("medium"));  //$NON-NLS-1$
 
             if (mSurface.drawingSelection()) {
                 drawSelection(display, gcImage);
@@ -756,7 +756,7 @@ public class TimeLineView extends Composite implements Observer {
             // Display the maximum data value
             double maxVal = mScaleInfo.getMaxVal();
             info = mUnits.labelledString(maxVal);
-            info = String.format(" max %s ", info);  // $NON-NLS-1$
+            info = String.format(" max %s ", info);  //$NON-NLS-1$
             Point extent = gc.stringExtent(info);
             Point dim = getSize();
             int x1 = dim.x - RightMargin - extent.x;
@@ -930,7 +930,7 @@ public class TimeLineView extends Composite implements Observer {
             // Set up the off-screen gc
             GC gcImage = new GC(image);
             if (mSetFonts)
-                gcImage.setFont(mFontRegistry.get("small"));  // $NON-NLS-1$
+                gcImage.setFont(mFontRegistry.get("small"));  //$NON-NLS-1$
 
             // Draw the background
             // gcImage.setBackground(colorBackground);
@@ -1035,14 +1035,14 @@ public class TimeLineView extends Composite implements Observer {
                 ArrayList<Selection> selections = new ArrayList<Selection>();
                 // Get the row label
                 RowData rd = mRows[mMouseRow];
-                selections.add(Selection.highlight("Thread", rd.mName));  // $NON-NLS-1$
-                selections.add(Selection.highlight("Call", selectBlock));  // $NON-NLS-1$
+                selections.add(Selection.highlight("Thread", rd.mName));  //$NON-NLS-1$
+                selections.add(Selection.highlight("Call", selectBlock));  //$NON-NLS-1$
 
                 int mouseX = mMouse.x - LeftMargin;
                 double mouseXval = mScaleInfo.pixelToValue(mouseX);
-                selections.add(Selection.highlight("Time", mouseXval));  // $NON-NLS-1$
+                selections.add(Selection.highlight("Time", mouseXval));  //$NON-NLS-1$
                 
-                mSelectionController.change(selections, "TimeLineView");  // $NON-NLS-1$
+                mSelectionController.change(selections, "TimeLineView");  //$NON-NLS-1$
                 mHighlightMethodData = null;
                 mHighlightCall = (Call) selectBlock;
                 startHighlighting();
@@ -1078,7 +1078,7 @@ public class TimeLineView extends Composite implements Observer {
                 if (md == null && mHighlightCall != null)
                     md = mHighlightCall.getMethodData();
                 if (md == null)
-                    System.out.printf("null highlight?\n");  // $NON-NLS-1$
+                    System.out.printf("null highlight?\n");  //$NON-NLS-1$
                 if (md != null) {
                     mTimescale.setMethodName(md.getProfileName());
                     mTimescale.setMethodColor(md.getColor());

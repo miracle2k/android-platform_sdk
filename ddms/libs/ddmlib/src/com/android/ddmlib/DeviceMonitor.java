@@ -304,10 +304,10 @@ final class DeviceMonitor {
             byte[] buffer = new byte[length];
             String result = read(mMainAdbConnection, buffer);
 
-            String[] devices = result.split("\n"); // $NON-NLS-1$
+            String[] devices = result.split("\n"); //$NON-NLS-1$
 
             for (String d : devices) {
-                String[] param = d.split("\t"); // $NON-NLS-1$
+                String[] param = d.split("\t"); //$NON-NLS-1$
                 if (param.length == 2) {
                     // new adb uses only serial numbers to identify devices
                     Device device = new Device(this, param[0] /*serialnumber*/,

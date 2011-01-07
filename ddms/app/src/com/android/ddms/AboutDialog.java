@@ -64,7 +64,7 @@ public class AboutDialog extends Dialog {
         Shell shell = new Shell(parent, getStyle());
         shell.setText("About...");
 
-        logoImage = loadImage(shell, "ddms-logo.png"); // $NON-NLS-1$
+        logoImage = loadImage(shell, "ddms-logo.png"); //$NON-NLS-1$
         createContents(shell);
         shell.pack();
 
@@ -86,7 +86,7 @@ public class AboutDialog extends Dialog {
      */
     private Image loadImage(Shell shell, String fileName) {
         InputStream imageStream;
-        String pathName = "/images/" + fileName;  // $NON-NLS-1$
+        String pathName = "/images/" + fileName;  //$NON-NLS-1$
 
         imageStream = this.getClass().getResourceAsStream(pathName);
         if (imageStream == null) {

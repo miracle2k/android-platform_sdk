@@ -273,7 +273,7 @@ class EventDisplayOptions  extends Dialog {
 
         ImageLoader loader = ImageLoader.getDdmUiLibLoader();
         mEventDisplayNewButton = new Button(bottomControls, SWT.PUSH | SWT.FLAT);
-        mEventDisplayNewButton.setImage(loader.loadImage("add.png", // $NON-NLS-1$
+        mEventDisplayNewButton.setImage(loader.loadImage("add.png", //$NON-NLS-1$
                 leftPanel.getDisplay()));
         mEventDisplayNewButton.setToolTipText("Adds a new event display");
         mEventDisplayNewButton.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
@@ -285,7 +285,7 @@ class EventDisplayOptions  extends Dialog {
         });
 
         mEventDisplayDeleteButton = new Button(bottomControls, SWT.PUSH | SWT.FLAT);
-        mEventDisplayDeleteButton.setImage(loader.loadImage("delete.png", // $NON-NLS-1$
+        mEventDisplayDeleteButton.setImage(loader.loadImage("delete.png", //$NON-NLS-1$
                 leftPanel.getDisplay()));
         mEventDisplayDeleteButton.setToolTipText("Deletes the selected event display");
         mEventDisplayDeleteButton.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
@@ -297,7 +297,7 @@ class EventDisplayOptions  extends Dialog {
         });
 
         mEventDisplayUpButton = new Button(bottomControls, SWT.PUSH | SWT.FLAT);
-        mEventDisplayUpButton.setImage(loader.loadImage("up.png", // $NON-NLS-1$
+        mEventDisplayUpButton.setImage(loader.loadImage("up.png", //$NON-NLS-1$
                 leftPanel.getDisplay()));
         mEventDisplayUpButton.setToolTipText("Moves the selected event display up");
         mEventDisplayUpButton.addSelectionListener(new SelectionAdapter() {
@@ -325,7 +325,7 @@ class EventDisplayOptions  extends Dialog {
         });
 
         mEventDisplayDownButton = new Button(bottomControls, SWT.PUSH | SWT.FLAT);
-        mEventDisplayDownButton.setImage(loader.loadImage("down.png", // $NON-NLS-1$
+        mEventDisplayDownButton.setImage(loader.loadImage("down.png", //$NON-NLS-1$
                 leftPanel.getDisplay()));
         mEventDisplayDownButton.setToolTipText("Moves the selected event display down");
         mEventDisplayDownButton.addSelectionListener(new SelectionAdapter() {

@@ -223,7 +223,7 @@ public class EditFilterDialog extends Dialog {
         });
 
         mPidWarning = new Label(main, SWT.NONE);
-        mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage("empty.png", // $NON-NLS-1$
+        mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage("empty.png", //$NON-NLS-1$
                 mShell.getDisplay()));
 
         l = new Label(main, SWT.NONE);
@@ -326,15 +326,15 @@ public class EditFilterDialog extends Dialog {
 
         // then we check it only contains digits.
         if (mPid != null) {
-            if (mPid.matches("[0-9]*") == false) { // $NON-NLS-1$
+            if (mPid.matches("[0-9]*") == false) { //$NON-NLS-1$
                 mOkButton.setEnabled(false);
                 mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
-                        "warning.png", // $NON-NLS-1$
+                        "warning.png", //$NON-NLS-1$
                         mShell.getDisplay()));
                 return;
             } else {
                 mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
-                        "empty.png", // $NON-NLS-1$
+                        "empty.png", //$NON-NLS-1$
                         mShell.getDisplay()));
             }
         }
