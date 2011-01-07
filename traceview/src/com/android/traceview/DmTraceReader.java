@@ -55,7 +55,7 @@ public class DmTraceReader extends TraceReader {
     private byte[] mBytes = new byte[8];
 
     // A regex for matching the thread "id name" lines in the .key file
-    private static final Pattern mIdNamePattern = Pattern.compile("(\\d+)\t(.*)");  // $NON-NLS-1$
+    private static final Pattern mIdNamePattern = Pattern.compile("(\\d+)\t(.*)");  //$NON-NLS-1$
 
     DmTraceReader(String traceFileName, boolean regression) {
         mTraceFileName = traceFileName;
@@ -110,7 +110,7 @@ public class DmTraceReader extends TraceReader {
         methodId = methodId & ~0x03;
         MethodData methodData = mMethodMap.get(methodId);
         if (methodData == null) {
-            String name = String.format("(0x%1$x)", methodId);  // $NON-NLS-1$
+            String name = String.format("(0x%1$x)", methodId);  //$NON-NLS-1$
             methodData = new MethodData(methodId, name);
         }
         
@@ -188,7 +188,7 @@ public class DmTraceReader extends TraceReader {
         long prevCallTime = 0;
         ThreadData threadData = mThreadMap.get(call.getThreadId());
         if (threadData == null) {
-            String name = String.format("[%1$d]", call.getThreadId());  // $NON-NLS-1$
+            String name = String.format("[%1$d]", call.getThreadId());  //$NON-NLS-1$
             threadData = new ThreadData(call.getThreadId(), name, mTopLevel);
             mThreadMap.put(call.getThreadId(), threadData);
         }

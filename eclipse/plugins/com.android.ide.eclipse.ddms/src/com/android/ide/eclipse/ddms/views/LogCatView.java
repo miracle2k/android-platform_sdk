@@ -71,26 +71,26 @@ import java.util.regex.Pattern;
 public final class LogCatView extends SelectionDependentViewPart implements LogCatViewInterface {
 
     public static final String ID =
-        "com.android.ide.eclipse.ddms.views.LogCatView"; // $NON-NLS-1$
+        "com.android.ide.eclipse.ddms.views.LogCatView"; //$NON-NLS-1$
 
     private static final String PREFS_COL_TIME =
-        DdmsPlugin.PLUGIN_ID + ".logcat.time"; // $NON-NLS-1$
+        DdmsPlugin.PLUGIN_ID + ".logcat.time"; //$NON-NLS-1$
     private static final String PREFS_COL_LEVEL =
-        DdmsPlugin.PLUGIN_ID + ".logcat.level"; // $NON-NLS-1$
+        DdmsPlugin.PLUGIN_ID + ".logcat.level"; //$NON-NLS-1$
     private static final String PREFS_COL_PID =
-        DdmsPlugin.PLUGIN_ID + ".logcat.pid"; // $NON-NLS-1$
+        DdmsPlugin.PLUGIN_ID + ".logcat.pid"; //$NON-NLS-1$
     private static final String PREFS_COL_TAG =
-        DdmsPlugin.PLUGIN_ID + ".logcat.tag"; // $NON-NLS-1$
+        DdmsPlugin.PLUGIN_ID + ".logcat.tag"; //$NON-NLS-1$
     private static final String PREFS_COL_MESSAGE =
-        DdmsPlugin.PLUGIN_ID + ".logcat.message"; // $NON-NLS-1$
+        DdmsPlugin.PLUGIN_ID + ".logcat.message"; //$NON-NLS-1$
 
     private static final String PREFS_FILTERS =
-        DdmsPlugin.PLUGIN_ID + ".logcat.filters"; // $NON-NLS-1$
+        DdmsPlugin.PLUGIN_ID + ".logcat.filters"; //$NON-NLS-1$
 
     public static final String CHOICE_METHOD_DECLARATION =
-        DdmsPlugin.PLUGIN_ID + ".logcat.MethodDeclaration"; // $NON-NLS-1$
+        DdmsPlugin.PLUGIN_ID + ".logcat.MethodDeclaration"; //$NON-NLS-1$
     public static final String CHOICE_ERROR_LINE =
-        DdmsPlugin.PLUGIN_ID + ".logcat.ErrorLine"; // $NON-NLS-1$
+        DdmsPlugin.PLUGIN_ID + ".logcat.ErrorLine"; //$NON-NLS-1$
 
     private static LogCatView sThis;
     private LogPanel mLogPanel;
@@ -126,7 +126,7 @@ public final class LogCatView extends SelectionDependentViewPart implements LogC
                     PREFS_FILTERS);
 
             // split in a string per filter
-            String[] filters = filterPrefs.split("\\|"); // $NON-NLS-1$
+            String[] filters = filterPrefs.split("\\|"); //$NON-NLS-1$
 
             ArrayList<LogFilter> list =
                 new ArrayList<LogFilter>(filters.length);
@@ -267,7 +267,7 @@ public final class LogCatView extends SelectionDependentViewPart implements LogC
             }
         };
         mEditFilterAction.setToolTipText("Edit Filter");
-        mEditFilterAction.setImageDescriptor(loader.loadDescriptor("edit.png")); // $NON-NLS-1$
+        mEditFilterAction.setImageDescriptor(loader.loadDescriptor("edit.png")); //$NON-NLS-1$
 
         mDeleteFilterAction = new CommonAction("Delete Filter") {
             @Override
@@ -276,7 +276,7 @@ public final class LogCatView extends SelectionDependentViewPart implements LogC
             }
         };
         mDeleteFilterAction.setToolTipText("Delete Filter");
-        mDeleteFilterAction.setImageDescriptor(loader.loadDescriptor("delete.png")); // $NON-NLS-1$
+        mDeleteFilterAction.setImageDescriptor(loader.loadDescriptor("delete.png")); //$NON-NLS-1$
 
         mExportAction = new CommonAction("Export Selection As Text...") {
             @Override
@@ -285,7 +285,7 @@ public final class LogCatView extends SelectionDependentViewPart implements LogC
             }
         };
         mExportAction.setToolTipText("Export Selection As Text...");
-        mExportAction.setImageDescriptor(loader.loadDescriptor("save.png")); // $NON-NLS-1$
+        mExportAction.setImageDescriptor(loader.loadDescriptor("save.png")); //$NON-NLS-1$
 
         mGotoMethodDeclarationAction = new CommonAction("Go to Problem (method declaration)") {
             @Override
@@ -333,7 +333,7 @@ public final class LogCatView extends SelectionDependentViewPart implements LogC
                 mLogPanel.clear();
             }
         };
-        mClearAction.setImageDescriptor(loader.loadDescriptor("clear.png")); // $NON-NLS-1$
+        mClearAction.setImageDescriptor(loader.loadDescriptor("clear.png")); //$NON-NLS-1$
 
 
         // now create the log view

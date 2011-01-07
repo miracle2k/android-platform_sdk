@@ -66,7 +66,7 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
 
 
     // The plug-in ID
-    public static final String PLUGIN_ID = "com.android.ide.eclipse.ddms"; // $NON-NLS-1$
+    public static final String PLUGIN_ID = "com.android.ide.eclipse.ddms"; //$NON-NLS-1$
 
     /** The singleton instance */
     private static DdmsPlugin sPlugin;
@@ -143,7 +143,7 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
         //DdmUiPreferences.displayCharts();
 
         // set the consoles.
-        mDdmsConsole = new MessageConsole("DDMS", null); // $NON-NLS-1$
+        mDdmsConsole = new MessageConsole("DDMS", null); //$NON-NLS-1$
         ConsolePlugin.getDefault().getConsoleManager().addConsoles(
                 new IConsole[] {
                     mDdmsConsole

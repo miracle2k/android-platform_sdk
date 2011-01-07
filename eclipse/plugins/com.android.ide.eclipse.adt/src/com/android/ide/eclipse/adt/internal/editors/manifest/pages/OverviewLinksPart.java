@@ -46,36 +46,36 @@ final class OverviewLinksPart extends ManifestSectionPart {
         Composite table = createTableLayout(toolkit, 2 /* numColumns */);
         
         StringBuffer buf = new StringBuffer();
-        buf.append(String.format("<form><li style=\"image\" value=\"app_img\"><a href=\"page:%1$s\">", // $NON-NLS-1$
+        buf.append(String.format("<form><li style=\"image\" value=\"app_img\"><a href=\"page:%1$s\">", //$NON-NLS-1$
                 ApplicationPage.PAGE_ID));
         buf.append("Application");
         buf.append("</a>");  //$NON-NLS-1$
         buf.append(": Activities, intent filters, providers, services and receivers.");
         buf.append("</li>"); //$NON-NLS-1$
 
-        buf.append(String.format("<li style=\"image\" value=\"perm_img\"><a href=\"page:%1$s\">", // $NON-NLS-1$
+        buf.append(String.format("<li style=\"image\" value=\"perm_img\"><a href=\"page:%1$s\">", //$NON-NLS-1$
                 PermissionPage.PAGE_ID));
         buf.append("Permission");
         buf.append("</a>"); //$NON-NLS-1$
         buf.append(": Permissions defined and permissions used.");
         buf.append("</li>"); //$NON-NLS-1$
 
-        buf.append(String.format("<li style=\"image\" value=\"inst_img\"><a href=\"page:%1$s\">", // $NON-NLS-1$
+        buf.append(String.format("<li style=\"image\" value=\"inst_img\"><a href=\"page:%1$s\">", //$NON-NLS-1$
                 InstrumentationPage.PAGE_ID));
         buf.append("Instrumentation");
         buf.append("</a>"); //$NON-NLS-1$
         buf.append(": Instrumentation defined.");
         buf.append("</li>"); //$NON-NLS-1$
 
-        buf.append(String.format("<li style=\"image\" value=\"android_img\"><a href=\"page:%1$s\">", // $NON-NLS-1$
+        buf.append(String.format("<li style=\"image\" value=\"android_img\"><a href=\"page:%1$s\">", //$NON-NLS-1$
                 ManifestEditor.TEXT_EDITOR_ID));
         buf.append("XML Source");
         buf.append("</a>"); //$NON-NLS-1$
         buf.append(": Directly edit the AndroidManifest.xml file.");
         buf.append("</li>"); //$NON-NLS-1$
 
-        buf.append("<li style=\"image\" value=\"android_img\">"); // $NON-NLS-1$
-        buf.append("<a href=\"http://code.google.com/android/devel/bblocks-manifest.html\">Documentation</a>: Documentation from the Android SDK for AndroidManifest.xml."); // $NON-NLS-1$
+        buf.append("<li style=\"image\" value=\"android_img\">"); //$NON-NLS-1$
+        buf.append("<a href=\"http://code.google.com/android/devel/bblocks-manifest.html\">Documentation</a>: Documentation from the Android SDK for AndroidManifest.xml."); //$NON-NLS-1$
         buf.append("</li>"); //$NON-NLS-1$
         buf.append("</form>"); //$NON-NLS-1$
 

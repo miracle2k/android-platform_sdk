@@ -38,23 +38,23 @@ public class EventLogView extends SelectionDependentViewPart {
         // create the external actions
         CommonAction optionsAction = new CommonAction("Options...");
         optionsAction.setToolTipText("Opens the options panel");
-        optionsAction.setImageDescriptor(loader.loadDescriptor("edit.png")); // $NON-NLS-1$
+        optionsAction.setImageDescriptor(loader.loadDescriptor("edit.png")); //$NON-NLS-1$
 
         CommonAction clearLogAction = new CommonAction("Clear Log");
         clearLogAction.setToolTipText("Clears the event log");
-        clearLogAction.setImageDescriptor(loader.loadDescriptor("clear.png")); // $NON-NLS-1$
+        clearLogAction.setImageDescriptor(loader.loadDescriptor("clear.png")); //$NON-NLS-1$
 
         CommonAction saveAction = new CommonAction("Save Log");
         saveAction.setToolTipText("Saves the event log");
-        saveAction.setImageDescriptor(loader.loadDescriptor("save.png")); // $NON-NLS-1$
+        saveAction.setImageDescriptor(loader.loadDescriptor("save.png")); //$NON-NLS-1$
 
         CommonAction loadAction = new CommonAction("Load Log");
         loadAction.setToolTipText("Loads an event log");
-        loadAction.setImageDescriptor(loader.loadDescriptor("load.png")); // $NON-NLS-1$
+        loadAction.setImageDescriptor(loader.loadDescriptor("load.png")); //$NON-NLS-1$
 
         CommonAction importBugAction = new CommonAction("Import Bug Report Log");
         importBugAction.setToolTipText("Imports a bug report.");
-        importBugAction.setImageDescriptor(loader.loadDescriptor("importBug.png")); // $NON-NLS-1$
+        importBugAction.setImageDescriptor(loader.loadDescriptor("importBug.png")); //$NON-NLS-1$
 
         placeActions(optionsAction, clearLogAction, saveAction, loadAction, importBugAction);
 

@@ -23,7 +23,7 @@ import org.eclipse.swt.widgets.Composite;
 public class NativeHeapView extends TableView {
 
     public static final String ID =
-        "com.android.ide.eclipse.ddms.views.NativeHeapView"; // $NON-NLS-1$
+        "com.android.ide.eclipse.ddms.views.NativeHeapView"; //$NON-NLS-1$
     private NativeHeapPanel mPanel;
 
     public NativeHeapView() {

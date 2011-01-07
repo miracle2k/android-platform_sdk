@@ -396,7 +396,7 @@ public class AndroidManifestParser {
                 String exportedStr = getAttributeValue(attributes,
                         AndroidManifest.ATTRIBUTE_EXPORTED, true);
                 boolean exported = exportedStr == null ||
-                        exportedStr.toLowerCase().equals("true"); // $NON-NLS-1$
+                        exportedStr.toLowerCase().equals("true"); //$NON-NLS-1$
                 mCurrentActivity = new Activity(activityName, exported);
                 mManifestData.mActivities.add(mCurrentActivity);
 

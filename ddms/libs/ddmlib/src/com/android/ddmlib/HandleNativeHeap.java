@@ -28,10 +28,10 @@ import java.nio.ByteOrder;
  */
 final class HandleNativeHeap extends ChunkHandler {
 
-    public static final int CHUNK_NHGT = type("NHGT"); // $NON-NLS-1$
-    public static final int CHUNK_NHSG = type("NHSG"); // $NON-NLS-1$
-    public static final int CHUNK_NHST = type("NHST"); // $NON-NLS-1$
-    public static final int CHUNK_NHEN = type("NHEN"); // $NON-NLS-1$
+    public static final int CHUNK_NHGT = type("NHGT"); //$NON-NLS-1$
+    public static final int CHUNK_NHSG = type("NHSG"); //$NON-NLS-1$
+    public static final int CHUNK_NHST = type("NHST"); //$NON-NLS-1$
+    public static final int CHUNK_NHEN = type("NHEN"); //$NON-NLS-1$
 
     private static final HandleNativeHeap mInst = new HandleNativeHeap();
 
