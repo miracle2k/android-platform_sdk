@@ -1124,6 +1124,10 @@ public class LayoutCanvas extends Canvas {
 
         manager.add(new Separator());
 
+        // Group "Show Included In" and "Show In" together
+        Action includeAction = new ShowWithinMenuAction(mLayoutEditor);
+        manager.add(includeAction);
+
         // Create a "Show In" sub-menu and automatically populate it using standard
         // actions contributed by the workbench.
         String showInLabel = IDEWorkbenchMessages.Workbench_showIn;

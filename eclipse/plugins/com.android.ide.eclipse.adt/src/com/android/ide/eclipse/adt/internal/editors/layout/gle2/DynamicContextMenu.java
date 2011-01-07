@@ -19,26 +19,19 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.MenuAction;
-import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
-import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
-import org.eclipse.jface.action.IMenuCreator;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Menu;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -208,11 +201,6 @@ import java.util.regex.Pattern;
             }
         }
 
-        // Showing includes is not supported for all the targeted platforms
-        if (mEditor.getGraphicalEditor().renderingSupports(Capability.EMBEDDED_LAYOUT)) {
-            insertShowIncludedMenu(endId);
-        }
-
         insertExtractAsInclude(endId);
     }
 
@@ -225,83 +213,6 @@ import java.util.regex.Pattern;
             mMenuManager.insertBefore(endId, new Separator());
             mMenuManager.insertBefore(endId, extractIncludeAction);
             mMenuManager.insertBefore(endId, new Separator());
-        }
-    }
-
-    /**
-     * Inserts a "Show Included In" context menu, if the current view is included in this
-     * view.
-     */
-    private void insertShowIncludedMenu(String beforeId) {
-        IFile file = mEditor.getGraphicalEditor().getEditedFile();
-        IProject project = file.getProject();
-        final List<Reference> includedBy = IncludeFinder.get(project).getIncludedBy(file);
-
-        Action includeAction = new Action("Show Included In", IAction.AS_DROP_DOWN_MENU) {
-            @Override
-            public IMenuCreator getMenuCreator() {
-                return new IMenuCreator() {
-                    private Menu mMenu;
-
-                    public void dispose() {
-                        if (mMenu != null) {
-                            mMenu.dispose();
-                            mMenu = null;
-                        }
-                    }
-
-                    public Menu getMenu(Control parent) {
-                        return null;
-                    }
-
-                    public Menu getMenu(Menu parent) {
-                        mMenu = new Menu(parent);
-                        if (includedBy != null && includedBy.size() > 0) {
-                            for (final Reference reference : includedBy) {
-                                String title = reference.getDisplayName();
-                                IAction action = new ShowWithinAction(title, reference);
-                                new ActionContributionItem(action).fill(mMenu, -1);
-                            }
-                            new Separator().fill(mMenu, -1);
-                        }
-                        IAction action = new ShowWithinAction("Nothing", null);
-                        if (includedBy == null || includedBy.size() == 0) {
-                            action.setEnabled(false);
-                        }
-                        new ActionContributionItem(action).fill(mMenu, -1);
-
-                        return mMenu;
-                    }
-
-                };
-            }
-        };
-        mMenuManager.insertBefore(beforeId, includeAction);
-    }
-
-    private class ShowWithinAction extends Action {
-        private Reference mReference;
-
-        public ShowWithinAction(String title, Reference reference) {
-            super(title, IAction.AS_RADIO_BUTTON);
-            mReference = reference;
-        }
-
-        @Override
-        public boolean isChecked() {
-            Reference within = mEditor.getGraphicalEditor().getIncludedWithin();
-            if (within == null) {
-                return mReference == null;
-            } else {
-                return within.equals(mReference);
-            }
-        }
-
-        @Override
-        public void run() {
-            if (!isChecked()) {
-                mEditor.getGraphicalEditor().showIn(mReference);
-            }
         }
     }
 
