@@ -7,6 +7,7 @@ Revision 10:
 - Ant lib rules now allow for overriding java.encoding, java.source, and java.target
 - Default encoding for Ant javac is now UTF-8
 - Fix "folder locked" errors when installing packages in SDK Manager on Windows.
+- Logcat view in DDMS now properly displays UTF-8 characters.
 
 Revision 9:
 - Fix packaging issue that broke draw9patch
