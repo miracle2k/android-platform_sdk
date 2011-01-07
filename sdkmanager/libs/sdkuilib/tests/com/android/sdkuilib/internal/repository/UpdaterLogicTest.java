@@ -22,6 +22,7 @@ import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.ITaskFactory;
 import com.android.sdklib.internal.repository.MockAddonPackage;
+import com.android.sdklib.internal.repository.MockBrokenPackage;
 import com.android.sdklib.internal.repository.MockPlatformPackage;
 import com.android.sdklib.internal.repository.MockPlatformToolPackage;
 import com.android.sdklib.internal.repository.MockToolPackage;
@@ -127,6 +128,54 @@ public class UpdaterLogicTest extends TestCase {
         ArchiveInfo ai2 = mul.findPlatformDependency(a2, out, selected, remote, sources, locals);
         assertNotNull(ai2);
         assertSame(p2_archive, ai2.getNewArchive());
+        assertEquals(1, out.size());
+        assertSame(p2_archive, out.get(0).getNewArchive());
+    }
+
+    /**
+     * Broken add-on packages require an exact platform package to be present or installed.
+     * This tests checks that findExactApiLevelDependency() can find a base
+     * platform package for a given broken add-on package.
+     */
+    public void testFindExactApiLevelDependency() {
+        MockUpdaterLogic mul = new MockUpdaterLogic(new NullUpdaterData(), null);
+
+        MockPlatformPackage p1 = new MockPlatformPackage(1, 1);
+        MockPlatformPackage p2 = new MockPlatformPackage(2, 1);
+
+        MockBrokenPackage a1 = new MockBrokenPackage(0, 1);
+        MockBrokenPackage a2 = new MockBrokenPackage(0, 2);
+
+        ArrayList<ArchiveInfo> out = new ArrayList<ArchiveInfo>();
+        ArrayList<Archive> selected = new ArrayList<Archive>();
+        ArrayList<Package> remote = new ArrayList<Package>();
+
+        // a2 depends on p2, which is not in the locals
+        Package[] localPkgs = { p1, a1 };
+        ArchiveInfo[] locals = mul.createLocalArchives(localPkgs);
+
+        SdkSource[] sources = null;
+
+        // a1 depends on p1, which can be found in the locals. p1 is already "installed"
+        // so we donn't need to suggest it as a dependency to solve any problem.
+        ArchiveInfo found = mul.findExactApiLevelDependency(
+                a1, out, selected, remote, sources, locals);
+        assertNull(found);
+
+        // a2 now depends on a "fake" archive info with no newArchive that wraps the missing
+        // underlying platform.
+        found = mul.findExactApiLevelDependency(a2, out, selected, remote, sources, locals);
+        assertNotNull(found);
+        assertNull(found.getNewArchive());
+        assertTrue(found.isRejected());
+        assertEquals(0, out.size());
+
+        // p2 is now selected, and should be scheduled for install in out
+        Archive p2_archive = p2.getArchives()[0];
+        selected.add(p2_archive);
+        found = mul.findExactApiLevelDependency(a2, out, selected, remote, sources, locals);
+        assertNotNull(found);
+        assertSame(p2_archive, found.getNewArchive());
         assertEquals(1, out.size());
         assertSame(p2_archive, out.get(0).getNewArchive());
     }

@@ -34,7 +34,7 @@ public interface IMinApiLevelDependency {
     public static final int MIN_API_LEVEL_NOT_SPECIFIED = 0;
 
     /**
-     * Returns the minimal API level required by this extra package, if > 0,
+     * Returns the minimal API level required by this package, if > 0,
      * or {@link #MIN_API_LEVEL_NOT_SPECIFIED} if there is no such requirement.
      */
     public abstract int getMinApiLevel();
