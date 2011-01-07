@@ -113,7 +113,9 @@ public class ExtraPackage extends MinToolsPackage
                     ep.getPath());
 
             BrokenPackage ba = new BrokenPackage(props, shortDesc, longDesc,
-                    IMinApiLevelDependency.MIN_API_LEVEL_NOT_SPECIFIED, archiveOsPath);
+                    ep.getMinApiLevel(),
+                    IExactApiLevelDependency.API_LEVEL_INVALID,
+                    archiveOsPath);
             return ba;
         }
     }

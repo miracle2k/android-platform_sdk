@@ -111,7 +111,9 @@ public class PlatformToolPackage extends Package {
                     error);
 
             BrokenPackage ba = new BrokenPackage(props, shortDesc, longDesc,
-                    IMinApiLevelDependency.MIN_API_LEVEL_NOT_SPECIFIED, archiveOsPath);
+                    IMinApiLevelDependency.MIN_API_LEVEL_NOT_SPECIFIED,
+                    IExactApiLevelDependency.API_LEVEL_INVALID,
+                    archiveOsPath);
             return ba;
         }
 
