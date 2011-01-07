@@ -432,7 +432,7 @@ public class Hyperlinks {
         IPath workspacePath = workspace.getLocation();
         IEditorSite editorSite = sourceEditor.getEditorSite();
         if (workspacePath.isPrefixOf(filePath)) {
-            IPath relativePath = Sdk.makeRelativeTo(filePath, workspacePath);
+            IPath relativePath = filePath.makeRelativeTo(workspacePath);
             IResource file = workspace.findMember(relativePath);
             if (file instanceof IFile) {
                 try {

@@ -33,7 +33,6 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.filesystem.EFS;
@@ -732,7 +731,7 @@ public class LayoutCanvas extends Canvas {
         IPath workspacePath = workspace.getLocation();
         IEditorSite editorSite = graphicalEditor.getEditorSite();
         if (workspacePath.isPrefixOf(filePath)) {
-            IPath relativePath = Sdk.makeRelativeTo(filePath, workspacePath);
+            IPath relativePath = filePath.makeRelativeTo(workspacePath);
             IResource xmlFile = workspace.findMember(relativePath);
             if (xmlFile != null) {
                 IFile leavingFile = graphicalEditor.getEditedFile();
