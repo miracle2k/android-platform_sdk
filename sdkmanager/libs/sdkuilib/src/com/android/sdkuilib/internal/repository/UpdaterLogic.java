@@ -42,6 +42,7 @@ import com.android.sdklib.internal.repository.Package.UpdateInfo;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * The logic to compute which packages to install, based on the choices
@@ -65,14 +66,14 @@ class UpdaterLogic {
      * When the user doesn't provide a selection, looks at local packages to find
      * those that can be updated and compute dependencies too.
      */
-    public ArrayList<ArchiveInfo> computeUpdates(
+    public List<ArchiveInfo> computeUpdates(
             Collection<Archive> selectedArchives,
             SdkSources sources,
             Package[] localPkgs,
             boolean includeObsoletes) {
 
-        ArrayList<ArchiveInfo> archives = new ArrayList<ArchiveInfo>();
-        ArrayList<Package> remotePkgs = new ArrayList<Package>();
+        List<ArchiveInfo> archives = new ArrayList<ArchiveInfo>();
+        List<Package>   remotePkgs = new ArrayList<Package>();
         SdkSource[] remoteSources = sources.getAllSources();
 
         // Create ArchiveInfos out of local (installed) packages.
@@ -121,7 +122,7 @@ class UpdaterLogic {
      * and adds them to the list of archives to install.
      */
     public void addNewPlatforms(
-            ArrayList<ArchiveInfo> archives,
+            Collection<ArchiveInfo> archives,
             SdkSources sources,
             Package[] localPkgs,
             boolean includeObsoletes) {
@@ -280,7 +281,7 @@ class UpdaterLogic {
      */
     private Collection<Archive> findUpdates(
             ArchiveInfo[] localArchives,
-            ArrayList<Package> remotePkgs,
+            Collection<Package> remotePkgs,
             SdkSource[] remoteSources,
             boolean includeObsoletes) {
         ArrayList<Archive> updates = new ArrayList<Archive>();
@@ -320,9 +321,9 @@ class UpdaterLogic {
      * an appropriate package.
      */
     private void fixMissingLocalDependencies(
-            ArrayList<ArchiveInfo> outArchives,
+            Collection<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
-            ArrayList<Package> remotePkgs,
+            Collection<Package> remotePkgs,
             SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
 
@@ -364,9 +365,9 @@ class UpdaterLogic {
     }
 
     private ArchiveInfo insertArchive(Archive archive,
-            ArrayList<ArchiveInfo> outArchives,
+            Collection<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
-            ArrayList<Package> remotePkgs,
+            Collection<Package> remotePkgs,
             SdkSource[] remoteSources,
             ArchiveInfo[] localArchives,
             boolean automated) {
@@ -430,9 +431,9 @@ class UpdaterLogic {
      * at least size 1 and contain no null elements.
      */
     private ArchiveInfo[] findDependency(Package pkg,
-            ArrayList<ArchiveInfo> outArchives,
+            Collection<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
-            ArrayList<Package> remotePkgs,
+            Collection<Package> remotePkgs,
             SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
 
@@ -534,9 +535,9 @@ class UpdaterLogic {
      */
     protected ArchiveInfo findToolsDependency(
             IMinToolsDependency pkg,
-            ArrayList<ArchiveInfo> outArchives,
+            Collection<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
-            ArrayList<Package> remotePkgs,
+            Collection<Package> remotePkgs,
             SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
         // This is the requirement to match.
@@ -632,9 +633,9 @@ class UpdaterLogic {
      */
     protected ArchiveInfo findPlatformToolsDependency(
             IMinPlatformToolsDependency pkg,
-            ArrayList<ArchiveInfo> outArchives,
+            Collection<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
-            ArrayList<Package> remotePkgs,
+            Collection<Package> remotePkgs,
             SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
         // This is the requirement to match.
@@ -773,9 +774,9 @@ class UpdaterLogic {
      */
     protected ArchiveInfo findPlatformDependency(
             IPlatformDependency pkg,
-            ArrayList<ArchiveInfo> outArchives,
+            Collection<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
-            ArrayList<Package> remotePkgs,
+            Collection<Package> remotePkgs,
             SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
         // This is the requirement to match.
@@ -872,9 +873,9 @@ class UpdaterLogic {
      */
     protected ArchiveInfo findMinApiLevelDependency(
             IMinApiLevelDependency pkg,
-            ArrayList<ArchiveInfo> outArchives,
+            Collection<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
-            ArrayList<Package> remotePkgs,
+            Collection<Package> remotePkgs,
             SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
 
@@ -987,9 +988,9 @@ class UpdaterLogic {
      */
     protected ArchiveInfo findExactApiLevelDependency(
             IExactApiLevelDependency pkg,
-            ArrayList<ArchiveInfo> outArchives,
+            Collection<ArchiveInfo> outArchives,
             Collection<Archive> selectedArchives,
-            ArrayList<Package> remotePkgs,
+            Collection<Package> remotePkgs,
             SdkSource[] remoteSources,
             ArchiveInfo[] localArchives) {
 
@@ -1095,7 +1096,7 @@ class UpdaterLogic {
      * @param remoteSources A list of available remote sources to fetch from.
      */
     protected void fetchRemotePackages(
-            final ArrayList<Package> remotePkgs,
+            final Collection<Package> remotePkgs,
             final SdkSource[] remoteSources) {
         if (remotePkgs.size() > 0) {
             return;
