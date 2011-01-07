@@ -24,11 +24,12 @@ import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
 
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.Rect;
-import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.rendering.api.Capability;
+import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ViewInfo;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -770,9 +771,9 @@ public class PaletteControl extends Composite {
                 org.eclipse.draw2d.geometry.Rectangle screenBounds = editor.getScreenBounds();
                 int renderWidth = Math.min(screenBounds.width, MAX_RENDER_WIDTH);
                 int renderHeight = Math.min(screenBounds.height, MAX_RENDER_HEIGHT);
-
+                LayoutLog silentLogger = new LayoutLog();
                 session = editor.render(model, renderWidth, renderHeight,
-                    null /* explodeNodes */, hasTransparency);
+                    null /* explodeNodes */, hasTransparency, silentLogger);
             } catch (Throwable t) {
                 // Previews can fail for a variety of reasons -- let's not bug
                 // the user with it

@@ -1198,10 +1198,12 @@ public class GraphicalEditorPart extends EditorPart
      * @param transparentBackground If true, the rendering will <b>not</b> paint the
      *            normal background requested by the theme, and it will instead paint the
      *            background using a fully transparent background color
+     * @param logger a logger where rendering errors are reported
      * @return the resulting rendered image wrapped in an {@link RenderSession}
      */
     public RenderSession render(UiDocumentNode model, int width, int height,
-            Set<UiElementNode> explodeNodes, boolean transparentBackground) {
+            Set<UiElementNode> explodeNodes, boolean transparentBackground,
+            LayoutLog logger) {
         if (!ensureFileValid()) {
             return null;
         }
@@ -1212,7 +1214,7 @@ public class GraphicalEditorPart extends EditorPart
 
         IProject iProject = mEditedFile.getProject();
         return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes,
-                transparentBackground, new LayoutLog());
+                transparentBackground, logger);
     }
 
     /**
