@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.wizards.newproject;
 
+import com.android.ide.common.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidNature;
@@ -176,7 +177,7 @@ public class NewProjectWizard extends Wizard implements INewWizard {
 
     private static final String STRINGS_FILE = "strings.xml";       //$NON-NLS-1$
 
-    private static final String STRING_RSRC_PREFIX = "@string/";    //$NON-NLS-1$
+    private static final String STRING_RSRC_PREFIX = LayoutConstants.STRING_PREFIX;
     private static final String STRING_APP_NAME = "app_name";       //$NON-NLS-1$
     private static final String STRING_HELLO_WORLD = "hello";       //$NON-NLS-1$
 

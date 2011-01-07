@@ -135,4 +135,16 @@ public class LayoutConstants {
 
     /** The prefix for existing id attribute values, @id/ */
     public static String ID_PREFIX = "@id/"; //$NON-NLS-1$
+
+    /** Prefix for resources that reference layouts */
+    public static String LAYOUT_PREFIX = "@layout/"; //$NON-NLS-1$
+
+    /** Prefix for resources that reference drawables */
+    public static String DRAWABLE_PREFIX = "@drawable/"; //$NON-NLS-1$
+
+    /** Prefix for resources that reference strings */
+    public static String STRING_PREFIX = "@string/"; //$NON-NLS-1$
+
+    /** Prefix for resources that reference Android strings */
+    public static String ANDROID_STRING_PREFIX = "@android:string/"; //$NON-NLS-1$
 }

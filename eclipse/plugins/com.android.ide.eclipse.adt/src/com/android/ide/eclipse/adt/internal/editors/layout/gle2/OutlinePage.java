@@ -16,6 +16,13 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_SRC;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
+import static com.android.ide.common.layout.LayoutConstants.DRAWABLE_PREFIX;
+import static com.android.ide.common.layout.LayoutConstants.LAYOUT_PREFIX;
+import static org.eclipse.jface.viewers.StyledString.QUALIFIER_STYLER;
+
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.layout.BaseLayoutRule;
@@ -24,6 +31,7 @@ import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
@@ -43,15 +51,16 @@ import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.IElementComparer;
-import org.eclipse.jface.viewers.ILabelProvider;
-import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.ITreeSelection;
+import org.eclipse.jface.viewers.StyledCellLabelProvider;
+import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
@@ -73,6 +82,8 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.views.contentoutline.ContentOutlinePage;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -93,6 +104,12 @@ import java.util.Set;
  */
 public class OutlinePage extends ContentOutlinePage
     implements ISelectionListener, INullSelectionListener {
+
+    /** Label which separates outline text from additional attributes like text prefix or url */
+    private static final String LABEL_SEPARATOR = " - ";
+
+    /** Max character count in labels, used for truncation */
+    private static final int LABEL_MAX_WIDTH = 50;
 
     /**
      * The graphical editor that created this outline.
@@ -435,10 +452,12 @@ public class OutlinePage extends ContentOutlinePage
      * Label provider for the Outline model.
      * Objects are going to be {@link CanvasViewInfo}.
      */
-    private class LabelProvider implements ILabelProvider {
-
+    private class LabelProvider extends StyledCellLabelProvider {
         /**
          * Returns the element's logo with a fallback on the android logo.
+         *
+         * @param element the tree element
+         * @return the image to be used as a logo
          */
         public Image getImage(Object element) {
             if (element instanceof CanvasViewInfo) {
@@ -464,9 +483,13 @@ public class OutlinePage extends ContentOutlinePage
         }
 
         /**
-         * Uses UiElementNode.shortDescription for the label for this tree item.
+         * Uses {@link UiElementNode#getStyledDescription} for the label for this tree item.
          */
-        public String getText(Object element) {
+        @Override
+        public void update(ViewerCell cell) {
+            Object element = cell.getElement();
+            StyledString styledString = null;
+
             CanvasViewInfo vi = null;
             if (element instanceof CanvasViewInfo) {
                 vi = (CanvasViewInfo) element;
@@ -475,33 +498,73 @@ public class OutlinePage extends ContentOutlinePage
 
             if (element instanceof UiElementNode) {
                 UiElementNode node = (UiElementNode) element;
-                return node.getShortDescription();
+                styledString = node.getStyledDescription();
+                Node xmlNode = node.getXmlNode();
+                if (xmlNode instanceof Element) {
+                    Element e = (Element) xmlNode;
+                    if (e.hasAttributeNS(ANDROID_URI, ATTR_TEXT)) {
+                        // Show the text attribute
+                        String text = e.getAttributeNS(ANDROID_URI, ATTR_TEXT);
+                        if (text != null && text.length() > 0
+                                && !text.contains(node.getDescriptor().getUiName())) {
+                            if (text.charAt(0) == '@') {
+                                String resolved = mGraphicalEditorPart.findString(text);
+                                if (resolved != null) {
+                                    text = resolved;
+                                }
+                            }
+                            styledString.append(LABEL_SEPARATOR, QUALIFIER_STYLER);
+                            styledString.append('"', QUALIFIER_STYLER);
+                            styledString.append(truncate(text, styledString), QUALIFIER_STYLER);
+                            styledString.append('"', QUALIFIER_STYLER);
+                        }
+                    } else if (e.hasAttributeNS(ANDROID_URI, ATTR_SRC)) {
+                        // Show ImageView source attributes etc
+                        String src = e.getAttributeNS(ANDROID_URI, ATTR_SRC);
+                        if (src != null && src.length() > 0) {
+                            if (src.startsWith(DRAWABLE_PREFIX)) {
+                                src = src.substring(DRAWABLE_PREFIX.length());
+                            }
+                            styledString.append(LABEL_SEPARATOR, QUALIFIER_STYLER);
+                            styledString.append(truncate(src, styledString), QUALIFIER_STYLER);
+                        }
+                    } else if (e.getTagName().equals(LayoutDescriptors.VIEW_INCLUDE)) {
+                        // Show the include reference.
+
+                        // Note: the layout attribute is NOT in the Android namespace
+                        String src = e.getAttribute(LayoutDescriptors.ATTR_LAYOUT);
+                        if (src != null && src.length() > 0) {
+                            if (src.startsWith(LAYOUT_PREFIX)) {
+                                src = src.substring(LAYOUT_PREFIX.length());
+                            }
+                            styledString.append(LABEL_SEPARATOR, QUALIFIER_STYLER);
+                            styledString.append(truncate(src, styledString), QUALIFIER_STYLER);
+                        }
+                    }
+                }
             } else if (element == null && vi != null) {
-                // It's an inclusion-context
+                // It's an inclusion-context: display it
                 Reference includedWithin = mGraphicalEditorPart.getIncludedWithin();
                 if (includedWithin != null) {
-                    return includedWithin.getDisplayName();
+                    styledString = new StyledString();
+                    styledString.append(includedWithin.getDisplayName(), QUALIFIER_STYLER);
                 }
             }
 
-            return element == null ? "(null)" : element.toString();  //$NON-NLS-1$
-        }
+            if (styledString == null) {
+                styledString = new StyledString();
+                styledString.append(element == null ? "(null)" : element.toString());
+            }
 
-        public void addListener(ILabelProviderListener listener) {
-            // pass
-        }
+           cell.setText(styledString.toString());
+           cell.setStyleRanges(styledString.getStyleRanges());
+           cell.setImage(getImage(element));
+           super.update(cell);
+       }
 
-        public void dispose() {
-            // pass
-        }
-
+        @Override
         public boolean isLabelProperty(Object element, String property) {
-            // pass
-            return false;
-        }
-
-        public void removeListener(ILabelProviderListener listener) {
-            // pass
+            return super.isLabelProperty(element, property);
         }
     }
 
@@ -845,5 +908,28 @@ public class OutlinePage extends ContentOutlinePage
         }
 
         return null;
+    }
+
+    /**
+     * Truncates the given text such that it will fit into the given {@link StyledString}
+     * up to a maximum length of {@link #LABEL_MAX_WIDTH}.
+     *
+     * @param text the text to truncate
+     * @param string the existing string to be appended to
+     * @return the truncated string
+     */
+    private static String truncate(String text, StyledString string) {
+        int existingLength = string.length();
+
+        if (text.length() + existingLength > LABEL_MAX_WIDTH) {
+            int truncatedLength = LABEL_MAX_WIDTH - existingLength - 3;
+            if (truncatedLength > 0) {
+                return String.format("%1$s...", text.substring(0, truncatedLength));
+            } else {
+                return ""; //$NON-NLS-1$
+            }
+        }
+
+        return text;
     }
 }

@@ -25,14 +25,14 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
- * {@link UiItemElementNode} is apecial version of {@link UiElementNode} that 
+ * {@link UiItemElementNode} is a special version of {@link UiElementNode} that
  * customizes the element display to include the item type attribute if present.
  */
 public class UiItemElementNode extends UiElementNode {
 
     /**
      * Creates a new {@link UiElementNode} described by a given {@link ItemElementDescriptor}.
-     * 
+     *
      * @param elementDescriptor The {@link ItemElementDescriptor} for the XML node. Cannot be null.
      */
     public UiItemElementNode(ItemElementDescriptor elementDescriptor) {
