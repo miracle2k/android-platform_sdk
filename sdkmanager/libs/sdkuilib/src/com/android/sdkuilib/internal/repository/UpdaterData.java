@@ -57,6 +57,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Data shared between {@link UpdaterWindowImpl} and its pages.
@@ -399,7 +400,7 @@ class UpdaterData implements IUpdaterData {
      *
      * @param result The archives to install. Incompatible ones will be skipped.
      */
-    public void installArchives(final ArrayList<ArchiveInfo> result) {
+    public void installArchives(final Collection<ArchiveInfo> result) {
         if (mTaskFactory == null) {
             throw new IllegalArgumentException("Task Factory is null");
         }
@@ -633,7 +634,7 @@ class UpdaterData implements IUpdaterData {
         // resolve missing dependencies.
 
         UpdaterLogic ul = new UpdaterLogic(this);
-        ArrayList<ArchiveInfo> archives = ul.computeUpdates(
+        List<ArchiveInfo> archives = ul.computeUpdates(
                 selectedArchives,
                 getSources(),
                 getLocalSdkParser().getPackages(),
@@ -681,7 +682,7 @@ class UpdaterData implements IUpdaterData {
         refreshSources(true);
 
         UpdaterLogic ul = new UpdaterLogic(this);
-        ArrayList<ArchiveInfo> archives = ul.computeUpdates(
+        List<ArchiveInfo> archives = ul.computeUpdates(
                 null /*selectedArchives*/,
                 getSources(),
                 getLocalSdkParser().getPackages(),
