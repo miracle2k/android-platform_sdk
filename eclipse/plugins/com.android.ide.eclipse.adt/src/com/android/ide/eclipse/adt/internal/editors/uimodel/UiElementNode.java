@@ -16,6 +16,13 @@
 
 package com.android.ide.eclipse.adt.internal.editors.uimodel;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_NS_PREFIX;
+import static com.android.ide.common.layout.LayoutConstants.ID_PREFIX;
+import static com.android.ide.common.layout.LayoutConstants.NEW_ID_PREFIX;
+import static com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor.XMLNS;
+import static com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor.XMLNS_URI;
+import static com.android.sdklib.SdkConstants.NS_RESOURCES;
+
 import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.resources.platform.AttributeInfo;
 import com.android.ide.eclipse.adt.AdtPlugin;
@@ -79,7 +86,7 @@ public class UiElementNode implements IPropertySource {
     /** List of prefixes removed from android:id strings when creating short descriptions. */
     private static String[] ID_PREFIXES = {
         "@android:id/", //$NON-NLS-1$
-        "@+id/", "@id/", "@+", "@" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+        NEW_ID_PREFIX, ID_PREFIX, "@+", "@" }; //$NON-NLS-1$ //$NON-NLS-2$
 
     /** The element descriptor for the node. Always present, never null. */
     private ElementDescriptor mDescriptor;
@@ -1502,8 +1509,8 @@ public class UiElementNode implements IPropertySource {
         }
 
         // per XML specification, the "xmlns" URI is reserved
-        if (XmlnsAttributeDescriptor.XMLNS_URI.equals(nsUri)) {
-            return "xmlns"; //$NON-NLS-1$
+        if (XMLNS_URI.equals(nsUri)) {
+            return XMLNS;
         }
 
         HashSet<String> visited = new HashSet<String>();
@@ -1527,7 +1534,7 @@ public class UiElementNode implements IPropertySource {
             NamedNodeMap attrs = node.getAttributes();
             for (int n = attrs.getLength() - 1; n >= 0; --n) {
                 Node attr = attrs.item(n);
-                if ("xmlns".equals(attr.getPrefix())) {  //$NON-NLS-1$
+                if (XMLNS.equals(attr.getPrefix())) {
                     String uri = attr.getNodeValue();
                     nsPrefix = attr.getLocalName();
                     // Is this the URI we are looking for? If yes, we found its prefix.
@@ -1544,7 +1551,7 @@ public class UiElementNode implements IPropertySource {
         // We need to make sure the prefix is not one that was declared in the scope
         // visited above. Use a default namespace prefix "android" for the Android resource
         // NS and use "ns" for all other custom namespaces.
-        String prefix = SdkConstants.NS_RESOURCES.equals(nsUri) ? "android" : "ns"; //$NON-NLS-1$ //$NON-NLS-2$
+        String prefix = NS_RESOURCES.equals(nsUri) ? ANDROID_NS_PREFIX : "ns"; //$NON-NLS-1$
         String base = prefix;
         for (int i = 1; visited.contains(prefix); i++) {
             prefix = base + Integer.toString(i);
@@ -1557,9 +1564,9 @@ public class UiElementNode implements IPropertySource {
                 node = node.getNextSibling();
             }
             if (node != null) {
-                Attr attr = doc.createAttributeNS(XmlnsAttributeDescriptor.XMLNS_URI, prefix);
+                Attr attr = doc.createAttributeNS(XMLNS_URI, prefix);
                 attr.setValue(nsUri);
-                attr.setPrefix("xmlns"); //$NON-NLS-1$
+                attr.setPrefix(XMLNS);
                 node.getAttributes().setNamedItemNS(attr);
             }
         }

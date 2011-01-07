@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.uimodel;
 
+import com.android.ide.common.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
@@ -113,7 +114,7 @@ public class UiViewElementNode extends UiElementNode {
                 layout_attrs.length);
         if (need_xmlns) {
             AttributeDescriptor desc = new XmlnsAttributeDescriptor(
-                    "android",  //$NON-NLS-1$
+                    LayoutConstants.ANDROID_NS_PREFIX,
                     SdkConstants.NS_RESOURCES);
             mCachedAttributeDescriptors[direct_attrs.length + layout_attrs.length] = desc;
         }

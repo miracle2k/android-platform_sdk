@@ -21,6 +21,7 @@ import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion.AndroidVersionException;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.io.FileWrapper;
+import com.android.sdklib.util.Pair;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,27 +44,27 @@ import java.util.regex.Pattern;
  */
 public final class SdkManager {
 
-    public final static String PROP_VERSION_SDK = "ro.build.version.sdk";
-    public final static String PROP_VERSION_CODENAME = "ro.build.version.codename";
-    public final static String PROP_VERSION_RELEASE = "ro.build.version.release";
+    public final static String PROP_VERSION_SDK = "ro.build.version.sdk";              //$NON-NLS-1$
+    public final static String PROP_VERSION_CODENAME = "ro.build.version.codename";    //$NON-NLS-1$
+    public final static String PROP_VERSION_RELEASE = "ro.build.version.release";      //$NON-NLS-1$
 
-    private final static String ADDON_NAME = "name";
-    private final static String ADDON_VENDOR = "vendor";
-    private final static String ADDON_API = "api";
-    private final static String ADDON_DESCRIPTION = "description";
-    private final static String ADDON_LIBRARIES = "libraries";
-    private final static String ADDON_DEFAULT_SKIN = "skin";
-    private final static String ADDON_USB_VENDOR = "usb-vendor";
-    private final static String ADDON_REVISION = "revision";
-    private final static String ADDON_REVISION_OLD = "version";
+    public final static String ADDON_NAME = "name";                                    //$NON-NLS-1$
+    public final static String ADDON_VENDOR = "vendor";                                //$NON-NLS-1$
+    public final static String ADDON_API = "api";                                      //$NON-NLS-1$
+    public final static String ADDON_DESCRIPTION = "description";                      //$NON-NLS-1$
+    public final static String ADDON_LIBRARIES = "libraries";                          //$NON-NLS-1$
+    public final static String ADDON_DEFAULT_SKIN = "skin";                            //$NON-NLS-1$
+    public final static String ADDON_USB_VENDOR = "usb-vendor";                        //$NON-NLS-1$
+    public final static String ADDON_REVISION = "revision";                            //$NON-NLS-1$
+    public final static String ADDON_REVISION_OLD = "version";                         //$NON-NLS-1$
 
 
     private final static Pattern PATTERN_LIB_DATA = Pattern.compile(
-            "^([a-zA-Z0-9._-]+\\.jar);(.*)$", Pattern.CASE_INSENSITIVE);
+            "^([a-zA-Z0-9._-]+\\.jar);(.*)$", Pattern.CASE_INSENSITIVE);               //$NON-NLS-1$
 
      // usb ids are 16-bit hexadecimal values.
     private final static Pattern PATTERN_USB_IDS = Pattern.compile(
-            "^0x[a-f0-9]{4}$", Pattern.CASE_INSENSITIVE);
+            "^0x[a-f0-9]{4}$", Pattern.CASE_INSENSITIVE);                              //$NON-NLS-1$
 
     /** List of items in the platform to check when parsing it. These paths are relative to the
      * platform root folder. */
@@ -73,39 +74,40 @@ public final class SdkManager {
     };
 
     /** Preference file containing the usb ids for adb */
-    private final static String ADB_INI_FILE = "adb_usb.ini";
+    private final static String ADB_INI_FILE = "adb_usb.ini";                          //$NON-NLS-1$
        //0--------90--------90--------90--------90--------90--------90--------90--------9
     private final static String ADB_INI_HEADER =
-        "# ANDROID 3RD PARTY USB VENDOR ID LIST -- DO NOT EDIT.\n" +
-        "# USE 'android update adb' TO GENERATE.\n" +
-        "# 1 USB VENDOR ID PER LINE.\n";
+        "# ANDROID 3RD PARTY USB VENDOR ID LIST -- DO NOT EDIT.\n" +                   //$NON-NLS-1$
+        "# USE 'android update adb' TO GENERATE.\n" +                                  //$NON-NLS-1$
+        "# 1 USB VENDOR ID PER LINE.\n";                                               //$NON-NLS-1$
 
-    /** the location of the SDK */
-    private final String mSdkLocation;
+    /** The location of the SDK as an OS path */
+    private final String mOsSdkPath;
+    /** Valid targets that have been loaded. */
     private IAndroidTarget[] mTargets;
 
     /**
      * Create a new {@link SdkManager} instance.
      * External users should use {@link #createManager(String, ISdkLog)}.
      *
-     * @param sdkLocation the location of the SDK.
+     * @param osSdkPath the location of the SDK.
      */
-    private SdkManager(String sdkLocation) {
-        mSdkLocation = sdkLocation;
+    private SdkManager(String osSdkPath) {
+        mOsSdkPath = osSdkPath;
     }
 
     /**
      * Creates an {@link SdkManager} for a given sdk location.
-     * @param sdkLocation the location of the SDK.
+     * @param osSdkPath the location of the SDK.
      * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      * @return the created {@link SdkManager} or null if the location is not valid.
      */
-    public static SdkManager createManager(String sdkLocation, ISdkLog log) {
+    public static SdkManager createManager(String osSdkPath, ISdkLog log) {
         try {
-            SdkManager manager = new SdkManager(sdkLocation);
+            SdkManager manager = new SdkManager(osSdkPath);
             ArrayList<IAndroidTarget> list = new ArrayList<IAndroidTarget>();
-            loadPlatforms(sdkLocation, list, log);
-            loadAddOns(sdkLocation, list, log);
+            loadPlatforms(osSdkPath, list, log);
+            loadAddOns(osSdkPath, list, log);
 
             // sort the targets/add-ons
             Collections.sort(list);
@@ -127,7 +129,7 @@ public final class SdkManager {
      * Returns the location of the SDK.
      */
     public String getLocation() {
-        return mSdkLocation;
+        return mOsSdkPath;
     }
 
     /**
@@ -193,7 +195,7 @@ public final class SdkManager {
 
             // now write the Id in a text file, one per line.
             for (Integer i : set) {
-                writer.write(String.format("0x%04x\n", i));
+                writer.write(String.format("0x%04x\n", i));                            //$NON-NLS-1$
             }
         } finally {
             if (writer != null) {
@@ -210,8 +212,8 @@ public final class SdkManager {
     public void reloadSdk(ISdkLog log) {
         // get the current target list.
         ArrayList<IAndroidTarget> list = new ArrayList<IAndroidTarget>();
-        loadPlatforms(mSdkLocation, list, log);
-        loadAddOns(mSdkLocation, list, log);
+        loadPlatforms(mOsSdkPath, list, log);
+        loadAddOns(mOsSdkPath, list, log);
 
         // For now replace the old list with the new one.
         // In the future we may want to keep the current objects, so that ADT doesn't have to deal
@@ -326,7 +328,7 @@ public final class SdkManager {
                         sourcePropFile, log);
                 if (sourceProp != null) {
                     try {
-                        revision = Integer.parseInt(sourceProp.get("Pkg.Revision"));
+                        revision = Integer.parseInt(sourceProp.get("Pkg.Revision"));   //$NON-NLS-1$
                     } catch (NumberFormatException e) {
                         // do nothing, we'll keep the default value of 1.
                     }
@@ -366,7 +368,8 @@ public final class SdkManager {
                 return target;
             }
         } else {
-            log.warning("Ignoring platform '%1$s': %2$s is missing.", platformFolder.getName(),
+            log.warning("Ignoring platform '%1$s': %2$s is missing.",   //$NON-NLS-1$
+                    platformFolder.getName(),
                     SdkConstants.FN_BUILD_PROP);
         }
 
@@ -376,19 +379,21 @@ public final class SdkManager {
 
     /**
      * Loads the Add-on from the SDK.
-     * @param location Location of the SDK
+     * @param osSdkPath Location of the SDK
      * @param list the list to fill with the add-ons.
      * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      */
-    private static void loadAddOns(String location, ArrayList<IAndroidTarget> list, ISdkLog log) {
-        File addonFolder = new File(location, SdkConstants.FD_ADDONS);
+    private static void loadAddOns(String osSdkPath, ArrayList<IAndroidTarget> list, ISdkLog log) {
+        File addonFolder = new File(osSdkPath, SdkConstants.FD_ADDONS);
         if (addonFolder.isDirectory()) {
             File[] addons  = addonFolder.listFiles();
+
+            IAndroidTarget[] targetList = list.toArray(new IAndroidTarget[list.size()]);
 
             for (File addon : addons) {
                 // Add-ons have to be folders. Ignore files and no need to warn about them.
                 if (addon.isDirectory()) {
-                    AddOnTarget target = loadAddon(addon, list, log);
+                    AddOnTarget target = loadAddon(addon, targetList, log);
                     if (target != null) {
                         list.add(target);
                     }
@@ -411,148 +416,219 @@ public final class SdkManager {
 
     /**
      * Loads a specific Add-on at a given location.
-     * @param addon the location of the addon.
+     * @param addonDir the location of the add-on directory.
      * @param targetList The list of Android target that were already loaded from the SDK.
      * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
      */
-    private static AddOnTarget loadAddon(File addon, ArrayList<IAndroidTarget> targetList,
+    private static AddOnTarget loadAddon(File addonDir,
+            IAndroidTarget[] targetList,
             ISdkLog log) {
-        FileWrapper addOnManifest = new FileWrapper(addon, SdkConstants.FN_MANIFEST_INI);
 
-        if (addOnManifest.isFile()) {
-            Map<String, String> propertyMap = ProjectProperties.parsePropertyFile(
-                    addOnManifest, log);
+        // Parse the addon properties to ensure we can load it.
+        Pair<Map<String, String>, String> infos = parseAddonProperties(addonDir, targetList, log);
 
-            if (propertyMap != null) {
-                // look for some specific values in the map.
-                // we require name, vendor, and api
-                String name = propertyMap.get(ADDON_NAME);
-                if (name == null) {
-                    displayAddonManifestWarning(log, addon.getName(), ADDON_NAME);
-                    return null;
+        Map<String, String> propertyMap = infos.getFirst();
+        String error = infos.getSecond();
+
+        if (error != null) {
+            log.warning("Ignoring add-on '%1$s': %2$s", addonDir.getName(), error);
+            return null;
+        }
+
+        // Since error==null we're not supposed to encounter any issues loading this add-on.
+        try {
+            assert propertyMap != null;
+
+            String api = propertyMap.get(ADDON_API);
+            String name = propertyMap.get(ADDON_NAME);
+            String vendor = propertyMap.get(ADDON_VENDOR);
+
+            assert api != null;
+            assert name != null;
+            assert vendor != null;
+
+            PlatformTarget baseTarget = null;
+
+            // Look for a platform that has a matching api level or codename.
+            for (IAndroidTarget target : targetList) {
+                if (target.isPlatform() && target.getVersion().equals(api)) {
+                    baseTarget = (PlatformTarget)target;
+                    break;
                 }
+            }
 
-                String vendor = propertyMap.get(ADDON_VENDOR);
-                if (vendor == null) {
-                    displayAddonManifestWarning(log, addon.getName(), ADDON_VENDOR);
-                    return null;
-                }
+            assert baseTarget != null;
 
-                String api = propertyMap.get(ADDON_API);
-                PlatformTarget baseTarget = null;
-                if (api == null) {
-                    displayAddonManifestWarning(log, addon.getName(), ADDON_API);
-                    return null;
-                } else {
-                    // Look for a platform that has a matching api level or codename.
-                    for (IAndroidTarget target : targetList) {
-                        if (target.isPlatform() && target.getVersion().equals(api)) {
-                            baseTarget = (PlatformTarget)target;
-                            break;
-                        }
-                    }
+            // get the optional description
+            String description = propertyMap.get(ADDON_DESCRIPTION);
 
-                    if (baseTarget == null) {
-                        // Ignore this add-on.
-                        log.warning(
-                                "Ignoring add-on '%1$s': Unable to find base platform with API level '%2$s'",
-                                addon.getName(), api);
-                        return null;
-                    }
-                }
+            // get the add-on revision
+            int revisionValue = 1;
+            String revision = propertyMap.get(ADDON_REVISION);
+            if (revision == null) {
+                revision = propertyMap.get(ADDON_REVISION_OLD);
+            }
+            if (revision != null) {
+                revisionValue = Integer.parseInt(revision);
+            }
 
-                // get the optional description
-                String description = propertyMap.get(ADDON_DESCRIPTION);
+            // get the optional libraries
+            String librariesValue = propertyMap.get(ADDON_LIBRARIES);
+            Map<String, String[]> libMap = null;
 
-                // get the add-on revision
-                int revisionValue = 1;
-                String revision = propertyMap.get(ADDON_REVISION);
-                if (revision == null) {
-                    revision = propertyMap.get(ADDON_REVISION_OLD);
-                }
-                if (revision != null) {
-                    try {
-                        revisionValue = Integer.parseInt(revision);
-                    } catch (NumberFormatException e) {
-                        // looks like apiNumber does not parse to a number.
-                        // Ignore this add-on.
-                        log.warning(
-                                "Ignoring add-on '%1$s': %2$s is not a valid number in %3$s.",
-                                addon.getName(), ADDON_REVISION, SdkConstants.FN_BUILD_PROP);
-                        return null;
-                    }
-                }
+            if (librariesValue != null) {
+                librariesValue = librariesValue.trim();
+                if (librariesValue.length() > 0) {
+                    // split in the string into the libraries name
+                    String[] libraries = librariesValue.split(";");                    //$NON-NLS-1$
+                    if (libraries.length > 0) {
+                        libMap = new HashMap<String, String[]>();
+                        for (String libName : libraries) {
+                            libName = libName.trim();
 
-                // get the optional libraries
-                String librariesValue = propertyMap.get(ADDON_LIBRARIES);
-                Map<String, String[]> libMap = null;
+                            // get the library data from the properties
+                            String libData = propertyMap.get(libName);
 
-                if (librariesValue != null) {
-                    librariesValue = librariesValue.trim();
-                    if (librariesValue.length() > 0) {
-                        // split in the string into the libraries name
-                        String[] libraries = librariesValue.split(";");
-                        if (libraries.length > 0) {
-                            libMap = new HashMap<String, String[]>();
-                            for (String libName : libraries) {
-                                libName = libName.trim();
-
-                                // get the library data from the properties
-                                String libData = propertyMap.get(libName);
-
-                                if (libData != null) {
-                                    // split the jar file from the description
-                                    Matcher m = PATTERN_LIB_DATA.matcher(libData);
-                                    if (m.matches()) {
-                                        libMap.put(libName, new String[] {
-                                                m.group(1), m.group(2) });
-                                    } else {
-                                        log.warning(
-                                                "Ignoring library '%1$s', property value has wrong format\n\t%2$s",
-                                                libName, libData);
-                                    }
+                            if (libData != null) {
+                                // split the jar file from the description
+                                Matcher m = PATTERN_LIB_DATA.matcher(libData);
+                                if (m.matches()) {
+                                    libMap.put(libName, new String[] {
+                                            m.group(1), m.group(2) });
                                 } else {
                                     log.warning(
-                                            "Ignoring library '%1$s', missing property value",
+                                            "Ignoring library '%1$s', property value has wrong format\n\t%2$s",
                                             libName, libData);
                                 }
+                            } else {
+                                log.warning(
+                                        "Ignoring library '%1$s', missing property value",
+                                        libName, libData);
                             }
                         }
                     }
                 }
-
-                AddOnTarget target = new AddOnTarget(addon.getAbsolutePath(), name, vendor,
-                        revisionValue, description, libMap, baseTarget);
-
-                // need to parse the skins.
-                String[] skins = parseSkinFolder(target.getPath(IAndroidTarget.SKINS));
-
-                // get the default skin, or take it from the base platform if needed.
-                String defaultSkin = propertyMap.get(ADDON_DEFAULT_SKIN);
-                if (defaultSkin == null) {
-                    if (skins.length == 1) {
-                        defaultSkin = skins[0];
-                    } else {
-                        defaultSkin = baseTarget.getDefaultSkin();
-                    }
-                }
-
-                // get the USB ID (if available)
-                int usbVendorId = convertId(propertyMap.get(ADDON_USB_VENDOR));
-                if (usbVendorId != IAndroidTarget.NO_USB_ID) {
-                    target.setUsbVendorId(usbVendorId);
-                }
-
-                target.setSkins(skins, defaultSkin);
-
-                return target;
             }
-        } else {
-            log.warning("Ignoring add-on '%1$s': %2$s is missing.", addon.getName(),
-                    SdkConstants.FN_MANIFEST_INI);
+
+            AddOnTarget target = new AddOnTarget(addonDir.getAbsolutePath(), name, vendor,
+                    revisionValue, description, libMap, baseTarget);
+
+            // need to parse the skins.
+            String[] skins = parseSkinFolder(target.getPath(IAndroidTarget.SKINS));
+
+            // get the default skin, or take it from the base platform if needed.
+            String defaultSkin = propertyMap.get(ADDON_DEFAULT_SKIN);
+            if (defaultSkin == null) {
+                if (skins.length == 1) {
+                    defaultSkin = skins[0];
+                } else {
+                    defaultSkin = baseTarget.getDefaultSkin();
+                }
+            }
+
+            // get the USB ID (if available)
+            int usbVendorId = convertId(propertyMap.get(ADDON_USB_VENDOR));
+            if (usbVendorId != IAndroidTarget.NO_USB_ID) {
+                target.setUsbVendorId(usbVendorId);
+            }
+
+            target.setSkins(skins, defaultSkin);
+
+            return target;
+        }
+        catch (Exception e) {
+            log.warning("Ignoring add-on '%1$s': error %2$s.",
+                    addonDir.getName(), e.toString());
         }
 
         return null;
+    }
+
+    /**
+     * Parses the add-on properties and decodes any error that occurs when loading an addon.
+     *
+     * @param addonDir the location of the addon directory.
+     * @param targetList The list of Android target that were already loaded from the SDK.
+     * @param log the ISdkLog object receiving warning/error from the parsing. Cannot be null.
+     * @return A pair with the property map and an error string. Both can be null but not at the
+     *  same time. If a non-null error is present then the property map must be ignored. The error
+     *  should be translatable as it might show up in the SdkManager UI.
+     */
+    public static Pair<Map<String, String>, String> parseAddonProperties(
+            File addonDir,
+            IAndroidTarget[] targetList,
+            ISdkLog log) {
+        Map<String, String> propertyMap = null;
+        String error = null;
+
+        FileWrapper addOnManifest = new FileWrapper(addonDir, SdkConstants.FN_MANIFEST_INI);
+
+        do {
+            if (!addOnManifest.isFile()) {
+                error = String.format("File not found: %1$s", SdkConstants.FN_MANIFEST_INI);
+                break;
+            }
+
+            propertyMap = ProjectProperties.parsePropertyFile(addOnManifest, log);
+            if (propertyMap == null) {
+                error = String.format("Failed to parse properties from %1$s",
+                        SdkConstants.FN_MANIFEST_INI);
+                break;
+            }
+
+            // look for some specific values in the map.
+            // we require name, vendor, and api
+            String name = propertyMap.get(ADDON_NAME);
+            if (name == null) {
+                error = addonManifestWarning(ADDON_NAME);
+                break;
+            }
+
+            String vendor = propertyMap.get(ADDON_VENDOR);
+            if (vendor == null) {
+                error = addonManifestWarning(ADDON_VENDOR);
+                break;
+            }
+
+            String api = propertyMap.get(ADDON_API);
+            PlatformTarget baseTarget = null;
+            if (api == null) {
+                error = addonManifestWarning(ADDON_API);
+                break;
+            }
+
+            // Look for a platform that has a matching api level or codename.
+            for (IAndroidTarget target : targetList) {
+                if (target.isPlatform() && target.getVersion().equals(api)) {
+                    baseTarget = (PlatformTarget)target;
+                    break;
+                }
+            }
+
+            if (baseTarget == null) {
+                error = String.format("Unable to find base platform with API level '%1$s'", api);
+                break;
+            }
+
+            // get the add-on revision
+            String revision = propertyMap.get(ADDON_REVISION);
+            if (revision == null) {
+                revision = propertyMap.get(ADDON_REVISION_OLD);
+            }
+            if (revision != null) {
+                try {
+                    Integer.parseInt(revision);
+                } catch (NumberFormatException e) {
+                    // looks like revision does not parse to a number.
+                    error = String.format("%1$s is not a valid number in %2$s.",
+                                ADDON_REVISION, SdkConstants.FN_BUILD_PROP);
+                    break;
+                }
+            }
+
+        } while(false);
+
+        return Pair.of(propertyMap, error);
     }
 
     /**
@@ -577,16 +653,14 @@ public final class SdkManager {
     }
 
     /**
-     * Displays a warning in the log about the addon being ignored due to a missing manifest value.
+     * Prepares a warning about the addon being ignored due to a missing manifest value.
+     * This string will show up in the SdkManager UI.
      *
-     * @param log The logger object. Cannot be null.
-     * @param addonName The addon name, for display.
      * @param valueName The missing manifest value, for display.
      */
-    private static void displayAddonManifestWarning(ISdkLog log, String addonName,
-            String valueName) {
-        log.warning("Ignoring add-on '%1$s': '%2$s' is missing from %3$s.",
-                addonName, valueName, SdkConstants.FN_MANIFEST_INI);
+    private static String addonManifestWarning(String valueName) {
+        return String.format("'%1$s' is missing from %2$s.",
+                valueName, SdkConstants.FN_MANIFEST_INI);
     }
 
     /**
@@ -603,7 +677,7 @@ public final class SdkManager {
             File f = new File(platform, relativePath);
             if (!f.exists()) {
                 log.warning(
-                        "Ignoring platform '%1$s': %2$s is missing.",
+                        "Ignoring platform '%1$s': %2$s is missing.",                  //$NON-NLS-1$
                         platform.getName(), relativePath);
                 return false;
             }
@@ -650,7 +724,7 @@ public final class SdkManager {
      * @param log Logger. Cannot be null.
      */
     private void loadSamples(ISdkLog log) {
-        File sampleFolder = new File(mSdkLocation, SdkConstants.FD_SAMPLES);
+        File sampleFolder = new File(mOsSdkPath, SdkConstants.FD_SAMPLES);
         if (sampleFolder.isDirectory()) {
             File[] platforms  = sampleFolder.listFiles();
 
@@ -688,13 +762,13 @@ public final class SdkManager {
 
             return new AndroidVersion(p);
         } catch (FileNotFoundException e) {
-            log.warning("Ignoring sample '%1$s': does not contain %2$s.", //$NON-NLS-1$
+            log.warning("Ignoring sample '%1$s': does not contain %2$s.",              //$NON-NLS-1$
                     folder.getName(), SdkConstants.FN_SOURCE_PROP);
         } catch (IOException e) {
-            log.warning("Ignoring sample '%1$s': failed reading %2$s.", //$NON-NLS-1$
+            log.warning("Ignoring sample '%1$s': failed reading %2$s.",                //$NON-NLS-1$
                     folder.getName(), SdkConstants.FN_SOURCE_PROP);
         } catch (AndroidVersionException e) {
-            log.warning("Ignoring sample '%1$s': no android version found in %2$s.", //$NON-NLS-1$
+            log.warning("Ignoring sample '%1$s': no android version found in %2$s.",   //$NON-NLS-1$
                     folder.getName(), SdkConstants.FN_SOURCE_PROP);
         }
 

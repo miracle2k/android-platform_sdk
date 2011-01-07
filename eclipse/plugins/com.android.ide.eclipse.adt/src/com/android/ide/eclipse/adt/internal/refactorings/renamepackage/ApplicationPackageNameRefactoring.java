@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.refactorings.renamepackage;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
 
@@ -81,9 +82,9 @@ class ApplicationPackageNameRefactoring extends Refactoring {
 
     List<String> MAIN_COMPONENT_TYPES_LIST = Arrays.asList(MAIN_COMPONENT_TYPES);
 
-    public final static String ANDROID_NS_URI = SdkConstants.NS_RESOURCES;
-    public final static String NAMESPACE_DECLARATION_PREFIX = "xmlns:"; //$NON-NLS-1$
-
+    private final static String ANDROID_NS_URI = SdkConstants.NS_RESOURCES;
+    private final static String NAMESPACE_DECLARATION_PREFIX =
+        XmlnsAttributeDescriptor.XMLNS_COLON;
 
     ApplicationPackageNameRefactoring(
             IProject project,

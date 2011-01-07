@@ -18,14 +18,18 @@ package com.android.sdklib.internal.repository;
 
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
+import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.annotations.VisibleForTesting.Visibility;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
 
 import org.w3c.dom.Node;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Represents a platform-tool XML node in an SDK repository.
@@ -54,7 +58,7 @@ public class PlatformToolPackage extends Package {
      * <p/>
      * By design, this creates a package with one and only one archive.
      */
-    PlatformToolPackage(
+    static Package create(
             SdkSource source,
             Properties props,
             int revision,
@@ -64,6 +68,68 @@ public class PlatformToolPackage extends Package {
             Os archiveOs,
             Arch archiveArch,
             String archiveOsPath) {
+
+        PlatformToolPackage ptp = new PlatformToolPackage(source, props, revision, license,
+                description, descUrl, archiveOs, archiveArch, archiveOsPath);
+
+        File platformToolsFolder = new File(archiveOsPath);
+        String error = null;
+        if (!platformToolsFolder.isDirectory()) {
+            error = "platform-tools folder is missing";
+        } else {
+            File[] files = platformToolsFolder.listFiles();
+            if (files == null || files.length == 0) {
+                error = "platform-tools folder is empty";
+            } else {
+                Set<String> names = new HashSet<String>();
+                for (File file : files) {
+                    names.add(file.getName());
+                }
+                for (String name : new String[] { SdkConstants.FN_ADB,
+                                                  SdkConstants.FN_AAPT,
+                                                  SdkConstants.FN_AIDL,
+                                                  SdkConstants.FN_DX } ) {
+                    if (!names.contains(name)) {
+                        if (error == null) {
+                            error = "platform-tools folder is missing ";
+                        } else {
+                            error += ", ";
+                        }
+                        error += name;
+                    }
+                }
+            }
+        }
+
+        if (error != null) {
+            String shortDesc = ptp.getShortDescription() + " [*]";  //$NON-NLS-1$
+
+            String longDesc = String.format(
+                    "Broken Platform-Tools Package: %1$s\n" +
+                    "[*] Package cannot be used due to error: %2$s",
+                    description,
+                    error);
+
+            BrokenPackage ba = new BrokenPackage(props, shortDesc, longDesc,
+                    IMinApiLevelDependency.MIN_API_LEVEL_NOT_SPECIFIED, archiveOsPath);
+            return ba;
+        }
+
+
+        return ptp;
+    }
+
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected PlatformToolPackage(
+                SdkSource source,
+                Properties props,
+                int revision,
+                String license,
+                String description,
+                String descUrl,
+                Os archiveOs,
+                Arch archiveArch,
+                String archiveOsPath) {
         super(source,
                 props,
                 revision,

@@ -87,7 +87,38 @@ public class ExtraPackage extends MinToolsPackage
      * <p/>
      * By design, this creates a package with one and only one archive.
      */
-    ExtraPackage(SdkSource source,
+    static Package create(SdkSource source,
+            Properties props,
+            String vendor,
+            String path,
+            int revision,
+            String license,
+            String description,
+            String descUrl,
+            Os archiveOs,
+            Arch archiveArch,
+            String archiveOsPath) {
+        ExtraPackage ep = new ExtraPackage(source, props, vendor, path, revision, license,
+                description, descUrl, archiveOs, archiveArch, archiveOsPath);
+
+        if (ep.isPathValid()) {
+            return ep;
+        } else {
+            String shortDesc = ep.getShortDescription() + " [*]";  //$NON-NLS-1$
+
+            String longDesc = String.format(
+                    "Broken Extra Package: %1$s\n" +
+                    "[*] Package cannot be used due to error: Invalid install path %2$s",
+                    description,
+                    ep.getPath());
+
+            BrokenPackage ba = new BrokenPackage(props, shortDesc, longDesc,
+                    IMinApiLevelDependency.MIN_API_LEVEL_NOT_SPECIFIED, archiveOsPath);
+            return ba;
+        }
+    }
+
+    private ExtraPackage(SdkSource source,
             Properties props,
             String vendor,
             String path,

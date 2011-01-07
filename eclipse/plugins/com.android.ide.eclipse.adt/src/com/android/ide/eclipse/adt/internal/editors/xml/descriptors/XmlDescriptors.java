@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.xml.descriptors;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_NS_PREFIX;
+
 import com.android.ide.common.resources.platform.AttributeInfo;
 import com.android.ide.common.resources.platform.DeclareStyleableInfo;
 import com.android.ide.common.resources.platform.ViewClassInfo;
@@ -132,7 +134,7 @@ public final class XmlDescriptors implements IDescriptorProvider {
             ViewClassInfo[] prefs, ViewClassInfo[] prefGroups) {
 
         XmlnsAttributeDescriptor xmlns = new XmlnsAttributeDescriptor(
-                "android", //$NON-NLS-1$
+                ANDROID_NS_PREFIX,
                 SdkConstants.NS_RESOURCES);
 
         ElementDescriptor searchable = createSearchable(searchableStyleMap, xmlns);

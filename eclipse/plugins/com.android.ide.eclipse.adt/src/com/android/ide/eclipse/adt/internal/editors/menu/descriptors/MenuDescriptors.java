@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.menu.descriptors;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_NS_PREFIX;
+
 import com.android.ide.common.resources.platform.DeclareStyleableInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
@@ -42,17 +44,17 @@ public final class MenuDescriptors implements IDescriptorProvider {
     public ElementDescriptor getDescriptor() {
         return mDescriptor;
     }
-    
+
     public ElementDescriptor[] getRootElementDescriptors() {
         return mDescriptor.getChildren();
     }
-    
+
     /**
      * Updates the document descriptor.
      * <p/>
      * It first computes the new children of the descriptor and then updates them
      * all at once.
-     * 
+     *
      * @param styleMap The map style => attributes from the attrs.xml file
      */
     public synchronized void updateDescriptors(Map<String, DeclareStyleableInfo> styleMap) {
@@ -65,7 +67,7 @@ public final class MenuDescriptors implements IDescriptorProvider {
         // A sub menu can contains sub items or sub groups:
         //  - sub groups can contain sub items
         //  - sub items cannot contain anything
-        
+
         if (mDescriptor == null) {
             mDescriptor = createElement(styleMap,
                 MENU_ROOT_ELEMENT, // xmlName
@@ -120,8 +122,8 @@ public final class MenuDescriptors implements IDescriptorProvider {
                 new ElementDescriptor[] { top_item }, // childrenElements,
                 false /* mandatory */);
 
-        XmlnsAttributeDescriptor xmlns = new XmlnsAttributeDescriptor("android", //$NON-NLS-1$
-                SdkConstants.NS_RESOURCES); 
+        XmlnsAttributeDescriptor xmlns = new XmlnsAttributeDescriptor(ANDROID_NS_PREFIX,
+                SdkConstants.NS_RESOURCES);
 
         updateElement(mDescriptor, styleMap, "Menu", xmlns); //$NON-NLS-1$
         mDescriptor.setChildren(new ElementDescriptor[] { top_item, top_group });
@@ -132,7 +134,7 @@ public final class MenuDescriptors implements IDescriptorProvider {
      * and the javadoc & attributes extracted from the style map if any.
      */
     private ElementDescriptor createElement(
-            Map<String, DeclareStyleableInfo> styleMap, 
+            Map<String, DeclareStyleableInfo> styleMap,
             String xmlName, String uiName, String sdkUrl,
             AttributeDescriptor extraAttribute,
             ElementDescriptor[] childrenElements, boolean mandatory) {
@@ -144,7 +146,7 @@ public final class MenuDescriptors implements IDescriptorProvider {
                 getStyleName(xmlName),
                 extraAttribute);
     }
-    
+
     /**
      * Updates an ElementDescriptor with the javadoc & attributes extracted from the style
      * map if any.
@@ -187,8 +189,8 @@ public final class MenuDescriptors implements IDescriptorProvider {
 
         // This is NOT the UI Name but the expected internal style name
         final String MENU_STYLE_BASE_NAME = "Menu"; //$NON-NLS-1$
-        
-        if (!styleName.equals(MENU_STYLE_BASE_NAME)) {        
+
+        if (!styleName.equals(MENU_STYLE_BASE_NAME)) {
             styleName = MENU_STYLE_BASE_NAME + styleName;
         }
         return styleName;

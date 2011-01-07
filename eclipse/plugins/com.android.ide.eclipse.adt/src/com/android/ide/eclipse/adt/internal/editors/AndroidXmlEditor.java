@@ -90,10 +90,10 @@ import java.net.URL;
 public abstract class AndroidXmlEditor extends FormEditor implements IResourceChangeListener {
 
     /** Preference name for the current page of this file */
-    private static final String PREF_CURRENT_PAGE = "_current_page"; // $NON-NLS-1$
+    private static final String PREF_CURRENT_PAGE = "_current_page"; //$NON-NLS-1$
 
     /** Id string used to create the Android SDK browser */
-    private static String BROWSER_ID = "android"; // $NON-NLS-1$
+    private static String BROWSER_ID = "android"; //$NON-NLS-1$
 
     /** Page id of the XML source editor, used for switching tabs programmatically */
     public final static String TEXT_EDITOR_ID = "editor_part"; //$NON-NLS-1$
@@ -1072,7 +1072,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
             }
         } catch (BadLocationException e) {
             // This cannot happen because we already clamped the offsets
-            AdtPlugin.log(e, e.toString()); // $NON-NLS-1$
+            AdtPlugin.log(e, e.toString());
         }
 
         if (textViewer instanceof StructuredTextViewer) {
@@ -1134,31 +1134,45 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
             IndexedRegion region = (IndexedRegion)xmlNode;
             IDocument document = getStructuredSourceViewer().getDocument();
             int startOffset = region.getStartOffset();
-            try {
-                IRegion lineInformation = document.getLineInformationOfOffset(startOffset);
-                if (lineInformation != null) {
-                    int lineBegin = lineInformation.getOffset();
-                    if (lineBegin != startOffset) {
-                        String prefix = document.get(lineBegin, startOffset - lineBegin);
-
-                        // It's possible that the tag whose indentation we seek is not
-                        // at the beginning of the line. In that case we'll just return
-                        // the indentation of the line itself.
-                        for (int i = 0; i < prefix.length(); i++) {
-                            if (!Character.isWhitespace(prefix.charAt(i))) {
-                                return prefix.substring(0, i);
-                            }
-                        }
-
-                        return prefix;
-                    }
-                }
-            } catch (BadLocationException e) {
-                AdtPlugin.log(e, "Could not obtain indentation"); // $NON-NLS-1$
-            }
+            return getIndentAtOffset(document, startOffset);
         }
 
-        return ""; // $NON-NLS-1$
+        return ""; //$NON-NLS-1$
+    }
+
+    /**
+     * Returns the indentation String at the line containing the given offset
+     *
+     * @param document the document containing the offset
+     * @param offset The offset of a character on a line whose indentation we seek
+     * @return The indent-string of the given node, or "" if the indentation for some
+     *         reason could not be computed.
+     */
+    public static String getIndentAtOffset(IDocument document, int offset) {
+        try {
+            IRegion lineInformation = document.getLineInformationOfOffset(offset);
+            if (lineInformation != null) {
+                int lineBegin = lineInformation.getOffset();
+                if (lineBegin != offset) {
+                    String prefix = document.get(lineBegin, offset - lineBegin);
+
+                    // It's possible that the tag whose indentation we seek is not
+                    // at the beginning of the line. In that case we'll just return
+                    // the indentation of the line itself.
+                    for (int i = 0; i < prefix.length(); i++) {
+                        if (!Character.isWhitespace(prefix.charAt(i))) {
+                            return prefix.substring(0, i);
+                        }
+                    }
+
+                    return prefix;
+                }
+            }
+        } catch (BadLocationException e) {
+            AdtPlugin.log(e, "Could not obtain indentation"); //$NON-NLS-1$
+        }
+
+        return ""; //$NON-NLS-1$
     }
 
     /**
