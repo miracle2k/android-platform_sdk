@@ -126,7 +126,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -219,8 +218,6 @@ public class GraphicalEditorPart extends EditorPart
     private Map<String, Map<String, ResourceValue>> mConfiguredFrameworkRes;
     private Map<String, Map<String, ResourceValue>> mConfiguredProjectRes;
     private ProjectCallback mProjectCallback;
-    private LayoutLog mLog;
-
     private boolean mNeedsRecompute = false;
 
     private TargetListener mTargetListener;
@@ -1189,8 +1186,7 @@ public class GraphicalEditorPart extends EditorPart
 
     /**
      * Renders the given model, using this editor's theme and screen settings, and returns
-     * the result as a {@link LayoutScene}. Any error messages will be written to the
-     * editor's error area.
+     * the result as a {@link RenderSession}.
      *
      * @param model the model to be rendered, which can be different than the editor's own
      *            {@link #getModel()}.
@@ -1202,7 +1198,7 @@ public class GraphicalEditorPart extends EditorPart
      * @param transparentBackground If true, the rendering will <b>not</b> paint the
      *            normal background requested by the theme, and it will instead paint the
      *            background using a fully transparent background color
-     * @return the resulting rendered image wrapped in an {@link LayoutScene}
+     * @return the resulting rendered image wrapped in an {@link RenderSession}
      */
     public RenderSession render(UiDocumentNode model, int width, int height,
             Set<UiElementNode> explodeNodes, boolean transparentBackground) {
@@ -1216,7 +1212,7 @@ public class GraphicalEditorPart extends EditorPart
 
         IProject iProject = mEditedFile.getProject();
         return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes,
-                transparentBackground);
+                transparentBackground, new LayoutLog());
     }
 
     /**
@@ -1436,16 +1432,23 @@ public class GraphicalEditorPart extends EditorPart
         int width = rect.width;
         int height = rect.height;
 
+        RenderLogger logger = new RenderLogger(mEditedFile.getName());
+
         RenderSession session = renderWithBridge(iProject, model, layoutLib, width, height,
-                explodeNodes, false);
+                explodeNodes, false, logger);
 
         canvas.setSession(session, explodeNodes);
 
         // update the UiElementNode with the layout info.
         if (session.getResult().isSuccess() == false) {
-            // An error was generated. Print it.
-            displayError(session.getResult().getErrorMessage());
-
+            // An error was generated. Print it (and any other accumulated warnings)
+            String errorMessage = session.getResult().getErrorMessage();
+            if (errorMessage != null && errorMessage.length() > 0) {
+                logger.error(null, session.getResult().getErrorMessage());
+            } else if (!logger.hasProblems()) {
+                logger.error(null, "Unexpected error in rendering, no details given");
+            }
+            displayError(logger.getProblems());
         } else {
             // Success means there was no exception. But we might have detected
             // some missing classes and swapped them by a mock view.
@@ -1453,6 +1456,8 @@ public class GraphicalEditorPart extends EditorPart
             Set<String> brokenClasses = mProjectCallback.getUninstantiatableClasses();
             if (missingClasses.size() > 0 || brokenClasses.size() > 0) {
                 displayFailingClasses(missingClasses, brokenClasses);
+            } else if (logger.hasProblems()) {
+                displayError(logger.getProblems());
             } else {
                 // Nope, no missing or broken classes. Clear success, congrats!
                 hideError();
@@ -1464,7 +1469,7 @@ public class GraphicalEditorPart extends EditorPart
 
     private RenderSession renderWithBridge(IProject iProject, UiDocumentNode model,
             LayoutLibrary layoutLib, int width, int height, Set<UiElementNode> explodeNodes,
-            boolean transparentBackground) {
+            boolean transparentBackground, LayoutLog logger) {
         ResourceManager resManager = ResourceManager.getInstance();
 
         ProjectResources projectRes = resManager.getProjectResources(iProject);
@@ -1499,45 +1504,6 @@ public class GraphicalEditorPart extends EditorPart
         } else {
             // Also clears the set of missing classes prior to rendering
             mProjectCallback.getMissingClasses().clear();
-        }
-
-        // Lazily create the logger the first time we need it
-        if (mLog == null) {
-            mLog = new LayoutLog() {
-                @Override
-                public void error(String tag, String message) {
-                    AdtPlugin.printErrorToConsole(mEditedFile.getName(), message);
-                }
-
-                @Override
-                public void error(String tag, Throwable throwable) {
-                    String message = throwable.getMessage();
-                    if (message == null) {
-                        message = throwable.getClass().getName();
-                    }
-
-                    PrintStream ps = new PrintStream(AdtPlugin.getErrorStream());
-                    throwable.printStackTrace(ps);
-                }
-
-                @Override
-                public void error(String tag, String message, Throwable throwable) {
-                    AdtPlugin.printErrorToConsole(mEditedFile.getName(), message);
-
-                    PrintStream ps = new PrintStream(AdtPlugin.getErrorStream());
-                    throwable.printStackTrace(ps);
-                }
-
-                @Override
-                public void warning(String tag, String message) {
-                    AdtPlugin.printToConsole(mEditedFile.getName(), message);
-                }
-
-                @Override
-                public void fidelityWarning(String tag, String message, Throwable throwable) {
-                    AdtPlugin.printToConsole(mEditedFile.getName(), message);
-                }
-            };
         }
 
         // get the selected theme
@@ -1621,7 +1587,7 @@ public class GraphicalEditorPart extends EditorPart
                 density, xdpi, ydpi,
                 theme, isProjectTheme,
                 configuredProjectRes, frameworkResources, mProjectCallback,
-                mLog);
+                logger);
 
         if (transparentBackground) {
             // It doesn't matter what the background color is as long as the alpha
@@ -1839,12 +1805,7 @@ public class GraphicalEditorPart extends EditorPart
         sr.start = start;
         sr.length = link.length();
         sr.fontStyle = SWT.NORMAL;
-        // We want to use SWT.UNDERLINE_LINK but the constant is only
-        // available when using SWT from Eclipse 3.5+
-        int version = SWT.getVersion();
-        if (version > 3500) {
-            sr.underlineStyle = 4 /*SWT.UNDERLINE_LINK*/;
-        }
+        sr.underlineStyle = SWT.UNDERLINE_LINK;
         sr.underline = true;
         styledText.setStyleRange(sr);
     }
