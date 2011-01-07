@@ -380,12 +380,20 @@ public class GraphicalEditorPart extends EditorPart
         // The initial state is a serialized version of the state compatible with
         // {@link ConfigurationComposite#CONFIG_STATE}.
         String initialState = null;
-        if (mEditedFile != null) {
+        IFile file = mEditedFile;
+        if (file == null) {
+            IEditorInput input = mLayoutEditor.getEditorInput();
+            if (input instanceof FileEditorInput) {
+                file = ((FileEditorInput) input).getFile();
+            }
+        }
+
+        if (file != null) {
             try {
-                initialState = (String) mEditedFile.getSessionProperty(NAME_INITIAL_STATE);
+                initialState = (String) file.getSessionProperty(NAME_INITIAL_STATE);
                 if (initialState != null) {
                     // Only use once
-                    mEditedFile.setSessionProperty(NAME_INITIAL_STATE, null);
+                    file.setSessionProperty(NAME_INITIAL_STATE, null);
                 }
             } catch (CoreException e) {
                 AdtPlugin.log(e, "Can't read session property %1$s", NAME_INITIAL_STATE);
@@ -895,6 +903,12 @@ public class GraphicalEditorPart extends EditorPart
         private IProject getProject() {
             return getLayoutEditor().getProject();
         }
+    }
+
+    /** Refresh the configured project resources associated with this editor */
+    /*package*/ void refreshProjectResources() {
+        mConfiguredProjectRes = null;
+        mConfigListener.getConfiguredProjectResources();
     }
 
     /**

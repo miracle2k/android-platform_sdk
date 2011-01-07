@@ -779,7 +779,7 @@ public class ExtractStringRefactoring extends Refactoring {
                 int pos2 = mTokenString.indexOf('/');
                 if (pos2 > pos1) {
                     String kind = mTokenString.substring(pos1 + 1, pos2);
-                    if (ResourceType.STRING.getName().equals(kind)) {                            //$NON-NLS-1$
+                    if (ResourceType.STRING.getName().equals(kind)) {
                         mTokenString = null;
                         status.addFatalError(String.format(
                                 "The attribute %1$s already contains a %2$s reference.",

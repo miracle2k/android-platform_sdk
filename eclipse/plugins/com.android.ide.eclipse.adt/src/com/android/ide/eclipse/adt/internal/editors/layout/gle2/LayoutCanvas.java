@@ -18,6 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.Point;
+import com.android.ide.common.layout.LayoutConstants;
 import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.eclipse.adt.AdtPlugin;
@@ -1187,7 +1188,7 @@ public class LayoutCanvas extends Canvas {
 
                 // A root node requires the Android XMLNS
                 uiNew.setAttributeValue(
-                        "android",
+                        LayoutConstants.ANDROID_NS_PREFIX,
                         XmlnsAttributeDescriptor.XMLNS_URI,
                         SdkConstants.NS_RESOURCES,
                         true /*override*/);

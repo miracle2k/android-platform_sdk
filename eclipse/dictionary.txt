@@ -1,3 +1,4 @@
+&apos;
 aapt
 accessor
 adb
@@ -13,6 +14,7 @@ api
 apk
 app
 apps
+arg
 avd
 avds
 backport
@@ -21,9 +23,11 @@ basenames
 bitmask
 breadcrumb
 builtin
+bytecode
 callback
 callbacks
 carlo
+changeset
 checkbox
 classloader
 classpath
@@ -40,6 +44,7 @@ configs
 configurability
 congrats
 coords
+dalvik
 ddms
 deactivated
 debuggable
@@ -66,6 +71,7 @@ env
 exec
 fallback
 foo
+foreach
 fqcn
 gen
 groovy
@@ -89,6 +95,7 @@ instantiatable
 int
 javac
 javadoc
+keystore
 layoutlib
 leaky
 lib
@@ -99,6 +106,7 @@ linux
 locale
 locales
 logo
+lowercase
 luminance
 mac
 macs
@@ -122,6 +130,7 @@ plugin
 pre
 precompiler
 pref
+prefs
 preload
 preloads
 primordial
@@ -135,8 +144,10 @@ recompilation
 rect
 redo
 refactor
+refactoring
 regexp
 registry
+reindent
 remap
 reparse
 reparses
@@ -154,6 +165,7 @@ selectable
 semi
 serializer
 settable
+snip
 spec
 standalone
 stash
@@ -165,6 +177,7 @@ subclassing
 submenu
 supertype
 syncs
+temp
 thematically
 themed
 tmp
@@ -188,6 +201,7 @@ varargs
 verbosity
 vs
 webtools
+whilst
 workflow
 xdpi
 xml

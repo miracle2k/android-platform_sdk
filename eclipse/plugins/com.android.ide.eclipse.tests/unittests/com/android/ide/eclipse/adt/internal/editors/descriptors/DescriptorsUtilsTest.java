@@ -239,4 +239,16 @@ public class DescriptorsUtilsTest extends TestCase {
             return super.findClass(name);
         }
     }
+
+    public void testToXmlAttributeValue() throws Exception {
+        assertEquals("", DescriptorsUtils.toXmlAttributeValue(""));
+        assertEquals("foo", DescriptorsUtils.toXmlAttributeValue("foo"));
+        assertEquals("foo<bar", DescriptorsUtils.toXmlAttributeValue("foo<bar"));
+
+        assertEquals("&quot;", DescriptorsUtils.toXmlAttributeValue("\""));
+        assertEquals("&apos;", DescriptorsUtils.toXmlAttributeValue("'"));
+        assertEquals("foo&quot;b&apos;&apos;ar",
+                DescriptorsUtils.toXmlAttributeValue("foo\"b''ar"));
+    }
+
 }

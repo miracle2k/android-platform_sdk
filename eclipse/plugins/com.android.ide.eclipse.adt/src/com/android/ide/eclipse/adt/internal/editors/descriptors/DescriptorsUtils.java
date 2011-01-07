@@ -25,7 +25,9 @@ import static com.android.ide.common.layout.LayoutConstants.EXPANDABLE_LIST_VIEW
 import static com.android.ide.common.layout.LayoutConstants.FQCN_ADAPTER_VIEW;
 import static com.android.ide.common.layout.LayoutConstants.GALLERY;
 import static com.android.ide.common.layout.LayoutConstants.GRID_VIEW;
+import static com.android.ide.common.layout.LayoutConstants.ID_PREFIX;
 import static com.android.ide.common.layout.LayoutConstants.LIST_VIEW;
+import static com.android.ide.common.layout.LayoutConstants.NEW_ID_PREFIX;
 import static com.android.ide.common.layout.LayoutConstants.RELATIVE_LAYOUT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
@@ -756,7 +758,7 @@ public final class DescriptorsUtils {
             return "@android:id/tabs";                         //$NON-NLS-1$
         }
 
-        return "@+id/" + getFreeWidgetId(uiRoot,   //$NON-NLS-1$
+        return NEW_ID_PREFIX + getFreeWidgetId(uiRoot,
                 new Object[] { name, null, null, null });
     }
 
@@ -819,8 +821,8 @@ public final class DescriptorsUtils {
 
         String id = uiRoot.getAttributeValue(ATTR_ID);
         if (id != null) {
-            id = id.replace("@+id/", "");                               //$NON-NLS-1$ $NON-NLS-2$
-            id = id.replace("@id/", "");                                //$NON-NLS-1$ $NON-NLS-2$
+            id = id.replace(NEW_ID_PREFIX, "");                            //$NON-NLS-1$
+            id = id.replace(ID_PREFIX, "");                                //$NON-NLS-1$
             if (map.add(id) && map.contains(generated)) {
 
                 do {
@@ -884,5 +886,34 @@ public final class DescriptorsUtils {
         }
 
         return false;
+    }
+
+    /**
+     * Converts the given attribute value to an XML-attribute-safe value, meaning that
+     * single and double quotes are replaced with their corresponding XML entities.
+     *
+     * @param attrValue the value to be escaped
+     * @return the escaped value
+     */
+    public static String toXmlAttributeValue(String attrValue) {
+        // Must escape ' and "
+        if (attrValue.indexOf('"') == -1 && attrValue.indexOf('\'') == -1) {
+            return attrValue;
+        }
+
+        int n = attrValue.length();
+        StringBuilder sb = new StringBuilder(2 * n);
+        for (int i = 0; i < n; i++) {
+            char c = attrValue.charAt(i);
+            if (c == '"') {
+                sb.append("&quot;"); //$NON-NLS-1$
+            } else if (c == '\'') {
+                sb.append("&apos;"); //$NON-NLS-1$
+            } else {
+                sb.append(c);
+            }
+        }
+
+        return sb.toString();
     }
 }

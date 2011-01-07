@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.uimodel;
 
+import com.android.ide.common.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
@@ -139,9 +140,9 @@ public class UiListAttributeNode extends UiAbstractTextAttributeNode {
         // FrameworkResourceManager expects a specific prefix for the attribute.
         String nsPrefix = "";
         if (SdkConstants.NS_RESOURCES.equals(descriptor.getNamespaceUri())) {
-            nsPrefix = "android:"; //$NON-NLS-1$
+            nsPrefix = LayoutConstants.ANDROID_NS_PREFIX + ':';
         } else if (XmlnsAttributeDescriptor.XMLNS_URI.equals(descriptor.getNamespaceUri())) {
-            nsPrefix = "xmlns:"; //$NON-NLS-1$
+            nsPrefix = XmlnsAttributeDescriptor.XMLNS_COLON;
         }
         attr_name = nsPrefix + attr_name;
 
