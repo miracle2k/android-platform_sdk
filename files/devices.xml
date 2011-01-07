@@ -288,7 +288,7 @@
         </d:config>
     </d:device>
 
-    <d:device name="10.1in XWVGA">
+    <d:device name="10.1in WXGA">
         <d:default>
             <d:screen-size>xlarge</d:screen-size>
             <d:screen-ratio>long</d:screen-ratio>
