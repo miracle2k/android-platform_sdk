@@ -4,6 +4,8 @@
     - The generated XML will be better formatted. Full XML formatter can be enabled in the preferences (under Android > Editors), but will touch part of the XML that isn't modified.
     - Rendering target can now be changed from the default (project target)
     - when choosing resources for rendering, the API level is properly handled
+- Logcat view in DDMS now properly displays UTF-8 characters.
+
 
 8.0.1:
 - Fix compilation issue in Android projects referencing standard Java projects.
