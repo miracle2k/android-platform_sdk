@@ -917,10 +917,10 @@ public final class Sdk  {
                 synchronized (sLock) {
                     for (ProjectState projectState : sProjectStateMap.values()) {
                         if (projectState != renamedState && projectState.isMissingLibraries()) {
-                            IPath oldRelativePath = makeRelativeTo(from,
+                            IPath oldRelativePath = from.makeRelativeTo(
                                     projectState.getProject().getFullPath());
 
-                            IPath newRelativePath = makeRelativeTo(project.getFullPath(),
+                            IPath newRelativePath = project.getFullPath().makeRelativeTo(
                                     projectState.getProject().getFullPath());
 
                             // get the current libraries
@@ -1681,39 +1681,6 @@ public final class Sdk  {
         // done, but there may be updated projects that were libraries, so we need to do the same
         // for this libraries, to update the project there were depending on.
         updateProjectsWithNewLibraries(updatedLibraries);
-    }
-
-    /**
-     * Computes a new IPath targeting a given target, but relative to a given base.
-     * <p/>{@link IPath#makeRelativeTo(IPath)} is only available in 3.5 and later.
-     * <p/>This is based on the implementation {@link Path#makeRelativeTo(IPath)}.
-     * @param target the target of the IPath
-     * @param base the IPath to base the relative path on.
-     * @return the relative IPath
-     */
-    public static IPath makeRelativeTo(IPath target, IPath base) {
-        //can't make relative if devices are not equal
-        if (target.getDevice() != base.getDevice() && (target.getDevice() == null ||
-                !target.getDevice().equalsIgnoreCase(base.getDevice())))
-            return target;
-        int commonLength = target.matchingFirstSegments(base);
-        final int differenceLength = base.segmentCount() - commonLength;
-        final int newSegmentLength = differenceLength + target.segmentCount() - commonLength;
-        if (newSegmentLength == 0)
-            return Path.EMPTY;
-        String[] newSegments = new String[newSegmentLength];
-        //add parent references for each segment different from the base
-        Arrays.fill(newSegments, 0, differenceLength, ".."); //$NON-NLS-1$
-        //append the segments of this path not in common with the base
-        System.arraycopy(target.segments(), commonLength, newSegments,
-                differenceLength, newSegmentLength - differenceLength);
-
-        StringBuilder sb = new StringBuilder();
-        for (String s : newSegments) {
-            sb.append(s).append('/');
-        }
-
-        return new Path(null, sb.toString());
     }
 }
 

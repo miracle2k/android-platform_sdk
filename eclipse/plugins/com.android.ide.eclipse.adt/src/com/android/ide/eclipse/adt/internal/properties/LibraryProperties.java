@@ -167,8 +167,8 @@ final class LibraryProperties {
                         "Please select a library project");
                 if (javaProject != null) {
                     IProject iProject = javaProject.getProject();
-                    IPath relativePath = Sdk.makeRelativeTo(
-                            iProject.getLocation(), mState.getProject().getLocation());
+                    IPath relativePath = iProject.getLocation().makeRelativeTo(
+                            mState.getProject().getLocation());
 
                     addItem(relativePath.toString(), iProject, -1);
                     resetEnabled();
@@ -267,11 +267,11 @@ final class LibraryProperties {
 
     /**
      * Saves the state of the UI into the {@link ProjectProperties} object that was returned by
-     * {@link #setContent(ProjectState)}.
+     * {@link #setContent}.
      * <p/>This does not update the {@link ProjectState} object that was provided, nor does it save
      * the new properties on disk. Saving the properties on disk, via
-     * {@link ProjectProperties#save()}, and updating the {@link ProjectState} instance, via
-     * {@link ProjectState#reloadProperties()} must be done by the caller.
+     * {@link ProjectPropertiesWorkingCopy#save()}, and updating the {@link ProjectState} instance,
+     * via {@link ProjectState#reloadProperties()} must be done by the caller.
      * @return <code>true</code> if there was actually new data saved in the project state, false
      * otherwise.
      */
