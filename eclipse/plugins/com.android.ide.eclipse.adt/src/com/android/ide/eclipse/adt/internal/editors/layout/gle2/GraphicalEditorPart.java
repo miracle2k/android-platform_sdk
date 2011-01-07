@@ -16,7 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_STRING_PREFIX;
 import static com.android.ide.common.layout.LayoutConstants.SCROLL_VIEW;
+import static com.android.ide.common.layout.LayoutConstants.STRING_PREFIX;
 import static com.android.ide.eclipse.adt.AndroidConstants.ANDROID_PKG;
 import static com.android.sdklib.resources.Density.DEFAULT_DENSITY;
 
@@ -1925,6 +1927,45 @@ public class GraphicalEditorPart extends EditorPart
 
         String name = url.substring(nameBegin);
         return findResourceFile(type, name, isFrameworkResource);
+    }
+
+    /**
+     * Resolve the given @string reference into a literal String using the current project
+     * configuration
+     *
+     * @param text the text resource reference to resolve
+     * @return the resolved string, or null
+     */
+    public String findString(String text) {
+        if (text.startsWith(STRING_PREFIX)) {
+            return findString(text.substring(STRING_PREFIX.length()), false);
+        } else if (text.startsWith(ANDROID_STRING_PREFIX)) {
+            return findString(text.substring(ANDROID_STRING_PREFIX.length()), true);
+        } else {
+            return text;
+        }
+    }
+
+    private String findString(String name, boolean isFrameworkResource) {
+        Map<String, Map<String, ResourceValue>> map;
+        map = isFrameworkResource ? mConfiguredFrameworkRes : mConfiguredProjectRes;
+        if (map == null) {
+            // Not yet configured
+            return null;
+        }
+
+        Map<String, ResourceValue> layoutMap = map.get(ResourceType.STRING.getName());
+        if (layoutMap != null) {
+            ResourceValue value = layoutMap.get(name);
+            if (value != null) {
+                // FIXME: This code does not handle theme value resolution.
+                // There is code to handle this, but it's in layoutlib; we should
+                // expose that and use it here.
+                return value.getValue();
+            }
+        }
+
+        return null;
     }
 
     /** This StyleRange represents a missing class link that the user can click */
