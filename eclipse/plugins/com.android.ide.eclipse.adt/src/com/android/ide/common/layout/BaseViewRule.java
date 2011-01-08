@@ -187,7 +187,7 @@ public class BaseViewRule implements IViewRule {
                     String oldText = node.getStringAttr(ANDROID_URI, ATTR_TEXT);
                     oldText = ensureValidString(oldText);
                     String newText = mRulesEngine.displayInput("New Text:", oldText, null);
-                    if (newText != null && newText.trim().length() > 0) {
+                    if (newText != null) {
                         node.editXml("Change text", new PropertySettingNodeHandler(ANDROID_URI,
                                 ATTR_TEXT, newText));
                     }
@@ -242,7 +242,9 @@ public class BaseViewRule implements IViewRule {
                                 } else {
                                     assert prop.isStringEdit();
                                     // We've already received the value outside the undo block
-                                    n.setAttribute(ANDROID_URI, actionId, customValue);
+                                    if (customValue != null) {
+                                        n.setAttribute(ANDROID_URI, actionId, customValue);
+                                    }
                                 }
                             }
                         });
