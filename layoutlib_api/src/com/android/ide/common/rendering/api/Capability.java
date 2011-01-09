@@ -36,12 +36,26 @@ public enum Capability {
      * {@link LayoutScene#insertChild(Object, IXmlPullParser, int, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
      * {@link LayoutScene#moveChild(Object, Object, int, java.util.Map, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
      * {@link LayoutScene#removeChild(Object, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
-     * {@link LayoutScene#setProperty(Object, String, String)}
+     * {@link LayoutScene#setProperty(Object, String, String)}<br>
+     * The method that receives an animation listener can only use it if the
+     * ANIMATED_VIEW_MANIPULATION, or FULL_ANIMATED_VIEW_MANIPULATION is also supported.
+     *
      * */
     VIEW_MANIPULATION,
-    /** Ability to call<br>
+    /** Ability to play animations with<br>
      * {@link LayoutScene#animate(Object, String, boolean, com.android.layoutlib.api.LayoutScene.IAnimationListener)}
-     * <p>If the bridge also supports {@link #VIEW_MANIPULATION} then those methods can use
-     * an {@link com.android.layoutlib.api.LayoutScene.IAnimationListener}, otherwise they won't. */
-    ANIMATE;
+     */
+    PLAY_ANIMATION,
+    /**
+     * Ability to manipulate views with animation, as long as the view does not change parent.
+     * {@link LayoutScene#insertChild(Object, IXmlPullParser, int, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
+     * {@link LayoutScene#moveChild(Object, Object, int, java.util.Map, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
+     * {@link LayoutScene#removeChild(Object, com.android.layoutlib.api.LayoutScene.IAnimationListener)}<br>
+     */
+    ANIMATED_VIEW_MANIPULATION,
+    /**
+     * Ability to move views (even into a different ViewGroup) with animation.
+     * see {@link LayoutScene#moveChild(Object, Object, int, java.util.Map, com.android.layoutlib.api.LayoutScene.IAnimationListener)}
+     */
+    FULL_ANIMATED_VIEW_MANIPULATION;
 }
