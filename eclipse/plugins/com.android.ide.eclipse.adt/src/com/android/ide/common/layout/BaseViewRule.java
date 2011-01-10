@@ -186,7 +186,7 @@ public class BaseViewRule implements IViewRule {
                 } else if (fullActionId.equals(EDIT_TEXT_ID)) {
                     String oldText = node.getStringAttr(ANDROID_URI, ATTR_TEXT);
                     oldText = ensureValidString(oldText);
-                    String newText = mRulesEngine.displayInput("New Text:", oldText, null);
+                    String newText = mRulesEngine.displayReferenceInput(oldText);
                     if (newText != null) {
                         node.editXml("Change text", new PropertySettingNodeHandler(ANDROID_URI,
                                 ATTR_TEXT, newText));
