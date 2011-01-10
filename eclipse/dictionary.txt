@@ -7,6 +7,7 @@ adt
 aidl
 alt
 android
+anim
 antialias
 antialiased
 apache
@@ -159,6 +160,7 @@ sans
 scrollable
 scrollbar
 scrollbars
+scrubbing
 sdk
 se
 searchable
@@ -190,6 +192,7 @@ translucency
 ui
 uncomment
 undescribed
+unhide
 unicode
 uninstall
 uninstallation

@@ -399,8 +399,28 @@ public class LayoutCanvas extends Canvas {
      *
      * @return the image overlay responsible for painting the rendered result, never null
      */
-    /* package */ ImageOverlay getImageOverlay() {
+    ImageOverlay getImageOverlay() {
         return mImageOverlay;
+    }
+
+    /**
+     * Returns the current {@link SelectionOverlay} painting the selection highlights
+     *
+     * @return the selection overlay responsible for painting the selection highlights,
+     *         never null
+     */
+    SelectionOverlay getSelectionOverlay() {
+        return mSelectionOverlay;
+    }
+
+    /**
+     * Returns the current {@link HoverOverlay} painting the mouse hover.
+     *
+     * @return the hover overlay responsible for painting the mouse hover,
+     *         never null
+     */
+    HoverOverlay getHoverOverlay() {
+        return mHoverOverlay;
     }
 
     /**
@@ -568,14 +588,18 @@ public class LayoutCanvas extends Canvas {
         gc.setFont(mFont);
         mGCWrapper.setGC(gc);
         try {
-            mImageOverlay.paint(gc);
+            if (!mImageOverlay.isHiding()) {
+                mImageOverlay.paint(gc);
+            }
 
             if (mShowOutline) {
                 if (mOutlineOverlay == null) {
                     mOutlineOverlay = new OutlineOverlay(mViewHierarchy, mHScale, mVScale);
                     mOutlineOverlay.create(getDisplay());
                 }
-                mOutlineOverlay.paint(gc);
+                if (!mOutlineOverlay.isHiding()) {
+                    mOutlineOverlay.paint(gc);
+                }
             }
 
             if (mShowInvisible) {
@@ -583,13 +607,21 @@ public class LayoutCanvas extends Canvas {
                     mEmptyOverlay = new EmptyViewsOverlay(mViewHierarchy, mHScale, mVScale);
                     mEmptyOverlay.create(getDisplay());
                 }
-                mEmptyOverlay.paint(gc);
+                if (!mEmptyOverlay.isHiding()) {
+                    mEmptyOverlay.paint(gc);
+                }
             }
 
-            mHoverOverlay.paint(gc);
-            mIncludeOverlay.paint(gc);
+            if (!mHoverOverlay.isHiding()) {
+                mHoverOverlay.paint(gc);
+            }
+            if (!mIncludeOverlay.isHiding()) {
+                mIncludeOverlay.paint(gc);
+            }
 
-            mSelectionOverlay.paint(mSelectionManager, mGCWrapper, mRulesEngine);
+            if (!mSelectionOverlay.isHiding()) {
+                mSelectionOverlay.paint(mSelectionManager, mGCWrapper, mRulesEngine);
+            }
             mGestureManager.paint(gc);
 
         } finally {
@@ -1056,77 +1088,15 @@ public class LayoutCanvas extends Canvas {
 
         manager.add(new Separator());
 
-        // Add test action
-        // Don't add it at the top above (by the cut action) because the
-        // dynamic context menu makes some assumptions about where things are
-        //// FIXME remove test.
-        //import com.android.layoutlib.api.SceneResult;
-        //import com.android.layoutlib.api.LayoutScene.IAnimationListener;
-        //manager.add(new Action("Play anim test", IAction.AS_PUSH_BUTTON) {
-        //    @Override
-        //    public void run() {
-        //        List<SelectionItem> selection = mSelectionManager.getSelections();
-        //        SelectionItem canvasSelection = selection.get(0);
-        //        CanvasViewInfo info = canvasSelection.getViewInfo();
-        //
-        //        Object viewObject = info.getViewObject();
-        //        if (viewObject != null) {
-        //            LayoutScene scene = mViewHierarchy.getScene();
-        //
-        //            scene.animate(viewObject, "testanim", false /*isFrameworkAnimation*/,
-        //                    new IAnimationListener() {
-        //                        private int mCount = 0;
-        //                        private boolean mPendingDrawing = false;
-        //                        public void onNewFrame(LayoutScene scene) {
-        //                            mCount++;
-        //                            mImageOverlay.setImage(scene.getImage());
-        //                            synchronized (this) {
-        //                                if (mPendingDrawing == false) {
-        //                                    getDisplay().asyncExec(new Runnable() {
-        //                                        public void run() {
-        //                                            drawImage();
-        //                                        }
-        //                                    });
-        //
-        //                                    mPendingDrawing = true;
-        //                                }
-        //                            }
-        //                        }
-        //
-        //                        public boolean isCanceled() {
-        //                            return false;
-        //                        }
-        //
-        //                        public void done(SceneResult result) {
-        //                            System.out.println("Animation count: " + mCount);
-        //                        }
-        //
-        //                        /**
-        //                         * this is called from the UI thread from the asyncRunnable.
-        //                         */
-        //                        public void drawImage() {
-        //                            // get last image
-        //                            synchronized (this) {
-        //                                mPendingDrawing = false;
-        //                            }
-        //
-        //                            redraw();
-        //                        }
-        //                    });
-        //        }
-        //    }
-        //});
-
-        manager.add(new Separator());
-
         manager.add(mDeleteAction);
         manager.add(mSelectAllAction);
 
         manager.add(new Separator());
+        manager.add(new PlayAnimationMenu(this));
+        manager.add(new Separator());
 
         // Group "Show Included In" and "Show In" together
-        Action includeAction = new ShowWithinMenuAction(mLayoutEditor);
-        manager.add(includeAction);
+        manager.add(new ShowWithinMenu(mLayoutEditor));
 
         // Create a "Show In" sub-menu and automatically populate it using standard
         // actions contributed by the workbench.

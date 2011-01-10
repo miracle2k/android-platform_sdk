@@ -28,6 +28,9 @@ import org.eclipse.swt.graphics.GC;
 public abstract class Overlay {
     private Device mDevice;
 
+    /** Whether the hover is hidden */
+    private boolean mHiding;
+
     /**
      * Construct the overlay, using the given graphics context for painting.
      */
@@ -63,7 +66,26 @@ public abstract class Overlay {
                 + "with specialized paint signature");
     }
 
+    /** Returns the device associated with this overlay */
     public Device getDevice() {
         return mDevice;
+    }
+
+    /**
+     * Returns whether the overlay is hidden
+     *
+     * @return true if the selection overlay is hidden
+     */
+    public boolean isHiding() {
+        return mHiding;
+    }
+
+    /**
+     * Hides the overlay
+     *
+     * @param hiding true to hide the overlay, false to unhide it (default)
+     */
+    public void setHiding(boolean hiding) {
+        mHiding = hiding;
     }
 }

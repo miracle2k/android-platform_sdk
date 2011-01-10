@@ -10,60 +10,24 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IMenuCreator;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.swt.events.MenuEvent;
-import org.eclipse.swt.events.MenuListener;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.widgets.MenuItem;
 
 import java.util.List;
 
 /**
  * Action which creates a submenu for the "Show Included In" action
  */
-class ShowWithinMenuAction extends Action implements MenuListener, IMenuCreator {
-    private Menu mMenu;
-
+class ShowWithinMenu extends SubmenuAction {
     private LayoutEditor mLayoutEditor;
 
-    ShowWithinMenuAction(LayoutEditor layoutEditor) {
-        super("Show Included In", IAction.AS_DROP_DOWN_MENU);
+    ShowWithinMenu(LayoutEditor layoutEditor) {
+        super("Show Included In");
         mLayoutEditor = layoutEditor;
     }
 
     @Override
-    public IMenuCreator getMenuCreator() {
-        return this;
-    }
-
-    public void dispose() {
-        if (mMenu != null) {
-            mMenu.dispose();
-            mMenu = null;
-        }
-    }
-
-    public Menu getMenu(Control parent) {
-        return null;
-    }
-
-    public Menu getMenu(Menu parent) {
-        mMenu = new Menu(parent);
-        mMenu.addMenuListener(this);
-        return mMenu;
-    }
-
-    public void menuHidden(MenuEvent e) {
-    }
-
-    public void menuShown(MenuEvent e) {
-        MenuItem[] menuItems = mMenu.getItems();
-        for (int i = 0; i < menuItems.length; i++) {
-            menuItems[i].dispose();
-        }
-
+    protected void addMenuItems(Menu menu) {
         GraphicalEditorPart graphicalEditor = mLayoutEditor.getGraphicalEditor();
         IFile file = graphicalEditor.getEditedFile();
         if (graphicalEditor.renderingSupports(Capability.EMBEDDED_LAYOUT)) {
@@ -75,21 +39,17 @@ class ShowWithinMenuAction extends Action implements MenuListener, IMenuCreator 
                 for (final Reference reference : includedBy) {
                     String title = reference.getDisplayName();
                     IAction action = new ShowWithinAction(title, reference);
-                    new ActionContributionItem(action).fill(mMenu, -1);
+                    new ActionContributionItem(action).fill(menu, -1);
                 }
-                new Separator().fill(mMenu, -1);
+                new Separator().fill(menu, -1);
             }
             IAction action = new ShowWithinAction("Nothing", null);
             if (includedBy == null || includedBy.size() == 0) {
                 action.setEnabled(false);
             }
-            new ActionContributionItem(action).fill(mMenu, -1);
+            new ActionContributionItem(action).fill(menu, -1);
         } else {
-            IAction action = new ShowWithinAction("Not supported on platform", Reference
-                    .create(file));
-            action.setEnabled(false);
-            action.setChecked(false);
-            new ActionContributionItem(action).fill(mMenu, -1);
+            addDisabledMessageItem("Not supported on platform");
         }
     }
 
