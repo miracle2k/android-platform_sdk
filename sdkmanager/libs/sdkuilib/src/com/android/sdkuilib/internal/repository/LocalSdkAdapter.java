@@ -94,7 +94,7 @@ class LocalSdkAdapter  {
          */
         public Object[] getElements(Object inputElement) {
             if (inputElement == LocalSdkAdapter.this) {
-                Package[] packages = mUpdaterData.getInstalledPackage();
+                Package[] packages = mUpdaterData.getInstalledPackages();
 
                 if (packages != null) {
                     return packages;

@@ -353,8 +353,11 @@ class UpdaterData implements IUpdaterData {
 
     /**
      * Returns the list of installed packages, parsing them if this has not yet been done.
+     * <p/>
+     * The package list is cached in the {@link LocalSdkParser} and will be reset when
+     * {@link #reloadSdk()} is invoked.
      */
-    public Package[] getInstalledPackage() {
+    public Package[] getInstalledPackages() {
         LocalSdkParser parser = getLocalSdkParser();
 
         Package[] packages = parser.getPackages();
@@ -416,7 +419,7 @@ class UpdaterData implements IUpdaterData {
 
                 // Mark all current local archives as already installed.
                 HashSet<Archive> installedArchives = new HashSet<Archive>();
-                for (Package p : getInstalledPackage()) {
+                for (Package p : getInstalledPackages()) {
                     for (Archive a : p.getArchives()) {
                         installedArchives.add(a);
                     }
