@@ -38,6 +38,7 @@ import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.Configurati
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.SelectorMode;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.util.Pair;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -728,6 +729,9 @@ class NewXmlFileCreationPage extends WizardPage {
      * <li>The current folder, valid if it's a folder under /res</li>
      * <li>An existing filename, in which case the user will be asked whether to override it.</li>
      * <ul>
+     * <p>
+     * The selection can also be set to a {@link Pair} of {@link IProject} and a workspace
+     * resource path (where the resource path does not have to exist yet, such as res/anim/).
      *
      * @param selection The selection when the wizard was initiated.
      */
@@ -788,6 +792,14 @@ class NewXmlFileCreationPage extends WizardPage {
                     targetWsFolderPath = wsFolderPath != null ? wsFolderPath.toString() : null;
                     targetFileName = fileName;
                 }
+            } else if (element instanceof Pair<?,?>) {
+                // Pair of Project/String
+                @SuppressWarnings("unchecked")
+                Pair<IProject,String> pair = (Pair<IProject,String>)element;
+                targetScore = 1;
+                targetProject = pair.getFirst();
+                targetWsFolderPath = pair.getSecond();
+                targetFileName = "";
             }
         }
 

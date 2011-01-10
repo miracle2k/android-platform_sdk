@@ -127,6 +127,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -2174,5 +2176,25 @@ public class GraphicalEditorPart extends EditorPart
      */
     public Reference getIncludedWithin() {
         return mIncludedWithin;
+    }
+
+    /**
+     * Return all resource names of a given type, either in the project or in the
+     * framework.
+     *
+     * @param framework if true, return all the framework resource names, otherwise return
+     *            all the project resource names
+     * @param type the type of resource to look up
+     * @return a collection of resource names, never null but possibly empty
+     */
+    public Collection<String> getResourceNames(boolean framework, ResourceType type) {
+        Map<String, Map<String, ResourceValue>> map =
+            framework ? mConfiguredFrameworkRes : mConfiguredProjectRes;
+        Map<String, ResourceValue> animations = map.get(type.getName());
+        if (animations != null) {
+            return animations.keySet();
+        } else {
+            return Collections.emptyList();
+        }
     }
 }
