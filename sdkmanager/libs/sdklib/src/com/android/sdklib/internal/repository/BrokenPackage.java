@@ -27,13 +27,20 @@ import java.util.Properties;
  * Represents an SDK repository package that is incomplete.
  * It has a distinct icon and a specific error that is supposed to help the user on how to fix it.
  */
-public class BrokenPackage extends Package implements IMinApiLevelDependency {
+public class BrokenPackage extends Package
+        implements IExactApiLevelDependency, IMinApiLevelDependency {
 
     /**
-     * The minimal API level required by this extra package, if > 0,
+     * The minimal API level required by this package, if > 0,
      * or {@link #MIN_API_LEVEL_NOT_SPECIFIED} if there is no such requirement.
      */
     private final int mMinApiLevel;
+
+    /**
+     * The exact API level required by this package, if > 0,
+     * or {@link #API_LEVEL_INVALID} if there is no such requirement.
+     */
+    private final int mExactApiLevel;
 
     private final String mShortDescription;
 
@@ -48,6 +55,7 @@ public class BrokenPackage extends Package implements IMinApiLevelDependency {
             String shortDescription,
             String longDescription,
             int minApiLevel,
+            int exactApiLevel,
             String archiveOsPath) {
         super(  null,                                   //source
                 props,                                  //properties
@@ -61,6 +69,7 @@ public class BrokenPackage extends Package implements IMinApiLevelDependency {
                 );
         mShortDescription = shortDescription;
         mMinApiLevel = minApiLevel;
+        mExactApiLevel = exactApiLevel;
     }
 
     /**
@@ -75,11 +84,19 @@ public class BrokenPackage extends Package implements IMinApiLevelDependency {
     }
 
     /**
-     * Returns the minimal API level required by this extra package, if > 0,
+     * Returns the minimal API level required by this package, if > 0,
      * or {@link #MIN_API_LEVEL_NOT_SPECIFIED} if there is no such requirement.
      */
     public int getMinApiLevel() {
         return mMinApiLevel;
+    }
+
+    /**
+     * Returns the exact API level required by this package, if > 0,
+     * or {@link #API_LEVEL_INVALID} if the value was missing.
+     */
+    public int getExactApiLevel() {
+        return mExactApiLevel;
     }
 
     /** Returns a short description for an {@link IDescription}. */

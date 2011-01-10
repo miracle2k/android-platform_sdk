@@ -21,6 +21,7 @@ import com.android.sdklib.internal.repository.AddonPackage;
 import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.DocPackage;
 import com.android.sdklib.internal.repository.ExtraPackage;
+import com.android.sdklib.internal.repository.IExactApiLevelDependency;
 import com.android.sdklib.internal.repository.IMinApiLevelDependency;
 import com.android.sdklib.internal.repository.IMinPlatformToolsDependency;
 import com.android.sdklib.internal.repository.IMinToolsDependency;
@@ -32,9 +33,9 @@ import com.android.sdklib.internal.repository.MinToolsPackage;
 import com.android.sdklib.internal.repository.Package;
 import com.android.sdklib.internal.repository.PlatformPackage;
 import com.android.sdklib.internal.repository.PlatformToolPackage;
+import com.android.sdklib.internal.repository.SamplePackage;
 import com.android.sdklib.internal.repository.SdkSource;
 import com.android.sdklib.internal.repository.SdkSources;
-import com.android.sdklib.internal.repository.SamplePackage;
 import com.android.sdklib.internal.repository.ToolPackage;
 import com.android.sdklib.internal.repository.Package.UpdateInfo;
 
@@ -501,6 +502,21 @@ class UpdaterLogic {
             }
         }
 
+        if (pkg instanceof IExactApiLevelDependency) {
+
+            ArchiveInfo ai = findExactApiLevelDependency(
+                    (IExactApiLevelDependency) pkg,
+                    outArchives,
+                    selectedArchives,
+                    remotePkgs,
+                    remoteSources,
+                    localArchives);
+
+            if (ai != null) {
+                list.add(ai);
+            }
+        }
+
         if (list.size() > 0) {
             return list.toArray(new ArchiveInfo[list.size()]);
         }
@@ -864,7 +880,7 @@ class UpdaterLogic {
 
         int api = pkg.getMinApiLevel();
 
-        if (api == ExtraPackage.MIN_API_LEVEL_NOT_SPECIFIED) {
+        if (api == IMinApiLevelDependency.MIN_API_LEVEL_NOT_SPECIFIED) {
             return null;
         }
 
@@ -954,6 +970,104 @@ class UpdaterLogic {
                     remoteSources,
                     localArchives,
                     true /*automated*/);
+        }
+
+        // We end up here if nothing matches. We don't have a good platform to match.
+        // We need to indicate this extra depends on a missing platform archive
+        // so that it can be impossible to install later on.
+        return new MissingPlatformArchiveInfo(new AndroidVersion(api, null /*codename*/));
+    }
+
+    /**
+     * Resolves platform dependencies for add-ons.
+     * An add-ons depends on having a platform with an exact specific API level.
+     *
+     * Finds the platform dependency. If found, add it to the list of things to install.
+     * Returns the archive info dependency, if any.
+     */
+    protected ArchiveInfo findExactApiLevelDependency(
+            IExactApiLevelDependency pkg,
+            ArrayList<ArchiveInfo> outArchives,
+            Collection<Archive> selectedArchives,
+            ArrayList<Package> remotePkgs,
+            SdkSource[] remoteSources,
+            ArchiveInfo[] localArchives) {
+
+        int api = pkg.getExactApiLevel();
+
+        if (api == IExactApiLevelDependency.API_LEVEL_INVALID) {
+            return null;
+        }
+
+        // Find a platform that would satisfy the requirement.
+
+        // First look in locally installed packages.
+        for (ArchiveInfo ai : localArchives) {
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformPackage) {
+                    if (((PlatformPackage) p).getVersion().equals(api)) {
+                        // We found one already installed.
+                        return null;
+                    }
+                }
+            }
+        }
+
+        // Look in archives already scheduled for install
+
+        for (ArchiveInfo ai : outArchives) {
+            Archive a = ai.getNewArchive();
+            if (a != null) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformPackage) {
+                    if (((PlatformPackage) p).getVersion().equals(api)) {
+                        return ai;
+                    }
+                }
+            }
+        }
+
+        // Otherwise look in the selected archives.
+        if (selectedArchives != null) {
+            for (Archive a : selectedArchives) {
+                Package p = a.getParentPackage();
+                if (p instanceof PlatformPackage) {
+                    if (((PlatformPackage) p).getVersion().equals(api)) {
+                        // It's not already in the list of things to install, so add it now
+                        return insertArchive(a,
+                                outArchives,
+                                selectedArchives,
+                                remotePkgs,
+                                remoteSources,
+                                localArchives,
+                                true /*automated*/);
+                    }
+                }
+            }
+        }
+
+        // Finally nothing matched, so let's look at all available remote packages
+        fetchRemotePackages(remotePkgs, remoteSources);
+        for (Package p : remotePkgs) {
+            if (p instanceof PlatformPackage) {
+                if (((PlatformPackage) p).getVersion().equals(api)) {
+                    // It's not already in the list of things to install, so add the
+                    // first compatible archive we can find.
+                    for (Archive a : p.getArchives()) {
+                        if (a.isCompatible()) {
+                            return insertArchive(a,
+                                    outArchives,
+                                    selectedArchives,
+                                    remotePkgs,
+                                    remoteSources,
+                                    localArchives,
+                                    true /*automated*/);
+                        }
+                    }
+                }
+            }
         }
 
         // We end up here if nothing matches. We don't have a good platform to match.

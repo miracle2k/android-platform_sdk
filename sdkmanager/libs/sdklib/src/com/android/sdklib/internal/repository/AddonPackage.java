@@ -38,7 +38,7 @@ import java.util.Properties;
  * Represents an add-on XML node in an SDK repository.
  */
 public class AddonPackage extends Package
-    implements IPackageVersion, IPlatformDependency {
+    implements IPackageVersion, IPlatformDependency, IExactApiLevelDependency {
 
     private static final String PROP_NAME      = "Addon.Name";      //$NON-NLS-1$
     private static final String PROP_VENDOR    = "Addon.Vendor";    //$NON-NLS-1$
@@ -157,15 +157,22 @@ public class AddonPackage extends Package
                 shortDesc,
                 error);
 
-        int minApiLevel = IMinApiLevelDependency.MIN_API_LEVEL_NOT_SPECIFIED;
+        int apiLevel = IExactApiLevelDependency.API_LEVEL_INVALID;
 
         try {
-            minApiLevel = Integer.parseInt(api);
+            apiLevel = Integer.parseInt(api);
         } catch(NumberFormatException e) {
             // ignore
         }
 
-        return new BrokenPackage(null/*props*/, shortDesc, longDesc, minApiLevel, archiveOsPath);
+        return new BrokenPackage(null/*props*/, shortDesc, longDesc,
+                IMinApiLevelDependency.MIN_API_LEVEL_NOT_SPECIFIED,
+                apiLevel,
+                archiveOsPath);
+    }
+
+    public int getExactApiLevel() {
+        return mVersion.getApiLevel();
     }
 
     /**
