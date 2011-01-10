@@ -26,6 +26,8 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.jdt.core.JavaConventions;
 import org.eclipse.jface.dialogs.IInputValidator;
 
 import java.util.HashSet;
@@ -71,6 +73,12 @@ public class ResourceNameValidator implements IInputValidator {
                 if (!Character.isJavaIdentifierPart(c)) {
                     return String.format("%1$c is not a valid resource name character", c);
                 }
+            }
+
+            String level = "1.5"; //$NON-NLS-1$
+            IStatus validIdentifier = JavaConventions.validateIdentifier(newText, level, level);
+            if (!validIdentifier.isOK()) {
+                return String.format("%1$s is not a valid name (reserved Java keyword)", newText);
             }
 
             if (mExisting != null && mExisting.contains(newText)) {
