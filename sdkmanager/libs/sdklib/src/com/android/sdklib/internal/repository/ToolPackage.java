@@ -18,6 +18,8 @@ package com.android.sdklib.internal.repository;
 
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
+import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.annotations.VisibleForTesting.Visibility;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
 import com.android.sdklib.repository.SdkRepoConstants;
@@ -97,7 +99,7 @@ public class ToolPackage extends Package implements IMinPlatformToolsDependency 
      * <p/>
      * By design, this creates a package with one and only one archive.
      */
-    ToolPackage(
+    static Package create(
             SdkSource source,
             Properties props,
             int revision,
@@ -107,6 +109,21 @@ public class ToolPackage extends Package implements IMinPlatformToolsDependency 
             Os archiveOs,
             Arch archiveArch,
             String archiveOsPath) {
+        return new ToolPackage(source, props, revision, license, description,
+                descUrl, archiveOs, archiveArch, archiveOsPath);
+    }
+
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected ToolPackage(
+                SdkSource source,
+                Properties props,
+                int revision,
+                String license,
+                String description,
+                String descUrl,
+                Os archiveOs,
+                Arch archiveArch,
+                String archiveOsPath) {
         super(source,
                 props,
                 revision,

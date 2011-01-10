@@ -21,6 +21,8 @@ import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
+import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.annotations.VisibleForTesting.Visibility;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
 import com.android.sdklib.repository.SdkRepoConstants;
@@ -98,7 +100,12 @@ public class AddonPackage extends Package
      * <p/>
      * By design, this creates a package with one and only one archive.
      */
-    AddonPackage(IAndroidTarget target, Properties props) {
+    static Package create(IAndroidTarget target, Properties props) {
+        return new AddonPackage(target, props);
+    }
+
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected AddonPackage(IAndroidTarget target, Properties props) {
         super(  null,                       //source
                 props,                      //properties
                 target.getRevision(),       //revision
@@ -123,6 +130,42 @@ public class AddonPackage extends Package
                 mLibs[i] = new Lib(optLibs[i].getName(), optLibs[i].getDescription());
             }
         }
+    }
+
+    /**
+     * Creates a broken addon which we know failed to load properly.
+     *
+     * @param archiveOsPath The absolute OS path of the addon folder.
+     * @param props The properties parsed from the addon manifest (not the source.properties).
+     * @param error The error indicating why this addon failed to be loaded.
+     */
+    static Package create(String archiveOsPath, Map<String, String> props, String error) {
+        String name     = props.get(SdkManager.ADDON_NAME);
+        String vendor   = props.get(SdkManager.ADDON_VENDOR);
+        String api      = props.get(SdkManager.ADDON_API);
+        String revision = props.get(SdkManager.ADDON_REVISION);
+
+        String shortDesc = String.format("%1$s by %2$s, Android API %3$s, revision %4$s [*]",
+                name,
+                vendor,
+                api,
+                revision);
+
+        String longDesc = String.format(
+                "%1$s\n" +
+                "[*] Addon failed to load: %2$s",
+                shortDesc,
+                error);
+
+        int minApiLevel = IMinApiLevelDependency.MIN_API_LEVEL_NOT_SPECIFIED;
+
+        try {
+            minApiLevel = Integer.parseInt(api);
+        } catch(NumberFormatException e) {
+            // ignore
+        }
+
+        return new BrokenPackage(null/*props*/, shortDesc, longDesc, minApiLevel, archiveOsPath);
     }
 
     /**
