@@ -1937,6 +1937,16 @@ public class GraphicalEditorPart extends EditorPart
     private static class ClassLinkStyleRange extends StyleRange {}
 
     /**
+     * Returns the error label for the graphical editor (which may not be visible
+     * or showing errors)
+     *
+     * @return the error label, never null
+     */
+    StyledText getErrorLabel() {
+        return mErrorLabel;
+    }
+
+    /**
      * Monitor clicks on the error label.
      * If the click happens on a style range created by
      * {@link GraphicalEditorPart#addClassLink(StyledText, String)}, we assume it's about
@@ -1969,6 +1979,9 @@ public class GraphicalEditorPart extends EditorPart
                 String link = mErrorLabel.getText(r.start, r.start + r.length - 1);
                 createNewClass(link);
             }
+
+            LayoutCanvas canvas = getCanvasControl();
+            canvas.updateMenuActionState(canvas.getSelectionManager().getSelections().isEmpty());
         }
 
         private void createNewClass(String fqcn) {

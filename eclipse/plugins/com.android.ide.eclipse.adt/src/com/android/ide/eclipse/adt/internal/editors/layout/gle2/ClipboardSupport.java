@@ -29,6 +29,7 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.jface.action.Action;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
@@ -78,6 +79,8 @@ public class ClipboardSupport {
      * <p/>
      * This sanitizes the selection, so it must be a copy. It then inserts the
      * selection both as text and as {@link SimpleElement}s in the clipboard.
+     * (If there is selected text in the error label, then the error is used
+     * as the text portion of the transferable.)
      *
      * @param selection A list of selection items to add to the clipboard;
      *            <b>this should be a copy already - this method will not make a
@@ -86,13 +89,29 @@ public class ClipboardSupport {
     public void copySelectionToClipboard(List<SelectionItem> selection) {
         SelectionManager.sanitize(selection);
 
+        // The error message area shares the copy action with the canvas. Invoking the
+        // copy action when there are errors visible *AND* the user has selected text there,
+        // should include the error message as the text transferable.
+        String message = null;
+        GraphicalEditorPart graphicalEditor = mCanvas.getLayoutEditor().getGraphicalEditor();
+        StyledText errorLabel = graphicalEditor.getErrorLabel();
+        if (errorLabel.getSelectionCount() > 0) {
+            message = errorLabel.getSelectionText();
+        }
+
         if (selection.isEmpty()) {
+            if (message != null) {
+                mClipboard.setContents(
+                        new Object[] { message },
+                        new Transfer[] { TextTransfer.getInstance() }
+                );
+            }
             return;
         }
 
         Object[] data = new Object[] {
                 SelectionItem.getAsElements(selection),
-                SelectionItem.getAsText(mCanvas, selection)
+                message != null ? message : SelectionItem.getAsText(mCanvas, selection)
         };
 
         Transfer[] types = new Transfer[] {
