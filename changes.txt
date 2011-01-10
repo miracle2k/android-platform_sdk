@@ -1,8 +1,11 @@
 Change log for Android SDK Tools.
 
 Revision 9:
-- fix packaging issue that broke draw9patch
+- Fix packaging issue that broke draw9patch
 - Ant build rules will now check the Ant version
+- Fix "folder locked" errors when installing packages in SDK Manager on Windows.
+- Support http/https proxy when installing from SDK Manager command-line.
+- SDK Manager now suggests to install missing base platform for add-ons.
 
 Revision 8:
 - New SDK component: platform-tools. This makes all platforms use the same
