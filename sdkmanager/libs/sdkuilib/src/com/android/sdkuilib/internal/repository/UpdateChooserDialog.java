@@ -55,6 +55,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 
 /**
@@ -84,15 +85,15 @@ final class UpdateChooserDialog extends GridDialog {
 
     /**
      * List of all archives to be installed with dependency information.
-     *
+     * <p/>
      * Note: in a lot of cases, we need to find the archive info for a given archive. This
      * is currently done using a simple linear search, which is fine since we only have a very
      * limited number of archives to deal with (e.g. < 10 now). We might want to revisit
      * this later if it becomes an issue. Right now just do the simple thing.
-     *
+     *<p/>
      * Typically we could add a map Archive=>ArchiveInfo later.
      */
-    private final ArrayList<ArchiveInfo> mArchives;
+    private final Collection<ArchiveInfo> mArchives;
 
 
 
@@ -104,7 +105,7 @@ final class UpdateChooserDialog extends GridDialog {
      */
     public UpdateChooserDialog(Shell parentShell,
             UpdaterData updaterData,
-            ArrayList<ArchiveInfo> archives) {
+            Collection<ArchiveInfo> archives) {
         super(parentShell, 3, false/*makeColumnsEqual*/);
         mUpdaterData = updaterData;
         mArchives = archives;

@@ -34,6 +34,7 @@ import org.eclipse.swt.widgets.Shell;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 
 import junit.framework.TestCase;
 
@@ -80,7 +81,7 @@ public class UpdaterLogicTest extends TestCase {
         }
 
         @Override
-        protected void fetchRemotePackages(ArrayList<Package> remotePkgs,
+        protected void fetchRemotePackages(Collection<Package> remotePkgs,
                 SdkSource[] remoteSources) {
             // Ignore remoteSources and instead uses the remotePackages list given to the
             // constructor.
