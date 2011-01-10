@@ -728,8 +728,8 @@ class NewXmlFileCreationPage extends WizardPage {
      * <li>The project name, valid if it's an android nature.</li>
      * <li>The current folder, valid if it's a folder under /res</li>
      * <li>An existing filename, in which case the user will be asked whether to override it.</li>
-     * <ul>
-     * <p>
+     * </ul>
+     * <p/>
      * The selection can also be set to a {@link Pair} of {@link IProject} and a workspace
      * resource path (where the resource path does not have to exist yet, such as res/anim/).
      *

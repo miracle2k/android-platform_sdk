@@ -36,11 +36,13 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorP
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleElement;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
+import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.ui.ReferenceChooserDialog;
+import com.android.ide.eclipse.adt.internal.ui.ResourceChooser;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.internal.project.ProjectProperties;
 
@@ -816,5 +818,36 @@ public class RulesEngine {
 
             return null;
         }
+
+        public String displayResourceInput(String resourceTypeName, String currentValue) {
+            AndroidXmlEditor editor = mEditor.getLayoutEditor();
+            IProject project = editor.getProject();
+            ResourceType type = ResourceType.valueOf(resourceTypeName.toUpperCase());
+            if (project != null) {
+                // get the resource repository for this project and the system resources.
+                IResourceRepository projectRepository = ResourceManager.getInstance()
+                        .getProjectResources(project);
+                Shell shell = AdtPlugin.getDisplay().getActiveShell();
+                if (shell == null) {
+                    return null;
+                }
+
+                AndroidTargetData data = editor.getTargetData();
+                IResourceRepository systemRepository = data.getSystemResources();
+
+                // open a resource chooser dialog for specified resource type.
+                ResourceChooser dlg = new ResourceChooser(project, type, projectRepository,
+                        systemRepository, shell);
+
+                dlg.setCurrentResource(currentValue);
+
+                if (dlg.open() == Window.OK) {
+                    return dlg.getCurrentResource();
+                }
+            }
+
+            return null;
+        }
+
     }
 }

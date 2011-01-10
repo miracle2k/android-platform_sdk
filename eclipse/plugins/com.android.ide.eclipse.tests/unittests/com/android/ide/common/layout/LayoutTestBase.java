@@ -234,6 +234,10 @@ public abstract class LayoutTestBase extends TestCase {
             return null;
         }
 
+        public String displayResourceInput(String resourceTypeName, String currentValue) {
+            fail("Not supported in tests yet");
+            return null;
+        }
     }
 
     public void testDummy() {
