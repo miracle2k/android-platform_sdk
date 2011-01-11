@@ -44,6 +44,7 @@ public final class FolderTypeRelationship {
             new HashMap<ResourceFolderType, List<ResourceType>>();
 
         add(ResourceType.ANIM, ResourceFolderType.ANIM, typeToFolderMap, folderToTypeMap);
+        add(ResourceType.ANIMATOR, ResourceFolderType.ANIMATOR, typeToFolderMap, folderToTypeMap);
         add(ResourceType.ARRAY, ResourceFolderType.VALUES, typeToFolderMap, folderToTypeMap);
         add(ResourceType.ATTR, ResourceFolderType.VALUES, typeToFolderMap, folderToTypeMap);
         add(ResourceType.BOOL, ResourceFolderType.VALUES, typeToFolderMap, folderToTypeMap);
@@ -57,6 +58,8 @@ public final class FolderTypeRelationship {
         add(ResourceType.FRACTION, ResourceFolderType.VALUES, typeToFolderMap, folderToTypeMap);
         add(ResourceType.ID, ResourceFolderType.VALUES, typeToFolderMap, folderToTypeMap);
         add(ResourceType.INTEGER, ResourceFolderType.VALUES, typeToFolderMap, folderToTypeMap);
+        add(ResourceType.INTERPOLATOR, ResourceFolderType.INTERPOLATOR, typeToFolderMap,
+                folderToTypeMap);
         add(ResourceType.LAYOUT, ResourceFolderType.LAYOUT, typeToFolderMap, folderToTypeMap);
         add(ResourceType.MENU, ResourceFolderType.MENU, typeToFolderMap, folderToTypeMap);
         add(ResourceType.PLURALS, ResourceFolderType.VALUES, typeToFolderMap, folderToTypeMap);
