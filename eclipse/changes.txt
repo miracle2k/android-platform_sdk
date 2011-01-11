@@ -1,11 +1,17 @@
 9.0.0
 - Visual Layout Editor
     - Empty layouts with 0,0 size are now automatically expanded when selected and during drag and drop
-    - The generated XML will be better formatted. Full XML formatter can be enabled in the preferences (under Android > Editors), but will touch part of the XML that isn't modified.
     - Rendering target can now be changed from the default (project target)
-    - when choosing resources for rendering, the API level is properly handled
+    - When choosing resources for rendering, the API level is properly handled
+    - Improved support for rendering <include> and <merge> views
+    - "Extract as Include" refactoring to extract selected views into a separate included layout.
+    - String and reference properties can be edited from the layout editor's context menu
+    - Rewritten outline drag & drop handling, improved label colors and content
+    - The generated XML will be better formatted. Full XML formatter can be enabled in the preferences (under Android > Editors), but will touch part of the XML that isn't modified.
+    - Automatic configuration of many widgets on drop, such as automatically filling a TextView in a vertical LinearLayout, adding rows to new tables, etc.
+    - Double click views to jump to the corresponding XML declaration, or for included views, to the included layout file
+- Go to Declaration hyperlinks for navigating from @resource references to their XML declarations, from the manifest file to activity and service classes, from Java access of resource R fields to the XML declarations, etc.
 - Logcat view in DDMS now properly displays UTF-8 characters.
-
 
 8.0.1:
 - Fix compilation issue in Android projects referencing standard Java projects.
