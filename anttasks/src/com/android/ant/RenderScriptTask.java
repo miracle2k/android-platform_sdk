@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Task to execute aidl.
@@ -41,12 +42,13 @@ import java.util.Iterator;
  * It also expects one or more inner elements called "source" which are identical to {@link Path}
  * elements.
  */
-public class AidlExecTask extends Task {
+public class RenderScriptTask extends Task {
 
     private String mExecutable;
     private String mFramework;
     private String mGenFolder;
-    private final ArrayList<Path> mPaths = new ArrayList<Path>();
+    private String mResFolder;
+    private final List<Path> mPaths = new ArrayList<Path>();
 
     /**
      * Sets the value of the "executable" attribute.
@@ -64,6 +66,10 @@ public class AidlExecTask extends Task {
         mGenFolder = TaskHelper.checkSinglePath("genFolder", value);
     }
 
+    public void setResFolder(Path value) {
+        mResFolder = TaskHelper.checkSinglePath("resFolder", value);
+    }
+
     public Path createSource() {
         Path p = new Path(getProject());
         mPaths.add(p);
@@ -73,13 +79,16 @@ public class AidlExecTask extends Task {
     @Override
     public void execute() throws BuildException {
         if (mExecutable == null) {
-            throw new BuildException("AidlExecTask's 'executable' is required.");
+            throw new BuildException("RenderScriptTask's 'executable' is required.");
         }
         if (mFramework == null) {
-            throw new BuildException("AidlExecTask's 'framework' is required.");
+            throw new BuildException("RenderScriptTask's 'framework' is required.");
         }
         if (mGenFolder == null) {
-            throw new BuildException("AidlExecTask's 'genFolder' is required.");
+            throw new BuildException("RenderScriptTask's 'genFolder' is required.");
+        }
+        if (mResFolder == null) {
+            throw new BuildException("RenderScriptTask's 'resFolder' is required.");
         }
 
         Project taskProject = getProject();
@@ -96,7 +105,7 @@ public class AidlExecTask extends Task {
         File exe = new File(mExecutable);
         String execTaskName = exe.getName();
 
-        // now loop on all the source folders to find all the aidl to compile
+        // now loop on all the source folders to find all the renderscript to compile
         // and compile them
         for (String sourceFolder : sourceFolders) {
             // create a fileset to find all the aidl files in the current source folder
@@ -104,7 +113,7 @@ public class AidlExecTask extends Task {
             fs.setProject(taskProject);
             fs.setDir(new File(sourceFolder));
             NameEntry include = fs.createInclude();
-            include.setName("**/*.aidl");
+            include.setName("**/*.rs");
 
             // loop through the results of the file set
             Iterator<?> iter = fs.iterator();
@@ -112,20 +121,18 @@ public class AidlExecTask extends Task {
                 Object next = iter.next();
 
                 ExecTask task = new ExecTask();
+                task.setTaskName(execTaskName);
                 task.setProject(taskProject);
                 task.setOwningTarget(getOwningTarget());
                 task.setExecutable(mExecutable);
-                task.setTaskName(execTaskName);
                 task.setFailonerror(true);
 
-                task.createArg().setValue("-p" + mFramework);
-                task.createArg().setValue("-o" + mGenFolder);
-                // add all the source folders as import in case an aidl file in a source folder
-                // imports a parcelable from another source folder.
-                for (String importFolder : sourceFolders) {
-                    task.createArg().setValue("-I" + importFolder);
-                }
-
+                task.createArg().setValue("-I");
+                task.createArg().setValue(mFramework);
+                task.createArg().setValue("-p");
+                task.createArg().setValue(mGenFolder);
+                task.createArg().setValue("-o");
+                task.createArg().setValue(mResFolder);
                 task.createArg().setValue(next.toString());
 
                 // execute it.

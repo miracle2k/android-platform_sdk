@@ -77,6 +77,8 @@ public interface IAndroidTarget extends Comparable<IAndroidTarget> {
     public final static int DX_JAR              = 23;
     /** OS Path to the "ant" folder which contains the ant build rules (ver 2 and above) */
     public final static int ANT                 = 24;
+    /** OS Path to the Renderscript include folder. */
+    public final static int ANDROID_RS          = 25;
 
     /**
      * Return value for {@link #getUsbVendorId()} meaning no USB vendor IDs are defined by the

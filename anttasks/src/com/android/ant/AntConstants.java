@@ -21,11 +21,14 @@ package com.android.ant;
  */
 public interface AntConstants {
 
-    /** ant property with the path to the android.jar */
+    /** ant property with the path to the android.jar file */
     public final static String PROP_ANDROID_JAR = "android.jar";
 
-    /** ant property with the path to the framework.jar */
+    /** ant property with the path to the framework.aidl file */
     public final static String PROP_ANDROID_AIDL = "android.aidl";
+
+    /** ant property with the path to the renderscript framework include folder. */
+    public final static String PROP_ANDROID_RENDERSCRIPT = "android.rs";
 
     /** ant property with the path to the aapt tool */
     public final static String PROP_AAPT = "aapt";
@@ -33,6 +36,8 @@ public interface AntConstants {
     public final static String PROP_AIDL = "aidl";
     /** ant property with the path to the dx tool */
     public final static String PROP_DX = "dx";
+    /** ant property with the path to the renderscript tool */
+    public final static String PROP_RENDERSCRIPT = "renderscript";
     /** ref id to the <path> object containing all the boot classpaths. */
     public final static String PROP_CLASSPATH_REF = "android.target.classpath";
 

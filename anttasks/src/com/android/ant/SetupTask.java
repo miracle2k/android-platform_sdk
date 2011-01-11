@@ -199,9 +199,15 @@ public final class SetupTask extends ImportTask {
         String androidAidl = androidTarget.getPath(IAndroidTarget.ANDROID_AIDL);
         antProject.setProperty(AntConstants.PROP_ANDROID_AIDL, androidAidl);
 
+        String androidRS = androidTarget.getPath(IAndroidTarget.ANDROID_RS);
+        antProject.setProperty(AntConstants.PROP_ANDROID_RENDERSCRIPT, androidRS);
+
         antProject.setProperty(AntConstants.PROP_AAPT, androidTarget.getPath(IAndroidTarget.AAPT));
         antProject.setProperty(AntConstants.PROP_AIDL, androidTarget.getPath(IAndroidTarget.AIDL));
         antProject.setProperty(AntConstants.PROP_DX, androidTarget.getPath(IAndroidTarget.DX));
+        antProject.setProperty(AntConstants.PROP_RENDERSCRIPT,
+                sdkOsPath + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER +
+                    SdkConstants.FN_RENDERSCRIPT);
 
         // sets up the boot classpath
 
