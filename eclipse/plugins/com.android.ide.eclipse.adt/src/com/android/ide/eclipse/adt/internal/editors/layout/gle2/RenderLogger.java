@@ -96,23 +96,6 @@ class RenderLogger extends LayoutLog {
     }
 
     @Override
-    public void error(String tag, Throwable throwable) {
-        AdtPlugin.log(throwable, "%1$s: %2$s", mName, tag);
-        assert throwable != null;
-        mHaveExceptions = true;
-
-        String message = throwable.getMessage();
-        if (message == null) {
-            message = throwable.getClass().getName();
-        } else if (tag == null && throwable instanceof ClassNotFoundException
-                && !message.contains(ClassNotFoundException.class.getSimpleName())) {
-            tag = ClassNotFoundException.class.getSimpleName();
-        }
-        String description = describe(tag, message);
-        addError(description);
-    }
-
-    @Override
     public void error(String tag, String message, Throwable throwable) {
         String description = describe(tag, message);
         AdtPlugin.log(throwable, "%1$s: %2$s", mName, description);
