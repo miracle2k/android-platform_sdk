@@ -172,10 +172,14 @@ public final class SdkConstants {
     public final static String FD_OUTPUT = "bin"; //$NON-NLS-1$
     /** Default anim resource folder name, i.e. "anim" */
     public final static String FD_ANIM = "anim"; //$NON-NLS-1$
+    /** Default animator resource folder name, i.e. "animator" */
+    public final static String FD_ANIMATOR = "animator"; //$NON-NLS-1$
     /** Default color resource folder name, i.e. "color" */
     public final static String FD_COLOR = "color"; //$NON-NLS-1$
     /** Default drawable resource folder name, i.e. "drawable" */
     public final static String FD_DRAWABLE = "drawable"; //$NON-NLS-1$
+    /** Default interpolator resource folder name, i.e. "interpolator" */
+    public final static String FD_INTERPOLATOR = "interpolator"; //$NON-NLS-1$
     /** Default layout resource folder name, i.e. "layout" */
     public final static String FD_LAYOUT = "layout"; //$NON-NLS-1$
     /** Default menu resource folder name, i.e. "menu" */
