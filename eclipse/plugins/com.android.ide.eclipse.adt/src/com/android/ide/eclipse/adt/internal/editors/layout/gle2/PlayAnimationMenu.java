@@ -50,7 +50,7 @@ import java.util.List;
  * "Play Animation" context menu which lists available animations in the project and in
  * the framework, as well as a "Create Animation" shortcut, and allows the animation to be
  * run on the selection
- * <p>
+ * <p/>
  * TODO: Add transport controls for play/rewind/pause/loop, and (if possible) scrubbing
  */
 public class PlayAnimationMenu extends SubmenuAction {

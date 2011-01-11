@@ -186,7 +186,7 @@ public class BaseViewRule implements IViewRule {
                 } else if (fullActionId.equals(EDIT_TEXT_ID)) {
                     String oldText = node.getStringAttr(ANDROID_URI, ATTR_TEXT);
                     oldText = ensureValidString(oldText);
-                    String newText = mRulesEngine.displayReferenceInput(oldText);
+                    String newText = mRulesEngine.displayResourceInput("string", oldText); //$NON-NLS-1$
                     if (newText != null) {
                         node.editXml("Change text", new PropertySettingNodeHandler(ANDROID_URI,
                                 ATTR_TEXT, newText));
@@ -264,6 +264,20 @@ public class BaseViewRule implements IViewRule {
                         && IAttributeInfo.Format.REFERENCE.in(attributeInfo.getFormats())) {
                     return mRulesEngine.displayReferenceInput(oldValue);
                 } else {
+                    // A single resource type? If so use a resource chooser initialized
+                    // to this specific type
+                    /* This does not work well, because the metadata is a bit misleading:
+                     * for example a Button's "text" property and a Button's "onClick" property
+                     * both claim to be of type [string], but @string/ is NOT valid for
+                     * onClick..
+                    if (attributeInfo != null && attributeInfo.getFormats().length == 1) {
+                        // Resource chooser
+                        Format format = attributeInfo.getFormats()[0];
+                        return mRulesEngine.displayResourceInput(format.name(), oldValue);
+                    }
+                    */
+
+                    // Fallback: just edit the raw XML string
                     String message = String.format("New %1$s Value:", attribute);
                     return mRulesEngine.displayInput(message, oldValue, null);
                 }

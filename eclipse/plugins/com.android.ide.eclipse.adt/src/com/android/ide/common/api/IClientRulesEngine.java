@@ -108,5 +108,15 @@ public interface IClientRulesEngine {
      */
     String displayReferenceInput(String currentValue);
 
+    /**
+     * Displays an input dialog where the user can enter an Android resource name of the
+     * given resource type ("id", "string", "drawable", and so on.)
+     *
+     * @param currentValue the current reference to select
+     * @param resourceTypeName resource type, such as "id", "string", and so on (never
+     *            null)
+     * @return the resource selected by the user, or null
+     */
+    String displayResourceInput(String resourceTypeName, String currentValue);
 }
 
