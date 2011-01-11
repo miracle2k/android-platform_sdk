@@ -416,7 +416,7 @@ public class GraphicalEditorPart extends EditorPart
 
         mCanvasViewer = new LayoutCanvasViewer(mLayoutEditor, mRulesEngine, mSashError, SWT.NONE);
 
-        mErrorLabel = new StyledText(mSashError, SWT.READ_ONLY);
+        mErrorLabel = new StyledText(mSashError, SWT.READ_ONLY | SWT.WRAP);
         mErrorLabel.setEditable(false);
         mErrorLabel.setBackground(d.getSystemColor(SWT.COLOR_INFO_BACKGROUND));
         mErrorLabel.setForeground(d.getSystemColor(SWT.COLOR_INFO_FOREGROUND));
