@@ -16,13 +16,14 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_SEP;
-import static com.android.sdklib.SdkConstants.FD_ANIM;
+import static com.android.sdklib.SdkConstants.FD_ANIMATOR;
 import static com.android.sdklib.SdkConstants.FD_RESOURCES;
 
 import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.IAnimationListener;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.Result;
+import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.wizards.newxmlfile.NewXmlFileWizard;
@@ -116,7 +117,7 @@ public class PlayAnimationMenu extends SubmenuAction {
 
             // List of animations
             Collection<String> animationNames = graphicalEditor.getResourceNames(mFramework,
-                    ResourceType.ANIM);
+                    ResourceType.ANIMATOR);
             if (animationNames.size() > 0) {
                 if (!mFramework) {
                     new Separator().fill(menu, -1);
@@ -158,7 +159,7 @@ public class PlayAnimationMenu extends SubmenuAction {
             if (viewObject != null) {
                 ViewHierarchy viewHierarchy = mCanvas.getViewHierarchy();
                 RenderSession session = viewHierarchy.getSession();
-                session.animate(viewObject, mAnimationName, mIsFrameworkAnim,
+                Result r = session.animate(viewObject, mAnimationName, mIsFrameworkAnim,
                         new IAnimationListener() {
                             private boolean mPendingDrawing = false;
 
@@ -211,6 +212,12 @@ public class PlayAnimationMenu extends SubmenuAction {
                                 });
                             }
                         });
+
+                if (!r.isSuccess()) {
+                    if (r.getErrorMessage() != null) {
+                        AdtPlugin.log(r.getException(), r.getErrorMessage());
+                    }
+                }
             }
         }
     }
@@ -231,7 +238,7 @@ public class PlayAnimationMenu extends SubmenuAction {
             LayoutEditor editor = mCanvas.getLayoutEditor();
             IWorkbenchWindow workbenchWindow = editor.getEditorSite().getWorkbenchWindow();
             IWorkbench workbench = workbenchWindow.getWorkbench();
-            String animationDir = FD_RESOURCES + WS_SEP + FD_ANIM;
+            String animationDir = FD_RESOURCES + WS_SEP + FD_ANIMATOR;
             Pair<IProject, String> pair = Pair.of(editor.getProject(), animationDir);
             IStructuredSelection selection = new StructuredSelection(pair);
             wizard.init(workbench, selection);
