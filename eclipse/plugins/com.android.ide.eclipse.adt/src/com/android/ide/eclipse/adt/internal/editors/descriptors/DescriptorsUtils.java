@@ -702,10 +702,11 @@ public final class DescriptorsUtils {
                     false /* override */);
         }
 
+        String widget_type = ui_node.getDescriptor().getUiName();
         ui_node.setAttributeValue(
                 ATTR_TEXT,
                 SdkConstants.NS_RESOURCES,
-                widget_id,
+                widget_type,
                 false /*override*/);
 
         if (updateLayout) {
@@ -731,7 +732,7 @@ public final class DescriptorsUtils {
 
     /**
      * Given a UI node, returns the first available id that matches the
-     * pattern "prefix%02d".
+     * pattern "prefix%d".
      * <p/>TabWidget is a special case and the method will always return "@android:id/tabs".
      *
      * @param uiNode The UI node that gives the prefix to match.
@@ -745,7 +746,7 @@ public final class DescriptorsUtils {
 
     /**
      * Given a UI root node and a potential XML node name, returns the first available
-     * id that matches the pattern "prefix%02d".
+     * id that matches the pattern "prefix%d".
      * <p/>TabWidget is a special case and the method will always return "@android:id/tabs".
      *
      * @param uiRoot The root UI node to search for name conflicts from
@@ -764,7 +765,7 @@ public final class DescriptorsUtils {
 
     /**
      * Given a UI root node, returns the first available id that matches the
-     * pattern "prefix%02d".
+     * pattern "prefix%d".
      *
      * For recursion purposes, a "context" is given. Since Java doesn't have in-out parameters
      * in methods and we're not going to do a dedicated type, we just use an object array which
@@ -807,12 +808,15 @@ public final class DescriptorsUtils {
             prefix = prefix.replaceAll("[^a-zA-Z]", "");                //$NON-NLS-1$ $NON-NLS-2$
             if (prefix.length() == 0) {
                 prefix = DEFAULT_WIDGET_PREFIX;
+            } else {
+                // Lowercase initial character
+                prefix = Character.toLowerCase(prefix.charAt(0)) + prefix.substring(1);
             }
 
             do {
                 num++;
-                generated = String.format("%1$s%2$02d", prefix, num);   //$NON-NLS-1$
-            } while (map.contains(generated));
+                generated = String.format("%1$s%2$d", prefix, num);   //$NON-NLS-1$
+            } while (map.contains(generated.toLowerCase()));
 
             params[0] = prefix;
             params[1] = num;
@@ -823,12 +827,12 @@ public final class DescriptorsUtils {
         if (id != null) {
             id = id.replace(NEW_ID_PREFIX, "");                            //$NON-NLS-1$
             id = id.replace(ID_PREFIX, "");                                //$NON-NLS-1$
-            if (map.add(id) && map.contains(generated)) {
+            if (map.add(id.toLowerCase()) && map.contains(generated.toLowerCase())) {
 
                 do {
                     num++;
-                    generated = String.format("%1$s%2$02d", prefix, num);   //$NON-NLS-1$
-                } while (map.contains(generated));
+                    generated = String.format("%1$s%2$d", prefix, num);   //$NON-NLS-1$
+                } while (map.contains(generated.toLowerCase()));
 
                 params[1] = num;
                 params[2] = generated;

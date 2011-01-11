@@ -30,7 +30,6 @@ import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.DescriptorsUtils;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
@@ -723,9 +722,7 @@ public class PaletteControl extends Composite {
 
             // This doesn't apply to all, but doesn't seem to cause harm and makes for a
             // better experience with text-oriented views like buttons and texts
-            UiElementNode uiRoot = layoutEditor.getUiRootNode();
-            String text = DescriptorsUtils.getFreeWidgetId(uiRoot, viewName);
-            element.setAttributeNS(SdkConstants.NS_RESOURCES, ATTR_TEXT, text);
+            element.setAttributeNS(SdkConstants.NS_RESOURCES, ATTR_TEXT, desc.getUiName());
 
             document.appendChild(element);
 
