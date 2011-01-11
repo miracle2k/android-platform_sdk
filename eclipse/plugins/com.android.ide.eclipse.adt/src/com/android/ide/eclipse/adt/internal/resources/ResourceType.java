@@ -21,6 +21,7 @@ package com.android.ide.eclipse.adt.internal.resources;
  */
 public enum ResourceType {
     ANIM("anim", "Animation"), //$NON-NLS-1$
+    ANIMATOR("animator", "Animator"), //$NON-NLS-1$
     ARRAY("array", "Array", "string-array", "integer-array"), //$NON-NLS-1$ //$NON-NLS-3$ //$NON-NLS-4$
     ATTR("attr", "Attr"), //$NON-NLS-1$
     BOOL("bool", "Boolean"), //$NON-NLS-1$
@@ -31,6 +32,7 @@ public enum ResourceType {
     FRACTION("fraction", "Fraction"), //$NON-NLS-1$
     ID("id", "ID"), //$NON-NLS-1$
     INTEGER("integer", "Integer"), //$NON-NLS-1$
+    INTERPOLATOR("interpolator", "Interpolator"), //$NON-NLS-1$
     LAYOUT("layout", "Layout"), //$NON-NLS-1$
     MENU("menu", "Menu"), //$NON-NLS-1$
     PLURALS("plurals", "Plurals"), //$NON-NLS-1$
