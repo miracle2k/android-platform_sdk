@@ -24,8 +24,10 @@ import com.android.sdklib.SdkConstants;
  */
 public enum ResourceFolderType {
     ANIM(SdkConstants.FD_ANIM),
+    ANIMATOR(SdkConstants.FD_ANIMATOR),
     COLOR(SdkConstants.FD_COLOR),
     DRAWABLE(SdkConstants.FD_DRAWABLE),
+    INTERPOLATOR(SdkConstants.FD_INTERPOLATOR),
     LAYOUT(SdkConstants.FD_LAYOUT),
     MENU(SdkConstants.FD_MENU),
     RAW(SdkConstants.FD_RAW),

@@ -134,8 +134,13 @@ public class SingleResourceFile extends ResourceFile {
         // get the name from the filename.
         String name = getFile().getName();
 
-        if (type == ResourceType.ANIM || type == ResourceType.LAYOUT || type == ResourceType.MENU ||
-                type == ResourceType.COLOR || type == ResourceType.XML) {
+        if (type == ResourceType.ANIM ||
+                type == ResourceType.ANIMATOR ||
+                type == ResourceType.COLOR ||
+                type == ResourceType.INTERPOLATOR ||
+                type == ResourceType.LAYOUT ||
+                type == ResourceType.MENU ||
+                type == ResourceType.XML) {
             Matcher m = sXmlPattern.matcher(name);
             if (m.matches()) {
                 return m.group(1);
