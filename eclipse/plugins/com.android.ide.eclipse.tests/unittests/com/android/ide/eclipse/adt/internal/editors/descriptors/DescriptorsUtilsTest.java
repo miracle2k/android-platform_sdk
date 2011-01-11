@@ -132,8 +132,8 @@ public class DescriptorsUtilsTest extends TestCase {
         UiDocumentNode model = new UiDocumentNode(documentDescriptor);
         UiElementNode uiRoot = model.getUiRoot();
 
-        assertEquals("@+id/Button01", DescriptorsUtils.getFreeWidgetId(uiRoot, "Button"));
-        assertEquals("@+id/LinearLayout01",
+        assertEquals("@+id/button1", DescriptorsUtils.getFreeWidgetId(uiRoot, "Button"));
+        assertEquals("@+id/linearLayout1",
                 DescriptorsUtils.getFreeWidgetId(uiRoot, "LinearLayout"));
     }
 
