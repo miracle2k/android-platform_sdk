@@ -18,13 +18,13 @@ package com.android.ide.common.rendering.api;
 
 public class LayoutLog {
 
-    public void error(String tag, String message) {
-    }
-
-    public void error(String tag, Throwable t) {
-    }
-
     public void warning(String tag, String message) {
+    }
+
+    public void fidelityWarning(String tag, String message, Throwable throwable) {
+    }
+
+    public void error(String tag, String message) {
     }
 
     /**
@@ -36,7 +36,4 @@ public class LayoutLog {
 
     }
 
-    public void fidelityWarning(String tag, String message, Throwable throwable) {
-
-    }
 }
