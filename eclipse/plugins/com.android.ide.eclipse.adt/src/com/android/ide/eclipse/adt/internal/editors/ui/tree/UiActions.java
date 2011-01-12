@@ -246,6 +246,8 @@ public abstract class UiActions implements ICommitXml {
             });
         }
 
+        assert last_node != null; // tell Eclipse this can't be null below
+
         if (select_xml_node[0] == null) {
             // The XML node has not been moved, we can just select the same UI node
             selectUiNode(last_node);
@@ -328,6 +330,8 @@ public abstract class UiActions implements ICommitXml {
             });
         }
 
+        assert last_node != null; // tell Eclipse this can't be null below
+
         if (select_xml_node[0] == null) {
             // The XML node has not been moved, we can just select the same UI node
             selectUiNode(last_node);
@@ -400,7 +404,7 @@ public abstract class UiActions implements ICommitXml {
         rootNode.getEditor().wrapEditXmlModel(new Runnable() {
             public void run() {
                 DescriptorsUtils.setDefaultLayoutAttributes(uiNew, updateLayout);
-                Node xmlNode = uiNew.createXmlNode();
+                uiNew.createXmlNode();
             }
         });
         return uiNew;

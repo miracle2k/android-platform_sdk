@@ -38,7 +38,6 @@ import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.forms.IDetailsPage;
 import org.eclipse.ui.forms.IFormPart;
 import org.eclipse.ui.forms.IManagedForm;
@@ -50,7 +49,6 @@ import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.SharedScrolledComposite;
 import org.eclipse.ui.forms.widgets.TableWrapData;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
-import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -284,8 +282,7 @@ class UiElementDetail implements IDetailsPage {
 
                     // Fallback to a pure text tooltip, no fancy HTML
                     tooltip = DescriptorsUtils.formatTooltip(elem_desc.getTooltip());
-                    Label label = SectionHelper.createLabel(masterTable, toolkit,
-                            tooltip, tooltip);
+                    SectionHelper.createLabel(masterTable, toolkit, tooltip, tooltip);
                 }
             }
 
