@@ -59,8 +59,6 @@ public class PlayAnimationMenu extends SubmenuAction {
     private final LayoutCanvas mCanvas;
     /** Whether this menu is showing local animations or framework animations */
     private boolean mFramework;
-    /** Most recently executed animation action: shown at the top of the context menu */
-    private PlayAnimationAction mRecent;
 
     /**
      * Creates a "Play Animation" menu
@@ -97,14 +95,25 @@ public class PlayAnimationMenu extends SubmenuAction {
 
         GraphicalEditorPart graphicalEditor = mCanvas.getLayoutEditor().getGraphicalEditor();
         if (graphicalEditor.renderingSupports(Capability.PLAY_ANIMATION)) {
+            // List of animations
+            Collection<String> animationNames = graphicalEditor.getResourceNames(mFramework,
+                    ResourceType.ANIMATOR);
+            if (animationNames.size() > 0) {
+                // Sort alphabetically
+                List<String> sortedNames = new ArrayList<String>(animationNames);
+                Collections.sort(sortedNames);
+
+                for (String animation : sortedNames) {
+                    String title = animation;
+                    IAction action = new PlayAnimationAction(title, animation, mFramework);
+                    new ActionContributionItem(action).fill(menu, -1);
+                }
+
+                new Separator().fill(menu, -1);
+            }
+
             if (!mFramework) {
                 // Not in the framework submenu: include recent list and create new actions
-
-                // First, most recent animation
-                if (mRecent != null) {
-                    new ActionContributionItem(mRecent).fill(menu, -1);
-                    new Separator().fill(menu, -1);
-                }
 
                 // "Create New" action
                 new ActionContributionItem(new CreateAnimationAction()).fill(menu, -1);
@@ -113,23 +122,6 @@ public class PlayAnimationMenu extends SubmenuAction {
                 new Separator().fill(menu, -1);
                 PlayAnimationMenu sub = new PlayAnimationMenu(mCanvas, "Android Builtin", true);
                 new ActionContributionItem(sub).fill(menu, -1);
-            }
-
-            // List of animations
-            Collection<String> animationNames = graphicalEditor.getResourceNames(mFramework,
-                    ResourceType.ANIMATOR);
-            if (animationNames.size() > 0) {
-                if (!mFramework) {
-                    new Separator().fill(menu, -1);
-                }
-                // Sort alphabetically
-                List<String> sortedNames = new ArrayList<String>(animationNames);
-                Collections.sort(sortedNames);
-                for (String animation : sortedNames) {
-                    String title = animation;
-                    IAction action = new PlayAnimationAction(title, animation, mFramework);
-                    new ActionContributionItem(action).fill(menu, -1);
-                }
             }
         } else {
             addDisabledMessageItem("Not supported on platform");
@@ -148,8 +140,6 @@ public class PlayAnimationMenu extends SubmenuAction {
 
         @Override
         public void run() {
-            mRecent = this;
-
             SelectionManager selectionManager = mCanvas.getSelectionManager();
             List<SelectionItem> selection = selectionManager.getSelections();
             SelectionItem canvasSelection = selection.get(0);
