@@ -37,6 +37,7 @@ import org.w3c.dom.Node;
 /**
  * Provides Paste operation for the tree nodes
  */
+@SuppressWarnings("restriction")
 public class PasteAction extends Action {
     private UiElementNode mUiNode;
     private final AndroidXmlEditor mEditor;

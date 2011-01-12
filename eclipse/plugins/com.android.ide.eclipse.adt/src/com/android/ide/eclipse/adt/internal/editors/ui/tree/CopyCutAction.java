@@ -46,6 +46,7 @@ import java.util.List;
 /**
  * Provides Cut and Copy actions for the tree nodes.
  */
+@SuppressWarnings({"restriction", "deprecation"})
 public class CopyCutAction extends Action {
     private List<UiElementNode> mUiNodes;
     private boolean mPerformCut;
