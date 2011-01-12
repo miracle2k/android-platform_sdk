@@ -54,6 +54,7 @@ import org.eclipse.jface.action.IStatusLineManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSource;
 import org.eclipse.swt.dnd.DropTarget;
@@ -963,6 +964,13 @@ public class LayoutCanvas extends Canvas {
         mSelectAllAction = new Action() {
             @Override
             public void run() {
+                GraphicalEditorPart graphicalEditor = getLayoutEditor().getGraphicalEditor();
+                StyledText errorLabel = graphicalEditor.getErrorLabel();
+                if (errorLabel.isFocusControl()) {
+                    errorLabel.selectAll();
+                    return;
+                }
+
                 mSelectionManager.selectAll();
             }
         };
@@ -985,10 +993,11 @@ public class LayoutCanvas extends Canvas {
      * @param hasSelection True iff we have a non-empty selection
      */
     /* package */ void updateMenuActionState(boolean hasSelection) {
+        StyledText errorLabel = mLayoutEditor.getGraphicalEditor().getErrorLabel();
         mCutAction.setEnabled(hasSelection);
-        mCopyAction.setEnabled(hasSelection);
+        mCopyAction.setEnabled(hasSelection || errorLabel.getSelectionCount() > 0);
         mDeleteAction.setEnabled(hasSelection);
-        mSelectAllAction.setEnabled(hasSelection);
+        mSelectAllAction.setEnabled(hasSelection || errorLabel.isFocusControl());
 
         // The paste operation is only available if we can paste our custom type.
         // We do not currently support pasting random text (e.g. XML). Maybe later.

@@ -268,11 +268,6 @@ public class AndroidTargetData {
                         }
 
                         @Override
-                        public void error(String tag, Throwable throwable) {
-                            AdtPlugin.log(throwable, null);
-                        }
-
-                        @Override
                         public void warning(String tag, String message) {
                             AdtPlugin.log(IStatus.WARNING, message);
                         }

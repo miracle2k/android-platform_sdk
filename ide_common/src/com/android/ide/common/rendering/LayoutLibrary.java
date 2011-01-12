@@ -350,7 +350,7 @@ public class LayoutLibrary {
             }
 
             public void error(Throwable t) {
-                log.error(null, t);
+                log.error(null, "error!", t);
             }
 
             public void error(String message) {
