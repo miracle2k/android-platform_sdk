@@ -34,6 +34,7 @@ class RenderLogger extends LayoutLog {
     private List<String> mWarnings;
     private List<String> mErrors;
     private boolean mHaveExceptions;
+    private List<String> mTags;
 
     /** Construct a logger for the given named layout */
     RenderLogger(String name) {
@@ -89,46 +90,43 @@ class RenderLogger extends LayoutLog {
 
     @Override
     public void error(String tag, String message) {
-        String description = describe(tag, message);
+        String description = describe(message);
         AdtPlugin.log(IStatus.ERROR, "%1$s: %2$s", mName, description);
 
-        addError(description);
+        addError(tag, description);
     }
 
     @Override
     public void error(String tag, String message, Throwable throwable) {
-        String description = describe(tag, message);
+        String description = describe(message);
         AdtPlugin.log(throwable, "%1$s: %2$s", mName, description);
         if (throwable != null) {
             mHaveExceptions = true;
         }
 
-        addError(description);
+        addError(tag, description);
     }
 
     @Override
     public void warning(String tag, String message) {
-        String description = describe(tag, message);
+        String description = describe(message);
         AdtPlugin.log(IStatus.WARNING, "%1$s: %2$s", mName, description);
-        addWarning(description);
+        addWarning(tag, description);
     }
 
     @Override
     public void fidelityWarning(String tag, String message, Throwable throwable) {
-        String description = describe(tag, message);
+        String description = describe(message);
         AdtPlugin.log(throwable, "%1$s: %2$s", mName, description);
         if (throwable != null) {
             mHaveExceptions = true;
         }
 
-        addFidelityWarning(description);
+        addFidelityWarning(tag, description);
     }
 
-    private String describe(String tag, String message) {
+    private String describe(String message) {
         StringBuilder sb = new StringBuilder();
-        if (tag != null) {
-            sb.append(tag);
-        }
         if (message != null) {
             if (sb.length() > 0) {
                 sb.append(": ");
@@ -138,7 +136,7 @@ class RenderLogger extends LayoutLog {
         return sb.toString();
     }
 
-    private void addWarning(String description) {
+    private void addWarning(String tag, String description) {
         if (mWarnings == null) {
             mWarnings = new ArrayList<String>();
         } else if (mWarnings.contains(description)) {
@@ -146,9 +144,10 @@ class RenderLogger extends LayoutLog {
             return;
         }
         mWarnings.add(description);
+        addTag(tag);
     }
 
-    private void addError(String description) {
+    private void addError(String tag, String description) {
         if (mErrors == null) {
             mErrors = new ArrayList<String>();
         } else if (mErrors.contains(description)) {
@@ -156,9 +155,10 @@ class RenderLogger extends LayoutLog {
             return;
         }
         mErrors.add(description);
+        addTag(tag);
     }
 
-    private void addFidelityWarning(String description) {
+    private void addFidelityWarning(String tag, String description) {
         if (mFidelityWarnings == null) {
             mFidelityWarnings = new ArrayList<String>();
         } else if (mFidelityWarnings.contains(description)) {
@@ -166,5 +166,51 @@ class RenderLogger extends LayoutLog {
             return;
         }
         mFidelityWarnings.add(description);
+        addTag(tag);
     }
+
+    // ---- Tags ----
+
+    private void addTag(String tag) {
+        if (tag != null) {
+            if (mTags == null) {
+                mTags = new ArrayList<String>();
+            }
+            mTags.add(tag);
+        }
+    }
+
+    /**
+     * Returns true if the given tag prefix has been seen
+     *
+     * @param prefix the tag prefix to look for
+     * @return true iff any tags with the given prefix was seen during the render
+     */
+    public boolean seenTagPrefix(String prefix) {
+        if (mTags != null) {
+            for (String tag : mTags) {
+                if (tag.startsWith(prefix)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true if the given tag has been seen
+     *
+     * @param tag the tag to look for
+     * @return true iff the tag was seen during the render
+     */
+    public boolean seenTag(String tag) {
+        if (mTags != null) {
+            return mTags.contains(tag);
+        } else {
+            return false;
+        }
+    }
+
+
 }

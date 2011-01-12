@@ -76,7 +76,6 @@ import javax.xml.parsers.ParserConfigurationException;
  * The include finder finds other XML files that are including a given XML file, and does
  * so efficiently (caching results across IDE sessions etc).
  */
-@SuppressWarnings("restriction")
 public class IncludeFinder {
     /** Qualified name for the per-project persistent property include-map */
     private final static QualifiedName CONFIG_INCLUDES = new QualifiedName(AdtPlugin.PLUGIN_ID,
