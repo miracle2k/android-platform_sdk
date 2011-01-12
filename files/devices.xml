@@ -307,11 +307,11 @@
             <d:ydpi>149</d:ydpi>
         </d:default>
 
-        <d:config name="Portrait">
-            <d:screen-orientation>port</d:screen-orientation>
-        </d:config>
         <d:config name="Landscape">
             <d:screen-orientation>land</d:screen-orientation>
+        </d:config>
+        <d:config name="Portrait">
+            <d:screen-orientation>port</d:screen-orientation>
         </d:config>
     </d:device>
 </d:layout-devices>

@@ -250,6 +250,10 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
      * opening a different configuration of the same layout.
      */
     public void showEditorInput(IEditorInput editorInput) {
+        if (getEditorInput().equals(editorInput)) {
+            return;
+        }
+
         // save the current editor input.
         doSave(new NullProgressMonitor());
 
