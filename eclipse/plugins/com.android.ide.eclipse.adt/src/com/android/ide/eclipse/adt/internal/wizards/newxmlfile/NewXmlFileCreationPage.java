@@ -1040,6 +1040,19 @@ class NewXmlFileCreationPage extends WizardPage {
                     }
                 }
 
+                // For now, treat a selection of /res/animator as /res/anim/,
+                // though we need to handle this better
+                // TODO: Properly support ANIMATOR templates!
+                if (!selected && folderName.equals(SdkConstants.FD_ANIMATOR)) {
+                    for (TypeInfo type : sTypes) {
+                        if (type.getResFolderType() == ResourceFolderType.ANIM) {
+                            matches.add(type);
+                            selected |= type.getWidget().getSelection();
+                            break;
+                        }
+                    }
+                }
+
                 if (matches.size() == 1) {
                     // If there's only one match, select it if it's not already selected
                     if (!selected) {
