@@ -18,6 +18,7 @@ package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_PREFIX;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_ABOVE;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_BASELINE;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_ALIGN_BOTTOM;
@@ -92,7 +93,7 @@ public class RelativeLayoutRule extends BaseLayoutRule {
     }
 
     private void addAttr(String propertyName, INode childNode, List<String> infos) {
-        String a = childNode.getStringAttr(ANDROID_URI, "layout_" + propertyName); //$NON-NLS-1$
+        String a = childNode.getStringAttr(ANDROID_URI, ATTR_LAYOUT_PREFIX + propertyName);
         if (a != null && a.length() > 0) {
             String s = propertyName + ": " + a;
             infos.add(s);
@@ -640,7 +641,7 @@ public class RelativeLayoutRule extends BaseLayoutRule {
 
                     for (String it : data.getCurr().getAttr()) {
                         newChild.setAttribute(ANDROID_URI,
-                             "layout_" + it, id != null ? id : "true"); //$NON-NLS-1$ //$NON-NLS-2$
+                             ATTR_LAYOUT_PREFIX + it, id != null ? id : "true"); //$NON-NLS-1$
                     }
 
                     addInnerElements(newChild, element, idMap);
