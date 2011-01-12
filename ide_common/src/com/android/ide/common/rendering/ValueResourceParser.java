@@ -222,6 +222,14 @@ public final class ValueResourceParser extends DefaultHandler {
                     System.arraycopy(buffer, i+1, buffer, i, length - i - 1);
                     length--;
                 }
+            } else if (buffer[i] == '"') {
+                // if the " was escaped it would have been processed above.
+                // offset the buffer to erase the "
+                System.arraycopy(buffer, i+1, buffer, i, length - i - 1);
+                length--;
+
+                // unlike when unescaping, we want to process the next char too
+                i--;
             }
         }
 
