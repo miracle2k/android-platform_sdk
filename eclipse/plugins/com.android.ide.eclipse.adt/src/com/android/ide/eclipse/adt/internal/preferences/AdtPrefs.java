@@ -117,6 +117,17 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         if (property == null || PREFS_SDK_DIR.equals(property)) {
             mOsSdkLocation = mStore.getString(PREFS_SDK_DIR);
 
+            // Make it possible to override the SDK path using an environment variable.
+            // The value will only be used if it matches an existing directory.
+            // Useful for testing from Eclipse.
+            // Note: this is a hack that does not change the preferences, so if the user
+            // looks at Window > Preferences > Android, the path will be the preferences
+            // one and not the overridden one.
+            String override = System.getenv("ADT_TEST_SDK_PATH");   //$NON-NLS-1$
+            if (override != null && override.length() > 0 && new File(override).isDirectory()) {
+                mOsSdkLocation = override;
+            }
+
             // make sure it ends with a separator. Normally this is done when the preference
             // is set. But to make sure older version still work, we fix it here as well.
             if (mOsSdkLocation.length() > 0 && mOsSdkLocation.endsWith(File.separator) == false) {
