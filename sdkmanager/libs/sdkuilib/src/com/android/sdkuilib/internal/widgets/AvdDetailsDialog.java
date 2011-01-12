@@ -127,6 +127,11 @@ final class AvdDetailsDialog extends Dialog {
                         displayValue(c, "SD Card:", sdcard);
                     }
 
+                    String snapshot = properties.get(AvdManager.AVD_INI_SNAPSHOT_PRESENT);
+                    if (snapshot != null) {
+                        displayValue(c, "Snapshot:", snapshot);
+                    }
+
                     // display other hardware
                     HashMap<String, String> copy = new HashMap<String, String>(properties);
                     // remove stuff we already displayed (or that we don't want to display)

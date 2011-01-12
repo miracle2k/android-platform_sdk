@@ -82,6 +82,13 @@ public final class AndroidLocation {
     }
 
     /**
+     * Resets the folder used to store android related files. For testing.
+     */
+    public final static void resetFolder() {
+        sPrefsLocation = null;
+    }
+
+    /**
      * Checks a list of system properties and/or system environment variables for validity, and
      * existing director, and returns the first one.
      * @param names
