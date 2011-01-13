@@ -149,6 +149,29 @@ public class RenderSession {
     }
 
     /**
+     * Returns the View parent.
+     *
+     * @param viewObject the object for which to return the parent.
+     *
+     * @return a {@link Result} indicating the status of the action, and if success, the parent
+     *      object in {@link Result#getData()}
+     */
+    public Result getViewParent(Object viewObject) {
+        return NOT_IMPLEMENTED.createResult();
+    }
+
+    /**
+     * Returns the index of a given view it its parent.
+     * @param viewObject the object for which to return the index.
+     *
+     * @return a {@link Result} indicating the status of the action, and if success, the index in
+     *      the parent in {@link Result#getData()}
+     */
+    public Result getViewIndex(Object viewObject) {
+        return NOT_IMPLEMENTED.createResult();
+    }
+
+    /**
      * Inserts a new child in a ViewGroup object, and renders the result.
      * <p/>
      * The child is first inflated and then added to its new parent, at the given <var>index<var>
