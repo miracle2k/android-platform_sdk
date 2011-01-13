@@ -28,17 +28,14 @@ public class MockLog implements ISdkLog {
         mMessages.add(new Formatter().format(code + format, args).toString());
     }
 
-    @Override
     public void warning(String format, Object... args) {
         add("W ", format, args);
     }
 
-    @Override
     public void printf(String format, Object... args) {
         add("P ", format, args);
     }
 
-    @Override
     public void error(Throwable t, String format, Object... args) {
         if (t != null) {
             add("T", "%s", t.toString());
