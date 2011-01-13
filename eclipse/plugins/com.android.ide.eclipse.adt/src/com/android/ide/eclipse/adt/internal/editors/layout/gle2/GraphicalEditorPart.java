@@ -34,6 +34,7 @@ import com.android.ide.common.rendering.api.Result;
 import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.IPageImageProvider;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.ContextPullParser;
@@ -70,6 +71,7 @@ import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -84,6 +86,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
@@ -416,7 +419,7 @@ public class GraphicalEditorPart extends EditorPart
 
         mCanvasViewer = new LayoutCanvasViewer(mLayoutEditor, mRulesEngine, mSashError, SWT.NONE);
 
-        mErrorLabel = new StyledText(mSashError, SWT.READ_ONLY | SWT.WRAP);
+        mErrorLabel = new StyledText(mSashError, SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
         mErrorLabel.setEditable(false);
         mErrorLabel.setBackground(d.getSystemColor(SWT.COLOR_INFO_BACKGROUND));
         mErrorLabel.setForeground(d.getSystemColor(SWT.COLOR_INFO_FOREGROUND));
@@ -1452,7 +1455,7 @@ public class GraphicalEditorPart extends EditorPart
             } else if (!logger.hasProblems()) {
                 logger.error(null, "Unexpected error in rendering, no details given");
             }
-            displayError(logger.getProblems());
+            displayLoggerProblems(iProject, logger);
         } else {
             // Success means there was no exception. But we might have detected
             // some missing classes and swapped them by a mock view.
@@ -1461,7 +1464,7 @@ public class GraphicalEditorPart extends EditorPart
             if (missingClasses.size() > 0 || brokenClasses.size() > 0) {
                 displayFailingClasses(missingClasses, brokenClasses);
             } else if (logger.hasProblems()) {
-                displayError(logger.getProblems());
+                displayLoggerProblems(iProject, logger);
             } else {
                 // Nope, no missing or broken classes. Clear success, congrats!
                 hideError();
@@ -1506,8 +1509,9 @@ public class GraphicalEditorPart extends EditorPart
             mProjectCallback = new ProjectCallback(
                     layoutLib.getClassLoader(), projectRes, iProject);
         } else {
-            // Also clears the set of missing classes prior to rendering
+            // Also clears the set of missing/broken classes prior to rendering
             mProjectCallback.getMissingClasses().clear();
+            mProjectCallback.getUninstantiatableClasses().clear();
         }
 
         // get the selected theme
@@ -1604,11 +1608,14 @@ public class GraphicalEditorPart extends EditorPart
         params.setImageFactory(getCanvasControl().getImageOverlay());
 
         try {
+            mProjectCallback.setLogger(logger);
             return layoutLib.createSession(params);
         } catch (RuntimeException t) {
             // Exceptions from the bridge
             displayError(t.getLocalizedMessage());
             throw t;
+        } finally {
+            mProjectCallback.setLogger(null);
         }
     }
 
@@ -1792,6 +1799,80 @@ public class GraphicalEditorPart extends EditorPart
         for (String s : string) {
             styledText.append(s);
         }
+    }
+
+    /** Display the problem list encountered during a render */
+    private void displayLoggerProblems(IProject project, RenderLogger logger) {
+        if (logger.hasProblems()) {
+            mErrorLabel.setText("");
+            // A common source of problems is attempting to open a layout when there are
+            // compilation errors. In this case, may not have run (or may not be up to date)
+            // so resources cannot be looked up etc. Explain this situation to the user.
+
+            boolean hasAaptErrors = false;
+            boolean hasJavaErrors = false;
+            try {
+                IMarker[] markers;
+                markers = project.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
+                if (markers.length > 0) {
+                    for (IMarker marker : markers) {
+                        String markerType = marker.getType();
+                        if (markerType.equals(IJavaModelMarker.JAVA_MODEL_PROBLEM_MARKER)) {
+                            int severity = marker.getAttribute(IMarker.SEVERITY, -1);
+                            if (severity == IMarker.SEVERITY_ERROR) {
+                                hasJavaErrors = true;
+                            }
+                        } else if (markerType.equals(AndroidConstants.MARKER_AAPT_COMPILE)) {
+                            int severity = marker.getAttribute(IMarker.SEVERITY, -1);
+                            if (severity == IMarker.SEVERITY_ERROR) {
+                                hasAaptErrors = true;
+                            }
+                        }
+                    }
+                }
+            } catch (CoreException e) {
+                AdtPlugin.log(e, null);
+            }
+
+            // From BridgeConstants.TAG_RESOURCES_RESOLVE, TAG_RESOURCES_READ, etc:
+            if (hasAaptErrors && logger.seenTagPrefix("resources.")) { //$NON-NLS-1$
+                // Text will automatically be wrapped by the error widget so no reason
+                // to insert linebreaks in this error message:
+                String message =
+                    "NOTE: This project contains resource errors, so aapt did not succeed, "
+                     + "which can cause rendering failures. "
+                     + "Fix resource problems first.\n\n";
+                 addBoldText(mErrorLabel, message);
+            } else if (hasJavaErrors && mProjectCallback != null && mProjectCallback.isUsed()) {
+                // Text will automatically be wrapped by the error widget so no reason
+                // to insert linebreaks in this error message:
+                String message =
+                   "NOTE: This project contains Java compilation errors, "
+                    + "which can cause rendering failures for custom views. "
+                    + "Fix compilation problems first.\n\n";
+                addBoldText(mErrorLabel, message);
+            }
+
+            String problems = logger.getProblems();
+            addText(mErrorLabel, problems);
+
+            mSashError.setMaximizedControl(null);
+        } else {
+            mSashError.setMaximizedControl(mCanvasViewer.getControl());
+        }
+    }
+
+    /** Appends the given text as a bold string in the given text widget */
+    private void addBoldText(StyledText styledText, String text) {
+        String s = styledText.getText();
+        int start = (s == null ? 0 : s.length());
+
+        styledText.append(text);
+        StyleRange sr = new ClassLinkStyleRange();
+        sr.start = start;
+        sr.length = text.length();
+        sr.fontStyle = SWT.BOLD;
+        styledText.setStyleRange(sr);
     }
 
     /**
