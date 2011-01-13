@@ -75,6 +75,7 @@ public final class ProjectCallback implements ILegacyCallback {
     public Object loadView(String className, Class[] constructorSignature,
             Object[] constructorParameters)
             throws ClassNotFoundException, Exception {
+        mUsed = true;
 
         // look for a cached version
         Class<?> clazz = mLoadedClasses.get(className);
@@ -90,29 +91,27 @@ public final class ProjectCallback implements ILegacyCallback {
             }
             clazz = mLoader.loadClass(className);
         } catch (Exception e) {
-            // Log this error with the class name we're trying to load
-            AdtPlugin.log(e, "ProjectCallback.loadView failed to find class %1$s", //$NON-NLS-1$
-                    className);
-
             // Add the missing class to the list so that the renderer can print them later.
+            // no need to log this.
             mMissingClasses.add(className);
         }
 
         try {
             if (clazz != null) {
-                mUsed = true;
+                // first try to instantiate it because adding it the list of loaded class so that
+                // we don't add broken classes.
+                Object view = instantiateClass(clazz, constructorSignature, constructorParameters);
                 mLoadedClasses.put(className, clazz);
-                return instantiateClass(clazz, constructorSignature, constructorParameters);
+
+                return view;
             }
         } catch (Throwable e) {
-            // Find root cause
+            // Find root cause to log it.
             while (e.getCause() != null) {
                 e = e.getCause();
             }
 
-            AdtPlugin.log(e,
-                    "ProjectCallback.loadView failed to instantiate class %1$s", //$NON-NLS-1$
-                    className);
+            AdtPlugin.log(e, "%1$s failed to instantiate.", className); //$NON-NLS-1$
 
             // Add the missing class to the list so that the renderer can print them later.
             mBrokenClasses.add(className);
@@ -128,7 +127,6 @@ public final class ProjectCallback implements ILegacyCallback {
             Method m = view.getClass().getMethod("setText",
                                                  new Class<?>[] { CharSequence.class });
             m.invoke(view, getShortClassName(className));
-            mUsed = true;
             return view;
         } catch (Exception e) {
             // We failed to create and return a mock view.
