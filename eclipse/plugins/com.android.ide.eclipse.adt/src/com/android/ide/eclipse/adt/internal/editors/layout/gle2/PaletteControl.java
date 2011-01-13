@@ -21,6 +21,8 @@ import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
+import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_INCLUDE;
+import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_MERGE;
 
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.Rect;
@@ -34,7 +36,6 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescript
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
-import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
@@ -308,9 +309,10 @@ public class PaletteControl extends Composite {
 
         for (ElementDescriptor desc : descriptors) {
 
-            // Exclude the <include> tag from the View palette.
+            // Exclude the <include> and <merge> tags from the View palette.
             // We don't have drop support for it right now, although someday we should.
-            if (LayoutDescriptors.VIEW_INCLUDE.equals(desc.getXmlName())) {
+            String xmlName = desc.getXmlName();
+            if (VIEW_INCLUDE.equals(xmlName) || VIEW_MERGE.equals(xmlName)) {
                 continue;
             }
 
