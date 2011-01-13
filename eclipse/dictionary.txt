@@ -16,6 +16,7 @@ apk
 app
 apps
 arg
+attrs
 avd
 avds
 backport
@@ -51,6 +52,7 @@ ddms
 deactivated
 debuggable
 dedent
+defstyle
 deprecated
 deselect
 deselects
@@ -102,6 +104,7 @@ layoutlib
 leaky
 lib
 lifecycle
+linebreaks
 linestyle
 linkable
 linux
@@ -181,6 +184,8 @@ subclassing
 submenu
 supertype
 syncs
+synthetically
+tad
 temp
 textfields
 thematically

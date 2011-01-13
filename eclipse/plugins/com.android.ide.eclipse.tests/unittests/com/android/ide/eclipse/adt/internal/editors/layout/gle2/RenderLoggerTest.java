@@ -32,6 +32,8 @@ public class RenderLoggerTest extends TestCase {
         assertTrue(l.hasProblems());
         assertEquals("The graphics preview may not be accurate:\n"
                 + "* No perspective Transforms\n" + "* No GPS\n", l.getProblems());
+        assertFalse(l.seenTag("foo"));
+        assertFalse(l.seenTag(null));
     }
 
     public void testLogger3() throws Exception {
@@ -40,7 +42,15 @@ public class RenderLoggerTest extends TestCase {
         l.error("timeout", "Sample Error", new RuntimeException());
         l.warning("slow", "Sample warning");
         assertTrue(l.hasProblems());
-        assertEquals("timeout: Sample Error\n" + "slow: Sample warning\n"
+        assertEquals("Sample Error\n" + "Sample warning\n"
                 + "Exception details are logged in Window > Show View > Error Log", l.getProblems());
+        assertFalse(l.seenTag("foo"));
+        assertTrue(l.seenTag("timeout"));
+        assertTrue(l.seenTag("slow"));
+        assertFalse(l.seenTagPrefix("foo"));
+        assertTrue(l.seenTagPrefix("timeout"));
+        assertTrue(l.seenTagPrefix("slow"));
+        assertTrue(l.seenTagPrefix("time"));
+        assertFalse(l.seenTagPrefix("timeouts"));
     }
 }

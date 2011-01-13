@@ -17,6 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
 import com.android.ide.common.rendering.api.IProjectCallback;
+import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.legacy.ILegacyCallback;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
@@ -50,6 +51,7 @@ public final class ProjectCallback implements ILegacyCallback {
     private boolean mUsed = false;
     private String mNamespace;
     private ProjectClassLoader mLoader = null;
+    private LayoutLog mLogger;
 
     public ProjectCallback(ClassLoader classLoader, ProjectResources projectRes, IProject project) {
         mParentClassLoader = classLoader;
@@ -63,6 +65,24 @@ public final class ProjectCallback implements ILegacyCallback {
 
     public Set<String> getUninstantiatableClasses() {
         return mBrokenClasses;
+    }
+
+    /**
+     * Sets the {@link LayoutLog} logger to use for error messages during problems
+     *
+     * @param logger the new logger to use, or null to clear it out
+     */
+    public void setLogger(LayoutLog logger) {
+        mLogger = logger;
+    }
+
+    /**
+     * Returns the {@link LayoutLog} logger used for error messages, or null
+     *
+     * @return the logger being used, or null if no logger is in use
+     */
+    public LayoutLog getLogger() {
+        return mLogger;
     }
 
     /**
@@ -214,9 +234,14 @@ public final class ProjectCallback implements ILegacyCallback {
     }
 
     /**
-     * Returns whether the loader has received requests to load custom views.
+     * Returns whether the loader has received requests to load custom views. Note that
+     * the custom view loading may not actually have succeeded; this flag only records
+     * whether it was <b>requested</b>.
      * <p/>
-     * This allows to efficiently only recreate when needed upon code change in the project.
+     * This allows to efficiently only recreate when needed upon code change in the
+     * project.
+     *
+     * @return true if the loader has been asked to load custom views
      */
     public boolean isUsed() {
         return mUsed;
@@ -289,6 +314,15 @@ public final class ProjectCallback implements ILegacyCallback {
                     constructor = clazz.getConstructor(constructorSignature);
                     if (constructor != null) {
                         // Found a suitable constructor, now let's use it.
+                        // (But let's warn the user if the simple View constructor was found
+                        // since Unexpected Things may happen if the attribute set constructors
+                        // are not found)
+                        if (constructorSignature.length < 2 && mLogger != null) {
+                            mLogger.warning("wrongconstructor", //$NON-NLS-1$
+                                String.format("Custom view %1$s is not using the 2- or 3-argument "
+                                    + "View constructors; XML attributes will not work",
+                                    clazz.getSimpleName()));
+                        }
                         break;
                     }
                 } catch (NoSuchMethodException e1) {
