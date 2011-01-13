@@ -18,6 +18,22 @@ package com.android.ide.common.rendering.api;
 
 public class LayoutLog {
 
+    public final static String TAG_UNSUPPORTED = "unsupported";
+    public final static String TAG_BROKEN = "broken";
+    public final static String TAG_RESOURCES_RESOLVE = "resources.resolve";
+    public final static String TAG_RESOURCES_READ = "resources.read";
+    public final static String TAG_RESOURCES_FORMAT = "resources.format";
+    public final static String TAG_MATRIX_AFFINE = "matrix.affine";
+    public final static String TAG_MATRIX_INVERSE = "matrix.inverse";
+    public final static String TAG_MASKFILTER = "maskfilter";
+    public final static String TAG_DRAWFILTER = "drawfilter";
+    public final static String TAG_PATHEFFECT = "patheffect";
+    public final static String TAG_COLORFILTER = "colorfilter";
+    public final static String TAG_RASTERIZER = "rasterizer";
+    public final static String TAG_SHADER = "shader";
+    public final static String TAG_XFERMODE = "xfermode";
+
+
     public void warning(String tag, String message) {
     }
 
