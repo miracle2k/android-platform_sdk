@@ -48,6 +48,13 @@ public final class LayoutDescriptors implements IDescriptorProvider {
     public static final String VIEW_INCLUDE = "include";      //$NON-NLS-1$
 
     /**
+     * The XML name of the special &lt;merge&gt; layout tag.
+     * A synthetic element with that name is created as part of the view descriptors list
+     * returned by {@link #getViewDescriptors()}.
+     */
+    public static final String VIEW_MERGE = "merge";          //$NON-NLS-1$
+
+    /**
      * The attribute name of the include tag's url naming the resource to be inserted
      * <p>
      * <b>NOTE</b>: The layout attribute is NOT in the Android namespace!
@@ -338,7 +345,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
      *   FrameLayout descriptor and extract its layout attributes.
      */
     private ElementDescriptor createMerge(ArrayList<ElementDescriptor> knownLayouts) {
-        String xml_name = "merge";  //$NON-NLS-1$
+        String xml_name = VIEW_MERGE;
 
         // Find View and inherit all its layout attributes
         AttributeDescriptor[] viewLayoutAttribs = findViewLayoutAttributes(
@@ -347,7 +354,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         // Create the include descriptor
         ViewElementDescriptor desc = new ViewElementDescriptor(xml_name,  // xml_name
                 xml_name, // ui_name
-                null,     // canonical class name, we don't have one
+                VIEW_MERGE, // "class name"; the GLE only treats this as an element tag
                 "A root tag useful for XML layouts inflated using a ViewStub.",  // tooltip
                 null,  // sdk_url
                 null,  // attributes
