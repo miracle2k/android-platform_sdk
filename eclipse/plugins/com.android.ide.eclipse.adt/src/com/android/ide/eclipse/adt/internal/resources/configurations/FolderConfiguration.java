@@ -107,6 +107,18 @@ public final class FolderConfiguration implements Comparable<FolderConfiguration
     }
 
     /**
+     * Adds the non-qualifiers from the given config.
+     * Qualifiers that are null in the given config do not change in the receiver.
+     */
+    public void add(FolderConfiguration config) {
+        for (int i = 0 ; i < INDEX_COUNT ; i++) {
+            if (config.mQualifiers[i] != null) {
+                mQualifiers[i] = config.mQualifiers[i];
+            }
+        }
+    }
+
+    /**
      * Returns the first invalid qualifier, or <code>null<code> if they are all valid (or if none
      * exists).
      */
