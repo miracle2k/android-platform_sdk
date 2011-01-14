@@ -1834,8 +1834,7 @@ public class GraphicalEditorPart extends EditorPart
                 AdtPlugin.log(e, null);
             }
 
-            // From BridgeConstants.TAG_RESOURCES_RESOLVE, TAG_RESOURCES_READ, etc:
-            if (hasAaptErrors && logger.seenTagPrefix("resources.")) { //$NON-NLS-1$
+            if (hasAaptErrors && logger.seenTagPrefix(LayoutLog.TAG_RESOURCES_PREFIX)) {
                 // Text will automatically be wrapped by the error widget so no reason
                 // to insert linebreaks in this error message:
                 String message =
