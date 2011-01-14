@@ -237,7 +237,7 @@ public class GraphicalEditorPart extends EditorPart
     private CustomButton mZoomOutButton;
     private CustomButton mZoomResetButton;
     private CustomButton mZoomInButton;
-
+    private CustomButton mZoomFitButton;
     private CustomButton mClippingButton;
 
     public GraphicalEditorPart(LayoutEditor layoutEditor) {
@@ -286,12 +286,13 @@ public class GraphicalEditorPart extends EditorPart
         gl.marginHeight = gl.marginWidth = 0;
 
         // create the top part for the configuration control
+        IconFactory iconFactory = IconFactory.getInstance();
         CustomButton[][] customButtons = new CustomButton[][] {
                 new CustomButton[] {
                     mZoomRealSizeButton = new CustomButton(
-                            "*",
-                            null, //image
-                            "Emulate real size",
+                            null, // label
+                            iconFactory.getIcon("zoomreal"), //$NON-NLS-1$
+                            "Emulate Real Size",
                             true /*isToggle*/,
                             false /*defaultValue*/
                             ) {
@@ -301,35 +302,49 @@ public class GraphicalEditorPart extends EditorPart
                                 mZoomOutButton.setEnabled(!newState);
                                 mZoomResetButton.setEnabled(!newState);
                                 mZoomInButton.setEnabled(!newState);
+                                mZoomFitButton.setEnabled(!newState);
                             } else {
                                 mZoomRealSizeButton.setSelection(!newState);
                             }
                         }
                     },
+                    mZoomFitButton = new CustomButton(
+                            null, // label
+                            iconFactory.getIcon("zoomfit"), //$NON-NLS-1$
+                            "Zoom to Fit (0)"
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            rescaleToFit();
+                        }
+                    },
+                    mZoomResetButton = new CustomButton(
+                            null, // label
+                            iconFactory.getIcon("zoom100"), //$NON-NLS-1$
+                            "Reset Zoom to 100% (1)"
+                            ) {
+                        @Override
+                        public void onSelected(boolean newState) {
+                            resetScale();
+                        }
+                    }
+                },
+                // Group zoom in/out separately
+                new CustomButton[] {
                     mZoomOutButton = new CustomButton(
-                            "-",
-                            null, //image
-                            "Canvas zoom out."
+                            null, // label
+                            iconFactory.getIcon("zoomminus"), //$NON-NLS-1$
+                            "Zoom Out (-)"
                             ) {
                         @Override
                         public void onSelected(boolean newState) {
                             rescale(-1);
                         }
                     },
-                    mZoomResetButton = new CustomButton(
-                            "100%",
-                            null, //image
-                            "Reset Canvas to 100%"
-                            ) {
-                        @Override
-                        public void onSelected(boolean newState) {
-                            resetScale();
-                        }
-                    },
                     mZoomInButton = new CustomButton(
-                            "+",
-                            null, //image
-                            "Canvas zoom in."
+                            null, // label
+                            iconFactory.getIcon("zoomplus"), //$NON-NLS-1$
+                            "Zoom In (+)"
                             ) {
                         @Override
                         public void onSelected(boolean newState) {
@@ -340,8 +355,8 @@ public class GraphicalEditorPart extends EditorPart
                 new CustomButton[] {
                     new CustomButton(
                             null, //text
-                            IconFactory.getInstance().getIcon("explode"), //$NON-NLS-1$
-                            "Displays extra margins in the layout.",
+                            iconFactory.getIcon("explode"), //$NON-NLS-1$
+                            "Displays extra margins in the layout",
                             true /*toggle*/,
                             false /*defaultValue*/
                             ) {
@@ -353,8 +368,8 @@ public class GraphicalEditorPart extends EditorPart
                     },
                     new CustomButton(
                             null, //text
-                            IconFactory.getInstance().getIcon("outline"), //$NON-NLS-1$
-                            "Shows the outline of all views in the layout.",
+                            iconFactory.getIcon("outline"), //$NON-NLS-1$
+                            "Shows the outline of all views in the layout",
                             true /*toggle*/,
                             false /*defaultValue*/
                             ) {
@@ -365,7 +380,7 @@ public class GraphicalEditorPart extends EditorPart
                     },
                     mClippingButton =  new CustomButton(
                             null, //text
-                            IconFactory.getInstance().getIcon("clipping"), //$NON-NLS-1$
+                            iconFactory.getIcon("clipping"), //$NON-NLS-1$
                             "Toggles screen clipping on/off",
                             true /*toggle*/,
                             true /*defaultValue*/
@@ -437,6 +452,16 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     /**
+     * Returns true if zooming in/out/to-fit/etc is allowed (which is not the case while
+     * emulating real size)
+     *
+     * @return true if zooming is allowed
+     */
+    boolean isZoomingAllowed() {
+        return mZoomInButton.isEnabled();
+    }
+
+    /**
      * Listens to workbench selections that does NOT come from {@link LayoutEditor}
      * (those are generated by ourselves).
      * <p/>
@@ -466,7 +491,7 @@ public class GraphicalEditorPart extends EditorPart
      * Rescales canvas.
      * @param direction +1 for zoom in, -1 for zoom out
      */
-    private void rescale(int direction) {
+    void rescale(int direction) {
         double s = mCanvasViewer.getCanvas().getScale();
 
         if (direction > 0) {
@@ -495,6 +520,13 @@ public class GraphicalEditorPart extends EditorPart
      */
     private void resetScale() {
         mCanvasViewer.getCanvas().setScale(1, true /*redraw*/);
+    }
+
+    /**
+     * Reset the canvas scale to best fit (so content is as large as possible without scrollbars)
+     */
+    private void rescaleToFit() {
+        mCanvasViewer.getCanvas().setFitScale();
     }
 
     private boolean rescaleToReal(boolean real) {

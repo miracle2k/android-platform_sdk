@@ -70,6 +70,7 @@ import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
@@ -266,6 +267,19 @@ public class LayoutCanvas extends Canvas {
                 // handle backspace for other platforms as well.
                 if (e.keyCode == SWT.BS) {
                     mDeleteAction.run();
+                } else {
+                    // Zooming actions
+                    char c = e.character;
+                    GraphicalEditorPart editor = mLayoutEditor.getGraphicalEditor();
+                    if (c == '1' && editor.isZoomingAllowed()) {
+                        setScale(1, true);
+                    } else if (c == '0' && editor.isZoomingAllowed()) {
+                        setFitScale();
+                    } else if (c == '+' && editor.isZoomingAllowed()) {
+                        editor.rescale(1);
+                    } else if (c == '-' && editor.isZoomingAllowed()) {
+                        editor.rescale(-1);
+                    }
                 }
             }
 
@@ -533,6 +547,25 @@ public class LayoutCanvas extends Canvas {
         mVScale.setScale(scale);
         if (redraw) {
             redraw();
+        }
+    }
+
+    /** Scales the canvas to best fit */
+    void setFitScale() {
+        Rectangle canvasSize = getClientArea();
+        int canvasWidth = canvasSize.width - 2 * ICanvasTransform.IMAGE_MARGIN;
+        int canvasHeight = canvasSize.height - 2 * ICanvasTransform.IMAGE_MARGIN;
+
+        Image image = getImageOverlay().getImage();
+        if (image != null) {
+            ImageData imageData = image.getImageData();
+            int sceneWidth = imageData.width;
+            int sceneHeight = imageData.height;
+            double hScale = canvasWidth / (double) sceneWidth;
+            double vScale = canvasHeight / (double) sceneHeight;
+
+            double scale = Math.min(hScale, vScale);
+            setScale(scale, true);
         }
     }
 
