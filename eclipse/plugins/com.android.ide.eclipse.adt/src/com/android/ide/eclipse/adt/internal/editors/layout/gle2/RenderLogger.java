@@ -89,7 +89,7 @@ class RenderLogger extends LayoutLog {
     // ---- extends LayoutLog ----
 
     @Override
-    public void error(String tag, String message) {
+    public void error(String tag, String message, Object data) {
         String description = describe(message);
         AdtPlugin.log(IStatus.ERROR, "%1$s: %2$s", mName, description);
 
@@ -97,7 +97,7 @@ class RenderLogger extends LayoutLog {
     }
 
     @Override
-    public void error(String tag, String message, Throwable throwable) {
+    public void error(String tag, String message, Throwable throwable, Object data) {
         String description = describe(message);
         AdtPlugin.log(throwable, "%1$s: %2$s", mName, description);
         if (throwable != null) {
@@ -108,14 +108,14 @@ class RenderLogger extends LayoutLog {
     }
 
     @Override
-    public void warning(String tag, String message) {
+    public void warning(String tag, String message, Object data) {
         String description = describe(message);
         AdtPlugin.log(IStatus.WARNING, "%1$s: %2$s", mName, description);
         addWarning(tag, description);
     }
 
     @Override
-    public void fidelityWarning(String tag, String message, Throwable throwable) {
+    public void fidelityWarning(String tag, String message, Throwable throwable, Object data) {
         String description = describe(message);
         AdtPlugin.log(throwable, "%1$s: %2$s", mName, description);
         if (throwable != null) {
