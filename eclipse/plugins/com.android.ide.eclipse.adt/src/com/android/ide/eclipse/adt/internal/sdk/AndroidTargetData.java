@@ -258,17 +258,18 @@ public class AndroidTargetData {
                     new LayoutLog() {
 
                         @Override
-                        public void error(String tag, String message, Throwable throwable) {
+                        public void error(String tag, String message, Throwable throwable,
+                                Object data) {
                             AdtPlugin.log(throwable, message);
                         }
 
                         @Override
-                        public void error(String tag, String message) {
+                        public void error(String tag, String message, Object data) {
                             AdtPlugin.log(IStatus.ERROR, message);
                         }
 
                         @Override
-                        public void warning(String tag, String message) {
+                        public void warning(String tag, String message, Object data) {
                             AdtPlugin.log(IStatus.WARNING, message);
                         }
                     });
