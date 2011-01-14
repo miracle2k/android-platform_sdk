@@ -1483,9 +1483,10 @@ public class GraphicalEditorPart extends EditorPart
             // An error was generated. Print it (and any other accumulated warnings)
             String errorMessage = session.getResult().getErrorMessage();
             if (errorMessage != null && errorMessage.length() > 0) {
-                logger.error(null, session.getResult().getErrorMessage());
+                logger.error(null, session.getResult().getErrorMessage(), null /*data*/);
             } else if (!logger.hasProblems()) {
-                logger.error(null, "Unexpected error in rendering, no details given");
+                logger.error(null, "Unexpected error in rendering, no details given",
+                        null /*data*/);
             }
             displayLoggerProblems(iProject, logger);
         } else {
