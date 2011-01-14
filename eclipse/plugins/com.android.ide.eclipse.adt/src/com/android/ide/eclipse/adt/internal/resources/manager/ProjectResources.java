@@ -369,17 +369,33 @@ public class ProjectResources implements IResourceRepository {
 
     /**
      * Returns the list of source files for a given resource.
+     * Optionally, if a {@link FolderConfiguration} is given, then only the best
+     * match for this config is returned.
      *
      * @param type the type of the resource.
      * @param name the name of the resource.
+     * @param referenceConfig an optional config for which only the best match will be returned.
      *
      * @return a list of files generating this resource or null if it was not found.
      */
-    public List<ResourceFile> getSourceFiles(ResourceType type, String name) {
+    public List<ResourceFile> getSourceFiles(ResourceType type, String name,
+            FolderConfiguration referenceConfig) {
+
         ProjectResourceItem[] resources = getResources(type);
 
         for (ProjectResourceItem item : resources) {
             if (name.equals(item.getName())) {
+                if (referenceConfig != null) {
+                    Resource match = findMatchingConfiguredResource(item.getSourceFileList(),
+                            referenceConfig);
+                    if (match instanceof ResourceFile) {
+                        ArrayList<ResourceFile> list = new ArrayList<ResourceFile>();
+                        list.add((ResourceFile) match);
+                        return list;
+                    }
+
+                    return null;
+                }
                 return item.getSourceFileList();
             }
         }
