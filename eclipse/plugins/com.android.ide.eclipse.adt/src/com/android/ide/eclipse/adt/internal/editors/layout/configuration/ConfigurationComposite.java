@@ -455,6 +455,10 @@ public class ConfigurationComposite extends Composite {
             });
         }
 
+        public boolean isEnabled() {
+            return mButton != null && mButton.isEnabled();
+        }
+
         public void setEnabled(boolean enabledState) {
             if (mButton != null) {
                 mButton.setEnabled(enabledState);
