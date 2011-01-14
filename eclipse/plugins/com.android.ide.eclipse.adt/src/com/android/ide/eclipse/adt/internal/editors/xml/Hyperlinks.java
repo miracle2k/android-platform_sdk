@@ -24,10 +24,9 @@ import static com.android.ide.eclipse.adt.AndroidConstants.ANDROID_PKG;
 import static com.android.ide.eclipse.adt.AndroidConstants.EXT_XML;
 import static com.android.ide.eclipse.adt.AndroidConstants.FN_RESOURCE_BASE;
 import static com.android.ide.eclipse.adt.AndroidConstants.FN_RESOURCE_CLASS;
-import static com.android.ide.eclipse.adt.AndroidConstants.WS_RESOURCES;
-import static com.android.ide.eclipse.adt.AndroidConstants.WS_SEP;
 import static com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors.NAME_ATTR;
 import static com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors.ROOT_ELEMENT;
+import static com.android.sdklib.SdkConstants.FD_VALUES;
 import static com.android.sdklib.xml.AndroidManifest.ATTRIBUTE_NAME;
 import static com.android.sdklib.xml.AndroidManifest.ATTRIBUTE_PACKAGE;
 import static com.android.sdklib.xml.AndroidManifest.NODE_ACTIVITY;
@@ -37,19 +36,23 @@ import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.manager.FolderTypeRelationship;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.io.IFolderWrapper;
+import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.sdklib.io.FileWrapper;
 import com.android.sdklib.util.Pair;
 
 import org.apache.xerces.parsers.DOMParser;
@@ -98,6 +101,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.wst.sse.core.StructuredModelManager;
@@ -122,6 +126,7 @@ import org.xml.sax.SAXException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -230,6 +235,10 @@ public class Hyperlinks {
 
     /** Returns true if this represents a {@code <foo.bar.Baz>} custom view class element */
     private static boolean isClassElement(XmlContext context) {
+        if (context.getAttribute() != null) {
+            // Don't match the outer element if the user is hovering over a specific attribute
+            return false;
+        }
         // If the element looks like a fully qualified class name (e.g. it's a custom view
         // element) offer it as a link
         String tag = context.getElement().getTagName();
@@ -479,7 +488,6 @@ public class Hyperlinks {
         status.setErrorMessage(message);
     }
 
-
     /**
      * Opens a framework resource's declaration
      *
@@ -494,25 +502,15 @@ public class Hyperlinks {
             return false;
         }
 
-        Sdk currentSdk = Sdk.getCurrent();
-        if (currentSdk == null) {
-            return false;
-        }
-        IAndroidTarget target = currentSdk.getTarget(project);
-        if (target == null) {
-            return false;
-        }
         ResourceType type = parsedUrl.getFirst();
         String name = parsedUrl.getSecond();
 
         // Attempt to open files, such as layouts and drawables in @android?
         if (isFileResource(type)) {
-            AndroidTargetData data = currentSdk.getTargetData(target);
-            if (data == null) {
+            ProjectResources frameworkResources = getResources(project, true /* framework */);
+            if (frameworkResources == null) {
                 return false;
             }
-
-            ProjectResources frameworkResources = data.getFrameworkResources();
             Map<String, Map<String, ResourceValue>> configuredResources =
                 frameworkResources.getConfiguredResources(new FolderConfiguration());
 
@@ -560,20 +558,91 @@ public class Hyperlinks {
                     break;
                 }
             }
-        } else if (isValueResource(type)) {
-            File values = new File(target.getPath(IAndroidTarget.RESOURCES),
-                    SdkConstants.FD_VALUES);
-            if (values.exists()) {
-                Pair<File, Integer> match = findValueDefinition(values, type, name);
-                if (match != null) {
-                    Path path = new Path(match.getFirst().getPath());
-                    openPath(path, null, match.getSecond());
+
+            // Attempt to find files via ProjectResources.getSourceFiles(); this
+            // is done after the above search since this search won't resolve references
+            FolderConfiguration configuration = getConfiguration();
+            List<ResourceFile> sourceFiles = frameworkResources.getSourceFiles(type, name,
+                    configuration);
+            for (ResourceFile file : sourceFiles) {
+                String location = file.getFile().getOsLocation();
+                if (new File(location).exists()) {
+                    Path path = new Path(location);
+                    openPath(path, null, -1);
                     return true;
                 }
+            }
+
+        } else if (isValueResource(type)) {
+            FolderConfiguration configuration = getConfiguration();
+            Pair<File, Integer> match = findFrameworkValueByConfig(project, type, name,
+                    configuration);
+            if (match == null && configuration != null) {
+                match = findFrameworkValueByConfig(project, type, name, null);
+            }
+
+            if (match != null) {
+                Path path = new Path(match.getFirst().getPath());
+                openPath(path, null, match.getSecond());
+                return true;
             }
         }
 
         return false;
+    }
+
+    /** Return the set of matching source files for the given resource type and name */
+    private static List<ResourceFile> getResourceFiles(IProject project,
+            ResourceType type, String name, boolean framework,
+            FolderConfiguration configuration) {
+        ProjectResources resources = getResources(project, framework);
+        if (resources == null) {
+            return null;
+        }
+        List<ResourceFile> sourceFiles = resources.getSourceFiles(type, name, configuration);
+        if (sourceFiles != null) {
+            if (sourceFiles.size() > 1 && configuration == null) {
+                // Sort all the files in the base values/ folder first, followed by
+                // everything else
+                List<ResourceFile> first = new ArrayList<ResourceFile>();
+                List<ResourceFile> second = new ArrayList<ResourceFile>();
+                for (ResourceFile file : sourceFiles) {
+                    if (FD_VALUES.equals(file.getFolder().getFolder().getName())) {
+                        // Found match in value
+                        first.add(file);
+                    } else {
+                        second.add(file);
+                    }
+                }
+                first.addAll(second);
+                sourceFiles = first;
+            }
+        }
+
+        return sourceFiles;
+    }
+
+    /** Searches for the given resource for a specific configuration (which may be null) */
+    private static Pair<File, Integer> findFrameworkValueByConfig(IProject project,
+            ResourceType type, String name, FolderConfiguration configuration) {
+        List<ResourceFile> sourceFiles = getResourceFiles(project, type, name, true /* framework*/,
+                configuration);
+        if (sourceFiles != null) {
+            for (ResourceFile resourceFile : sourceFiles) {
+                if (resourceFile.getFile() instanceof FileWrapper) {
+                    File file = ((FileWrapper) resourceFile.getFile());
+                    if (file.getName().endsWith(EXT_XML)) {
+                        // Must have an XML extension
+                        Pair<File, Integer> match = findValueInXml(type, name, file);
+                        if (match != null) {
+                            return match;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /** Opens a Java class for the given fully qualified class name */
@@ -604,72 +673,115 @@ public class Hyperlinks {
 
     /** Looks up the project member of the given type and the given name */
     private static IResource findNonValueFile(IProject project, ResourceType type, String name) {
-        String relativePath;
-        IResource member;
-        String folder = WS_RESOURCES + WS_SEP + type.getName();
-        relativePath = folder + WS_SEP + name + '.' + EXT_XML;
-        member = project.findMember(relativePath);
-        if (member == null) {
-            // Search for any file in the directory with the given basename;
-            // this is necessary for files like drawables that don't have
-            // .xml files. It's an error to have conflicts in basenames for
-            // these resources types so this is safe.
-            IResource d = project.findMember(folder);
-            if (d instanceof IFolder) {
-                IFolder dir = (IFolder) d;
-                member = findInFolder(name, dir);
-            }
-
-            if (member == null) {
-                // Still couldn't find the member; it must not be defined in a "base" directory
-                // like "layout"; look in various variations
-                ResourceManager manager = ResourceManager.getInstance();
-                ProjectResources resources = manager.getProjectResources(project);
-
-                ResourceFolderType[] folderTypes = FolderTypeRelationship.getRelatedFolders(type);
-                for (ResourceFolderType folderType : folderTypes) {
-                    if (folderType != ResourceFolderType.VALUES) {
-                        List<ResourceFolder> folders = resources.getFolders(folderType);
-                        for (ResourceFolder resourceFolder : folders) {
-                            if (resourceFolder.getFolder() instanceof IFolderWrapper) {
-                                IFolderWrapper wrapper =
-                                    (IFolderWrapper) resourceFolder.getFolder();
-                                IFolder iFolder = wrapper.getIFolder();
-                                member = findInFolder(name, iFolder);
-                                if (member != null) {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
+        ProjectResources resources = getResources(project, false /* not framework */);
+        if (resources == null) {
+            return null;
+        }
+        FolderConfiguration configuration = getConfiguration();
+        if (configuration != null) {
+            IResource file = findFileByConfig(type, name, resources, configuration);
+            if (file != null) {
+                return file;
             }
         }
 
-        return member;
+        return findFileByConfig(type, name, resources, null);
     }
 
     /**
-     * Finds a resource of the given name in the given folder, searching for possible file
-     * extensions
+     * Find a file for a given named resource, associated with a given folder
+     * configuration
      */
-    private static IResource findInFolder(String name, IFolder dir) {
-        try {
-            for (IResource child : dir.members()) {
-                String fileName = child.getName();
-                int index = fileName.indexOf('.');
-                if (index != -1) {
-                    fileName = fileName.substring(0, index);
-                }
-                if (fileName.equals(name)) {
-                    return child;
+    private static IResource findFileByConfig(ResourceType type, String name,
+            ProjectResources resources, FolderConfiguration configuration) {
+        List<ResourceFile> sourceFiles = resources.getSourceFiles(type, name, configuration);
+        if (sourceFiles != null) {
+            for (ResourceFile resourceFile : sourceFiles) {
+                if (resourceFile.getFile() instanceof IFileWrapper) {
+                    return ((IFileWrapper) resourceFile.getFile()).getIFile();
                 }
             }
-        } catch (CoreException e) {
-            AdtPlugin.log(e, ""); //$NON-NLS-1$
         }
 
         return null;
+    }
+
+    /**
+     * Returns the current configuration, if the associated UI editor has been initialized
+     * and has an associated configuration
+     *
+     * @return the configuration for this file, or null
+     */
+    private static FolderConfiguration getConfiguration() {
+        IEditorPart editor = getEditor();
+        if (editor != null) {
+            if (editor instanceof LayoutEditor) {
+                LayoutEditor layoutEditor = (LayoutEditor) editor;
+                GraphicalEditorPart graphicalEditor = layoutEditor.getGraphicalEditor();
+                if (graphicalEditor != null) {
+                    return graphicalEditor.getConfiguration();
+                } else {
+                    // TODO: Could try a few more things to get the configuration:
+                    // (1) try to look at the file.getPersistentProperty(NAME_CONFIG_STATE)
+                    //    which will return previously saved state. This isn't necessary today
+                    //    since no editors seem to be lazily initialized.
+                    // (2) attempt to use the configuration from any of the other open
+                    //    files, especially files in the same directory as this one.
+                }
+            }
+
+            // Create a configuration from the current file
+            IEditorInput editorInput = editor.getEditorInput();
+            if (editorInput instanceof FileEditorInput) {
+                IFile file = ((FileEditorInput) editorInput).getFile();
+                IProject project = file.getProject();
+                ProjectResources pr = ResourceManager.getInstance().getProjectResources(project);
+                ResourceFolder resFolder = pr.getResourceFolder((IFolder) file.getParent());
+                if (resFolder != null) {
+                    return resFolder.getConfiguration();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** Returns the {@link IAndroidTarget} to be used for looking up system resources */
+    private static IAndroidTarget getTarget(IProject project) {
+        IEditorPart editor = getEditor();
+        if (editor != null) {
+            if (editor instanceof LayoutEditor) {
+                LayoutEditor layoutEditor = (LayoutEditor) editor;
+                GraphicalEditorPart graphicalEditor = layoutEditor.getGraphicalEditor();
+                if (graphicalEditor != null) {
+                    return graphicalEditor.getRenderingTarget();
+                }
+            }
+        }
+
+        Sdk currentSdk = Sdk.getCurrent();
+        if (currentSdk == null) {
+            return null;
+        }
+
+        return currentSdk.getTarget(project);
+    }
+
+    /** Return either the project resources or the framework resources (or null) */
+    private static ProjectResources getResources(IProject project, boolean framework) {
+        if (framework) {
+            IAndroidTarget target = getTarget(project);
+            if (target == null) {
+                return null;
+            }
+            AndroidTargetData data = Sdk.getCurrent().getTargetData(target);
+            if (data == null) {
+                return null;
+            }
+            return data.getFrameworkResources();
+        } else {
+            return ResourceManager.getInstance().getProjectResources(project);
+        }
     }
 
     /**
@@ -677,6 +789,16 @@ public class Hyperlinks {
      * resources; use {@link #findValueDefinition} to locate it there.)
      */
     private static Pair<IFile, IRegion> findIdDefinition(IProject project, String id) {
+        // FIRST look in the same file as the originating request, that's where you usually
+        // want to jump
+        IFile self = getFile();
+        if (self != null && EXT_XML.equals(self.getFileExtension())) {
+            Pair<IFile, IRegion> target = findIdInXml(id, self);
+            if (target != null) {
+                return target;
+            }
+        }
+
         // We're currently only searching in the base layout folder.
         // The next step is to add global resource reference tracking (which we already
         // need to detect unused resources etc) and in that case we can quickly offer
@@ -718,30 +840,39 @@ public class Hyperlinks {
         // Search within the files in the values folder and find the value which defines
         // the given resource. To be efficient, we will only parse XML files that contain
         // a string match of the given token name.
+        FolderConfiguration configuration = getConfiguration();
+        Pair<IFile, IRegion> target = findValueByConfig(project, type, name, configuration);
+        if (target != null) {
+            return target;
+        }
 
-        String folderPath = AndroidConstants.WS_RESOURCES + AndroidConstants.WS_SEP
-                + SdkConstants.FD_VALUES;
+        if (configuration != null) {
+            // Try searching without configuration too; more potential matches
+            return findValueByConfig(project, type, name, configuration);
+        }
 
-        IFolder f = project.getFolder(folderPath);
-        if (f.exists()) {
-            try {
-                // Check XML files in values/
-                for (IResource resource : f.members()) {
-                    if (resource.exists() && !resource.isDerived() && resource instanceof IFile) {
-                        IFile file = (IFile) resource;
-                        // Must have an XML extension
-                        if (EXT_XML.equals(file.getFileExtension())) {
-                            Pair<IFile, IRegion> target = findValueInXml(type, name, file);
-                            if (target != null) {
-                                return target;
-                            }
+        return null;
+    }
+
+    /** Searches for the given resource for a specific configuration (which may be null) */
+    private static Pair<IFile, IRegion> findValueByConfig(IProject project,
+            ResourceType type, String name, FolderConfiguration configuration) {
+        List<ResourceFile> sourceFiles = getResourceFiles(project, type, name,
+                false /* not framework*/, configuration);
+        if (sourceFiles != null) {
+            for (ResourceFile resourceFile : sourceFiles) {
+                if (resourceFile.getFile() instanceof IFileWrapper) {
+                    IFile file = ((IFileWrapper) resourceFile.getFile()).getIFile();
+                    if (EXT_XML.equals(file.getFileExtension())) {
+                        Pair<IFile, IRegion> target = findValueInXml(type, name, file);
+                        if (target != null) {
+                            return target;
                         }
                     }
                 }
-            } catch (CoreException e) {
-                AdtPlugin.log(e, ""); //$NON-NLS-1$
             }
         }
+
         return null;
     }
 
@@ -918,39 +1049,6 @@ public class Hyperlinks {
         return Pair.of(type, name);
     }
 
-    /**
-     * Searches for a resource of a "multi-file" type (like @string) where the value can
-     * be found in any file within the folder containing resource of that type (in the
-     * case of @string, "values", and in the case of @color, "colors", etc).
-     * <p>
-     * This method operates on plain {@link File} objects and is intended for searches in
-     * the Android platform files; for project-relative searches use
-     * {@link #findValueDefinition(File, ResourceType, String)}.
-     */
-    private static Pair<File, Integer> findValueDefinition(File resourceDir, ResourceType type,
-            String name) {
-        // Search within the files in the values folder and find the value which defines
-        // the given resource. To be efficient, we will only parse XML files that contain
-        // a string match of the given token name.
-
-        // Check XML files in values/
-        File[] children = resourceDir.listFiles();
-        if (children == null) {
-            return null;
-        }
-        for (File resource : children) {
-            // Must have an XML extension
-            if (resource.getName().endsWith(EXT_XML)) {
-                Pair<File, Integer> target = findValueInXml(type, name, resource);
-                if (target != null) {
-                    return target;
-                }
-            }
-        }
-
-        return null;
-    }
-
     /** Parses the given file and locates a definition of the given resource */
     private static Pair<File, Integer> findValueInXml(ResourceType type, String name, File file) {
         // We can't use the StructureModelManager on files outside projects
@@ -981,6 +1079,9 @@ public class Hyperlinks {
         if (type == ResourceType.ID) {
             // Ids are recorded in <item> tags instead of <id> tags
             targetTag = "item"; //$NON-NLS-1$
+        } else if (type == ResourceType.ATTR) {
+            // Attributes seem to be defined in <public> tags
+            targetTag = "public"; //$NON-NLS-1$
         }
         Element root = document.getDocumentElement();
         if (root.getTagName().equals(ROOT_ELEMENT)) {
@@ -1157,15 +1258,25 @@ public class Hyperlinks {
         return null;
     }
 
-    /** Returns the project applicable to this hyperlink detection */
-    private static IProject getProject() {
+    /** Returns the file where the link request originated */
+    private static IFile getFile() {
         IEditorPart editor = getEditor();
         if (editor != null) {
             IEditorInput input = editor.getEditorInput();
             if (input instanceof IFileEditorInput) {
                 IFileEditorInput fileInput = (IFileEditorInput) input;
-                return fileInput.getFile().getProject();
+                return fileInput.getFile();
             }
+        }
+
+        return null;
+    }
+
+    /** Returns the project applicable to this hyperlink detection */
+    private static IProject getProject() {
+        IFile file = getFile();
+        if (file != null) {
+            return file.getProject();
         }
 
         return null;

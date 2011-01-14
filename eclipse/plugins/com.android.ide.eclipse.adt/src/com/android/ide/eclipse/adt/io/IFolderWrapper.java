@@ -171,4 +171,9 @@ public class IFolderWrapper implements IAbstractFolder {
 
         return null;
     }
+
+    @Override
+    public String toString() {
+        return mFolder.toString();
+    }
 }
