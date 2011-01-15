@@ -275,8 +275,8 @@ public class SdkSources {
 
             int count = 0;
             for (SdkSource s : getSources(SdkSourceCategory.USER_ADDONS)) {
-                count++;
                 props.setProperty(String.format("%s%02d", KEY_SRC, count), s.getUrl());  //$NON-NLS-1$
+                count++;
             }
             props.setProperty(KEY_COUNT, Integer.toString(count));
 
