@@ -346,15 +346,15 @@ public class LayoutLibrary {
         ILayoutLog logWrapper = new ILayoutLog() {
 
             public void warning(String message) {
-                log.warning(null, message);
+                log.warning(null, message, null /*data*/);
             }
 
             public void error(Throwable t) {
-                log.error(null, "error!", t);
+                log.error(null, "error!", t, null /*data*/);
             }
 
             public void error(String message) {
-                log.error(null, message);
+                log.error(null, message, null /*data*/);
             }
         };
 
