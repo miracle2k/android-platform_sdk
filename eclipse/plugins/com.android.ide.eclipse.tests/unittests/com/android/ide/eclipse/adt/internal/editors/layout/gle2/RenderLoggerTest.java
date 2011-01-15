@@ -27,8 +27,8 @@ public class RenderLoggerTest extends TestCase {
     public void testLogger2() throws Exception {
         RenderLogger l = new RenderLogger("foo");
         assertFalse(l.hasProblems());
-        l.fidelityWarning(null, "No perspective Transforms", null);
-        l.fidelityWarning(null, "No GPS", null);
+        l.fidelityWarning(null, "No perspective Transforms", null, null);
+        l.fidelityWarning(null, "No GPS", null, null);
         assertTrue(l.hasProblems());
         assertEquals("The graphics preview may not be accurate:\n"
                 + "* No perspective Transforms\n" + "* No GPS\n", l.getProblems());
@@ -40,7 +40,7 @@ public class RenderLoggerTest extends TestCase {
         RenderLogger l = new RenderLogger("foo");
         assertFalse(l.hasProblems());
         l.error("timeout", "Sample Error", new RuntimeException());
-        l.warning("slow", "Sample warning");
+        l.warning("slow", "Sample warning", null);
         assertTrue(l.hasProblems());
         assertEquals("Sample Error\n" + "Sample warning\n"
                 + "Exception details are logged in Window > Show View > Error Log", l.getProblems());
