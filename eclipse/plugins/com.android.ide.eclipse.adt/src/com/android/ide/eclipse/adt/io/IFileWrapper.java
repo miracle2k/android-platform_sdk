@@ -123,4 +123,9 @@ public class IFileWrapper implements IAbstractFile {
 
         return null;
     }
+
+    @Override
+    public String toString() {
+        return mFile.toString();
+    }
 }
