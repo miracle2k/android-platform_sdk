@@ -1409,7 +1409,7 @@ public class GraphicalEditorPart extends EditorPart
      * target set.
      *
      */
-    private IAndroidTarget getRenderingTarget() {
+    public IAndroidTarget getRenderingTarget() {
         // if the SDK is null no targets are loaded.
         Sdk currentSdk = Sdk.getCurrent();
         if (currentSdk == null) {
@@ -2322,5 +2322,14 @@ public class GraphicalEditorPart extends EditorPart
         } else {
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * Return this editor's current configuration
+     *
+     * @return the current configuration
+     */
+    public FolderConfiguration getConfiguration() {
+        return mConfigComposite.getCurrentConfig();
     }
 }
