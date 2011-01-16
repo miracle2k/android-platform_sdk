@@ -212,6 +212,12 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
                 } else if (PreferenceInitializer.ATTR_TIME_OUT.equals(property)) {
                     DdmPreferences.setTimeOut(
                             eclipseStore.getInt(PreferenceInitializer.ATTR_TIME_OUT));
+                } else if (PreferenceInitializer.ATTR_USE_ADBHOST.equals(property)) {
+                    DdmPreferences.setUseAdbHost(
+                            eclipseStore.getBoolean(PreferenceInitializer.ATTR_USE_ADBHOST));
+                } else if (PreferenceInitializer.ATTR_ADBHOST_VALUE.equals(property)) {
+                    DdmPreferences.setAdbHostValue(
+                            eclipseStore.getString(PreferenceInitializer.ATTR_ADBHOST_VALUE));
                 }
             }
         });

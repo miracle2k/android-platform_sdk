@@ -769,12 +769,25 @@ public class UIThread implements IUiSelectionListener, IClientChangeListener {
             }
         });
 
+        final MenuItem actionResetAdb = new MenuItem(actionMenu, SWT.NONE);
+        actionResetAdb.setText("&Reset adb");
+        actionResetAdb.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                AndroidDebugBridge bridge = AndroidDebugBridge.getBridge();
+                if (bridge != null) {
+                    bridge.restart();
+                }
+            }
+        });
+
         // configure Action items based on current state
         actionMenu.addMenuListener(new MenuAdapter() {
             @Override
             public void menuShown(MenuEvent e) {
                 actionHaltItem.setEnabled(mTBHalt.getEnabled() && mCurrentClient != null);
                 actionCauseGcItem.setEnabled(mTBCauseGc.getEnabled() && mCurrentClient != null);
+                actionResetAdb.setEnabled(true);
             }
         });
 

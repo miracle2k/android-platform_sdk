@@ -26,11 +26,16 @@ import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.RadioGroupFieldEditor;
+import org.eclipse.jface.preference.StringFieldEditor;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
 public class PreferencePage extends FieldEditorPreferencePage implements
         IWorkbenchPreferencePage {
+
+    private BooleanFieldEditor mUseAdbHost;
+    private StringFieldEditor mAdbHostValue;
 
     public PreferencePage() {
         super(GRID);
@@ -87,8 +92,26 @@ public class PreferencePage extends FieldEditorPreferencePage implements
                     },
                 getFieldEditorParent(), true);
         addField(rgfe);
+
+        mUseAdbHost = new BooleanFieldEditor(PreferenceInitializer.ATTR_USE_ADBHOST,
+                "Use ADBHOST", getFieldEditorParent());
+        addField(mUseAdbHost);
+
+        mAdbHostValue = new StringFieldEditor(PreferenceInitializer.ATTR_ADBHOST_VALUE,
+                "ADBHOST value:", getFieldEditorParent());
+        mAdbHostValue.setEnabled(getPreferenceStore()
+                .getBoolean(PreferenceInitializer.ATTR_USE_ADBHOST), getFieldEditorParent());
+        addField(mAdbHostValue);
     }
 
     public void init(IWorkbench workbench) {
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+        // TODO Auto-generated method stub
+        if (event.getSource().equals(mUseAdbHost)) {
+            mAdbHostValue.setEnabled(mUseAdbHost.getBooleanValue(), getFieldEditorParent());
+        }
     }
 }

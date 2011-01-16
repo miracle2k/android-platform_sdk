@@ -42,6 +42,9 @@ public final class DdmPreferences {
     public final static LogLevel DEFAULT_LOG_LEVEL = LogLevel.ERROR;
     /** Default timeout values for adb connection (milliseconds) */
     public static final int DEFAULT_TIMEOUT = 5000; // standard delay, in ms
+    /** Default values for the use of the ADBHOST environment variable. */
+    public final static boolean DEFAULT_USE_ADBHOST = false;
+    public final static String DEFAULT_ADBHOST_VALUE = "127.0.0.1";
 
     private static boolean sThreadUpdate = DEFAULT_INITIAL_THREAD_UPDATE;
     private static boolean sInitialHeapUpdate = DEFAULT_INITIAL_HEAP_UPDATE;
@@ -50,6 +53,9 @@ public final class DdmPreferences {
     private static int sDebugPortBase = DEFAULT_DEBUG_PORT_BASE;
     private static LogLevel sLogLevel = DEFAULT_LOG_LEVEL;
     private static int sTimeOut = DEFAULT_TIMEOUT;
+
+    private static boolean sUseAdbHost = DEFAULT_USE_ADBHOST;
+    private static String sAdbHostValue = DEFAULT_ADBHOST_VALUE;
 
     /**
      * Returns the initial {@link Client} flag for thread updates.
@@ -155,6 +161,36 @@ public final class DdmPreferences {
      */
     public static void setTimeOut(int timeOut) {
         sTimeOut = timeOut;
+    }
+
+    /**
+     * Returns a boolean indicating that the user uses or not the variable ADBHOST.
+     */
+    public static boolean getUseAdbHost() {
+        return sUseAdbHost;
+    }
+
+    /**
+     * Sets the value of the boolean indicating that the user uses or not the variable ADBHOST.
+     * @param useAdbHost true if the user uses ADBHOST
+     */
+    public static void setUseAdbHost(boolean useAdbHost) {
+        sUseAdbHost = useAdbHost;
+    }
+
+    /**
+     * Returns the value of the ADBHOST variable set by the user.
+     */
+    public static String getAdbHostValue() {
+        return sAdbHostValue;
+    }
+
+    /**
+     * Sets the value of the ADBHOST variable.
+     * @param adbHostValue
+     */
+    public static void setAdbHostValue(String adbHostValue) {
+        sAdbHostValue = adbHostValue;
     }
 
     /**

@@ -27,6 +27,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -899,7 +900,16 @@ public final class AndroidDebugBridge {
             Log.d(DDMS,
                     String.format("Launching '%1$s %2$s' to ensure ADB is running.", //$NON-NLS-1$
                     mAdbOsLocation, command[1]));
-            proc = Runtime.getRuntime().exec(command);
+            ProcessBuilder processBuilder = new ProcessBuilder(command);
+            if (DdmPreferences.getUseAdbHost()) {
+                String adbHostValue = DdmPreferences.getAdbHostValue();
+                if (adbHostValue != null && adbHostValue.length() > 0) {
+                    //TODO : check that the String is a valid IP address
+                    Map<String, String> env = processBuilder.environment();
+                    env.put("ADBHOST", adbHostValue);
+                }
+            }
+            proc = processBuilder.start();
 
             ArrayList<String> errorOutput = new ArrayList<String>();
             ArrayList<String> stdOutput = new ArrayList<String>();

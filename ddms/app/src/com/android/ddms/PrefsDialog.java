@@ -36,6 +36,7 @@ import org.eclipse.jface.preference.PreferenceNode;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.jface.preference.RadioGroupFieldEditor;
+import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
@@ -85,6 +86,8 @@ public final class PrefsDialog {
     private final static String PREFS_THREAD_REFRESH_INTERVAL = "threadStatusInterval"; //$NON-NLS-1$
     private final static String PREFS_LOG_LEVEL = "ddmsLogLevel"; //$NON-NLS-1$
     private final static String PREFS_TIMEOUT = "timeOut"; //$NON-NLS-1$
+    private final static String PREFS_USE_ADBHOST = "useAdbHost"; //$NON-NLS-1$
+    private final static String PREFS_ADBHOST_VALUE = "adbHostValue"; //$NON-NLS-1$
 
 
     /**
@@ -151,6 +154,8 @@ public final class PrefsDialog {
         DdmPreferences.setInitialThreadUpdate(mPrefStore.getBoolean(PREFS_DEFAULT_THREAD_UPDATE));
         DdmPreferences.setInitialHeapUpdate(mPrefStore.getBoolean(PREFS_DEFAULT_HEAP_UPDATE));
         DdmPreferences.setTimeOut(mPrefStore.getInt(PREFS_TIMEOUT));
+        DdmPreferences.setUseAdbHost(mPrefStore.getBoolean(PREFS_USE_ADBHOST));
+        DdmPreferences.setAdbHostValue(mPrefStore.getString(PREFS_ADBHOST_VALUE));
 
         // some static values
         String out = System.getenv("ANDROID_PRODUCT_OUT"); //$NON-NLS-1$
@@ -184,6 +189,9 @@ public final class PrefsDialog {
 
         mPrefStore.setDefault(PREFS_SELECTED_DEBUG_PORT,
                 DdmPreferences.DEFAULT_SELECTED_DEBUG_PORT);
+
+        mPrefStore.setDefault(PREFS_USE_ADBHOST, DdmPreferences.DEFAULT_USE_ADBHOST);
+        mPrefStore.setDefault(PREFS_ADBHOST_VALUE, DdmPreferences.DEFAULT_ADBHOST_VALUE);
 
         mPrefStore.setDefault(PREFS_DEFAULT_THREAD_UPDATE, true);
         mPrefStore.setDefault(PREFS_DEFAULT_HEAP_UPDATE, false);
@@ -239,6 +247,10 @@ public final class PrefsDialog {
                     (String) event.getNewValue());
             } else if (changed.equals(PREFS_TIMEOUT)) {
                 DdmPreferences.setTimeOut(mPrefStore.getInt(PREFS_TIMEOUT));
+            } else if (changed.equals(PREFS_USE_ADBHOST)) {
+                DdmPreferences.setUseAdbHost(mPrefStore.getBoolean(PREFS_USE_ADBHOST));
+            } else if (changed.equals(PREFS_ADBHOST_VALUE)) {
+                DdmPreferences.setAdbHostValue(mPrefStore.getString(PREFS_ADBHOST_VALUE));
             } else {
                 Log.v("ddms", "Preference change: " + event.getProperty()
                     + ": '" + event.getOldValue()
@@ -301,6 +313,9 @@ public final class PrefsDialog {
      */
     private static class DebuggerPrefs extends FieldEditorPreferencePage {
 
+        private BooleanFieldEditor mUseAdbHost;
+        private StringFieldEditor mAdbHostValue;
+
         /**
          * Basic constructor.
          */
@@ -323,6 +338,24 @@ public final class PrefsDialog {
             ife = new PortFieldEditor(PREFS_SELECTED_DEBUG_PORT,
                 "Port of Selected VM:", getFieldEditorParent());
             addField(ife);
+
+            mUseAdbHost = new BooleanFieldEditor(PREFS_USE_ADBHOST,
+                    "Use ADBHOST", getFieldEditorParent());
+            addField(mUseAdbHost);
+
+            mAdbHostValue = new StringFieldEditor(PREFS_ADBHOST_VALUE,
+                    "ADBHOST value:", getFieldEditorParent());
+            mAdbHostValue.setEnabled(getPreferenceStore()
+                    .getBoolean(PREFS_USE_ADBHOST), getFieldEditorParent());
+            addField(mAdbHostValue);
+        }
+
+        @Override
+        public void propertyChange(PropertyChangeEvent event) {
+            // TODO Auto-generated method stub
+            if (event.getSource().equals(mUseAdbHost)) {
+                mAdbHostValue.setEnabled(mUseAdbHost.getBooleanValue(), getFieldEditorParent());
+            }
         }
     }
 
