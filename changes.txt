@@ -1,6 +1,11 @@
 Change log for Android SDK Tools.
 
-Revision 10:
+Revision 9:
+- Fix packaging issue that broke draw9patch
+- Ant build rules will now check the Ant version and fail if it's older than 1.8
+- Fix "folder locked" errors when installing packages in SDK Manager on Windows.
+- Support https proxy when installing from SDK Manager.
+- SDK Manager now suggests to install missing base platform for add-ons.
 - Default proguard config file changes:
    * ignore classes extending android.preference.Preference
    * ignore classes extending android.app.backup.BackupAgentHelper
@@ -8,12 +13,6 @@ Revision 10:
 - Default encoding for Ant javac is now UTF-8
 - Logcat view in DDMS now properly displays UTF-8 characters.
 
-Revision 9:
-- Fix packaging issue that broke draw9patch
-- Ant build rules will now check the Ant version
-- Fix "folder locked" errors when installing packages in SDK Manager on Windows.
-- Support https proxy when installing from SDK Manager.
-- SDK Manager now suggests to install missing base platform for add-ons.
 
 Revision 8:
 - New SDK component: platform-tools. This makes all platforms use the same
