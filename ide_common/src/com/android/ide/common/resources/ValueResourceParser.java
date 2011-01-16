@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ide.common.rendering;
+package com.android.ide.common.resources;
 
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.StyleResourceValue;
