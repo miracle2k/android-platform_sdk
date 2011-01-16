@@ -16,9 +16,9 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
-import com.android.ide.common.rendering.ValueResourceParser;
-import com.android.ide.common.rendering.ValueResourceParser.IValueResourceRepository;
 import com.android.ide.common.rendering.api.ResourceValue;
+import com.android.ide.common.resources.ValueResourceParser;
+import com.android.ide.common.resources.ValueResourceParser.IValueResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.StreamException;

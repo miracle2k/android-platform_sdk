@@ -178,8 +178,17 @@ final class PlatformTarget implements IAndroidTarget {
     }
 
     public String getDefaultSkin() {
-        // at this time, this is the default skin for all the platform.
-        return "HVGA";
+        if (mSkins.length == 1) {
+            return mSkins[0];
+        }
+
+        if (mVersion.getApiLevel() >= 4) {
+            // at this time, this is the default skin for all the platforms.
+            // TODO: make it configurable using a file in the platform folder.
+            return "WVGA800";
+        }
+
+        return "HVGA"; // this is for 1.5 and earlier.
     }
 
     /**
