@@ -235,7 +235,7 @@ public class LayoutCanvas extends Canvas {
         // mOutlineOverlay and mEmptyOverlay are initialized lazily
         mHoverOverlay = new HoverOverlay(mHScale, mVScale);
         mHoverOverlay.create(display);
-        mSelectionOverlay = new SelectionOverlay();
+        mSelectionOverlay = new SelectionOverlay(this);
         mSelectionOverlay.create(display);
         mImageOverlay = new ImageOverlay(this, mHScale, mVScale);
         mIncludeOverlay = new IncludeOverlay(this);
