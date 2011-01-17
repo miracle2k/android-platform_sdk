@@ -254,7 +254,7 @@ public class MultiApkExportAction implements IObjectActionDelegate {
             throws CoreException {
         try {
             // get the libraries for this project
-            IProject[] libProjects = projectState.getFullLibraryProjects();
+            List<IProject> libProjects = projectState.getFullLibraryProjects();
 
             IProject project = projectState.getProject();
             IJavaProject javaProject = JavaCore.create(project);
@@ -294,8 +294,8 @@ public class MultiApkExportAction implements IObjectActionDelegate {
             String outputFile = binFolder.getFile(outputName).getLocation().toOSString();
 
             // get the list of referenced projects.
-            IProject[] javaRefs = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(javaRefs);
+            List<IProject> javaRefs = ProjectHelper.getReferencedProjects(project);
+            List<IJavaProject> referencedJavaProjects = BuildHelper.getJavaProjects(javaRefs);
 
             helper.finalPackage(
                     new File(projectBinFolderPath, pkgName).getAbsolutePath(),

@@ -17,11 +17,14 @@
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.build.BuildHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
@@ -35,6 +38,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ClassLoader able to load class from output of an Eclipse project.
@@ -52,30 +56,71 @@ public final class ProjectClassLoader extends ClassLoader {
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
+        // if we are here through a child classloader, throw an exception.
+        if (mInsideJarClassLoader) {
+            throw new ClassNotFoundException(name);
+        }
+
+        // attempt to load the class from the main project
+        Class<?> clazz = loadFromProject(mJavaProject, name);
+
+        if (clazz != null) {
+            return clazz;
+        }
+
+        // attempt to load the class from the jar dependencies
+        clazz = loadClassFromJar(name);
+        if (clazz != null) {
+            return clazz;
+        }
+
+        // attempt to load the class from the referenced projects.
+        try {
+            List<IProject> javaProjects = ProjectHelper.getReferencedProjects(
+                    mJavaProject.getProject());
+            List<IJavaProject> referencedJavaProjects = BuildHelper.getJavaProjects(javaProjects);
+
+            for (IJavaProject javaProject : referencedJavaProjects) {
+                clazz = loadFromProject(javaProject, name);
+
+                if (clazz != null) {
+                    return clazz;
+                }
+            }
+        } catch (CoreException e) {
+            // log exception?
+        }
+
+        throw new ClassNotFoundException(name);
+    }
+
+    /**
+     * Attempts to load a class from a project output folder.
+     * @param project the project to load the class from
+     * @param name the name of the class
+     * @return a class object if found, null otherwise.
+     */
+    private Class<?> loadFromProject(IJavaProject project, String name) {
         try {
             // get the project output folder.
             IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-            IPath outputLocation = mJavaProject.getOutputLocation();
+            IPath outputLocation = project.getOutputLocation();
             IResource outRes = root.findMember(outputLocation);
             if (outRes == null) {
-                throw new ClassNotFoundException(name);
+                return null;
             }
 
             File outFolder = new File(outRes.getLocation().toOSString());
 
             // get the class name segments
             String[] segments = name.split("\\."); //$NON-NLS-1$
-            
+
+            // try to load the class from the bin folder of the project.
             File classFile = getFile(outFolder, segments, 0);
             if (classFile == null) {
-                if (mInsideJarClassLoader == false) {
-                    // if no file matching the class name was found, look in the 3rd party jars
-                    return loadClassFromJar(name);
-                } else {
-                    throw new ClassNotFoundException(name);
-                }
+                return null;
             }
-            
+
             // load the content of the file and create the class.
             FileInputStream fis = new FileInputStream(classFile);
             byte[] data = new byte[(int)classFile.length()];
@@ -86,7 +131,7 @@ public final class ProjectClassLoader extends ClassLoader {
                 data = null;
             }
             fis.close();
-            
+
             if (data != null) {
                 Class<?> clazz = defineClass(null, data, 0, read);
                 if (clazz != null) {
@@ -94,12 +139,12 @@ public final class ProjectClassLoader extends ClassLoader {
                 }
             }
         } catch (Exception e) {
-            throw new ClassNotFoundException(e.getMessage());
+            // log the exception?
         }
 
-        throw new ClassNotFoundException(name);
+        return null;
     }
-    
+
     /**
      * Returns the File matching the a certain path from a root {@link File}.
      * <p/>The methods checks that the file ends in .class even though the last segment
@@ -121,7 +166,7 @@ public final class ProjectClassLoader extends ClassLoader {
 
         // we're at the last segments. we look for a matching <file>.class
         if (index == segments.length - 1) {
-            toMatch = toMatch + ".class"; 
+            toMatch = toMatch + ".class";
 
             if (files != null) {
                 for (File file : files) {
@@ -130,13 +175,13 @@ public final class ProjectClassLoader extends ClassLoader {
                     }
                 }
             }
-            
+
             // no match? abort.
             throw new FileNotFoundException();
         }
-        
+
         String innerClassName = null;
-        
+
         if (files != null) {
             for (File file : files) {
                 if (file.isDirectory()) {
@@ -151,43 +196,47 @@ public final class ProjectClassLoader extends ClassLoader {
                             sb.append(segments[i]);
                         }
                         sb.append(".class");
-                        
+
                         innerClassName = sb.toString();
                     }
-                    
+
                     if (file.getName().equals(innerClassName)) {
                         return file;
                     }
                 }
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Loads a class from the 3rd party jar present in the project
-     * @throws ClassNotFoundException
+     *
+     * @return the class loader or null if not found.
      */
-    private Class<?> loadClassFromJar(String name) throws ClassNotFoundException {
+    private Class<?> loadClassFromJar(String name) {
         if (mJarClassLoader == null) {
             // get the OS path to all the external jars
             URL[] jars = getExternalJars();
-            
+
             mJarClassLoader = new URLClassLoader(jars, this /* parent */);
         }
-        
+
         try {
             // because a class loader always look in its parent loader first, we need to know
             // that we are querying the jar classloader. This will let us know to not query
             // it again for classes we don't find, or this would create an infinite loop.
             mInsideJarClassLoader = true;
             return mJarClassLoader.loadClass(name);
+        } catch (ClassNotFoundException e) {
+            // not found? return null.
+            return null;
         } finally {
             mInsideJarClassLoader = false;
         }
     }
-    
+
     /**
      * Returns an array of external jar files used by the project.
      * @return an array of OS-specific absolute file paths
@@ -195,7 +244,7 @@ public final class ProjectClassLoader extends ClassLoader {
     private final URL[] getExternalJars() {
         // get a java project from it
         IJavaProject javaProject = JavaCore.create(mJavaProject.getProject());
-        
+
         IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
 
         ArrayList<URL> oslibraryList = new ArrayList<URL>();
@@ -206,7 +255,7 @@ public final class ProjectClassLoader extends ClassLoader {
                         e.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
                     // if this is a classpath variable reference, we resolve it.
                     if (e.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
-                        e = JavaCore.getResolvedClasspathEntry(e); 
+                        e = JavaCore.getResolvedClasspathEntry(e);
                     }
 
                     // get the IPath

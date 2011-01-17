@@ -535,7 +535,7 @@ public final class ProjectHelper {
 
         // test the referenced projects if needed.
         if (includeReferencedProjects) {
-            IProject[] projects = getReferencedProjects(project);
+            List<IProject> projects = getReferencedProjects(project);
 
             for (IProject p : projects) {
                 if (hasError(p, false)) {
@@ -651,10 +651,10 @@ public final class ProjectHelper {
     /**
      * Returns the list of referenced project that are opened and Java projects.
      * @param project
-     * @return list of opened referenced java project.
+     * @return a new list object containing the opened referenced java project.
      * @throws CoreException
      */
-    public static IProject[] getReferencedProjects(IProject project) throws CoreException {
+    public static List<IProject> getReferencedProjects(IProject project) throws CoreException {
         IProject[] projects = project.getReferencedProjects();
 
         ArrayList<IProject> list = new ArrayList<IProject>();
@@ -665,7 +665,7 @@ public final class ProjectHelper {
             }
         }
 
-        return list.toArray(new IProject[list.size()]);
+        return list;
     }
 
 

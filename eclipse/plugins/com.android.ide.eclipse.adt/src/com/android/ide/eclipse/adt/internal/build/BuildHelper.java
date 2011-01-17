@@ -137,7 +137,7 @@ public class BuildHelper {
      * @throws AaptExecException
      * @throws AaptResultException
      */
-    public void packageResources(IFile manifestFile, IProject[] libProjects, String resFilter,
+    public void packageResources(IFile manifestFile, List<IProject> libProjects, String resFilter,
             int versionCode, String outputFolder, String outputFilename)
             throws AaptExecException, AaptResultException {
         // need to figure out some path before we can execute aapt;
@@ -208,8 +208,8 @@ public class BuildHelper {
      * @throws DuplicateFileException
      */
     public void finalDebugPackage(String intermediateApk, String dex, String output,
-            final IJavaProject javaProject, IProject[] libProjects,
-            IJavaProject[] referencedJavaProjects, ResourceMarker resMarker)
+            final IJavaProject javaProject, List<IProject> libProjects,
+            List<IJavaProject> referencedJavaProjects, ResourceMarker resMarker)
             throws ApkCreationException, KeytoolException, AndroidLocationException,
             NativeLibInJarException, DuplicateFileException, CoreException {
 
@@ -262,8 +262,8 @@ public class BuildHelper {
      * @throws DuplicateFileException
      */
     public void finalPackage(String intermediateApk, String dex, String output,
-            final IJavaProject javaProject, IProject[] libProjects,
-            IJavaProject[] referencedJavaProjects, String abiFilter, PrivateKey key,
+            final IJavaProject javaProject, List<IProject> libProjects,
+            List<IJavaProject> referencedJavaProjects, String abiFilter, PrivateKey key,
             X509Certificate certificate, ResourceMarker resMarker)
             throws NativeLibInJarException, ApkCreationException, DuplicateFileException,
             CoreException {
@@ -358,16 +358,16 @@ public class BuildHelper {
         IFolder outputFolder = BaseProjectHelper.getOutputFolder(mProject);
 
         // get the list of referenced projects output to add
-        IProject[] javaProjects = ProjectHelper.getReferencedProjects(mProject);
-        IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(javaProjects);
-        String[] projectOutputs = getProjectOutputs(referencedJavaProjects);
+        List<IProject> javaProjects = ProjectHelper.getReferencedProjects(mProject);
+        List<IJavaProject> referencedJavaProjects = BuildHelper.getJavaProjects(javaProjects);
 
-        String[] outputs = new String[1 + projectOutputs.length];
+        // get the project output, and since it's a new list object, just add the outputFolder
+        // of the project directly to it.
+        List<String> projectOutputs = getProjectOutputs(referencedJavaProjects);
 
-        outputs[0] = outputFolder.getLocation().toOSString();
-        System.arraycopy(projectOutputs, 0, outputs, 1, projectOutputs.length);
+        projectOutputs.add(0, outputFolder.getLocation().toOSString());
 
-        return outputs;
+        return projectOutputs.toArray(new String[projectOutputs.size()]);
     }
 
     /**
@@ -721,7 +721,7 @@ public class BuildHelper {
      * @throws CoreException
      */
     private void writeStandardResources(ApkBuilder apkBuilder, IJavaProject javaProject,
-            IJavaProject[] referencedJavaProjects)
+            List<IJavaProject> referencedJavaProjects)
             throws DuplicateFileException, ApkCreationException, SealedApkException,
             CoreException  {
         IWorkspace ws = ResourcesPlugin.getWorkspace();
@@ -834,10 +834,11 @@ public class BuildHelper {
      * they are Android projects.
      *
      * @param referencedJavaProjects the java projects.
-     * @return an array, always. Can be empty.
+     * @return a new list object containing the output folder paths.
      * @throws CoreException
      */
-    private String[] getProjectOutputs(IJavaProject[] referencedJavaProjects) throws CoreException {
+    private List<String> getProjectOutputs(List<IJavaProject> referencedJavaProjects)
+            throws CoreException {
         ArrayList<String> list = new ArrayList<String>();
 
         IWorkspace ws = ResourcesPlugin.getWorkspace();
@@ -865,7 +866,7 @@ public class BuildHelper {
             }
         }
 
-        return list.toArray(new String[list.size()]);
+        return list;
     }
 
     /**
@@ -891,12 +892,12 @@ public class BuildHelper {
     }
 
     /**
-     * Returns an array of {@link IJavaProject} matching the provided {@link IProject} objects.
+     * Returns a list of {@link IJavaProject} matching the provided {@link IProject} objects.
      * @param projects the IProject objects.
-     * @return an array, always. Can be empty.
+     * @return a new list object containing the IJavaProject object for the given IProject objects.
      * @throws CoreException
      */
-    public static IJavaProject[] getJavaProjects(IProject[] projects) throws CoreException {
+    public static List<IJavaProject> getJavaProjects(List<IProject> projects) throws CoreException {
         ArrayList<IJavaProject> list = new ArrayList<IJavaProject>();
 
         for (IProject p : projects) {
@@ -906,7 +907,7 @@ public class BuildHelper {
             }
         }
 
-        return list.toArray(new IJavaProject[list.size()]);
+        return list;
     }
 
     /**

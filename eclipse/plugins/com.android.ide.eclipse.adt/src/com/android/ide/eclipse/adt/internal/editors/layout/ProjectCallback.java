@@ -53,6 +53,13 @@ public final class ProjectCallback implements ILegacyCallback {
     private ProjectClassLoader mLoader = null;
     private LayoutLog mLogger;
 
+    /**
+     * Creates a new {@link ProjectCallback} to be used with the layout lib.
+     *
+     * @param classLoader The class loader that was used to load layoutlib.jar
+     * @param projectRes the {@link ProjectResources} for the project.
+     * @param project the project.
+     */
     public ProjectCallback(ClassLoader classLoader, ProjectResources projectRes, IProject project) {
         mParentClassLoader = classLoader;
         mProjectRes = projectRes;
