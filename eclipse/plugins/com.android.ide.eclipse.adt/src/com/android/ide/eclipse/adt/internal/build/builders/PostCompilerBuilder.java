@@ -58,6 +58,7 @@ import org.eclipse.jdt.core.JavaModelException;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class PostCompilerBuilder extends BaseBuilder {
@@ -206,9 +207,8 @@ public class PostCompilerBuilder extends BaseBuilder {
         // get a project object
         IProject project = getProject();
 
-        // list of referenced projects.
-        IProject[] libProjects = null;
-        IProject[] javaProjects = null;
+        // list of referenced projects. This is a mix of java projects and library projects
+        // and is computed below.
         IProject[] allRefProjects = null;
 
         try {
@@ -220,7 +220,7 @@ public class PostCompilerBuilder extends BaseBuilder {
             }
 
             // get the libraries
-            libProjects = projectState.getFullLibraryProjects();
+            List<IProject> libProjects = projectState.getFullLibraryProjects();
 
             IJavaProject javaProject = JavaCore.create(project);
 
@@ -228,20 +228,16 @@ public class PostCompilerBuilder extends BaseBuilder {
             abortOnBadSetup(javaProject);
 
             // get the list of referenced projects.
-            javaProjects = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(
+            List<IProject> javaProjects = ProjectHelper.getReferencedProjects(project);
+            List<IJavaProject> referencedJavaProjects = BuildHelper.getJavaProjects(
                     javaProjects);
 
             // mix the java project and the library projects
-            final int libCount = libProjects.length;
-            final int javaCount = javaProjects != null ? javaProjects.length : 0;
-            allRefProjects = new IProject[libCount + javaCount];
-            if (libCount > 0) {
-                System.arraycopy(libProjects, 0, allRefProjects, 0, libCount);
-            }
-            if (javaCount > 0) {
-                System.arraycopy(javaProjects, 0, allRefProjects, libCount, javaCount);
-            }
+            final int size = libProjects.size() + javaProjects.size();
+            ArrayList<IProject> refList = new ArrayList<IProject>(size);
+            refList.addAll(libProjects);
+            refList.addAll(javaProjects);
+            allRefProjects = refList.toArray(new IProject[size]);
 
             // get the output folder, this method returns the path with a trailing
             // separator
@@ -283,7 +279,7 @@ public class PostCompilerBuilder extends BaseBuilder {
                 // if the main resources didn't change, then we check for the library
                 // ones (will trigger resource repackaging too)
                 if ((mPackageResources == false || mBuildFinalPackage == false) &&
-                        libProjects.length > 0) {
+                        libProjects.size() > 0) {
                     for (IProject libProject : libProjects) {
                         delta = getDelta(libProject);
                         if (delta != null) {
@@ -302,9 +298,10 @@ public class PostCompilerBuilder extends BaseBuilder {
 
                 // also go through the delta for all the referenced projects, until we are forced to
                 // compile anyway
-                for (int i = 0 ; i < referencedJavaProjects.length &&
+                final int referencedCount = referencedJavaProjects.size();
+                for (int i = 0 ; i < referencedCount &&
                         (mBuildFinalPackage == false || mConvertToDex == false); i++) {
-                    IJavaProject referencedJavaProject = referencedJavaProjects[i];
+                    IJavaProject referencedJavaProject = referencedJavaProjects.get(i);
                     delta = getDelta(referencedJavaProject.getProject());
                     if (delta != null) {
                         ReferencedProjectDeltaVisitor refProjectDv =

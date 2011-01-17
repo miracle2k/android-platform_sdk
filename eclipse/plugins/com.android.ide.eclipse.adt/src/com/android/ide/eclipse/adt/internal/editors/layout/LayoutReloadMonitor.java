@@ -33,6 +33,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.runtime.CoreException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -166,9 +167,50 @@ public final class LayoutReloadMonitor {
          * This records the changes for each project, but does not notify listeners.
          */
         public void fileChanged(IFile file, IMarkerDelta[] markerDeltas, int kind) {
-            // get the file project
+            // get the file's project
             IProject project = file.getProject();
 
+            boolean hasAndroidNature = false;
+            try {
+                hasAndroidNature = project.hasNature(AndroidConstants.NATURE_DEFAULT);
+            } catch (CoreException e) {
+                // do nothing if the nature cannot be queried.
+                return;
+            }
+
+            if (hasAndroidNature) {
+                // project is an Android project, it's the one being affected
+                // directly by its own file change.
+                // Note that resource change is handled separately, so there's no need to
+                // figure out if the project is a library and to update its main project(s).
+                processFileChanged(file, project);
+            } else {
+                // check the projects depending on it, if they are Android project, update them.
+                IProject[] referencingProjects = project.getReferencingProjects();
+
+                for (IProject p : referencingProjects) {
+                    try {
+                        hasAndroidNature = p.hasNature(AndroidConstants.NATURE_DEFAULT);
+                    } catch (CoreException e) {
+                        // do nothing if the nature cannot be queried.
+                        continue;
+                    }
+
+                    if (hasAndroidNature) {
+                        // the changed project is a dependency on an Android project,
+                        // update the main project.
+                        processFileChanged(file, p);
+                    }
+                }
+            }
+        }
+
+        /**
+         * Processes a file change for a given project which may or may not be the file's project.
+         * @param file the changed file
+         * @param project the project impacted by the file change.
+         */
+        private void processFileChanged(IFile file, IProject project) {
             // if this project has already been marked as modified, we do nothing.
             ChangeFlags changeFlags = mProjectFlags.get(project);
             if (changeFlags != null && changeFlags.isAllTrue()) {

@@ -165,7 +165,7 @@ public final class ProjectState {
     private final ArrayList<LibraryState> mLibraries = new ArrayList<LibraryState>();
     /** Cached list of all IProject instances representing the resolved libraries, including
      * indirect dependencies. This must never be null. */
-    private IProject[] mLibraryProjects = new IProject[0];
+    private List<IProject> mLibraryProjects = Collections.emptyList();
     /**
      * List of parent projects. When this instance is a library ({@link #isLibrary()} returns
      * <code>true</code>) then this is filled with projects that depends on this project.
@@ -330,13 +330,13 @@ public final class ProjectState {
 
     /**
      * Returns all the <strong>resolved</strong> library projects, including indirect dependencies.
-     * The array is ordered to match the library priority order for resource processing with
+     * The list is ordered to match the library priority order for resource processing with
      * <code>aapt</code>.
      * <p/>If some dependencies are not resolved (or their projects is not opened in Eclipse),
      * they will not show up in this list.
-     * @return the resolved projects. May be an empty list.
+     * @return the resolved projects as an unmodifiable list. May be an empty.
      */
-    public IProject[] getFullLibraryProjects() {
+    public List<IProject> getFullLibraryProjects() {
         return mLibraryProjects;
     }
 
@@ -608,7 +608,7 @@ public final class ProjectState {
             buildFullLibraryDependencies(mLibraries, list);
         }
 
-        mLibraryProjects = list.toArray(new IProject[list.size()]);
+        mLibraryProjects = Collections.unmodifiableList(list);
     }
 
     /**
