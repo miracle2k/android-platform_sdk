@@ -54,6 +54,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.ui.DecorComposite;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.ide.eclipse.adt.internal.editors.xml.Hyperlinks;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
@@ -1488,20 +1489,23 @@ public class GraphicalEditorPart extends EditorPart
                 logger.error(null, "Unexpected error in rendering, no details given",
                         null /*data*/);
             }
+            // These errors will be included in the log warnings which are
+            // displayed regardless of render success status below
+        }
+
+        // We might have detected some missing classes and swapped them by a mock view,
+        // or run into fidelity warnings or missing resources, so emit all these
+        // warnings
+        Set<String> missingClasses = mProjectCallback.getMissingClasses();
+        Set<String> brokenClasses = mProjectCallback.getUninstantiatableClasses();
+        if (logger.hasProblems()) {
             displayLoggerProblems(iProject, logger);
+            displayFailingClasses(missingClasses, brokenClasses, true);
+        } else if (missingClasses.size() > 0 || brokenClasses.size() > 0) {
+            displayFailingClasses(missingClasses, brokenClasses, false);
         } else {
-            // Success means there was no exception. But we might have detected
-            // some missing classes and swapped them by a mock view.
-            Set<String> missingClasses = mProjectCallback.getMissingClasses();
-            Set<String> brokenClasses = mProjectCallback.getUninstantiatableClasses();
-            if (missingClasses.size() > 0 || brokenClasses.size() > 0) {
-                displayFailingClasses(missingClasses, brokenClasses);
-            } else if (logger.hasProblems()) {
-                displayLoggerProblems(iProject, logger);
-            } else {
-                // Nope, no missing or broken classes. Clear success, congrats!
-                hideError();
-            }
+            // Nope, no missing or broken classes. Clear success, congrats!
+            hideError();
         }
 
         model.refreshUi();
@@ -1795,8 +1799,15 @@ public class GraphicalEditorPart extends EditorPart
      * Switches the sash to display the error label to show a list of
      * missing classes and give options to create them.
      */
-    private void displayFailingClasses(Set<String> missingClasses, Set<String> brokenClasses) {
-        mErrorLabel.setText("");
+    private void displayFailingClasses(Set<String> missingClasses, Set<String> brokenClasses,
+            boolean append) {
+        if (missingClasses.size() == 0 && brokenClasses.size() == 0) {
+            return;
+        }
+
+        if (!append) {
+            mErrorLabel.setText("");
+        }
         if (missingClasses.size() > 0) {
             addText(mErrorLabel, "The following classes could not be found:\n");
             for (String clazz : missingClasses) {
@@ -2095,8 +2106,10 @@ public class GraphicalEditorPart extends EditorPart
             }
 
             if (r instanceof ClassLinkStyleRange) {
-                String link = mErrorLabel.getText(r.start, r.start + r.length - 1);
-                createNewClass(link);
+                String fqcn = mErrorLabel.getText(r.start, r.start + r.length - 1);
+                if (!Hyperlinks.openJavaClass(getProject(), fqcn)) {
+                    createNewClass(fqcn);
+                }
             }
 
             LayoutCanvas canvas = getCanvasControl();
