@@ -45,6 +45,8 @@ public class LayoutConstants {
 
     public static final String ATTR_TEXT = "text";                      //$NON-NLS-1$
     public static final String ATTR_ID = "id";                          //$NON-NLS-1$
+    public static final String ATTR_HANDLE = "handle";                  //$NON-NLS-1$
+    public static final String ATTR_CONTENT = "content";                //$NON-NLS-1$
 
     public static final String ATTR_LAYOUT_PREFIX = "layout_";          //$NON-NLS-1$
     public static final String ATTR_LAYOUT_HEIGHT = "layout_height";    //$NON-NLS-1$
@@ -116,6 +118,9 @@ public class LayoutConstants {
 
     /** The fully qualified class name of a TabWidget view */
     public static final String FQCN_TAB_WIDGET = "android.widget.TabWidget"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a Button view */
+    public static final String FQCN_BUTTON = "android.widget.Button"; //$NON-NLS-1$
 
     /** The fully qualified class name of an AdapterView */
     public static final String FQCN_ADAPTER_VIEW = "android.widget.AdapterView"; //$NON-NLS-1$
