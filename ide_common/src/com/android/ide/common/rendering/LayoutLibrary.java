@@ -29,6 +29,7 @@ import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.common.rendering.api.Result.Status;
 import com.android.ide.common.rendering.legacy.ILegacyCallback;
 import com.android.ide.common.rendering.legacy.ILegacyPullParser;
+import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.layoutlib.api.ILayoutBridge;
 import com.android.layoutlib.api.ILayoutLog;
@@ -339,6 +340,12 @@ public class LayoutLibrary {
             throw new IllegalArgumentException("Project callback must be of type ILegacyCallback");
         }
 
+        if (params.getResources() instanceof ResourceResolver == false) {
+            throw new IllegalArgumentException("RenderResources object must be of type ResourceResolver");
+        }
+
+        ResourceResolver resources = (ResourceResolver) params.getResources();
+
         int apiLevel = getLegacyApiLevel();
 
         // create a log wrapper since the older api requires a ILayoutLog
@@ -358,13 +365,15 @@ public class LayoutLibrary {
             }
         };
 
+
+
         // convert the map of ResourceValue into IResourceValue. Super ugly but works.
         @SuppressWarnings("unchecked")
         Map<String, Map<String, IResourceValue>> projectMap =
-            (Map<String, Map<String, IResourceValue>>)(Map) params.getProjectResources();
+            (Map<String, Map<String, IResourceValue>>)(Map) resources.getProjectResources();
         @SuppressWarnings("unchecked")
         Map<String, Map<String, IResourceValue>> frameworkMap =
-            (Map<String, Map<String, IResourceValue>>)(Map) params.getFrameworkResources();
+            (Map<String, Map<String, IResourceValue>>)(Map) resources.getFrameworkResources();
 
         ILayoutResult result = null;
 
@@ -376,7 +385,7 @@ public class LayoutLibrary {
                     params.getScreenWidth(), params.getScreenHeight(),
                     params.getRenderingMode() == RenderingMode.FULL_EXPAND ? true : false,
                     params.getDensity(), params.getXdpi(), params.getYdpi(),
-                    params.getThemeName(), params.isProjectTheme(),
+                    resources.getThemeName(), resources.isProjectTheme(),
                     projectMap, frameworkMap,
                     (IProjectCallback) params.getProjectCallback(),
                     logWrapper);
@@ -386,7 +395,7 @@ public class LayoutLibrary {
                     (IXmlPullParser) params.getLayoutDescription(), params.getProjectKey(),
                     params.getScreenWidth(), params.getScreenHeight(),
                     params.getDensity(), params.getXdpi(), params.getYdpi(),
-                    params.getThemeName(), params.isProjectTheme(),
+                    resources.getThemeName(), resources.isProjectTheme(),
                     projectMap, frameworkMap,
                     (IProjectCallback) params.getProjectCallback(), logWrapper);
         } else if (apiLevel == 2) {
@@ -394,7 +403,7 @@ public class LayoutLibrary {
             result = mLegacyBridge.computeLayout(
                     (IXmlPullParser) params.getLayoutDescription(), params.getProjectKey(),
                     params.getScreenWidth(), params.getScreenHeight(),
-                    params.getThemeName(), params.isProjectTheme(),
+                    resources.getThemeName(), resources.isProjectTheme(),
                     projectMap, frameworkMap,
                     (IProjectCallback) params.getProjectCallback(), logWrapper);
         } else {
@@ -403,8 +412,8 @@ public class LayoutLibrary {
 
             // change the string if it's a custom theme to make sure we can
             // differentiate them
-            String themeName = params.getThemeName();
-            if (params.isProjectTheme()) {
+            String themeName = resources.getThemeName();
+            if (resources.isProjectTheme()) {
                 themeName = "*" + themeName; //$NON-NLS-1$
             }
 
