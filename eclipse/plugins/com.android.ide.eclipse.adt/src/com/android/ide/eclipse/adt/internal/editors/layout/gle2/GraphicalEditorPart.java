@@ -32,6 +32,7 @@ import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.Result;
 import com.android.ide.common.rendering.api.Params.RenderingMode;
+import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
@@ -1624,14 +1625,19 @@ public class GraphicalEditorPart extends EditorPart
             }
         }
 
+        // FIXME: make resource resolver persistent, and only update it when something changes.
+        ResourceResolver resolver = ResourceResolver.create(
+                configuredProjectRes, frameworkResources,
+                theme, isProjectTheme);
+
         Params params = new Params(
                 topParser,
                 iProject /* projectKey */,
                 width, height,
                 renderingMode,
                 density, xdpi, ydpi,
-                theme, isProjectTheme,
-                configuredProjectRes, frameworkResources, mProjectCallback,
+                resolver,
+                mProjectCallback,
                 logger);
 
         if (transparentBackground) {
