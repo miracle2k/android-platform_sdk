@@ -781,7 +781,7 @@ public final class Sdk  {
                         LibraryState libState = projectState.getLibrary(project);
                         if (libState != null) {
                             // get the current libraries.
-                            IProject[] oldLibraries = projectState.getFullLibraryProjects();
+                            List<IProject> oldLibraries = projectState.getFullLibraryProjects();
 
                             // the unlink below will work in the job, but we need to close
                             // the library right away.
@@ -924,7 +924,7 @@ public final class Sdk  {
                                     projectState.getProject().getFullPath());
 
                             // get the current libraries
-                            IProject[] oldLibraries = projectState.getFullLibraryProjects();
+                            List<IProject> oldLibraries = projectState.getFullLibraryProjects();
 
                             // update the library for the main project.
                             LibraryState libState = projectState.updateLibrary(
@@ -977,7 +977,7 @@ public final class Sdk  {
                     boolean wasLibrary = state.isLibrary();
 
                     // get the current list of project dependencies
-                    IProject[] oldLibraries = state.getFullLibraryProjects();
+                    List<IProject> oldLibraries = state.getFullLibraryProjects();
 
                     LibraryDifference diff = state.reloadProperties();
 
@@ -1511,9 +1511,9 @@ public final class Sdk  {
      *            {@link ProjectState#getFullLibraryProjects()} before the ProjectState is updated.
      * @return null if there no action to take, or a {@link LinkUpdateBundle} object to run.
      */
-    private LinkUpdateBundle getLinkBundle(ProjectState project, IProject[] oldLibraries) {
+    private LinkUpdateBundle getLinkBundle(ProjectState project, List<IProject> oldLibraries) {
         // get the new full list of projects
-        IProject[] newLibraries = project.getFullLibraryProjects();
+        List<IProject> newLibraries = project.getFullLibraryProjects();
 
         // and build the real difference. A list of new projects and a list of
         // removed project.
@@ -1634,7 +1634,7 @@ public final class Sdk  {
             // we add them to the list so that can be updated as well.
             for (ProjectState projectState : sProjectStateMap.values()) {
                 // record the current library dependencies
-                IProject[] oldLibraries = projectState.getFullLibraryProjects();
+                List<IProject> oldLibraries = projectState.getFullLibraryProjects();
 
                 boolean needLibraryDependenciesUpdated = false;
                 for (ProjectState library : libraries) {

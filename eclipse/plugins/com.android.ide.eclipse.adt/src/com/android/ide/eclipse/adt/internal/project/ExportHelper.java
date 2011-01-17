@@ -60,6 +60,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
@@ -117,7 +118,7 @@ public final class ExportHelper {
 
             // get the list of library projects
             ProjectState projectState = Sdk.getProjectState(project);
-            IProject[] libProjects = projectState.getFullLibraryProjects();
+            List<IProject> libProjects = projectState.getFullLibraryProjects();
 
             // Step 1. Package the resources.
 
@@ -196,8 +197,8 @@ public final class ExportHelper {
             }
 
             IJavaProject javaProject = JavaCore.create(project);
-            IProject[] javaProjects = ProjectHelper.getReferencedProjects(project);
-            IJavaProject[] referencedJavaProjects = BuildHelper.getJavaProjects(
+            List<IProject> javaProjects = ProjectHelper.getReferencedProjects(project);
+            List<IJavaProject> referencedJavaProjects = BuildHelper.getJavaProjects(
                     javaProjects);
 
             helper.executeDx(javaProject, dxInput, dexFile.getAbsolutePath());
