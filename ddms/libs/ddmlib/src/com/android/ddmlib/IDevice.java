@@ -54,7 +54,8 @@ public interface IDevice {
     public static enum DeviceState {
         BOOTLOADER("bootloader"), //$NON-NLS-1$
         OFFLINE("offline"), //$NON-NLS-1$
-        ONLINE("device"); //$NON-NLS-1$
+        ONLINE("device"), //$NON-NLS-1$
+        RECOVERY("recovery"); //$NON-NLS-1$
 
         private String mState;
 
