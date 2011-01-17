@@ -112,10 +112,13 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
     @Override
     public void initialize(IPath containerPath, IJavaProject project) throws CoreException {
         if (CONTAINER_ID.equals(containerPath.toString())) {
-            JavaCore.setClasspathContainer(new Path(CONTAINER_ID),
-                    new IJavaProject[] { project },
-                    new IClasspathContainer[] { allocateAndroidContainer(project) },
-                    new NullProgressMonitor());
+            IClasspathContainer container = allocateAndroidContainer(project);
+            if (container != null) {
+                JavaCore.setClasspathContainer(new Path(CONTAINER_ID),
+                        new IJavaProject[] { project },
+                        new IClasspathContainer[] { container },
+                        new NullProgressMonitor());
+            }
         }
     }
 
@@ -182,6 +185,9 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
 
         try {
             AdtPlugin plugin = AdtPlugin.getDefault();
+            if (plugin == null) { // This is totally weird, but I've seen it happen!
+                return null;
+            }
 
             synchronized (Sdk.getLock()) {
                 boolean sdkIsLoaded = plugin.getSdkLoadStatus() == LoadStatus.LOADED;

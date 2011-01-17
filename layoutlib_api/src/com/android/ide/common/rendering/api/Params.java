@@ -16,7 +16,6 @@
 
 package com.android.ide.common.rendering.api;
 
-import java.util.Map;
 
 public class Params {
 
@@ -45,20 +44,17 @@ public class Params {
         }
     }
 
-    private ILayoutPullParser mLayoutDescription;
-    private Object mProjectKey;
-    private int mScreenWidth;
-    private int mScreenHeight;
-    private RenderingMode mRenderingMode;
-    private int mDensity;
-    private float mXdpi;
-    private float mYdpi;
-    private String mThemeName;
-    private boolean mIsProjectTheme;
-    private Map<String, Map<String, ResourceValue>> mProjectResources;
-    private Map<String, Map<String, ResourceValue>> mFrameworkResources;
-    private IProjectCallback mProjectCallback;
-    private LayoutLog mLog;
+    private final ILayoutPullParser mLayoutDescription;
+    private final Object mProjectKey;
+    private final int mScreenWidth;
+    private final int mScreenHeight;
+    private final RenderingMode mRenderingMode;
+    private final int mDensity;
+    private final float mXdpi;
+    private final float mYdpi;
+    private final RenderResources mRenderResources;
+    private final IProjectCallback mProjectCallback;
+    private final LayoutLog mLog;
 
     private boolean mCustomBackgroundEnabled;
     private int mCustomBackgroundColor;
@@ -95,9 +91,7 @@ public class Params {
             Object projectKey,
             int screenWidth, int screenHeight, RenderingMode renderingMode,
             int density, float xdpi, float ydpi,
-            String themeName, boolean isProjectTheme,
-            Map<String, Map<String, ResourceValue>> projectResources,
-            Map<String, Map<String, ResourceValue>> frameworkResources,
+            RenderResources renderResources,
             IProjectCallback projectCallback, LayoutLog log) {
         mLayoutDescription = layoutDescription;
         mProjectKey = projectKey;
@@ -107,10 +101,7 @@ public class Params {
         mDensity = density;
         mXdpi = xdpi;
         mYdpi = ydpi;
-        mThemeName = themeName;
-        mIsProjectTheme = isProjectTheme;
-        mProjectResources = projectResources;
-        mFrameworkResources = frameworkResources;
+        mRenderResources = renderResources;
         mProjectCallback = projectCallback;
         mLog = log;
         mCustomBackgroundEnabled = false;
@@ -129,10 +120,7 @@ public class Params {
         mDensity = params.mDensity;
         mXdpi = params.mXdpi;
         mYdpi = params.mYdpi;
-        mThemeName = params.mThemeName;
-        mIsProjectTheme = params.mIsProjectTheme;
-        mProjectResources = params.mProjectResources;
-        mFrameworkResources = params.mFrameworkResources;
+        mRenderResources = params.mRenderResources;
         mProjectCallback = params.mProjectCallback;
         mLog = params.mLog;
         mCustomBackgroundEnabled = params.mCustomBackgroundEnabled;
@@ -186,20 +174,8 @@ public class Params {
         return mYdpi;
     }
 
-    public String getThemeName() {
-        return mThemeName;
-    }
-
-    public boolean isProjectTheme() {
-        return mIsProjectTheme;
-    }
-
-    public Map<String, Map<String, ResourceValue>> getProjectResources() {
-        return mProjectResources;
-    }
-
-    public Map<String, Map<String, ResourceValue>> getFrameworkResources() {
-        return mFrameworkResources;
+    public RenderResources getResources() {
+        return mRenderResources;
     }
 
     public IProjectCallback getProjectCallback() {

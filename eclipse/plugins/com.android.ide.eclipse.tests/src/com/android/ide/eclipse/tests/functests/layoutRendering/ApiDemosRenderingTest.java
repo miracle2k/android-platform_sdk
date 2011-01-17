@@ -23,6 +23,7 @@ import com.android.ide.common.rendering.api.Params;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.Params.RenderingMode;
+import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier;
@@ -199,6 +200,10 @@ public class ApiDemosRenderingTest extends SdkTestCase {
 
             ProjectCallBack projectCallBack = new ProjectCallBack();
 
+            ResourceResolver resolver = ResourceResolver.create(
+                    configuredProject, configuredFramework,
+                    "Theme", false /*isProjectTheme*/);
+
             RenderSession session = layoutLib.createSession(new Params(
                     parser,
                     null /*projectKey*/,
@@ -208,10 +213,7 @@ public class ApiDemosRenderingTest extends SdkTestCase {
                     160, //density
                     160, //xdpi
                     160, // ydpi
-                    "Theme", //themeName
-                    false, //isProjectTheme
-                    configuredProject,
-                    configuredFramework,
+                    resolver,
                     projectCallBack,
                     null //logger
                     ));
