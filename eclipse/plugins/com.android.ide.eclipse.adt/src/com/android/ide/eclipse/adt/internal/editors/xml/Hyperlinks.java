@@ -645,8 +645,14 @@ public class Hyperlinks {
         return null;
     }
 
-    /** Opens a Java class for the given fully qualified class name */
-    private static boolean openJavaClass(IProject project, String fqcn) {
+    /**
+     * Opens a Java class for the given fully qualified class name
+     *
+     * @param project the project containing the class
+     * @param fqcn the fully qualified class name of the class to be opened
+     * @return true if the class was opened, false otherwise
+     */
+    public static boolean openJavaClass(IProject project, String fqcn) {
         if (fqcn == null) {
             return false;
         }
