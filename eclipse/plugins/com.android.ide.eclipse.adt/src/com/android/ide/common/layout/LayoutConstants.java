@@ -46,6 +46,7 @@ public class LayoutConstants {
     public static final String ATTR_TEXT = "text";                      //$NON-NLS-1$
     public static final String ATTR_ID = "id";                          //$NON-NLS-1$
 
+    public static final String ATTR_LAYOUT_PREFIX = "layout_";          //$NON-NLS-1$
     public static final String ATTR_LAYOUT_HEIGHT = "layout_height";    //$NON-NLS-1$
     public static final String ATTR_LAYOUT_WIDTH = "layout_width";      //$NON-NLS-1$
 
