@@ -1484,8 +1484,12 @@ public class GraphicalEditorPart extends EditorPart
         if (session.getResult().isSuccess() == false) {
             // An error was generated. Print it (and any other accumulated warnings)
             String errorMessage = session.getResult().getErrorMessage();
-            if (errorMessage != null && errorMessage.length() > 0) {
-                logger.error(null, session.getResult().getErrorMessage(), null /*data*/);
+            Throwable exception = session.getResult().getException();
+            if (exception != null && errorMessage == null) {
+                errorMessage = exception.toString();
+            }
+            if (exception != null || (errorMessage != null && errorMessage.length() > 0)) {
+                logger.error(null, errorMessage, exception, null /*data*/);
             } else if (!logger.hasProblems()) {
                 logger.error(null, "Unexpected error in rendering, no details given",
                         null /*data*/);
