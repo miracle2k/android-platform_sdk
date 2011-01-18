@@ -215,6 +215,8 @@ public class ApiDemosRenderingTest extends SdkTestCase {
                     160, // ydpi
                     resolver,
                     projectCallBack,
+                    1, // minSdkVersion
+                    1, // targetSdkVersion
                     null //logger
                     ));
 
