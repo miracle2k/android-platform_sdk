@@ -77,6 +77,7 @@ fallback
 foo
 foreach
 fqcn
+framelayout
 gen
 groovy
 guava
@@ -175,6 +176,7 @@ snip
 spec
 standalone
 stash
+stateful
 stateless
 stderr
 stdout
