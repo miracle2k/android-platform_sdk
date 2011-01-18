@@ -21,6 +21,8 @@
       adding rows to new tables, etc.
     - Double click views to jump to the corresponding XML declaration,
       or for included views, to the included layout file
+    - Improved support for various views (such as TabHosts and
+      SlidingDrawers) when rendered using Honeycomb
 - Go to Declaration hyperlinks for navigating from @resource
   references to their XML declarations, from the manifest file to
   activity and service classes, from Java access of resource R fields
