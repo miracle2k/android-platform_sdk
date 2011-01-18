@@ -1642,6 +1642,8 @@ public class GraphicalEditorPart extends EditorPart
                 density, xdpi, ydpi,
                 resolver,
                 mProjectCallback,
+                1 /*minSdkVersion*/,
+                1 /*targetSdkVersion */,
                 logger);
 
         if (transparentBackground) {
