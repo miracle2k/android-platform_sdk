@@ -51,7 +51,7 @@
 /** SENSOR IDS AND NAMES
  **/
 
-#define MAX_NUM_SENSORS 4
+#define MAX_NUM_SENSORS 5
 
 #define SUPPORTED_SENSORS  ((1<<MAX_NUM_SENSORS)-1)
 
@@ -60,19 +60,22 @@
 #define  ID_MAGNETIC_FIELD (ID_BASE+1)
 #define  ID_ORIENTATION    (ID_BASE+2)
 #define  ID_TEMPERATURE    (ID_BASE+3)
+#define  ID_PROXIMITY      (ID_BASE+4)
 
 #define  SENSORS_ACCELERATION   (1 << ID_ACCELERATION)
 #define  SENSORS_MAGNETIC_FIELD  (1 << ID_MAGNETIC_FIELD)
 #define  SENSORS_ORIENTATION     (1 << ID_ORIENTATION)
 #define  SENSORS_TEMPERATURE     (1 << ID_TEMPERATURE)
+#define  SENSORS_PROXIMITY       (1 << ID_PROXIMITY)
 
-#define  ID_CHECK(x)  ((unsigned)((x)-ID_BASE) < 4)
+#define  ID_CHECK(x)  ((unsigned)((x)-ID_BASE) < MAX_NUM_SENSORS)
 
 #define  SENSORS_LIST  \
     SENSOR_(ACCELERATION,"acceleration") \
     SENSOR_(MAGNETIC_FIELD,"magnetic-field") \
     SENSOR_(ORIENTATION,"orientation") \
     SENSOR_(TEMPERATURE,"temperature") \
+    SENSOR_(PROXIMITY,"proximity") \
 
 static const struct {
     const char*  name;
@@ -380,6 +383,13 @@ data__poll(struct sensors_data_device_t *dev, sensors_data_t* values)
             continue;
         }
 
+        /* "proximity:<value>" */
+        if (sscanf(buff, "proximity:%g", params+0) == 1) {
+            new_sensors |= SENSORS_PROXIMITY;
+            data->sensors[ID_PROXIMITY].vector.x = params[0];
+            continue;
+        }
+
         /* "sync:<time>" is sent after a series of sensor events.
          * where 'time' is expressed in micro-seconds and corresponds
          * to the VM time when the real poll occured.
@@ -484,6 +494,17 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 80.0f,
           .resolution = 1.0f,
           .power      = 0.0f,
+          .reserved   = {}
+        },
+
+        { .name       = "Goldfish Proximity sensor",
+          .vendor     = "The Android Open Source Project",
+          .version    = 1,
+          .handle     = ID_PROXIMITY,
+          .type       = SENSOR_TYPE_PROXIMITY,
+          .maxRange   = 1.0f,
+          .resolution = 1.0f,
+          .power      = 20.0f,
           .reserved   = {}
         },
 };
