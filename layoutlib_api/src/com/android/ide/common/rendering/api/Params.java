@@ -54,6 +54,8 @@ public class Params {
     private final float mYdpi;
     private final RenderResources mRenderResources;
     private final IProjectCallback mProjectCallback;
+    private final int mMinSdkVersion;
+    private final int mTargetSdkVersion;
     private final LayoutLog mLog;
 
     private boolean mCustomBackgroundEnabled;
@@ -85,6 +87,8 @@ public class Params {
      * value is the resource value.
      * @param projectCallback The {@link IProjectCallback} object to get information from
      * the project.
+     * @param minSdkVersion the minSdkVersion of the project
+     * @param targetSdkVersion the targetSdkVersion of the project
      * @param log the object responsible for displaying warning/errors to the user.
      */
     public Params(ILayoutPullParser layoutDescription,
@@ -92,7 +96,9 @@ public class Params {
             int screenWidth, int screenHeight, RenderingMode renderingMode,
             int density, float xdpi, float ydpi,
             RenderResources renderResources,
-            IProjectCallback projectCallback, LayoutLog log) {
+            IProjectCallback projectCallback,
+            int minSdkVersion, int targetSdkVersion,
+            LayoutLog log) {
         mLayoutDescription = layoutDescription;
         mProjectKey = projectKey;
         mScreenWidth = screenWidth;
@@ -103,6 +109,8 @@ public class Params {
         mYdpi = ydpi;
         mRenderResources = renderResources;
         mProjectCallback = projectCallback;
+        mMinSdkVersion = minSdkVersion;
+        mTargetSdkVersion = targetSdkVersion;
         mLog = log;
         mCustomBackgroundEnabled = false;
         mTimeout = DEFAULT_TIMEOUT;
@@ -122,6 +130,8 @@ public class Params {
         mYdpi = params.mYdpi;
         mRenderResources = params.mRenderResources;
         mProjectCallback = params.mProjectCallback;
+        mMinSdkVersion = params.mMinSdkVersion;
+        mTargetSdkVersion = params.mTargetSdkVersion;
         mLog = params.mLog;
         mCustomBackgroundEnabled = params.mCustomBackgroundEnabled;
         mCustomBackgroundColor = params.mCustomBackgroundColor;
@@ -148,6 +158,14 @@ public class Params {
 
     public Object getProjectKey() {
         return mProjectKey;
+    }
+
+    public int getMinSdkVersion() {
+        return mMinSdkVersion;
+    }
+
+    public int getTargetSdkVersion() {
+        return mTargetSdkVersion;
     }
 
     public int getScreenWidth() {
