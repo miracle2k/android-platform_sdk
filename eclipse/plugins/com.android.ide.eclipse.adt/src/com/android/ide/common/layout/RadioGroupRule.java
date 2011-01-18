@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 The Android Open Source Project
+ * Copyright (C) 2011 The Android Open Source Project
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,32 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
-import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
-import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_CHECKED;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_TRUE;
 
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.IViewRule;
 import com.android.ide.common.api.InsertType;
 
 /**
- * An {@link IViewRule} for android.widget.ZoomControls.
+ * An {@link IViewRule} for android.widget.RadioGroup which initializes the radio group
+ * with some radio buttons
  */
-public class WebViewRule extends IgnoredLayoutRule {
-    // A WebView is not a general purpose AbsoluteLayout you should drop stuff
-    // into; it's an AbsoluteLayout for implementation purposes.
-
+public class RadioGroupRule extends LinearLayoutRule {
     @Override
     public void onCreate(INode node, INode parent, InsertType insertType) {
         super.onCreate(node, parent, insertType);
 
         if (insertType == InsertType.CREATE) {
-            String matchParent = getFillParentValueName();
-            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, matchParent);
-            node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, matchParent);
+            for (int i = 0; i < 3; i++) {
+                INode handle = node.appendChild(LayoutConstants.FQCN_RADIO_BUTTON);
+                handle.setAttribute(ANDROID_URI, ATTR_ID, String.format("@+id/radio%d", i));
+                if (i == 0) {
+                    handle.setAttribute(ANDROID_URI, ATTR_CHECKED, VALUE_TRUE);
+                }
+            }
         }
     }
 }

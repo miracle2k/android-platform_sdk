@@ -31,7 +31,7 @@ import com.android.ide.common.api.InsertType;
  * An {@link IViewRule} for android.widget.SlidingDrawerRule which initializes new sliding
  * drawers with their mandatory children and default sizing attributes
  */
-public class SlidingDrawerRule extends BaseViewRule {
+public class SlidingDrawerRule extends BaseLayoutRule {
 
     @Override
     public void onCreate(INode node, INode parent, InsertType insertType) {
