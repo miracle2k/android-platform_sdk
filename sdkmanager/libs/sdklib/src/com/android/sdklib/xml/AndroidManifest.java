@@ -183,14 +183,20 @@ public final class AndroidManifest {
     }
 
     /**
-     * Returns the value of the minSdkVersion attribute (defaults to 1 if the attribute is not set),
-     * or -1 if the value is a codename.
+     * Returns the value of the minSdkVersion attribute.
+     * <p/>
+     * If the attribute is set with an int value, the method returns an Integer object.
+     * <p/>
+     * If the attribute is set with a codename, it returns the codename as a String object.
+     * <p/>
+     * If the attribute is not set, it returns null.
+     *
      * @param manifestFile the manifest file to read the attribute from.
-     * @return the integer value or -1 if not set.
+     * @return the attribute value.
      * @throws XPathExpressionException
      * @throws StreamException If any error happens when reading the manifest.
      */
-    public static int getMinSdkVersion(IAbstractFile manifestFile)
+    public static Object getMinSdkVersion(IAbstractFile manifestFile)
             throws XPathExpressionException, StreamException {
         XPath xPath = AndroidXPathFactory.newXPath();
 
@@ -202,9 +208,35 @@ public final class AndroidManifest {
                 new InputSource(manifestFile.getContents()));
 
         try {
-            return Integer.parseInt(result);
+            return Integer.valueOf(result);
         } catch (NumberFormatException e) {
-            return result.length() > 0 ? -1 : 1;
+            return result.length() > 0 ? result : null;
+        }
+    }
+
+    /**
+     * Returns the value of the targetSdkVersion attribute (defaults to 1 if the attribute is
+     * not set), or -1 if the value is a codename.
+     * @param manifestFile the manifest file to read the attribute from.
+     * @return the integer value or -1 if not set.
+     * @throws XPathExpressionException
+     * @throws StreamException If any error happens when reading the manifest.
+     */
+    public static Integer getTargetSdkVersion(IAbstractFile manifestFile)
+            throws XPathExpressionException, StreamException {
+        XPath xPath = AndroidXPathFactory.newXPath();
+
+        String result = xPath.evaluate(
+                "/"  + NODE_MANIFEST +
+                "/"  + NODE_USES_SDK +
+                "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX +
+                ":"  + ATTRIBUTE_TARGET_SDK_VERSION,
+                new InputSource(manifestFile.getContents()));
+
+        try {
+            return Integer.valueOf(result);
+        } catch (NumberFormatException e) {
+            return result.length() > 0 ? -1 : null;
         }
     }
 

@@ -28,6 +28,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager.IResourceListener;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
@@ -64,9 +65,10 @@ public final class LayoutReloadMonitor {
         public boolean layout = false;
         public boolean rClass = false;
         public boolean localeList = false;
+        public boolean manifest = false;
 
         boolean isAllTrue() {
-            return code && resources && rClass && localeList;
+            return code && resources && rClass && localeList && manifest;
         }
     }
 
@@ -237,6 +239,16 @@ public final class LayoutReloadMonitor {
 
                     changeFlags.code = true;
                 }
+            } else if (SdkConstants.FN_ANDROID_MANIFEST_XML.equals(file.getName()) &&
+                    file.getParent().equals(project)) {
+                // this is a manifest change!
+                if (changeFlags == null) {
+                    changeFlags = new ChangeFlags();
+                    mProjectFlags.put(project, changeFlags);
+                }
+
+                changeFlags.manifest = true;
+
             }
         }
     };

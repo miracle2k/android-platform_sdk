@@ -67,8 +67,13 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
+import com.android.ide.eclipse.adt.io.IFolderWrapper;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.io.IAbstractFile;
+import com.android.sdklib.io.StreamException;
+import com.android.sdklib.xml.AndroidManifest;
+import com.android.sdklib.xml.AndroidManifestParser;
 import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
 
 import org.eclipse.core.resources.IFile;
@@ -137,6 +142,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.xml.xpath.XPathExpressionException;
 
 /**
  * Graphical layout editor part, version 2.
@@ -241,6 +248,9 @@ public class GraphicalEditorPart extends EditorPart
     private CustomButton mZoomInButton;
     private CustomButton mZoomFitButton;
     private CustomButton mClippingButton;
+
+    private int mMinSdkVersion;
+    private int mTargetSdkVersion;
 
     public GraphicalEditorPart(LayoutEditor layoutEditor) {
         mLayoutEditor = layoutEditor;
@@ -1080,6 +1090,8 @@ public class GraphicalEditorPart extends EditorPart
                 AdtPlugin.log(e, "Can't access session property %1$s", NAME_INCLUDE);
             }
         }
+
+        computeSdkVersion();
     }
 
     /**
@@ -1089,6 +1101,7 @@ public class GraphicalEditorPart extends EditorPart
     public void replaceFile(IFile file) {
         mEditedFile = file;
         mConfigComposite.replaceFile(mEditedFile);
+        computeSdkVersion();
     }
 
     /**
@@ -1642,8 +1655,8 @@ public class GraphicalEditorPart extends EditorPart
                 density, xdpi, ydpi,
                 resolver,
                 mProjectCallback,
-                1 /*minSdkVersion*/,
-                1 /*targetSdkVersion */,
+                mMinSdkVersion,
+                mTargetSdkVersion,
                 logger);
 
         if (transparentBackground) {
@@ -1772,6 +1785,10 @@ public class GraphicalEditorPart extends EditorPart
                     mProjectCallback = null;
                     recompute = true;
                 }
+            }
+
+            if (flags.manifest) {
+                recompute |= computeSdkVersion();
             }
 
             if (recompute) {
@@ -2362,5 +2379,52 @@ public class GraphicalEditorPart extends EditorPart
      */
     public FolderConfiguration getConfiguration() {
         return mConfigComposite.getCurrentConfig();
+    }
+
+
+    /**
+     * Figures out the project's minSdkVersion and targetSdkVersion and return whether the values
+     * have changed.
+     */
+    private boolean computeSdkVersion() {
+        int oldMinSdkVersion = mMinSdkVersion;
+        int oldTargetSdkVersion = mTargetSdkVersion;
+
+        IAbstractFile manifestFile = AndroidManifestParser.getManifest(
+                new IFolderWrapper(mEditedFile.getProject()));
+
+        if (manifestFile != null) {
+            try {
+                Object value = AndroidManifest.getMinSdkVersion(manifestFile);
+                if (value instanceof Integer) {
+                    mMinSdkVersion = ((Integer) value).intValue();
+                } else if (value instanceof String) {
+                    // handle codename
+                    IAndroidTarget target = Sdk.getCurrent().getTargetFromHashString(
+                            "android-" + value); //$NON-NLS-1$
+                    if (target == null) {
+                        mMinSdkVersion = 1; // missing value? same as api 1
+                    } else {
+                        // codename future API level is current api + 1
+                        mMinSdkVersion = target.getVersion().getApiLevel() + 1;
+                    }
+                } else {
+                    mMinSdkVersion = 1; // missing value? same as api 1
+                }
+
+                Integer i = AndroidManifest.getTargetSdkVersion(manifestFile);
+                if (i == null) {
+                    mTargetSdkVersion = mMinSdkVersion;
+                } else {
+                    mTargetSdkVersion = i.intValue();
+                }
+            } catch (XPathExpressionException e) {
+                // do nothing we'll use 1 below.
+            } catch (StreamException e) {
+                // do nothing we'll use 1 below.
+            }
+        }
+
+        return oldMinSdkVersion != mMinSdkVersion || oldTargetSdkVersion != mTargetSdkVersion;
     }
 }
