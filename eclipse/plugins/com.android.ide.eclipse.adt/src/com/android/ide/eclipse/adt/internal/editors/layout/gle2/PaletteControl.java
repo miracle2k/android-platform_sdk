@@ -219,6 +219,7 @@ public class PaletteControl extends Composite {
 
         mRoot = new Composite(this, SWT.NONE);
         GridLayoutBuilder.create(mRoot).columns(1).columnsEqual().spacing(0).noMargins();
+        GridDataBuilder.create(mRoot).hGrab().hFill();
 
         if (targetData != null) {
             addGroup(mRoot, "Views", targetData.getLayoutDescriptors().getViewDescriptors());
@@ -304,8 +305,10 @@ public class PaletteControl extends Composite {
 
         Composite group = new Composite(parent, SWT.NONE);
         GridLayoutBuilder.create(group).columns(1).columnsEqual().spacing(0).noMargins();
+        GridDataBuilder.create(group).hFill().hGrab();
 
         Toggle toggle = new Toggle(group, uiName);
+        GridDataBuilder.create(toggle).hFill().hGrab();
 
         for (ElementDescriptor desc : descriptors) {
 
@@ -318,7 +321,7 @@ public class PaletteControl extends Composite {
 
             Item item = new Item(group, this, desc);
             toggle.addItem(item);
-            GridDataBuilder.create(item);
+            GridDataBuilder.create(item).hFill().hGrab();
         }
     }
 
