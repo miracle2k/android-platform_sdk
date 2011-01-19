@@ -22,6 +22,10 @@
         classname="com.android.ant.AidlExecTask"
         classpathref="android.antlibs" />
 
+    <taskdef name="renderscript"
+        classname="com.android.ant.RenderScriptTask"
+        classpathref="android.antlibs" />
+
     <taskdef name="apkbuilder"
         classname="com.android.ant.ApkBuilderTask"
         classpathref="android.antlibs" />
@@ -294,7 +298,7 @@
     <target name="-pre-build"/>
 
     <!-- Generates the R.java file for this project's resources. -->
-    <target name="-resource-src" depends="-dirs, -pre-build">
+    <target name="-resource-src" depends="-dirs">
         <if condition="${manifest.hasCode}">
             <then>
                 <echo>Generating R.java / Manifest.java from the resources...</echo>
@@ -330,12 +334,31 @@
         </if>
     </target>
 
+    <!-- Compiles RenderScript files into Java and bytecode. -->
+    <target name="-renderscript" depends="-dirs">
+        <if condition="${manifest.hasCode}">
+            <then>
+                <echo>Compiling RenderScript files into Java classes and RenderScript bytecode...</echo>
+                <renderscript executable="${renderscript}"
+                        framework="${android.rs}"
+                        genFolder="${gen.absolute.dir}"
+                        resFolder="${resource.absolute.dir}/raw">
+                    <source path="${source.absolute.dir}"/>
+                    <source refid="project.libraries.src"/>
+                </renderscript>
+            </then>
+            <else>
+                <echo>hasCode = false. Skipping...</echo>
+            </else>
+        </if>
+    </target>
+
     <!-- empty default pre-compile target. Create a similar target in
          your build.xml and it'll be called instead of this one. -->
     <target name="-pre-compile"/>
 
     <!-- Compiles this project's .java files into .class files. -->
-    <target name="compile" depends="-resource-src, -aidl, -pre-compile"
+    <target name="compile" depends="-pre-build, -aidl, -renderscript, -resource-src, -pre-compile"
                 description="Compiles project's .java files into .class files">
         <if condition="${manifest.hasCode}">
             <then>

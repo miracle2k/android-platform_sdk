@@ -62,6 +62,10 @@ public final class SdkConstants {
     public static final String FN_ATTRS_MANIFEST_XML = "attrs_manifest.xml";
     /** framework aidl import file */
     public static final String FN_FRAMEWORK_AIDL = "framework.aidl";
+    /** framework renderscript folder */
+    public static final String FN_FRAMEWORK_RENDERSCRIPT = "renderscript";
+    /** framework include folder */
+    public static final String FN_FRAMEWORK_INCLUDE = "include";
     /** layoutlib.jar file */
     public static final String FN_LAYOUTLIB_JAR = "layoutlib.jar";
     /** widget list file */
@@ -115,6 +119,10 @@ public final class SdkConstants {
     /** aidl executable (with extension for the current OS)  */
     public final static String FN_AIDL = (CURRENT_PLATFORM == PLATFORM_WINDOWS) ?
             "aidl.exe" : "aidl"; //$NON-NLS-1$ //$NON-NLS-2$
+
+    /** renderscript executable (with extension for the current OS)  */
+    public final static String FN_RENDERSCRIPT = (CURRENT_PLATFORM == PLATFORM_WINDOWS) ?
+            "llvm-rs-cc.exe" : "llvm-rs-cc"; //$NON-NLS-1$ //$NON-NLS-2$
 
     /** adb executable (with extension for the current OS)  */
     public final static String FN_ADB = (CURRENT_PLATFORM == PLATFORM_WINDOWS) ?
@@ -221,6 +229,8 @@ public final class SdkConstants {
     public final static String FD_ANT = "ant";
     /** Name of the SDK data folder, i.e. "data" */
     public final static String FD_DATA = "data";
+    /** Name of the SDK renderscript folder, i.e. "rs" */
+    public final static String FD_RENDERSCRIPT = "rs";
     /** Name of the SDK resources folder, i.e. "res" */
     public final static String FD_RES = "res";
     /** Name of the SDK font folder, i.e. "fonts" */
@@ -287,6 +297,11 @@ public final class SdkConstants {
      *  This is an OS path, ending with a separator. */
     public final static String OS_PLATFORM_DATA_FOLDER = FD_DATA + File.separator;
 
+    /** Path of the renderscript directory relative to a platform folder.
+     *  This is an OS path, ending with a separator. */
+    public final static String OS_PLATFORM_RENDERSCRIPT_FOLDER = FD_RENDERSCRIPT + File.separator;
+
+
     /** Path of the samples directory relative to a platform folder.
      *  This is an OS path, ending with a separator. */
     public final static String OS_PLATFORM_SAMPLES_FOLDER = FD_SAMPLES + File.separator;
@@ -324,6 +339,10 @@ public final class SdkConstants {
     /** Path of the layoutlib.jar file relative to a platform folder. */
     public final static String OS_PLATFORM_LAYOUTLIB_JAR =
             OS_PLATFORM_DATA_FOLDER + FN_LAYOUTLIB_JAR;
+
+    /** Path of the renderscript include folder relative to a platform folder. */
+    public final static String OS_FRAMEWORK_RS =
+            FN_FRAMEWORK_RENDERSCRIPT + File.separator + FN_FRAMEWORK_INCLUDE;
 
     /* Folder paths relative to a addon folder */
 

@@ -302,6 +302,9 @@ public final class AaptExecLoopTask extends Task {
         task.setExecutable(mExecutable);
         task.setFailonerror(true);
 
+        File exe = new File(mExecutable);
+        task.setTaskName(exe.getName());
+
         // aapt command. Only "package" is supported at this time really.
         task.createArg().setValue(mCommand);
 
