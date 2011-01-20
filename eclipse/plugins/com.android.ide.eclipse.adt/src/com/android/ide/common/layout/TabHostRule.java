@@ -67,10 +67,13 @@ public class TabHostRule extends IgnoredLayoutRule {
             frame.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, fillParent);
             frame.setAttribute(ANDROID_URI, ATTR_ID, "@android:id/tabcontent"); //$NON-NLS-1$
 
-            INode child = frame.appendChild(FQCN_LINEAR_LAYOUT);
-            child.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
-            child.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, fillParent);
-            child.setAttribute(ANDROID_URI, ATTR_ID, "@+id/contentlayout"); //$NON-NLS-1$
+            for (int i = 0; i < 3; i++) {
+                INode child = frame.appendChild(FQCN_LINEAR_LAYOUT);
+                child.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
+                child.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, fillParent);
+                child.setAttribute(ANDROID_URI, ATTR_ID,
+                        String.format("@+id/tab%d", i + 1)); //$NON-NLS-1$
+            }
         }
     }
 
