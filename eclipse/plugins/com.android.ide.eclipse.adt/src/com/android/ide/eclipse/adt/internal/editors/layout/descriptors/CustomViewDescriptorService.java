@@ -18,7 +18,6 @@ package com.android.ide.eclipse.adt.internal.editors.layout.descriptors;
 
 import com.android.ide.common.resources.platform.ViewClassInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
@@ -201,7 +200,7 @@ public final class CustomViewDescriptorService {
     private ViewElementDescriptor createViewDescriptor(IType type, IProject project,
             ITypeHierarchy typeHierarchy) {
         // check if the type is a built-in View class.
-        List<ElementDescriptor> builtInList = null;
+        List<ViewElementDescriptor> builtInList = null;
 
         Sdk currentSdk = Sdk.getCurrent();
         if (currentSdk != null) {
@@ -220,12 +219,9 @@ public final class CustomViewDescriptorService {
         String fqcn = type.getFullyQualifiedName();
 
         if (builtInList != null) {
-            for (ElementDescriptor desc : builtInList) {
-                if (desc instanceof ViewElementDescriptor) {
-                    ViewElementDescriptor viewDescriptor = (ViewElementDescriptor)desc;
-                    if (fqcn.equals(viewDescriptor.getFullClassName())) {
-                        return viewDescriptor;
-                    }
+            for (ViewElementDescriptor viewDescriptor : builtInList) {
+                if (fqcn.equals(viewDescriptor.getFullClassName())) {
+                    return viewDescriptor;
                 }
             }
         }

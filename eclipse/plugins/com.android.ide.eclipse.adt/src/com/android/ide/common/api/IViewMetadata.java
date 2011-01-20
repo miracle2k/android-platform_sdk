@@ -23,13 +23,6 @@ package com.android.ide.common.api;
  */
 public interface IViewMetadata {
     /**
-     * Returns true if this view is a potential parent (e.g. it <b>can</b> have children).
-     *
-     * @return true if this view can have children
-     */
-    public boolean isParent();
-
-    /**
      * Returns the display name views of this type (a name suitable to display to the
      * user, normally capitalized and usually but not necessarily tied to the
      * implementation class). To be clear, a specific view may have an id attribute and a
@@ -40,13 +33,6 @@ public interface IViewMetadata {
      * @return the user visible name of views of this type (never null)
      */
     public String getDisplayName();
-
-    /**
-     * Returns the tooltip for this view, if any
-     *
-     * @return a tooltip, or null
-     */
-    public String getTooltip();
 
     /**
      * Returns the {@link FillPreference} of this view

@@ -18,7 +18,6 @@ package com.android.ide.eclipse.adt.internal.editors.layout.uimodel;
 
 import com.android.ide.common.layout.LayoutConstants;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
@@ -68,7 +67,7 @@ public class UiViewElementNode extends UiElementNode {
             // owned by a FrameLayout.
             // TODO replace by something user-configurable.
 
-            List<ElementDescriptor> layoutDescriptors = null;
+            List<ViewElementDescriptor> layoutDescriptors = null;
             IProject project = getEditor().getProject();
             if (project != null) {
                 Sdk currentSdk = Sdk.getCurrent();
@@ -84,10 +83,9 @@ public class UiViewElementNode extends UiElementNode {
             }
 
             if (layoutDescriptors != null) {
-                for (ElementDescriptor desc : layoutDescriptors) {
-                    if (desc instanceof ViewElementDescriptor &&
-                            desc.getXmlName().equals(SdkConstants.CLASS_NAME_FRAMELAYOUT)) {
-                        layout_attrs = ((ViewElementDescriptor) desc).getLayoutAttributes();
+                for (ViewElementDescriptor desc : layoutDescriptors) {
+                    if (desc.getXmlName().equals(SdkConstants.CLASS_NAME_FRAMELAYOUT)) {
+                        layout_attrs = desc.getLayoutAttributes();
                         need_xmlns = true;
                         break;
                     }

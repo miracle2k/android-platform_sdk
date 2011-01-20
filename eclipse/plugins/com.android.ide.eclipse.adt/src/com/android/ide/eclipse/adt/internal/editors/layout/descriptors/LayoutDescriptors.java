@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 
@@ -69,16 +70,17 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         new DocumentDescriptor("layout_doc", null); //$NON-NLS-1$
 
     /** The list of all known ViewLayout descriptors. */
-    private ArrayList<ElementDescriptor> mLayoutDescriptors = new ArrayList<ElementDescriptor>();
+    private List<ViewElementDescriptor> mLayoutDescriptors =
+        new ArrayList<ViewElementDescriptor>();
 
     /** Read-Only list of View Descriptors. */
-    private List<ElementDescriptor> mROLayoutDescriptors;
+    private List<ViewElementDescriptor> mROLayoutDescriptors;
 
     /** The list of all known View (not ViewLayout) descriptors. */
-    private ArrayList<ElementDescriptor> mViewDescriptors = new ArrayList<ElementDescriptor>();
+    private List<ViewElementDescriptor> mViewDescriptors = new ArrayList<ViewElementDescriptor>();
 
     /** Read-Only list of View Descriptors. */
-    private List<ElementDescriptor> mROViewDescriptors;
+    private List<ViewElementDescriptor> mROViewDescriptors;
 
     /** The descriptor matching android.view.View. */
     private ViewElementDescriptor mBaseViewDescriptor;
@@ -89,12 +91,12 @@ public final class LayoutDescriptors implements IDescriptorProvider {
     }
 
     /** Returns the read-only list of all known ViewLayout descriptors. */
-    public List<ElementDescriptor> getLayoutDescriptors() {
+    public List<ViewElementDescriptor> getLayoutDescriptors() {
         return mROLayoutDescriptors;
     }
 
     /** Returns the read-only list of all known View (not ViewLayout) descriptors. */
-    public List<ElementDescriptor> getViewDescriptors() {
+    public List<ViewElementDescriptor> getViewDescriptors() {
         return mROViewDescriptors;
     }
 
@@ -141,10 +143,10 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         HashMap<ViewClassInfo, ViewElementDescriptor> infoDescMap =
             new HashMap<ViewClassInfo, ViewElementDescriptor>();
 
-        ArrayList<ElementDescriptor> newViews = new ArrayList<ElementDescriptor>();
+        ArrayList<ViewElementDescriptor> newViews = new ArrayList<ViewElementDescriptor>();
         if (views != null) {
             for (ViewClassInfo info : views) {
-                ElementDescriptor desc = convertView(info, infoDescMap);
+                ViewElementDescriptor desc = convertView(info, infoDescMap);
                 newViews.add(desc);
             }
         }
@@ -153,20 +155,20 @@ public final class LayoutDescriptors implements IDescriptorProvider {
         // Note: ViewStub is already described by attrs.xml
         insertInclude(newViews);
 
-        ArrayList<ElementDescriptor> newLayouts = new ArrayList<ElementDescriptor>();
+        List<ViewElementDescriptor> newLayouts = new ArrayList<ViewElementDescriptor>();
         if (layouts != null) {
             for (ViewClassInfo info : layouts) {
-                ElementDescriptor desc = convertView(info, infoDescMap);
+                ViewElementDescriptor desc = convertView(info, infoDescMap);
                 newLayouts.add(desc);
             }
         }
 
-        ArrayList<ElementDescriptor> newDescriptors = new ArrayList<ElementDescriptor>();
+        List<ElementDescriptor> newDescriptors = new ArrayList<ElementDescriptor>();
         newDescriptors.addAll(newLayouts);
         newDescriptors.addAll(newViews);
 
         // Link all layouts to everything else here.. recursively
-        for (ElementDescriptor layoutDesc : newLayouts) {
+        for (ViewElementDescriptor layoutDesc : newLayouts) {
             layoutDesc.setChildren(newDescriptors);
         }
 
@@ -174,7 +176,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
 
         // The <merge> tag can only be a root tag, so it is added at the end.
         // It gets everything else as children but it is not made a child itself.
-        ElementDescriptor mergeTag = createMerge(newLayouts);
+        ViewElementDescriptor mergeTag = createMerge(newLayouts);
         mergeTag.setChildren(newDescriptors);  // mergeTag makes a copy of the list
         newDescriptors.add(mergeTag);
         newLayouts.add(mergeTag);
@@ -199,7 +201,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
      * @param infoDescMap This map links every ViewClassInfo to the ElementDescriptor it created.
      *                    It is filled by here and used later to fix the super-class hierarchy.
      */
-    private ElementDescriptor convertView(
+    private ViewElementDescriptor convertView(
             ViewClassInfo info,
             HashMap<ViewClassInfo, ViewElementDescriptor> infoDescMap) {
         String xml_name = info.getShortClassName();
@@ -296,7 +298,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
      * @param knownViews A list of view descriptors being populated. Also used to find the
      *   View descriptor and extract its layout attributes.
      */
-    private void insertInclude(ArrayList<ElementDescriptor> knownViews) {
+    private void insertInclude(List<ViewElementDescriptor> knownViews) {
         String xml_name = VIEW_INCLUDE;
 
         // Create the include custom attributes
@@ -344,7 +346,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
      * @param knownLayouts  A list of all known layout view descriptors, used to find the
      *   FrameLayout descriptor and extract its layout attributes.
      */
-    private ElementDescriptor createMerge(ArrayList<ElementDescriptor> knownLayouts) {
+    private ViewElementDescriptor createMerge(List<ViewElementDescriptor> knownLayouts) {
         String xml_name = VIEW_MERGE;
 
         // Find View and inherit all its layout attributes
@@ -370,14 +372,11 @@ public final class LayoutDescriptors implements IDescriptorProvider {
      */
     private AttributeDescriptor[] findViewLayoutAttributes(
             String viewFqcn,
-            ArrayList<ElementDescriptor> knownViews) {
+            List<ViewElementDescriptor> knownViews) {
 
-        for (ElementDescriptor desc : knownViews) {
-            if (desc instanceof ViewElementDescriptor) {
-                ViewElementDescriptor viewDesc = (ViewElementDescriptor) desc;
-                if (viewFqcn.equals(viewDesc.getFullClassName())) {
-                    return viewDesc.getLayoutAttributes();
-                }
+        for (ViewElementDescriptor viewDesc : knownViews) {
+            if (viewFqcn.equals(viewDesc.getFullClassName())) {
+                return viewDesc.getLayoutAttributes();
             }
         }
 
@@ -388,7 +387,7 @@ public final class LayoutDescriptors implements IDescriptorProvider {
      * Set the super-class of each {@link ViewElementDescriptor} by using the super-class
      * information available in the {@link ViewClassInfo}.
      */
-    private void fixSuperClasses(HashMap<ViewClassInfo, ViewElementDescriptor> infoDescMap) {
+    private void fixSuperClasses(Map<ViewClassInfo, ViewElementDescriptor> infoDescMap) {
 
         for (Entry<ViewClassInfo, ViewElementDescriptor> entry : infoDescMap.entrySet()) {
             ViewClassInfo info = entry.getKey();

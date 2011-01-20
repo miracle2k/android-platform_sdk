@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Palette Metadata
+
+    This document provides additional designtime metadata for various Android views,
+    such as logical palette categories (as well as a natural ordering of the views within
+    their categories, fill-preferences (how a view will sets its width and height attributes
+    when dropped into other views), and so on.
+ -->
+<!DOCTYPE metadata [
+<!--- The metadata consists of a series of category definitions -->
+<!ELEMENT metadata (category)*>
+<!--- Each category has a name and contains a list of views in order -->
+<!ELEMENT category (view)*>
+<!ATTLIST category name CDATA #IMPLIED>
+<!--- Each view is identified by its full class name and has various
+      other attributes such as a fill preference  -->
+<!ELEMENT view EMPTY>
+<!ATTLIST view
+    class CDATA #REQUIRED
+    previewXml CDATA #IMPLIED
+    fill ( none|both|width|height|opposite|
+          width_in_vertical|height_in_horizontal) "none"
+>
+]>
+<metadata>
+    <category name="Form Widgets">
+        <view class="android.widget.TextView" />
+        <view class="android.widget.Button" />
+        <view class="android.widget.CheckBox" />
+        <view class="android.widget.ToggleButton" />
+        <view class="android.widget.RadioButton" />
+        <view class="android.widget.CheckedTextView" />
+        <view class="android.widget.Spinner" fill="width_in_vertical" />
+        <view class="android.widget.EditText" fill="width_in_vertical" />
+        <view class="android.widget.AutoCompleteTextView" fill="width_in_vertical" />
+        <view class="android.widget.MultiAutoCompleteTextView" fill="width_in_vertical" />
+        <view class="android.widget.ProgressBar" />
+        <view class="android.widget.QuickContactBadge" />
+        <view class="android.widget.RadioGroup" />
+        <view class="android.widget.RatingBar" />
+        <view class="android.widget.SeekBar" fill="width_in_vertical" />
+    </category>
+    <category name="Composite">
+        <view class="android.widget.ListView" fill="width_in_vertical" />
+        <view class="android.widget.ExpandableListView" fill="width_in_vertical" />
+        <view class="android.widget.TwoLineListItem" />
+        <view class="android.widget.GridView" fill="opposite"/>
+        <view class="android.widget.ScrollView" fill="opposite"/>
+        <view class="android.widget.HorizontalScrollView" />
+        <view class="android.widget.SearchView" />
+        <view class="android.widget.SlidingDrawer" />
+        <view class="android.widget.TabHost" fill="width_in_vertical" />
+        <view class="android.widget.TabWidget" />
+        <view class="android.webkit.WebView" fill="opposite"/>
+    </category>
+    <category name="Images &amp; Media">
+        <view class="android.widget.ImageView" />
+        <view class="android.widget.ImageButton" />
+        <view class="android.widget.Gallery" fill="width_in_vertical" />
+        <view class="android.widget.MediaController" />
+        <view class="android.widget.VideoView"  fill="opposite" />
+    </category>
+    <category name="Layouts">
+        <view class="android.widget.LinearLayout" fill="opposite"/>
+        <view class="android.widget.RelativeLayout" fill="opposite"/>
+        <view class="android.widget.FrameLayout" fill="opposite"/>
+        <view class="android.widget.AbsoluteLayout" fill="opposite"/>
+        <view class="android.widget.TableLayout" fill="opposite"/>
+        <view class="android.widget.TableRow" fill="opposite"/>
+    </category>
+    <category name="Time &amp; Date">
+        <view class="android.widget.TimePicker" />
+        <view class="android.widget.DatePicker" />
+        <view class="android.widget.CalendarView" />
+        <view class="android.widget.Chronometer" />
+        <view class="android.widget.AnalogClock" />
+        <view class="android.widget.DigitalClock" />
+    </category>
+    <category name="Transitions">
+        <view class="android.widget.ImageSwitcher" />
+        <view class="android.widget.AdapterViewFlipper" fill="opposite"/>
+        <view class="android.widget.StackView" fill="opposite"/>
+        <view class="android.widget.TextSwitcher" fill="opposite"/>
+        <view class="android.widget.ViewAnimator" fill="opposite"/>
+        <view class="android.widget.ViewFlipper" fill="opposite"/>
+        <view class="android.widget.ViewSwitcher" fill="opposite"/>
+    </category>
+    <category name="Advanced">
+        <view class="android.view.View" />
+        <view class="android.view.ViewStub" />
+        <view class="android.gesture.GestureOverlayView" />
+        <view class="android.view.SurfaceView" />
+        <view class="android.widget.NumberPicker" />
+        <view class="android.widget.ZoomButton" />
+        <view class="android.widget.ZoomControls" />
+        <view class="android.widget.DialerFilter" fill="width_in_vertical" />
+    </category>
+    <category name="Other">
+        <!--  This is the catch-all category which contains unknown views if we encounter any -->
+    </category>
+    <!--  TODO: Add-ons? -->
+</metadata>

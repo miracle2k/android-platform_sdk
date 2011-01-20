@@ -36,6 +36,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescript
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
@@ -222,6 +223,12 @@ public class PaletteControl extends Composite {
         GridDataBuilder.create(mRoot).hGrab().hFill();
 
         if (targetData != null) {
+            // TODO: Use metadata categories instead:
+            //List<Pair<String,List<ViewElementDescriptor>>> paletteEntries =
+            //    ViewMetadataRepository.get().getPaletteEntries(targetData);
+            //for (Pair<String,List<ViewElementDescriptor>> pair : paletteEntries) {
+            //    addGroup(mRoot, pair.getFirst(), pair.getSecond());
+            //}
             addGroup(mRoot, "Views", targetData.getLayoutDescriptors().getViewDescriptors());
             addGroup(mRoot, "Layouts", targetData.getLayoutDescriptors().getLayoutDescriptors());
         }
@@ -301,7 +308,7 @@ public class PaletteControl extends Composite {
 
     private void addGroup(Composite parent,
             String uiName,
-            List<ElementDescriptor> descriptors) {
+            List<ViewElementDescriptor> descriptors) {
 
         Composite group = new Composite(parent, SWT.NONE);
         GridLayoutBuilder.create(group).columns(1).columnsEqual().spacing(0).noMargins();
@@ -310,7 +317,7 @@ public class PaletteControl extends Composite {
         Toggle toggle = new Toggle(group, uiName);
         GridDataBuilder.create(toggle).hFill().hGrab();
 
-        for (ElementDescriptor desc : descriptors) {
+        for (ViewElementDescriptor desc : descriptors) {
 
             // Exclude the <include> and <merge> tags from the View palette.
             // We don't have drop support for it right now, although someday we should.

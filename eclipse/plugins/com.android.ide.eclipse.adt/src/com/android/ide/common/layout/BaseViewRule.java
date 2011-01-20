@@ -156,7 +156,7 @@ public class BaseViewRule implements IViewRule {
                 if (fullActionId.equals(WIDTH_ID)) {
                     final String newAttrValue = getValue(valueId, customWidth);
                     if (newAttrValue != null) {
-                        node.editXml("Change attribute " + ATTR_LAYOUT_WIDTH,
+                        node.editXml("Change Attribute " + ATTR_LAYOUT_WIDTH,
                                 new PropertySettingNodeHandler(ANDROID_URI,
                                         ATTR_LAYOUT_WIDTH, newAttrValue));
                     }
@@ -165,7 +165,7 @@ public class BaseViewRule implements IViewRule {
                     // Ask the user
                     final String newAttrValue = getValue(valueId, customHeight);
                     if (newAttrValue != null) {
-                        node.editXml("Change attribute " + ATTR_LAYOUT_HEIGHT,
+                        node.editXml("Change Attribute " + ATTR_LAYOUT_HEIGHT,
                                 new PropertySettingNodeHandler(ANDROID_URI,
                                         ATTR_LAYOUT_HEIGHT, newAttrValue));
                     }
@@ -180,7 +180,7 @@ public class BaseViewRule implements IViewRule {
                         if (!newId.startsWith(NEW_ID_PREFIX)) {
                             newId = NEW_ID_PREFIX + stripIdPrefix(newId);
                         }
-                        node.editXml("Change id", new PropertySettingNodeHandler(ANDROID_URI,
+                        node.editXml("Change ID", new PropertySettingNodeHandler(ANDROID_URI,
                                 ATTR_ID, newId));
                     }
                 } else if (fullActionId.equals(EDIT_TEXT_ID)) {
@@ -188,7 +188,7 @@ public class BaseViewRule implements IViewRule {
                     oldText = ensureValidString(oldText);
                     String newText = mRulesEngine.displayResourceInput("string", oldText); //$NON-NLS-1$
                     if (newText != null) {
-                        node.editXml("Change text", new PropertySettingNodeHandler(ANDROID_URI,
+                        node.editXml("Change Text", new PropertySettingNodeHandler(ANDROID_URI,
                                 ATTR_TEXT, newText));
                     }
                 }
@@ -203,7 +203,7 @@ public class BaseViewRule implements IViewRule {
                         final String customValue = prop.isStringEdit()
                             ? inputAttributeValue(node, actionId) : null;
 
-                        node.editXml("Change attribute " + actionId, new INodeHandler() {
+                        node.editXml("Change Attribute " + actionId, new INodeHandler() {
                             public void handle(INode n) {
                                 if (prop.isToggle()) {
                                     // case of toggle
