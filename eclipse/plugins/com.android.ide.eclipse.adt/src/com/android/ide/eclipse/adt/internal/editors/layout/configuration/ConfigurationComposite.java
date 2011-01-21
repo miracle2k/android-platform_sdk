@@ -38,9 +38,9 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
+import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.resources.Density;
 import com.android.sdklib.resources.DockMode;
@@ -1556,11 +1556,27 @@ public class ConfigurationComposite extends Composite {
 
     /**
      * Returns the current theme, or null if the combo has no selection.
+     *
+     * @return the theme name, or null
      */
     public String getTheme() {
         int themeIndex = mThemeCombo.getSelectionIndex();
         if (themeIndex != -1) {
             return mThemeCombo.getItem(themeIndex);
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the current device string, or null if the combo has no selection.
+     *
+     * @return the device name, or null
+     */
+    public String getDevice() {
+        int deviceIndex = mDeviceCombo.getSelectionIndex();
+        if (deviceIndex != -1) {
+            return mDeviceCombo.getItem(deviceIndex);
         }
 
         return null;

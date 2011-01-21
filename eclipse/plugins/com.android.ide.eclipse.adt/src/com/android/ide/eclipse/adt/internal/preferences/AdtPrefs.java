@@ -48,6 +48,8 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
 
     public final static String PREFS_FORMAT_XML = AdtPlugin.PLUGIN_ID + ".formatXml"; //$NON-NLS-1$
 
+    public final static String PREFS_PALETTE_MODE = AdtPlugin.PLUGIN_ID + ".palette"; //$NON-NLS-1$
+
     /** singleton instance */
     private final static AdtPrefs sThis = new AdtPrefs();
 
@@ -64,6 +66,7 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
     private boolean mBuildForceErrorOnNativeLibInJar = true;
     private boolean mFormatXml = false;
     private float mMonitorDensity = 0.f;
+    private String mPalette;
 
     public static enum BuildVerbosity {
         /** Build verbosity "Always". Those messages are always displayed, even in silent mode */
@@ -157,6 +160,10 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
         if (property == null || PREFS_FORMAT_XML.equals(property)) {
             mFormatXml = mStore.getBoolean(PREFS_FORMAT_XML);
         }
+
+        if (property == null || PREFS_PALETTE_MODE.equals(property)) {
+            mPalette = mStore.getString(PREFS_PALETTE_MODE);
+        }
     }
 
     /**
@@ -181,6 +188,18 @@ public final class AdtPrefs extends AbstractPreferenceInitializer {
 
     public boolean getBuildForceErrorOnNativeLibInJar() {
         return mBuildForceErrorOnNativeLibInJar;
+    }
+
+    public String getPaletteModes() {
+        return mPalette;
+    }
+
+    public void setPaletteModes(String palette) {
+        mPalette = palette;
+
+        // need to save this new value to the store
+        IPreferenceStore store = AdtPlugin.getDefault().getPreferenceStore();
+        store.setValue(PREFS_PALETTE_MODE, palette);
     }
 
     public float getMonitorDensity() {

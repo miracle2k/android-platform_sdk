@@ -310,6 +310,9 @@ public class RelativeLayoutRule extends BaseLayoutRule {
                     continue;
                 }
                 String childId = child.getStringAttr(ANDROID_URI, ATTR_ID);
+                if (childId == null) {
+                    continue;
+                }
                 childId = normalizeId(childId);
                 if (id.equals(childId)) {
                     Set<String> linkedIds = getLinkedIds(child, cachedLinkIds);

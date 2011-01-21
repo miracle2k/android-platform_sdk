@@ -15,6 +15,7 @@
  */
 package com.android.ide.eclipse.adt;
 
+import java.io.File;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
@@ -38,4 +39,11 @@ public class AdtPluginTest extends TestCase {
         assertEquals(input, contents);
     }
 
+    public void testReadWriteFile() throws Exception {
+        File temp = File.createTempFile("test", ".txt");
+        String myContent = "this is\na test";
+        AdtPlugin.writeFile(temp, myContent);
+        String readBack = AdtPlugin.readFile(temp);
+        assertEquals(myContent, readBack);
+    }
 }

@@ -98,6 +98,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -456,6 +457,34 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
         }
 
         return null;
+    }
+
+    /**
+     * Writes the given content out to the given {@link File}. The file will be deleted if
+     * it already exists.
+     *
+     * @param file the target file
+     * @param content the content to be written into the file
+     */
+    public static void writeFile(File file, String content) {
+        if (file.exists()) {
+            file.delete();
+        }
+        FileWriter fw = null;
+        try {
+            fw = new FileWriter(file);
+            fw.write(content);
+        } catch (IOException e) {
+            AdtPlugin.log(e, null);
+        } finally {
+            if (fw != null) {
+                try {
+                    fw.close();
+                } catch (IOException e) {
+                    AdtPlugin.log(e, null);
+                }
+            }
+        }
     }
 
     /**
@@ -1167,7 +1196,7 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
             @Override
             protected IStatus run(IProgressMonitor monitor) {
                 try {
-                    pingUsageServer(); //$NON-NLS-1$
+                    pingUsageServer();
 
                     return Status.OK_STATUS;
                 } catch (Throwable t) {

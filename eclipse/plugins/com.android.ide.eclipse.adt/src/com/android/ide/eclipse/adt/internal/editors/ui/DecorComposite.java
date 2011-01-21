@@ -37,7 +37,7 @@ public class DecorComposite extends Composite {
     public DecorComposite(Composite parent, int style) {
         super(parent, style);
 
-        GridLayoutBuilder.create(this).noMargins().columns(2);
+        GridLayoutBuilder.create(this).noMargins().columns(2).vSpacing(1);
 
         mTitle = new CLabel(this, SWT.NONE);
         GridDataBuilder.create(mTitle).hGrab().hFill().vCenter();
