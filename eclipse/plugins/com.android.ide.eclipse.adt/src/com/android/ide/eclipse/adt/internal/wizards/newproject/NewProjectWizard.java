@@ -51,14 +51,22 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.internal.ui.packageview.PackageExplorerPart;
+import org.eclipse.jdt.internal.ui.workingsets.IWorkingSetIDs;
 import org.eclipse.jdt.ui.actions.OpenJavaPerspectiveAction;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.ITreeSelection;
+import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.IWorkingSet;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.WorkspaceModifyOperation;
 
 import java.io.ByteArrayInputStream;
@@ -69,10 +77,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * A "New Android Project" Wizard.
@@ -574,6 +585,21 @@ public class NewProjectWizard extends Wizard implements INewWizard {
                         mainData.getDescription(),
                         mainData.getParameters(),
                         mainData.getDictionary());
+
+                if (mainProject != null) {
+                    final IJavaProject javaProject = JavaCore.create(mainProject);
+                    Display.getDefault().syncExec(new Runnable() {
+
+                        public void run() {
+                            IWorkingSet[] workingSets = mMainPage.getWorkingSets();
+                            if (workingSets.length > 0 && javaProject != null
+                                    && javaProject.exists()) {
+                                PlatformUI.getWorkbench().getWorkingSetManager()
+                                        .addToWorkingSets(javaProject, workingSets);
+                            }
+                        }
+                    });
+                }
             }
 
             if (testData != null) {
@@ -583,14 +609,27 @@ public class NewProjectWizard extends Wizard implements INewWizard {
                     parameters.put(PARAM_REFERENCE_PROJECT, mainProject);
                 }
 
-                createEclipseProject(
+                IProject testProject = createEclipseProject(
                         new SubProgressMonitor(monitor, 50),
                         testData.getProject(),
                         testData.getDescription(),
                         parameters,
                         testData.getDictionary());
-            }
+                if (testProject != null) {
+                    final IJavaProject javaProject = JavaCore.create(testProject);
+                    Display.getDefault().syncExec(new Runnable() {
 
+                        public void run() {
+                            IWorkingSet[] workingSets = mTestPage.getWorkingSets();
+                            if (workingSets.length > 0 && javaProject != null
+                                    && javaProject.exists()) {
+                                PlatformUI.getWorkbench().getWorkingSetManager()
+                                        .addToWorkingSets(javaProject, workingSets);
+                            }
+                        }
+                    });
+                }
+            }
         } catch (CoreException e) {
             throw new InvocationTargetException(e);
         } catch (IOException e) {
@@ -1171,4 +1210,103 @@ public class NewProjectWizard extends Wizard implements INewWizard {
 
         return str;
     }
+
+    /*
+     * Copied from org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne
+     */
+
+    private static final IWorkingSet[] EMPTY_WORKING_SET_ARRAY = new IWorkingSet[0];
+
+    public static IWorkingSet[] getSelectedWorkingSet(IStructuredSelection selection,
+            IWorkbenchPart activePart) {
+        IWorkingSet[] selected= getSelectedWorkingSet(selection);
+        if (selected != null && selected.length > 0) {
+            for (int i= 0; i < selected.length; i++) {
+                if (!isValidWorkingSet(selected[i]))
+                    return EMPTY_WORKING_SET_ARRAY;
+            }
+            return selected;
+        }
+
+        if (!(activePart instanceof PackageExplorerPart))
+            return EMPTY_WORKING_SET_ARRAY;
+
+        PackageExplorerPart explorerPart= (PackageExplorerPart) activePart;
+        if (explorerPart.getRootMode() == PackageExplorerPart.PROJECTS_AS_ROOTS) {
+            //Get active filter
+            IWorkingSet filterWorkingSet= explorerPart.getFilterWorkingSet();
+            if (filterWorkingSet == null)
+                return EMPTY_WORKING_SET_ARRAY;
+
+            if (!isValidWorkingSet(filterWorkingSet))
+                return EMPTY_WORKING_SET_ARRAY;
+
+            return new IWorkingSet[] {filterWorkingSet};
+        } else {
+            //If we have been gone into a working set return the working set
+            Object input= explorerPart.getViewPartInput();
+            if (!(input instanceof IWorkingSet))
+                return EMPTY_WORKING_SET_ARRAY;
+
+            IWorkingSet workingSet= (IWorkingSet)input;
+            if (!isValidWorkingSet(workingSet))
+                return EMPTY_WORKING_SET_ARRAY;
+
+            return new IWorkingSet[] {workingSet};
+        }
+    }
+
+    public static IWorkingSet[] getSelectedWorkingSet(IStructuredSelection selection) {
+        if (!(selection instanceof ITreeSelection))
+            return EMPTY_WORKING_SET_ARRAY;
+
+        ITreeSelection treeSelection= (ITreeSelection) selection;
+        if (treeSelection.isEmpty())
+            return EMPTY_WORKING_SET_ARRAY;
+
+        List elements= treeSelection.toList();
+        if (elements.size() == 1) {
+            Object element= elements.get(0);
+            TreePath[] paths= treeSelection.getPathsFor(element);
+            if (paths.length != 1)
+                return EMPTY_WORKING_SET_ARRAY;
+
+            TreePath path= paths[0];
+            if (path.getSegmentCount() == 0)
+                return EMPTY_WORKING_SET_ARRAY;
+
+            Object candidate= path.getSegment(0);
+            if (!(candidate instanceof IWorkingSet))
+                return EMPTY_WORKING_SET_ARRAY;
+
+            IWorkingSet workingSetCandidate= (IWorkingSet) candidate;
+            if (isValidWorkingSet(workingSetCandidate))
+                return new IWorkingSet[] { workingSetCandidate };
+
+            return EMPTY_WORKING_SET_ARRAY;
+        }
+
+        ArrayList result= new ArrayList();
+        for (Iterator iterator= elements.iterator(); iterator.hasNext();) {
+            Object element= iterator.next();
+            if (element instanceof IWorkingSet && isValidWorkingSet((IWorkingSet) element)) {
+                result.add(element);
+            }
+        }
+        return (IWorkingSet[]) result.toArray(new IWorkingSet[result.size()]);
+    }
+
+
+    private static boolean isValidWorkingSet(IWorkingSet workingSet) {
+        String id= workingSet.getId();
+        if (!IWorkingSetIDs.JAVA.equals(id) && !IWorkingSetIDs.RESOURCE.equals(id))
+            return false;
+
+        if (workingSet.isAggregateWorkingSet())
+            return false;
+
+        return true;
+    }
+
+
 }
