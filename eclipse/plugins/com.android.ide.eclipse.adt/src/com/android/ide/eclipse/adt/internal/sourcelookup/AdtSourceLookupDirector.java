@@ -17,7 +17,9 @@
 
 package com.android.ide.eclipse.adt.internal.sourcelookup;
 
-import com.android.ide.eclipse.adt.internal.project.AndroidClasspathContainerInitializer;
+import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -32,6 +34,7 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.internal.launching.JavaSourceLookupDirector;
+import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 
 import java.io.File;
 
@@ -41,20 +44,35 @@ public class AdtSourceLookupDirector extends JavaSourceLookupDirector {
     public void initializeDefaults(ILaunchConfiguration configuration) throws CoreException {
         dispose();
         setLaunchConfiguration(configuration);
-        String projectName = configuration.getAttribute("org.eclipse.jdt.launching.PROJECT_ATTR", //$NON-NLS-1$
+        String projectName =
+            configuration.getAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME,
                 ""); //$NON-NLS-1$
         if (projectName != null && projectName.length() > 0) {
             IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
             if (project != null && project.isOpen()) {
+                ProjectState state = Sdk.getProjectState(project);
+                if (state == null) {
+                    initDefaults();
+                    return;
+                }
+                IAndroidTarget target = state.getTarget();
+                if (target == null) {
+                    initDefaults();
+                    return;
+                }
+                String path = target.getPath(IAndroidTarget.ANDROID_JAR);
+                if (path == null) {
+                    initDefaults();
+                    return;
+                }
                 IJavaProject javaProject = JavaCore.create(project);
                 if (javaProject != null && javaProject.isOpen()) {
-                    IClasspathEntry[] entries = javaProject.getRawClasspath();
+                    IClasspathEntry[] entries = javaProject.getResolvedClasspath(true);
                     IClasspathEntry androidEntry = null;
                     for (int i = 0; i < entries.length; i++) {
                         IClasspathEntry entry = entries[i];
-                        if (entry.getPath() != null
-                                && AndroidClasspathContainerInitializer.CONTAINER_ID.equals(entry
-                                        .getPath().toString())) {
+                        if (entry.getEntryKind() == IClasspathEntry.CPE_LIBRARY
+                                && path.equals(entry.getPath().toString())) {
                             androidEntry = entry;
                             break;
                         }
@@ -88,6 +106,10 @@ public class AdtSourceLookupDirector extends JavaSourceLookupDirector {
                 }
             }
         }
+        initDefaults();
+    }
+
+    private void initDefaults() {
         setSourceContainers(new ISourceContainer[] {
             new DefaultSourceContainer()
         });
