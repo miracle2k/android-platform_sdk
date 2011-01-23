@@ -19,6 +19,7 @@ package com.android.ide.eclipse.ddms.preferences;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
 import com.android.ide.eclipse.ddms.views.LogCatView;
 
+import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.FontFieldEditor;
@@ -27,14 +28,19 @@ import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
+import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Preference Pane for LogCat.
  */
 public class LogCatPreferencePage extends FieldEditorPreferencePage implements
         IWorkbenchPreferencePage {
+
+    private BooleanFieldEditor mSwitchPerspective;
+    private ComboFieldEditor mWhichPerspective;
 
     public LogCatPreferencePage() {
         super(GRID);
@@ -73,8 +79,45 @@ public class LogCatPreferencePage extends FieldEditorPreferencePage implements
                     { "Go to Problem (error line)", LogCatView.CHOICE_ERROR_LINE },
                 }, getFieldEditorParent());
         addField(cfe);
+
+        mSwitchPerspective = new BooleanFieldEditor(PreferenceInitializer.ATTR_SWITCH_PERSPECTIVE,
+                "Switch Perspective", getFieldEditorParent());
+        addField(mSwitchPerspective);
+
+        IPerspectiveDescriptor[] perspectiveDescriptors =
+                PlatformUI.getWorkbench().getPerspectiveRegistry().getPerspectives();
+        String[][] perspectives;
+        if (perspectiveDescriptors.length > 0) {
+            perspectives = new String[perspectiveDescriptors.length][2];
+            for (int i = 0; i < perspectiveDescriptors.length; i++) {
+                IPerspectiveDescriptor perspective = perspectiveDescriptors[i];
+                perspectives[i][0] = perspective.getLabel();
+                perspectives[i][1] = perspective.getId();
+            }
+        } else {
+            perspectives = new String[0][0];
+        }
+        mWhichPerspective = new ComboFieldEditor(PreferenceInitializer.ATTR_PERSPECTIVE_ID,
+                "Switch to:", perspectives, getFieldEditorParent());
+        mWhichPerspective.setEnabled(getPreferenceStore()
+                .getBoolean(PreferenceInitializer.ATTR_SWITCH_PERSPECTIVE), getFieldEditorParent());
+        addField(mWhichPerspective);
     }
 
     public void init(IWorkbench workbench) {
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+        if (event.getSource().equals(mSwitchPerspective)) {
+            mWhichPerspective.setEnabled(mSwitchPerspective.getBooleanValue()
+                    , getFieldEditorParent());
+        }
+    }
+
+    @Override
+    protected void performDefaults() {
+        super.performDefaults();
+        mWhichPerspective.setEnabled(mSwitchPerspective.getBooleanValue(), getFieldEditorParent());
     }
 }

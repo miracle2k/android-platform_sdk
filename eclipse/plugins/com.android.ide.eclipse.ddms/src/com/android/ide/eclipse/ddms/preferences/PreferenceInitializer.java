@@ -74,6 +74,12 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
     public final static String ATTR_ADBHOST_VALUE =
         DdmsPlugin.PLUGIN_ID + ".adbHostValue"; //$NON-NLS-1$
 
+    public final static String ATTR_SWITCH_PERSPECTIVE =
+        DdmsPlugin.PLUGIN_ID + ".switchPerspective"; //$NON-NLS-1$
+
+    public final static String ATTR_PERSPECTIVE_ID =
+        DdmsPlugin.PLUGIN_ID + ".perspectiveId"; //$NON-NLS-1$
+
     /*
      * (non-Javadoc)
      *
@@ -109,6 +115,8 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
         store.setDefault(ATTR_LOGCAT_GOTO_PROBLEM, LogCatView.CHOICE_ERROR_LINE);
         store.setDefault(ATTR_USE_ADBHOST, DdmPreferences.DEFAULT_USE_ADBHOST);
         store.setDefault(ATTR_ADBHOST_VALUE, DdmPreferences.DEFAULT_ADBHOST_VALUE);
+        store.setDefault(ATTR_SWITCH_PERSPECTIVE, LogCatView.DEFAULT_SWITCH_PERSPECTIVE);
+        store.setDefault(ATTR_PERSPECTIVE_ID, LogCatView.DEFAULT_PERSPECTIVE_ID);
     }
 
     /**
