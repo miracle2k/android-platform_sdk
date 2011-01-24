@@ -24,8 +24,8 @@ import static com.android.ide.common.layout.LayoutConstants.VALUE_MATCH_PARENT;
 import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.common.rendering.api.ResourceDensity;
 import com.android.ide.common.rendering.api.ViewInfo;
-import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
@@ -64,7 +64,7 @@ public final class UiElementPullParser extends BasePullParser {
     private final boolean mExplodedRendering;
     private boolean mZeroAttributeIsPadding = false;
     private boolean mIncreaseExistingPadding = false;
-    private List<ElementDescriptor> mLayoutDescriptors;
+    private List<ViewElementDescriptor> mLayoutDescriptors;
     private final int mDensityValue;
     private final float mXdpi;
 
@@ -158,7 +158,7 @@ public final class UiElementPullParser extends BasePullParser {
         if (mExplodedRendering) {
             // first get the node name
             String xml = node.getDescriptor().getXmlLocalName();
-            for (ElementDescriptor descriptor : mLayoutDescriptors) {
+            for (ViewElementDescriptor descriptor : mLayoutDescriptors) {
                 if (xml.equals(descriptor.getXmlLocalName())) {
                     NamedNodeMap attributes = node.getXmlNode().getAttributes();
                     Node padding = attributes.getNamedItemNS(SdkConstants.NS_RESOURCES, "padding");

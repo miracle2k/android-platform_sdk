@@ -39,7 +39,7 @@ public class RenderLoggerTest extends TestCase {
     public void testLogger3() throws Exception {
         RenderLogger l = new RenderLogger("foo");
         assertFalse(l.hasProblems());
-        l.error("timeout", "Sample Error", new RuntimeException());
+        l.error("timeout", "Sample Error", new RuntimeException(), null);
         l.warning("slow", "Sample warning", null);
         assertTrue(l.hasProblems());
         assertEquals("Sample Error\n" + "Sample warning\n"

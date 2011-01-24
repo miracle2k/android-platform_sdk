@@ -16,8 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout;
 
-import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
+import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
@@ -69,8 +69,8 @@ public final class ExplodedRenderingHelper {
         LayoutDescriptors descriptors = data.getLayoutDescriptors();
 
         mLayoutNames = new HashSet<String>();
-        List<ElementDescriptor> layoutDescriptors = descriptors.getLayoutDescriptors();
-        for (ElementDescriptor desc : layoutDescriptors) {
+        List<ViewElementDescriptor> layoutDescriptors = descriptors.getLayoutDescriptors();
+        for (ViewElementDescriptor desc : layoutDescriptors) {
             mLayoutNames.add(desc.getXmlLocalName());
         }
 

@@ -773,7 +773,16 @@ public class RulesEngine {
         }
 
         public IViewMetadata getMetadata(final String fqcn) {
-            return new ViewMetadata(mEditor.getLayoutEditor(), fqcn);
+            return new IViewMetadata() {
+                public String getDisplayName() {
+                    // This also works when there is no "."
+                    return fqcn.substring(fqcn.lastIndexOf('.') + 1);
+                }
+
+                public FillPreference getFillPreference() {
+                    return ViewMetadataRepository.get().getFillPreference(fqcn);
+                }
+            };
         }
 
         public int getMinApiLevel() {
