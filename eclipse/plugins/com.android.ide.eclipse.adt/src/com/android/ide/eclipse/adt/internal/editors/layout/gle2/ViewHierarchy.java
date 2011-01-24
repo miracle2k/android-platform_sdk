@@ -16,21 +16,27 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_MERGE;
+
 import com.android.ide.common.api.INode;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
+import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.util.Pair;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.w3c.dom.Node;
 
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.RandomAccess;
 import java.util.Set;
 
 /**
@@ -52,7 +58,7 @@ public class ViewHierarchy {
     }
 
     /**
-     * The CanvasViewInfo root created by the last call to {@link #setResult}
+     * The CanvasViewInfo root created by the last call to {@link #setSession}
      * with a valid layout.
      * <p/>
      * This <em>can</em> be null to indicate we're dealing with an empty document with
@@ -63,7 +69,7 @@ public class ViewHierarchy {
     private CanvasViewInfo mLastValidViewInfoRoot;
 
     /**
-     * True when the last {@link #setResult} provided a valid {@link LayoutScene}.
+     * True when the last {@link #setSession} provided a valid {@link LayoutScene}.
      * <p/>
      * When false this means the canvas is displaying an out-dated result image & bounds and some
      * features should be disabled accordingly such a drag'n'drop.
@@ -137,21 +143,42 @@ public class ViewHierarchy {
         mSession = session;
         mIsResultValid = (session != null && session.getResult().isSuccess());
         mExplodedParents = false;
-        mIncludedBounds = null;
-
         if (mIsResultValid && session != null) {
-            ViewInfo root = null;
-
             List<ViewInfo> rootList = session.getRootViews();
 
-            if (rootList != null && rootList.size() > 0) {
-                root = rootList.get(0);
-            }
+            Pair<CanvasViewInfo,List<Rectangle>> infos = null;
 
-            if (root == null) {
-                mLastValidViewInfoRoot = null;
+            if (rootList == null || rootList.size() == 0) {
+                // Special case: Look to see if this is really an empty <merge> view,
+                // which shows up without any ViewInfos in the merge. In that case we
+                // want to manufacture an empty view, such that we can target the view
+                // via drag & drop, etc.
+                if (hasMergeRoot()) {
+                    ViewInfo mergeRoot = createMergeInfo(session);
+                    infos = CanvasViewInfo.create(mergeRoot);
+                } else {
+                    infos = null;
+                }
             } else {
-                mLastValidViewInfoRoot = CanvasViewInfo.create(root);
+                if (rootList.size() > 1 && hasMergeRoot()) {
+                    ViewInfo mergeRoot = createMergeInfo(session);
+                    mergeRoot.setChildren(rootList);
+                    infos = CanvasViewInfo.create(mergeRoot);
+                } else {
+                    ViewInfo root = rootList.get(0);
+                    if (root != null) {
+                        infos = CanvasViewInfo.create(root);
+                    } else {
+                        infos = null;
+                    }
+                }
+            }
+            if (infos != null) {
+                mLastValidViewInfoRoot = infos.getFirst();
+                mIncludedBounds = infos.getSecond();
+            } else {
+                mLastValidViewInfoRoot = null;
+                mIncludedBounds = null;
             }
 
             updateNodeProxies(mLastValidViewInfoRoot, null);
@@ -167,8 +194,39 @@ public class ViewHierarchy {
             // Update the selection
             mCanvas.getSelectionManager().sync(mLastValidViewInfoRoot);
         } else {
+            mIncludedBounds = null;
             mInvisibleParents.clear();
         }
+    }
+
+    private ViewInfo createMergeInfo(RenderSession session) {
+        BufferedImage image = session.getImage();
+        ControlPoint imageSize = ControlPoint.create(mCanvas,
+                ICanvasTransform.IMAGE_MARGIN + image.getWidth(),
+                ICanvasTransform.IMAGE_MARGIN + image.getHeight());
+        LayoutPoint layoutSize = imageSize.toLayout();
+        UiDocumentNode model = mCanvas.getLayoutEditor().getUiRootNode();
+        List<UiElementNode> children = model.getUiChildren();
+        return new ViewInfo(VIEW_MERGE, children.get(0), 0, 0, layoutSize.x, layoutSize.y);
+    }
+
+    /**
+     * Returns true if this view hierarchy corresponds to an editor that has a {@code
+     * <merge>} tag at the root
+     *
+     * @return true if there is a {@code <merge>} at the root of this editor's document
+     */
+    private boolean hasMergeRoot() {
+        UiDocumentNode model = mCanvas.getLayoutEditor().getUiRootNode();
+        if (model != null) {
+            List<UiElementNode> children = model.getUiChildren();
+            if (children != null && children.size() > 0
+                    && VIEW_MERGE.equals(children.get(0).getDescriptor().getXmlName())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -189,14 +247,6 @@ public class ViewHierarchy {
 
         if (key != null) {
             mCanvas.getNodeFactory().create(vi);
-
-            if (parentKey == null && vi.getParent() != null) {
-                // This is an included view root
-                if (mIncludedBounds == null) {
-                    mIncludedBounds = new ArrayList<Rectangle>();
-                }
-                mIncludedBounds.add(vi.getAbsRect());
-            }
         }
 
         for (CanvasViewInfo child : vi.getChildren()) {
@@ -411,7 +461,15 @@ public class ViewHierarchy {
         if (r.contains(p.x, p.y)) {
 
             // try to find a matching child first
-            for (CanvasViewInfo child : canvasViewInfo.getChildren()) {
+            // Iterate in REVERSE z order such that siblings on top
+            // are checked before earlier siblings (this matters in layouts like
+            // FrameLayout and in <merge> contexts where the views are sitting on top
+            // of each other and we want to select the same view as the one drawn
+            // on top of the others
+            List<CanvasViewInfo> children = canvasViewInfo.getChildren();
+            assert children instanceof RandomAccess;
+            for (int i = children.size() - 1; i >= 0; i--) {
+                CanvasViewInfo child = children.get(i);
                 CanvasViewInfo v = findViewInfoAt_Recursive(p, child);
                 if (v != null) {
                     return v;

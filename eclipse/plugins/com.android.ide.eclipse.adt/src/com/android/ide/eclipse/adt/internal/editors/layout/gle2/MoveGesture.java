@@ -521,6 +521,15 @@ public class MoveGesture extends DropGesture {
             vi = mCurrentView;
         } else {
             vi = mCanvas.getViewHierarchy().findViewInfoAt(p);
+
+            // When dragging into the canvas, if you are not over any other view, target
+            // the root element (since it may not "fill" the screen, e.g. if you have a linear
+            // layout but have layout_height wrap_content, then the layout will only extend
+            // to cover the children in the layout, not the whole visible screen area, which
+            // may be surprising
+            if (vi == null) {
+                vi = mCanvas.getViewHierarchy().getRoot();
+            }
         }
 
         boolean isMove = true;

@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
+import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_MERGE;
+
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IClientRulesEngine;
 import com.android.ide.common.api.IDragElement;
@@ -614,6 +616,7 @@ public class RulesEngine {
             String ruleClassName;
             ClassLoader classLoader;
             if (realFqcn.startsWith("android.") || //$NON-NLS-1$
+                    realFqcn.equals(VIEW_MERGE) ||
                     // FIXME: Remove this special case as soon as we pull
                     // the MapViewRule out of this code base and bundle it
                     // with the add ons
@@ -628,6 +631,10 @@ public class RulesEngine {
                 classLoader = RulesEngine.class.getClassLoader();
                 int dotIndex = realFqcn.lastIndexOf('.');
                 String baseName = realFqcn.substring(dotIndex+1);
+                // Capitalize rule class name to match naming conventions, if necessary (<merge>)
+                if (Character.isLowerCase(baseName.charAt(0))) {
+                    baseName = Character.toUpperCase(baseName.charAt(0)) + baseName.substring(1);
+                }
                 ruleClassName = packageName + "." + //$NON-NLS-1$
                     baseName + "Rule"; //$NON-NLS-1$
 

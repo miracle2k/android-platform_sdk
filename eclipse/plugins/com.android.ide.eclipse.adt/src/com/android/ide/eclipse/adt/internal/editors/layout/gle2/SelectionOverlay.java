@@ -63,7 +63,7 @@ public class SelectionOverlay extends Overlay {
                 NodeProxy node = s.getNode();
                 if (node != null) {
                     String name = s.getName();
-                    paintSelection(gcWrapper, node, name, isMultipleSelection);
+                    paintSelection(gcWrapper, s.getViewInfo(), node, name, isMultipleSelection);
                 }
             }
 
@@ -121,7 +121,7 @@ public class SelectionOverlay extends Overlay {
     }
 
     /** Called by the canvas when a view is being selected. */
-    private void paintSelection(IGraphics gc, INode selectedNode, String displayName,
+    private void paintSelection(IGraphics gc, CanvasViewInfo view, INode selectedNode, String displayName,
             boolean isMultipleSelection) {
         Rect r = selectedNode.getBounds();
 
@@ -132,6 +132,18 @@ public class SelectionOverlay extends Overlay {
         gc.useStyle(DrawingStyle.SELECTION);
         gc.fillRect(r);
         gc.drawRect(r);
+
+        // Paint sibling rectangles, if applicable
+        List<CanvasViewInfo> siblings = view.getNodeSiblings();
+        if (siblings != null) {
+            for (CanvasViewInfo sibling : siblings) {
+                if (sibling != view) {
+                    r = SwtUtils.toRect(sibling.getSelectionRect());
+                    gc.fillRect(r);
+                    gc.drawRect(r);
+                }
+            }
+        }
 
         /* Label hidden pending selection visual design
         if (displayName == null || isMultipleSelection) {

@@ -407,7 +407,7 @@ public class OutlinePage extends ContentOutlinePage
                 }
             }
             if (element instanceof CanvasViewInfo) {
-                List<CanvasViewInfo> children = ((CanvasViewInfo) element).getChildren();
+                List<CanvasViewInfo> children = ((CanvasViewInfo) element).getUniqueChildren();
                 if (children != null) {
                     return children.toArray();
                 }
@@ -497,6 +497,8 @@ public class OutlinePage extends ContentOutlinePage
                 element = vi.getUiViewNode();
             }
 
+            Image image = getImage(element);
+
             if (element instanceof UiElementNode) {
                 UiElementNode node = (UiElementNode) element;
                 styledString = node.getStyledDescription();
@@ -549,6 +551,7 @@ public class OutlinePage extends ContentOutlinePage
                 if (includedWithin != null) {
                     styledString = new StyledString();
                     styledString.append(includedWithin.getDisplayName(), QUALIFIER_STYLER);
+                    image = IconFactory.getInstance().getIcon(LayoutDescriptors.VIEW_INCLUDE);
                 }
             }
 
@@ -559,7 +562,7 @@ public class OutlinePage extends ContentOutlinePage
 
            cell.setText(styledString.toString());
            cell.setStyleRanges(styledString.getStyleRanges());
-           cell.setImage(getImage(element));
+           cell.setImage(image);
            super.update(cell);
        }
 

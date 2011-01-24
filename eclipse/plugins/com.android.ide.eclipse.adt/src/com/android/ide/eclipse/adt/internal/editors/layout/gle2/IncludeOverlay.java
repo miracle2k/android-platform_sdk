@@ -35,7 +35,7 @@ import java.util.List;
  */
 public class IncludeOverlay extends Overlay {
     /** Mask transparency - 0 is transparent, 255 is opaque */
-    private static final int MASK_TRANSPARENCY = 208;
+    private static final int MASK_TRANSPARENCY = 160;
 
     /** The associated {@link LayoutCanvas}. */
     private LayoutCanvas mCanvas;

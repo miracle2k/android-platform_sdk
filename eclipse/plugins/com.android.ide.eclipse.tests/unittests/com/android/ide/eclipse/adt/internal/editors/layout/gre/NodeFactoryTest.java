@@ -48,7 +48,7 @@ public class NodeFactoryTest extends TestCase {
         ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
         ViewInfo lvi = new ViewInfo("name", uiv, 10, 12, 110, 120);
-        CanvasViewInfo cvi = CanvasViewInfo.create(lvi);
+        CanvasViewInfo cvi = CanvasViewInfo.create(lvi).getFirst();
 
         // Create a NodeProxy.
         NodeProxy proxy = m.create(cvi);
@@ -95,7 +95,7 @@ public class NodeFactoryTest extends TestCase {
         ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
         ViewInfo lvi = new ViewInfo("name", uiv, 10, 12, 110, 120);
-        CanvasViewInfo cvi = CanvasViewInfo.create(lvi);
+        CanvasViewInfo cvi = CanvasViewInfo.create(lvi).getFirst();
 
         // NodeProxies are cached. Creating the same one twice returns the same proxy.
         NodeProxy proxy1 = m.create(cvi);
@@ -107,7 +107,7 @@ public class NodeFactoryTest extends TestCase {
         ViewElementDescriptor ved = new ViewElementDescriptor("xml", "com.example.MyJavaClass");
         UiViewElementNode uiv = new UiViewElementNode(ved);
         ViewInfo lvi = new ViewInfo("name", uiv, 10, 12, 110, 120);
-        CanvasViewInfo cvi = CanvasViewInfo.create(lvi);
+        CanvasViewInfo cvi = CanvasViewInfo.create(lvi).getFirst();
 
         // NodeProxies are cached. Creating the same one twice returns the same proxy.
         NodeProxy proxy1 = m.create(cvi);
