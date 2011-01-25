@@ -278,52 +278,60 @@ public class BuildHelper {
             writeStandardResources(apkBuilder, javaProject, referencedJavaProjects);
 
             // Now we write the standard resources from the external jars
-            for (String libraryOsPath : getExternalJars(resMarker)) {
-                JarStatus jarStatus = apkBuilder.addResourcesFromJar(new File(libraryOsPath));
+            for (String libraryOsPath : getExternalDependencies(resMarker)) {
+                File libFile = new File(libraryOsPath);
+                if (libFile.isFile()) {
+                    JarStatus jarStatus = apkBuilder.addResourcesFromJar(new File(libraryOsPath));
 
-                // check if we found native libraries in the external library. This
-                // constitutes an error or warning depending on if they are in lib/
-                if (jarStatus.getNativeLibs().size() > 0) {
-                    String libName = new File(libraryOsPath).getName();
+                    // check if we found native libraries in the external library. This
+                    // constitutes an error or warning depending on if they are in lib/
+                    if (jarStatus.getNativeLibs().size() > 0) {
+                        String libName = new File(libraryOsPath).getName();
 
-                    String msg = String.format(
-                            "Native libraries detected in '%1$s'. See console for more information.",
-                            libName);
+                        String msg = String.format(
+                                "Native libraries detected in '%1$s'. See console for more information.",
+                                libName);
 
-                    ArrayList<String> consoleMsgs = new ArrayList<String>();
+                        ArrayList<String> consoleMsgs = new ArrayList<String>();
 
-                    consoleMsgs.add(String.format(
-                            "The library '%1$s' contains native libraries that will not run on the device.",
-                            libName));
+                        consoleMsgs.add(String.format(
+                                "The library '%1$s' contains native libraries that will not run on the device.",
+                                libName));
 
-                    if (jarStatus.hasNativeLibsConflicts()) {
-                        consoleMsgs.add("Additionally some of those libraries will interfer with the installation of the application because of their location in lib/");
-                        consoleMsgs.add("lib/ is reserved for NDK libraries.");
-                    }
-
-                    consoleMsgs.add("The following libraries were found:");
-
-                    for (String lib : jarStatus.getNativeLibs()) {
-                        consoleMsgs.add(" - " + lib);
-                    }
-
-                    String[] consoleStrings = consoleMsgs.toArray(new String[consoleMsgs.size()]);
-
-                    // if there's a conflict or if the prefs force error on any native code in jar
-                    // files, throw an exception
-                    if (jarStatus.hasNativeLibsConflicts() ||
-                            AdtPrefs.getPrefs().getBuildForceErrorOnNativeLibInJar()) {
-                        throw new NativeLibInJarException(jarStatus, msg, libName, consoleStrings);
-                    } else {
-                        // otherwise, put a warning, and output to the console also.
-                        if (resMarker != null) {
-                            resMarker.setWarning(mProject, msg);
+                        if (jarStatus.hasNativeLibsConflicts()) {
+                            consoleMsgs.add("Additionally some of those libraries will interfer with the installation of the application because of their location in lib/");
+                            consoleMsgs.add("lib/ is reserved for NDK libraries.");
                         }
 
-                        for (String string : consoleStrings) {
-                            mOutStream.println(string);
+                        consoleMsgs.add("The following libraries were found:");
+
+                        for (String lib : jarStatus.getNativeLibs()) {
+                            consoleMsgs.add(" - " + lib);
+                        }
+
+                        String[] consoleStrings = consoleMsgs.toArray(new String[consoleMsgs.size()]);
+
+                        // if there's a conflict or if the prefs force error on any native code in jar
+                        // files, throw an exception
+                        if (jarStatus.hasNativeLibsConflicts() ||
+                                AdtPrefs.getPrefs().getBuildForceErrorOnNativeLibInJar()) {
+                            throw new NativeLibInJarException(jarStatus, msg, libName, consoleStrings);
+                        } else {
+                            // otherwise, put a warning, and output to the console also.
+                            if (resMarker != null) {
+                                resMarker.setWarning(mProject, msg);
+                            }
+
+                            for (String string : consoleStrings) {
+                                mOutStream.println(string);
+                            }
                         }
                     }
+                } else if (libFile.isDirectory()) {
+                    // this is technically not a source folder (class folder instead) but since we
+                    // only care about Java resources (ie non class/java files) this will do the
+                    // same
+                    apkBuilder.addSourceFolder(libFile);
                 }
             }
 
@@ -386,7 +394,7 @@ public class BuildHelper {
             throws CoreException {
 
         // get the list of libraries to include with the source code
-        String[] libraries = getExternalJars(resMarker);
+        String[] libraries = getExternalDependencies(resMarker);
 
         int startIndex = 0;
 
@@ -772,10 +780,13 @@ public class BuildHelper {
     }
 
     /**
-     * Returns an array of external jar files used by the project.
+     * Returns an array of external dependencies used the project. This can be paths to jar files
+     * or to source folders.
+     *
+     * @param resMarker if non null, used to put Resource marker on problem files.
      * @return an array of OS-specific absolute file paths
      */
-    private final String[] getExternalJars(ResourceMarker resMarker) {
+    private final String[] getExternalDependencies(ResourceMarker resMarker) {
         // get a java project from it
         IJavaProject javaProject = JavaCore.create(mProject);
 
@@ -795,9 +806,9 @@ public class BuildHelper {
                     // get the IPath
                     IPath path = e.getPath();
 
-                    // check the name ends with .jar
+                    IResource resource = wsRoot.findMember(path);
+                    // case of a jar file (which could be relative to the workspace or a full path)
                     if (AndroidConstants.EXT_JAR.equalsIgnoreCase(path.getFileExtension())) {
-                        IResource resource = wsRoot.findMember(path);
                         if (resource != null && resource.exists() &&
                                 resource.getType() == IResource.FILE) {
                             oslibraryList.add(resource.getLocation().toOSString());
@@ -807,7 +818,7 @@ public class BuildHelper {
                             String osFullPath = path.toOSString();
 
                             File f = new File(osFullPath);
-                            if (f.exists()) {
+                            if (f.isFile()) {
                                 oslibraryList.add(osFullPath);
                             } else {
                                 String message = String.format( Messages.Couldnt_Locate_s_Error,
@@ -819,6 +830,21 @@ public class BuildHelper {
                                 if (resMarker != null) {
                                     resMarker.setWarning(mProject, message);
                                 }
+                            }
+                        }
+                    } else {
+                        // this can be the case for a class folder.
+                        if (resource != null && resource.exists() &&
+                                resource.getType() == IResource.FOLDER) {
+                            oslibraryList.add(resource.getLocation().toOSString());
+                        } else {
+                            // if the path doesn't match a workspace resource,
+                            // then we get an OSString and check if this links to a valid folder.
+                            String osFullPath = path.toOSString();
+
+                            File f = new File(osFullPath);
+                            if (f.isDirectory()) {
+                                oslibraryList.add(osFullPath);
                             }
                         }
                     }
