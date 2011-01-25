@@ -21,6 +21,8 @@ import com.android.ide.common.rendering.api.Result;
 import com.android.ide.common.rendering.api.ViewInfo;
 
 import java.awt.image.BufferedImage;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Static {@link RenderSession} returning a given {@link Result}, {@link ViewInfo} and
@@ -35,12 +37,12 @@ import java.awt.image.BufferedImage;
 public class StaticRenderSession extends RenderSession {
 
     private final Result mResult;
-    private final ViewInfo mRootViewInfo;
+    private final List<ViewInfo> mRootViewInfo;
     private final BufferedImage mImage;
 
     public StaticRenderSession(Result result, ViewInfo rootViewInfo, BufferedImage image) {
         mResult = result;
-        mRootViewInfo = rootViewInfo;
+        mRootViewInfo = Collections.singletonList(rootViewInfo);
         mImage = image;
     }
 
@@ -50,7 +52,7 @@ public class StaticRenderSession extends RenderSession {
     }
 
     @Override
-    public ViewInfo getRootView() {
+    public List<ViewInfo> getRootViews() {
         return mRootViewInfo;
     }
 

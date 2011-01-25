@@ -225,6 +225,7 @@ public class LayoutLibrary {
      * Initializes the Layout Library object. This must be called before any other action is taken
      * on the instance.
      *
+     * @param platformProperties The build properties for the platform.
      * @param fontLocation the location of the fonts in the SDK target.
      * @param enumValueMap map attrName => { map enumFlagName => Integer value }. This is typically
      *          read from attrs.xml in the SDK target.
@@ -233,10 +234,12 @@ public class LayoutLibrary {
      *
      * @see Bridge#init(String, Map)
      */
-    public boolean init(File fontLocation, Map<String, Map<String, Integer>> enumValueMap,
+    public boolean init(Map<String, String> platformProperties,
+            File fontLocation, Map<String,
+            Map<String, Integer>> enumValueMap,
             LayoutLog log) {
         if (mBridge != null) {
-            return mBridge.init(fontLocation, enumValueMap, log);
+            return mBridge.init(platformProperties, fontLocation, enumValueMap, log);
         } else if (mLegacyBridge != null) {
             return mLegacyBridge.init(fontLocation.getAbsolutePath(), enumValueMap);
         }

@@ -253,6 +253,7 @@ public class AndroidTargetData {
     public synchronized LayoutLibrary getLayoutLibrary() {
         if (mLayoutBridgeInit == false && mLayoutLibrary.getStatus() == LoadStatus.LOADED) {
             mLayoutLibrary.init(
+                    mTarget.getProperties(),
                     new File(mTarget.getPath(IAndroidTarget.FONTS)),
                     getEnumValueMap(),
                     new LayoutLog() {

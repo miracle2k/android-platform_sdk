@@ -795,7 +795,14 @@ public class PaletteControl extends Composite {
                     if (image != null) {
                         BufferedImage cropped;
                         Rect initialCrop = null;
-                        ViewInfo viewInfo = session.getRootView();
+                        ViewInfo viewInfo = null;
+
+                        List<ViewInfo> viewInfoList = session.getRootViews();
+
+                        if (viewInfoList != null && viewInfoList.size() > 0) {
+                            viewInfo = viewInfoList.get(0);
+                        }
+
                         if (viewInfo != null) {
                             int x1 = viewInfo.getLeft();
                             int x2 = viewInfo.getRight();

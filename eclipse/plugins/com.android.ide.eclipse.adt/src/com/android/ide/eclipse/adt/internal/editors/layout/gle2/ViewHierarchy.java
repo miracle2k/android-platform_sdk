@@ -140,7 +140,14 @@ public class ViewHierarchy {
         mIncludedBounds = null;
 
         if (mIsResultValid && session != null) {
-            ViewInfo root = session.getRootView();
+            ViewInfo root = null;
+
+            List<ViewInfo> rootList = session.getRootViews();
+
+            if (rootList != null && rootList.size() > 0) {
+                root = rootList.get(0);
+            }
+
             if (root == null) {
                 mLastValidViewInfoRoot = null;
             } else {
