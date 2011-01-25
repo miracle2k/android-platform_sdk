@@ -60,9 +60,10 @@ public class AndroidPrintStream extends PrintStream {
         String tag = getMessageTag(mProject != null ? mProject.getName() : null);
 
         print(tag);
-        print(": ");
+        print(" "); //$NON-NLS-1$
         if (mPrefix != null) {
             print(mPrefix);
+            print(" "); //$NON-NLS-1$
         }
 
         // then write the regular message
