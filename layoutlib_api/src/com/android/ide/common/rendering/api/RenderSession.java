@@ -21,6 +21,7 @@ import static com.android.ide.common.rendering.api.Result.Status.NOT_IMPLEMENTED
 import com.android.ide.common.rendering.api.Result.Status;
 
 import java.awt.image.BufferedImage;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,16 +43,20 @@ public class RenderSession {
     }
 
     /**
-     * Returns the {@link ViewInfo} object for the top level view.
-     * <p>
-     *
+     * Returns the {@link ViewInfo} objects for the top level views.
+     * <p/>
+     * In most case the list will only contain one item. If the top level node is {@code merge}
+     * though then it will contain all the items under the {@code merge} tag.
+     * <p/>
      * This is reset to a new instance every time {@link #render()} is called and can be
      * <code>null</code> if the call failed (and the method returned a {@link Result} with
      * {@link Status#ERROR_UNKNOWN} or {@link Status#NOT_IMPLEMENTED}.
      * <p/>
      * This can be safely modified by the caller.
+     *
+     * @return the list of {@link ViewInfo} or null if there aren't any.
      */
-    public ViewInfo getRootView() {
+    public List<ViewInfo> getRootViews() {
         return null;
     }
 
