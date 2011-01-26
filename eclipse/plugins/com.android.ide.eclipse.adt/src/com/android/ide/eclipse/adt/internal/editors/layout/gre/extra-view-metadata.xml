@@ -19,6 +19,8 @@
 <!ATTLIST view
     class CDATA #REQUIRED
     previewXml CDATA #IMPLIED
+    skip (true|false) "false"
+    render (alone|skip|normal) "normal"
     fill ( none|both|width|height|opposite|
           width_in_vertical|height_in_horizontal) "none"
 >
@@ -41,60 +43,62 @@
         <view class="android.widget.RatingBar" />
         <view class="android.widget.SeekBar" fill="width_in_vertical" />
     </category>
+    <category name="Layouts">
+        <view class="android.widget.LinearLayout" fill="opposite" render="skip"/>
+        <view class="android.widget.RelativeLayout" fill="opposite" render="skip"/>
+        <view class="android.widget.FrameLayout" fill="opposite" render="skip"/>
+        <view class="android.widget.AbsoluteLayout" fill="opposite" render="skip"/>
+        <view class="android.widget.TableLayout" fill="opposite" render="skip"/>
+        <view class="android.widget.TableRow" fill="opposite" render="skip"/>
+    </category>
     <category name="Composite">
-        <view class="android.widget.ListView" fill="width_in_vertical" />
-        <view class="android.widget.ExpandableListView" fill="width_in_vertical" />
-        <view class="android.widget.TwoLineListItem" />
-        <view class="android.widget.GridView" fill="opposite"/>
-        <view class="android.widget.ScrollView" fill="opposite"/>
-        <view class="android.widget.HorizontalScrollView" />
-        <view class="android.widget.SearchView" />
-        <view class="android.widget.SlidingDrawer" />
-        <view class="android.widget.TabHost" fill="width_in_vertical" />
-        <view class="android.widget.TabWidget" />
-        <view class="android.webkit.WebView" fill="opposite"/>
+        <view class="android.widget.ListView" fill="width_in_vertical"  render="skip"/>
+        <view class="android.widget.ExpandableListView" fill="width_in_vertical"  render="skip"/>
+        <view class="android.widget.TwoLineListItem"  render="skip"/>
+        <view class="android.widget.GridView" fill="opposite" render="skip"/>
+        <view class="android.widget.ScrollView" fill="opposite" render="skip"/>
+        <view class="android.widget.HorizontalScrollView" render="skip"/>
+        <view class="android.widget.SearchView" render="skip"/>
+        <view class="android.widget.SlidingDrawer"/>
+        <view class="android.widget.TabHost" fill="width_in_vertical" render="alone" />
+        <view class="android.widget.TabWidget" render="alone" />
+        <view class="android.webkit.WebView" fill="opposite" render="skip" />
     </category>
     <category name="Images &amp; Media">
         <view class="android.widget.ImageView" />
         <view class="android.widget.ImageButton" />
-        <view class="android.widget.Gallery" fill="width_in_vertical" />
-        <view class="android.widget.MediaController" />
-        <view class="android.widget.VideoView"  fill="opposite" />
-    </category>
-    <category name="Layouts">
-        <view class="android.widget.LinearLayout" fill="opposite"/>
-        <view class="android.widget.RelativeLayout" fill="opposite"/>
-        <view class="android.widget.FrameLayout" fill="opposite"/>
-        <view class="android.widget.AbsoluteLayout" fill="opposite"/>
-        <view class="android.widget.TableLayout" fill="opposite"/>
-        <view class="android.widget.TableRow" fill="opposite"/>
+        <view class="android.widget.Gallery" fill="width_in_vertical" render="skip"/>
+        <view class="android.widget.MediaController" render="skip"/>
+        <view class="android.widget.VideoView" fill="opposite" render="skip"/>
     </category>
     <category name="Time &amp; Date">
-        <view class="android.widget.TimePicker" />
-        <view class="android.widget.DatePicker" />
+        <view class="android.widget.TimePicker" render="alone"/>
+        <view class="android.widget.DatePicker" render="alone"/>
         <view class="android.widget.CalendarView" />
         <view class="android.widget.Chronometer" />
         <view class="android.widget.AnalogClock" />
         <view class="android.widget.DigitalClock" />
     </category>
     <category name="Transitions">
-        <view class="android.widget.ImageSwitcher" />
-        <view class="android.widget.AdapterViewFlipper" fill="opposite"/>
-        <view class="android.widget.StackView" fill="opposite"/>
-        <view class="android.widget.TextSwitcher" fill="opposite"/>
-        <view class="android.widget.ViewAnimator" fill="opposite"/>
-        <view class="android.widget.ViewFlipper" fill="opposite"/>
-        <view class="android.widget.ViewSwitcher" fill="opposite"/>
+        <view class="android.widget.ImageSwitcher" render="skip"/>
+        <view class="android.widget.AdapterViewFlipper" fill="opposite" render="skip"/>
+        <view class="android.widget.StackView" fill="opposite" render="skip"/>
+        <view class="android.widget.TextSwitcher" fill="opposite" render="skip"/>
+        <view class="android.widget.ViewAnimator" fill="opposite" render="skip"/>
+        <view class="android.widget.ViewFlipper" fill="opposite" render="skip"/>
+        <view class="android.widget.ViewSwitcher" fill="opposite" render="skip"/>
     </category>
     <category name="Advanced">
-        <view class="android.view.View" />
-        <view class="android.view.ViewStub" />
-        <view class="android.gesture.GestureOverlayView" />
-        <view class="android.view.SurfaceView" />
-        <view class="android.widget.NumberPicker" />
-        <view class="android.widget.ZoomButton" />
-        <view class="android.widget.ZoomControls" />
-        <view class="android.widget.DialerFilter" fill="width_in_vertical" />
+        <view class="android.view.View" render="skip"/>
+        <view class="android.view.ViewStub" render="skip"/>
+        <view class="android.gesture.GestureOverlayView" render="skip"/>
+        <view class="android.view.SurfaceView" render="skip"/>
+        <view class="android.widget.NumberPicker" render="alone"/>
+        <view class="android.widget.ZoomButton"/>
+        <view class="android.widget.ZoomControls"/>
+        <view class="include" skip="true" render="skip"/>
+        <view class="merge" skip="true" render="skip"/>
+        <view class="android.widget.DialerFilter" fill="width_in_vertical" render="skip"/>
     </category>
     <category name="Other">
         <!--  This is the catch-all category which contains unknown views if we encounter any -->

@@ -17,8 +17,10 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
 import static com.android.ide.common.api.IViewMetadata.FillPreference.NONE;
-import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_INCLUDE;
-import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_MERGE;
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.ID_PREFIX;
+import static com.android.ide.common.layout.LayoutConstants.NEW_ID_PREFIX;
 
 import com.android.ide.common.api.IViewMetadata.FillPreference;
 import com.android.ide.eclipse.adt.AdtPlugin;
@@ -52,6 +54,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
  * classes
  */
 public class ViewMetadataRepository {
+    private static final String PREVIEW_CONFIG_FILENAME = "rendering-configs.xml";  //$NON-NLS-1$
+    private static final String METADATA_FILENAME = "extra-view-metadata.xml";  //$NON-NLS-1$
+
     /** Singleton instance */
     private static ViewMetadataRepository sInstance = new ViewMetadataRepository();
 
@@ -103,18 +108,96 @@ public class ViewMetadataRepository {
         return mClassToView;
     }
 
+    /**
+     * Returns an XML document containing rendering configurations for the various Android
+     * views. The FQN of each view can be obtained via the
+     * {@link #getFullClassName(Element)} method
+     *
+     * @return an XML document containing rendering elements
+     */
+    public Document getRenderingConfigDoc() {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        Class<ViewMetadataRepository> clz = ViewMetadataRepository.class;
+        InputStream paletteStream = clz.getResourceAsStream(PREVIEW_CONFIG_FILENAME);
+        InputSource is = new InputSource(paletteStream);
+        try {
+            factory.setNamespaceAware(true);
+            factory.setValidating(false);
+            factory.setIgnoringElementContentWhitespace(true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            return builder.parse(is);
+        } catch (Exception e) {
+            AdtPlugin.log(e, "Parsing palette file failed");
+            return null;
+        }
+    }
+
+    /**
+     * Returns a fully qualified class name for an element in the rendering document
+     * returned by {@link #getRenderingConfigDoc()}
+     *
+     * @param element the element to look up the fqcn for
+     * @return the fqcn of the view the element represents a preview for
+     */
+    public String getFullClassName(Element element) {
+        // We don't use the element tag name, because in some cases we have
+        // an outer element to render some interesting inner element, such as a tab widget
+        // (which must be rendered inside a tab host).
+        //
+        // Therefore, we instead use the convention that the id is the fully qualified
+        // class name, with .'s replaced with _'s.
+
+
+        // Special case: for tab host we aren't allowed to mess with the id
+
+        String id = element.getAttributeNS(ANDROID_URI, ATTR_ID);
+
+        if ("@android:id/tabhost".equals(id)) {
+            // Special case to distinguish TabHost and TabWidget
+            NodeList children = element.getChildNodes();
+            if (children.getLength() > 1 && (children.item(1) instanceof Element)) {
+                Element child = (Element) children.item(1);
+                String childId = child.getAttributeNS(ANDROID_URI, ATTR_ID);
+                if ("@+id/android_widget_TabWidget".equals(childId)) {
+                    return "android.widget.TabWidget"; // TODO: Tab widget!
+                }
+            }
+            return "android.widget.TabHost"; // TODO: Tab widget!
+        }
+
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        if (id.startsWith(NEW_ID_PREFIX)) {
+            i = NEW_ID_PREFIX.length();
+        } else if (id.startsWith(ID_PREFIX)) {
+            i = ID_PREFIX.length();
+        }
+
+        for (; i < id.length(); i++) {
+            char c = id.charAt(i);
+            if (c == '_') {
+                sb.append('.');
+            } else {
+                sb.append(c);
+            }
+        }
+
+        return sb.toString();
+    }
+
     /** Returns an ordered list of categories and views, parsed from a metadata file */
     private List<CategoryData> getCategories() {
         if (mCategories == null) {
             mCategories = new ArrayList<CategoryData>();
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            String fileName = "extra-view-metadata.xml"; //$NON-NLS-1$
-            InputStream inputStream = ViewMetadataRepository.class.getResourceAsStream(fileName);
+            Class<ViewMetadataRepository> clz = ViewMetadataRepository.class;
+            InputStream inputStream = clz.getResourceAsStream(METADATA_FILENAME);
             InputSource is = new InputSource(new BufferedInputStream(inputStream));
             try {
                 factory.setNamespaceAware(true);
                 factory.setValidating(false);
+                factory.setIgnoringElementContentWhitespace(true);
                 DocumentBuilder builder = factory.newDocumentBuilder();
                 Document document = builder.parse(is);
                 Map<String, FillPreference> fillTypes = new HashMap<String, FillPreference>();
@@ -144,7 +227,15 @@ public class ViewMetadataRepository {
                                     if (fillPreference == null) {
                                         fillPreference = NONE;
                                     }
-                                    ViewData view = new ViewData(category, fqcn, fillPreference);
+                                    String skip = child.getAttribute("skip"); //$NON-NLS-1$
+                                    RenderMode mode = RenderMode.NORMAL;
+                                    String render = child.getAttribute("render"); //$NON-NLS-1$
+                                    if (render.length() > 0) {
+                                        mode = RenderMode.get(render);
+                                    }
+                                    ViewData view = new ViewData(category, fqcn, fillPreference,
+                                            skip.length() == 0 ? false : Boolean.valueOf(skip),
+                                            mode);
                                     category.addView(view);
                                 }
                             }
@@ -166,11 +257,13 @@ public class ViewMetadataRepository {
      * available node descriptors, categorizing and sorting them.
      *
      * @param targetData the target data for which to compute palette entries
+     * @param alphabetical if true, sort all items in alphabetical order
+     * @param createCategories if true, organize the items into categories
      * @return a list of pairs where each pair contains of the category label and an
      *         ordered list of elements to be included in that category
      */
     public List<Pair<String, List<ViewElementDescriptor>>> getPaletteEntries(
-            AndroidTargetData targetData) {
+            AndroidTargetData targetData, boolean alphabetical, boolean createCategories) {
         List<Pair<String, List<ViewElementDescriptor>>> result =
             new ArrayList<Pair<String, List<ViewElementDescriptor>>>();
 
@@ -194,17 +287,12 @@ public class ViewMetadataRepository {
 
         for (List<ViewElementDescriptor> list : lists) {
             for (ViewElementDescriptor view : list) {
-                String name = view.getXmlLocalName();
-
-                // Exclude the <include> and <merge> tags from the View palette.
-                // We don't have drop support for it right now, although someday we should.
-                if (VIEW_INCLUDE.equals(name) || VIEW_MERGE.equals(name)) {
-                    continue;
-                }
-
                 ViewData viewData = getClassToView().get(view.getFullClassName());
                 CategoryData category = other;
                 if (viewData != null) {
+                    if (viewData.getSkip()) {
+                        continue;
+                    }
                     category = viewData.getCategory();
                 }
 
@@ -218,6 +306,18 @@ public class ViewMetadataRepository {
             }
         }
 
+        if (!createCategories) {
+            // Squash all categories into a single one, "Views"
+            Map<CategoryData, List<ViewElementDescriptor>> singleCategory =
+                new HashMap<CategoryData, List<ViewElementDescriptor>>();
+            List<ViewElementDescriptor> items = new ArrayList<ViewElementDescriptor>(100);
+            for (Map.Entry<CategoryData, List<ViewElementDescriptor>> entry : categories.entrySet()) {
+                items.addAll(entry.getValue());
+            }
+            singleCategory.put(new CategoryData("Views"), items);
+            categories = singleCategory;
+        }
+
         for (Map.Entry<CategoryData, List<ViewElementDescriptor>> entry : categories.entrySet()) {
             String name = entry.getKey().getName();
             List<ViewElementDescriptor> items = entry.getValue();
@@ -226,38 +326,43 @@ public class ViewMetadataRepository {
             }
 
             // Natural sort of the descriptors
-            Comparator<ViewElementDescriptor> comparator = new Comparator<ViewElementDescriptor>() {
-                public int compare(ViewElementDescriptor v1, ViewElementDescriptor v2) {
-                    String fqcn1 = v1.getFullClassName();
-                    String fqcn2 = v2.getFullClassName();
-                    if (fqcn1 == null) {
-                        // <view> and <merge> tags etc
-                        fqcn1 = v1.getUiName();
-                    }
-                    if (fqcn2 == null) {
-                        fqcn2 = v2.getUiName();
-                    }
-                    ViewData d1 = viewMap.get(fqcn1);
-                    ViewData d2 = viewMap.get(fqcn2);
+            if (alphabetical) {
+                Collections.sort(items);
+            } else {
+                Collections.sort(items, new Comparator<ViewElementDescriptor>() {
+                    public int compare(ViewElementDescriptor v1, ViewElementDescriptor v2) {
+                        String fqcn1 = v1.getFullClassName();
+                        String fqcn2 = v2.getFullClassName();
+                        if (fqcn1 == null) {
+                            // <view> and <merge> tags etc
+                            fqcn1 = v1.getUiName();
+                        }
+                        if (fqcn2 == null) {
+                            fqcn2 = v2.getUiName();
+                        }
+                        ViewData d1 = viewMap.get(fqcn1);
+                        ViewData d2 = viewMap.get(fqcn2);
 
-                    // Use natural sorting order of the view data
-                    // Sort unknown views to the end (and alphabetically among themselves)
-                    if (d1 != null) {
-                        if (d2 != null) {
-                            return d1.getOrdinal() - d2.getOrdinal();
+                        // Use natural sorting order of the view data
+                        // Sort unknown views to the end (and alphabetically among themselves)
+                        if (d1 != null) {
+                            if (d2 != null) {
+                                return d1.getOrdinal() - d2.getOrdinal();
+                            } else {
+                                return 1;
+                            }
                         } else {
-                            return 1;
-                        }
-                    } else {
-                        if (d2 == null) {
-                            return v1.getUiName().compareTo(v2.getUiName());
-                        } else {
-                            return -1;
+                            if (d2 == null) {
+                                return v1.getUiName().compareTo(v2.getUiName());
+                            } else {
+                                return -1;
+                            }
                         }
                     }
-                }
-            };
-            Collections.sort(items, comparator);
+                });
+            }
+
+
             result.add(Pair.of(name, items));
         }
 
@@ -315,15 +420,22 @@ public class ViewMetadataRepository {
         private final FillPreference mFillPreference;
         /** The category that the view belongs to */
         private final CategoryData mCategory;
+        /** Skip this item in the palette? */
+        private final boolean mSkip;
+        /** Must this item be rendered alone? skipped? etc */
+        private final RenderMode mRenderMode;
         /** The relative rank of the view for natural ordering */
         private final int mOrdinal = sNextOrdinal++;
 
         /** Constructs a new view data for the given class */
-        private ViewData(CategoryData category, String fqcn, FillPreference fillPreference) {
+        private ViewData(CategoryData category, String fqcn,
+                FillPreference fillPreference, boolean skip, RenderMode renderMode) {
             super();
             mCategory = category;
             mFqcn = fqcn;
             mFillPreference = fillPreference;
+            mSkip = skip;
+            mRenderMode = renderMode;
         }
 
         /** Returns the category for views of this type */
@@ -350,6 +462,14 @@ public class ViewMetadataRepository {
         public int compareTo(ViewData other) {
             return mOrdinal - other.mOrdinal;
         }
+
+        public RenderMode getRenderMode() {
+            return mRenderMode;
+        }
+
+        public boolean getSkip() {
+            return mSkip;
+        }
     }
 
     /**
@@ -366,5 +486,63 @@ public class ViewMetadataRepository {
         }
 
         return FillPreference.NONE;
+    }
+
+    /**
+     * Returns the {@link RenderMode} for classes with the given fully qualified class
+     * name
+     *
+     * @param fqcn the fully qualified class name
+     * @return the {@link RenderMode} to use for previews of the given view type
+     */
+    public RenderMode getRenderMode(String fqcn) {
+        ViewData view = getClassToView().get(fqcn);
+        if (view != null) {
+            return view.getRenderMode();
+        }
+
+        return RenderMode.ALONE;
+    }
+
+    /**
+     * Returns true if classes with the given fully qualified class name should be hidden
+     * or skipped from the palette
+     *
+     * @param fqcn the fully qualified class name
+     * @return true if views of the given type should be hidden from the palette
+     */
+    public boolean getSkip(String fqcn) {
+        ViewData view = getClassToView().get(fqcn);
+        if (view != null) {
+            return view.getSkip();
+        }
+
+        return false;
+    }
+
+    /** Render mode for palette preview */
+    public enum RenderMode {
+        /**
+         * Render previews, and it can be rendered as a sibling of many other views in a
+         * big linear layout
+         */
+        NORMAL,
+        /** This view needs to be rendered alone */
+        ALONE,
+        /**
+         * Skip this element; it doesn't work or does not produce any visible artifacts
+         * (such as the basic layouts)
+         */
+        SKIP;
+
+        public static RenderMode get(String render) {
+            if ("alone".equals(render)) {
+                return ALONE;
+            } else if ("skip".equals(render)) {
+                return SKIP;
+            } else {
+                return NORMAL;
+            }
+        }
     }
 }

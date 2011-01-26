@@ -28,10 +28,10 @@ import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.Params;
+import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.Result;
-import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
@@ -42,14 +42,14 @@ import com.android.ide.eclipse.adt.internal.editors.layout.ContextPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.ExplodedRenderingHelper;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor;
-import com.android.ide.eclipse.adt.internal.editors.layout.ProjectCallback;
-import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ChangeFlags;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ILayoutReloadListener;
+import com.android.ide.eclipse.adt.internal.editors.layout.ProjectCallback;
+import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
-import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomButton;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
+import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.ui.DecorComposite;
@@ -683,6 +683,8 @@ public class GraphicalEditorPart extends EditorPart
                             mEditedFile.getName());
                 }
             }
+
+            reloadPalette();
         }
 
         public void onThemeChange() {
@@ -690,6 +692,8 @@ public class GraphicalEditorPart extends EditorPart
             mConfigComposite.storeState();
 
             recomputeLayout();
+
+            reloadPalette();
         }
 
         public void onCreate() {
@@ -710,6 +714,8 @@ public class GraphicalEditorPart extends EditorPart
         public void onRenderingTargetPostChange(IAndroidTarget target) {
             AndroidTargetData targetData = Sdk.getCurrent().getTargetData(target);
             updateCapabilities(targetData);
+
+            mPalette.reloadPalette(target);
         }
 
         public Map<String, Map<String, ResourceValue>> getConfiguredFrameworkResources() {
@@ -1222,8 +1228,8 @@ public class GraphicalEditorPart extends EditorPart
                     computeAndSetRealScale(false /* redraw */);
                 }
 
-                IProject iProject = mEditedFile.getProject();
-                renderWithBridge(iProject, model, layoutLib);
+                IProject project = mEditedFile.getProject();
+                renderWithBridge(project, model, layoutLib);
             }
         } finally {
             // no matter the result, we are done doing the recompute based on the latest
@@ -1234,7 +1240,10 @@ public class GraphicalEditorPart extends EditorPart
 
     public void reloadPalette() {
         if (mPalette != null) {
-            mPalette.reloadPalette(mLayoutEditor.getTargetData());
+            IAndroidTarget renderingTarget = getRenderingTarget();
+            if (renderingTarget != null) {
+                mPalette.reloadPalette(renderingTarget);
+            }
         }
     }
 
@@ -1253,11 +1262,12 @@ public class GraphicalEditorPart extends EditorPart
      *            normal background requested by the theme, and it will instead paint the
      *            background using a fully transparent background color
      * @param logger a logger where rendering errors are reported
+     * @param renderingMode the {@link RenderingMode} to use for rendering
      * @return the resulting rendered image wrapped in an {@link RenderSession}
      */
     public RenderSession render(UiDocumentNode model, int width, int height,
             Set<UiElementNode> explodeNodes, boolean transparentBackground,
-            LayoutLog logger) {
+            LayoutLog logger, RenderingMode renderingMode) {
         if (!ensureFileValid()) {
             return null;
         }
@@ -1268,7 +1278,7 @@ public class GraphicalEditorPart extends EditorPart
 
         IProject iProject = mEditedFile.getProject();
         return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes,
-                transparentBackground, logger);
+                transparentBackground, logger, null /* includeWithin */, renderingMode);
     }
 
     /**
@@ -1490,8 +1500,20 @@ public class GraphicalEditorPart extends EditorPart
 
         RenderLogger logger = new RenderLogger(mEditedFile.getName());
 
+        RenderingMode renderingMode = RenderingMode.NORMAL;
+        if (mClippingButton.getSelection() == false) {
+            renderingMode = RenderingMode.FULL_EXPAND;
+        } else {
+            // FIXME set the rendering mode using ViewRule or something.
+            List<UiElementNode> children = model.getUiChildren();
+            if (children.size() > 0 &&
+                    children.get(0).getDescriptor().getXmlLocalName().equals(SCROLL_VIEW)) {
+                renderingMode = RenderingMode.V_SCROLL;
+            }
+        }
+
         RenderSession session = renderWithBridge(iProject, model, layoutLib, width, height,
-                explodeNodes, false, logger);
+                explodeNodes, false, logger, mIncludedWithin, renderingMode);
 
         canvas.setSession(session, explodeNodes);
 
@@ -1533,7 +1555,8 @@ public class GraphicalEditorPart extends EditorPart
 
     private RenderSession renderWithBridge(IProject iProject, UiDocumentNode model,
             LayoutLibrary layoutLib, int width, int height, Set<UiElementNode> explodeNodes,
-            boolean transparentBackground, LayoutLog logger) {
+            boolean transparentBackground, LayoutLog logger, Reference includeWithin,
+            RenderingMode renderingMode) {
         ResourceManager resManager = ResourceManager.getInstance();
 
         ProjectResources projectRes = resManager.getProjectResources(iProject);
@@ -1606,8 +1629,8 @@ public class GraphicalEditorPart extends EditorPart
         // Code to support editing included layout
 
         // Outer layout name:
-        if (mIncludedWithin != null) {
-            String contextLayoutName = mIncludedWithin.getName();
+        if (includeWithin != null) {
+            String contextLayoutName = includeWithin.getName();
 
             // Find the layout file.
             Map<String, ResourceValue> layouts = configuredProjectRes.get(
@@ -1629,18 +1652,6 @@ public class GraphicalEditorPart extends EditorPart
                         // this will not happen since we check above.
                     }
                 }
-            }
-        }
-
-        RenderingMode renderingMode = RenderingMode.NORMAL;
-        if (mClippingButton.getSelection() == false) {
-            renderingMode = RenderingMode.FULL_EXPAND;
-        } else {
-            // FIXME set the rendering mode using ViewRule or something.
-            List<UiElementNode> children = model.getUiChildren();
-            if (children.size() > 0 &&
-                    children.get(0).getDescriptor().getXmlLocalName().equals(SCROLL_VIEW)) {
-                renderingMode = RenderingMode.V_SCROLL;
             }
         }
 
@@ -1738,6 +1749,9 @@ public class GraphicalEditorPart extends EditorPart
 
         /** Reload layout. <b>Must be called on the SWT thread</b> */
         private void reloadLayoutSwt(ChangeFlags flags, boolean libraryChanged) {
+            if (mConfigComposite.isDisposed()) {
+                return;
+            }
             assert mConfigComposite.getDisplay().getThread() == Thread.currentThread();
 
             boolean recompute = false;
@@ -2383,7 +2397,6 @@ public class GraphicalEditorPart extends EditorPart
         return mConfigComposite.getCurrentConfig();
     }
 
-
     /**
      * Figures out the project's minSdkVersion and targetSdkVersion and return whether the values
      * have changed.
@@ -2427,5 +2440,9 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         return oldMinSdkVersion != mMinSdkVersion || oldTargetSdkVersion != mTargetSdkVersion;
+    }
+
+    public ConfigurationComposite getConfigurationComposite() {
+        return mConfigComposite;
     }
 }

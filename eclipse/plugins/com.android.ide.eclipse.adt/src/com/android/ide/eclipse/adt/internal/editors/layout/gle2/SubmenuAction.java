@@ -49,6 +49,7 @@ abstract class SubmenuAction extends Action implements MenuListener, IMenuCreato
     protected abstract void addMenuItems(Menu menu);
 
     public void menuShown(MenuEvent e) {
+        // TODO: Replace this stuff with manager.setRemoveAllWhenShown(true);
         MenuItem[] menuItems = mMenu.getItems();
         for (int i = 0; i < menuItems.length; i++) {
             menuItems[i].dispose();

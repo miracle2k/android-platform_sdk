@@ -351,4 +351,26 @@ public class ImageUtils {
 
         return union;
     }
+
+    /**
+     * Returns a new image which contains of the sub image given by the rectangle (x1,y1)
+     * to (x2,y2)
+     *
+     * @param source the source image
+     * @param x1 top left X coordinate
+     * @param y1 top left Y coordinate
+     * @param x2 bottom right X coordinate
+     * @param y2 bottom right Y coordinate
+     * @return a new image containing the pixels in the given range
+     */
+    public static BufferedImage subImage(BufferedImage source, int x1, int y1, int x2, int y2) {
+        int width = x2 - x1;
+        int height = y2 - y1;
+        BufferedImage sub = new BufferedImage(width, height, source.getType());
+        Graphics g = sub.getGraphics();
+        g.drawImage(source, 0, 0, width, height, x1, y1, x2, y2, null);
+        g.dispose();
+
+        return sub;
+    }
 }

@@ -97,6 +97,8 @@ public class AndroidConstants {
     public final static String DOT_DEX = DOT + EXT_DEX;
     /** Dot-Extension for temporary resource files, ie "ap_ */
     public final static String DOT_RES = DOT + EXT_RES;
+    /** Dot-Extension for PNG files, i.e. ".png" */
+    public static final String DOT_PNG = ".png"; //$NON-NLS-1$
 
     /** Name of the android sources directory */
     public static final String FD_ANDROID_SOURCES = "sources"; //$NON-NLS-1$

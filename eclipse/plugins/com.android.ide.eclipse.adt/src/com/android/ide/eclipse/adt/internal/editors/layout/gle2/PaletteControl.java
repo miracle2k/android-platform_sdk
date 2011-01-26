@@ -21,8 +21,6 @@ import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
-import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_INCLUDE;
-import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_MERGE;
 
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.Rect;
@@ -31,24 +29,34 @@ import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ViewInfo;
+import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
+import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
+import com.android.ide.eclipse.adt.internal.editors.layout.gre.ViewMetadataRepository;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.ui.DecorComposite;
-import com.android.ide.eclipse.adt.internal.editors.ui.GridDataBuilder;
-import com.android.ide.eclipse.adt.internal.editors.ui.GridLayoutBuilder;
 import com.android.ide.eclipse.adt.internal.editors.ui.IDecorContent;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
+import com.android.sdklib.util.Pair;
 
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.action.Separator;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.dnd.DND;
@@ -56,23 +64,24 @@ import org.eclipse.swt.dnd.DragSource;
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.Transfer;
-import org.eclipse.swt.events.ControlEvent;
-import org.eclipse.swt.events.ControlListener;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.MenuDetectEvent;
+import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseTrackListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.ScrollBar;
+import org.eclipse.swt.widgets.Menu;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -81,7 +90,10 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -94,20 +106,13 @@ import javax.xml.parsers.ParserConfigurationException;
  * with a list of element descriptors.
  * <p/>
  *
- * @since GLE2
- *
  * TODO list:
  *   - The available items should depend on the actual GLE2 Canvas selection. Selected android
  *     views should force filtering on what they accept can be dropped on them (e.g. TabHost,
  *     TableLayout). Should enable/disable them, not hide them, to avoid shuffling around.
  *   - Optional: a text filter
- *   - Optional: have icons that depict the element and/or automatically rendered icons
- *     based on a rendering of the widget.
  *   - Optional: have context-sensitive tools items, e.g. selection arrow tool,
  *     group selection tool, alignment, etc.
- *   - Different view strategies: big icon, small icons, text vs no text, compact grid.
- *     - This would only be useful with meaningful icons. Out current 1-letter icons are not enough
- *       to get rid of text labels.
  */
 public class PaletteControl extends Composite {
 
@@ -139,12 +144,70 @@ public class PaletteControl extends Composite {
         }
     }
 
-    /** The parent grid layout that contains all the {@link Toggle} and {@link Item} widgets. */
-    private Composite mRoot;
-    private ScrollBar mVBar;
-    private ControlListener mControlListener;
-    private Listener mScrollbarListener;
+    /**
+     * The parent grid layout that contains all the {@link Toggle} and
+     * {@link IconTextItem} widgets.
+     */
     private GraphicalEditorPart mEditor;
+    private Color mBackground;
+
+    /** The palette modes control various ways to visualize and lay out the views */
+    private static enum PaletteMode {
+        /** Show rendered previews of the views */
+        PREVIEW("Show Previews", true),
+        /** Show rendered previews of the views, scaled down to 75% */
+        SMALL_PREVIEW("Show Small Previews", true),
+        /** Show rendered previews of the views, scaled down to 50% */
+        TINY_PREVIEW("Show Tiny Previews", true),
+        /** Show an icon + text label */
+        ICON_TEXT("Show Icon and Text", false),
+        /** Show only icons, packed multiple per row */
+        ICON_ONLY("Show Only Icons", true);
+
+        PaletteMode(String actionLabel, boolean wrap) {
+            mActionLabel = actionLabel;
+            mWrap = wrap;
+        }
+
+        public String getActionLabel() {
+            return mActionLabel;
+        }
+
+        public boolean getWrap() {
+            return mWrap;
+        }
+
+        public boolean isPreview() {
+            return this == PREVIEW || this == SMALL_PREVIEW || this == TINY_PREVIEW;
+        }
+
+        public boolean isScaledPreview() {
+            return this == SMALL_PREVIEW || this == TINY_PREVIEW;
+        }
+
+        private final String mActionLabel;
+        private final boolean mWrap;
+    };
+
+    /** Token used in preference string to record alphabetical sorting */
+    private static final String VALUE_ALPHABETICAL = "alpha";   //$NON-NLS-1$
+    /** Token used in preference string to record categories being turned off */
+    private static final String VALUE_NO_CATEGORIES = "nocat"; //$NON-NLS-1$
+    /** Token used in preference string to record auto close being turned off */
+    private static final String VALUE_NO_AUTOCLOSE = "noauto";      //$NON-NLS-1$
+
+    private final PreviewIconFactory mPreviewIconFactory = new PreviewIconFactory(this);
+    private PaletteMode mPaletteMode = PaletteMode.SMALL_PREVIEW;
+    /** Use alphabetical sorting instead of natural order? */
+    private boolean mAlphabetical;
+    /** Use categories instead of a single large list of views? */
+    private boolean mCategories = true;
+    /** Auto-close the previous category when new categories are opened */
+    private boolean mAutoClose = true;
+    private AccordionControl mAccordion;
+    private String mCurrentTheme;
+    private String mCurrentDevice;
+    private IAndroidTarget mCurrentTarget;
 
     /**
      * Create the composite.
@@ -152,32 +215,59 @@ public class PaletteControl extends Composite {
      * @param editor An editor associated with this palette.
      */
     public PaletteControl(Composite parent, GraphicalEditorPart editor) {
-        super(parent, SWT.V_SCROLL);
+        super(parent, SWT.NONE);
 
         mEditor = editor;
-        mVBar = getVerticalBar();
+        loadPaletteMode();
+    }
 
-        mScrollbarListener = new Listener() {
-            public void handleEvent(Event event) {
-                scrollScrollbar();
+    /** Reads UI mode from persistent store to preserve palette mode across IDE sessions */
+    private void loadPaletteMode() {
+        String paletteModes = AdtPrefs.getPrefs().getPaletteModes();
+        if (paletteModes.length() > 0) {
+            String[] tokens = paletteModes.split(","); //$NON-NLS-1$
+            try {
+                mPaletteMode = PaletteMode.valueOf(tokens[0]);
+            } catch (Throwable t) {
+                mPaletteMode = PaletteMode.values()[0];
             }
-        };
+            mAlphabetical = paletteModes.contains(VALUE_ALPHABETICAL);
+            mCategories = !paletteModes.contains(VALUE_NO_CATEGORIES);
+            mAutoClose = !paletteModes.contains(VALUE_NO_AUTOCLOSE);
+        }
+    }
 
-        mVBar.addListener(SWT.Selection, mScrollbarListener);
+    /**
+     * Returns the most recently stored version of auto-close-mode; this is the last
+     * user-initiated setting of the auto-close mode (we programmatically switch modes when
+     * you enter icons-only mode, and set it back to this when going to any other mode)
+     */
+    private boolean getSavedAutoCloseMode() {
+        return !AdtPrefs.getPrefs().getPaletteModes().contains(VALUE_NO_AUTOCLOSE);
+    }
 
+    /** Saves UI mode to persistent store to preserve palette mode across IDE sessions */
+    private void savePaletteMode() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(mPaletteMode);
+        if (mAlphabetical) {
+            sb.append(',').append(VALUE_ALPHABETICAL);
+        }
+        if (!mCategories) {
+            sb.append(',').append(VALUE_NO_CATEGORIES);
+        }
+        if (!mAutoClose) {
+            sb.append(',').append(VALUE_NO_AUTOCLOSE);
+        }
+        AdtPrefs.getPrefs().setPaletteModes(sb.toString());
+    }
 
-        mControlListener = new ControlListener() {
-            public void controlMoved(ControlEvent e) {
-                // Ignore
-            }
-            public void controlResized(ControlEvent e) {
-                if (recomputeScrollbar()) {
-                    redraw();
-                }
-            }
-        };
-
-        addControlListener(mControlListener);
+    private void refreshPalette() {
+        IAndroidTarget oldTarget = mCurrentTarget;
+        mCurrentTarget = null;
+        mCurrentTheme = null;
+        mCurrentDevice = null;
+        reloadPalette(oldTarget);
     }
 
     @Override
@@ -187,299 +277,226 @@ public class PaletteControl extends Composite {
 
     @Override
     public void dispose() {
-        if (mControlListener != null) {
-            removeControlListener(mControlListener);
-            mControlListener = null;
-        }
-
-        if (mVBar != null && !mVBar.isDisposed()) {
-            if (mScrollbarListener != null) {
-                mVBar.removeListener(SWT.Selection, mScrollbarListener);
-            }
-            mVBar = null;
+        if (mBackground != null) {
+            mBackground.dispose();
+            mBackground = null;
         }
 
         super.dispose();
     }
 
     /**
+     * Returns the currently displayed target
+     *
+     * @return the current target, or null
+     */
+    public IAndroidTarget getCurrentTarget() {
+        return mCurrentTarget;
+    }
+
+    /**
+     * Returns the currently displayed theme (in palette modes that support previewing)
+     *
+     * @return the current theme, or null
+     */
+    public String getCurrentTheme() {
+        return mCurrentTheme;
+    }
+
+    /**
+     * Returns the currently displayed device (in palette modes that support previewing)
+     *
+     * @return the current device, or null
+     */
+    public String getCurrentDevice() {
+        return mCurrentDevice;
+    }
+
+    /**
      * Loads or reloads the palette elements by using the layout and view descriptors from the
      * given target data.
      *
-     * @param targetData The target data that contains the descriptors. If null or empty,
-     *   no groups will be created.
+     * @param target The target that has just been loaded
      */
-    public void reloadPalette(AndroidTargetData targetData) {
+    public void reloadPalette(IAndroidTarget target) {
+        ConfigurationComposite configuration = mEditor.getConfigurationComposite();
+        String theme = configuration.getTheme();
+        String device = configuration.getDevice();
+        if (target == mCurrentTarget && mCurrentTheme != null && mCurrentTheme.equals(theme) &&
+                mCurrentDevice != null && mCurrentDevice.equals(device)) {
+            return;
+        }
+        mCurrentTheme = theme;
+        mCurrentTarget = target;
+        mCurrentDevice = device;
+        mPreviewIconFactory.reset();
 
+        // Erase old content and recreate new
         for (Control c : getChildren()) {
             c.dispose();
         }
 
-        GridLayoutBuilder.create(this).columns(1).columnsEqual().hSpacing(0).noMargins();
+        if (mPaletteMode.isPreview()) {
+            RGB background = mPreviewIconFactory.getBackgroundColor();
+            if (mBackground != null) {
+                mBackground.dispose();
+            }
+            mBackground = new Color(getDisplay(), background);
+        }
 
-        mRoot = new Composite(this, SWT.NONE);
-        GridLayoutBuilder.create(mRoot).columns(1).columnsEqual().spacing(0).noMargins();
-        GridDataBuilder.create(mRoot).hGrab().hFill();
+        AndroidTargetData targetData = Sdk.getCurrent().getTargetData(target);
 
+        List<Object> headers = Collections.emptyList();
+        final Map<String, List<ViewElementDescriptor>> categoryToItems;
         if (targetData != null) {
-            // TODO: Use metadata categories instead:
-            //List<Pair<String,List<ViewElementDescriptor>>> paletteEntries =
-            //    ViewMetadataRepository.get().getPaletteEntries(targetData);
-            //for (Pair<String,List<ViewElementDescriptor>> pair : paletteEntries) {
-            //    addGroup(mRoot, pair.getFirst(), pair.getSecond());
-            //}
-            addGroup(mRoot, "Views", targetData.getLayoutDescriptors().getViewDescriptors());
-            addGroup(mRoot, "Layouts", targetData.getLayoutDescriptors().getLayoutDescriptors());
+            categoryToItems = new HashMap<String, List<ViewElementDescriptor>>();
+            headers = new ArrayList<Object>();
+            List<Pair<String,List<ViewElementDescriptor>>> paletteEntries =
+                ViewMetadataRepository.get().getPaletteEntries(targetData,
+                        mAlphabetical, mCategories);
+            for (Pair<String,List<ViewElementDescriptor>> pair : paletteEntries) {
+                String category = pair.getFirst();
+                List<ViewElementDescriptor> categoryItems = pair.getSecond();
+                headers.add(category);
+                categoryToItems.put(category, categoryItems);
+            }
+        } else {
+            categoryToItems = null;
+        }
+
+        boolean wrap = mPaletteMode.getWrap();
+
+        // Pack icon-only view vertically; others stretch to fill palette region
+        boolean fillVertical = mPaletteMode != PaletteMode.ICON_ONLY;
+
+        mAccordion = new AccordionControl(this, SWT.NONE, headers, fillVertical, wrap) {
+            @Override
+            protected Composite createChildContainer(Composite parent) {
+                Composite composite = super.createChildContainer(parent);
+                if (mPaletteMode.isPreview()) {
+                    composite.setBackground(mBackground);
+                }
+                addMenu(composite);
+                return composite;
+            }
+            @Override
+            protected void createChildren(Composite parent, Object header) {
+                assert categoryToItems != null;
+                List<ViewElementDescriptor> list = categoryToItems.get(header);
+                for (ViewElementDescriptor desc : list) {
+                    createItem(parent, desc);
+                }
+            }
+        };
+        addMenu(mAccordion);
+        for (CLabel headerLabel : mAccordion.getHeaderLabels()) {
+            addMenu(headerLabel);
+        }
+        setLayout(new FillLayout());
+
+        // Expand All for icon-only mode, but don't store it as the persistent auto-close mode;
+        // when we enter other modes it will read back whatever persistent mode.
+        if (mPaletteMode == PaletteMode.ICON_ONLY) {
+            mAccordion.expandAll(true);
+            mAccordion.setAutoClose(false);
+        } else {
+            mAccordion.setAutoClose(getSavedAutoCloseMode());
         }
 
         layout(true);
-
-        recomputeScrollbar();
-    }
-
-    // ----- private methods ----
-
-    /** Returns true if scrollbar changed. */
-    private  boolean recomputeScrollbar() {
-        if (mVBar != null && mRoot != null) {
-
-            int sel = mVBar.getSelection();
-            int max = mVBar.getMaximum();
-            float current = max > 0 ? (float)sel / max : 0;
-
-            int ry = mRoot.getSize().y;
-
-            // The root contains composite groups
-            // which in turn contain Toggle/Item CLabel instances
-            Control[] children = mRoot.getChildren();
-            findVisibleItem: for (int i = children.length - 1; i >= 0; i--) {
-                Control ci = children[i];
-                if (ci.isVisible() && ci instanceof Composite) {
-                    Control[] children2 = ((Composite) ci).getChildren();
-                    for (int j = children2.length - 1; j >= 0; j--) {
-                        Control cj = children2[j];
-                        if (cj.isVisible()) {
-                            // This is the bottom-most visible item
-                            ry = ci.getLocation().y + cj.getLocation().y + cj.getSize().y;
-                            break findVisibleItem;
-                        }
-                    }
-                }
-            }
-
-
-            int vy = getSize().y;
-            // Scrollable size is the height of the root view
-            // less the current view visible height.
-            int y = ry > vy ? ry - vy + 2 : 0;
-            // Thumb size is the ratio between root view and visible height.
-            float ft = ry > 0 ? (float)vy / ry : 1;
-            int thumb = (int) Math.ceil(y * ft);
-            if (thumb < 1) {
-                thumb = 1;
-            }
-            y += thumb;
-
-
-            if (y != max) {
-                int minimum = mVBar.getMinimum();
-                mVBar.setEnabled(y > 0);
-                int maximum = y < 0 ? 1 : y;
-                int selection = (int) (y * current);
-                int increment = 20;
-                int pageIncrement = thumb;
-                mVBar.setValues(selection, minimum, maximum, thumb, increment, pageIncrement);
-                scrollScrollbar();
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private void scrollScrollbar() {
-        if (mVBar != null && mRoot != null) {
-            Point p = mRoot.getLocation();
-            p.y = - mVBar.getSelection();
-            mRoot.setLocation(p);
-        }
-    }
-
-    private void addGroup(Composite parent,
-            String uiName,
-            List<ViewElementDescriptor> descriptors) {
-
-        Composite group = new Composite(parent, SWT.NONE);
-        GridLayoutBuilder.create(group).columns(1).columnsEqual().spacing(0).noMargins();
-        GridDataBuilder.create(group).hFill().hGrab();
-
-        Toggle toggle = new Toggle(group, uiName);
-        GridDataBuilder.create(toggle).hFill().hGrab();
-
-        for (ViewElementDescriptor desc : descriptors) {
-
-            // Exclude the <include> and <merge> tags from the View palette.
-            // We don't have drop support for it right now, although someday we should.
-            String xmlName = desc.getXmlName();
-            if (VIEW_INCLUDE.equals(xmlName) || VIEW_MERGE.equals(xmlName)) {
-                continue;
-            }
-
-            Item item = new Item(group, desc);
-            toggle.addItem(item);
-            GridDataBuilder.create(item).hFill().hGrab();
-        }
     }
 
     /* package */ GraphicalEditorPart getEditor() {
         return mEditor;
     }
 
-    /**
-     * A Toggle widget is a row that is the head of a group.
-     * <p/>
-     * When clicked, the toggle will show/hide all the {@link Item} widgets that have been
-     * added to it using {@link #addItem(Item)}.
-     */
-    private class Toggle extends CLabel implements MouseTrackListener, MouseListener {
-        private boolean mMouseIn;
-        private DragSource mSource;
-        private ArrayList<Item> mItems = new ArrayList<Item>();
-
-        public Toggle(Composite parent, String groupName) {
-            super(parent, SWT.NONE);
-            mMouseIn = false;
-
-            setData(null);
-
-            String s = String.format("-= %s =-", groupName);
-            setText(s);
-            setToolTipText(s);
-            //TODO use triangle icon and swap it -- setImage(desc.getIcon());
-            addMouseTrackListener(this);
-            addMouseListener(this);
-        }
-
-        public void addItem(Item item) {
-            mItems.add(item);
-        }
-
-        @Override
-        public void dispose() {
-            if (mSource != null) {
-                mSource.dispose();
-                mSource = null;
-            }
-            super.dispose();
-        }
-
-        @Override
-        public int getStyle() {
-            int style = super.getStyle();
-            if (mMouseIn) {
-                style |= SWT.SHADOW_IN;
-            }
-            return style;
-        }
-
-        // -- MouseTrackListener callbacks
-
-        public void mouseEnter(MouseEvent e) {
-            if (!mMouseIn) {
-                mMouseIn = true;
-                redraw();
-            }
-        }
-
-        public void mouseExit(MouseEvent e) {
-            if (mMouseIn) {
-                mMouseIn = false;
-                redraw();
-            }
-        }
-
-        public void mouseHover(MouseEvent e) {
-            // pass
-        }
-
-        // -- MouseListener callbacks
-
-        public void mouseDoubleClick(MouseEvent arg0) {
-            // pass
-        }
-
-        public void mouseDown(MouseEvent arg0) {
-            // pass
-        }
-
-        public void mouseUp(MouseEvent arg0) {
-            for (Item i : mItems) {
-                if (i.isVisible()) {
-                    Object ld = i.getLayoutData();
-                    if (ld instanceof GridData) {
-                        GridData gd = (GridData) ld;
-
-                        i.setData(gd.heightHint != SWT.DEFAULT ?
-                                    Integer.valueOf(gd.heightHint) :
-                                        null);
-                        gd.heightHint = 0;
-                    }
-                } else {
-                    Object ld = i.getLayoutData();
-                    if (ld instanceof GridData) {
-                        GridData gd = (GridData) ld;
-
-                        Object d = i.getData();
-                        if (d instanceof Integer) {
-                            gd.heightHint = ((Integer) d).intValue();
-                        } else {
-                            gd.heightHint = SWT.DEFAULT;
+    private Control createItem(Composite parent, ViewElementDescriptor desc) {
+        Control item = null;
+        switch (mPaletteMode) {
+            case SMALL_PREVIEW:
+            case TINY_PREVIEW:
+            case PREVIEW: {
+                ImageDescriptor descriptor = mPreviewIconFactory.getImageDescriptor(desc);
+                if (descriptor != null) {
+                    Image image = descriptor.createImage();
+                    ImageControl imageControl = new ImageControl(parent, SWT.None, image);
+                    if (mPaletteMode.isScaledPreview()) {
+                        // Try to preserve the overall size since rendering sizes typically
+                        // vary with the dpi - so while the scaling factor for a 160 dpi
+                        // rendering the scaling factor should be 0.5, for a 320 dpi one the
+                        // scaling factor should be half that, 0.25.
+                        float scale = 1.0f;
+                        if (mPaletteMode == PaletteMode.SMALL_PREVIEW) {
+                            scale = 0.75f;
+                        } else if (mPaletteMode == PaletteMode.TINY_PREVIEW) {
+                            scale = 0.5f;
                         }
+                        int dpi = mEditor.getConfigurationComposite().getDensity().getDpiValue();
+                        while (dpi > 160) {
+                            scale = scale / 2;
+                            dpi = dpi / 2;
+                        }
+                        imageControl.setScale(scale);
                     }
-                }
-                i.setVisible(!i.isVisible());
-            }
+                    imageControl.setHoverColor(getDisplay().getSystemColor(SWT.COLOR_WHITE));
+                    imageControl.setBackground(mBackground);
+                    String toolTip = desc.getUiName();
+                    // It appears pretty much none of the descriptors have tooltips
+                    //String descToolTip = desc.getTooltip();
+                    //if (descToolTip != null && descToolTip.length() > 0) {
+                    //    toolTip = toolTip + "\n" + descToolTip;
+                    //}
+                    imageControl.setToolTipText(toolTip);
 
-            // Tell the root composite that its content changed.
-            mRoot.layout(true /*changed*/);
-            // Force the top composite to recompute the scrollbar and refresh it.
-            mControlListener.controlResized(null /*event*/);
+                    item = imageControl;
+                } else {
+                    // Just use an Icon+Text item for these for now
+                    item = new IconTextItem(parent, desc);
+                }
+                break;
+            }
+            case ICON_TEXT: {
+                item = new IconTextItem(parent, desc);
+                break;
+            }
+            case ICON_ONLY: {
+                item = new ImageControl(parent, SWT.None, desc.getIcon());
+                item.setToolTipText(desc.getUiName());
+                break;
+            }
+            default:
+                throw new IllegalArgumentException("Not yet implemented");
         }
+
+        final DragSource source = new DragSource(item, DND.DROP_COPY);
+        source.setTransfer(new Transfer[] { SimpleXmlTransfer.getInstance() });
+        source.addDragListener(new DescDragSourceListener(desc));
+        item.addDisposeListener(new DisposeListener() {
+            public void widgetDisposed(DisposeEvent e) {
+                source.dispose();
+            }
+        });
+        addMenu(item);
+
+        return item;
     }
 
     /**
      * An Item widget represents one {@link ElementDescriptor} that can be dropped on the
      * GLE2 canvas using drag'n'drop.
      */
-    private class Item extends CLabel implements MouseTrackListener {
+    private class IconTextItem extends CLabel implements MouseTrackListener {
 
         private boolean mMouseIn;
-        private DragSource mSource;
-        private final ViewElementDescriptor mDesc;
 
-        public Item(Composite parent, ViewElementDescriptor desc) {
+        public IconTextItem(Composite parent, ViewElementDescriptor desc) {
             super(parent, SWT.NONE);
-            mDesc = desc;
             mMouseIn = false;
 
             setText(desc.getUiName());
             setImage(desc.getIcon());
             setToolTipText(desc.getTooltip());
             addMouseTrackListener(this);
-
-            // DND Reference: http://www.eclipse.org/articles/Article-SWT-DND/DND-in-SWT.html
-            mSource = new DragSource(this, DND.DROP_COPY);
-            mSource.setTransfer(new Transfer[] { SimpleXmlTransfer.getInstance() });
-            mSource.addDragListener(new DescDragSourceListener(mDesc));
-        }
-
-        @Override
-        public void dispose() {
-            if (mSource != null) {
-                mSource.dispose();
-                mSource = null;
-            }
-            super.dispose();
         }
 
         @Override
@@ -613,7 +630,7 @@ public class PaletteControl extends Composite {
                 // example the preview of an empty layout), so instead create a placeholder
                 // image
                 // Render the palette item itself as an image
-                Control control = PaletteControl.this;
+                Control control = ((DragSource) event.widget).getControl();
                 GC gc = new GC(control);
                 Point size = control.getSize();
                 Display display = getDisplay();
@@ -733,7 +750,7 @@ public class PaletteControl extends Composite {
                 int renderHeight = Math.min(screenBounds.height, MAX_RENDER_HEIGHT);
                 LayoutLog silentLogger = new LayoutLog();
                 session = editor.render(model, renderWidth, renderHeight,
-                    null /* explodeNodes */, hasTransparency, silentLogger);
+                    null /* explodeNodes */, hasTransparency, silentLogger, RenderingMode.NORMAL);
             } catch (Throwable t) {
                 // Previews can fail for a variety of reasons -- let's not bug
                 // the user with it
@@ -841,5 +858,91 @@ public class PaletteControl extends Composite {
                 }
             }
         }
+    }
+
+    /** Action for switching view modes via radio buttons */
+    private class PaletteModeAction extends Action {
+        private final PaletteMode mMode;
+
+        PaletteModeAction(PaletteMode mode) {
+            super(mode.getActionLabel(), IAction.AS_RADIO_BUTTON);
+            mMode = mode;
+            boolean selected = mMode == mPaletteMode;
+            setChecked(selected);
+            setEnabled(!selected);
+        }
+
+        @Override
+        public void run() {
+            if (isEnabled()) {
+                mPaletteMode = mMode;
+                refreshPalette();
+                savePaletteMode();
+            }
+        }
+    }
+
+    /** Action for toggling various checkbox view modes - categories, sorting, etc */
+    private class ToggleViewOptionAction extends Action {
+        private final int mAction;
+        final static int TOGGLE_CATEGORY = 1;
+        final static int TOGGLE_ALPHABETICAL = 2;
+        final static int TOGGLE_AUTO_CLOSE = 3;
+
+        ToggleViewOptionAction(String title, int action, boolean checked) {
+            super(title, IAction.AS_CHECK_BOX);
+            mAction = action;
+            setChecked(checked);
+        }
+
+        @Override
+        public void run() {
+            switch (mAction) {
+                case TOGGLE_CATEGORY:
+                    mCategories = !mCategories;
+                    refreshPalette();
+                    break;
+                case TOGGLE_ALPHABETICAL:
+                    mAlphabetical = !mAlphabetical;
+                    refreshPalette();
+                    break;
+                case TOGGLE_AUTO_CLOSE:
+                    mAutoClose = !mAutoClose;
+                    mAccordion.setAutoClose(mAutoClose);
+                    break;
+            }
+            savePaletteMode();
+        }
+    }
+
+    private void addMenu(Control control) {
+        control.addMenuDetectListener(new MenuDetectListener() {
+            public void menuDetected(MenuDetectEvent e) {
+                MenuManager manager = new MenuManager() {
+                    @Override
+                    public boolean isDynamic() {
+                        return true;
+                    }
+                };
+                for (PaletteMode mode : PaletteMode.values()) {
+                        manager.add(new PaletteModeAction(mode));
+                }
+                manager.add(new Separator());
+                manager.add(new ToggleViewOptionAction("Show Categories",
+                        ToggleViewOptionAction.TOGGLE_CATEGORY,
+                        mCategories));
+                manager.add(new ToggleViewOptionAction("Sort Alphabetically",
+                        ToggleViewOptionAction.TOGGLE_ALPHABETICAL,
+                        mAlphabetical));
+                manager.add(new Separator());
+                manager.add(new ToggleViewOptionAction("Auto Close Previous",
+                        ToggleViewOptionAction.TOGGLE_AUTO_CLOSE,
+                        mAutoClose));
+                Menu menu = manager.createContextMenu(PaletteControl.this);
+                Point point = new Point(e.x, e.y);
+                menu.setLocation(point.x, point.y);
+                menu.setVisible(true);
+            }
+        });
     }
 }

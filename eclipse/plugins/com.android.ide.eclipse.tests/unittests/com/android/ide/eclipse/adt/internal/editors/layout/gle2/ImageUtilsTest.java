@@ -275,4 +275,28 @@ public class ImageUtilsTest extends TestCase {
 
         return dest;
     }
+
+    public void testSubImage() throws Exception {
+        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics g = image.getGraphics();
+        g.setColor(new Color(0xFF00FF00, true));
+        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        g.setColor(new Color(0xFFFF0000, true));
+        g.fillRect(25, 25, 50, 50);
+        g.dispose();
+
+        BufferedImage sub = ImageUtils.subImage(image, 25, 25, 35, 45);
+        assertEquals(10, sub.getWidth());
+        assertEquals(20, sub.getHeight());
+        assertEquals(0xFFFF0000, sub.getRGB(0, 0));
+        assertEquals(0xFFFF0000, sub.getRGB(9, 9));
+
+        sub = ImageUtils.subImage(image, 23, 23, 5, 5);
+        assertEquals(5, sub.getWidth());
+        assertEquals(5, sub.getHeight());
+        assertEquals(0xFF00FF00, sub.getRGB(0, 0));
+        assertEquals(0xFFFF0000, sub.getRGB(9, 9));
+    }
+
+
 }

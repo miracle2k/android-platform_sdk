@@ -98,6 +98,7 @@ inline
 instanceof
 instantiatable
 int
+iterable
 javac
 javadoc
 keystore
@@ -194,6 +195,7 @@ thematically
 themed
 tmp
 tooltip
+tooltips
 traceview
 translucency
 ui
