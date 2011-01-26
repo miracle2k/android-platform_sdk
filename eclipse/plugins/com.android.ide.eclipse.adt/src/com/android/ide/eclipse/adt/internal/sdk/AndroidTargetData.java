@@ -252,7 +252,7 @@ public class AndroidTargetData {
      */
     public synchronized LayoutLibrary getLayoutLibrary() {
         if (mLayoutBridgeInit == false && mLayoutLibrary.getStatus() == LoadStatus.LOADED) {
-            mLayoutLibrary.init(
+            boolean ok = mLayoutLibrary.init(
                     mTarget.getProperties(),
                     new File(mTarget.getPath(IAndroidTarget.FONTS)),
                     getEnumValueMap(),
@@ -274,6 +274,10 @@ public class AndroidTargetData {
                             AdtPlugin.log(IStatus.WARNING, message);
                         }
                     });
+            if (!ok) {
+                AdtPlugin.log(IStatus.ERROR,
+                        "LayoutLibrary initialization failed");
+            }
             mLayoutBridgeInit = true;
         }
 
