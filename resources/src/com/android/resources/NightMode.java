@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package com.android.sdklib.resources;
+package com.android.resources;
 
 /**
- * Dock enum.
+ * Night enum.
  * <p/>This is used in the resource folder names.
  */
-public enum DockMode implements ResourceEnum {
-    NONE("", "No Dock"),
-    CAR("car", "Car Dock"),
-    DESK("desk", "Desk Dock");
+public enum NightMode implements ResourceEnum {
+    NOTNIGHT("notnight", "Not Night", "Day time"),
+    NIGHT("night", "Night", "Night time");
 
     private final String mValue;
-    private final String mDisplayValue;
+    private final String mShortDisplayValue;
+    private final String mLongDisplayValue;
 
-    private DockMode(String value, String display) {
+    private NightMode(String value, String shortDisplayValue, String longDisplayValue) {
         mValue = value;
-        mDisplayValue = display;
+        mShortDisplayValue = shortDisplayValue;
+        mLongDisplayValue = longDisplayValue;
     }
 
     /**
@@ -38,8 +39,8 @@ public enum DockMode implements ResourceEnum {
      * @param value The qualifier value.
      * @return the enum for the qualifier value or null if no matching was found.
      */
-    public static DockMode getEnum(String value) {
-        for (DockMode mode : values()) {
+    public static NightMode getEnum(String value) {
+        for (NightMode mode : values()) {
             if (mode.mValue.equals(value)) {
                 return mode;
             }
@@ -53,16 +54,16 @@ public enum DockMode implements ResourceEnum {
     }
 
     public String getShortDisplayValue() {
-        return mDisplayValue;
+        return mShortDisplayValue;
     }
 
     public String getLongDisplayValue() {
-        return mDisplayValue;
+        return mLongDisplayValue;
     }
 
-    public static int getIndex(DockMode value) {
+    public static int getIndex(NightMode value) {
         int i = 0;
-        for (DockMode mode : values()) {
+        for (NightMode mode : values()) {
             if (mode == value) {
                 return i;
             }
@@ -73,9 +74,9 @@ public enum DockMode implements ResourceEnum {
         return -1;
     }
 
-    public static DockMode getByIndex(int index) {
+    public static NightMode getByIndex(int index) {
         int i = 0;
-        for (DockMode value : values()) {
+        for (NightMode value : values()) {
             if (i == index) {
                 return value;
             }
@@ -85,10 +86,11 @@ public enum DockMode implements ResourceEnum {
     }
 
     public boolean isFakeValue() {
-        return this == NONE; // NONE is not a real enum. it's used for internal state only.
+        return false;
     }
 
     public boolean isValidValueForDevice() {
-        return this != NONE;
+        return true;
     }
+
 }

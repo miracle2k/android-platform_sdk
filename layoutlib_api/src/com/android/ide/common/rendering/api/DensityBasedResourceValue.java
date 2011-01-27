@@ -21,10 +21,10 @@ import com.android.layoutlib.api.IDensityBasedResourceValue;
 @SuppressWarnings("deprecation")
 public class DensityBasedResourceValue extends ResourceValue implements IDensityBasedResourceValue {
 
-    private ResourceDensity mDensity;
+    private com.android.resources.Density mDensity;
 
     public DensityBasedResourceValue(String type, String name, String value,
-            ResourceDensity density, boolean isFramework) {
+            com.android.resources.Density density, boolean isFramework) {
         super(type, name, value, isFramework);
         mDensity = density;
     }
@@ -33,7 +33,7 @@ public class DensityBasedResourceValue extends ResourceValue implements IDensity
      * Returns the density for which this resource is configured.
      * @return the density.
      */
-    public ResourceDensity getResourceDensity() {
+    public com.android.resources.Density getResourceDensity() {
         return mDensity;
     }
 
@@ -41,6 +41,6 @@ public class DensityBasedResourceValue extends ResourceValue implements IDensity
      * @deprecated use {@link #getResourceDensity()} instead.
      */
     public Density getDensity() {
-        return Density.getEnum(mDensity.getDpi());
+        return Density.getEnum(mDensity.getDpiValue());
     }
 }

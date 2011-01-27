@@ -17,8 +17,8 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.resources.KeyboardState;
-import com.android.sdklib.resources.ResourceEnum;
+import com.android.resources.KeyboardState;
+import com.android.resources.ResourceEnum;
 
 import org.eclipse.swt.graphics.Image;
 

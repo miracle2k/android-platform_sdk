@@ -48,14 +48,12 @@ if [ "$HOST" == "Linux" ]; then
         ln -svf $BACK/out/host/linux-x86/framework/$LIB.jar "$DEST/"
     done
     ln -svf $BACK/out/host/linux-x86/framework/kxml2-2.3.0.jar        "$DEST/"
-    ln -svf $BACK/out/host/linux-x86/framework/layoutlib.jar          "$DEST/"
 
 elif [ "$HOST" == "Darwin" ]; then
     for LIB in $LIBS; do
         ln -svf $BACK/out/host/darwin-x86/framework/$LIB.jar "$DEST/"
     done
     ln -svf $BACK/out/host/darwin-x86/framework/kxml2-2.3.0.jar       "$DEST/"
-    ln -svf $BACK/out/host/darwin-x86/framework/layoutlib.jar         "$DEST/"
 
 elif [ "${HOST:0:6}" == "CYGWIN" ]; then
     for LIB in $LIBS; do
@@ -65,35 +63,19 @@ elif [ "${HOST:0:6}" == "CYGWIN" ]; then
         cp -v "prebuilt/common/kxml2/kxml2-2.3.0.jar" "$DEST/"
     fi
 
-    LIBS="layoutlib.jar"
-    NEED_MAKE="yes"
-    for LIB in $LIBS ; do
-        SRCJAR="out/host/windows-x86/framework/$LIB"
-        DSTJAR="$DEST/$LIB"
-        if [[ $NEED_MAKE ]] && ! diff -q "$SRCJAR" "$DSTJAR" >/dev/null ; then
-            MAKE_LIBS="${LIBS//.jar/}"
-            echo "Make java libs: $MAKE_LIBS"
-            make -j3 showcommands $MAKE_LIBS || die "adt-tests: Failed to build one of $LIBS."
-            NEED_MAKE=""
-        fi
-        
-        cp -v "$SRCJAR" "$DSTJAR"
-    done
-
     chmod -v a+rx "$DEST"/*.jar
 else
     echo "Unsupported platform ($HOST). Nothing done."
 fi
 
-# create link to ddmlib tests
-DEST=$BASE/unittests/com/android
-cpdir $DEST sdk/ddms/libs/ddmlib/tests/src/com/android/ddmlib
-cpdir $DEST sdk/sdkmanager/libs/sdklib/tests/com/android/sdklib
-
 # Cleanup old obsolete symlink
+
+DEST=$BASE/unittests/com/android
 [[ -e $DEST/sdkuilib || -L $DEST/sdkuilib ]] && rm -rfv $DEST/sdkuilib
+[[ -e $DEST/ddmlib || -L $DEST/ddmlib ]] && rm -rfv $DEST/ddmlib
+[[ -e $DEST/sdklib || -L $DEST/sdklib ]] && rm -rfv $DEST/sdklib
 
 DEST=$BASE/unittests/com/android/layoutlib
-mkdir -p $DEST
-cpdir $DEST frameworks/base/tools/layoutlib/bridge/tests/com/android/layoutlib/bridge
-cpdir $DEST frameworks/base/tools/layoutlib/bridge/tests/com/android/layoutlib/testdata
+[[ -e $DEST/bridge || -L $DEST/bridge ]] && rm -rfv $DEST/bridge
+[[ -e $DEST/testdata || -L $DEST/testdata ]] && rm -rfv $DEST/testdata
+

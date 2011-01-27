@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.sdklib.resources;
+package com.android.resources;
 
 /**
  * An enum representing a resource qualifier value.

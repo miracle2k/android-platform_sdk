@@ -16,9 +16,9 @@
 
 package com.android.sdklib.xml;
 
-import com.android.sdklib.resources.Keyboard;
-import com.android.sdklib.resources.Navigation;
-import com.android.sdklib.resources.TouchScreen;
+import com.android.resources.Keyboard;
+import com.android.resources.Navigation;
+import com.android.resources.TouchScreen;
 import com.android.sdklib.xml.ManifestData.UsesFeature;
 import com.android.sdklib.xml.ManifestData.UsesLibrary;
 

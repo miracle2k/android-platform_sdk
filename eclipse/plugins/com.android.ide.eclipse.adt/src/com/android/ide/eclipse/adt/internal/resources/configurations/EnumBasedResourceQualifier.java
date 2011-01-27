@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
-import com.android.sdklib.resources.ResourceEnum;
+import com.android.resources.ResourceEnum;
 
 /**
  * Base class for {@link ResourceQualifier} whose value is an {@link ResourceEnum}.

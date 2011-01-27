@@ -74,13 +74,11 @@ public class RenderSession {
     }
 
     /**
-     * Returns true if the current session is rendered as a floating window.
-     * <p/>
-     * If true this means the alpha channel of {@link #getImage()} should be respected. If false,
-     * if can be dropped if it's more convenient/faster.
-     * @return whether the current session is rendered as a floating window.
+     * Returns true if the current image alpha channel is relevant.
+     *
+     * @return whether the image alpha channel is relevant.
      */
-    public boolean isFloatingWindow() {
+    public boolean isAlphaChannelImage() {
         return true;
     }
 

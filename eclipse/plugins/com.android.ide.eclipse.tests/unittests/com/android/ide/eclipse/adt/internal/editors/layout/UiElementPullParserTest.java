@@ -23,8 +23,8 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescripto
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.mock.MockXmlNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.resources.Density;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.resources.Density;
 
 import org.w3c.dom.Node;
 import org.xmlpull.v1.XmlPullParser;

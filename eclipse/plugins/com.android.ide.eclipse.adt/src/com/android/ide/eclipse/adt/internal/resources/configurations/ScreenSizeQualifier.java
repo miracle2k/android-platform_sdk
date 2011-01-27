@@ -17,8 +17,8 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.resources.ResourceEnum;
-import com.android.sdklib.resources.ScreenSize;
+import com.android.resources.ResourceEnum;
+import com.android.resources.ScreenSize;
 
 import org.eclipse.swt.graphics.Image;
 

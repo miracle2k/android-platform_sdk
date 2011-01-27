@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier;
-import com.android.sdklib.resources.Keyboard;
+import com.android.resources.Keyboard;
 
 import junit.framework.TestCase;
 

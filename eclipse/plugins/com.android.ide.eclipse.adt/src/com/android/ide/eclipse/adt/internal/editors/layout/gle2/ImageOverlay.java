@@ -84,9 +84,10 @@ public class ImageOverlay extends Overlay implements IImageFactory {
      * an empty document.
      *
      * @param awtImage The AWT image to be rendered as an SWT image.
+     * @param isAlphaChannelImage whether the alpha channel of the image is relevant
      * @return The corresponding SWT image, or null.
      */
-    public synchronized Image setImage(BufferedImage awtImage, boolean isFloatingWindow) {
+    public synchronized Image setImage(BufferedImage awtImage, boolean isAlphaChannelImage) {
         if (awtImage != mAwtImage || awtImage == null) {
             mAwtImage = null;
 
@@ -97,12 +98,13 @@ public class ImageOverlay extends Overlay implements IImageFactory {
             if (awtImage == null) {
                 mImage = null;
             } else {
-                mImage = SwtUtils.convertToSwt(mCanvas.getDisplay(), awtImage, true, -1);
+                mImage = SwtUtils.convertToSwt(mCanvas.getDisplay(), awtImage,
+                        isAlphaChannelImage, -1);
             }
         } else {
             assert awtImage instanceof SwtReadyBufferedImage;
 
-            if (isFloatingWindow) {
+            if (isAlphaChannelImage) {
                 mImage = SwtUtils.convertToSwt(mCanvas.getDisplay(), awtImage, true, -1);
             } else {
                 mImage = ((SwtReadyBufferedImage)awtImage).getSwtImage();

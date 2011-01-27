@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.DockModeQualifier;
-import com.android.sdklib.resources.DockMode;
+import com.android.resources.DockMode;
 
 import junit.framework.TestCase;
 

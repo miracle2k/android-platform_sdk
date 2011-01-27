@@ -17,8 +17,8 @@
 package com.android.ide.eclipse.adt.internal.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
-import com.android.sdklib.resources.Density;
-import com.android.sdklib.resources.ResourceEnum;
+import com.android.resources.Density;
+import com.android.resources.ResourceEnum;
 
 import org.eclipse.swt.graphics.Image;
 

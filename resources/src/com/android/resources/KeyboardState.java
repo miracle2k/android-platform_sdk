@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package com.android.sdklib.resources;
+package com.android.resources;
 
 /**
- * Screen size enum.
+ * Keyboard state enum.
  * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum ScreenSize implements ResourceEnum {
-    SMALL("small", "Small", "Small Screen"), //$NON-NLS-1$
-    NORMAL("normal", "Normal", "Normal Screen"), //$NON-NLS-1$
-    LARGE("large", "Large", "Large Screen"), //$NON-NLS-1$
-    XLARGE("xlarge", "X-Large", "Extra Large Screen"); //$NON-NLS-1$
+public enum KeyboardState implements ResourceEnum {
+    EXPOSED("keysexposed", "Exposed", "Exposed keyboard"), //$NON-NLS-1$
+    HIDDEN("keyshidden", "Hidden", "Hidden keyboard"),    //$NON-NLS-1$
+    SOFT("keyssoft", "Soft", "Soft keyboard");          //$NON-NLS-1$
 
     private final String mValue;
     private final String mShortDisplayValue;
     private final String mLongDisplayValue;
 
-    private ScreenSize(String value, String shortDisplayValue, String longDisplayValue) {
+    private KeyboardState(String value, String shortDisplayValue, String longDisplayValue) {
         mValue = value;
         mShortDisplayValue = shortDisplayValue;
         mLongDisplayValue = longDisplayValue;
@@ -41,10 +40,10 @@ public enum ScreenSize implements ResourceEnum {
      * @param value The qualifier value.
      * @return the enum for the qualifier value or null if no matching was found.
      */
-    public static ScreenSize getEnum(String value) {
-        for (ScreenSize orient : values()) {
-            if (orient.mValue.equals(value)) {
-                return orient;
+    public static KeyboardState getEnum(String value) {
+        for (KeyboardState state : values()) {
+            if (state.mValue.equals(value)) {
+                return state;
             }
         }
 
@@ -63,10 +62,10 @@ public enum ScreenSize implements ResourceEnum {
         return mLongDisplayValue;
     }
 
-    public static int getIndex(ScreenSize orientation) {
+    public static int getIndex(KeyboardState value) {
         int i = 0;
-        for (ScreenSize orient : values()) {
-            if (orient == orientation) {
+        for (KeyboardState input : values()) {
+            if (value == input) {
                 return i;
             }
 
@@ -76,15 +75,14 @@ public enum ScreenSize implements ResourceEnum {
         return -1;
     }
 
-    public static ScreenSize getByIndex(int index) {
+    public static KeyboardState getByIndex(int index) {
         int i = 0;
-        for (ScreenSize orient : values()) {
+        for (KeyboardState value : values()) {
             if (i == index) {
-                return orient;
+                return value;
             }
             i++;
         }
-
         return null;
     }
 
