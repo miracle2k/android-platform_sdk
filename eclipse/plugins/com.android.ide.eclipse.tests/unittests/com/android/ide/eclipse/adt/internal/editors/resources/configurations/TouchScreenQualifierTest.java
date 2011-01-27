@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier;
-import com.android.sdklib.resources.TouchScreen;
+import com.android.resources.TouchScreen;
 
 import junit.framework.TestCase;
 

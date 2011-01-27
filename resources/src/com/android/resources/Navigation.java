@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.sdklib.resources;
+package com.android.resources;
 
 /**
- * Night enum.
- * <p/>This is used in the resource folder names.
+ * Navigation enum.
+ * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum NightMode implements ResourceEnum {
-    NOTNIGHT("notnight", "Not Night", "Day time"),
-    NIGHT("night", "Night", "Night time");
+public enum Navigation implements ResourceEnum {
+    NONAV("nonav", "None", "No navigation"), //$NON-NLS-1$
+    DPAD("dpad", "D-pad", "D-pad navigation"), //$NON-NLS-1$
+    TRACKBALL("trackball", "Trackball", "Trackball navigation"), //$NON-NLS-1$
+    WHEEL("wheel", "Wheel", "Wheel navigation"); //$NON-NLS-1$
 
     private final String mValue;
     private final String mShortDisplayValue;
     private final String mLongDisplayValue;
 
-    private NightMode(String value, String shortDisplayValue, String longDisplayValue) {
+    private Navigation(String value, String shortDisplayValue, String longDisplayValue) {
         mValue = value;
         mShortDisplayValue = shortDisplayValue;
         mLongDisplayValue = longDisplayValue;
@@ -39,10 +41,10 @@ public enum NightMode implements ResourceEnum {
      * @param value The qualifier value.
      * @return the enum for the qualifier value or null if no matching was found.
      */
-    public static NightMode getEnum(String value) {
-        for (NightMode mode : values()) {
-            if (mode.mValue.equals(value)) {
-                return mode;
+    public static Navigation getEnum(String value) {
+        for (Navigation nav : values()) {
+            if (nav.mValue.equals(value)) {
+                return nav;
             }
         }
 
@@ -61,10 +63,10 @@ public enum NightMode implements ResourceEnum {
         return mLongDisplayValue;
     }
 
-    public static int getIndex(NightMode value) {
+    public static int getIndex(Navigation value) {
         int i = 0;
-        for (NightMode mode : values()) {
-            if (mode == value) {
+        for (Navigation nav : values()) {
+            if (nav == value) {
                 return i;
             }
 
@@ -74,9 +76,9 @@ public enum NightMode implements ResourceEnum {
         return -1;
     }
 
-    public static NightMode getByIndex(int index) {
+    public static Navigation getByIndex(int index) {
         int i = 0;
-        for (NightMode value : values()) {
+        for (Navigation value : values()) {
             if (i == index) {
                 return value;
             }

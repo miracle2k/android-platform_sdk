@@ -29,15 +29,15 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenRatio
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TextInputMethodQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.TouchScreenQualifier;
-import com.android.sdklib.resources.Density;
-import com.android.sdklib.resources.Keyboard;
-import com.android.sdklib.resources.KeyboardState;
-import com.android.sdklib.resources.Navigation;
-import com.android.sdklib.resources.NavigationState;
-import com.android.sdklib.resources.ScreenOrientation;
-import com.android.sdklib.resources.ScreenRatio;
-import com.android.sdklib.resources.ScreenSize;
-import com.android.sdklib.resources.TouchScreen;
+import com.android.resources.Density;
+import com.android.resources.Keyboard;
+import com.android.resources.KeyboardState;
+import com.android.resources.Navigation;
+import com.android.resources.NavigationState;
+import com.android.resources.ScreenOrientation;
+import com.android.resources.ScreenRatio;
+import com.android.resources.ScreenSize;
+import com.android.resources.TouchScreen;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;

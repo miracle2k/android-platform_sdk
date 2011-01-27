@@ -13,5 +13,6 @@
 	<classpathentry kind="lib" path="/adt/libs/ninepatch.jar" sourcepath="/ninepatch"/>
 	<classpathentry kind="lib" path="/adt/libs/sdklib.jar" sourcepath="/SdkLib"/>
 	<classpathentry kind="lib" path="/adt/libs/sdkuilib.jar" sourcepath="/SdkUiLib"/>
+	<classpathentry kind="lib" path="/adt/libs/resources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

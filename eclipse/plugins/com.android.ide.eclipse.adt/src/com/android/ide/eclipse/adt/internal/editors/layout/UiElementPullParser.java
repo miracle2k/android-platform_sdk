@@ -22,7 +22,6 @@ import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_MATCH_PARENT;
 
 import com.android.ide.common.rendering.api.ILayoutPullParser;
-import com.android.ide.common.rendering.api.ResourceDensity;
 import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
@@ -30,6 +29,7 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.resources.Density;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 
@@ -571,7 +571,7 @@ public final class UiElementPullParser extends BasePullParser {
                         case COMPLEX_UNIT_DIP:
                         case COMPLEX_UNIT_SP: // intended fall-through since we don't
                                               // adjust for font size
-                            f *= (float)mDensityValue / ResourceDensity.DEFAULT_DENSITY;
+                            f *= (float)mDensityValue / Density.DEFAULT_DENSITY;
                             break;
                         case COMPLEX_UNIT_PT:
                             f *= mXdpi * (1.0f / 72);

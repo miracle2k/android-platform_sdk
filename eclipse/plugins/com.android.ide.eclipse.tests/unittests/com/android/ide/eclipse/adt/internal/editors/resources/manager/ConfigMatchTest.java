@@ -27,15 +27,15 @@ import com.android.ide.eclipse.adt.internal.resources.manager.SingleResourceFile
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
 import com.android.ide.eclipse.mock.Mocks;
+import com.android.resources.DockMode;
+import com.android.resources.Keyboard;
+import com.android.resources.KeyboardState;
+import com.android.resources.Navigation;
+import com.android.resources.NavigationState;
+import com.android.resources.NightMode;
+import com.android.resources.ScreenOrientation;
+import com.android.resources.TouchScreen;
 import com.android.sdklib.io.IAbstractFolder;
-import com.android.sdklib.resources.DockMode;
-import com.android.sdklib.resources.Keyboard;
-import com.android.sdklib.resources.KeyboardState;
-import com.android.sdklib.resources.Navigation;
-import com.android.sdklib.resources.NavigationState;
-import com.android.sdklib.resources.NightMode;
-import com.android.sdklib.resources.ScreenOrientation;
-import com.android.sdklib.resources.TouchScreen;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;

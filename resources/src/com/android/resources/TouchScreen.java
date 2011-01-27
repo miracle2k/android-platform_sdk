@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package com.android.sdklib.resources;
+package com.android.resources;
 
 /**
- * Navigation state enum.
- * <p/>This is used in the resource folder names.
+ * Touch screen enum.
+ * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
  */
-public enum NavigationState implements ResourceEnum {
-    EXPOSED("navexposed", "Exposed", "Exposed navigation"), //$NON-NLS-1$
-    HIDDEN("navhidden", "Hidden", "Hidden navigation");    //$NON-NLS-1$
+public enum TouchScreen implements ResourceEnum {
+    NOTOUCH("notouch", "No Touch", "No-touch screen"), //$NON-NLS-1$
+    STYLUS("stylus", "Stylus", "Stylus-based touchscreen"), //$NON-NLS-1$
+    FINGER("finger", "Finger", "Finger-based touchscreen"); //$NON-NLS-1$
 
     private final String mValue;
     private final String mShortDisplayValue;
     private final String mLongDisplayValue;
 
-    private NavigationState(String value, String shortDisplayValue, String longDisplayValue) {
+    private TouchScreen(String value, String displayValue, String longDisplayValue) {
         mValue = value;
-        mShortDisplayValue = shortDisplayValue;
+        mShortDisplayValue = displayValue;
         mLongDisplayValue = longDisplayValue;
     }
 
@@ -39,10 +40,10 @@ public enum NavigationState implements ResourceEnum {
      * @param value The qualifier value.
      * @return the enum for the qualifier value or null if no matching was found.
      */
-    public static NavigationState getEnum(String value) {
-        for (NavigationState state : values()) {
-            if (state.mValue.equals(value)) {
-                return state;
+    public static TouchScreen getEnum(String value) {
+        for (TouchScreen orient : values()) {
+            if (orient.mValue.equals(value)) {
+                return orient;
             }
         }
 
@@ -61,10 +62,10 @@ public enum NavigationState implements ResourceEnum {
         return mLongDisplayValue;
     }
 
-    public static int getIndex(NavigationState value) {
+    public static int getIndex(TouchScreen touch) {
         int i = 0;
-        for (NavigationState input : values()) {
-            if (value == input) {
+        for (TouchScreen t : values()) {
+            if (t == touch) {
                 return i;
             }
 
@@ -74,14 +75,15 @@ public enum NavigationState implements ResourceEnum {
         return -1;
     }
 
-    public static NavigationState getByIndex(int index) {
+    public static TouchScreen getByIndex(int index) {
         int i = 0;
-        for (NavigationState value : values()) {
+        for (TouchScreen value : values()) {
             if (i == index) {
                 return value;
             }
             i++;
         }
+
         return null;
     }
 

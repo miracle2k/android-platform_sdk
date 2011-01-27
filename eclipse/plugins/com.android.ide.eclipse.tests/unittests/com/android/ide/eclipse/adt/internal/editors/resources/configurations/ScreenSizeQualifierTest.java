@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQualifier;
-import com.android.sdklib.resources.ScreenSize;
+import com.android.resources.ScreenSize;
 
 import junit.framework.TestCase;
 

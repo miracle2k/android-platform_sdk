@@ -16,6 +16,8 @@
 
 package com.android.ide.common.rendering.api;
 
+import com.android.resources.ScreenSize;
+
 
 public class Params {
 
@@ -63,6 +65,8 @@ public class Params {
     private long mTimeout;
 
     private IImageFactory mImageFactory = null;
+
+    private ScreenSize mConfigScreenSize = null;
 
     /**
      *
@@ -137,6 +141,7 @@ public class Params {
         mCustomBackgroundColor = params.mCustomBackgroundColor;
         mTimeout = params.mTimeout;
         mImageFactory = params.mImageFactory;
+        mConfigScreenSize = params.mConfigScreenSize;
     }
 
     public void setOverrideBgColor(int color) {
@@ -150,6 +155,10 @@ public class Params {
 
     public void setImageFactory(IImageFactory imageFactory) {
         mImageFactory = imageFactory;
+    }
+
+    public void setConfigScreenSize(ScreenSize size) {
+        mConfigScreenSize  = size;
     }
 
     public ILayoutPullParser getLayoutDescription() {
@@ -218,5 +227,9 @@ public class Params {
 
     public IImageFactory getImageFactory() {
         return mImageFactory;
+    }
+
+    public ScreenSize getConfigScreenSize() {
+        return mConfigScreenSize;
     }
 }

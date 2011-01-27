@@ -38,14 +38,14 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice;
-import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
 import com.android.ide.eclipse.adt.internal.sdk.LayoutDeviceManager;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
+import com.android.resources.Density;
+import com.android.resources.DockMode;
+import com.android.resources.NightMode;
+import com.android.resources.ScreenOrientation;
 import com.android.sdklib.IAndroidTarget;
-import com.android.sdklib.resources.Density;
-import com.android.sdklib.resources.DockMode;
-import com.android.sdklib.resources.NightMode;
-import com.android.sdklib.resources.ScreenOrientation;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;

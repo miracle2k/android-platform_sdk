@@ -16,12 +16,12 @@
 
 package com.android.sdklib.internal.export;
 
+import com.android.resources.Density;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.export.MultiApkExportHelper.ExportException;
 import com.android.sdklib.internal.project.ApkSettings;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
-import com.android.sdklib.resources.Density;
 import com.android.sdklib.xml.ManifestData;
 import com.android.sdklib.xml.ManifestData.SupportsScreens;
 

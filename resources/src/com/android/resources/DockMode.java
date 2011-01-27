@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.sdklib.resources;
+package com.android.resources;
 
 /**
- * Keyboard state enum.
- * <p/>This is used in the manifest in the uses-configuration node and in the resource folder names.
+ * Dock enum.
+ * <p/>This is used in the resource folder names.
  */
-public enum KeyboardState implements ResourceEnum {
-    EXPOSED("keysexposed", "Exposed", "Exposed keyboard"), //$NON-NLS-1$
-    HIDDEN("keyshidden", "Hidden", "Hidden keyboard"),    //$NON-NLS-1$
-    SOFT("keyssoft", "Soft", "Soft keyboard");          //$NON-NLS-1$
+public enum DockMode implements ResourceEnum {
+    NONE("", "No Dock"),
+    CAR("car", "Car Dock"),
+    DESK("desk", "Desk Dock");
 
     private final String mValue;
-    private final String mShortDisplayValue;
-    private final String mLongDisplayValue;
+    private final String mDisplayValue;
 
-    private KeyboardState(String value, String shortDisplayValue, String longDisplayValue) {
+    private DockMode(String value, String display) {
         mValue = value;
-        mShortDisplayValue = shortDisplayValue;
-        mLongDisplayValue = longDisplayValue;
+        mDisplayValue = display;
     }
 
     /**
@@ -40,10 +38,10 @@ public enum KeyboardState implements ResourceEnum {
      * @param value The qualifier value.
      * @return the enum for the qualifier value or null if no matching was found.
      */
-    public static KeyboardState getEnum(String value) {
-        for (KeyboardState state : values()) {
-            if (state.mValue.equals(value)) {
-                return state;
+    public static DockMode getEnum(String value) {
+        for (DockMode mode : values()) {
+            if (mode.mValue.equals(value)) {
+                return mode;
             }
         }
 
@@ -55,17 +53,17 @@ public enum KeyboardState implements ResourceEnum {
     }
 
     public String getShortDisplayValue() {
-        return mShortDisplayValue;
+        return mDisplayValue;
     }
 
     public String getLongDisplayValue() {
-        return mLongDisplayValue;
+        return mDisplayValue;
     }
 
-    public static int getIndex(KeyboardState value) {
+    public static int getIndex(DockMode value) {
         int i = 0;
-        for (KeyboardState input : values()) {
-            if (value == input) {
+        for (DockMode mode : values()) {
+            if (mode == value) {
                 return i;
             }
 
@@ -75,9 +73,9 @@ public enum KeyboardState implements ResourceEnum {
         return -1;
     }
 
-    public static KeyboardState getByIndex(int index) {
+    public static DockMode getByIndex(int index) {
         int i = 0;
-        for (KeyboardState value : values()) {
+        for (DockMode value : values()) {
             if (i == index) {
                 return value;
             }
@@ -87,11 +85,10 @@ public enum KeyboardState implements ResourceEnum {
     }
 
     public boolean isFakeValue() {
-        return false;
+        return this == NONE; // NONE is not a real enum. it's used for internal state only.
     }
 
     public boolean isValidValueForDevice() {
-        return true;
+        return this != NONE;
     }
-
 }

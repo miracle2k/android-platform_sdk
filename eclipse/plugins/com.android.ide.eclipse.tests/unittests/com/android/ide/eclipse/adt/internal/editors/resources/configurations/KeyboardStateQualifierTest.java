@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.resources.configurations;
 
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.KeyboardStateQualifier;
-import com.android.sdklib.resources.KeyboardState;
+import com.android.resources.KeyboardState;
 
 import junit.framework.TestCase;
 
