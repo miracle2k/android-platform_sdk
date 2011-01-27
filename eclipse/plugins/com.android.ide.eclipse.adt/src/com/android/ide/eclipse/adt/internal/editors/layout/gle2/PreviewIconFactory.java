@@ -40,11 +40,11 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -348,16 +348,16 @@ public class PreviewIconFactory {
             File file = new File(imageDir, PREVIEW_INFO_FILE);
             if (file.exists()) {
                 Properties properties = new Properties();
-                Reader reader = null;
+                InputStream is = null;
                 try {
-                    reader = new BufferedReader(new FileReader(file));
-                    properties.load(reader);
+                    is = new BufferedInputStream(new FileInputStream(file));;
+                    properties.load(is);
                 } catch (IOException e) {
                     AdtPlugin.log(e, "Can't read preview properties");
                 } finally {
-                    if (reader != null) {
+                    if (is != null) {
                         try {
-                            reader.close();
+                            is.close();
                         } catch (IOException e) {
                             // Nothing useful can be done.
                         }
