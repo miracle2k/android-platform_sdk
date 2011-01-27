@@ -81,7 +81,6 @@
         android:layout_height="wrap_content">
     </ProgressBar>
     <QuickContactBadge
-        android:src="@android:drawable/ic_dialog_email"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:id="@+id/android_widget_QuickContactBadge">
