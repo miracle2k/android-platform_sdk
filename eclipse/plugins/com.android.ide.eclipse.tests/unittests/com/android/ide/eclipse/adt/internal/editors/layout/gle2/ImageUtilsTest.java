@@ -298,5 +298,9 @@ public class ImageUtilsTest extends TestCase {
         assertEquals(0xFFFF0000, sub.getRGB(9, 9));
     }
 
-
+    public void testGetColor() throws Exception {
+        assertEquals(0xFF000000, ImageUtils.getColor("#000"));
+        assertEquals(0xFF000000, ImageUtils.getColor("#000000"));
+        assertEquals(0xABCDEF91, ImageUtils.getColor("#ABCDEF91"));
+    }
 }

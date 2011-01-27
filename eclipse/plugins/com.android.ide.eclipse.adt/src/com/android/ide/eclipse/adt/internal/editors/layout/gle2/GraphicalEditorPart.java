@@ -1700,6 +1700,21 @@ public class GraphicalEditorPart extends EditorPart
         }
     }
 
+    ResourceResolver createResolver() {
+        String theme = mConfigComposite.getTheme();
+        boolean isProjectTheme = mConfigComposite.isProjectTheme();
+        Map<String, Map<String, ResourceValue>> configuredProjectRes =
+            mConfigListener.getConfiguredProjectResources();
+
+        // Get the framework resources
+        Map<String, Map<String, ResourceValue>> frameworkResources =
+            mConfigListener.getConfiguredFrameworkResources();
+
+        return ResourceResolver.create(
+                configuredProjectRes, frameworkResources,
+                theme, isProjectTheme);
+    }
+
     /**
      * Returns the resource name of this layout, NOT including the @layout/ prefix
      *

@@ -373,4 +373,58 @@ public class ImageUtils {
 
         return sub;
     }
+
+    /**
+     * Returns the color value represented by the given string value
+     * @param value the color value
+     * @return the color as an int
+     * @throw NumberFormatException if the conversion failed.
+     */
+    public static int getColor(String value) {
+        // Copied from ResourceHelper in layoutlib
+        if (value != null) {
+            if (value.startsWith("#") == false) { //$NON-NLS-1$
+                throw new NumberFormatException(
+                        String.format("Color value '%s' must start with #", value));
+            }
+
+            value = value.substring(1);
+
+            // make sure it's not longer than 32bit
+            if (value.length() > 8) {
+                throw new NumberFormatException(String.format(
+                        "Color value '%s' is too long. Format is either" +
+                        "#AARRGGBB, #RRGGBB, #RGB, or #ARGB",
+                        value));
+            }
+
+            if (value.length() == 3) { // RGB format
+                char[] color = new char[8];
+                color[0] = color[1] = 'F';
+                color[2] = color[3] = value.charAt(0);
+                color[4] = color[5] = value.charAt(1);
+                color[6] = color[7] = value.charAt(2);
+                value = new String(color);
+            } else if (value.length() == 4) { // ARGB format
+                char[] color = new char[8];
+                color[0] = color[1] = value.charAt(0);
+                color[2] = color[3] = value.charAt(1);
+                color[4] = color[5] = value.charAt(2);
+                color[6] = color[7] = value.charAt(3);
+                value = new String(color);
+            } else if (value.length() == 6) {
+                value = "FF" + value; //$NON-NLS-1$
+            }
+
+            // this is a RRGGBB or AARRGGBB value
+
+            // Integer.parseInt will fail to parse strings like "ff191919", so we use
+            // a Long, but cast the result back into an int, since we know that we're only
+            // dealing with 32 bit values.
+            return (int)Long.parseLong(value, 16);
+        }
+
+        throw new NumberFormatException();
+    }
+
 }

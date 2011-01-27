@@ -27,9 +27,9 @@ import com.android.ide.common.api.Rect;
 import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.LayoutLog;
+import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ViewInfo;
-import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -150,6 +150,7 @@ public class PaletteControl extends Composite {
      */
     private GraphicalEditorPart mEditor;
     private Color mBackground;
+    private Color mForeground;
 
     /** The palette modes control various ways to visualize and lay out the views */
     private static enum PaletteMode {
@@ -281,6 +282,10 @@ public class PaletteControl extends Composite {
             mBackground.dispose();
             mBackground = null;
         }
+        if (mForeground != null) {
+            mForeground.dispose();
+            mForeground = null;
+        }
 
         super.dispose();
     }
@@ -337,11 +342,20 @@ public class PaletteControl extends Composite {
         }
 
         if (mPaletteMode.isPreview()) {
-            RGB background = mPreviewIconFactory.getBackgroundColor();
+            if (mForeground != null) {
+                mForeground.dispose();
+                mForeground = null;
+            }
             if (mBackground != null) {
                 mBackground.dispose();
+                mBackground = null;
             }
+            RGB background = mPreviewIconFactory.getBackgroundColor();
             mBackground = new Color(getDisplay(), background);
+            RGB foreground = mPreviewIconFactory.getForegroundColor();
+            if (foreground != null) {
+                mForeground = new Color(getDisplay(), foreground);
+            }
         }
 
         AndroidTargetData targetData = Sdk.getCurrent().getTargetData(target);
@@ -452,6 +466,10 @@ public class PaletteControl extends Composite {
                 } else {
                     // Just use an Icon+Text item for these for now
                     item = new IconTextItem(parent, desc);
+                    if (mForeground != null) {
+                        item.setForeground(mForeground);
+                        item.setBackground(mBackground);
+                    }
                 }
                 break;
             }

@@ -13,14 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.eclipse.adt.AndroidConstants.DOT_PNG;
+import static com.android.ide.eclipse.adt.AndroidConstants.DOT_XML;
 
 import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.RenderSession;
+import com.android.ide.common.rendering.api.ResourceValue;
+import com.android.ide.common.rendering.api.StyleResourceValue;
 import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.common.rendering.api.Params.RenderingMode;
+import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -30,14 +36,18 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.ViewMetadataRepos
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
+import com.android.sdklib.util.Pair;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.graphics.RGB;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
@@ -53,14 +63,19 @@ import java.util.Properties;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
  * Factory which can provide preview icons for android views of a particular SDK and
  * editor's configuration chooser
  */
 public class PreviewIconFactory {
+    private static final String TAG_ITEM = "item"; //$NON-NLS-1$
+    private static final String ATTR_COLOR = "color";  //$NON-NLS-1$
     private PaletteControl mPalette;
     private RGB mBackground;
+    private RGB mForeground;
     private File mImageDir;
 
     private static final String PREVIEW_INFO_FILE = "preview.properties"; //$NON-NLS-1$
@@ -77,6 +92,7 @@ public class PreviewIconFactory {
     public void reset() {
         mImageDir = null;
         mBackground = null;
+        mForeground = null;
     }
 
     /**
@@ -143,8 +159,8 @@ public class PreviewIconFactory {
     }
 
     /**
-     * Renders ALL the widgets and then extracts image data for each view and saves it
-     * on disk
+     * Renders ALL the widgets and then extracts image data for each view and saves it on
+     * disk
      */
     private boolean render() {
         LayoutEditor layoutEditor = mPalette.getEditor().getLayoutEditor();
@@ -209,10 +225,21 @@ public class PreviewIconFactory {
 
                         // TODO - use resource resolution instead?
                         if (mBackground == null) {
-                            int rgb = image.getRGB(image.getWidth()-1, image.getHeight()-1);
-                            RGB color = new RGB((rgb & 0xFF0000) >> 16, (rgb & 0xFF00) >> 8,
-                                    rgb & 0xFF);
-                            storeBackground(imageDir, color);
+                            Pair<RGB, RGB> themeColors = getColorsFromTheme();
+
+                            RGB bg = themeColors.getFirst();
+                            RGB fg = themeColors.getSecond();
+
+                            if (bg == null) {
+                                int p = image.getRGB(image.getWidth() - 1, image.getHeight() - 1);
+                                bg = new RGB((p & 0xFF0000) >> 16, (p & 0xFF00) >> 8, p & 0xFF);
+                                // This isn't reliable - for example, for some themes the
+                                // background is a 9 patch image - so in this case don't
+                                // set the foreground color
+                                fg = null;
+                            }
+
+                            storeBackground(imageDir, bg, fg);
                         }
 
                         List<ViewInfo> viewInfoList = session.getRootViews();
@@ -220,6 +247,8 @@ public class PreviewIconFactory {
                             // We don't render previews under a <merge> so there should
                             // only be one root.
                             ViewInfo firstRoot = viewInfoList.get(0);
+                            int parentX = firstRoot.getLeft();
+                            int parentY = firstRoot.getTop();
                             List<ViewInfo> infos = firstRoot.getChildren();
                             for (ViewInfo info : infos) {
                                 Object cookie = info.getCookie();
@@ -233,10 +262,10 @@ public class PreviewIconFactory {
                                     // On Windows, perhaps we need to rename instead?
                                     file.delete();
                                 }
-                                int x1 = info.getLeft();
-                                int y1 = info.getTop();
-                                int x2 = info.getRight();
-                                int y2 = info.getBottom();
+                                int x1 = parentX + info.getLeft();
+                                int y1 = parentY + info.getTop();
+                                int x2 = parentX + info.getRight();
+                                int y2 = parentY + info.getBottom();
                                 if (x1 != x2 && y1 != y2) {
                                     savePreview(file, image, x1, y1, x2, y2);
                                 }
@@ -250,6 +279,125 @@ public class PreviewIconFactory {
         }
 
         return true;
+    }
+
+    /**
+     * Look up the background and foreground colors from the theme. May not find either
+     * the background or foreground or both, but will always return a pair of possibly
+     * null colors.
+     *
+     * @return a pair of possibly null color descriptions
+     */
+    private Pair<RGB, RGB> getColorsFromTheme() {
+        RGB background = null;
+        RGB foreground = null;
+
+        ResourceResolver resources = mPalette.getEditor().createResolver();
+        StyleResourceValue theme = resources.getCurrentTheme();
+        if (theme != null) {
+            background = resolveThemeColor(resources, "windowBackground"); //$NON-NLS-1$
+            if (background == null) {
+                background = resolveThemeColor(resources, "colorBackground"); //$NON-NLS-1$
+            }
+            foreground = resolveThemeColor(resources, "textColorPrimary"); //$NON-NLS-1$
+        }
+
+        return Pair.of(background, foreground);
+    }
+
+    private static RGB resolveThemeColor(ResourceResolver resources, String resourceName) {
+        ResourceValue textColor = resources.findItemInTheme(resourceName);
+        textColor = resources.resolveResValue(textColor);
+        if (textColor == null) {
+            return null;
+        }
+        String value = textColor.getValue();
+
+        while (value != null) {
+            if (value.startsWith("#")) { //$NON-NLS-1$
+                try {
+                    int rgba = ImageUtils.getColor(value);
+                    // Drop alpha channel
+                    return new RGB((rgba & 0xFF0000) >> 16, (rgba & 0xFF00) >> 8, rgba & 0xFF);
+                } catch (NumberFormatException nfe) {
+                    ;
+                }
+                return null;
+            }
+            if (value.startsWith("@")) { //$NON-NLS-1$
+                boolean isFramework = textColor.isFramework();
+                textColor = resources.findResValue(value, isFramework);
+                if (textColor != null) {
+                    value = textColor.getValue();
+                } else {
+                    break;
+                }
+            } else {
+                File file = new File(value);
+                if (file.exists() && file.getName().endsWith(DOT_XML)) {
+                    // Parse
+                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                    BufferedInputStream bis = null;
+                    try {
+                        bis = new BufferedInputStream(new FileInputStream(file));
+                        InputSource is = new InputSource(bis);
+                        factory.setNamespaceAware(true);
+                        factory.setValidating(false);
+                        DocumentBuilder builder = factory.newDocumentBuilder();
+                        Document document = builder.parse(is);
+                        NodeList items = document.getElementsByTagName(TAG_ITEM);
+
+                        value = findColorValue(items);
+                        continue;
+                    } catch (Exception e) {
+                        AdtPlugin.log(e, "Failed parsing color file %1$s", file.getName());
+                    } finally {
+                        if (bis != null) {
+                            try {
+                                bis.close();
+                            } catch (IOException e) {
+                                // Nothing useful can be done here
+                            }
+                        }
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     *  Searches a color XML file for the color definition element that does not
+     * have an associated state and returns its color
+     */
+    private static String findColorValue(NodeList items) {
+        for (int i = 0, n = items.getLength(); i < n; i++) {
+            // Find non-state color definition
+            Node item = items.item(i);
+            boolean hasState = false;
+            if (item.getNodeType() == Node.ELEMENT_NODE) {
+                Element element = (Element) item;
+                if (element.hasAttributeNS(ANDROID_URI, ATTR_COLOR)) {
+                    NamedNodeMap attributes = element.getAttributes();
+                    for (int j = 0, m = attributes.getLength(); j < m; j++) {
+                        Attr attribute = (Attr) attributes.item(j);
+                        if (attribute.getLocalName().startsWith("state_")) { //$NON-NLS-1$
+                            hasState = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasState) {
+                        return element.getAttributeNS(ANDROID_URI, ATTR_COLOR);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private String getFileName(ElementDescriptor descriptor) {
@@ -304,8 +452,8 @@ public class PreviewIconFactory {
             if (themeName.startsWith(themeNamePrefix)) {
                 themeName = themeName.substring(themeNamePrefix.length());
             }
-            String dirName = String.format("palette-%s-%s-%s",
-                    cleanup(targetName), cleanup(themeName), cleanup(mPalette.getCurrentDevice()));
+            String dirName = String.format("palette-preview-%s-%s-%s", cleanup(targetName),
+                    cleanup(themeName), cleanup(mPalette.getCurrentDevice()));
             IPath dirPath = pluginState.append(dirName);
 
             mImageDir = new File(dirPath.toOSString());
@@ -328,21 +476,50 @@ public class PreviewIconFactory {
         }
     }
 
-    private void storeBackground(File imageDir, RGB color) {
-        mBackground = color;
+    private void storeBackground(File imageDir, RGB bg, RGB fg) {
+        mBackground = bg;
+        mForeground = fg;
         File file = new File(imageDir, PREVIEW_INFO_FILE);
-        String colors = String.format("background=%02x,%02x,%02x",
-                color.red, color.green, color.blue);
+        String colors = String.format(
+                "background=#%02x%02x%02x\nforeground=#%02x%02x%02x\\n", //$NON-NLS-1$
+                bg.red, bg.green, bg.blue,
+                fg.red, fg.green, fg.blue);
         AdtPlugin.writeFile(file, colors);
     }
 
     public RGB getBackgroundColor() {
         if (mBackground == null) {
-            mBackground = null;
+            initColors();
+        }
+
+        return mBackground;
+    }
+
+    public RGB getForegroundColor() {
+        if (mForeground == null) {
+            initColors();
+        }
+
+        return mForeground;
+    }
+
+    public void initColors() {
+        try {
+            // Already initialized? Foreground can be null which would call
+            // initColors again and again, but background is never null after
+            // initialization so we use it as the have-initialized flag.
+            if (mBackground != null) {
+                return;
+            }
 
             File imageDir = getImageDir(false);
             if (!imageDir.exists()) {
                 render();
+
+                // Initialized as part of the render
+                if (mBackground != null) {
+                    return;
+                }
             }
 
             File file = new File(imageDir, PREVIEW_INFO_FILE);
@@ -366,22 +543,22 @@ public class PreviewIconFactory {
 
                 String colorString = (String) properties.get("background"); //$NON-NLS-1$
                 if (colorString != null) {
-                    String[] colors = colorString.split(","); //$NON-NLS-1$
-                    if (colors.length == 3) {
-                        colorString = colorString.trim();
-                        int red = Integer.parseInt(colors[0], 16);
-                        int green = Integer.parseInt(colors[1], 16);
-                        int blue = Integer.parseInt(colors[2], 16);
-                        mBackground = new RGB(red, green, blue);
-                    }
+                    int rgb = ImageUtils.getColor(colorString.trim());
+                    mBackground = new RGB((rgb & 0xFF0000) >> 16, (rgb & 0xFF00) >> 8, rgb & 0xFF);
+                }
+                colorString = (String) properties.get("foreground"); //$NON-NLS-1$
+                if (colorString != null) {
+                    int rgb = ImageUtils.getColor(colorString.trim());
+                    mForeground = new RGB((rgb & 0xFF0000) >> 16, (rgb & 0xFF00) >> 8, rgb & 0xFF);
                 }
             }
 
             if (mBackground == null) {
-                mBackground = new RGB(0,0,0);
+                mBackground = new RGB(0, 0, 0);
             }
+            // mForeground is allowed to be null.
+        } catch (Throwable t) {
+            AdtPlugin.log(t, "Cannot initialize preview color settings");
         }
-
-        return mBackground;
     }
 }
