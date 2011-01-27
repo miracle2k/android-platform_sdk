@@ -164,7 +164,7 @@ public class PlayAnimationMenu extends SubmenuAction {
                                 }
 
                                 ImageOverlay imageOverlay = mCanvas.getImageOverlay();
-                                imageOverlay.setImage(s.getImage());
+                                imageOverlay.setImage(s.getImage(), s.isFloatingWindow());
                                 synchronized (this) {
                                     if (mPendingDrawing == false) {
                                         mCanvas.getDisplay().asyncExec(new Runnable() {

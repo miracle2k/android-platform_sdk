@@ -73,6 +73,16 @@ public class RenderSession {
         return null;
     }
 
+    /**
+     * Returns true if the current session is rendered as a floating window.
+     * <p/>
+     * If true this means the alpha channel of {@link #getImage()} should be respected. If false,
+     * if can be dropped if it's more convenient/faster.
+     * @return whether the current session is rendered as a floating window.
+     */
+    public boolean isFloatingWindow() {
+        return true;
+    }
 
     /**
      * Returns a map of (XML attribute name, attribute value) containing only default attribute
