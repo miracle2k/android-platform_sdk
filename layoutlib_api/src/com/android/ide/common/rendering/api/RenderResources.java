@@ -50,11 +50,32 @@ public class RenderResources {
     }
 
     /**
-     * Return the {@link StyleResourceValue} representing the current theme.
-     * @return the theme or null if there is no theme.
+     * Returns the {@link StyleResourceValue} representing the current theme.
+     * @return the theme or null if there is no current theme.
      */
-    public StyleResourceValue getTheme() {
+    public StyleResourceValue getCurrentTheme() {
         return null;
+    }
+
+    /**
+     * Returns a theme by its name.
+     *
+     * @param name the name of the theme
+     * @param frameworkTheme whether the theme is a framework theme.
+     * @return the theme or null if there's no match
+     */
+    public StyleResourceValue getTheme(String name, boolean frameworkTheme) {
+        return null;
+    }
+
+    /**
+     * Returns whether a theme is a parent of a given theme.
+     * @param parentTheme the parent theme
+     * @param childTheme the child theme.
+     * @return true if the parent theme is indeed a parent theme of the child theme.
+     */
+    public boolean themeIsParentOf(StyleResourceValue parentTheme, StyleResourceValue childTheme) {
+        return false;
     }
 
     /**
@@ -83,8 +104,9 @@ public class RenderResources {
      * @return the {@link ResourceValue} object or <code>null</code>
      */
     public ResourceValue findItemInTheme(String itemName) {
-        if (getTheme() != null) {
-            return findItemInStyle(getTheme(), itemName);
+        StyleResourceValue currentTheme = getCurrentTheme();
+        if (currentTheme != null) {
+            return findItemInStyle(currentTheme, itemName);
         }
 
         return null;

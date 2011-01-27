@@ -109,8 +109,43 @@ public class ResourceResolver extends RenderResources {
     }
 
     @Override
-    public StyleResourceValue getTheme() {
+    public StyleResourceValue getCurrentTheme() {
         return mTheme;
+    }
+
+    @Override
+    public StyleResourceValue getTheme(String name, boolean frameworkTheme) {
+        ResourceValue theme = null;
+
+        if (frameworkTheme) {
+            Map<String, ResourceValue> frameworkStyleMap = mFrameworkResources.get(RES_STYLE);
+            if (frameworkStyleMap != null) {
+                theme = frameworkStyleMap.get(name);
+            }
+        } else {
+            Map<String, ResourceValue> projectStyleMap = mProjectResources.get(RES_STYLE);
+            if (projectStyleMap != null) {
+                theme = projectStyleMap.get(name);
+            }
+        }
+
+        if (theme instanceof StyleResourceValue) {
+            return (StyleResourceValue) theme;
+        }
+
+        return null;
+    }
+
+    @Override
+    public boolean themeIsParentOf(StyleResourceValue parentTheme, StyleResourceValue childTheme) {
+        do {
+            childTheme = mStyleInheritanceMap.get(childTheme);
+            if (childTheme == null) {
+                return false;
+            } else if (childTheme == parentTheme) {
+                return true;
+            }
+        } while (true);
     }
 
     @Override
