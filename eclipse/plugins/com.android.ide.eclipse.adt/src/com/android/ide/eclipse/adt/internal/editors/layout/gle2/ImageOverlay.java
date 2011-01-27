@@ -86,7 +86,7 @@ public class ImageOverlay extends Overlay implements IImageFactory {
      * @param awtImage The AWT image to be rendered as an SWT image.
      * @return The corresponding SWT image, or null.
      */
-    public synchronized Image setImage(BufferedImage awtImage) {
+    public synchronized Image setImage(BufferedImage awtImage, boolean isFloatingWindow) {
         if (awtImage != mAwtImage || awtImage == null) {
             mAwtImage = null;
 
@@ -97,11 +97,16 @@ public class ImageOverlay extends Overlay implements IImageFactory {
             if (awtImage == null) {
                 mImage = null;
             } else {
-                mImage = SwtUtils.convertToSwt(mCanvas.getDisplay(), awtImage, false, -1);
+                mImage = SwtUtils.convertToSwt(mCanvas.getDisplay(), awtImage, true, -1);
             }
         } else {
             assert awtImage instanceof SwtReadyBufferedImage;
-            mImage = ((SwtReadyBufferedImage)awtImage).getSwtImage();
+
+            if (isFloatingWindow) {
+                mImage = SwtUtils.convertToSwt(mCanvas.getDisplay(), awtImage, true, -1);
+            } else {
+                mImage = ((SwtReadyBufferedImage)awtImage).getSwtImage();
+            }
         }
 
         return mImage;
@@ -268,5 +273,4 @@ public class ImageOverlay extends Overlay implements IImageFactory {
 
         return mAwtImage;
     }
-
 }

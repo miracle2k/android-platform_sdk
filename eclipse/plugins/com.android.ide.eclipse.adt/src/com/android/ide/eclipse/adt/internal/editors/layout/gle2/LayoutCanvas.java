@@ -520,7 +520,7 @@ public class LayoutCanvas extends Canvas {
 
         mViewHierarchy.setSession(session, explodedNodes);
         if (mViewHierarchy.isValid() && session != null) {
-            Image image = mImageOverlay.setImage(session.getImage());
+            Image image = mImageOverlay.setImage(session.getImage(), session.isFloatingWindow());
 
             mOutlinePage.setModel(mViewHierarchy.getRoot());
 
