@@ -36,7 +36,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.ViewMetadataRepos
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.resource.ImageDescriptor;

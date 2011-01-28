@@ -27,7 +27,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

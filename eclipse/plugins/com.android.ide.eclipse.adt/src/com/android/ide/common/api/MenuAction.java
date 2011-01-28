@@ -16,7 +16,7 @@
 
 package com.android.ide.common.api;
 
-import com.android.sdklib.annotations.Nullable;
+import com.android.annotations.Nullable;
 
 import java.util.Map;
 

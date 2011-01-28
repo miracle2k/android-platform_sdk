@@ -17,15 +17,36 @@
 package com.android.ide.common.rendering.legacy;
 
 import com.android.ide.common.rendering.api.IProjectCallback;
+import com.android.resources.ResourceType;
+import com.android.util.Pair;
 
 /**
- * Intermediary interface extending both old and new project call back from the layout lib API.
+ * Intermediary class implementing parts of both the old and new project call back from the
+ * layout lib API.
  *
  * Clients should use this instead of {@link IProjectCallback} to target both old and new
  * Layout Libraries.
  *
  */
 @SuppressWarnings("deprecation")
-public interface ILegacyCallback extends com.android.ide.common.rendering.api.IProjectCallback,
+public abstract class LegacyCallback implements
+        com.android.ide.common.rendering.api.IProjectCallback,
         com.android.layoutlib.api.IProjectCallback {
+
+    // ------ implementation of the old interface using the new interface.
+
+    public final Integer getResourceValue(String type, String name) {
+        return getResourceId(ResourceType.getEnum(type), name);
+    }
+
+    public final String[] resolveResourceValue(int id) {
+        Pair<ResourceType, String> info = resolveResourceId(id);
+        return new String[] { info.getSecond(), info.getFirst().getName() };
+    }
+
+    public final String resolveResourceValue(int[] id) {
+        return resolveResourceId(id);
+    }
+
+    // ------
 }

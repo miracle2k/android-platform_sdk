@@ -24,6 +24,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 import com.android.resources.ResourceType;
 import com.android.sdklib.xml.ManifestData;
+import com.android.util.Pair;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarkerDelta;
@@ -150,8 +151,8 @@ public final class CompiledResourcesMonitor implements IFileListener, IProjectLi
                         // create the maps to store the result of the parsing
                         Map<ResourceType, Map<String, Integer>> resourceValueMap =
                             new EnumMap<ResourceType, Map<String, Integer>>(ResourceType.class);
-                        Map<Integer, String[]> genericValueToNameMap =
-                            new HashMap<Integer, String[]>();
+                        Map<Integer, Pair<ResourceType, String>> genericValueToNameMap =
+                            new HashMap<Integer, Pair<ResourceType, String>>();
                         Map<IntArrayWrapper, String> styleableValueToNameMap =
                             new HashMap<IntArrayWrapper, String>();
 
@@ -181,7 +182,8 @@ public final class CompiledResourcesMonitor implements IFileListener, IProjectLi
      * @param resourceValueMap
      * @return True if we managed to parse the R class.
      */
-    private boolean parseClass(Class<?> rClass, Map<Integer, String[]> genericValueToNameMap,
+    private boolean parseClass(Class<?> rClass,
+            Map<Integer, Pair<ResourceType, String>> genericValueToNameMap,
             Map<IntArrayWrapper, String> styleableValueToNameMap, Map<ResourceType,
             Map<String, Integer>> resourceValueMap) {
         try {
@@ -205,8 +207,7 @@ public final class CompiledResourcesMonitor implements IFileListener, IProjectLi
                                         f.getName());
                             } else if (type == int.class) {
                                 Integer value = (Integer) f.get(null);
-                                genericValueToNameMap.put(value,
-                                        new String[] { f.getName(), resType.getName() });
+                                genericValueToNameMap.put(value, Pair.of(resType, f.getName()));
                                 fullMap.put(f.getName(), value);
                             } else {
                                 assert false;

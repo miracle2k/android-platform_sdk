@@ -21,7 +21,7 @@ import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;

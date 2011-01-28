@@ -27,7 +27,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.wizards.newxmlfile.NewXmlFileWizard;
 import com.android.resources.ResourceType;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.Action;

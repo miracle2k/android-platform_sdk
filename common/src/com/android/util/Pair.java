@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.sdklib.util;
+package com.android.util;
 
 /**
  * A Pair class is simply a 2-tuple for use in this package. We might want to

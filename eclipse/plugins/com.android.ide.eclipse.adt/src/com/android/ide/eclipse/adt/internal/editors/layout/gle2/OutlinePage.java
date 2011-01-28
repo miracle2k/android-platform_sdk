@@ -21,8 +21,10 @@ import static com.android.ide.common.layout.LayoutConstants.ATTR_SRC;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
 import static com.android.ide.common.layout.LayoutConstants.DRAWABLE_PREFIX;
 import static com.android.ide.common.layout.LayoutConstants.LAYOUT_PREFIX;
+
 import static org.eclipse.jface.viewers.StyledString.QUALIFIER_STYLER;
 
+import com.android.annotations.VisibleForTesting;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.layout.BaseLayoutRule;
@@ -37,8 +39,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.ui.ErrorImageComposite;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.sdklib.annotations.VisibleForTesting;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;

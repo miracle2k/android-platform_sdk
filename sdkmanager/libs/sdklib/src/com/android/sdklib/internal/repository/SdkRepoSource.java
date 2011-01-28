@@ -16,7 +16,7 @@
 
 package com.android.sdklib.internal.repository;
 
-import com.android.sdklib.annotations.Nullable;
+import com.android.annotations.Nullable;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
 import com.android.sdklib.repository.RepoConstants;

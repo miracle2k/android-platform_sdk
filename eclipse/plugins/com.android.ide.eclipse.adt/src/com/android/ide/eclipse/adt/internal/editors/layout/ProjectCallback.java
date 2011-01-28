@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 
 import com.android.ide.common.rendering.api.IProjectCallback;
 import com.android.ide.common.rendering.api.LayoutLog;
-import com.android.ide.common.rendering.legacy.ILegacyCallback;
+import com.android.ide.common.rendering.legacy.LegacyCallback;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
@@ -27,6 +27,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.ManifestData;
+import com.android.util.Pair;
 
 import org.eclipse.core.resources.IProject;
 
@@ -41,7 +42,7 @@ import java.util.TreeSet;
  * <p/>This implements {@link IProjectCallback} for the old and new API through
  * {@link ILegacyCallback}
  */
-public final class ProjectCallback implements ILegacyCallback {
+public final class ProjectCallback extends LegacyCallback {
 
     private final HashMap<String, Class<?>> mLoadedClasses = new HashMap<String, Class<?>>();
     private final Set<String> mMissingClasses = new TreeSet<String>();
@@ -205,7 +206,7 @@ public final class ProjectCallback implements ILegacyCallback {
         return mNamespace;
     }
 
-    public String[] resolveResourceValue(int id) {
+    public Pair<ResourceType, String> resolveResourceId(int id) {
         if (mProjectRes != null) {
             return mProjectRes.resolveResourceValue(id);
         }
@@ -213,7 +214,7 @@ public final class ProjectCallback implements ILegacyCallback {
         return null;
     }
 
-    public String resolveResourceValue(int[] id) {
+    public String resolveResourceId(int[] id) {
         if (mProjectRes != null) {
             return mProjectRes.resolveResourceValue(id);
         }
@@ -221,14 +222,7 @@ public final class ProjectCallback implements ILegacyCallback {
         return null;
     }
 
-    /**
-     * @deprecated use {@link #getResourceValue(ResourceType, String)} instead.
-     */
-    public Integer getResourceValue(String type, String name) {
-        return getResourceValue(ResourceType.getEnum(type), name);
-    }
-
-    public Integer getResourceValue(ResourceType type, String name) {
+    public Integer getResourceId(ResourceType type, String name) {
         if (mProjectRes != null) {
             return mProjectRes.getResourceValue(type, name);
         }

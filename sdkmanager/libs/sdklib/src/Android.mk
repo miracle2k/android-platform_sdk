@@ -21,7 +21,7 @@ LOCAL_JAVA_RESOURCE_DIRS := .
 LOCAL_JAR_MANIFEST := ../manifest.txt
 LOCAL_JAVA_LIBRARIES := \
         androidprefs \
-        resources \
+        common \
         commons-compress-1.0
 
 LOCAL_MODULE := sdklib

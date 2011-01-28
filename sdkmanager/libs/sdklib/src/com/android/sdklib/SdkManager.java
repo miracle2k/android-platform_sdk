@@ -21,7 +21,7 @@ import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion.AndroidVersionException;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.io.FileWrapper;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import java.io.File;
 import java.io.FileInputStream;

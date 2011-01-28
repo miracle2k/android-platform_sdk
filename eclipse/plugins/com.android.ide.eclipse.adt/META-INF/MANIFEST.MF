@@ -13,7 +13,7 @@ Bundle-ClassPath: .,
  libs/kxml2-2.3.0.jar,
  libs/layoutlib_api.jar,
  libs/ide_common.jar,
- libs/resources.jar
+ libs/common.jar
 Bundle-Activator: com.android.ide.eclipse.adt.AdtPlugin
 Bundle-Vendor: The Android Open Source Project
 Require-Bundle: com.android.ide.eclipse.ddms,
@@ -47,7 +47,8 @@ Require-Bundle: com.android.ide.eclipse.ddms,
  org.eclipse.ltk.ui.refactoring,
  org.eclipse.core.expressions
 Eclipse-LazyStart: true
-Export-Package: com.android.ide.common.api;x-friends:="com.android.ide.eclipse.tests",
+Export-Package: com.android.annotations;x-friends:="com.android.ide.eclipse.tests",
+ com.android.ide.common.api;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.common.layout;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.common.log;x-friends:="com.android.ide.eclipse.tests",
  com.android.ide.common.rendering;x-friends:="com.android.ide.eclipse.tests",
@@ -110,7 +111,6 @@ Export-Package: com.android.ide.common.api;x-friends:="com.android.ide.eclipse.t
  com.android.prefs;x-friends:="com.android.ide.eclipse.tests",
  com.android.resources;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib;x-friends:="com.android.ide.eclipse.tests",
- com.android.sdklib.annotations;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib.build;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib.internal.avd;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdklib.internal.build;x-friends:="com.android.ide.eclipse.tests",
@@ -128,6 +128,7 @@ Export-Package: com.android.ide.common.api;x-friends:="com.android.ide.eclipse.t
  com.android.sdkuilib.internal.widgets;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdkuilib.repository;x-friends:="com.android.ide.eclipse.tests",
  com.android.sdkuilib.ui;x-friends:="com.android.ide.eclipse.tests",
+ com.android.util;x-friends:="com.android.ide.eclipse.tests",
  org.apache.commons.compress.archivers;x-friends:="com.android.ide.eclipse.tests",
  org.apache.commons.compress.archivers.ar;x-friends:="com.android.ide.eclipse.tests",
  org.apache.commons.compress.archivers.cpio;x-friends:="com.android.ide.eclipse.tests",

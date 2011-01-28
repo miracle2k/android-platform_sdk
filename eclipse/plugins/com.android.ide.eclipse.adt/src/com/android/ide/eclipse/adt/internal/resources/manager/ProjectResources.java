@@ -28,6 +28,7 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
 import com.android.resources.ResourceType;
 import com.android.sdklib.io.IAbstractFolder;
+import com.android.util.Pair;
 
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -62,7 +63,7 @@ public class ProjectResources implements IResourceRepository {
     /** Map of (name, id) for resources of type {@link ResourceType#ID} coming from R.java */
     private Map<ResourceType, Map<String, Integer>> mResourceValueMap;
     /** Map of (id, [name, resType]) for all resources coming from R.java */
-    private Map<Integer, String[]> mResIdValueToNameMap;
+    private Map<Integer, Pair<ResourceType, String>> mResIdValueToNameMap;
     /** Map of (int[], name) for styleable resources coming from R.java */
     private Map<IntArrayWrapper, String> mStyleableValueToNameMap;
 
@@ -522,7 +523,7 @@ public class ProjectResources implements IResourceRepository {
      * @param id
      * @return an array of 2 strings { name, type } or null if the id could not be resolved
      */
-    public String[] resolveResourceValue(int id) {
+    public Pair<ResourceType, String> resolveResourceValue(int id) {
         if (mResIdValueToNameMap != null) {
             return mResIdValueToNameMap.get(id);
         }
@@ -922,7 +923,7 @@ public class ProjectResources implements IResourceRepository {
      * @param resourceValueMap a map of (name, id) for resources of type {@link ResourceType#ID}.
      * The list is acquired by the {@link ProjectResources} object.
      */
-    void setCompiledResources(Map<Integer, String[]> resIdValueToNameMap,
+    void setCompiledResources(Map<Integer, Pair<ResourceType, String>> resIdValueToNameMap,
             Map<IntArrayWrapper, String> styleableValueMap,
             Map<ResourceType, Map<String, Integer>> resourceValueMap) {
         mResourceValueMap = resourceValueMap;
