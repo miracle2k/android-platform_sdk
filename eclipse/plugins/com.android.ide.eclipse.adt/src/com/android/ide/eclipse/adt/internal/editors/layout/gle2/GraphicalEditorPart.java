@@ -1703,11 +1703,11 @@ public class GraphicalEditorPart extends EditorPart
     ResourceResolver createResolver() {
         String theme = mConfigComposite.getTheme();
         boolean isProjectTheme = mConfigComposite.isProjectTheme();
-        Map<String, Map<String, ResourceValue>> configuredProjectRes =
+        Map<ResourceType, Map<String, ResourceValue>> configuredProjectRes =
             mConfigListener.getConfiguredProjectResources();
 
         // Get the framework resources
-        Map<String, Map<String, ResourceValue>> frameworkResources =
+        Map<ResourceType, Map<String, ResourceValue>> frameworkResources =
             mConfigListener.getConfiguredFrameworkResources();
 
         return ResourceResolver.create(
