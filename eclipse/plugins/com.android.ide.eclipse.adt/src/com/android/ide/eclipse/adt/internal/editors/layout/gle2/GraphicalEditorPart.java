@@ -56,7 +56,6 @@ import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.editors.xml.Hyperlinks;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
@@ -69,6 +68,7 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
 import com.android.resources.Density;
+import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.IAbstractFile;
@@ -230,8 +230,8 @@ public class GraphicalEditorPart extends EditorPart
      */
     private Reference mIncludedWithin;
 
-    private Map<String, Map<String, ResourceValue>> mConfiguredFrameworkRes;
-    private Map<String, Map<String, ResourceValue>> mConfiguredProjectRes;
+    private Map<ResourceType, Map<String, ResourceValue>> mConfiguredFrameworkRes;
+    private Map<ResourceType, Map<String, ResourceValue>> mConfiguredProjectRes;
     private ProjectCallback mProjectCallback;
     private boolean mNeedsRecompute = false;
 
@@ -719,7 +719,7 @@ public class GraphicalEditorPart extends EditorPart
             mPalette.reloadPalette(target);
         }
 
-        public Map<String, Map<String, ResourceValue>> getConfiguredFrameworkResources() {
+        public Map<ResourceType, Map<String, ResourceValue>> getConfiguredFrameworkResources() {
             if (mConfiguredFrameworkRes == null && mConfigComposite != null) {
                 ProjectResources frameworkRes = getFrameworkResources();
 
@@ -735,7 +735,7 @@ public class GraphicalEditorPart extends EditorPart
             return mConfiguredFrameworkRes;
         }
 
-        public Map<String, Map<String, ResourceValue>> getConfiguredProjectResources() {
+        public Map<ResourceType, Map<String, ResourceValue>> getConfiguredProjectResources() {
             if (mConfiguredProjectRes == null && mConfigComposite != null) {
                 ProjectResources project = getProjectResources();
 
@@ -1567,11 +1567,11 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         // Get the resources of the file's project.
-        Map<String, Map<String, ResourceValue>> configuredProjectRes =
+        Map<ResourceType, Map<String, ResourceValue>> configuredProjectRes =
             mConfigListener.getConfiguredProjectResources();
 
         // Get the framework resources
-        Map<String, Map<String, ResourceValue>> frameworkResources =
+        Map<ResourceType, Map<String, ResourceValue>> frameworkResources =
             mConfigListener.getConfiguredFrameworkResources();
 
         // Abort the rendering if the resources are not found.
@@ -1635,7 +1635,7 @@ public class GraphicalEditorPart extends EditorPart
 
             // Find the layout file.
             Map<String, ResourceValue> layouts = configuredProjectRes.get(
-                    ResourceType.LAYOUT.getName());
+                    ResourceType.LAYOUT);
             ResourceValue contextLayout = layouts.get(contextLayoutName);
             if (contextLayout != null) {
                 File layoutFile = new File(contextLayout.getValue());
@@ -2024,14 +2024,14 @@ public class GraphicalEditorPart extends EditorPart
         // There is code to handle this, but it's in layoutlib; we should
         // expose that and use it here.
 
-        Map<String, Map<String, ResourceValue>> map;
+        Map<ResourceType, Map<String, ResourceValue>> map;
         map = isFrameworkResource ? mConfiguredFrameworkRes : mConfiguredProjectRes;
         if (map == null) {
             // Not yet configured
             return null;
         }
 
-        Map<String, ResourceValue> layoutMap = map.get(type.getName());
+        Map<String, ResourceValue> layoutMap = map.get(type);
         if (layoutMap != null) {
             ResourceValue value = layoutMap.get(name);
             if (value != null) {
@@ -2108,14 +2108,14 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     private String findString(String name, boolean isFrameworkResource) {
-        Map<String, Map<String, ResourceValue>> map;
+        Map<ResourceType, Map<String, ResourceValue>> map;
         map = isFrameworkResource ? mConfiguredFrameworkRes : mConfiguredProjectRes;
         if (map == null) {
             // Not yet configured
             return null;
         }
 
-        Map<String, ResourceValue> layoutMap = map.get(ResourceType.STRING.getName());
+        Map<String, ResourceValue> layoutMap = map.get(ResourceType.STRING);
         if (layoutMap != null) {
             ResourceValue value = layoutMap.get(name);
             if (value != null) {
@@ -2399,9 +2399,9 @@ public class GraphicalEditorPart extends EditorPart
      * @return a collection of resource names, never null but possibly empty
      */
     public Collection<String> getResourceNames(boolean framework, ResourceType type) {
-        Map<String, Map<String, ResourceValue>> map =
+        Map<ResourceType, Map<String, ResourceValue>> map =
             framework ? mConfiguredFrameworkRes : mConfiguredProjectRes;
-        Map<String, ResourceValue> animations = map.get(type.getName());
+        Map<String, ResourceValue> animations = map.get(type);
         if (animations != null) {
             return animations.keySet();
         } else {

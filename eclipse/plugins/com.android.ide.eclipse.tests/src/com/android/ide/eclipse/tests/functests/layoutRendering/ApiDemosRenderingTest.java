@@ -40,6 +40,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.tests.SdkTestCase;
 import com.android.layoutlib.api.IXmlPullParser;
+import com.android.resources.ResourceType;
 import com.android.resources.Density;
 import com.android.resources.Keyboard;
 import com.android.resources.KeyboardState;
@@ -105,6 +106,12 @@ public class ApiDemosRenderingTest extends SdkTestCase {
         public Integer getResourceValue(String type, String name) {
             Integer result = ++mIdCounter;
             mResourceMap.put(result, new String[] { name, type });
+            return result;
+        }
+
+        public Integer getResourceValue(ResourceType type, String name) {
+            Integer result = ++mIdCounter;
+            mResourceMap.put(result, new String[] { name, type.getName() });
             return result;
         }
 
@@ -182,9 +189,9 @@ public class ApiDemosRenderingTest extends SdkTestCase {
         FolderConfiguration config = getConfiguration();
 
         // get the configured resources
-        Map<String, Map<String, ResourceValue>> configuredFramework =
+        Map<ResourceType, Map<String, ResourceValue>> configuredFramework =
                 framework.getConfiguredResources(config);
-        Map<String, Map<String, ResourceValue>> configuredProject =
+        Map<ResourceType, Map<String, ResourceValue>> configuredProject =
                 project.getConfiguredResources(config);
 
         boolean saveFiles = System.getenv("save_file") != null;

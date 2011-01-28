@@ -18,7 +18,6 @@ package com.android.ide.eclipse.adt.internal.editors.layout;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
@@ -28,6 +27,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager.IResourceListener;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.resources.IFile;

@@ -289,7 +289,6 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
         loaderLabel.setLayoutData(gd);
 
         mInstrumentationCombo = new Combo(comp, SWT.DROP_DOWN | SWT.READ_ONLY);
-        gd = new GridData(GridData.FILL_HORIZONTAL);
         mInstrumentationCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         mInstrumentationCombo.clearSelection();
         mInstrumentationCombo.addSelectionListener(new SelectionAdapter() {

@@ -98,7 +98,7 @@ public final class ExportHelper {
             // debuggable in the manifest will override this and generate a debug build
             IResource manifestResource = project.findMember(SdkConstants.FN_ANDROID_MANIFEST_XML);
             if (manifestResource.getType() != IResource.FILE) {
-                new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
+                throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
                         String.format("%1$s missing.", SdkConstants.FN_ANDROID_MANIFEST_XML)));
             }
 

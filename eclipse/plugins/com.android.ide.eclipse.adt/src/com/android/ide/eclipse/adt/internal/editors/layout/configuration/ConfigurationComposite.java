@@ -20,7 +20,6 @@ import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.StyleResourceValue;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.DockModeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.LanguageQualifier;
@@ -44,6 +43,7 @@ import com.android.ide.eclipse.adt.internal.sdk.LayoutDevice.DeviceConfig;
 import com.android.resources.Density;
 import com.android.resources.DockMode;
 import com.android.resources.NightMode;
+import com.android.resources.ResourceType;
 import com.android.resources.ScreenOrientation;
 import com.android.sdklib.IAndroidTarget;
 
@@ -191,8 +191,8 @@ public class ConfigurationComposite extends Composite {
         ProjectResources getProjectResources();
         ProjectResources getFrameworkResources();
         ProjectResources getFrameworkResources(IAndroidTarget target);
-        Map<String, Map<String, ResourceValue>> getConfiguredProjectResources();
-        Map<String, Map<String, ResourceValue>> getConfiguredFrameworkResources();
+        Map<ResourceType, Map<String, ResourceValue>> getConfiguredProjectResources();
+        Map<ResourceType, Map<String, ResourceValue>> getConfiguredFrameworkResources();
     }
 
     /**
@@ -1364,13 +1364,12 @@ public class ConfigurationComposite extends Composite {
             // get the themes, and languages from the Framework.
             if (frameworkProject != null) {
                 // get the configured resources for the framework
-                Map<String, Map<String, ResourceValue>> frameworResources =
+                Map<ResourceType, Map<String, ResourceValue>> frameworResources =
                     frameworkProject.getConfiguredResources(getCurrentConfig());
 
                 if (frameworResources != null) {
                     // get the styles.
-                    Map<String, ResourceValue> styles = frameworResources.get(
-                            ResourceType.STYLE.getName());
+                    Map<String, ResourceValue> styles = frameworResources.get(ResourceType.STYLE);
 
 
                     // collect the themes out of all the styles.
@@ -1399,13 +1398,13 @@ public class ConfigurationComposite extends Composite {
             // in cases where the opened file is not linked to a project, this could be null.
             if (project != null) {
                 // get the configured resources for the project
-                Map<String, Map<String, ResourceValue>> configuredProjectRes =
+                Map<ResourceType, Map<String, ResourceValue>> configuredProjectRes =
                     mListener.getConfiguredProjectResources();
 
                 if (configuredProjectRes != null) {
                     // get the styles.
                     Map<String, ResourceValue> styleMap = configuredProjectRes.get(
-                            ResourceType.STYLE.getName());
+                            ResourceType.STYLE);
 
                     if (styleMap != null) {
                         // collect the themes out of all the styles, ie styles that extend,

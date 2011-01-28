@@ -1120,7 +1120,7 @@ class NewXmlFileCreationPage extends WizardPage {
             // The configuration is invalid. We still update the path but this time
             // do it manually on the string.
             if (wsFolderPath.startsWith(RES_FOLDER_ABS)) {
-                wsFolderPath.replaceFirst(
+                wsFolderPath = wsFolderPath.replaceFirst(
                         "^(" + RES_FOLDER_ABS +")[^-]*(.*)",         //$NON-NLS-1$ //$NON-NLS-2$
                         "\\1" + type.getResFolderName() + "\\2");    //$NON-NLS-1$ //$NON-NLS-2$
             } else {

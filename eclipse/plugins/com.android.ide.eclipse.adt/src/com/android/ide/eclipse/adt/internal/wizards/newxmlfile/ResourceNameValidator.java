@@ -20,10 +20,10 @@ import static com.android.ide.eclipse.adt.AndroidConstants.DOT_XML;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
+import com.android.resources.ResourceType;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IStatus;

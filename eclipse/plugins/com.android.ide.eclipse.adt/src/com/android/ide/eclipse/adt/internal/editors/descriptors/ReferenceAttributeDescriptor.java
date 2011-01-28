@@ -23,7 +23,7 @@ import com.android.ide.eclipse.adt.internal.editors.ui.ResourceValueCellEditor;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiResourceAttributeNode;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.jface.viewers.CellEditor;

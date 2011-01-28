@@ -18,7 +18,7 @@ package com.android.ide.eclipse.adt.internal.sdk;
 
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.resources.ResourceType;
 
 import java.util.List;
 import java.util.Map;

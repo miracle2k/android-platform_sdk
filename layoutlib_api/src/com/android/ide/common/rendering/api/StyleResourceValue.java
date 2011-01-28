@@ -18,6 +18,7 @@ package com.android.ide.common.rendering.api;
 
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IStyleResourceValue;
+import com.android.resources.ResourceType;
 
 import java.util.HashMap;
 
@@ -30,11 +31,12 @@ public final class StyleResourceValue extends ResourceValue implements IStyleRes
     private String mParentStyle = null;
     private HashMap<String, ResourceValue> mItems = new HashMap<String, ResourceValue>();
 
-    public StyleResourceValue(String type, String name, boolean isFramework) {
+    public StyleResourceValue(ResourceType type, String name, boolean isFramework) {
         super(type, name, isFramework);
     }
 
-    public StyleResourceValue(String type, String name, String parentStyle, boolean isFramework) {
+    public StyleResourceValue(ResourceType type, String name, String parentStyle,
+            boolean isFramework) {
         super(type, name, isFramework);
         mParentStyle = parentStyle;
     }

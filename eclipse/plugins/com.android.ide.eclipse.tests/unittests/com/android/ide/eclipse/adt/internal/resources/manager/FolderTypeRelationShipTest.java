@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.resources.ResourceType;
 
 import junit.framework.TestCase;
 

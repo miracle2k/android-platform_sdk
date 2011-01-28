@@ -37,7 +37,7 @@ import com.android.ide.common.resources.platform.AttributeInfo;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.graphics.Image;

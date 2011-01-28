@@ -19,7 +19,6 @@ package com.android.ide.eclipse.adt.internal.resources.manager;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.LanguageQualifier;
 import com.android.ide.eclipse.adt.internal.resources.configurations.RegionQualifier;
@@ -27,6 +26,7 @@ import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQua
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
+import com.android.resources.ResourceType;
 import com.android.sdklib.io.IAbstractFolder;
 
 import org.eclipse.core.resources.IFolder;
@@ -35,6 +35,7 @@ import org.eclipse.core.resources.IProject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,14 +53,14 @@ public class ProjectResources implements IResourceRepository {
                                                         // project IDs that start at a much higher
                                                         // value
 
-    private final HashMap<ResourceFolderType, List<ResourceFolder>> mFolderMap =
-        new HashMap<ResourceFolderType, List<ResourceFolder>>();
+    private final Map<ResourceFolderType, List<ResourceFolder>> mFolderMap =
+        new EnumMap<ResourceFolderType, List<ResourceFolder>>(ResourceFolderType.class);
 
-    private final HashMap<ResourceType, List<ProjectResourceItem>> mResourceMap =
-        new HashMap<ResourceType, List<ProjectResourceItem>>();
+    private final Map<ResourceType, List<ProjectResourceItem>> mResourceMap =
+        new EnumMap<ResourceType, List<ProjectResourceItem>>(ResourceType.class);
 
     /** Map of (name, id) for resources of type {@link ResourceType#ID} coming from R.java */
-    private Map<String, Map<String, Integer>> mResourceValueMap;
+    private Map<ResourceType, Map<String, Integer>> mResourceValueMap;
     /** Map of (id, [name, resType]) for all resources coming from R.java */
     private Map<Integer, String[]> mResIdValueToNameMap;
     /** Map of (int[], name) for styleable resources coming from R.java */
@@ -71,7 +72,7 @@ public class ProjectResources implements IResourceRepository {
     /** Cached list of {@link IdResourceItem}. This is mix of IdResourceItem created by
      * {@link MultiResourceFile} for ids coming from XML files under res/values and
      * {@link IdResourceItem} created manually, from the list coming from R.java */
-    private final ArrayList<IdResourceItem> mIdResourceList = new ArrayList<IdResourceItem>();
+    private final List<IdResourceItem> mIdResourceList = new ArrayList<IdResourceItem>();
 
     private final boolean mIsFrameworkRepository;
     private final IProject mProject;
@@ -266,7 +267,7 @@ public class ProjectResources implements IResourceRepository {
         // in case ResourceType.ID haven't been added yet because there's no id defined
         // in XML, we check on the list of compiled id resources.
         if (list.indexOf(ResourceType.ID) == -1 && mResourceValueMap != null) {
-            Map<String, Integer> map = mResourceValueMap.get(ResourceType.ID.getName());
+            Map<String, Integer> map = mResourceValueMap.get(ResourceType.ID);
             if (map != null && map.size() > 0) {
                 list.add(ResourceType.ID);
             }
@@ -407,11 +408,11 @@ public class ProjectResources implements IResourceRepository {
      * Returns the resources values matching a given {@link FolderConfiguration}.
      * @param referenceConfig the configuration that each value must match.
      */
-    public Map<String, Map<String, ResourceValue>> getConfiguredResources(
+    public Map<ResourceType, Map<String, ResourceValue>> getConfiguredResources(
             FolderConfiguration referenceConfig) {
 
-        Map<String, Map<String, ResourceValue>> map =
-            new HashMap<String, Map<String, ResourceValue>>();
+        Map<ResourceType, Map<String, ResourceValue>> map =
+            new EnumMap<ResourceType, Map<String, ResourceValue>>(ResourceType.class);
 
         // if the project contains libraries, we need to add the libraries resources here
         // so that they are accessible to the layout rendering.
@@ -436,10 +437,10 @@ public class ProjectResources implements IResourceRepository {
 
                         // we don't want to simply replace the whole map, but instead merge the
                         // content of any sub-map
-                        Map<String, Map<String, ResourceValue>> libMap =
+                        Map<ResourceType, Map<String, ResourceValue>> libMap =
                                 libRes.getConfiguredResources(referenceConfig);
 
-                        for (Entry<String, Map<String, ResourceValue>> entry : libMap.entrySet()) {
+                        for (Entry<ResourceType, Map<String, ResourceValue>> entry : libMap.entrySet()) {
                             // get the map currently in the result map for this resource type
                             Map<String, ResourceValue> tempMap = map.get(entry.getKey());
                             if (tempMap == null) {
@@ -464,16 +465,15 @@ public class ProjectResources implements IResourceRepository {
         // special case for Id since there's a mix of compiled id (declared inline) and id declared
         // in the XML files.
         if (mIdResourceList.size() > 0) {
-            String idType = ResourceType.ID.getName();
-            Map<String, ResourceValue> idMap = map.get(idType);
+            Map<String, ResourceValue> idMap = map.get(ResourceType.ID);
 
             if (idMap == null) {
                 idMap = new HashMap<String, ResourceValue>();
-                map.put(idType, idMap);
+                map.put(ResourceType.ID, idMap);
             }
             for (IdResourceItem id : mIdResourceList) {
                 // FIXME: cache the ResourceValue!
-                idMap.put(id.getName(), new ResourceValue(idType, id.getName(),
+                idMap.put(id.getName(), new ResourceValue(ResourceType.ID, id.getName(),
                         mIsFrameworkRepository));
             }
 
@@ -488,11 +488,10 @@ public class ProjectResources implements IResourceRepository {
                         referenceConfig);
 
                 // check if a map for this type already exists
-                String resName = key.getName();
-                Map<String, ResourceValue> resMap = map.get(resName);
+                Map<String, ResourceValue> resMap = map.get(key);
                 if (resMap == null) {
                     // just use the local results.
-                    map.put(resName, localResMap);
+                    map.put(key, localResMap);
                 } else {
                     // add to the library results.
                     resMap.putAll(localResMap);
@@ -549,19 +548,19 @@ public class ProjectResources implements IResourceRepository {
      * internal map, then new id values are dynamically generated (and stored so that queries
      * with the same names will return the same value).
      */
-    public Integer getResourceValue(String type, String name) {
+    public Integer getResourceValue(ResourceType type, String name) {
         if (mResourceValueMap != null) {
             Map<String, Integer> map = mResourceValueMap.get(type);
             if (map != null) {
                 Integer value = map.get(name);
 
                 // if no value
-                if (value == null && ResourceType.ID.getName().equals(type)) {
+                if (value == null && ResourceType.ID == type) {
                     return getDynamicId(name);
                 }
 
                 return value;
-            } else if (ResourceType.ID.getName().equals(type)) {
+            } else if (ResourceType.ID == type) {
                 return getDynamicId(name);
             }
         }
@@ -925,7 +924,7 @@ public class ProjectResources implements IResourceRepository {
      */
     void setCompiledResources(Map<Integer, String[]> resIdValueToNameMap,
             Map<IntArrayWrapper, String> styleableValueMap,
-            Map<String, Map<String, Integer>> resourceValueMap) {
+            Map<ResourceType, Map<String, Integer>> resourceValueMap) {
         mResourceValueMap = resourceValueMap;
         mResIdValueToNameMap = resIdValueToNameMap;
         mStyleableValueToNameMap = styleableValueMap;
@@ -953,7 +952,7 @@ public class ProjectResources implements IResourceRepository {
             // get the list of compile id resources.
             Map<String, Integer> idMap = null;
             if (mResourceValueMap != null) {
-                idMap = mResourceValueMap.get(ResourceType.ID.getName());
+                idMap = mResourceValueMap.get(ResourceType.ID);
             }
 
             if (idMap == null) {

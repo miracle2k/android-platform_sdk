@@ -17,13 +17,14 @@
 package com.android.ide.common.rendering.api;
 
 import com.android.layoutlib.api.IDensityBasedResourceValue;
+import com.android.resources.ResourceType;
 
 @SuppressWarnings("deprecation")
 public class DensityBasedResourceValue extends ResourceValue implements IDensityBasedResourceValue {
 
     private com.android.resources.Density mDensity;
 
-    public DensityBasedResourceValue(String type, String name, String value,
+    public DensityBasedResourceValue(ResourceType type, String name, String value,
             com.android.resources.Density density, boolean isFramework) {
         super(type, name, value, isFramework);
         mDensity = density;

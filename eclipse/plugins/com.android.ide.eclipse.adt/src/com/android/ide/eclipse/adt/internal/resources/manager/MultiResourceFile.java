@@ -19,7 +19,7 @@ package com.android.ide.eclipse.adt.internal.resources.manager;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.resources.ValueResourceParser;
 import com.android.ide.common.resources.ValueResourceParser.IValueResourceRepository;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.resources.ResourceType;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.StreamException;
 
@@ -28,7 +28,9 @@ import org.xml.sax.SAXException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -45,8 +47,8 @@ public final class MultiResourceFile extends ResourceFile implements IValueResou
 
     private final static SAXParserFactory sParserFactory = SAXParserFactory.newInstance();
 
-    private final HashMap<ResourceType, HashMap<String, ResourceValue>> mResourceItems =
-        new HashMap<ResourceType, HashMap<String, ResourceValue>>();
+    private final Map<ResourceType, HashMap<String, ResourceValue>> mResourceItems =
+        new EnumMap<ResourceType, HashMap<String, ResourceValue>>(ResourceType.class);
 
     public MultiResourceFile(IAbstractFile file, ResourceFolder folder) {
         super(file, folder);
@@ -133,29 +135,25 @@ public final class MultiResourceFile extends ResourceFile implements IValueResou
      * @param resType The type of the resource
      * @param value The value of the resource.
      */
-    public void addResourceValue(String resType, ResourceValue value) {
-        ResourceType type = ResourceType.getEnum(resType);
-        assert type != null;
-        if (type != null) {
-            HashMap<String, ResourceValue> list = mResourceItems.get(type);
+    public void addResourceValue(ResourceType resType, ResourceValue value) {
+        HashMap<String, ResourceValue> list = mResourceItems.get(resType);
 
-            // if the list does not exist, create it.
-            if (list == null) {
-                list = new HashMap<String, ResourceValue>();
-                mResourceItems.put(type, list);
-            } else {
-                // look for a possible value already existing.
-                ResourceValue oldValue = list.get(value.getName());
+        // if the list does not exist, create it.
+        if (list == null) {
+            list = new HashMap<String, ResourceValue>();
+            mResourceItems.put(resType, list);
+        } else {
+            // look for a possible value already existing.
+            ResourceValue oldValue = list.get(value.getName());
 
-                if (oldValue != null) {
-                    oldValue.replaceWith(value);
-                    return;
-                }
+            if (oldValue != null) {
+                oldValue.replaceWith(value);
+                return;
             }
-
-            // empty list or no match found? add the given resource
-            list.put(value.getName(), value);
         }
+
+        // empty list or no match found? add the given resource
+        list.put(value.getName(), value);
     }
 
     @Override

@@ -26,8 +26,8 @@ import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.Resour
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
+import com.android.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.ManifestData;
 

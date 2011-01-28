@@ -17,7 +17,7 @@
 package com.android.ide.eclipse.adt.internal.resources.manager;
 
 import com.android.ide.eclipse.adt.internal.resources.IIdResourceItem;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.resources.ResourceType;
 
 /**
  * Represents a resource item of type {@link ResourceType#ID}
