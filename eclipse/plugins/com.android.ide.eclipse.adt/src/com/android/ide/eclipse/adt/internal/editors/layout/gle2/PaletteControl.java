@@ -27,9 +27,9 @@ import com.android.ide.common.api.Rect;
 import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.LayoutLog;
-import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ViewInfo;
+import com.android.ide.common.rendering.api.Params.RenderingMode;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
@@ -567,10 +567,14 @@ public class PaletteControl extends Composite {
             createDragImage(e);
             if (mImage != null && !mIsPlaceholder) {
                 ImageData data = mImage.getImageData();
-                int width = data.width;
-                int height = data.height;
+                LayoutCanvas canvas = mEditor.getCanvasControl();
+                double scale = canvas.getScale();
+                int x = -data.width / 2;
+                int y = -data.height / 2;
+                int width = (int) (data.width / scale);
+                int height = (int) (data.height / scale);
                 bounds = new Rect(0, 0, width, height);
-                dragBounds = new Rect(-width / 2, -height / 2, width, height);
+                dragBounds = new Rect(x, y, width, height);
             }
 
             SimpleElement se = new SimpleElement(
@@ -827,6 +831,11 @@ public class PaletteControl extends Composite {
                                     hasTransparency ? 3 : 5 /* shadowSize */,
                                     !hasTransparency ? 0.6f : needsContrast ? 0.8f : 0.7f/*alpha*/,
                                     0x000000 /* shadowRgb */);
+
+                            double scale = canvas.getScale();
+                            if (scale != 1L) {
+                                cropped = ImageUtils.scale(cropped, scale, scale);
+                            }
 
                             Display display = getDisplay();
                             int alpha = (!hasTransparency || !needsContrast) ? IMG_ALPHA : -1;
