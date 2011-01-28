@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.resources;
+package com.android.resources;
+
 
 /**
  * Enum representing a type of compiled resource.
@@ -88,23 +89,6 @@ public enum ResourceType {
             }
         }
         return null;
-    }
-
-    /**
-     * Returns a formatted string usable in an XML to use the specified {@link ResourceItem}.
-     * @param resourceItem The resource item.
-     * @param system Whether this is a system resource or a project resource.
-     * @return a string in the format @[type]/[name]
-     */
-    public String getXmlString(ResourceItem resourceItem, boolean system) {
-        if (this == ID && resourceItem instanceof IIdResourceItem) {
-            IIdResourceItem idResource = (IIdResourceItem)resourceItem;
-            if (idResource.isDeclaredInline()) {
-                return (system?"@android:":"@+") + mName + "/" + resourceItem.getName(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-            }
-        }
-
-        return (system?"@android:":"@") + mName + "/" + resourceItem.getName(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     }
 
     /**

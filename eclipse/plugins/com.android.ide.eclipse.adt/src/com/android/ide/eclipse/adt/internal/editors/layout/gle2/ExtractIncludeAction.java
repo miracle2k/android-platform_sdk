@@ -29,7 +29,7 @@ import static com.android.ide.eclipse.adt.AndroidConstants.DOT_XML;
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_SEP;
 import static com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor.XMLNS;
 import static com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor.XMLNS_COLON;
-import static com.android.ide.eclipse.adt.internal.resources.ResourceType.LAYOUT;
+import static com.android.resources.ResourceType.LAYOUT;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;

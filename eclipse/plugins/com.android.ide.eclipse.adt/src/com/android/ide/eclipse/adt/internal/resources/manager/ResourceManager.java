@@ -18,7 +18,6 @@ package com.android.ide.eclipse.adt.internal.resources.manager;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ResourceQualifier;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
@@ -26,6 +25,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
+import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.FolderWrapper;

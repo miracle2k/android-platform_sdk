@@ -20,9 +20,9 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IFileListener;
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
+import com.android.resources.ResourceType;
 import com.android.sdklib.xml.ManifestData;
 
 import org.eclipse.core.resources.IFile;
@@ -36,6 +36,7 @@ import org.eclipse.core.runtime.IStatus;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -147,8 +148,8 @@ public final class CompiledResourcesMonitor implements IFileListener, IProjectLi
 
                     if (clazz != null) {
                         // create the maps to store the result of the parsing
-                        Map<String, Map<String, Integer>> resourceValueMap =
-                            new HashMap<String, Map<String, Integer>>();
+                        Map<ResourceType, Map<String, Integer>> resourceValueMap =
+                            new EnumMap<ResourceType, Map<String, Integer>>(ResourceType.class);
                         Map<Integer, String[]> genericValueToNameMap =
                             new HashMap<Integer, String[]>();
                         Map<IntArrayWrapper, String> styleableValueToNameMap =
@@ -181,30 +182,35 @@ public final class CompiledResourcesMonitor implements IFileListener, IProjectLi
      * @return True if we managed to parse the R class.
      */
     private boolean parseClass(Class<?> rClass, Map<Integer, String[]> genericValueToNameMap,
-            Map<IntArrayWrapper, String> styleableValueToNameMap, Map<String,
+            Map<IntArrayWrapper, String> styleableValueToNameMap, Map<ResourceType,
             Map<String, Integer>> resourceValueMap) {
         try {
             for (Class<?> inner : rClass.getDeclaredClasses()) {
-                String resType = inner.getSimpleName();
+                String resTypeName = inner.getSimpleName();
+                ResourceType resType = ResourceType.getEnum(resTypeName);
 
-                Map<String, Integer> fullMap = new HashMap<String, Integer>();
-                resourceValueMap.put(resType, fullMap);
+                if (resType != null) {
+                    Map<String, Integer> fullMap = new HashMap<String, Integer>();
+                    resourceValueMap.put(resType, fullMap);
 
-                for (Field f : inner.getDeclaredFields()) {
-                    // only process static final fields.
-                    int modifiers = f.getModifiers();
-                    if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
-                        Class<?> type = f.getType();
-                        if (type.isArray() && type.getComponentType() == int.class) {
-                            // if the object is an int[] we put it in the styleable map
-                            styleableValueToNameMap.put(new IntArrayWrapper((int[]) f.get(null)),
-                                    f.getName());
-                        } else if (type == int.class) {
-                            Integer value = (Integer) f.get(null);
-                            genericValueToNameMap.put(value, new String[] { f.getName(), resType });
-                            fullMap.put(f.getName(), value);
-                        } else {
-                            assert false;
+                    for (Field f : inner.getDeclaredFields()) {
+                        // only process static final fields.
+                        int modifiers = f.getModifiers();
+                        if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
+                            Class<?> type = f.getType();
+                            if (type.isArray() && type.getComponentType() == int.class) {
+                                // if the object is an int[] we put it in the styleable map
+                                styleableValueToNameMap.put(
+                                        new IntArrayWrapper((int[]) f.get(null)),
+                                        f.getName());
+                            } else if (type == int.class) {
+                                Integer value = (Integer) f.get(null);
+                                genericValueToNameMap.put(value,
+                                        new String[] { f.getName(), resType.getName() });
+                                fullMap.put(f.getName(), value);
+                            } else {
+                                assert false;
+                            }
                         }
                     }
                 }

@@ -25,7 +25,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.IDescriptorProvi
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ListAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextValueDescriptor;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.resources.ResourceType;
 
 
 /**

@@ -18,6 +18,7 @@ package com.android.ide.common.resources;
 
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.StyleResourceValue;
+import com.android.resources.ResourceType;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -35,15 +36,11 @@ public final class ValueResourceParser extends DefaultHandler {
     private final static String ATTR_TYPE = "type";
     private final static String ATTR_PARENT = "parent";
 
-    // Resource type definition
-    private final static String RES_STYLE = "style";
-    private final static String RES_ATTR = "attr";
-
     private final static String DEFAULT_NS_PREFIX = "android:";
     private final static int DEFAULT_NS_PREFIX_LEN = DEFAULT_NS_PREFIX.length();
 
     public interface IValueResourceRepository {
-        void addResourceValue(String resType, ResourceValue value);
+        void addResourceValue(ResourceType type, ResourceValue value);
     }
 
     private boolean inResources = false;
@@ -87,24 +84,27 @@ public final class ValueResourceParser extends DefaultHandler {
                     inResources = true;
                 }
             } else if (mDepth == 2 && inResources == true) {
-                String type;
+                String typeValue;
 
                 // if the node is <item>, we get the type from the attribute "type"
                 if (NODE_ITEM.equals(qName)) {
-                    type = attributes.getValue(ATTR_TYPE);
+                    typeValue = attributes.getValue(ATTR_TYPE);
                 } else {
                     // the type is the name of the node.
-                    type = qName;
+                    typeValue = qName;
                 }
 
+                ResourceType type = ResourceType.getEnum(typeValue);
+
                 if (type != null) {
-                    if (RES_ATTR.equals(type) == false) {
+                    if (type != ResourceType.ATTR) {
                         // get the resource name
                         String name = attributes.getValue(ATTR_NAME);
                         if (name != null) {
-                            if (RES_STYLE.equals(type)) {
+                            if (type == ResourceType.STYLE) {
                                 String parent = attributes.getValue(ATTR_PARENT);
-                                mCurrentStyle = new StyleResourceValue(type, name, parent, mIsFramework);
+                                mCurrentStyle = new StyleResourceValue(type, name, parent,
+                                        mIsFramework);
                                 mRepository.addResourceValue(type, mCurrentStyle);
                             } else {
                                 mCurrentValue = new ResourceValue(type, name, mIsFramework);

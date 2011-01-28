@@ -18,10 +18,10 @@ package com.android.ide.eclipse.adt.internal.ui;
 
 import com.android.ide.eclipse.adt.internal.resources.IIdResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ConfigurableResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.manager.IdResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
+import com.android.resources.ResourceType;
 
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;

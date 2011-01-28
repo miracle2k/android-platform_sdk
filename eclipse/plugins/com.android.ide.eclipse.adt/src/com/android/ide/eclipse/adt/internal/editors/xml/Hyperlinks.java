@@ -38,7 +38,6 @@ import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.manager.FolderTypeRelationship;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
@@ -49,6 +48,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
+import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.annotations.VisibleForTesting;
@@ -511,7 +511,7 @@ public class Hyperlinks {
             if (frameworkResources == null) {
                 return false;
             }
-            Map<String, Map<String, ResourceValue>> configuredResources =
+            Map<ResourceType, Map<String, ResourceValue>> configuredResources =
                 frameworkResources.getConfiguredResources(new FolderConfiguration());
 
             Set<String> seen = new HashSet<String>();
@@ -522,7 +522,7 @@ public class Hyperlinks {
             // @drawable/popup_full_dark, which when looked up will finally yield
             // the XML path we are looking for
             while (true) {
-                Map<String, ResourceValue> typeMap = configuredResources.get(type.getName());
+                Map<String, ResourceValue> typeMap = configuredResources.get(type);
                 if (typeMap != null) {
                     ResourceValue value = typeMap.get(name);
                     if (value != null) {

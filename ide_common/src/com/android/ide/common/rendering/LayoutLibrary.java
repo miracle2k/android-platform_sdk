@@ -23,6 +23,7 @@ import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.Params;
 import com.android.ide.common.rendering.api.RenderSession;
+import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.Result;
 import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.common.rendering.api.Params.RenderingMode;
@@ -38,6 +39,7 @@ import com.android.layoutlib.api.IProjectCallback;
 import com.android.layoutlib.api.IResourceValue;
 import com.android.layoutlib.api.IXmlPullParser;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
+import com.android.resources.ResourceType;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -46,7 +48,9 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Class to use the Layout library.
@@ -371,12 +375,11 @@ public class LayoutLibrary {
 
 
         // convert the map of ResourceValue into IResourceValue. Super ugly but works.
-        @SuppressWarnings("unchecked")
-        Map<String, Map<String, IResourceValue>> projectMap =
-            (Map<String, Map<String, IResourceValue>>)(Map) resources.getProjectResources();
-        @SuppressWarnings("unchecked")
-        Map<String, Map<String, IResourceValue>> frameworkMap =
-            (Map<String, Map<String, IResourceValue>>)(Map) resources.getFrameworkResources();
+
+        Map<String, Map<String, IResourceValue>> projectMap = convertMap(
+                resources.getProjectResources());
+        Map<String, Map<String, IResourceValue>> frameworkMap = convertMap(
+                resources.getFrameworkResources());
 
         ILayoutResult result = null;
 
@@ -432,6 +435,21 @@ public class LayoutLibrary {
         legacyCleanUp();
 
         return convertToScene(result);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, IResourceValue>> convertMap(
+            Map<ResourceType, Map<String, ResourceValue>> map) {
+        Map<String, Map<String, IResourceValue>> result =
+            new HashMap<String, Map<String, IResourceValue>>();
+
+        for (Entry<ResourceType, Map<String, ResourceValue>> entry : map.entrySet()) {
+            // ugly case but works.
+            result.put(entry.getKey().getName(),
+                    (Map<String, IResourceValue>)(Map) entry.getValue());
+        }
+
+        return result;
     }
 
     /**

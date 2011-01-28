@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.resources;
 
+import com.android.resources.ResourceType;
+
 /**
  * Classes which implements this interface provides a method indicating the state of a resource of
  * type {@link ResourceType#ID}.

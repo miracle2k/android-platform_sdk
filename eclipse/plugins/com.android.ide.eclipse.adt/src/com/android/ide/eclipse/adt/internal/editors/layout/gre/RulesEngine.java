@@ -36,13 +36,13 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorP
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.SimpleElement;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.ui.ReferenceChooserDialog;
 import com.android.ide.eclipse.adt.internal.ui.ResourceChooser;
+import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.internal.project.ProjectProperties;
 

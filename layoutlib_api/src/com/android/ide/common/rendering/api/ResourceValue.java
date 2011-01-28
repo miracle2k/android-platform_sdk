@@ -17,35 +17,41 @@
 package com.android.ide.common.rendering.api;
 
 import com.android.layoutlib.api.IResourceValue;
+import com.android.resources.ResourceType;
 
 /**
  * Represents an android resource with a name and a string value.
  */
 @SuppressWarnings("deprecation")
 public class ResourceValue implements IResourceValue {
-    private final String mType;
+    private final ResourceType mType;
     private final String mName;
     private String mValue = null;
     private final boolean mIsFramwork;
 
-    public ResourceValue(String type, String name, boolean isFramwork) {
+    public ResourceValue(ResourceType type, String name, boolean isFramwork) {
         mType = type;
         mName = name;
         mIsFramwork = isFramwork;
     }
 
-    public ResourceValue(String type, String name, String value, boolean isFramework) {
+    public ResourceValue(ResourceType type, String name, String value, boolean isFramework) {
         mType = type;
         mName = name;
         mValue = value;
         mIsFramwork = isFramework;
     }
 
+    public ResourceType getResourceType() {
+        return mType;
+    }
+
     /**
      * Returns the type of the resource. For instance "drawable", "color", etc...
+     * @deprecated use {@link #getResourceType()} instead.
      */
     public String getType() {
-        return mType;
+        return mType.getName();
     }
 
     /**
@@ -69,7 +75,6 @@ public class ResourceValue implements IResourceValue {
     public final boolean isFramework() {
         return mIsFramwork;
     }
-
 
     /**
      * Sets the value of the resource.

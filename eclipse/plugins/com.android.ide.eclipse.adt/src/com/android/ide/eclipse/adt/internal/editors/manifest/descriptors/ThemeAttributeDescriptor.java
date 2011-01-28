@@ -23,7 +23,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDes
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiResourceAttributeNode;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
+import com.android.resources.ResourceType;
 
 /**
  * Describes a Theme/Style XML attribute displayed by a {@link UiResourceAttributeNode}

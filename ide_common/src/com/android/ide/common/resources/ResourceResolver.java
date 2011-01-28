@@ -20,6 +20,7 @@ import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.RenderResources;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.StyleResourceValue;
+import com.android.resources.ResourceType;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,7 +28,7 @@ import java.util.Map;
 
 public class ResourceResolver extends RenderResources {
 
-    private final static String REFERENCE_STYLE = RES_STYLE + "/";
+    private final static String REFERENCE_STYLE = ResourceType.STYLE.getName() + "/";
     private final static String PREFIX_ANDROID_RESOURCE_REF = "@android:";
     private final static String PREFIX_RESOURCE_REF = "@";
     private final static String PREFIX_ANDROID_THEME_REF = "?android:";
@@ -35,8 +36,8 @@ public class ResourceResolver extends RenderResources {
     private final static String PREFIX_ANDROID = "android:";
 
 
-    private final Map<String, Map<String, ResourceValue>>  mProjectResources;
-    private final Map<String, Map<String, ResourceValue>>  mFrameworkResources;
+    private final Map<ResourceType, Map<String, ResourceValue>> mProjectResources;
+    private final Map<ResourceType, Map<String, ResourceValue>> mFrameworkResources;
 
     private final Map<StyleResourceValue, StyleResourceValue> mStyleInheritanceMap =
         new HashMap<StyleResourceValue, StyleResourceValue>();
@@ -49,8 +50,8 @@ public class ResourceResolver extends RenderResources {
     private boolean mIsProjectTheme;
 
     private ResourceResolver(
-            Map<String, Map<String, ResourceValue>> projectResources,
-            Map<String, Map<String, ResourceValue>> frameworkResources) {
+            Map<ResourceType, Map<String, ResourceValue>> projectResources,
+            Map<ResourceType, Map<String, ResourceValue>> frameworkResources) {
         mProjectResources = projectResources;
         mFrameworkResources = frameworkResources;
     }
@@ -66,8 +67,8 @@ public class ResourceResolver extends RenderResources {
      * @return
      */
     public static ResourceResolver create(
-            Map<String, Map<String, ResourceValue>> projectResources,
-            Map<String, Map<String, ResourceValue>> frameworkResources,
+            Map<ResourceType, Map<String, ResourceValue>> projectResources,
+            Map<ResourceType, Map<String, ResourceValue>> frameworkResources,
             String themeName, boolean isProjectTheme) {
 
         ResourceResolver resolver = new ResourceResolver(
@@ -88,11 +89,11 @@ public class ResourceResolver extends RenderResources {
         return mIsProjectTheme;
     }
 
-    public Map<String, Map<String, ResourceValue>> getProjectResources() {
+    public Map<ResourceType, Map<String, ResourceValue>> getProjectResources() {
         return mProjectResources;
     }
 
-    public Map<String, Map<String, ResourceValue>> getFrameworkResources() {
+    public Map<ResourceType, Map<String, ResourceValue>> getFrameworkResources() {
         return mFrameworkResources;
     }
 
@@ -118,12 +119,13 @@ public class ResourceResolver extends RenderResources {
         ResourceValue theme = null;
 
         if (frameworkTheme) {
-            Map<String, ResourceValue> frameworkStyleMap = mFrameworkResources.get(RES_STYLE);
+            Map<String, ResourceValue> frameworkStyleMap = mFrameworkResources.get(
+                    ResourceType.STYLE);
             if (frameworkStyleMap != null) {
                 theme = frameworkStyleMap.get(name);
             }
         } else {
-            Map<String, ResourceValue> projectStyleMap = mProjectResources.get(RES_STYLE);
+            Map<String, ResourceValue> projectStyleMap = mProjectResources.get(ResourceType.STYLE);
             if (projectStyleMap != null) {
                 theme = projectStyleMap.get(name);
             }
@@ -149,12 +151,12 @@ public class ResourceResolver extends RenderResources {
     }
 
     @Override
-    public ResourceValue getFrameworkResource(String resourceType, String resourceName) {
+    public ResourceValue getFrameworkResource(ResourceType resourceType, String resourceName) {
         return getResource(resourceType, resourceName, mFrameworkResources);
     }
 
     @Override
-    public ResourceValue getProjectResource(String resourceType, String resourceName) {
+    public ResourceValue getProjectResource(ResourceType resourceType, String resourceName) {
         return getResource(resourceType, resourceName, mProjectResources);
     }
 
@@ -204,7 +206,7 @@ public class ResourceResolver extends RenderResources {
             if (segments.length == 2) {
                 // there was a resType in the reference. If it's attr, we ignore it
                 // else, we assert for now.
-                if (RES_ATTR.equals(segments[0])) {
+                if (ResourceType.ATTR.getName().equals(segments[0])) {
                     referenceName = segments[1];
                 } else {
                     // At this time, no support for ?type/name where type is not "attr"
@@ -256,7 +258,14 @@ public class ResourceResolver extends RenderResources {
                 segments[1] = segments[1].substring(PREFIX_ANDROID.length());
             }
 
-            return findResValue(segments[0], segments[1],
+            ResourceType type = ResourceType.getEnum(segments[0]);
+
+            // unknown type?
+            if (type == null) {
+                return null;
+            }
+
+            return findResValue(type, segments[1],
                     forceFrameworkOnly ? true :frameworkOnly);
         }
 
@@ -265,7 +274,7 @@ public class ResourceResolver extends RenderResources {
     }
 
     @Override
-    public ResourceValue resolveValue(String type, String name, String value,
+    public ResourceValue resolveValue(ResourceType type, String name, String value,
             boolean isFrameworkValue) {
         if (value == null) {
             return null;
@@ -317,7 +326,8 @@ public class ResourceResolver extends RenderResources {
      * @param frameworkOnly if <code>true</code>, the method does not search in the
      * project resources
      */
-    private ResourceValue findResValue(String resType, String resName, boolean frameworkOnly) {
+    private ResourceValue findResValue(ResourceType resType, String resName,
+            boolean frameworkOnly) {
         // map of ResouceValue for the given type
         Map<String, ResourceValue> typeMap;
 
@@ -343,7 +353,7 @@ public class ResourceResolver extends RenderResources {
             // if it was not found and the type is an id, it is possible that the ID was
             // generated dynamically when compiling the framework resources.
             // Look for it in the R map.
-            if (mFrameworkProvider != null && RES_ID.equals(resType)) {
+            if (mFrameworkProvider != null && resType == ResourceType.ID) {
                 if (mFrameworkProvider.getId(resType, resName) != null) {
                     return new ResourceValue(resType, resName, true);
                 }
@@ -351,11 +361,7 @@ public class ResourceResolver extends RenderResources {
         }
 
         // didn't find the resource anywhere.
-        // This is normal if the resource is an ID that is generated automatically.
-        // For other resources, we output a warning
-        if (mLogger != null &&
-                "+id".equals(resType) == false &&         //$NON-NLS-1$
-                "+android:id".equals(resType) == false) { //$NON-NLS-1$
+        if (mLogger != null) {
             mLogger.warning(LayoutLog.TAG_RESOURCES_RESOLVE,
                     "Couldn't resolve resource @" +
                     (frameworkOnly ? "android:" : "") + resType + "/" + resName,
@@ -364,8 +370,8 @@ public class ResourceResolver extends RenderResources {
         return null;
     }
 
-    private ResourceValue getResource(String resourceType, String resourceName,
-            Map<String, Map<String, ResourceValue>> resourceRepository) {
+    private ResourceValue getResource(ResourceType resourceType, String resourceName,
+            Map<ResourceType, Map<String, ResourceValue>> resourceRepository) {
         Map<String, ResourceValue> typeMap = resourceRepository.get(resourceType);
         if (typeMap != null) {
             ResourceValue item = typeMap.get(resourceName);
@@ -388,8 +394,8 @@ public class ResourceResolver extends RenderResources {
     private void computeStyleMaps(String themeName, boolean isProjectTheme) {
         mThemeName = themeName;
         mIsProjectTheme = isProjectTheme;
-        Map<String, ResourceValue> projectStyleMap = mProjectResources.get(RES_STYLE);
-        Map<String, ResourceValue> frameworkStyleMap = mFrameworkResources.get(RES_STYLE);
+        Map<String, ResourceValue> projectStyleMap = mProjectResources.get(ResourceType.STYLE);
+        Map<String, ResourceValue> frameworkStyleMap = mFrameworkResources.get(ResourceType.STYLE);
 
         if (projectStyleMap != null && frameworkStyleMap != null) {
             // first, get the theme

@@ -16,6 +16,8 @@
 
 package com.android.ide.eclipse.adt.internal.resources;
 
+import com.android.resources.ResourceType;
+
 /**
  * A repository of resources. This allows access to the resource by {@link ResourceType}.
  */

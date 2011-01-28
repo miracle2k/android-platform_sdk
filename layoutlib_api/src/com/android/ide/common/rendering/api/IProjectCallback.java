@@ -16,6 +16,8 @@
 
 package com.android.ide.common.rendering.api;
 
+import com.android.resources.ResourceType;
+
 /**
  * Callback for project information needed by the Layout Library.
  * Classes implementing this interface provide methods giving access to some project data, like
@@ -69,6 +71,6 @@ public interface IProjectCallback {
      * @param name the name of the resource
      * @return an Integer containing the resource Id, or <code>null</code> if not found.
      */
-    Integer getResourceValue(String type, String name);
+    Integer getResourceValue(ResourceType type, String name);
 
 }

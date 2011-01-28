@@ -139,9 +139,9 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
     public AndroidXmlEditor(boolean addTargetListener) {
         super();
 
-        if (addTargetListener) {
-            ResourcesPlugin.getWorkspace().addResourceChangeListener(this);
+        ResourcesPlugin.getWorkspace().addResourceChangeListener(this);
 
+        if (addTargetListener) {
             mTargetListener = new TargetChangeListener() {
                 @Override
                 public IProject getProject() {

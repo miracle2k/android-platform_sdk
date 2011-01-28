@@ -24,6 +24,7 @@ import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectClassLoader;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
+import com.android.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.ManifestData;
 
@@ -204,10 +205,6 @@ public final class ProjectCallback implements ILegacyCallback {
         return mNamespace;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.android.layoutlib.api.IProjectCallback#resolveResourceValue(int)
-     */
     public String[] resolveResourceValue(int id) {
         if (mProjectRes != null) {
             return mProjectRes.resolveResourceValue(id);
@@ -216,10 +213,6 @@ public final class ProjectCallback implements ILegacyCallback {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.android.layoutlib.api.IProjectCallback#resolveResourceValue(int[])
-     */
     public String resolveResourceValue(int[] id) {
         if (mProjectRes != null) {
             return mProjectRes.resolveResourceValue(id);
@@ -228,11 +221,14 @@ public final class ProjectCallback implements ILegacyCallback {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.android.layoutlib.api.IProjectCallback#getResourceValue(java.lang.String, java.lang.String)
+    /**
+     * @deprecated use {@link #getResourceValue(ResourceType, String)} instead.
      */
     public Integer getResourceValue(String type, String name) {
+        return getResourceValue(ResourceType.getEnum(type), name);
+    }
+
+    public Integer getResourceValue(ResourceType type, String name) {
         if (mProjectRes != null) {
             return mProjectRes.getResourceValue(type, name);
         }

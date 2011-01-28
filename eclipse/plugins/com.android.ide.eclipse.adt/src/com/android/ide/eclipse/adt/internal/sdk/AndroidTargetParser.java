@@ -27,9 +27,9 @@ import com.android.ide.eclipse.adt.internal.editors.menu.descriptors.MenuDescrip
 import com.android.ide.eclipse.adt.internal.editors.xml.descriptors.XmlDescriptors;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
+import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 

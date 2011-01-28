@@ -23,11 +23,11 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDes
 import com.android.ide.eclipse.adt.internal.editors.ui.SectionHelper;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
-import com.android.ide.eclipse.adt.internal.resources.ResourceType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.ui.ReferenceChooserDialog;
 import com.android.ide.eclipse.adt.internal.ui.ResourceChooser;
+import com.android.resources.ResourceType;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.window.Window;

@@ -16,6 +16,8 @@
 
 package com.android.ide.common.rendering.api;
 
+import com.android.resources.ResourceType;
+
 /**
  * A class containing all the resources needed to do a rendering.
  * <p/>
@@ -24,21 +26,10 @@ package com.android.ide.common.rendering.api;
  */
 public class RenderResources {
 
-    public final static String RES_ANIMATOR = "animator";
-    public final static String RES_STYLE = "style";
-    public final static String RES_ATTR = "attr";
-    public final static String RES_DIMEN = "dimen";
-    public final static String RES_DRAWABLE = "drawable";
-    public final static String RES_COLOR = "color";
-    public final static String RES_LAYOUT = "layout";
-    public final static String RES_STRING = "string";
-    public final static String RES_ID = "id";
-
     public final static String REFERENCE_NULL = "@null";
 
-
     public static class FrameworkResourceIdProvider {
-        public Integer getId(String resType, String resName) {
+        public Integer getId(ResourceType resType, String resName) {
             return null;
         }
     }
@@ -83,7 +74,7 @@ public class RenderResources {
      * @param resourceType the type of the resource
      * @param resourceName the name of the resource
      */
-    public ResourceValue getFrameworkResource(String resourceType, String resourceName) {
+    public ResourceValue getFrameworkResource(ResourceType resourceType, String resourceName) {
         return null;
     }
 
@@ -92,7 +83,7 @@ public class RenderResources {
      * @param resourceType the type of the resource
      * @param resourceName the name of the resource
      */
-    public ResourceValue getProjectResource(String resourceType, String resourceName) {
+    public ResourceValue getProjectResource(ResourceType resourceType, String resourceName) {
         return null;
     }
 
@@ -165,7 +156,7 @@ public class RenderResources {
      *
      * @return the resolved resource value or <code>null</code> if it failed to resolve it.
      */
-    public ResourceValue resolveValue(String type, String name, String value,
+    public ResourceValue resolveValue(ResourceType type, String name, String value,
             boolean isFrameworkValue) {
         return null;
     }
