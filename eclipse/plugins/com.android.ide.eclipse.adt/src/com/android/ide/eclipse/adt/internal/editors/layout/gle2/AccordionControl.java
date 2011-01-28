@@ -38,6 +38,7 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.ScrollBar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -245,6 +246,9 @@ public abstract class AccordionControl extends Composite {
 
             // Turn off border?
             final ScrolledComposite scrolledComposite = new ScrolledComposite(this, SWT.V_SCROLL);
+            ScrollBar verticalBar = scrolledComposite.getVerticalBar();
+            verticalBar.setIncrement(20);
+            verticalBar.setPageIncrement(100);
 
             // Do we need the scrolled composite or can we just look at the next
             // wizard in the hierarchy?
@@ -267,6 +271,8 @@ public abstract class AccordionControl extends Composite {
                         if (content != null && r != null) {
                             Point minSize = content.computeSize(r.width, SWT.DEFAULT);
                             scrolledComposite.setMinSize(minSize);
+                            ScrollBar vBar = scrolledComposite.getVerticalBar();
+                            vBar.setPageIncrement(r.height);
                         }
                     }
                   });
