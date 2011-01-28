@@ -70,12 +70,18 @@ fi
 
 # Cleanup old obsolete symlink
 
+function clean() {
+  if [[ -e "$1" || -L "$1" ]]; then
+    rm -rfv "$1"
+  fi
+}
+
 DEST=$BASE/unittests/com/android
-[[ -e $DEST/sdkuilib || -L $DEST/sdkuilib ]] && rm -rfv $DEST/sdkuilib
-[[ -e $DEST/ddmlib || -L $DEST/ddmlib ]] && rm -rfv $DEST/ddmlib
-[[ -e $DEST/sdklib || -L $DEST/sdklib ]] && rm -rfv $DEST/sdklib
+clean $DEST/sdkuilib
+clean $DEST/ddmlib
+clean $DEST/sdklib
 
 DEST=$BASE/unittests/com/android/layoutlib
-[[ -e $DEST/bridge || -L $DEST/bridge ]] && rm -rfv $DEST/bridge
-[[ -e $DEST/testdata || -L $DEST/testdata ]] && rm -rfv $DEST/testdata
+clean $DEST/bridge
+clean $DEST/testdata
 
