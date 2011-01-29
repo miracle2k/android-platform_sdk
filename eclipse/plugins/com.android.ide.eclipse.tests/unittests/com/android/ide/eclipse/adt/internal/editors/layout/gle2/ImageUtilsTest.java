@@ -291,16 +291,41 @@ public class ImageUtilsTest extends TestCase {
         assertEquals(0xFFFF0000, sub.getRGB(0, 0));
         assertEquals(0xFFFF0000, sub.getRGB(9, 9));
 
-        sub = ImageUtils.subImage(image, 23, 23, 5, 5);
+        sub = ImageUtils.subImage(image, 23, 23, 23 + 5, 23 + 5);
         assertEquals(5, sub.getWidth());
         assertEquals(5, sub.getHeight());
         assertEquals(0xFF00FF00, sub.getRGB(0, 0));
-        assertEquals(0xFFFF0000, sub.getRGB(9, 9));
+        assertEquals(0xFFFF0000, sub.getRGB(4, 4));
     }
 
     public void testGetColor() throws Exception {
         assertEquals(0xFF000000, ImageUtils.getColor("#000"));
         assertEquals(0xFF000000, ImageUtils.getColor("#000000"));
         assertEquals(0xABCDEF91, ImageUtils.getColor("#ABCDEF91"));
+    }
+
+    public void testScaleImage() throws Exception {
+        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics g = image.getGraphics();
+        g.setColor(new Color(0xFF00FF00, true));
+        g.fillRect(0, 0, image.getWidth(), image.getHeight());
+        g.setColor(new Color(0xFFFF0000, true));
+        g.fillRect(25, 25, 50, 50);
+        g.dispose();
+
+        BufferedImage scaled = ImageUtils.scale(image, 0.5, 0.5);
+        assertEquals(50, scaled.getWidth());
+        assertEquals(50, scaled.getHeight());
+        assertEquals(0xFF00FF00, scaled.getRGB(0, 0));
+        assertEquals(0xFF00FF00, scaled.getRGB(49, 49));
+        assertEquals(0xFFFF0000, scaled.getRGB(25, 25));
+
+        scaled = ImageUtils.scale(image, 2.0, 2.0);
+        assertEquals(200, scaled.getWidth());
+        assertEquals(200, scaled.getHeight());
+        assertEquals(0xFF00FF00, scaled.getRGB(0, 0));
+        assertEquals(0xFF00FF00, scaled.getRGB(48, 48));
+        assertEquals(0xFFFF0000, scaled.getRGB(100, 100));
+        assertEquals(0xFF00FF00, scaled.getRGB(199, 199));
     }
 }

@@ -19,8 +19,11 @@ import com.android.ide.common.api.Rect;
 
 import org.eclipse.swt.graphics.Rectangle;
 
+import java.awt.AlphaComposite;
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.util.Iterator;
@@ -427,4 +430,31 @@ public class ImageUtils {
         throw new NumberFormatException();
     }
 
+    /**
+     * Resize the given image
+     *
+     * @param source the image to be scaled
+     * @param xScale x scale
+     * @param yScale y scale
+     * @return the scaled image
+     */
+    public static BufferedImage scale(BufferedImage source, double xScale, double yScale) {
+        int sourceWidth = source.getWidth();
+        int sourceHeight = source.getHeight();
+        int destWidth = (int) (xScale * sourceWidth);
+        int destHeight = (int) (yScale * sourceHeight);
+        BufferedImage scaled = new BufferedImage(destWidth, destHeight, source.getType());
+        Graphics2D g2 = scaled.createGraphics();
+        g2.setComposite(AlphaComposite.Src);
+        g2.setColor(new Color(0, true));
+        g2.fillRect(0, 0, destWidth, destHeight);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.drawImage(source, 0, 0, destWidth, destHeight, 0, 0, sourceWidth, sourceHeight, null);
+        g2.dispose();
+
+        return scaled;
+    }
 }
