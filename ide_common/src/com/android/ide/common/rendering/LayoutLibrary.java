@@ -65,7 +65,7 @@ import java.util.Map.Entry;
  * For client wanting to access both new and old (pre API level 5) layout libraries, it is
  * important that the following interfaces be used:<br>
  * {@link ILegacyPullParser} instead of {@link ILayoutPullParser}<br>
- * {@link LegacyCallback} instead of{@link com.android.ide.common.rendering.api.IProjectCallback}.
+ * {@link LegacyCallback} instead of {@link com.android.ide.common.rendering.api.IProjectCallback}.
  * <p/>
  * These interfaces will ensure that both new and older Layout libraries can be accessed.
  */

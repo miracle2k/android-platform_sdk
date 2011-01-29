@@ -36,6 +36,7 @@ public enum ResourceType {
     INTERPOLATOR("interpolator", "Interpolator"), //$NON-NLS-1$
     LAYOUT("layout", "Layout"), //$NON-NLS-1$
     MENU("menu", "Menu"), //$NON-NLS-1$
+    MIPMAP("mipmap", "Mip Map"), //$NON-NLS-1$
     PLURALS("plurals", "Plurals"), //$NON-NLS-1$
     RAW("raw", "Raw"), //$NON-NLS-1$
     STRING("string", "String"), //$NON-NLS-1$
