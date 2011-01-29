@@ -134,6 +134,7 @@ params
 pings
 placeholder
 plugin
+popup
 pre
 precompiler
 pref
