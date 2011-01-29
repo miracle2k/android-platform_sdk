@@ -47,7 +47,6 @@
         <view class="android.widget.LinearLayout" fill="opposite" render="skip"/>
         <view class="android.widget.RelativeLayout" fill="opposite" render="skip"/>
         <view class="android.widget.FrameLayout" fill="opposite" render="skip"/>
-        <view class="android.widget.AbsoluteLayout" fill="opposite" render="skip"/>
         <view class="android.widget.TableLayout" fill="opposite" render="skip"/>
         <view class="android.widget.TableRow" fill="opposite" render="skip"/>
     </category>
@@ -99,6 +98,7 @@
         <view class="include" skip="true" render="skip"/>
         <view class="merge" skip="true" render="skip"/>
         <view class="android.widget.DialerFilter" fill="width_in_vertical" render="skip"/>
+        <view class="android.widget.AbsoluteLayout" fill="opposite" render="skip"/>
     </category>
     <category name="Other">
         <!--  This is the catch-all category which contains unknown views if we encounter any -->

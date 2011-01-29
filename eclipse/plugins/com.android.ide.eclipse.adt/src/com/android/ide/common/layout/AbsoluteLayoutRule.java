@@ -30,6 +30,8 @@ import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.util.Pair;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,6 +39,14 @@ import java.util.Map;
  * classes.
  */
 public class AbsoluteLayoutRule extends BaseLayoutRule {
+
+    @Override
+    public List<String> getSelectionHint(INode parentNode, INode childNode) {
+        List<String> infos = new ArrayList<String>(2);
+        infos.add("AbsoluteLayout is deprecated.");
+        infos.add("Use other layouts instead.");
+        return infos;
+    }
 
     // ==== Drag'n'drop support ====
     // The AbsoluteLayout accepts any drag'n'drop anywhere on its surface.
