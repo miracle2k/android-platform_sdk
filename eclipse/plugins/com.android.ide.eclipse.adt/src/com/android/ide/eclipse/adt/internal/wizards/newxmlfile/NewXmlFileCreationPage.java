@@ -38,7 +38,7 @@ import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.Configurati
 import com.android.ide.eclipse.adt.internal.ui.ConfigurationSelector.SelectorMode;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;

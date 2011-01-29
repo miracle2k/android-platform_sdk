@@ -16,9 +16,9 @@
 
 package com.android.sdklib.internal.repository;
 
-import com.android.sdklib.annotations.Nullable;
-import com.android.sdklib.annotations.VisibleForTesting;
-import com.android.sdklib.annotations.VisibleForTesting.Visibility;
+import com.android.annotations.Nullable;
+import com.android.annotations.VisibleForTesting;
+import com.android.annotations.VisibleForTesting.Visibility;
 import com.android.sdklib.repository.RepoConstants;
 import com.android.sdklib.repository.SdkAddonConstants;
 import com.android.sdklib.repository.SdkRepoConstants;

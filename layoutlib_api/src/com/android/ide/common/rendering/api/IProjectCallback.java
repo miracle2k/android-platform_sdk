@@ -17,6 +17,7 @@
 package com.android.ide.common.rendering.api;
 
 import com.android.resources.ResourceType;
+import com.android.util.Pair;
 
 /**
  * Callback for project information needed by the Layout Library.
@@ -49,10 +50,10 @@ public interface IProjectCallback {
      * <p/>The resource id is the value of a <code>R.&lt;type&gt;.&lt;name&gt;</code>, and
      * this method will return both the type and name of the resource.
      * @param id the Id to resolve.
-     * @return an array of 2 strings containing the resource name and type, or null if the id
-     * does not match any resource.
+     * @return a Pair of {@link ResourceType} and resource name, or null if the id
+     *     does not match any resource.
      */
-    String[] resolveResourceValue(int id);
+    Pair<ResourceType, String> resolveResourceId(int id);
 
     /**
      * Resolves the id of a resource Id of type int[]
@@ -61,7 +62,7 @@ public interface IProjectCallback {
      * @param id the Id to resolve.
      * @return the name of the resource or <code>null</code> if not found.
      */
-    String resolveResourceValue(int[] id);
+    String resolveResourceId(int[] id);
 
     /**
      * Returns the id of a resource.
@@ -71,6 +72,5 @@ public interface IProjectCallback {
      * @param name the name of the resource
      * @return an Integer containing the resource Id, or <code>null</code> if not found.
      */
-    Integer getResourceValue(ResourceType type, String name);
-
+    Integer getResourceId(ResourceType type, String name);
 }

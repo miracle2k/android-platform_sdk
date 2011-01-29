@@ -39,12 +39,11 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.tests.SdkTestCase;
-import com.android.layoutlib.api.IXmlPullParser;
-import com.android.resources.ResourceType;
 import com.android.resources.Density;
 import com.android.resources.Keyboard;
 import com.android.resources.KeyboardState;
 import com.android.resources.Navigation;
+import com.android.resources.ResourceType;
 import com.android.resources.ScreenOrientation;
 import com.android.resources.ScreenRatio;
 import com.android.resources.ScreenSize;
@@ -52,6 +51,7 @@ import com.android.resources.TouchScreen;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.FolderWrapper;
+import com.android.util.Pair;
 
 import org.kxml2.io.KXmlParser;
 import org.xmlpull.v1.XmlPullParser;
@@ -68,7 +68,7 @@ import javax.imageio.ImageIO;
 public class ApiDemosRenderingTest extends SdkTestCase {
 
     /**
-     * Custom parser that implements {@link IXmlPullParser} (which itself extends
+     * Custom parser that implements {@link ILayoutPullParser} (which itself extends
      * {@link XmlPullParser}).
      */
     private final static class TestParser extends KXmlParser implements ILayoutPullParser {
@@ -94,25 +94,14 @@ public class ApiDemosRenderingTest extends SdkTestCase {
         // in some cases, the id that getResourceValue(String type, String name) returns
         // will be sent back to get the type/name. This map stores the id/type/name we generate
         // to be able to do the reverse resolution.
-        private Map<Integer, String[]> mResourceMap = new HashMap<Integer, String[]>();
+        private Map<Integer, Pair<ResourceType, String>> mResourceMap =
+            new HashMap<Integer, Pair<ResourceType, String>>();
 
         private boolean mCustomViewAttempt = false;
 
         public String getNamespace() {
             // TODO: read from the ApiDemos manifest.
             return "com.example.android.apis";
-        }
-
-        public Integer getResourceValue(String type, String name) {
-            Integer result = ++mIdCounter;
-            mResourceMap.put(result, new String[] { name, type });
-            return result;
-        }
-
-        public Integer getResourceValue(ResourceType type, String name) {
-            Integer result = ++mIdCounter;
-            mResourceMap.put(result, new String[] { name, type.getName() });
-            return result;
         }
 
         @SuppressWarnings("unchecked")
@@ -122,11 +111,17 @@ public class ApiDemosRenderingTest extends SdkTestCase {
             return null;
         }
 
-        public String[] resolveResourceValue(int id) {
+        public Integer getResourceId(ResourceType type, String name) {
+            Integer result = ++mIdCounter;
+            mResourceMap.put(result, Pair.of(type, name));
+            return result;
+        }
+
+        public Pair<ResourceType, String> resolveResourceId(int id) {
             return mResourceMap.get(id);
         }
 
-        public String resolveResourceValue(int[] id) {
+        public String resolveResourceId(int[] id) {
             return null;
         }
 

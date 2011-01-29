@@ -50,7 +50,7 @@ import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.api.INode.IAttribute;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;

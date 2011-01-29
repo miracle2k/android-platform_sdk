@@ -22,7 +22,7 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import java.io.File;
 import java.io.FileInputStream;

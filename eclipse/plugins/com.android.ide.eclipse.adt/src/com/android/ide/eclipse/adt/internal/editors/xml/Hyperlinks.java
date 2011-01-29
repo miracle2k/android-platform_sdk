@@ -32,6 +32,7 @@ import static com.android.sdklib.xml.AndroidManifest.ATTRIBUTE_PACKAGE;
 import static com.android.sdklib.xml.AndroidManifest.NODE_ACTIVITY;
 import static com.android.sdklib.xml.AndroidManifest.NODE_SERVICE;
 
+import com.android.annotations.VisibleForTesting;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
@@ -51,9 +52,8 @@ import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.annotations.VisibleForTesting;
 import com.android.sdklib.io.FileWrapper;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import org.apache.xerces.parsers.DOMParser;
 import org.apache.xerces.xni.Augmentations;

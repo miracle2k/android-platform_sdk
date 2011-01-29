@@ -17,7 +17,7 @@
 
 package com.android.ide.common.api;
 
-import com.android.sdklib.annotations.Nullable;
+import com.android.annotations.Nullable;
 
 /**
  * A Client Rules Engine is a set of methods that {@link IViewRule}s can use to

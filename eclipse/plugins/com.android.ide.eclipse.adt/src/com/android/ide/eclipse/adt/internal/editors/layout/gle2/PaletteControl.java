@@ -50,7 +50,7 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;

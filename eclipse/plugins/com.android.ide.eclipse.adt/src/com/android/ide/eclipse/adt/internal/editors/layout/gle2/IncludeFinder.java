@@ -20,11 +20,13 @@ import static com.android.ide.eclipse.adt.AndroidConstants.EXT_XML;
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_LAYOUTS;
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_SEP;
 import static com.android.sdklib.SdkConstants.FD_LAYOUT;
+
 import static org.eclipse.core.resources.IResourceDelta.ADDED;
 import static org.eclipse.core.resources.IResourceDelta.CHANGED;
 import static org.eclipse.core.resources.IResourceDelta.CONTENT;
 import static org.eclipse.core.resources.IResourceDelta.REMOVED;
 
+import com.android.annotations.VisibleForTesting;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
@@ -37,7 +39,6 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager.IR
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.resources.ResourceType;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.annotations.VisibleForTesting;
 import com.android.sdklib.io.IAbstractFile;
 
 import org.eclipse.core.resources.IFile;

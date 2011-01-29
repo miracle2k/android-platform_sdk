@@ -16,8 +16,8 @@
 
 package com.android.sdklib.internal.repository;
 
-import com.android.sdklib.annotations.VisibleForTesting;
-import com.android.sdklib.annotations.VisibleForTesting.Visibility;
+import com.android.annotations.VisibleForTesting;
+import com.android.annotations.VisibleForTesting.Visibility;
 import com.android.sdklib.repository.SdkAddonsListConstants;
 
 import org.w3c.dom.Document;

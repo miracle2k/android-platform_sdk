@@ -16,10 +16,10 @@
 
 package com.android.sdklib.internal.repository;
 
+import com.android.annotations.VisibleForTesting;
+import com.android.annotations.VisibleForTesting.Visibility;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
-import com.android.sdklib.annotations.VisibleForTesting;
-import com.android.sdklib.annotations.VisibleForTesting.Visibility;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
 

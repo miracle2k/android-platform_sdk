@@ -16,7 +16,7 @@
 
 package com.android.sdklib.internal.repository;
 
-import com.android.sdklib.annotations.Nullable;
+import com.android.annotations.Nullable;
 import com.android.sdklib.repository.SdkAddonConstants;
 
 import org.w3c.dom.Document;

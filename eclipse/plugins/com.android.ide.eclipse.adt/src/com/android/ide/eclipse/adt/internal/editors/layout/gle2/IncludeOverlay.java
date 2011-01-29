@@ -16,7 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
-import com.android.sdklib.annotations.VisibleForTesting;
+import com.android.annotations.VisibleForTesting;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;

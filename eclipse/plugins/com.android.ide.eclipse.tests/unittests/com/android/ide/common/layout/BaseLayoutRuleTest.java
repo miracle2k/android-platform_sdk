@@ -23,7 +23,7 @@ import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.Rect;
 import com.android.ide.common.layout.BaseLayoutRule.AttributeFilter;
-import com.android.sdklib.util.Pair;
+import com.android.util.Pair;
 
 import java.util.Arrays;
 import java.util.HashMap;
