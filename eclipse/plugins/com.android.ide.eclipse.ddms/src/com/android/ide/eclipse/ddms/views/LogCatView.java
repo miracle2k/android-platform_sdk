@@ -52,12 +52,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IPerspectiveRegistry;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.WorkbenchException;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.internal.WorkbenchPlugin;
-import org.eclipse.ui.internal.registry.PerspectiveDescriptor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -91,6 +92,11 @@ public final class LogCatView extends SelectionDependentViewPart implements LogC
         DdmsPlugin.PLUGIN_ID + ".logcat.MethodDeclaration"; //$NON-NLS-1$
     public static final String CHOICE_ERROR_LINE =
         DdmsPlugin.PLUGIN_ID + ".logcat.ErrorLine"; //$NON-NLS-1$
+
+    /* Default values for the switch of perspective. */
+    public static final boolean DEFAULT_SWITCH_PERSPECTIVE = true;
+    public static final String DEFAULT_PERSPECTIVE_ID =
+        "org.eclipse.jdt.ui.JavaPerspective"; //$NON-NLS-1$
 
     private static LogCatView sThis;
     private LogPanel mLogPanel;
@@ -435,17 +441,21 @@ public final class LogCatView extends SelectionDependentViewPart implements LogC
     }
 
     void switchPerspective() {
-
-        IWorkbenchWindow window = getViewSite().getWorkbenchWindow()
-                .getWorkbench().getActiveWorkbenchWindow();
-        String rtPerspectiveId = "org.eclipse.jdt.ui.JavaPerspective";
-        IPerspectiveRegistry reg = WorkbenchPlugin.getDefault()
-                .getPerspectiveRegistry();
-        PerspectiveDescriptor rtPerspectiveDesc = (PerspectiveDescriptor) reg
-                .findPerspectiveWithId(rtPerspectiveId);
-        if (window != null) {
-            IWorkbenchPage page = window.getActivePage();
-            page.setPerspective(rtPerspectiveDesc);
+        IPreferenceStore store = DdmsPlugin.getDefault().getPreferenceStore();
+        if (store.getBoolean(PreferenceInitializer.ATTR_SWITCH_PERSPECTIVE)) {
+            IWorkbench workbench = PlatformUI.getWorkbench();
+            IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
+            IPerspectiveRegistry perspectiveRegistry = workbench.getPerspectiveRegistry();
+            String perspectiveId = store.getString(PreferenceInitializer.ATTR_PERSPECTIVE_ID);
+            if (perspectiveId != null
+                    && perspectiveId.length() > 0
+                    && perspectiveRegistry.findPerspectiveWithId(perspectiveId) != null) {
+                try {
+                    workbench.showPerspective(perspectiveId, window);
+                } catch (WorkbenchException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
