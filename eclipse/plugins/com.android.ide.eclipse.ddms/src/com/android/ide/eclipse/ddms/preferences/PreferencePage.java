@@ -114,4 +114,10 @@ public class PreferencePage extends FieldEditorPreferencePage implements
             mAdbHostValue.setEnabled(mUseAdbHost.getBooleanValue(), getFieldEditorParent());
         }
     }
+
+    @Override
+    protected void performDefaults() {
+        super.performDefaults();
+        mAdbHostValue.setEnabled(mUseAdbHost.getBooleanValue(), getFieldEditorParent());
+    }
 }
