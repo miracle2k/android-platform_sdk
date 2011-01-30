@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Traceview
+Bundle-SymbolicName: com.android.ide.eclipse.traceview;singleton:=true
+Bundle-Version: 10.0.0.qualifier
+Bundle-Activator: com.android.ide.eclipse.traceview.TraceviewPlugin
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .,
+ libs/traceview.jar
+Bundle-Vendor: The Android Open Source Project

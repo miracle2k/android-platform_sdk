@@ -20,6 +20,9 @@
    <feature url="features/com.android.ide.eclipse.pdt_10.0.0.qualifier.jar" id="com.android.ide.eclipse.pdt" version="10.0.0.qualifier">
       <category name="platform"/>
    </feature>
+   <feature url="features/com.android.ide.eclipse.traceview_10.0.0.qualifier.jar" id="com.android.ide.eclipse.traceview" version="10.0.0.qualifier">
+      <category name="platform"/>
+   </feature>
    <category-def name="developer" label="Application Developer Tools">
       <description>
          Features that add Android support to Eclipse for application developers.
