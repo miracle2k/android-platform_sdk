@@ -25,7 +25,7 @@ rem and set up progdir to be the fully-qualified pathname of its directory.
 set prog=%~f0
 
 rem Grab current directory before we change it
-set work_dir=%cd%
+set work_dir="%cd%"
 
 rem Change current directory and drive to where the script is, to avoid
 rem issues with directories containing whitespaces.
@@ -76,6 +76,6 @@ if exist %swt_path% goto SetPath
 
 :SetPath
 rem Finally exec the java program and end here.
-call %java_exe% -Dcom.android.sdkmanager.toolsdir="%tools_dir%" -Dcom.android.sdkmanager.workdir="%work_dir%" -classpath "%jar_path%;%swt_path%\swt.jar" com.android.sdkmanager.Main %*
+call %java_exe% -Dcom.android.sdkmanager.toolsdir="%tools_dir%" -Dcom.android.sdkmanager.workdir=%work_dir% -classpath "%jar_path%;%swt_path%\swt.jar" com.android.sdkmanager.Main %*
 
 rem EOF
