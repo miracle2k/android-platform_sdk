@@ -16,8 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_MERGE;
+
 import com.android.ide.common.api.Rect;
 import com.android.ide.common.rendering.api.Capability;
+import com.android.ide.common.rendering.api.MergeCookie;
 import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.UiElementPullParser;
@@ -25,6 +28,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDes
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+import com.android.util.Pair;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.ui.views.properties.IPropertyDescriptor;
@@ -34,8 +38,11 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Maps a {@link ViewInfo} in a structure more adapted to our needs.
@@ -66,7 +73,7 @@ public class CanvasViewInfo implements IPropertySource {
     private final String mName;
     private final Object mViewObject;
     private final UiViewElementNode mUiViewNode;
-    private final CanvasViewInfo mParent;
+    private CanvasViewInfo mParent;
     private final ArrayList<CanvasViewInfo> mChildren = new ArrayList<CanvasViewInfo>();
 
     /**
@@ -75,6 +82,17 @@ public class CanvasViewInfo implements IPropertySource {
      * fixed padding because they were invisible and somebody requested visibility.
      */
     private boolean mExploded;
+
+    /**
+     * Node sibling. This is usually null, but it's possible for a single node in the
+     * model to have <b>multiple</b> separate views in the canvas, for example
+     * when you {@code <include>} a view that has multiple widgets inside a
+     * {@code <merge>} tag. In this case, all the views have the same node model,
+     * the include tag, and selecting the include should highlight all the separate
+     * views that are linked to this node. That's what this field is all about: it is
+     * a <b>circular</b> list of all the siblings that share the same node.
+     */
+    private List<CanvasViewInfo> mNodeSiblings;
 
     /**
      * Constructs a {@link CanvasViewInfo} initialized with the given initial values.
@@ -138,6 +156,77 @@ public class CanvasViewInfo implements IPropertySource {
      * @return the children, never null
      */
     public List<CanvasViewInfo> getChildren() {
+        return mChildren;
+    }
+
+    /**
+     * For nodes that have multiple views rendered from a single node, such as the
+     * children of a {@code <merge>} tag included into a separate layout, return the
+     * "primary" view, the first view that is rendered
+     */
+    private CanvasViewInfo getPrimaryNodeSibling() {
+        if (mNodeSiblings == null || mNodeSiblings.size() == 0) {
+            return null;
+        }
+
+        return mNodeSiblings.get(0);
+    }
+
+    /**
+     * Returns true if this view represents one view of many linked to a single node, and
+     * where this is the primary view. The primary view is the one that will be shown
+     * in the outline for example (since we only show nodes, not views, in the outline,
+     * and therefore don't want repetitions when a view has more than one view info.)
+     *
+     * @return true if this is the primary view among more than one linked to a single
+     *         node
+     */
+    private boolean isPrimaryNodeSibling() {
+        return getPrimaryNodeSibling() == this;
+    }
+
+    /**
+     * Returns the list of node sibling of this view (which <b>will include this
+     * view</b>). For most views this is going to be null, but for views that share a
+     * single node (such as widgets inside a {@code <merge>} tag included into another
+     * layout), this will provide all the views that correspond to the node.
+     *
+     * @return a non-empty list of siblings (including this), or null
+     */
+    public List<CanvasViewInfo> getNodeSiblings() {
+        return mNodeSiblings;
+    }
+
+    /**
+     * Returns all the children of the canvas view info where each child corresponds to a
+     * unique node. This is intended for use by the outline for example, where only the
+     * actual nodes are displayed, not the views themselves.
+     * <p>
+     * Most views have their own nodes, so this is generally the same as
+     * {@link #getChildren}, except in the case where you for example include a view that
+     * has multiple widgets inside a {@code <merge>} tag, where all these widgets have the
+     * same node (the {@code <merge>} tag).
+     *
+     * @return list of {@link CanvasViewInfo} objects that are children of this view,
+     *         never null
+     */
+    public List<CanvasViewInfo> getUniqueChildren() {
+        for (CanvasViewInfo info : mChildren) {
+            if (info.mNodeSiblings != null) {
+                // We have secondary children; must create a new collection containing
+                // only non-secondary children
+                List<CanvasViewInfo> children = new ArrayList<CanvasViewInfo>();
+                for (CanvasViewInfo vi : mChildren) {
+                    if (vi.mNodeSiblings == null) {
+                        children.add(vi);
+                    } else if (vi.isPrimaryNodeSibling()) {
+                        children.add(vi);
+                    }
+                }
+                return children;
+            }
+        }
+
         return mChildren;
     }
 
@@ -376,6 +465,32 @@ public class CanvasViewInfo implements IPropertySource {
         return null;
     }
 
+    /** Adds the given {@link CanvasViewInfo} as a new last child of this view */
+    private void addChild(CanvasViewInfo child) {
+        mChildren.add(child);
+    }
+
+    /** Adds the given {@link CanvasViewInfo} as a child at the given index */
+    private void addChildAt(int index, CanvasViewInfo child) {
+        mChildren.add(index, child);
+    }
+
+    /**
+     * Removes the given {@link CanvasViewInfo} from the child list of this view, and
+     * returns true if it was successfully removed
+     *
+     * @param child the child to be removed
+     * @return true if it was a child and was removed
+     */
+    public boolean removeChild(CanvasViewInfo child) {
+        return mChildren.remove(child);
+    }
+
+    @Override
+    public String toString() {
+        return "CanvasViewInfo [name=" + mName + ", node=" + mUiViewNode + "]";
+    }
+
     // ---- Factory functionality ----
 
     /**
@@ -402,234 +517,488 @@ public class CanvasViewInfo implements IPropertySource {
      * @param root the root {@link ViewInfo} to build from
      * @return a {@link CanvasViewInfo} hierarchy
      */
-    public static CanvasViewInfo create(ViewInfo root) {
-        if (root.getCookie() == null) {
-            // Special case: If the root-most view does not have a view cookie,
-            // then we are rendering some outer layout surrounding this layout, and in
-            // that case we must search down the hierarchy for the (possibly multiple)
-            // sub-roots that correspond to elements in this layout, and place them inside
-            // an outer view that has no node. In the outline this item will be used to
-            // show the inclusion-context.
-            CanvasViewInfo rootView = createView(null, root, 0, 0);
-            addKeyedSubtrees(rootView, root, 0, 0);
-            return rootView;
-        } else {
-            // We have a view key at the top, so just go and create {@link CanvasViewInfo}
-            // objects for each {@link ViewInfo} until we run into a null key.
-            return addKeyedSubtrees(null, root, 0, 0);
-        }
+    public static Pair<CanvasViewInfo,List<Rectangle>> create(ViewInfo root) {
+        return new Builder().create(root);
     }
 
-    /** Creates a {@link CanvasViewInfo} for a given {@link ViewInfo} but does not recurse */
-    private static CanvasViewInfo createView(CanvasViewInfo parent, ViewInfo root, int parentX,
-            int parentY) {
-        Object cookie = root.getCookie();
-        UiViewElementNode node = null;
-        if (cookie instanceof UiViewElementNode) {
-            node = (UiViewElementNode) cookie;
-        }
+    /** Builder object which walks over a tree of {@link ViewInfo} objects and builds
+     * up a corresponding {@link CanvasViewInfo} hierarchy. */
+    private static class Builder {
+        private Map<UiViewElementNode,List<CanvasViewInfo>> mMergeNodeMap;
 
-        return createView(parent, root, parentX, parentY, node);
-    }
+        public Pair<CanvasViewInfo,List<Rectangle>> create(ViewInfo root) {
+            Object cookie = root.getCookie();
+            if (cookie == null) {
+                // Special case: If the root-most view does not have a view cookie,
+                // then we are rendering some outer layout surrounding this layout, and in
+                // that case we must search down the hierarchy for the (possibly multiple)
+                // sub-roots that correspond to elements in this layout, and place them inside
+                // an outer view that has no node. In the outline this item will be used to
+                // show the inclusion-context.
+                CanvasViewInfo rootView = createView(null, root, 0, 0);
+                addKeyedSubtrees(rootView, root, 0, 0);
 
-    /**
-     * Creates a {@link CanvasViewInfo} for a given {@link ViewInfo} but does not recurse.
-     * This method specifies an explicit {@link UiViewElementNode} to use rather than
-     * relying on the view cookie in the info object.
-     */
-    private static CanvasViewInfo createView(CanvasViewInfo parent, ViewInfo root, int parentX,
-            int parentY, UiViewElementNode node) {
-
-        int x = root.getLeft();
-        int y = root.getTop();
-        int w = root.getRight() - x;
-        int h = root.getBottom() - y;
-
-        x += parentX;
-        y += parentY;
-
-        Rectangle absRect = new Rectangle(x, y, w - 1, h - 1);
-
-        if (w < SELECTION_MIN_SIZE) {
-            int d = (SELECTION_MIN_SIZE - w) / 2;
-            x -= d;
-            w += SELECTION_MIN_SIZE - w;
-        }
-
-        if (h < SELECTION_MIN_SIZE) {
-            int d = (SELECTION_MIN_SIZE - h) / 2;
-            y -= d;
-            h += SELECTION_MIN_SIZE - h;
-        }
-
-        Rectangle selectionRect = new Rectangle(x, y, w - 1, h - 1);
-
-        return new CanvasViewInfo(parent, root.getClassName(), root.getViewObject(), node, absRect,
-                selectionRect);
-    }
-
-    /** Create a subtree recursively until you run out of keys */
-    private static CanvasViewInfo createSubtree(CanvasViewInfo parent, ViewInfo viewInfo,
-            int parentX, int parentY) {
-        assert viewInfo.getCookie() != null;
-
-        CanvasViewInfo view = createView(parent, viewInfo, parentX, parentY);
-
-        // Process children:
-        parentX += viewInfo.getLeft();
-        parentY += viewInfo.getTop();
-
-        // See if we have any missing keys at this level
-        int missingNodes = 0;
-        List<ViewInfo> children = viewInfo.getChildren();
-        for (ViewInfo child : children) {
-            // Only use children which have a ViewKey of the correct type.
-            // We can't interact with those when they have a null key or
-            // an incompatible type.
-            Object cookie = child.getCookie();
-            if (!(cookie instanceof UiViewElementNode)) {
-                missingNodes++;
-            }
-        }
-
-        if (missingNodes == 0) {
-            // No missing nodes; this is the normal case, and we can just continue to
-            // recursively add our children
-            for (ViewInfo child : children) {
-                CanvasViewInfo childView = createSubtree(view, child, parentX, parentY);
-                view.addChild(childView);
-            }
-        } else {
-            // We don't have keys for one or more of the ViewInfos. There are many
-            // possible causes: we are on an SDK platform that does not support
-            // embedded_layout rendering, or we are including a view with a <merge>
-            // as the root element.
-
-            String containerName = view.getUiViewNode().getDescriptor().getXmlLocalName();
-            if (containerName.equals(LayoutDescriptors.VIEW_INCLUDE)) {
-                // This is expected -- we don't WANT to get node keys for the content
-                // of an include since it's in a different file and should be treated
-                // as a single unit that cannot be edited (hence, no CanvasViewInfo
-                // children)
-            } else {
-                // We are getting children with null keys where we don't expect it;
-                // this usually means that we are dealing with an Android platform
-                // that does not support {@link Capability#EMBEDDED_LAYOUT}, or
-                // that there are <merge> tags which are doing surprising things
-                // to the view hierarchy
-                LinkedList<UiViewElementNode> unused = new LinkedList<UiViewElementNode>();
-                for (UiElementNode child : view.getUiViewNode().getUiChildren()) {
-                    if (child instanceof UiViewElementNode) {
-                        unused.addLast((UiViewElementNode) child);
+                List<Rectangle> includedBounds = new ArrayList<Rectangle>();
+                for (CanvasViewInfo vi : rootView.getChildren()) {
+                    if (vi.isPrimaryNodeSibling()) {
+                        includedBounds.add(vi.getAbsRect());
                     }
                 }
-                for (ViewInfo child : children) {
-                    Object cookie = child.getCookie();
-                    if (cookie != null) {
-                        unused.remove(cookie);
+
+                // There are <merge> nodes here; see if we can insert it into the hierarchy
+                if (mMergeNodeMap != null) {
+                    // Locate all the nodes that have a <merge> as a parent in the node model,
+                    // and where the view sits at the top level inside the include-context node.
+                    UiViewElementNode merge = null;
+                    List<CanvasViewInfo> merged = new ArrayList<CanvasViewInfo>();
+                    for (Map.Entry<UiViewElementNode, List<CanvasViewInfo>> entry : mMergeNodeMap
+                            .entrySet()) {
+                        UiViewElementNode node = entry.getKey();
+                        if (!hasMergeParent(node)) {
+                            continue;
+                        }
+                        List<CanvasViewInfo> views = entry.getValue();
+                        assert views.size() > 0;
+                        CanvasViewInfo view = views.get(0); // primary
+                        if (view.getParent() != rootView) {
+                            continue;
+                        }
+                        UiElementNode parent = node.getUiParent();
+                        if (merge != null && parent != merge) {
+                            continue;
+                        }
+                        merge = (UiViewElementNode) parent;
+                        merged.add(view);
                     }
-                }
-                if (unused.size() > 0) {
-                    if (unused.size() == missingNodes) {
-                        // The number of unmatched elements and ViewInfos are identical;
-                        // it's very likely that they match one to one, so just use these
-                        for (ViewInfo child : children) {
-                            if (child.getCookie() == null) {
-                                // Only create a flat (non-recursive) view
-                                CanvasViewInfo childView = createView(view, child, parentX,
-                                        parentY, unused.removeFirst());
-                                view.addChild(childView);
+                    if (merged.size() > 0) {
+                        // Compute a bounding box for the merged views
+                        Rectangle absRect = null;
+                        for (CanvasViewInfo child : merged) {
+                            Rectangle rect = child.getAbsRect();
+                            if (absRect == null) {
+                                absRect = rect;
                             } else {
-                                CanvasViewInfo childView = createSubtree(view, child, parentX,
-                                        parentY);
+                                absRect = absRect.union(rect);
+                            }
+                        }
+
+                        CanvasViewInfo mergeView = new CanvasViewInfo(rootView, VIEW_MERGE, null,
+                                merge, absRect, absRect);
+                        for (CanvasViewInfo view : merged) {
+                            if (rootView.removeChild(view)) {
+                                mergeView.addChild(view);
+                            }
+                        }
+                        rootView.addChild(mergeView);
+                    }
+                }
+
+                return Pair.of(rootView, includedBounds);
+            } else {
+                // We have a view key at the top, so just go and create {@link CanvasViewInfo}
+                // objects for each {@link ViewInfo} until we run into a null key.
+                CanvasViewInfo rootView = addKeyedSubtrees(null, root, 0, 0);
+
+                // Special case: look to see if the root element is really a <merge>, and if so,
+                // manufacture a view for it such that we can target this root element
+                // in drag & drop operations, such that we can show it in the outline, etc
+                if (rootView != null && hasMergeParent(rootView.getUiViewNode())) {
+                    CanvasViewInfo merge = new CanvasViewInfo(null, VIEW_MERGE, null,
+                            (UiViewElementNode) rootView.getUiViewNode().getUiParent(),
+                            rootView.getAbsRect(), rootView.getSelectionRect());
+                    // Insert the <merge> as the new real root
+                    rootView.mParent = merge;
+                    merge.addChild(rootView);
+                    rootView = merge;
+                }
+
+                return Pair.of(rootView, null);
+            }
+        }
+
+        private boolean hasMergeParent(UiViewElementNode rootNode) {
+            UiElementNode rootParent = rootNode.getUiParent();
+            return (rootParent instanceof UiViewElementNode
+                    && VIEW_MERGE.equals(rootParent.getDescriptor().getXmlName()));
+        }
+
+        /** Creates a {@link CanvasViewInfo} for a given {@link ViewInfo} but does not recurse */
+        private CanvasViewInfo createView(CanvasViewInfo parent, ViewInfo root, int parentX,
+                int parentY) {
+            Object cookie = root.getCookie();
+            UiViewElementNode node = null;
+            if (cookie instanceof UiViewElementNode) {
+                node = (UiViewElementNode) cookie;
+            } else if (cookie instanceof MergeCookie) {
+                cookie = ((MergeCookie) cookie).getCookie();
+                if (cookie instanceof UiViewElementNode) {
+                    node = (UiViewElementNode) cookie;
+                    CanvasViewInfo view = createView(parent, root, parentX, parentY, node);
+                    if (root.getCookie() instanceof MergeCookie && view.mNodeSiblings == null) {
+                        List<CanvasViewInfo> v = mMergeNodeMap == null ?
+                                null : mMergeNodeMap.get(node);
+                        if (v != null) {
+                            v.add(view);
+                        } else {
+                            v = new ArrayList<CanvasViewInfo>();
+                            v.add(view);
+                            if (mMergeNodeMap == null) {
+                                mMergeNodeMap =
+                                    new HashMap<UiViewElementNode, List<CanvasViewInfo>>();
+                            }
+                            mMergeNodeMap.put(node, v);
+                        }
+                        view.mNodeSiblings = v;
+                    }
+
+                    return view;
+                }
+            }
+
+            return createView(parent, root, parentX, parentY, node);
+        }
+
+        /**
+         * Creates a {@link CanvasViewInfo} for a given {@link ViewInfo} but does not recurse.
+         * This method specifies an explicit {@link UiViewElementNode} to use rather than
+         * relying on the view cookie in the info object.
+         */
+        private CanvasViewInfo createView(CanvasViewInfo parent, ViewInfo root, int parentX,
+                int parentY, UiViewElementNode node) {
+
+            int x = root.getLeft();
+            int y = root.getTop();
+            int w = root.getRight() - x;
+            int h = root.getBottom() - y;
+
+            x += parentX;
+            y += parentY;
+
+            Rectangle absRect = new Rectangle(x, y, w - 1, h - 1);
+
+            if (w < SELECTION_MIN_SIZE) {
+                int d = (SELECTION_MIN_SIZE - w) / 2;
+                x -= d;
+                w += SELECTION_MIN_SIZE - w;
+            }
+
+            if (h < SELECTION_MIN_SIZE) {
+                int d = (SELECTION_MIN_SIZE - h) / 2;
+                y -= d;
+                h += SELECTION_MIN_SIZE - h;
+            }
+
+            Rectangle selectionRect = new Rectangle(x, y, w - 1, h - 1);
+
+            return new CanvasViewInfo(parent, root.getClassName(), root.getViewObject(), node,
+                    absRect, selectionRect);
+        }
+
+        /** Create a subtree recursively until you run out of keys */
+        private CanvasViewInfo createSubtree(CanvasViewInfo parent, ViewInfo viewInfo,
+                int parentX, int parentY) {
+            assert viewInfo.getCookie() != null;
+
+            CanvasViewInfo view = createView(parent, viewInfo, parentX, parentY);
+
+            // Process children:
+            parentX += viewInfo.getLeft();
+            parentY += viewInfo.getTop();
+
+            // See if we have any missing keys at this level
+            int missingNodes = 0;
+            int mergeNodes = 0;
+            List<ViewInfo> children = viewInfo.getChildren();
+            for (ViewInfo child : children) {
+                // Only use children which have a ViewKey of the correct type.
+                // We can't interact with those when they have a null key or
+                // an incompatible type.
+                Object cookie = child.getCookie();
+                if (!(cookie instanceof UiViewElementNode)) {
+                    if (cookie instanceof MergeCookie) {
+                        mergeNodes++;
+                    } else {
+                        missingNodes++;
+                    }
+                }
+            }
+
+            if (missingNodes == 0 && mergeNodes == 0) {
+                // No missing nodes; this is the normal case, and we can just continue to
+                // recursively add our children
+                for (ViewInfo child : children) {
+                    CanvasViewInfo childView = createSubtree(view, child,
+                            parentX, parentY);
+                    view.addChild(childView);
+                }
+
+                // TBD: Emit placeholder views for keys that have no views?
+            } else {
+                // We don't have keys for one or more of the ViewInfos. There are many
+                // possible causes: we are on an SDK platform that does not support
+                // embedded_layout rendering, or we are including a view with a <merge>
+                // as the root element.
+
+                String containerName = view.getUiViewNode().getDescriptor().getXmlLocalName();
+                if (containerName.equals(LayoutDescriptors.VIEW_INCLUDE)) {
+                    // This is expected -- we don't WANT to get node keys for the content
+                    // of an include since it's in a different file and should be treated
+                    // as a single unit that cannot be edited (hence, no CanvasViewInfo
+                    // children)
+                } else {
+                    // We are getting children with null keys where we don't expect it;
+                    // this usually means that we are dealing with an Android platform
+                    // that does not support {@link Capability#EMBEDDED_LAYOUT}, or
+                    // that there are <merge> tags which are doing surprising things
+                    // to the view hierarchy
+                    LinkedList<UiViewElementNode> unused = new LinkedList<UiViewElementNode>();
+                    for (UiElementNode child : view.getUiViewNode().getUiChildren()) {
+                        if (child instanceof UiViewElementNode) {
+                            unused.addLast((UiViewElementNode) child);
+                        }
+                    }
+                    for (ViewInfo child : children) {
+                        Object cookie = child.getCookie();
+                        if (mergeNodes > 0 && cookie instanceof MergeCookie) {
+                            cookie = ((MergeCookie) cookie).getCookie();
+                        }
+                        if (cookie != null) {
+                            unused.remove(cookie);
+                        }
+                    }
+
+                    if (unused.size() > 0 || mergeNodes > 0) {
+                        if (unused.size() == missingNodes) {
+                            // The number of unmatched elements and ViewInfos are identical;
+                            // it's very likely that they match one to one, so just use these
+                            for (ViewInfo child : children) {
+                                if (child.getCookie() == null) {
+                                    // Only create a flat (non-recursive) view
+                                    CanvasViewInfo childView = createView(view, child, parentX,
+                                            parentY, unused.removeFirst());
+                                    view.addChild(childView);
+                                } else {
+                                    CanvasViewInfo childView = createSubtree(view, child, parentX,
+                                            parentY);
+                                    view.addChild(childView);
+                                }
+                            }
+                        } else {
+                            // We have an uneven match. In this case we might be dealing
+                            // with <merge> etc.
+                            // We have no way to associate elements back with the
+                            // corresponding <include> tags if there are more than one of
+                            // them. That's not a huge tragedy since visually you are not
+                            // allowed to edit these anyway; we just need to make a visual
+                            // block for these for selection and outline purposes.
+                            addMismatched(view, parentX, parentY, children, unused);
+                        }
+                    } else {
+                        // No unused keys, but there are views without keys.
+                        // We can't represent these since all views must have node keys
+                        // such that you can operate on them. Just ignore these.
+                        for (ViewInfo child : children) {
+                            if (child.getCookie() != null) {
+                                CanvasViewInfo childView = createSubtree(view, child,
+                                        parentX, parentY);
                                 view.addChild(childView);
                             }
                         }
-                    } else {
-                        // We have an uneven match. In this case we might be dealing
-                        // with <merge> etc.
-                        // We have no way to associate elements back with the
-                        // corresponding <include> tags if there are more than one of
-                        // them. That's not a huge tragedy since visually you are not
-                        // allowed to edit these anyway; we just need to make a visual
-                        // block for these for selection and outline purposes.
-                        UiViewElementNode reference = unused.get(0);
-                        addBoundingView(view, children, reference, parentX, parentY);
                     }
                 }
             }
+
+            return view;
         }
 
-        return view;
-    }
-
-    /**
-     * Add a single bounding view for all the non-keyed children with dimensions that span
-     * the bounding rectangle of all these children, and associate it with the given node
-     * reference. Keyed children are added in the normal way.
-     */
-    private static void addBoundingView(CanvasViewInfo parentView, List<ViewInfo> children,
-            UiViewElementNode reference, int parentX, int parentY) {
-        Rectangle absRect = null;
-        int insertIndex = -1;
-        for (int index = 0, size = children.size(); index < size; index++) {
-            ViewInfo child = children.get(index);
-            if (child.getCookie() == null) {
-                int x = child.getLeft();
-                int y = child.getTop();
-                int width = child.getRight() - x;
-                int height = child.getBottom() - y;
-                Rectangle rect = new Rectangle(x, y, width, height);
-                if (absRect == null) {
-                    absRect = rect;
-                    insertIndex = index;
+        /**
+         * We have various {@link ViewInfo} children with null keys, and/or nodes in
+         * the corresponding UI model that are not referenced by any of the {@link ViewInfo}
+         * objects. This method attempts to account for this, by matching the views in
+         * the right order.
+         */
+        private void addMismatched(CanvasViewInfo parentView, int parentX, int parentY,
+                List<ViewInfo> children, LinkedList<UiViewElementNode> unused) {
+            UiViewElementNode afterNode = null;
+            UiViewElementNode beforeNode = null;
+            // We have one important clue we can use when matching unused nodes
+            // with views: if we have a view V1 with node N1, and a view V2 with node N2,
+            // then we can only match unknown node UN with unknown node UV if
+            // V1 < UV < V2 and N1 < UN < N2.
+            // We can use these constraints to do the matching, for example by
+            // a simple DAG traversal. However, since the number of unmatched nodes
+            // will typically be very small, we'll just do a simple algorithm here
+            // which checks forwards/backwards whether a match is valid.
+            for (int index = 0, size = children.size(); index < size; index++) {
+                ViewInfo child = children.get(index);
+                if (child.getCookie() != null) {
+                    CanvasViewInfo childView = createSubtree(parentView, child, parentX, parentY);
+                    parentView.addChild(childView);
+                    if (child.getCookie() instanceof UiViewElementNode) {
+                        afterNode = (UiViewElementNode) child.getCookie();
+                    }
                 } else {
-                    absRect = absRect.union(rect);
-                }
-            } else {
-                CanvasViewInfo childView = createSubtree(parentView, child, parentX, parentY);
-                parentView.addChild(childView);
-            }
-        }
-        if (absRect != null) {
-            absRect.x += parentX;
-            absRect.y += parentY;
-            String name = reference.getDescriptor().getXmlLocalName();
-            CanvasViewInfo childView = new CanvasViewInfo(parentView, name, null, reference,
-                    absRect, absRect);
-            parentView.addChild(childView, insertIndex);
-        }
-    }
+                    beforeNode = nextViewNode(children, index);
 
-    /** Search for a subtree with valid keys and add those subtrees */
-    private static CanvasViewInfo addKeyedSubtrees(CanvasViewInfo parent, ViewInfo viewInfo,
-            int parentX, int parentY) {
-        if (viewInfo.getCookie() != null) {
-            CanvasViewInfo subtree = createSubtree(parent, viewInfo, parentX, parentY);
-            if (parent != null) {
-                parent.mChildren.add(subtree);
+                    // Find first eligible node from unused
+                    // TOD: What if there are more eligible? We need to process ALL views
+                    // and all nodes in one go here
+
+                    UiViewElementNode matching = null;
+                    for (UiViewElementNode candidate : unused) {
+                        if (afterNode == null || isAfter(afterNode, candidate)) {
+                            if (beforeNode == null || isBefore(beforeNode, candidate)) {
+                                matching = candidate;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (matching != null) {
+                        unused.remove(matching);
+                        CanvasViewInfo childView = createView(parentView, child, parentX, parentY,
+                                matching);
+                        parentView.addChild(childView);
+                        afterNode = matching;
+                    } else {
+                        // We have no node for the view -- what do we do??
+                        // Nothing - we only represent stuff in the outline that is in the
+                        // source model, not in the render
+                    }
+                }
             }
-            return subtree;
-        } else {
-            for (ViewInfo child : viewInfo.getChildren()) {
-                addKeyedSubtrees(parent, child, parentX + viewInfo.getLeft(), parentY
-                        + viewInfo.getTop());
+
+            // Add zero-bounded boxes for all remaining nodes since they need to show
+            // up in the outline, need to be selectable so you can press Delete, etc.
+            if (unused.size() > 0) {
+                Map<UiViewElementNode, Integer> rankMap =
+                    new HashMap<UiViewElementNode, Integer>();
+                Map<UiViewElementNode, CanvasViewInfo> infoMap =
+                    new HashMap<UiViewElementNode, CanvasViewInfo>();
+                UiElementNode parent = unused.get(0).getUiParent();
+                if (parent != null) {
+                    int index = 0;
+                    for (UiElementNode child : parent.getUiChildren()) {
+                        UiViewElementNode node = (UiViewElementNode) child;
+                        rankMap.put(node, index++);
+                    }
+                    for (CanvasViewInfo child : parentView.getChildren()) {
+                        infoMap.put(child.getUiViewNode(), child);
+                    }
+                    List<Integer> usedIndexes = new ArrayList<Integer>();
+                    for (UiViewElementNode node : unused) {
+                        Integer rank = rankMap.get(node);
+                        if (rank != null) {
+                            usedIndexes.add(rank);
+                        }
+                    }
+                    Collections.sort(usedIndexes);
+                    for (int i = usedIndexes.size() - 1; i >= 0; i--) {
+                        Integer rank = usedIndexes.get(i);
+                        UiViewElementNode found = null;
+                        for (UiViewElementNode node : unused) {
+                            if (rankMap.get(node) == rank) {
+                                found = node;
+                                break;
+                            }
+                        }
+                        if (found != null) {
+                            Rectangle absRect = new Rectangle(parentX, parentY, 0, 0);
+                            String name = found.getDescriptor().getXmlLocalName();
+                            CanvasViewInfo v = new CanvasViewInfo(parentView, name, null, found,
+                                    absRect, absRect);
+                            // Find corresponding index in the parent view
+                            List<CanvasViewInfo> siblings = parentView.getChildren();
+                            int insertPosition = siblings.size();
+                            for (int j = siblings.size() - 1; j >= 0; j--) {
+                                CanvasViewInfo sibling = siblings.get(j);
+                                UiViewElementNode siblingNode = sibling.getUiViewNode();
+                                if (siblingNode != null) {
+                                    Integer siblingRank = rankMap.get(siblingNode);
+                                    if (siblingRank != null && siblingRank < rank) {
+                                        insertPosition = j + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            parentView.addChildAt(insertPosition, v);
+                            unused.remove(found);
+                        }
+                    }
+                }
+                // Add in any remaining
+                for (UiViewElementNode node : unused) {
+                    Rectangle absRect = new Rectangle(parentX, parentY, 0, 0);
+                    String name = node.getDescriptor().getXmlLocalName();
+                    CanvasViewInfo v = new CanvasViewInfo(parentView, name, null, node, absRect,
+                            absRect);
+                    parentView.addChild(v);
+                }
+            }
+        }
+
+        private boolean isBefore(UiViewElementNode beforeNode, UiViewElementNode candidate) {
+            UiElementNode parent = candidate.getUiParent();
+            if (parent != null) {
+                for (UiElementNode sibling : parent.getUiChildren()) {
+                    if (sibling == beforeNode) {
+                        return false;
+                    } else if (sibling == candidate) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private boolean isAfter(UiViewElementNode afterNode, UiViewElementNode candidate) {
+            UiElementNode parent = candidate.getUiParent();
+            if (parent != null) {
+                for (UiElementNode sibling : parent.getUiChildren()) {
+                    if (sibling == afterNode) {
+                        return true;
+                    } else if (sibling == candidate) {
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private UiViewElementNode nextViewNode(List<ViewInfo> children, int index) {
+            int size = children.size();
+            for (; index < size; index++) {
+                ViewInfo child = children.get(index);
+                if (child.getCookie() instanceof UiViewElementNode) {
+                    return (UiViewElementNode) child.getCookie();
+                }
             }
 
             return null;
         }
-    }
 
-    /** Adds the given {@link CanvasViewInfo} as a new last child of this view */
-    private void addChild(CanvasViewInfo child) {
-        mChildren.add(child);
-    }
+        /** Search for a subtree with valid keys and add those subtrees */
+        private CanvasViewInfo addKeyedSubtrees(CanvasViewInfo parent, ViewInfo viewInfo,
+                int parentX, int parentY) {
+            // We don't include MergeCookies when searching down for the first non-null key,
+            // since this means we are in a "Show Included In" context, and the include tag itself
+            // (which the merge cookie is pointing to) is still in the including-document rather
+            // than the included document. Therefore, we only accept real UiViewElementNodes here,
+            // not MergeCookies.
+            if (viewInfo.getCookie() != null) {
+                CanvasViewInfo subtree = createSubtree(parent, viewInfo, parentX, parentY);
+                if (parent != null) {
+                    parent.mChildren.add(subtree);
+                }
+                return subtree;
+            } else {
+                for (ViewInfo child : viewInfo.getChildren()) {
+                    addKeyedSubtrees(parent, child, parentX + viewInfo.getLeft(), parentY
+                            + viewInfo.getTop());
+                }
 
-    /** Adds the given {@link CanvasViewInfo} as a new child at the given index */
-    private void addChild(CanvasViewInfo child, int index) {
-        if (index < 0) {
-            index = mChildren.size();
+                return null;
+            }
         }
-        mChildren.add(index, child);
     }
 }

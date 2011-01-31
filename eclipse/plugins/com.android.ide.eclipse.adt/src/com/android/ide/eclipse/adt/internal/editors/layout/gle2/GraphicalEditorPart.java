@@ -1760,6 +1760,9 @@ public class GraphicalEditorPart extends EditorPart
          * Called when the file changes triggered a redraw of the layout
          */
         public void reloadLayout(final ChangeFlags flags, final boolean libraryChanged) {
+            if (mConfigComposite.isDisposed()) {
+                return;
+            }
             Display display = mConfigComposite.getDisplay();
             display.asyncExec(new Runnable() {
                 public void run() {

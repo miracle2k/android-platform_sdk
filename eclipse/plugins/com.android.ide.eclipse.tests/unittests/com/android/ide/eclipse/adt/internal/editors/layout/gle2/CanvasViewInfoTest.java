@@ -17,15 +17,23 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.rendering.api.Capability;
+import com.android.ide.common.rendering.api.MergeCookie;
 import com.android.ide.common.rendering.api.ViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
+import com.android.util.Pair;
 
 import org.eclipse.swt.graphics.Rectangle;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import junit.framework.TestCase;
 
@@ -66,7 +74,7 @@ public class CanvasViewInfoTest extends TestCase {
         ViewInfo child2 = new ViewInfo("Button", child2Node, 0, 20, 70, 25);
         root.setChildren(Arrays.asList(child1, child2));
 
-        CanvasViewInfo rootView = CanvasViewInfo.create(root);
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
         assertNotNull(rootView);
         assertEquals("LinearLayout", rootView.getName());
         assertEquals(new Rectangle(10, 10, 89, 89), rootView.getAbsRect());
@@ -103,7 +111,7 @@ public class CanvasViewInfoTest extends TestCase {
         ViewInfo child21 = new ViewInfo("RadioButton", child21Node, 0, 20, 70, 25);
         child2.setChildren(Arrays.asList(child21));
 
-        CanvasViewInfo rootView = CanvasViewInfo.create(root);
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
         assertNotNull(rootView);
         assertEquals("LinearLayout", rootView.getName());
         assertEquals(new Rectangle(10, 10, 89, 89), rootView.getAbsRect());
@@ -140,7 +148,7 @@ public class CanvasViewInfoTest extends TestCase {
         ViewInfo child21 = new ViewInfo("RadioButton", null, 0, 20, 70, 25);
         child2.setChildren(Arrays.asList(child21));
 
-        CanvasViewInfo rootView = CanvasViewInfo.create(root);
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
         assertNotNull(rootView);
         assertEquals("LinearLayout", rootView.getName());
         assertEquals(new Rectangle(10, 10, 89, 89), rootView.getAbsRect());
@@ -181,7 +189,7 @@ public class CanvasViewInfoTest extends TestCase {
         ViewInfo child21 = new ViewInfo("RadioButton", null, 0, 20, 70, 25);
         child2.setChildren(Arrays.asList(child21));
 
-        CanvasViewInfo rootView = CanvasViewInfo.create(root);
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
         assertNotNull(rootView);
         assertEquals("LinearLayout", rootView.getName());
         assertEquals(new Rectangle(10, 10, 89, 89), rootView.getAbsRect());
@@ -207,6 +215,57 @@ public class CanvasViewInfoTest extends TestCase {
         assertEquals(0, includedView.getChildren().size());
     }
 
+    public void testMergeMatching() throws Exception {
+        // Test rendering of MULTIPLE included views or when there is no simple match
+        // between view info and ui element node children
+
+        UiViewElementNode rootNode = createNode("android.widget.LinearLayout", true);
+        ViewInfo root = new ViewInfo("LinearLayout", rootNode, 10, 10, 100, 100);
+        UiViewElementNode child1Node = createNode(rootNode, "android.widget.Button", false);
+        ViewInfo child1 = new ViewInfo("CheckBox", child1Node, 0, 0, 50, 20);
+        UiViewElementNode multiChildNode1 = createNode(rootNode, "foo", true);
+        UiViewElementNode multiChildNode2 = createNode(rootNode, "bar", true);
+        ViewInfo child2 = new ViewInfo("RelativeLayout", null, 0, 20, 70, 25);
+        ViewInfo child3 = new ViewInfo("AbsoluteLayout", null, 10, 40, 50, 15);
+        root.setChildren(Arrays.asList(child1, child2, child3));
+        ViewInfo child21 = new ViewInfo("RadioButton", null, 0, 20, 70, 25);
+        child2.setChildren(Arrays.asList(child21));
+
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
+        assertNotNull(rootView);
+        assertEquals("LinearLayout", rootView.getName());
+        assertEquals(new Rectangle(10, 10, 89, 89), rootView.getAbsRect());
+        assertEquals(new Rectangle(10, 10, 89, 89), rootView.getSelectionRect());
+        assertNull(rootView.getParent());
+        assertSame(rootNode, rootView.getUiViewNode());
+        assertEquals(3, rootView.getChildren().size());
+
+        CanvasViewInfo childView1 = rootView.getChildren().get(0);
+        CanvasViewInfo includedView1 = rootView.getChildren().get(1);
+        CanvasViewInfo includedView2 = rootView.getChildren().get(2);
+
+        assertEquals("CheckBox", childView1.getName());
+        assertSame(rootView, childView1.getParent());
+        assertEquals(new Rectangle(10, 10, 49, 19), childView1.getAbsRect());
+        assertEquals(new Rectangle(10, 10, 49, 19), childView1.getSelectionRect());
+        assertSame(childView1.getUiViewNode(), child1Node);
+
+        assertEquals("RelativeLayout", includedView1.getName());
+        assertSame(multiChildNode1, includedView1.getUiViewNode());
+        assertEquals("foo", includedView1.getUiViewNode().getDescriptor().getXmlName());
+        assertSame(multiChildNode2, includedView2.getUiViewNode());
+        assertEquals("AbsoluteLayout", includedView2.getName());
+        assertEquals("bar", includedView2.getUiViewNode().getDescriptor().getXmlName());
+        assertSame(rootView, includedView1.getParent());
+        assertSame(rootView, includedView2.getParent());
+        assertEquals(new Rectangle(10, 30, 69, 4), includedView1.getAbsRect());
+        assertEquals(new Rectangle(10, 30, 69, 5), includedView1.getSelectionRect());
+        assertEquals(new Rectangle(20, 50, 39, -26), includedView2.getAbsRect());
+        assertEquals(new Rectangle(20, 35, 39, 5), includedView2.getSelectionRect());
+        assertEquals(0, includedView1.getChildren().size());
+        assertEquals(0, includedView2.getChildren().size());
+    }
+
     public void testMerge() throws Exception {
         // Test rendering of MULTIPLE included views or when there is no simple match
         // between view info and ui element node children
@@ -222,7 +281,7 @@ public class CanvasViewInfoTest extends TestCase {
         ViewInfo child21 = new ViewInfo("RadioButton", null, 0, 20, 70, 25);
         child2.setChildren(Arrays.asList(child21));
 
-        CanvasViewInfo rootView = CanvasViewInfo.create(root);
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
         assertNotNull(rootView);
         assertEquals("LinearLayout", rootView.getName());
         assertEquals(new Rectangle(10, 10, 89, 89), rootView.getAbsRect());
@@ -240,12 +299,247 @@ public class CanvasViewInfoTest extends TestCase {
         assertEquals(new Rectangle(10, 10, 49, 19), childView1.getSelectionRect());
         assertSame(childView1.getUiViewNode(), child1Node);
 
-        assertEquals("foo", includedView.getName());
+        assertEquals("RelativeLayout", includedView.getName());
         assertSame(rootView, includedView.getParent());
-        assertEquals(new Rectangle(10, 30, 70, 5), includedView.getAbsRect());
-        assertEquals(new Rectangle(10, 30, 70, 5), includedView.getSelectionRect());
+        assertEquals(new Rectangle(10, 30, 69, 4), includedView.getAbsRect());
+        assertEquals(new Rectangle(10, 30, 69, 5), includedView.getSelectionRect());
         assertEquals(0, includedView.getChildren().size());
         assertSame(multiChildNode, includedView.getUiViewNode());
+    }
+
+    public void testInsertMerge() throws Exception {
+        // Test rendering of MULTIPLE included views or when there is no simple match
+        // between view info and ui element node children
+
+        UiViewElementNode mergeNode = createNode("merge", true);
+        UiViewElementNode rootNode = createNode(mergeNode, "android.widget.Button", false);
+        ViewInfo root = new ViewInfo("Button", rootNode, 10, 10, 100, 100);
+
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
+        assertNotNull(rootView);
+        assertEquals("merge", rootView.getName());
+        assertSame(rootView.getUiViewNode(), mergeNode);
+        assertEquals(new Rectangle(10, 10, 89, 89), rootView.getAbsRect());
+        assertEquals(new Rectangle(10, 10, 89, 89), rootView.getSelectionRect());
+        assertNull(rootView.getParent());
+        assertSame(mergeNode, rootView.getUiViewNode());
+        assertEquals(1, rootView.getChildren().size());
+
+        CanvasViewInfo childView1 = rootView.getChildren().get(0);
+
+        assertEquals("Button", childView1.getName());
+        assertSame(rootView, childView1.getParent());
+        assertEquals(new Rectangle(10, 10, 89, 89), childView1.getAbsRect());
+        assertEquals(new Rectangle(10, 10, 89, 89), childView1.getSelectionRect());
+        assertSame(childView1.getUiViewNode(), rootNode);
+    }
+
+    public void testUnmatchedMissing() throws Exception {
+        UiViewElementNode rootNode = createNode("android.widget.LinearLayout", true);
+        ViewInfo root = new ViewInfo("LinearLayout", rootNode, 0, 0, 100, 100);
+        List<ViewInfo> children = new ArrayList<ViewInfo>();
+        // Should be matched up with corresponding node:
+        Set<Integer> missingKeys = new HashSet<Integer>();
+        // Should not be matched with any views, but should get view created:
+        Set<Integer> extraKeys = new HashSet<Integer>();
+        // Should not be matched with any nodes
+        Set<Integer> extraViews = new HashSet<Integer>();
+        int numViews = 30;
+        missingKeys.add(0);
+        missingKeys.add(4);
+        missingKeys.add(14);
+        missingKeys.add(29);
+        extraKeys.add(9);
+        extraKeys.add(20);
+        extraKeys.add(22);
+        extraViews.add(18);
+        extraViews.add(24);
+
+        List<String> expectedViewNames = new ArrayList<String>();
+        List<String> expectedNodeNames = new ArrayList<String>();
+
+        for (int i = 0; i < numViews; i++) {
+            UiViewElementNode childNode = null;
+            if (!extraViews.contains(i)) {
+                childNode = createNode(rootNode, "childNode" + i, false);
+            }
+            Object cookie = missingKeys.contains(i) || extraViews.contains(i) ? null : childNode;
+            ViewInfo childView = new ViewInfo("childView" + i, cookie,
+                    0, i * 20, 50, (i + 1) * 20);
+            children.add(childView);
+
+            if (!extraViews.contains(i)) {
+                expectedViewNames.add("childView" + i);
+                expectedNodeNames.add("childNode" + i);
+            }
+
+            if (extraKeys.contains(i)) {
+                createNode(rootNode, "extraNodeAt" + i, false);
+
+                expectedViewNames.add("extraNodeAt" + i);
+                expectedNodeNames.add("extraNodeAt" + i);
+            }
+        }
+        root.setChildren(children);
+
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
+        assertNotNull(rootView);
+
+        // dump(root, 0);
+        // dump(rootView, 0);
+
+        assertEquals("LinearLayout", rootView.getName());
+        assertNull(rootView.getParent());
+        assertSame(rootNode, rootView.getUiViewNode());
+        assertEquals(numViews + extraKeys.size() - extraViews.size(), rootNode.getUiChildren()
+                .size());
+        assertEquals(numViews + extraKeys.size() - extraViews.size(),
+                rootView.getChildren().size());
+        assertEquals(expectedViewNames.size(), rootView.getChildren().size());
+        for (int i = 0, n = rootView.getChildren().size(); i < n; i++) {
+            CanvasViewInfo childView = rootView.getChildren().get(i);
+            String expectedViewName = expectedViewNames.get(i);
+            String expectedNodeName = expectedNodeNames.get(i);
+            assertEquals(expectedViewName, childView.getName());
+            assertNotNull(childView.getUiViewNode());
+            assertEquals(expectedNodeName, childView.getUiViewNode().getDescriptor().getXmlName());
+        }
+    }
+
+    public void testMergeCookies() throws Exception {
+        UiViewElementNode rootNode = createNode("android.widget.LinearLayout", true);
+        ViewInfo root = new ViewInfo("LinearLayout", rootNode, 0, 0, 100, 100);
+
+        // Create the merge cookies in the opposite order to ensure that we don't
+        // apply our own logic when matching up views with nodes
+        LinkedList<MergeCookie> cookies = new LinkedList<MergeCookie>();
+        for (int i = 0; i < 10; i++) {
+            UiViewElementNode node = createNode(rootNode, "childNode" + i, false);
+            cookies.addFirst(new MergeCookie(node));
+        }
+        Iterator<MergeCookie> it = cookies.iterator();
+        ArrayList<ViewInfo> children = new ArrayList<ViewInfo>();
+        for (int i = 0; i < 10; i++) {
+            ViewInfo childView = new ViewInfo("childView" + i, it.next(), 0, i * 20, 50,
+                    (i + 1) * 20);
+            children.add(childView);
+        }
+        root.setChildren(children);
+
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
+        assertNotNull(rootView);
+
+        assertEquals("LinearLayout", rootView.getName());
+        assertNull(rootView.getParent());
+        assertSame(rootNode, rootView.getUiViewNode());
+        for (int i = 0, n = rootView.getChildren().size(); i < n; i++) {
+            CanvasViewInfo childView = rootView.getChildren().get(i);
+            assertEquals("childView" + i, childView.getName());
+            assertEquals("childNode" + (9 - i), childView.getUiViewNode().getDescriptor()
+                    .getXmlName());
+        }
+    }
+
+    public void testMergeCookies2() throws Exception {
+        UiViewElementNode rootNode = createNode("android.widget.LinearLayout", true);
+        ViewInfo root = new ViewInfo("LinearLayout", rootNode, 0, 0, 100, 100);
+
+        UiViewElementNode node1 = createNode(rootNode, "childNode1", false);
+        UiViewElementNode node2 = createNode(rootNode, "childNode2", false);
+        MergeCookie cookie1 = new MergeCookie(node1);
+        MergeCookie cookie2 = new MergeCookie(node2);
+
+        // Sets alternating merge cookies and checks whether the node sibling lists are
+        // okay and merged correctly
+
+        ArrayList<ViewInfo> children = new ArrayList<ViewInfo>();
+        for (int i = 0; i < 10; i++) {
+            Object cookie = (i % 2) == 0 ? cookie1 : cookie2;
+            ViewInfo childView = new ViewInfo("childView" + i, cookie, 0, i * 20, 50, (i + 1) * 20);
+            children.add(childView);
+        }
+        root.setChildren(children);
+
+        Pair<CanvasViewInfo, List<Rectangle>> result = CanvasViewInfo.create(root);
+        CanvasViewInfo rootView = result.getFirst();
+        List<Rectangle> bounds = result.getSecond();
+        assertNull(bounds);
+        assertNotNull(rootView);
+
+        assertEquals("LinearLayout", rootView.getName());
+        assertNull(rootView.getParent());
+        assertSame(rootNode, rootView.getUiViewNode());
+        assertEquals(10, rootView.getChildren().size());
+        assertEquals(2, rootView.getUniqueChildren().size());
+        for (int i = 0, n = rootView.getChildren().size(); i < n; i++) {
+            CanvasViewInfo childView = rootView.getChildren().get(i);
+            assertEquals("childView" + i, childView.getName());
+            Object cookie = (i % 2) == 0 ? node1 : node2;
+            assertSame(cookie, childView.getUiViewNode());
+            List<CanvasViewInfo> nodeSiblings = childView.getNodeSiblings();
+            assertEquals(5, nodeSiblings.size());
+        }
+        List<CanvasViewInfo> nodeSiblings = rootView.getChildren().get(0).getNodeSiblings();
+        for (int j = 0; j < 5; j++) {
+            assertEquals("childView" + (j * 2), nodeSiblings.get(j).getName());
+        }
+        nodeSiblings = rootView.getChildren().get(1).getNodeSiblings();
+        for (int j = 0; j < 5; j++) {
+            assertEquals("childView" + (j * 2 + 1), nodeSiblings.get(j).getName());
+        }
+    }
+
+    public void testIncludeBounds() throws Exception {
+        UiViewElementNode rootNode = createNode("android.widget.LinearLayout", true);
+        ViewInfo root = new ViewInfo("included", null, 0, 0, 100, 100);
+
+        UiViewElementNode node1 = createNode(rootNode, "childNode1", false);
+        UiViewElementNode node2 = createNode(rootNode, "childNode2", false);
+        MergeCookie cookie1 = new MergeCookie(node1);
+        MergeCookie cookie2 = new MergeCookie(node2);
+
+        // Sets alternating merge cookies and checks whether the node sibling lists are
+        // okay and merged correctly
+
+        ArrayList<ViewInfo> children = new ArrayList<ViewInfo>();
+        for (int i = 0; i < 10; i++) {
+            Object cookie = (i % 2) == 0 ? cookie1 : cookie2;
+            ViewInfo childView = new ViewInfo("childView" + i, cookie, 0, i * 20, 50, (i + 1) * 20);
+            children.add(childView);
+        }
+        root.setChildren(children);
+
+        Pair<CanvasViewInfo, List<Rectangle>> result = CanvasViewInfo.create(root);
+        CanvasViewInfo rootView = result.getFirst();
+        List<Rectangle> bounds = result.getSecond();
+        assertNotNull(rootView);
+
+        assertEquals("included", rootView.getName());
+        assertNull(rootView.getParent());
+        assertNull(rootView.getUiViewNode());
+        assertEquals(10, rootView.getChildren().size());
+        assertEquals(2, rootView.getUniqueChildren().size());
+        for (int i = 0, n = rootView.getChildren().size(); i < n; i++) {
+            CanvasViewInfo childView = rootView.getChildren().get(i);
+            assertEquals("childView" + i, childView.getName());
+            Object cookie = (i % 2) == 0 ? node1 : node2;
+            assertSame(cookie, childView.getUiViewNode());
+            List<CanvasViewInfo> nodeSiblings = childView.getNodeSiblings();
+            assertEquals(5, nodeSiblings.size());
+        }
+        List<CanvasViewInfo> nodeSiblings = rootView.getChildren().get(0).getNodeSiblings();
+        for (int j = 0; j < 5; j++) {
+            assertEquals("childView" + (j * 2), nodeSiblings.get(j).getName());
+        }
+        nodeSiblings = rootView.getChildren().get(1).getNodeSiblings();
+        for (int j = 0; j < 5; j++) {
+            assertEquals("childView" + (j * 2 + 1), nodeSiblings.get(j).getName());
+        }
+
+        // Only show the primary bounds as included
+        assertEquals(2, bounds.size());
+        assertEquals(new Rectangle(0, 0, 49, 19), bounds.get(0));
+        assertEquals(new Rectangle(0, 20, 49, 19), bounds.get(1));
     }
 
     /**
@@ -261,11 +555,10 @@ public class CanvasViewInfoTest extends TestCase {
         System.out.println("Supports Embedded Layout=" + supportsEmbedding);
         System.out.println("Rendering context=" + graphicalEditor.getIncludedWithin());
         dump(root, 0);
-
     }
 
     /** Helper for {@link #dump(GraphicalEditorPart, ViewInfo)} */
-    private static void dump(ViewInfo info, int depth) {
+    public static void dump(ViewInfo info, int depth) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < depth; i++) {
             sb.append("    ");
@@ -285,7 +578,7 @@ public class CanvasViewInfoTest extends TestCase {
             sb.append(" ");
             UiViewElementNode node = (UiViewElementNode) cookie;
             sb.append("<");
-            sb.append(node.getXmlNode().getNodeName());
+            sb.append(node.getDescriptor().getXmlName());
             sb.append("> ");
         } else if (cookie != null) {
             sb.append(" cookie=" + cookie);
@@ -297,4 +590,24 @@ public class CanvasViewInfoTest extends TestCase {
             dump(child, depth + 1);
         }
     }
+
+    /** Helper for {@link #dump(GraphicalEditorPart, ViewInfo)} */
+    public static void dump(CanvasViewInfo info, int depth) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < depth; i++) {
+            sb.append("    ");
+        }
+        sb.append(info.getName());
+        sb.append(" [");
+        sb.append(info.getAbsRect());
+        sb.append("], node=");
+        sb.append(info.getUiViewNode());
+
+        System.out.println(sb.toString());
+
+        for (CanvasViewInfo child : info.getChildren()) {
+            dump(child, depth + 1);
+        }
+    }
+
 }
