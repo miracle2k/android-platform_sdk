@@ -1519,7 +1519,7 @@ public class GraphicalEditorPart extends EditorPart
         canvas.setSession(session, explodeNodes);
 
         // update the UiElementNode with the layout info.
-        if (session.getResult().isSuccess() == false) {
+        if (session != null && session.getResult().isSuccess() == false) {
             // An error was generated. Print it (and any other accumulated warnings)
             String errorMessage = session.getResult().getErrorMessage();
             Throwable exception = session.getResult().getException();
