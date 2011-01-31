@@ -38,8 +38,6 @@ import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
 import org.xml.sax.SAXException;
 
@@ -126,6 +124,10 @@ public abstract class BaseBuilder extends IncrementalProjectBuilder {
         public void errorFound() {
             mXmlError = true;
         }
+    }
+
+    protected static class AbortBuildException extends Exception {
+        private static final long serialVersionUID = 1L;
     }
 
     public BaseBuilder() {
@@ -304,55 +306,43 @@ public abstract class BaseBuilder extends IncrementalProjectBuilder {
      * @param javaProject The {@link IJavaProject} being compiled.
      * @throws CoreException
      */
-    protected void abortOnBadSetup(IJavaProject javaProject) throws CoreException {
+    protected void abortOnBadSetup(IJavaProject javaProject) throws AbortBuildException {
         IProject iProject = javaProject.getProject();
         // check if we have finished loading the project target.
         Sdk sdk = Sdk.getCurrent();
         if (sdk == null) {
-            // we exit silently
-            stopBuild("SDK is not loaded yet");
+            throw new AbortBuildException();
         }
 
         // get the target for the project
         IAndroidTarget target = sdk.getTarget(javaProject.getProject());
 
         if (target == null) {
-            // we exit silently
-            stopBuild("Project target not resolved yet.");
+            throw new AbortBuildException();
         }
 
         // check on the target data.
         if (sdk.checkAndLoadTargetData(target, javaProject) != LoadStatus.LOADED) {
-            // we exit silently
-            stopBuild("Project target not loaded yet.");
+            throw new AbortBuildException();
        }
 
         // abort if there are TARGET or ADT type markers
-        IMarker[] markers = iProject.findMarkers(AndroidConstants.MARKER_TARGET,
-                false /*includeSubtypes*/, IResource.DEPTH_ZERO);
-
-        if (markers.length > 0) {
-            stopBuild("");
-        }
-
-        markers = iProject.findMarkers(AndroidConstants.MARKER_ADT, false /*includeSubtypes*/,
-                IResource.DEPTH_ZERO);
-
-        if (markers.length > 0) {
-            stopBuild("");
-        }
+        stopOnMarker(iProject, AndroidConstants.MARKER_TARGET, IResource.DEPTH_ZERO);
+        stopOnMarker(iProject, AndroidConstants.MARKER_ADT, IResource.DEPTH_ZERO);
     }
 
-    /**
-     * Throws an exception to cancel the build.
-     *
-     * @param error the error message
-     * @param args the printf-style arguments to the error message.
-     * @throws CoreException
-     */
-    protected final void stopBuild(String error, Object... args) throws CoreException {
-        throw new CoreException(new Status(IStatus.CANCEL, AdtPlugin.PLUGIN_ID,
-                String.format(error, args)));
+    protected void stopOnMarker(IProject project, String markerType, int depth)
+            throws AbortBuildException {
+        try {
+            IMarker[] markers = project.findMarkers(markerType, false /*includeSubtypes*/, depth);
+
+            if (markers.length > 0) {
+                throw new AbortBuildException();
+            }
+        } catch (CoreException e) {
+            // don't stop, something's really screwed up and the build will break later with
+            // a better error message.
+        }
     }
 
     /**

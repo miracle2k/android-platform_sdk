@@ -770,7 +770,7 @@ public class BuildHelper {
             IJavaProject javaProject, IWorkspaceRoot wsRoot, ArrayList<String> list)
             throws DuplicateFileException, ApkCreationException, SealedApkException, CoreException {
         // get the source pathes
-        ArrayList<IPath> sourceFolders = BaseProjectHelper.getSourceClasspaths(javaProject);
+        List<IPath> sourceFolders = BaseProjectHelper.getSourceClasspaths(javaProject);
 
         // loop on them and then recursively go through the content looking for matching files.
         for (IPath sourcePath : sourceFolders) {

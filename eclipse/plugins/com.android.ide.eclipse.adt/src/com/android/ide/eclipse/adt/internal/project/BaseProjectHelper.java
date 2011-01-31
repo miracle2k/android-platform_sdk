@@ -53,6 +53,7 @@ import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Utility methods to manipulate projects.
@@ -73,7 +74,7 @@ public final class BaseProjectHelper {
      * @param javaProject
      * @return a list of path relative to the workspace root.
      */
-    public static ArrayList<IPath> getSourceClasspaths(IJavaProject javaProject) {
+    public static List<IPath> getSourceClasspaths(IJavaProject javaProject) {
         ArrayList<IPath> sourceList = new ArrayList<IPath>();
         IClasspathEntry[] classpaths = javaProject.readRawClasspath();
         if (classpaths != null) {
@@ -91,7 +92,7 @@ public final class BaseProjectHelper {
      * @param project
      * @return a list of path relative to the workspace root.
      */
-    public static ArrayList<IPath> getSourceClasspaths(IProject project) {
+    public static List<IPath> getSourceClasspaths(IProject project) {
         IJavaProject javaProject = JavaCore.create(project);
         return getSourceClasspaths(javaProject);
     }

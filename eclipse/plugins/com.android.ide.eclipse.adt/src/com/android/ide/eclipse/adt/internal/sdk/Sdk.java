@@ -1394,8 +1394,7 @@ public final class Sdk  {
                     final String varName = getLibraryVariableName(libName);
 
                     // get the list of source folders for the library.
-                    ArrayList<IPath> sourceFolderPaths = BaseProjectHelper.getSourceClasspaths(
-                            library);
+                    List<IPath> sourceFolderPaths = BaseProjectHelper.getSourceClasspaths(library);
 
                     // loop on all the source folder, ignoring FD_GEN and add them
                     // as linked folder
