@@ -18,9 +18,10 @@ package com.android.ide.eclipse.adt.internal.build.builders;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.build.JavaGenerator;
 import com.android.ide.eclipse.adt.internal.build.Messages;
+import com.android.ide.eclipse.adt.internal.build.JavaGenerator.JavaGeneratorDeltaVisitor;
 import com.android.ide.eclipse.adt.internal.build.builders.BaseBuilder.BaseDeltaVisitor;
-import com.android.ide.eclipse.adt.internal.build.builders.PreCompilerBuilder.AidlData;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
@@ -39,6 +40,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Resource Delta visitor for the pre-compiler.
@@ -56,16 +58,6 @@ import java.util.ArrayList;
 class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
         IResourceDeltaVisitor {
 
-    private enum AidlType {
-        UNKNOWN, INTERFACE, PARCELABLE;
-    }
-
-    // See comment in #getAidlType()
-//    private final static Pattern sParcelablePattern = Pattern.compile(
-//            "^\\s*parcelable\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*;\\s*$");
-//
-//    private final static Pattern sInterfacePattern = Pattern.compile(
-//            "^\\s*interface\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?:\\{.*)?$");
 
     // Result fields.
     /**
@@ -75,17 +67,6 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
      * into R.java
      */
     private boolean mCompileResources = false;
-
-    /**
-     * Aidl force recompilation flag. If true, we'll attempt to recompile all aidl files.
-     */
-    private boolean mForceAidlCompile = false;
-
-    /** List of .aidl files found that are modified or new. */
-    private final ArrayList<AidlData> mAidlToCompile = new ArrayList<AidlData>();
-
-    /** List of .aidl files that have been removed. */
-    private final ArrayList<AidlData> mAidlToRemove = new ArrayList<AidlData>();
 
     /** Manifest check/parsing flag. */
     private boolean mCheckedManifestXml = false;
@@ -109,32 +90,30 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
     private IFolder mSourceFolder = null;
 
     /** List of source folders. */
-    private ArrayList<IPath> mSourceFolders;
+    private List<IPath> mSourceFolders;
     private boolean mIsGenSourceFolder = false;
 
+    private final List<JavaGeneratorDeltaVisitor> mGeneratorDeltaVisitors =
+        new ArrayList<JavaGeneratorDeltaVisitor>();
     private IWorkspaceRoot mRoot;
 
 
-    public PreCompilerDeltaVisitor(BaseBuilder builder, ArrayList<IPath> sourceFolders) {
+
+    public PreCompilerDeltaVisitor(BaseBuilder builder, ArrayList<IPath> sourceFolders,
+            List<JavaGenerator> generators) {
         super(builder);
         mSourceFolders = sourceFolders;
         mRoot = ResourcesPlugin.getWorkspace().getRoot();
+
+        for (JavaGenerator generator : generators) {
+            JavaGeneratorDeltaVisitor dv = generator.getDeltaVisitor();
+            dv.setWorkspaceRoot(mRoot);
+            mGeneratorDeltaVisitors.add(dv);
+        }
     }
 
     public boolean getCompileResources() {
         return mCompileResources;
-    }
-
-    public boolean getForceAidlCompile() {
-        return mForceAidlCompile;
-    }
-
-    public ArrayList<AidlData> getAidlToCompile() {
-        return mAidlToCompile;
-    }
-
-    public ArrayList<AidlData> getAidlToRemove() {
-        return mAidlToRemove;
     }
 
     /**
@@ -296,28 +275,13 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
                     // we want a warning
                     outputWarning = true;
                 } else {
-                    // this has to be a Java file created from an aidl file.
-                    // Look for the source aidl file in all the source folders.
-                    String aidlFileName = fileName.replaceAll(AndroidConstants.RE_JAVA_EXT,
-                            AndroidConstants.DOT_AIDL);
-
-                    for (IPath sourceFolderPath : mSourceFolders) {
-                        // do not search in the current source folder as it is the 'gen' folder.
-                        if (sourceFolderPath.equals(mSourceFolder.getFullPath())) {
-                            continue;
-                        }
-
-                        IFolder sourceFolder = getFolder(sourceFolderPath);
-                        if (sourceFolder != null) {
-                            // go recursively, segment by segment.
-                            // index starts at 2 (0 is project, 1 is 'gen'
-                            IFile sourceFile = findFile(sourceFolder, segments, 2, aidlFileName);
-
-                            if (sourceFile != null) {
-                                // found the source. add it to the list of files to compile
-                                mAidlToCompile.add(new AidlData(sourceFolder, sourceFile));
+                    // look to see if this java file was generated by a generator.
+                    if (AndroidConstants.EXT_JAVA.equalsIgnoreCase(file.getFileExtension())) {
+                        for (JavaGeneratorDeltaVisitor dv : mGeneratorDeltaVisitors) {
+                            if (dv.handleChangedGeneratedJavaFile(
+                                    mSourceFolder, file, mSourceFolders)) {
                                 outputWarning = true;
-                                break;
+                                break; // there shouldn't be 2 generators that handles the same file.
                             }
                         }
                     }
@@ -337,27 +301,8 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
                 }
             } else {
                 // this is another source folder.
-                // We only care about aidl files being added/modified/removed.
-
-                // get the extension of the resource
-                String ext = resource.getFileExtension();
-                if (AndroidConstants.EXT_AIDL.equalsIgnoreCase(ext)) {
-                    // first check whether it's a regular file or a parcelable.
-                    AidlType type = getAidlType(file);
-
-                    if (type == AidlType.INTERFACE) {
-                        if (kind == IResourceDelta.REMOVED) {
-                            // we'll have to remove the generated file.
-                            mAidlToRemove.add(new AidlData(mSourceFolder, file));
-                        } else if (mForceAidlCompile == false) {
-                            // add the aidl file to the list of file to (re)compile
-                            mAidlToCompile.add(new AidlData(mSourceFolder, file));
-                        }
-                    } else {
-                        // force recompilations of all Aidl Files.
-                        mForceAidlCompile = true;
-                        mAidlToCompile.clear();
-                    }
+                for (JavaGeneratorDeltaVisitor dv : mGeneratorDeltaVisitors) {
+                    dv.handleChangedNonJavaFile(mSourceFolder, file, kind);
                 }
             }
 
@@ -458,32 +403,6 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
     }
 
     /**
-     * Searches for and return a file in a folder. The file is defined by its segments, and a new
-     * name (replacing the last segment).
-     * @param folder the folder we are searching
-     * @param segments the segments of the file to search.
-     * @param index the index of the current segment we are looking for
-     * @param filename the new name to replace the last segment.
-     * @return the {@link IFile} representing the searched file, or null if not found
-     */
-    private IFile findFile(IFolder folder, String[] segments, int index, String filename) {
-        boolean lastSegment = index == segments.length - 1;
-        IResource resource = folder.findMember(lastSegment ? filename : segments[index]);
-        if (resource != null && resource.exists()) {
-            if (lastSegment) {
-                if (resource.getType() == IResource.FILE) {
-                    return (IFile)resource;
-                }
-            } else {
-                if (resource.getType() == IResource.FOLDER) {
-                    return findFile((IFolder)resource, segments, index+1, filename);
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
      * Returns a handle to the folder identified by the given path in this container.
      * <p/>The different with {@link IContainer#getFolder(IPath)} is that this returns a non
      * null object only if the resource actually exists and is a folder (and not a file)
@@ -499,55 +418,4 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
         return null;
     }
 
-    /**
-     * Returns the type of the aidl file. Aidl files can either declare interfaces, or declare
-     * parcelables. This method will attempt to parse the file and return the type. If the type
-     * cannot be determined, then it will return {@link AidlType#UNKNOWN}.
-     * @param file The aidl file
-     * @return the type of the aidl.
-     * @throws CoreException
-     */
-    private AidlType getAidlType(IFile file) throws CoreException {
-        // At this time, parsing isn't available, so we return UNKNOWN. This will force
-        // a recompilation of all aidl file as soon as one is changed.
-        return AidlType.UNKNOWN;
-
-        // TODO: properly parse aidl file to determine type and generate dependency graphs.
-//
-//        String className = file.getName().substring(0,
-//                file.getName().length() - AndroidConstants.DOT_AIDL.length());
-//
-//        InputStream input = file.getContents(true /* force*/);
-//        try {
-//            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-//            String line;
-//            while ((line = reader.readLine()) != null) {
-//                if (line.length() == 0) {
-//                    continue;
-//                }
-//
-//                Matcher m = sParcelablePattern.matcher(line);
-//                if (m.matches() && m.group(1).equals(className)) {
-//                    return AidlType.PARCELABLE;
-//                }
-//
-//                m = sInterfacePattern.matcher(line);
-//                if (m.matches() && m.group(1).equals(className)) {
-//                    return AidlType.INTERFACE;
-//                }
-//            }
-//        } catch (IOException e) {
-//            throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
-//                    "Error parsing aidl file", e));
-//        } finally {
-//            try {
-//                input.close();
-//            } catch (IOException e) {
-//                throw new CoreException(new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID,
-//                        "Error parsing aidl file", e));
-//            }
-//        }
-//
-//        return AidlType.UNKNOWN;
-    }
 }

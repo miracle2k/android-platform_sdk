@@ -53,7 +53,7 @@ import javax.xml.parsers.SAXParserFactory;
  * Base builder for XML files. This class allows for basic XML parsing with
  * error checking and marking the files for errors/warnings.
  */
-abstract class BaseBuilder extends IncrementalProjectBuilder {
+public abstract class BaseBuilder extends IncrementalProjectBuilder {
 
 
     /** SAX Parser factory. */
@@ -193,7 +193,7 @@ abstract class BaseBuilder extends IncrementalProjectBuilder {
      * @param markerId The id of the markers to remove. If null, all marker of
      * type <code>IMarker.PROBLEM</code> will be removed.
      */
-    protected final void removeMarkersFromFile(IFile file, String markerId) {
+    public final void removeMarkersFromFile(IFile file, String markerId) {
         try {
             if (file.exists()) {
                 file.deleteMarkers(markerId, true, IResource.DEPTH_ZERO);

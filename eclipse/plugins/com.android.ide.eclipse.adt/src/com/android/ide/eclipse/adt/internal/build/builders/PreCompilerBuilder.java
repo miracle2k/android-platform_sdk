@@ -19,6 +19,8 @@ package com.android.ide.eclipse.adt.internal.build.builders;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.build.AaptParser;
+import com.android.ide.eclipse.adt.internal.build.AidlGenerator;
+import com.android.ide.eclipse.adt.internal.build.JavaGenerator;
 import com.android.ide.eclipse.adt.internal.build.Messages;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
@@ -37,20 +39,16 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.ManifestData;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 
@@ -58,8 +56,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Pre Java Compiler.
@@ -80,42 +76,6 @@ public class PreCompilerBuilder extends BaseBuilder {
     private static final String PROPERTY_PACKAGE = "manifestPackage"; //$NON-NLS-1$
 
     private static final String PROPERTY_COMPILE_RESOURCES = "compileResources"; //$NON-NLS-1$
-    private static final String PROPERTY_COMPILE_AIDL = "compileAidl"; //$NON-NLS-1$
-
-    /**
-     * Single line aidl error<br>
-     * "&lt;path&gt;:&lt;line&gt;: &lt;error&gt;"
-     * or
-     * "&lt;path&gt;:&lt;line&gt; &lt;error&gt;"
-     */
-    private static Pattern sAidlPattern1 = Pattern.compile("^(.+?):(\\d+):?\\s(.+)$"); //$NON-NLS-1$
-
-    /**
-     * Data to temporarily store aidl source file information
-     */
-    static class AidlData {
-        IFile aidlFile;
-        IFolder sourceFolder;
-
-        AidlData(IFolder sourceFolder, IFile aidlFile) {
-            this.sourceFolder = sourceFolder;
-            this.aidlFile = aidlFile;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-
-            if (obj instanceof AidlData) {
-                AidlData file = (AidlData)obj;
-                return aidlFile.equals(file.aidlFile) && sourceFolder.equals(file.sourceFolder);
-            }
-
-            return false;
-        }
-    }
 
     /**
      * Resource Compile flag. This flag is reset to false after each successful compilation, and
@@ -124,11 +84,7 @@ public class PreCompilerBuilder extends BaseBuilder {
      */
     private boolean mMustCompileResources = false;
 
-    /** List of .aidl files found that are modified or new. */
-    private final ArrayList<AidlData> mAidlToCompile = new ArrayList<AidlData>();
-
-    /** List of .aidl files that have been removed. */
-    private final ArrayList<AidlData> mAidlToRemove = new ArrayList<AidlData>();
+    private final List<JavaGenerator> mGeneratorList = new ArrayList<JavaGenerator>();
 
     /** cache of the java package defined in the manifest */
     private String mManifestPackage;
@@ -144,6 +100,7 @@ public class PreCompilerBuilder extends BaseBuilder {
      */
     private DerivedProgressMonitor mDerivedProgressMonitor;
 
+
     /**
      * Progress monitor waiting the end of the process to set a persistent value
      * in a file. This is typically used in conjunction with <code>IResource.refresh()</code>,
@@ -153,17 +110,14 @@ public class PreCompilerBuilder extends BaseBuilder {
      */
     private static class DerivedProgressMonitor implements IProgressMonitor {
         private boolean mCancelled = false;
-        private final ArrayList<IFile> mFileList = new ArrayList<IFile>();
         private boolean mDone = false;
-        public DerivedProgressMonitor() {
-        }
+        private final IFolder mGenFolder;
 
-        void addFile(IFile file) {
-            mFileList.add(file);
+        public DerivedProgressMonitor(IFolder genFolder) {
+            mGenFolder = genFolder;
         }
 
         void reset() {
-            mFileList.clear();
             mDone = false;
         }
 
@@ -173,14 +127,30 @@ public class PreCompilerBuilder extends BaseBuilder {
         public void done() {
             if (mDone == false) {
                 mDone = true;
-                for (IFile file : mFileList) {
-                    if (file.exists()) {
-                        try {
-                            file.setDerived(true);
-                        } catch (CoreException e) {
-                            // This really shouldn't happen since we check that the resource exist.
-                            // Worst case scenario, the resource isn't marked as derived.
-                        }
+                processChildrenOf(mGenFolder);
+            }
+        }
+
+        private void processChildrenOf(IFolder folder) {
+            IResource[] list;
+            try {
+                list = folder.members();
+            } catch (CoreException e) {
+                return;
+            }
+
+            for (IResource member : list) {
+                if (member.exists()) {
+                    if (member.getType() == IResource.FOLDER) {
+                        processChildrenOf((IFolder) member);
+                    }
+
+                    try {
+                        member.setDerived(true);
+                    } catch (CoreException e) {
+                        // This really shouldn't happen since we check that the resource
+                        // exist.
+                        // Worst case scenario, the resource isn't marked as derived.
                     }
                 }
             }
@@ -260,7 +230,10 @@ public class PreCompilerBuilder extends BaseBuilder {
                 doClean(project, monitor);
 
                 mMustCompileResources = true;
-                buildAidlCompilationList(project, sourceFolderPathList);
+
+                for (JavaGenerator generator : mGeneratorList) {
+                    generator.prepareFullBuild(project, sourceFolderPathList);
+                }
             } else {
                 AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                         Messages.Start_Inc_Pre_Compiler);
@@ -272,20 +245,18 @@ public class PreCompilerBuilder extends BaseBuilder {
                 IResourceDelta delta = getDelta(project);
                 if (delta == null) {
                     mMustCompileResources = true;
-                    buildAidlCompilationList(project, sourceFolderPathList);
+
+                    for (JavaGenerator generator : mGeneratorList) {
+                        generator.prepareFullBuild(project, sourceFolderPathList);
+                    }
                 } else {
-                    dv = new PreCompilerDeltaVisitor(this, sourceFolderPathList);
+                    dv = new PreCompilerDeltaVisitor(this, sourceFolderPathList, mGeneratorList);
                     delta.accept(dv);
 
                     // record the state
                     mMustCompileResources |= dv.getCompileResources();
-
-                    if (dv.getForceAidlCompile()) {
-                        buildAidlCompilationList(project, sourceFolderPathList);
-                    } else {
-                        // handle aidl modification, and update mMustCompileAidl
-                        mergeAidlFileModifications(dv.getAidlToCompile(),
-                                dv.getAidlToRemove());
+                    for (JavaGenerator generator : mGeneratorList) {
+                        generator.doneVisiting(project, sourceFolderPathList);
                     }
 
                     // get the java package from the visitor
@@ -496,7 +467,9 @@ public class PreCompilerBuilder extends BaseBuilder {
                 // force a clean
                 doClean(project, monitor);
                 mMustCompileResources = true;
-                buildAidlCompilationList(project, sourceFolderPathList);
+                for (JavaGenerator generator : mGeneratorList) {
+                    generator.prepareFullBuild(project, sourceFolderPathList);
+                }
 
                 saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES , mMustCompileResources);
             }
@@ -505,10 +478,14 @@ public class PreCompilerBuilder extends BaseBuilder {
                 handleResources(project, javaPackage, projectTarget, manifestFile, libProjects);
             }
 
-            // now handle the aidl stuff.
-            boolean aidlStatus = handleAidl(projectTarget, sourceFolderPathList, monitor);
+            // run the Java generators
+            boolean generatorStatus = false;
+            for (JavaGenerator generator : mGeneratorList) {
+                generatorStatus |= generator.compileFiles(this,
+                        project, projectTarget, sourceFolderPathList, monitor);
+            }
 
-            if (aidlStatus == false && mMustCompileResources == false) {
+            if (generatorStatus == false && mMustCompileResources == false) {
                 AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                         Messages.Nothing_To_Compile);
             }
@@ -551,8 +528,6 @@ public class PreCompilerBuilder extends BaseBuilder {
     protected void startupOnInitialize() {
         super.startupOnInitialize();
 
-        mDerivedProgressMonitor = new DerivedProgressMonitor();
-
         IProject project = getProject();
 
         // load the previous IFolder and java package.
@@ -561,20 +536,16 @@ public class PreCompilerBuilder extends BaseBuilder {
         // get the source folder in which all the Java files are created
         mGenFolder = project.getFolder(SdkConstants.FD_GEN_SOURCES);
 
-        // Load the current compile flags. We ask for true if not found to force a
-        // recompile.
+        // Load the current compile flags. We ask for true if not found to force a recompile.
         mMustCompileResources = loadProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES, true);
-        boolean mustCompileAidl = loadProjectBooleanProperty(PROPERTY_COMPILE_AIDL, true);
 
-        // if we stored that we have to compile some aidl, we build the list that will compile them
-        // all
-        if (mustCompileAidl) {
-            IJavaProject javaProject = JavaCore.create(project);
-            ArrayList<IPath> sourceFolderPathList = BaseProjectHelper.getSourceClasspaths(
-                    javaProject);
+        IJavaProject javaProject = JavaCore.create(project);
 
-            buildAidlCompilationList(project, sourceFolderPathList);
-        }
+        // load the java generators
+        JavaGenerator aidlGenerator = new AidlGenerator(javaProject, mGenFolder);
+        mGeneratorList.add(aidlGenerator);
+
+        mDerivedProgressMonitor = new DerivedProgressMonitor(mGenFolder);
     }
 
     /**
@@ -671,16 +642,10 @@ public class PreCompilerBuilder extends BaseBuilder {
     private void execAapt(IProject project, IAndroidTarget projectTarget, String osOutputPath,
             String osResPath, String osManifestPath, IFolder packageFolder,
             ArrayList<IFolder> libResFolders, String customJavaPackage) throws CoreException {
-        // since the R.java file may be already existing in read-only
-        // mode we need to make it readable so that aapt can overwrite it
-        IFile rJavaFile = packageFolder.getFile(AndroidConstants.FN_RESOURCE_CLASS);
-
-        // do the same for the Manifest.java class
-        IFile manifestJavaFile = packageFolder.getFile(AndroidConstants.FN_MANIFEST_CLASS);
-
-        // we actually need to delete the manifest.java as it may become empty and
+        // We actually need to delete the manifest.java as it may become empty and
         // in this case aapt doesn't generate an empty one, but instead doesn't
         // touch it.
+        IFile manifestJavaFile = packageFolder.getFile(AndroidConstants.FN_MANIFEST_CLASS);
         manifestJavaFile.getLocation().toFile().delete();
 
         // launch aapt: create the command line
@@ -788,11 +753,6 @@ public class PreCompilerBuilder extends BaseBuilder {
         // if the return code was OK, we refresh the folder that
         // contains R.java to force a java recompile.
         if (execError == 0) {
-            // now add the R.java/Manifest.java to the list of file to be marked
-            // as derived.
-            mDerivedProgressMonitor.addFile(rJavaFile);
-            mDerivedProgressMonitor.addFile(manifestJavaFile);
-
             // build has been done. reset the state of the builder
             mMustCompileResources = false;
 
@@ -852,359 +812,5 @@ public class PreCompilerBuilder extends BaseBuilder {
         // get a folder for this path under the 'gen' source folder, and return it.
         // This IFolder may not reference an actual existing folder.
         return mGenFolder.getFolder(packagePath);
-    }
-
-    /**
-     * Compiles aidl files into java. This will also removes old java files
-     * created from aidl files that are now gone.
-     * @param projectTarget Target of the project
-     * @param sourceFolders the list of source folders, relative to the workspace.
-     * @param monitor the progress monitor
-     * @returns true if it did something
-     * @throws CoreException
-     */
-    private boolean handleAidl(IAndroidTarget projectTarget, ArrayList<IPath> sourceFolders,
-            IProgressMonitor monitor) throws CoreException {
-        if (mAidlToCompile.size() == 0 && mAidlToRemove.size() == 0) {
-            return false;
-        }
-
-        // create the command line
-        String[] command = new String[4 + sourceFolders.size()];
-        int index = 0;
-        command[index++] = projectTarget.getPath(IAndroidTarget.AIDL);
-        command[index++] = "-p" + Sdk.getCurrent().getTarget(getProject()).getPath( //$NON-NLS-1$
-                IAndroidTarget.ANDROID_AIDL);
-
-        // since the path are relative to the workspace and not the project itself, we need
-        // the workspace root.
-        IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
-        for (IPath p : sourceFolders) {
-            IFolder f = wsRoot.getFolder(p);
-            command[index++] = "-I" + f.getLocation().toOSString(); //$NON-NLS-1$
-        }
-
-        // list of files that have failed compilation.
-        ArrayList<AidlData> stillNeedCompilation = new ArrayList<AidlData>();
-
-        // if an aidl file is being removed before we managed to compile it, it'll be in
-        // both list. We *need* to remove it from the compile list or it'll never go away.
-        for (AidlData aidlFile : mAidlToRemove) {
-            int pos = mAidlToCompile.indexOf(aidlFile);
-            if (pos != -1) {
-                mAidlToCompile.remove(pos);
-            }
-        }
-
-        // loop until we've compile them all
-        for (AidlData aidlData : mAidlToCompile) {
-            // Remove the AIDL error markers from the aidl file
-            removeMarkersFromFile(aidlData.aidlFile, AndroidConstants.MARKER_AIDL);
-
-            // get the path of the source file.
-            IPath sourcePath = aidlData.aidlFile.getLocation();
-            String osSourcePath = sourcePath.toOSString();
-
-            IFile javaFile = getGenDestinationFile(aidlData, true /*createFolders*/, monitor);
-
-            // finish to set the command line.
-            command[index] = osSourcePath;
-            command[index + 1] = javaFile.getLocation().toOSString();
-
-            // launch the process
-            if (execAidl(command, aidlData.aidlFile) == false) {
-                // aidl failed. File should be marked. We add the file to the list
-                // of file that will need compilation again.
-                stillNeedCompilation.add(aidlData);
-
-                // and we move on to the next one.
-                continue;
-            } else {
-                // make sure the file will be marked as derived once we refresh the 'gen' source
-                // folder.
-                mDerivedProgressMonitor.addFile(javaFile);
-            }
-        }
-
-        // change the list to only contains the file that have failed compilation
-        mAidlToCompile.clear();
-        mAidlToCompile.addAll(stillNeedCompilation);
-
-        // Remove the java files created from aidl files that have been removed.
-        for (AidlData aidlData : mAidlToRemove) {
-            IFile javaFile = getGenDestinationFile(aidlData, false /*createFolders*/, monitor);
-            if (javaFile.exists()) {
-                // This confirms the java file was generated by the builder,
-                // we can delete the aidlFile.
-                javaFile.getLocation().toFile().delete();
-            }
-        }
-
-        mAidlToRemove.clear();
-
-        // store the build state. If there are any files that failed to compile, we will
-        // force a full aidl compile on the next project open. (unless a full compilation succeed
-        // before the project is closed/re-opened.)
-        // TODO: Optimize by saving only the files that need compilation
-        saveProjectBooleanProperty(PROPERTY_COMPILE_AIDL , mAidlToCompile.size() > 0);
-
-        return true;
-    }
-
-    /**
-     * Returns the {@link IFile} handle to the destination file for a given aidl source file
-     * ({@link AidlData}).
-     * @param aidlData the data for the aidl source file.
-     * @param createFolders whether or not the parent folder of the destination should be created
-     * if it does not exist.
-     * @param monitor the progress monitor
-     * @return the handle to the destination file.
-     * @throws CoreException
-     */
-    private IFile getGenDestinationFile(AidlData aidlData, boolean createFolders,
-            IProgressMonitor monitor) throws CoreException {
-        // build the destination folder path.
-        // Use the path of the source file, except for the path leading to its source folder,
-        // and for the last segment which is the filename.
-        int segmentToSourceFolderCount = aidlData.sourceFolder.getFullPath().segmentCount();
-        IPath packagePath = aidlData.aidlFile.getFullPath().removeFirstSegments(
-                segmentToSourceFolderCount).removeLastSegments(1);
-        Path destinationPath = new Path(packagePath.toString());
-
-        // get an IFolder for this path. It's relative to the 'gen' folder already
-        IFolder destinationFolder = mGenFolder.getFolder(destinationPath);
-
-        // create it if needed.
-        if (destinationFolder.exists() == false && createFolders) {
-            createFolder(destinationFolder, monitor);
-        }
-
-        // Build the Java file name from the aidl name.
-        String javaName = aidlData.aidlFile.getName().replaceAll(AndroidConstants.RE_AIDL_EXT,
-                AndroidConstants.DOT_JAVA);
-
-        // get the resource for the java file.
-        IFile javaFile = destinationFolder.getFile(javaName);
-        return javaFile;
-    }
-
-    /**
-     * Creates the destination folder. Because
-     * {@link IFolder#create(boolean, boolean, IProgressMonitor)} only works if the parent folder
-     * already exists, this goes and ensure that all the parent folders actually exist, or it
-     * creates them as well.
-     * @param destinationFolder The folder to create
-     * @param monitor the {@link IProgressMonitor},
-     * @throws CoreException
-     */
-    private void createFolder(IFolder destinationFolder, IProgressMonitor monitor)
-            throws CoreException {
-
-        // check the parent exist and create if necessary.
-        IContainer parent = destinationFolder.getParent();
-        if (parent.getType() == IResource.FOLDER && parent.exists() == false) {
-            createFolder((IFolder)parent, monitor);
-        }
-
-        // create the folder.
-        destinationFolder.create(true /*force*/, true /*local*/,
-                new SubProgressMonitor(monitor, 10));
-    }
-
-    /**
-     * Execute the aidl command line, parse the output, and mark the aidl file
-     * with any reported errors.
-     * @param command the String array containing the command line to execute.
-     * @param file The IFile object representing the aidl file being
-     *      compiled.
-     * @return false if the exec failed, and build needs to be aborted.
-     */
-    private boolean execAidl(String[] command, IFile file) {
-        // do the exec
-        try {
-            if (AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE) {
-                StringBuilder sb = new StringBuilder();
-                for (String c : command) {
-                    sb.append(c);
-                    sb.append(' ');
-                }
-                String cmd_line = sb.toString();
-                AdtPlugin.printToConsole(getProject(), cmd_line);
-            }
-
-            Process p = Runtime.getRuntime().exec(command);
-
-            // list to store each line of stderr
-            ArrayList<String> results = new ArrayList<String>();
-
-            // get the output and return code from the process
-            int result = grabProcessOutput(p, results);
-
-            // attempt to parse the error output
-            boolean error = parseAidlOutput(results, file);
-
-            // If the process failed and we couldn't parse the output
-            // we print a message, mark the project and exit
-            if (result != 0 && error == true) {
-                // display the message in the console.
-                AdtPlugin.printErrorToConsole(getProject(), results.toArray());
-
-                // mark the project and exit
-                markProject(AndroidConstants.MARKER_ADT, Messages.Unparsed_AIDL_Errors,
-                        IMarker.SEVERITY_ERROR);
-                return false;
-            }
-        } catch (IOException e) {
-            // mark the project and exit
-            String msg = String.format(Messages.AIDL_Exec_Error, command[0]);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
-            return false;
-        } catch (InterruptedException e) {
-            // mark the project and exit
-            String msg = String.format(Messages.AIDL_Exec_Error, command[0]);
-            markProject(AndroidConstants.MARKER_ADT, msg, IMarker.SEVERITY_ERROR);
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Goes through the build paths and fills the list of aidl files to compile
-     * ({@link #mAidlToCompile}).
-     * @param project The project.
-     * @param sourceFolderPathList The list of source folder paths.
-     */
-    private void buildAidlCompilationList(IProject project,
-            ArrayList<IPath> sourceFolderPathList) {
-        IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-        for (IPath sourceFolderPath : sourceFolderPathList) {
-            IFolder sourceFolder = root.getFolder(sourceFolderPath);
-            // we don't look in the 'gen' source folder as there will be no source in there.
-            if (sourceFolder.exists() && sourceFolder.equals(mGenFolder) == false) {
-                scanFolderForAidl(sourceFolder, sourceFolder);
-            }
-        }
-    }
-
-    /**
-     * Scans a folder and fills the list of aidl files to compile.
-     * @param sourceFolder the root source folder.
-     * @param folder The folder to scan.
-     */
-    private void scanFolderForAidl(IFolder sourceFolder, IFolder folder) {
-        try {
-            IResource[] members = folder.members();
-            for (IResource r : members) {
-                // get the type of the resource
-               switch (r.getType()) {
-                   case IResource.FILE:
-                       // if this a file, check that the file actually exist
-                       // and that it's an aidl file
-                       if (r.exists() &&
-                               AndroidConstants.EXT_AIDL.equalsIgnoreCase(r.getFileExtension())) {
-                           mAidlToCompile.add(new AidlData(sourceFolder, (IFile)r));
-                       }
-                       break;
-                   case IResource.FOLDER:
-                       // recursively go through children
-                       scanFolderForAidl(sourceFolder, (IFolder)r);
-                       break;
-                   default:
-                       // this would mean it's a project or the workspace root
-                       // which is unlikely to happen. we do nothing
-                       break;
-               }
-            }
-        } catch (CoreException e) {
-            // Couldn't get the members list for some reason. Just return.
-        }
-    }
-
-
-    /**
-     * Parse the output of aidl and mark the file with any errors.
-     * @param lines The output to parse.
-     * @param file The file to mark with error.
-     * @return true if the parsing failed, false if success.
-     */
-    private boolean parseAidlOutput(ArrayList<String> lines, IFile file) {
-        // nothing to parse? just return false;
-        if (lines.size() == 0) {
-            return false;
-        }
-
-        Matcher m;
-
-        for (int i = 0; i < lines.size(); i++) {
-            String p = lines.get(i);
-
-            m = sAidlPattern1.matcher(p);
-            if (m.matches()) {
-                // we can ignore group 1 which is the location since we already
-                // have a IFile object representing the aidl file.
-                String lineStr = m.group(2);
-                String msg = m.group(3);
-
-                // get the line number
-                int line = 0;
-                try {
-                    line = Integer.parseInt(lineStr);
-                } catch (NumberFormatException e) {
-                    // looks like the string we extracted wasn't a valid
-                    // file number. Parsing failed and we return true
-                    return true;
-                }
-
-                // mark the file
-                BaseProjectHelper.markResource(file, AndroidConstants.MARKER_AIDL, msg, line,
-                        IMarker.SEVERITY_ERROR);
-
-                // success, go to the next line
-                continue;
-            }
-
-            // invalid line format, flag as error, and bail
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Merge the current list of aidl file to compile/remove with the new one.
-     * @param toCompile List of file to compile
-     * @param toRemove List of file to remove
-     */
-    private void mergeAidlFileModifications(ArrayList<AidlData> toCompile,
-            ArrayList<AidlData> toRemove) {
-        // loop through the new toRemove list, and add it to the old one,
-        // plus remove any file that was still to compile and that are now
-        // removed
-        for (AidlData r : toRemove) {
-            if (mAidlToRemove.indexOf(r) == -1) {
-                mAidlToRemove.add(r);
-            }
-
-            int index = mAidlToCompile.indexOf(r);
-            if (index != -1) {
-                mAidlToCompile.remove(index);
-            }
-        }
-
-        // now loop through the new files to compile and add it to the list.
-        // Also look for them in the remove list, this would mean that they
-        // were removed, then added back, and we shouldn't remove them, just
-        // recompile them.
-        for (AidlData r : toCompile) {
-            if (mAidlToCompile.indexOf(r) == -1) {
-                mAidlToCompile.add(r);
-            }
-
-            int index = mAidlToRemove.indexOf(r);
-            if (index != -1) {
-                mAidlToRemove.remove(index);
-            }
-        }
     }
 }
