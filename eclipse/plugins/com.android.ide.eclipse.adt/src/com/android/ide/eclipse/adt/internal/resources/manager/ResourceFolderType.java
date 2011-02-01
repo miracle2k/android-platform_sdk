@@ -30,6 +30,7 @@ public enum ResourceFolderType {
     INTERPOLATOR(SdkConstants.FD_INTERPOLATOR),
     LAYOUT(SdkConstants.FD_LAYOUT),
     MENU(SdkConstants.FD_MENU),
+    MIPMAP(SdkConstants.FD_MIPMAP),
     RAW(SdkConstants.FD_RAW),
     VALUES(SdkConstants.FD_VALUES),
     XML(SdkConstants.FD_XML);

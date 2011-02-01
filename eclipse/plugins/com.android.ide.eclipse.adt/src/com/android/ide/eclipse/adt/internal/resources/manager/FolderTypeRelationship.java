@@ -62,6 +62,7 @@ public final class FolderTypeRelationship {
                 folderToTypeMap);
         add(ResourceType.LAYOUT, ResourceFolderType.LAYOUT, typeToFolderMap, folderToTypeMap);
         add(ResourceType.MENU, ResourceFolderType.MENU, typeToFolderMap, folderToTypeMap);
+        add(ResourceType.MIPMAP, ResourceFolderType.MIPMAP, typeToFolderMap, folderToTypeMap);
         add(ResourceType.PLURALS, ResourceFolderType.VALUES, typeToFolderMap, folderToTypeMap);
         add(ResourceType.PUBLIC, ResourceFolderType.VALUES, typeToFolderMap, folderToTypeMap);
         add(ResourceType.RAW, ResourceFolderType.RAW, typeToFolderMap, folderToTypeMap);

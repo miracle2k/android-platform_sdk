@@ -81,7 +81,12 @@ public class GeneratorDeltaVisitor {
         }
     }
 
-    protected boolean filterResourceFolder(IContainer parent) {
+    /**
+     * Called to restrict {@link #handleResourceFile(IFile, int)} on selected resource folders.
+     * @param folder
+     * @return
+     */
+    protected boolean filterResourceFolder(IContainer folder) {
         return false;
     }
 

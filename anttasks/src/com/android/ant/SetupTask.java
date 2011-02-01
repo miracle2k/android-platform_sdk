@@ -199,15 +199,19 @@ public final class SetupTask extends ImportTask {
         String androidAidl = androidTarget.getPath(IAndroidTarget.ANDROID_AIDL);
         antProject.setProperty(AntConstants.PROP_ANDROID_AIDL, androidAidl);
 
-        String androidRS = androidTarget.getPath(IAndroidTarget.ANDROID_RS);
-        antProject.setProperty(AntConstants.PROP_ANDROID_RENDERSCRIPT, androidRS);
+        Path includePath = new Path(antProject);
+        PathElement element = includePath.createPathElement();
+        element.setPath(androidTarget.getPath(IAndroidTarget.ANDROID_RS));
+        element = includePath.createPathElement();
+        element.setPath(androidTarget.getPath(IAndroidTarget.ANDROID_RS_CLANG));
+        antProject.setProperty(AntConstants.PROP_ANDROID_RENDERSCRIPT, includePath.toString());
 
         antProject.setProperty(AntConstants.PROP_AAPT, androidTarget.getPath(IAndroidTarget.AAPT));
         antProject.setProperty(AntConstants.PROP_AIDL, androidTarget.getPath(IAndroidTarget.AIDL));
         antProject.setProperty(AntConstants.PROP_DX, androidTarget.getPath(IAndroidTarget.DX));
         antProject.setProperty(AntConstants.PROP_RENDERSCRIPT,
                 sdkOsPath + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER +
-                    SdkConstants.FN_RENDERSCRIPT);
+                SdkConstants.FN_RENDERSCRIPT);
 
         // sets up the boot classpath
 
@@ -215,7 +219,7 @@ public final class SetupTask extends ImportTask {
         Path bootclasspath = new Path(antProject);
 
         // create a PathElement for the framework jar
-        PathElement element = bootclasspath.createPathElement();
+        element = bootclasspath.createPathElement();
         element.setPath(androidJar);
 
         // create PathElement for each optional library.

@@ -81,6 +81,17 @@ public class NonJavaFileBundle {
         }
     }
 
+    public void setDependencyFiles(List<IFile> depFiles) {
+        mDependencyFiles.clear();
+        if (depFiles != null) {
+            mDependencyFiles.addAll(depFiles);
+        }
+    }
+
+    public List<IFile> getDependencyFiles() {
+        return mDependencyFiles;
+    }
+
     /**
      * Shortcut access to the first output file. This is useful for generator that only output
      * one file.

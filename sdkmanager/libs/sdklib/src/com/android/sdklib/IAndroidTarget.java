@@ -79,6 +79,8 @@ public interface IAndroidTarget extends Comparable<IAndroidTarget> {
     public final static int ANT                 = 24;
     /** OS Path to the Renderscript include folder. */
     public final static int ANDROID_RS          = 25;
+    /** OS Path to the Renderscript(clang) include folder. */
+    public final static int ANDROID_RS_CLANG    = 26;
 
     /**
      * Return value for {@link #getUsbVendorId()} meaning no USB vendor IDs are defined by the

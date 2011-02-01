@@ -16,9 +16,10 @@
 
 package com.android.sdklib;
 
+import com.android.sdklib.util.SparseArray;
+
 import java.io.File;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -40,7 +41,7 @@ final class PlatformTarget implements IAndroidTarget {
     private final String mVersionName;
     private final int mRevision;
     private final Map<String, String> mProperties;
-    private final Map<Integer, String> mPaths = new HashMap<Integer, String>();
+    private final SparseArray<String> mPaths = new SparseArray<String>();
     private String[] mSkins;
 
 
@@ -77,6 +78,7 @@ final class PlatformTarget implements IAndroidTarget {
         mPaths.put(SOURCES, mRootFolderOsPath + SdkConstants.FD_ANDROID_SOURCES);
         mPaths.put(ANDROID_AIDL, mRootFolderOsPath + SdkConstants.FN_FRAMEWORK_AIDL);
         mPaths.put(ANDROID_RS, mRootFolderOsPath + SdkConstants.OS_FRAMEWORK_RS);
+        mPaths.put(ANDROID_RS_CLANG, mRootFolderOsPath + SdkConstants.OS_FRAMEWORK_RS_CLANG);
         mPaths.put(IMAGES, mRootFolderOsPath + SdkConstants.OS_IMAGES_FOLDER);
         mPaths.put(SAMPLES, mRootFolderOsPath + SdkConstants.OS_PLATFORM_SAMPLES_FOLDER);
         mPaths.put(SKINS, mRootFolderOsPath + SdkConstants.OS_SKINS_FOLDER);

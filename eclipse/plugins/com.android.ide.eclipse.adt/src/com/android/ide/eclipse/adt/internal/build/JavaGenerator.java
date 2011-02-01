@@ -51,6 +51,10 @@ import java.util.Set;
  */
 public abstract class JavaGenerator {
 
+    public final static int COMPILE_STATUS_NONE = 0;
+    public final static int COMPILE_STATUS_CODE = 0x1;
+    public final static int COMPILE_STATUS_RES = 0x2;
+
     /** List of all source files, their dependencies, and their output. */
     private final Map<IFile, NonJavaFileBundle> mFiles = new HashMap<IFile, NonJavaFileBundle>();
 
@@ -183,16 +187,25 @@ public abstract class JavaGenerator {
         saveState(project);
     }
 
+    /**
+     * Returns the extension of the source files handled by this generator.
+     * @return
+     */
     protected abstract String getExtension();
 
     protected abstract String getSavePropertyName();
 
-    public final boolean compileFiles(BaseBuilder builder,
+    /**
+     * Compiles the source files and return what type of file was generated.
+     *
+     * @see #getCompilationType()
+     */
+    public final int compileFiles(BaseBuilder builder,
             IProject project, IAndroidTarget projectTarget,
             List<IPath> sourceFolders, IProgressMonitor monitor) throws CoreException {
 
         if (mToCompile.size() == 0 && mRemoved.size() == 0) {
-            return false;
+            return COMPILE_STATUS_NONE;
         }
 
         // if a source file is being removed before we managed to compile it, it'll be in
@@ -214,7 +227,13 @@ public abstract class JavaGenerator {
         mToCompile.addAll(stillNeedCompilation);
 
         // Remove the files created from source files that have been removed.
-        doRemoveFiles(mRemoved, monitor);
+        for (IFile sourceFile : mRemoved) {
+            // look if we already know the output
+            NonJavaFileBundle bundle = getBundle(sourceFile);
+            if (bundle != null) {
+                doRemoveFiles(bundle);
+            }
+        }
 
         // remove the associated bundles.
         for (IFile removedFile : mRemoved) {
@@ -228,7 +247,7 @@ public abstract class JavaGenerator {
         // before the project is closed/re-opened.)
         saveState(project);
 
-        return true;
+        return getCompilationType();
     }
 
     protected abstract void doCompileFiles(
@@ -237,8 +256,22 @@ public abstract class JavaGenerator {
             List<IPath> sourceFolders, List<IFile> notCompiledOut, IProgressMonitor monitor)
             throws CoreException;
 
-    protected abstract void doRemoveFiles(List<IFile> sources, IProgressMonitor monitor)
-            throws CoreException;
+    /**
+     * Returns the type of compilation. It can be any of (in combination too):
+     * <p/>
+     * {@link #COMPILE_STATUS_CODE} means this generator created source files.
+     * {@link #COMPILE_STATUS_RES} means this generator created resources.
+     */
+    protected abstract int getCompilationType();
+
+    protected void doRemoveFiles(NonJavaFileBundle bundle) throws CoreException {
+        List<IFile> outputFiles = bundle.getOutputFiles();
+        for (IFile outputFile : outputFiles) {
+            if (outputFile.exists()) {
+                outputFile.getLocation().toFile().delete();
+            }
+        }
+    }
 
     public final boolean loadState(IProject project) {
         return ProjectHelper.loadBooleanProperty(project, getSavePropertyName(),
@@ -253,13 +286,37 @@ public abstract class JavaGenerator {
 
     protected abstract void loadOutputAndDependencies();
 
+
+    protected IPath getSourceFolderFor(IFile file) {
+        // find the source folder for the class so that we can infer the package from the
+        // difference between the file and its source folder.
+        List<IPath> sourceFolders = BaseProjectHelper.getSourceClasspaths(getJavaProject());
+        IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+
+        for (IPath sourceFolderPath : sourceFolders) {
+            IFolder sourceFolder = root.getFolder(sourceFolderPath);
+            // we don't look in the 'gen' source folder as there will be no source in there.
+            if (sourceFolder.exists() && sourceFolder.equals(getGenFolder()) == false) {
+                // look for the source file parent, until we find this source folder.
+                IResource parent = file;
+                while ((parent = parent.getParent()) != null) {
+                    if (parent.equals(sourceFolder)) {
+                        return sourceFolderPath;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Goes through the build paths and fills the list of files to compile.
      *
      * @param project The project.
      * @param sourceFolderPathList The list of source folder paths.
      */
-    protected void buildSourceFileList() {
+    private final void buildSourceFileList() {
         mFiles.clear();
 
         IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();

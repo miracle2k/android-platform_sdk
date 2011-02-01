@@ -22,6 +22,7 @@ import com.android.ide.eclipse.adt.internal.build.AaptParser;
 import com.android.ide.eclipse.adt.internal.build.AidlGenerator;
 import com.android.ide.eclipse.adt.internal.build.JavaGenerator;
 import com.android.ide.eclipse.adt.internal.build.Messages;
+import com.android.ide.eclipse.adt.internal.build.RenderScriptGenerator;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
@@ -467,18 +468,33 @@ public class PreCompilerBuilder extends BaseBuilder {
                 saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES , mMustCompileResources);
             }
 
+            // run the Java generators
+            int generatorStatus = JavaGenerator.COMPILE_STATUS_NONE;
+            for (JavaGenerator generator : mGeneratorList) {
+                try {
+                    generatorStatus |= generator.compileFiles(this,
+                            project, projectTarget, sourceFolderPathList, monitor);
+                } catch (Throwable t) {
+                }
+            }
+
+            // if a generator created some resources file, force recompilation of the resources.
+            if ((generatorStatus & JavaGenerator.COMPILE_STATUS_RES) != 0) {
+                mMustCompileResources = true;
+                // save the current state before attempting the compilation
+                saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES , mMustCompileResources);
+            }
+
+            // handle the resources, after the java generators are run since some (renderscript)
+            // generate resources.
+            boolean compiledTheResources = mMustCompileResources;
             if (mMustCompileResources) {
                 handleResources(project, javaPackage, projectTarget, manifestFile, libProjects);
+                saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES , false);
             }
 
-            // run the Java generators
-            boolean generatorStatus = false;
-            for (JavaGenerator generator : mGeneratorList) {
-                generatorStatus |= generator.compileFiles(this,
-                        project, projectTarget, sourceFolderPathList, monitor);
-            }
-
-            if (generatorStatus == false && mMustCompileResources == false) {
+            if (generatorStatus == JavaGenerator.COMPILE_STATUS_NONE &&
+                    compiledTheResources == false) {
                 AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                         Messages.Nothing_To_Compile);
             }
@@ -539,6 +555,8 @@ public class PreCompilerBuilder extends BaseBuilder {
         // load the java generators
         JavaGenerator aidlGenerator = new AidlGenerator(javaProject, mGenFolder);
         mGeneratorList.add(aidlGenerator);
+        JavaGenerator renderScriptGenerator = new RenderScriptGenerator(javaProject, mGenFolder);
+        mGeneratorList.add(renderScriptGenerator);
 
         mDerivedProgressMonitor = new DerivedProgressMonitor(mGenFolder);
     }

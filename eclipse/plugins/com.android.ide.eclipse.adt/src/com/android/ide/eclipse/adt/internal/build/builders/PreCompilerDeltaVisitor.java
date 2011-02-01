@@ -55,9 +55,7 @@ import java.util.List;
  * <li>Any modification to aidl files.</li>
  *
  */
-class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
-        IResourceDeltaVisitor {
-
+class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements IResourceDeltaVisitor {
 
     // Result fields.
     /**
@@ -344,6 +342,10 @@ class PreCompilerDeltaVisitor extends BaseDeltaVisitor implements
             if (message != null) {
                 AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE,
                         mBuilder.getProject(), message);
+            }
+
+            for (GeneratorDeltaVisitor dv : mGeneratorDeltaVisitors) {
+                dv.handleResourceFile((IFile)resource, kind);
             }
 
             if (AndroidConstants.EXT_XML.equalsIgnoreCase(ext)) {
