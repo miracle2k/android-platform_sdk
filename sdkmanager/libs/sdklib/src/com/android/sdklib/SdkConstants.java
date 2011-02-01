@@ -66,6 +66,8 @@ public final class SdkConstants {
     public static final String FN_FRAMEWORK_RENDERSCRIPT = "renderscript";
     /** framework include folder */
     public static final String FN_FRAMEWORK_INCLUDE = "include";
+    /** framework include (clang) folder */
+    public static final String FN_FRAMEWORK_INCLUDE_CLANG = "clang-include";
     /** layoutlib.jar file */
     public static final String FN_LAYOUTLIB_JAR = "layoutlib.jar";
     /** widget list file */
@@ -192,6 +194,8 @@ public final class SdkConstants {
     public final static String FD_LAYOUT = "layout"; //$NON-NLS-1$
     /** Default menu resource folder name, i.e. "menu" */
     public final static String FD_MENU = "menu"; //$NON-NLS-1$
+    /** Default menu resource folder name, i.e. "mipmap" */
+    public final static String FD_MIPMAP = "mipmap"; //$NON-NLS-1$
     /** Default values resource folder name, i.e. "values" */
     public final static String FD_VALUES = "values"; //$NON-NLS-1$
     /** Default xml resource folder name, i.e. "xml" */
@@ -343,6 +347,9 @@ public final class SdkConstants {
     /** Path of the renderscript include folder relative to a platform folder. */
     public final static String OS_FRAMEWORK_RS =
             FN_FRAMEWORK_RENDERSCRIPT + File.separator + FN_FRAMEWORK_INCLUDE;
+    /** Path of the renderscript (clang) include folder relative to a platform folder. */
+    public final static String OS_FRAMEWORK_RS_CLANG =
+            FN_FRAMEWORK_RENDERSCRIPT + File.separator + FN_FRAMEWORK_INCLUDE_CLANG;
 
     /* Folder paths relative to a addon folder */
 

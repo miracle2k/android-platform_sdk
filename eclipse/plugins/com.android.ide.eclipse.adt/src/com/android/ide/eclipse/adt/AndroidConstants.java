@@ -74,6 +74,8 @@ public class AndroidConstants {
     public final static String EXT_AIDL = "aidl"; //$NON-NLS-1$
     /** Extension of Renderscript files, i.e. "rs" */
     public final static String EXT_RS = "rs"; //$NON-NLS-1$
+    /** Extension of dependency files, i.e. "d" */
+    public final static String EXT_DEP = "d"; //$NON-NLS-1$
     /** Extension of native libraries, i.e. "so" */
     public final static String EXT_NATIVE_LIB = "so"; //$NON-NLS-1$
     /** Extension of dex files, i.e. "dex" */
@@ -95,6 +97,10 @@ public class AndroidConstants {
     public final static String DOT_JAR = DOT + EXT_JAR;
     /** Dot-Extension of aidl files, i.e. ".aidl" */
     public final static String DOT_AIDL = DOT + EXT_AIDL;
+    /** Dot-Extension of renderscript files, i.e. ".rs" */
+    public final static String DOT_RS = DOT + EXT_RS;
+    /** Dot-Extension of dependency files, i.e. ".d" */
+    public final static String DOT_DEP = DOT + EXT_DEP;
     /** Dot-Extension of dex files, i.e. ".dex" */
     public final static String DOT_DEX = DOT + EXT_DEX;
     /** Dot-Extension for temporary resource files, ie "ap_ */
@@ -151,9 +157,11 @@ public class AndroidConstants {
 
     public final static String RE_DOT = "\\."; //$NON-NLS-1$
     /** Regexp for java extension, i.e. "\.java$" */
-    public final static String RE_JAVA_EXT = "\\.java$"; //$NON-NLS-1$
+    public final static String RE_JAVA_EXT = "\\" + DOT_JAVA + "$"; //$NON-NLS-1$ //$NON-NLS-2$
     /** Regexp for aidl extension, i.e. "\.aidl$" */
-    public final static String RE_AIDL_EXT = "\\.aidl$"; //$NON-NLS-1$
+    public final static String RE_AIDL_EXT = "\\" + DOT_AIDL + "$"; //$NON-NLS-1$ //$NON-NLS-2$
+    /** Regexp for rs extension, i.e. "\.rs$" */
+    public final static String RE_RS_EXT = "\\" + DOT_RS + "$"; //$NON-NLS-1$ //$NON-NLS-2$
 
     /**
      * Namespace pattern for the custom resource XML, i.e. "http://schemas.android.com/apk/res/%s"
@@ -195,6 +203,9 @@ public class AndroidConstants {
 
     /** aidl marker error, only to be used in {@link PreCompilerBuilder} */
     public final static String MARKER_AIDL = LEGACY_PLUGIN_ID + ".aidlProblem"; //$NON-NLS-1$
+
+    /** renderscript marker error, only to be used in {@link PreCompilerBuilder} */
+    public final static String MARKER_RENDERSCRIPT = LEGACY_PLUGIN_ID + ".rsProblem"; //$NON-NLS-1$
 
     /** android marker error, only to be used in the Manifest parsing
      * from the {@link PreCompilerBuilder} */

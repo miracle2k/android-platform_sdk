@@ -45,7 +45,7 @@ import java.util.List;
 public class RenderScriptTask extends Task {
 
     private String mExecutable;
-    private String mFramework;
+    private Path mFramework;
     private String mGenFolder;
     private String mResFolder;
     private final List<Path> mPaths = new ArrayList<Path>();
@@ -59,7 +59,7 @@ public class RenderScriptTask extends Task {
     }
 
     public void setFramework(Path value) {
-        mFramework = TaskHelper.checkSinglePath("framework", value);
+        mFramework = value;
     }
 
     public void setGenFolder(Path value) {
@@ -127,8 +127,14 @@ public class RenderScriptTask extends Task {
                 task.setExecutable(mExecutable);
                 task.setFailonerror(true);
 
-                task.createArg().setValue("-I");
-                task.createArg().setValue(mFramework);
+                for (String path : mFramework.list()) {
+                    File res = new File(path);
+                    if (res.isDirectory()) {
+                        task.createArg().setValue("-I");
+                        task.createArg().setValue(path);
+                    }
+                }
+
                 task.createArg().setValue("-p");
                 task.createArg().setValue(mGenFolder);
                 task.createArg().setValue("-o");
