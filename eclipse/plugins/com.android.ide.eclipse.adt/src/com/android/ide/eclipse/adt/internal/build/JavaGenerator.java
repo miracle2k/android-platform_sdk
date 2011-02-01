@@ -17,20 +17,27 @@
 package com.android.ide.eclipse.adt.internal.build;
 
 import com.android.ide.eclipse.adt.internal.build.builders.BaseBuilder;
+import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
+import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.sdklib.IAndroidTarget;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jdt.core.IJavaProject;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Base class to handle generated java code.
@@ -44,236 +51,279 @@ import java.util.List;
  */
 public abstract class JavaGenerator {
 
-    /**
-     * Data to temporarily store source file information.
-     */
-    protected static class SourceData {
-        IFile sourceFile;
-        /** this is the root source folder, not the file parent. */
-        IFolder sourceFolder;
+    /** List of all source files, their dependencies, and their output. */
+    private final Map<IFile, NonJavaFileBundle> mFiles = new HashMap<IFile, NonJavaFileBundle>();
 
-        SourceData(IFolder sourceFolder, IFile sourceFile) {
-            this.sourceFolder = sourceFolder;
-            this.sourceFile = sourceFile;
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((sourceFile == null) ? 0 : sourceFile.hashCode());
-            result = prime * result + ((sourceFolder == null) ? 0 : sourceFolder.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            SourceData other = (SourceData) obj;
-            if (sourceFile == null) {
-                if (other.sourceFile != null)
-                    return false;
-            } else if (!sourceFile.equals(other.sourceFile))
-                return false;
-            if (sourceFolder == null) {
-                if (other.sourceFolder != null)
-                    return false;
-            } else if (!sourceFolder.equals(other.sourceFolder))
-                return false;
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "SourceData [sourceFile=" //$NON-NLS-1$
-                + sourceFile
-                + ", sourceFolder="          //$NON-NLS-1$
-                + sourceFolder
-                + "]";                       //$NON-NLS-1$
-        }
-    }
-
-    /**
-     * Base delta visitor for the Java generator classes.
-     *
-     * It provides storage for modified and deleted source files and a few other features.
-     */
-    public abstract static class JavaGeneratorDeltaVisitor {
-
-        private IWorkspaceRoot mRoot;
-
-        private boolean mForceCompile;
-
-        /** List of source files found that are modified or new. */
-        private final List<SourceData> mToCompile = new ArrayList<SourceData>();
-
-        /** List of .aidl files that have been removed. */
-        private final List<SourceData> mToRemove = new ArrayList<SourceData>();
-
-        public abstract boolean handleChangedGeneratedJavaFile(IFolder currentSourceFolder,
-                IFile file, List<IPath> sourceFolders);
-
-        public abstract void handleChangedNonJavaFile(IFolder currentSourceFolder,
-                IFile file, int kind);
-
-        public void setWorkspaceRoot(IWorkspaceRoot root) {
-            mRoot = root;
-        }
-
-        public void setForceCompile() {
-            mForceCompile = true;
-        }
-
-        boolean getForceCompile() {
-            return mForceCompile;
-        }
-
-        public void addFileToCompile(IFolder sourceFolder, IFile sourceFile) {
-            mToCompile.add(new SourceData(sourceFolder, sourceFile));
-        }
-
-        List<SourceData> getFilesToCompile() {
-            return mToCompile;
-        }
-
-        public void addFileToRemove(IFolder sourceFolder, IFile sourceFile) {
-            mToRemove.add(new SourceData(sourceFolder, sourceFile));
-        }
-
-        List<SourceData> getFilesToRemove() {
-            return mToRemove;
-        }
-
-        public void reset() {
-            mForceCompile = false;
-            mToCompile.clear();
-            mToRemove.clear();
-        }
-
-        /**
-         * Returns a handle to the folder identified by the given path in this container.
-         * <p/>The different with {@link IContainer#getFolder(IPath)} is that this returns a non
-         * null object only if the resource actually exists and is a folder (and not a file)
-         * @param path the path of the folder to return.
-         * @return a handle to the folder if it exists, or null otherwise.
-         */
-        protected IFolder getFolder(IPath path) {
-            IResource resource = mRoot.findMember(path);
-            if (resource != null && resource.exists() && resource.getType() == IResource.FOLDER) {
-                return (IFolder)resource;
-            }
-
-            return null;
-        }
-
-        /**
-         * Searches for and return a file in a folder. The file is defined by its segments, and
-         * a new name (replacing the last segment).
-         * @param folder the folder we are searching
-         * @param segments the segments of the file to search.
-         * @param index the index of the current segment we are looking for
-         * @param filename the new name to replace the last segment.
-         * @return the {@link IFile} representing the searched file, or null if not found
-         */
-        protected IFile findFile(IFolder folder, String[] segments, int index, String filename) {
-            boolean lastSegment = index == segments.length - 1;
-            IResource resource = folder.findMember(lastSegment ? filename : segments[index]);
-            if (resource != null && resource.exists()) {
-                if (lastSegment) {
-                    if (resource.getType() == IResource.FILE) {
-                        return (IFile)resource;
-                    }
-                } else {
-                    if (resource.getType() == IResource.FOLDER) {
-                        return findFile((IFolder)resource, segments, index+1, filename);
-                    }
-                }
-            }
-            return null;
-        }
-    }
-
-    /** List of source files found that are modified or new. */
-    private final List<SourceData> mToCompile = new ArrayList<SourceData>();
-
-    /** List of .aidl files that have been removed. */
-    private final List<SourceData> mToRemove = new ArrayList<SourceData>();
-
-    private final JavaGeneratorDeltaVisitor mDeltaVisitor;
-
+    private final IJavaProject mJavaProject;
     private final IFolder mGenFolder;
+    private final GeneratorDeltaVisitor mDeltaVisitor;
 
-    protected JavaGenerator(JavaGeneratorDeltaVisitor deltaVisitor, IFolder genFolder) {
-        mDeltaVisitor = deltaVisitor;
+    /** List of source files pending compilation at the next build */
+    private final List<IFile> mToCompile = new ArrayList<IFile>();
+
+    /** List of removed source files pending cleaning at the next build. */
+    private final List<IFile> mRemoved = new ArrayList<IFile>();
+
+    protected JavaGenerator(IJavaProject javaProject, IFolder genFolder,
+            GeneratorDeltaVisitor deltaVisitor) {
+        mJavaProject = javaProject;
         mGenFolder = genFolder;
+        mDeltaVisitor = deltaVisitor;
+
+        mDeltaVisitor.init(this);
+
+        IProject project = javaProject.getProject();
+
+        // get all the source files
+        buildSourceFileList();
+
+        // load the known dependencies
+        loadOutputAndDependencies();
+
+        boolean mustCompile = loadState(project);
+
+        // if we stored that we have to compile some files, we build the list that will compile them
+        // all. For now we have to reuse the full list since we don't know which files needed
+        // compilation.
+        if (mustCompile) {
+            mToCompile.addAll(mFiles.keySet());
+        }
     }
 
-    public JavaGeneratorDeltaVisitor getDeltaVisitor() {
+    protected JavaGenerator(IJavaProject javaProject, IFolder genFolder) {
+        this(javaProject, genFolder, new GeneratorDeltaVisitor());
+    }
+
+
+    /**
+     * Returns whether the given file is an output of this generator by return the source
+     * file that generated it.
+     * @param file the file to test.
+     * @return the source file that generated the given file or null.
+     */
+    IFile isOutput(IFile file) {
+        for (NonJavaFileBundle bundle : mFiles.values()) {
+            if (bundle.generated(file)) {
+                return bundle.getSourceFile();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns whether the given file is a dependency for other files by returning a list
+     * of file depending on the given file.
+     * @param file the file to test.
+     * @return a list of files that depend on the given file or an empty list if there
+     *    are no matches.
+     */
+    List<IFile> isDependency(IFile file) {
+        ArrayList<IFile> files = new ArrayList<IFile>();
+        for (NonJavaFileBundle bundle : mFiles.values()) {
+            if (bundle.dependsOn(file)) {
+                files.add(bundle.getSourceFile());
+            }
+        }
+
+        return files;
+    }
+
+    void addBundle(NonJavaFileBundle bundle) {
+        mFiles.put(bundle.getSourceFile(), bundle);
+    }
+
+    NonJavaFileBundle getBundle(IFile file) {
+        return mFiles.get(file);
+    }
+
+    Collection<NonJavaFileBundle> getBundles() {
+        return mFiles.values();
+    }
+
+    public final GeneratorDeltaVisitor getDeltaVisitor() {
         return mDeltaVisitor;
     }
 
-    IFolder getGenFolder() {
+    final IJavaProject getJavaProject() {
+        return mJavaProject;
+    }
+
+    final IFolder getGenFolder() {
         return mGenFolder;
     }
 
-    List<SourceData> getToCompile() {
+    final List<IFile> getToCompile() {
         return mToCompile;
     }
 
-    List<SourceData> getToRemove() {
-        return mToRemove;
+    final List<IFile> getRemovedFile() {
+        return mRemoved;
     }
 
-    void addFileToCompile(IFolder sourceFolder, IFile sourceFile) {
-        mToCompile.add(new SourceData(sourceFolder, sourceFile));
+    final void addFileToCompile(IFile file) {
+        mToCompile.add(file);
     }
 
-    public void prepareFullBuild(IProject project, List<IPath> sourceFolders) {
+    public final void prepareFullBuild(IProject project) {
         mDeltaVisitor.reset();
-        buildCompilationList(project, sourceFolders);
+
+        // get all the source files
+        buildSourceFileList();
+
+        mToCompile.addAll(mFiles.keySet());
     }
 
-    public void doneVisiting(IProject project, List<IPath> sourceFolders) {
-        if (mDeltaVisitor.getForceCompile()) {
-            buildCompilationList(project, sourceFolders);
-        } else {
-            // merge the previous file modification lists and the new one.
-            mergeFileModifications(mDeltaVisitor);
-        }
+    public final void doneVisiting(IProject project) {
+        // merge the previous file modification lists and the new one.
+        mergeFileModifications(mDeltaVisitor);
 
         mDeltaVisitor.reset();
 
         saveState(project);
     }
 
-    protected abstract void buildCompilationList(IProject project, List<IPath> sourceFolders);
+    protected abstract String getExtension();
 
-    public abstract boolean compileFiles(BaseBuilder builder,
+    protected abstract String getSavePropertyName();
+
+    public final boolean compileFiles(BaseBuilder builder,
             IProject project, IAndroidTarget projectTarget,
-            List<IPath> sourceFolders, IProgressMonitor monitor) throws CoreException;
+            List<IPath> sourceFolders, IProgressMonitor monitor) throws CoreException {
 
-    public abstract void saveState(IProject project);
+        if (mToCompile.size() == 0 && mRemoved.size() == 0) {
+            return false;
+        }
+
+        // if a source file is being removed before we managed to compile it, it'll be in
+        // both list. We *need* to remove it from the compile list or it'll never go away.
+        for (IFile sourceFile : mRemoved) {
+            int pos = mToCompile.indexOf(sourceFile);
+            if (pos != -1) {
+                mToCompile.remove(pos);
+            }
+        }
+
+        // list of files that have failed compilation.
+        List<IFile> stillNeedCompilation = new ArrayList<IFile>();
+
+        doCompileFiles(mToCompile, builder, project, projectTarget, sourceFolders,
+                stillNeedCompilation, monitor);
+
+        mToCompile.clear();
+        mToCompile.addAll(stillNeedCompilation);
+
+        // Remove the files created from source files that have been removed.
+        doRemoveFiles(mRemoved, monitor);
+
+        // remove the associated bundles.
+        for (IFile removedFile : mRemoved) {
+            mFiles.remove(removedFile);
+        }
+
+        mRemoved.clear();
+
+        // store the build state. If there are any files that failed to compile, we will
+        // force a full aidl compile on the next project open. (unless a full compilation succeed
+        // before the project is closed/re-opened.)
+        saveState(project);
+
+        return true;
+    }
+
+    protected abstract void doCompileFiles(
+            List<IFile> filesToCompile, BaseBuilder builder,
+            IProject project, IAndroidTarget projectTarget,
+            List<IPath> sourceFolders, List<IFile> notCompiledOut, IProgressMonitor monitor)
+            throws CoreException;
+
+    protected abstract void doRemoveFiles(List<IFile> sources, IProgressMonitor monitor)
+            throws CoreException;
+
+    public final boolean loadState(IProject project) {
+        return ProjectHelper.loadBooleanProperty(project, getSavePropertyName(),
+                true /*defaultValue*/);
+    }
+
+    public final void saveState(IProject project) {
+        // TODO: Optimize by saving only the files that need compilation
+        ProjectHelper.saveStringProperty(project, getSavePropertyName(),
+                Boolean.toString(getToCompile().size() > 0));
+    }
+
+    protected abstract void loadOutputAndDependencies();
+
+    /**
+     * Goes through the build paths and fills the list of files to compile.
+     *
+     * @param project The project.
+     * @param sourceFolderPathList The list of source folder paths.
+     */
+    protected void buildSourceFileList() {
+        mFiles.clear();
+
+        IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+        List<IPath> sourceFolderPathList = BaseProjectHelper.getSourceClasspaths(mJavaProject);
+
+        for (IPath sourceFolderPath : sourceFolderPathList) {
+            IFolder sourceFolder = root.getFolder(sourceFolderPath);
+            // we don't look in the 'gen' source folder as there will be no source in there.
+            if (sourceFolder.exists() && sourceFolder.equals(getGenFolder()) == false) {
+                scanFolderForSourceFiles(sourceFolder, sourceFolder);
+            }
+        }
+    }
+
+    /**
+     * Scans a folder and fills the list of files to compile.
+     * @param sourceFolder the root source folder.
+     * @param folder The folder to scan.
+     */
+    private void scanFolderForSourceFiles(IFolder sourceFolder, IFolder folder) {
+        try {
+            IResource[] members = folder.members();
+            for (IResource r : members) {
+                // get the type of the resource
+               switch (r.getType()) {
+                   case IResource.FILE:
+                       // if this a file, check that the file actually exist
+                       // and that it's the type of of file that's used in this generator
+                       if (r.exists() &&
+                               getExtension().equalsIgnoreCase(r.getFileExtension())) {
+                           mFiles.put((IFile) r, new NonJavaFileBundle((IFile) r));
+                       }
+                       break;
+                   case IResource.FOLDER:
+                       // recursively go through children
+                       scanFolderForSourceFiles(sourceFolder, (IFolder)r);
+                       break;
+                   default:
+                       // this would mean it's a project or the workspace root
+                       // which is unlikely to happen. we do nothing
+                       break;
+               }
+            }
+        } catch (CoreException e) {
+            // Couldn't get the members list for some reason. Just return.
+        }
+    }
+
 
     /**
      * Merge the current list of source file to compile/remove with the one coming from the
      * delta visitor
      * @param visitor the delta visitor.
      */
-    private void mergeFileModifications(JavaGeneratorDeltaVisitor visitor) {
-        List<SourceData> toRemove = visitor.getFilesToRemove();
-        List<SourceData> toCompile = visitor.getFilesToCompile();
+    private void mergeFileModifications(GeneratorDeltaVisitor visitor) {
+        Set<IFile> toRemove = visitor.getRemovedFiles();
+        Set<IFile> toCompile = visitor.getFilesToCompile();
 
         // loop through the new toRemove list, and add it to the old one,
         // plus remove any file that was still to compile and that are now
         // removed
-        for (SourceData r : toRemove) {
-            if (mToRemove.indexOf(r) == -1) {
-                mToRemove.add(r);
+        for (IFile r : toRemove) {
+            if (mRemoved.indexOf(r) == -1) {
+                mRemoved.add(r);
             }
 
             int index = mToCompile.indexOf(r);
@@ -286,14 +336,14 @@ public abstract class JavaGenerator {
         // Also look for them in the remove list, this would mean that they
         // were removed, then added back, and we shouldn't remove them, just
         // recompile them.
-        for (SourceData r : toCompile) {
+        for (IFile r : toCompile) {
             if (mToCompile.indexOf(r) == -1) {
                 mToCompile.add(r);
             }
 
-            int index = mToRemove.indexOf(r);
+            int index = mRemoved.indexOf(r);
             if (index != -1) {
-                mToRemove.remove(index);
+                mRemoved.remove(index);
             }
         }
     }

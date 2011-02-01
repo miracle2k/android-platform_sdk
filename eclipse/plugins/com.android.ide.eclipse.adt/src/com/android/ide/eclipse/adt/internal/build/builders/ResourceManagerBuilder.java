@@ -41,7 +41,7 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -81,7 +81,11 @@ public class ResourceManagerBuilder extends BaseBuilder {
 
         // check for existing target marker, in which case we abort.
         // (this means: no SDK, no target, or unresolvable target.)
-        abortOnBadSetup(javaProject);
+        try {
+            abortOnBadSetup(javaProject);
+        } catch (AbortBuildException e) {
+            return null;
+        }
 
         // Check the compiler compliance level, displaying the error message
         // since this is the first builder.
@@ -103,8 +107,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
             markProject(AndroidConstants.MARKER_ADT, errorMessage, IMarker.SEVERITY_ERROR);
             AdtPlugin.printErrorToConsole(project, errorMessage);
 
-            // interrupt the build. The next builders will not run.
-            stopBuild(errorMessage);
+            return null;
         }
 
         // Check that the SDK directory has been setup.
@@ -115,16 +118,14 @@ public class ResourceManagerBuilder extends BaseBuilder {
             markProject(AndroidConstants.MARKER_ADT, Messages.No_SDK_Setup_Error,
                     IMarker.SEVERITY_ERROR);
 
-            // This interrupts the build. The next builders will not run.
-            stopBuild(Messages.No_SDK_Setup_Error);
+            return null;
         }
 
         // check the project has a target
         IAndroidTarget projectTarget = Sdk.getCurrent().getTarget(project);
         if (projectTarget == null) {
             // no target. marker has been set by the container initializer: exit silently.
-            // This interrupts the build. The next builders will not run.
-            stopBuild("Project has no target");
+            return null;
         }
 
         // check the 'gen' source folder is present
@@ -167,15 +168,14 @@ public class ResourceManagerBuilder extends BaseBuilder {
             AdtPlugin.printErrorToConsole(project, message);
             markProject(AndroidConstants.MARKER_ADT, message, IMarker.SEVERITY_ERROR);
 
-            // This interrupts the build. The next builders will not run.
-            stopBuild(message);
+            return null;
         } else if (hasGenSrcFolder == false || genFolderPresent == false) {
             // either there is no 'gen' source folder in the project (older SDK),
             // or the folder does not exist (was deleted, or was a fresh svn checkout maybe.)
 
             // In case we are migrating from an older SDK, we go through the current source
             // folders and delete the generated Java files.
-            ArrayList<IPath> sourceFolders = BaseProjectHelper.getSourceClasspaths(javaProject);
+            List<IPath> sourceFolders = BaseProjectHelper.getSourceClasspaths(javaProject);
             IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
             for (IPath path : sourceFolders) {
                 IResource member = root.findMember(path);

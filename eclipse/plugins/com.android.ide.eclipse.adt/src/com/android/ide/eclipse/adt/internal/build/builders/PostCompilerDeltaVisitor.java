@@ -29,7 +29,7 @@ import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Delta resource visitor looking for changes that will trigger a new packaging of an Android
@@ -74,7 +74,7 @@ public class PostCompilerDeltaVisitor extends BaseDeltaVisitor
     private boolean mMakeFinalPackage = false;
 
     /** List of source folders. */
-    private ArrayList<IPath> mSourceFolders;
+    private List<IPath> mSourceFolders;
 
     private IPath mOutputPath;
 
@@ -91,7 +91,7 @@ public class PostCompilerDeltaVisitor extends BaseDeltaVisitor
      * @param sourceFolders the list of source folders for the project, relative to the workspace.
      * @param outputfolder the output folder of the project.
      */
-    public PostCompilerDeltaVisitor(BaseBuilder builder, ArrayList<IPath> sourceFolders,
+    public PostCompilerDeltaVisitor(BaseBuilder builder, List<IPath> sourceFolders,
             IFolder outputfolder) {
         super(builder);
         mSourceFolders = sourceFolders;

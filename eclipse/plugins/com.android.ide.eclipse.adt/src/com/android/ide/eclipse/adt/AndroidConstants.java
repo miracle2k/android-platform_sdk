@@ -72,6 +72,8 @@ public class AndroidConstants {
     public final static String EXT_JAR = "jar"; //$NON-NLS-1$
     /** Extension of aidl files, i.e. "aidl" */
     public final static String EXT_AIDL = "aidl"; //$NON-NLS-1$
+    /** Extension of Renderscript files, i.e. "rs" */
+    public final static String EXT_RS = "rs"; //$NON-NLS-1$
     /** Extension of native libraries, i.e. "so" */
     public final static String EXT_NATIVE_LIB = "so"; //$NON-NLS-1$
     /** Extension of dex files, i.e. "dex" */

@@ -22,10 +22,10 @@ import com.android.ide.eclipse.adt.AndroidPrintStream;
 import com.android.ide.eclipse.adt.internal.build.AaptExecException;
 import com.android.ide.eclipse.adt.internal.build.AaptParser;
 import com.android.ide.eclipse.adt.internal.build.AaptResultException;
+import com.android.ide.eclipse.adt.internal.build.BuildHelper;
 import com.android.ide.eclipse.adt.internal.build.DexException;
 import com.android.ide.eclipse.adt.internal.build.Messages;
 import com.android.ide.eclipse.adt.internal.build.NativeLibInJarException;
-import com.android.ide.eclipse.adt.internal.build.BuildHelper;
 import com.android.ide.eclipse.adt.internal.build.BuildHelper.ResourceMarker;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
@@ -103,7 +103,7 @@ public class PostCompilerBuilder extends BaseBuilder {
         private boolean mMakeFinalPackage;
 
         private IPath mOutputFolder;
-        private ArrayList<IPath> mSourceFolders;
+        private List<IPath> mSourceFolders;
 
         private ReferencedProjectDeltaVisitor(IJavaProject javaProject) {
             try {
@@ -224,9 +224,6 @@ public class PostCompilerBuilder extends BaseBuilder {
 
             IJavaProject javaProject = JavaCore.create(project);
 
-            // Top level check to make sure the build can move forward.
-            abortOnBadSetup(javaProject);
-
             // get the list of referenced projects.
             List<IProject> javaProjects = ProjectHelper.getReferencedProjects(project);
             List<IJavaProject> referencedJavaProjects = BuildHelper.getJavaProjects(
@@ -239,12 +236,15 @@ public class PostCompilerBuilder extends BaseBuilder {
             refList.addAll(javaProjects);
             allRefProjects = refList.toArray(new IProject[size]);
 
+            // Top level check to make sure the build can move forward.
+            abortOnBadSetup(javaProject);
+
             // get the output folder, this method returns the path with a trailing
             // separator
             IFolder outputFolder = BaseProjectHelper.getOutputFolder(project);
 
             // now we need to get the classpath list
-            ArrayList<IPath> sourceList = BaseProjectHelper.getSourceClasspaths(javaProject);
+            List<IPath> sourceList = BaseProjectHelper.getSourceClasspaths(javaProject);
 
             // First thing we do is go through the resource delta to not
             // lose it if we have to abort the build for any reason.
@@ -596,6 +596,8 @@ public class PostCompilerBuilder extends BaseBuilder {
                 AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, getProject(),
                         "Build Success!");
             }
+        } catch (AbortBuildException e) {
+            return allRefProjects;
         } catch (Exception exception) {
             // try to catch other exception to actually display an error. This will be useful
             // if we get an NPE or something so that we can at least notify the user that something
@@ -634,17 +636,19 @@ public class PostCompilerBuilder extends BaseBuilder {
     }
 
     @Override
-    protected void abortOnBadSetup(IJavaProject javaProject) throws CoreException {
+    protected void abortOnBadSetup(IJavaProject javaProject) throws AbortBuildException {
         super.abortOnBadSetup(javaProject);
+
+        IProject iProject = getProject();
 
         // for this version, we stop on any marker (ie also markers coming from JDT).
         // The depth is set to ZERO to make sure we don't stop on warning on resources.
         // Only markers set directly on the project are considered.
-        IMarker[] markers = javaProject.getProject().findMarkers(null /*type*/,
-                false /*includeSubtypes*/, IResource.DEPTH_ZERO);
+        stopOnMarker(iProject, null /*type*/, IResource.DEPTH_ZERO);
 
-        if (markers.length > 0) {
-            stopBuild("");
-        }
+        // now search for other Precompiler type markers.
+        stopOnMarker(iProject, AndroidConstants.MARKER_AAPT_COMPILE, IResource.DEPTH_ZERO);
+        stopOnMarker(iProject, AndroidConstants.MARKER_AIDL, IResource.DEPTH_ZERO);
+        stopOnMarker(iProject, AndroidConstants.MARKER_ANDROID, IResource.DEPTH_ZERO);
     }
 }
