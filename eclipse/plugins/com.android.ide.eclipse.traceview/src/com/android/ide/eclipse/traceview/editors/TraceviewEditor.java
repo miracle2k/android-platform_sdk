@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.ide.eclipse.traceview.views;
+package com.android.ide.eclipse.traceview.editors;
 
 import com.android.traceview.ColorController;
 import com.android.traceview.DmTraceReader;
@@ -23,8 +23,7 @@ import com.android.traceview.TimeLineView;
 import com.android.traceview.TraceReader;
 import com.android.traceview.TraceUnits;
 
-import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.graphics.Color;
@@ -32,47 +31,70 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.FileDialog;
-import org.eclipse.ui.IActionBars;
-import org.eclipse.ui.part.ViewPart;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorSite;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.ide.FileStoreEditorInput;
+import org.eclipse.ui.part.EditorPart;
+import org.eclipse.ui.part.FileEditorInput;
 
-public class TraceviewView extends ViewPart {
+public class TraceviewEditor extends EditorPart {
 
-    private Action mOpenTraceFileAction;
     private Composite mParent;
     private String mFilename;
     private Composite mContents;
 
     @Override
-    public void createPartControl(Composite parent) {
-        mParent = parent;
-        mContents = null;
-
-        mOpenTraceFileAction = new Action("Open trace file") {
-            @Override
-            public void run() {
-                FileDialog fd = new FileDialog(mParent.getShell(), SWT.OPEN);
-                mFilename = fd.open();
-                if (mFilename != null) {
-                    display();
-                }
-            }
-        };
-
-        IActionBars actionBars = getViewSite().getActionBars();
-
-        // toolbar
-        IToolBarManager toolBarManager = actionBars.getToolBarManager();
-        toolBarManager.add(mOpenTraceFileAction);
+    public void doSave(IProgressMonitor monitor) {
+        // We do not modify the file
     }
 
-    public void display() {
+    @Override
+    public void doSaveAs() {
+        // We do not modify the file
+    }
+
+    @Override
+    public void init(IEditorSite site, IEditorInput input) throws PartInitException {
+        // The contract of init() mentions we need to fail if we can't
+        // understand the input.
+        if (input instanceof FileEditorInput) {
+            // We try to open a file that is part of the current workspace
+            FileEditorInput fileEditorInput = (FileEditorInput) input;
+            mFilename = fileEditorInput.getPath().toOSString();
+            setSite(site);
+            setInput(input);
+            setPartName(input.getName());
+        } else if (input instanceof FileStoreEditorInput) {
+            // We try to open a file that is not part of the current workspace
+            FileStoreEditorInput fileStoreEditorInput = (FileStoreEditorInput) input;
+            mFilename = fileStoreEditorInput.getURI().getPath();
+            setSite(site);
+            setInput(input);
+            setPartName(input.getName());
+        } else {
+            throw new PartInitException("Input is not of type FileEditorInput " + //$NON-NLS-1$
+                    "nor FileStoreEditorInput: " + //$NON-NLS-1$
+                    input == null ? "null" : input.toString()); //$NON-NLS-1$
+        }
+    }
+
+    @Override
+    public boolean isDirty() {
+        return false;
+    }
+
+    @Override
+    public boolean isSaveAsAllowed() {
+        return false;
+    }
+
+    @Override
+    public void createPartControl(Composite parent) {
+        mParent = parent;
         TraceReader reader = new DmTraceReader(mFilename, false);
         reader.getTraceUnits().setTimeScale(TraceUnits.TimeScale.MilliSeconds);
 
-        if (mContents != null) {
-            mContents.dispose();
-        }
         mContents = new Composite(mParent, SWT.NONE);
 
         Display display = mContents.getDisplay();
