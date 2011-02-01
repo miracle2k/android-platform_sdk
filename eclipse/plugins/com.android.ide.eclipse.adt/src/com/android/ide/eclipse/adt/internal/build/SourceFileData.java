@@ -23,21 +23,21 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Data bundle for a given non-java source file. It contains a list of output files and a list
+ * Data for Android-specific source files. It contains a list of output files and a list
  * of dependencies.
  * The source file itself is a implied dependency and is not meant to be in the dependency list.
  */
-public class NonJavaFileBundle {
+public class SourceFileData {
 
     private final IFile mSourceFile;
     private final List<IFile> mOutputFiles = new ArrayList<IFile>();
     private final List<IFile> mDependencyFiles = new ArrayList<IFile>();
 
-    public NonJavaFileBundle(IFile sourceFile) {
+    public SourceFileData(IFile sourceFile) {
         this(sourceFile, null, null);
     }
 
-    public NonJavaFileBundle(IFile sourceFile,
+    SourceFileData(IFile sourceFile,
             List<IFile> outputFiles, List<IFile> dependencyFiles) {
         mSourceFile = sourceFile;
         if (outputFiles != null) {
@@ -48,40 +48,56 @@ public class NonJavaFileBundle {
         }
     }
 
-    public NonJavaFileBundle(IFile sourceFile, IFile outputFile) {
+    SourceFileData(IFile sourceFile, IFile outputFile) {
         mSourceFile = sourceFile;
         if (outputFile != null) {
             mOutputFiles.add(outputFile);
         }
     }
 
+    /**
+     * Returns the source file as an {@link IFile}
+     */
     public IFile getSourceFile() {
         return mSourceFile;
     }
 
+    /**
+     * Returns whether the given file is a dependency for this source file.
+     * <p/>Note that the source file itself is not tested against. Therefore if
+     * {@code file.equals(getSourceFile()} returns {@code true}, this method will return
+     * {@code false}.
+     * @param file the file to check against
+     * @return true if the given file is a dependency for this source file.
+     */
     public boolean dependsOn(IFile file) {
         return mDependencyFiles.contains(file);
     }
 
+    /**
+     * Returns whether the given file is an ouput of this source file.
+     * @param file the file to test.
+     * @return true if the file is an output file.
+     */
     public boolean generated(IFile file) {
         return mOutputFiles.contains(file);
     }
 
-    public void setOutputFiles(List<IFile> outputFiles) {
+    void setOutputFiles(List<IFile> outputFiles) {
         mOutputFiles.clear();
         if (outputFiles != null) {
             mOutputFiles.addAll(outputFiles);
         }
     }
 
-    public void setOutputFile(IFile outputFile) {
+    void setOutputFile(IFile outputFile) {
         mOutputFiles.clear();
         if (outputFile != null) {
             mOutputFiles.add(outputFile);
         }
     }
 
-    public void setDependencyFiles(List<IFile> depFiles) {
+    void setDependencyFiles(List<IFile> depFiles) {
         mDependencyFiles.clear();
         if (depFiles != null) {
             mDependencyFiles.addAll(depFiles);

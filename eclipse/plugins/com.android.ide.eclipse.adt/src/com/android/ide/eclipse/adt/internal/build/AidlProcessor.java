@@ -47,10 +47,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A {@link JavaGenerator} for aidl files.
+ * A {@link SourceProcessor} for aidl files.
  *
  */
-public class AidlGenerator extends JavaGenerator {
+public class AidlProcessor extends SourceProcessor {
 
     private static final String PROPERTY_COMPILE_AIDL = "compileAidl"; //$NON-NLS-1$
 
@@ -75,7 +75,7 @@ public class AidlGenerator extends JavaGenerator {
 //          "^\\s*interface\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?:\\{.*)?$");
 
 
-    public AidlGenerator(IJavaProject javaProject, IFolder genFolder) {
+    public AidlProcessor(IJavaProject javaProject, IFolder genFolder) {
         super(javaProject, genFolder);
     }
 
@@ -136,16 +136,16 @@ public class AidlGenerator extends JavaGenerator {
             String osSourcePath = sourcePath.toOSString();
 
             // look if we already know the output
-            NonJavaFileBundle bundle = getBundle(sourceFile);
-            if (bundle == null) {
+            SourceFileData data = getFileData(sourceFile);
+            if (data == null) {
                 IFile javaFile = getAidlOutputFile(sourceFile, true /*createFolders*/, monitor);
-                bundle = new NonJavaFileBundle(sourceFile, javaFile);
-                addBundle(bundle);
+                data = new SourceFileData(sourceFile, javaFile);
+                addData(data);
             }
 
             // finish to set the command line.
             command[index] = osSourcePath;
-            command[index + 1] = bundle.getOutput().getLocation().toOSString();
+            command[index + 1] = data.getOutput().getLocation().toOSString();
 
             // launch the process
             if (execAidl(builder, project, command, sourceFile, verbose) == false) {
@@ -159,12 +159,12 @@ public class AidlGenerator extends JavaGenerator {
     @Override
     protected void loadOutputAndDependencies() {
         IProgressMonitor monitor = new NullProgressMonitor();
-        Collection<NonJavaFileBundle> bundles = getBundles();
-        for (NonJavaFileBundle bundle : bundles) {
+        Collection<SourceFileData> dataList = getAllFileData();
+        for (SourceFileData data : dataList) {
             try {
-                IFile javaFile = getAidlOutputFile(bundle.getSourceFile(),
+                IFile javaFile = getAidlOutputFile(data.getSourceFile(),
                         false /*createFolders*/, monitor);
-                bundle.setOutputFile(javaFile);
+                data.setOutputFile(javaFile);
             } catch (CoreException e) {
                 // ignore, we're not asking to create the folder so this won't happen anyway.
             }
