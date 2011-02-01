@@ -30,6 +30,8 @@ import javax.swing.JFileChooser;
 import javax.swing.JSplitPane;
 import javax.swing.JButton;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
 import java.awt.image.BufferedImage;
@@ -697,7 +699,25 @@ class ImageEditorPanel extends JPanel {
 
             setOpaque(true);
 
-            setZoom(DEFAULT_ZOOM);
+            // Set dummy size.
+            // Exact size will be set by setZoom() in AncestorListener#ancestorMoved.
+            size = new Dimension(0, 0);
+
+            addAncestorListener(new AncestorListener() {
+                @Override
+                public void ancestorRemoved(AncestorEvent event) {
+                }
+                @Override
+                public void ancestorMoved(AncestorEvent event) {
+                    // Set exactly size.
+                    viewer.setZoom(DEFAULT_ZOOM);
+                    viewer.removeAncestorListener(this);
+                }
+                @Override
+                public void ancestorAdded(AncestorEvent event) {
+                }
+            });
+
             findPatches();
 
             addMouseListener(new MouseAdapter() {
@@ -843,7 +863,7 @@ class ImageEditorPanel extends JPanel {
             }
 
             int left = (getWidth() - size.width) / 2;
-            int top = (helpPanel.getHeight() + getHeight() - size.height) / 2;
+            int top = helpPanel.getHeight() + (getHeight() - size.height) / 2;
 
             x = (x - left) / zoom;
             y = (y - top) / zoom;
@@ -869,7 +889,7 @@ class ImageEditorPanel extends JPanel {
             lastPositionY = y;
 
             int left = (getWidth() - size.width) / 2;
-            int top = (helpPanel.getHeight() + getHeight() - size.height) / 2;
+            int top = helpPanel.getHeight() + (getHeight() - size.height) / 2;
 
             x = (x - left) / zoom;
             y = (y - top) / zoom;
@@ -903,7 +923,7 @@ class ImageEditorPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
             int x = (getWidth() - size.width) / 2;
-            int y = (helpPanel.getHeight() + getHeight() - size.height) / 2;
+            int y = helpPanel.getHeight() + (getHeight() - size.height) / 2;
 
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setColor(BACK_COLOR);
@@ -1008,7 +1028,11 @@ class ImageEditorPanel extends JPanel {
             int height = image.getHeight();
 
             zoom = value;
-            size = new Dimension(width * zoom, height * zoom);
+            if (size.height == 0 || (getHeight() - size.height) == 0) {
+                size = new Dimension(width * zoom, height * zoom + helpPanel.getHeight());
+            } else {
+                size = new Dimension(width * zoom, height * zoom);
+            }
 
             setSize(size);
             ImageEditorPanel.this.validate();
