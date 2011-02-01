@@ -1,14 +1,18 @@
 #!/bin/bash
 
-# This file is included by development.git/tools/build/patch_windows_sdk.sh.
+# This file is run by development/tools/build/windows_sdk.mk right
+# after development.git/tools/build/patch_windows_sdk.sh.
 # Please see the details in the other file.
 
+set -e # any error stops the build
 
 # Verbose by default. Use -q to make more silent.
-V="-v"
+V=""
 if [[ "$1" == "-q" ]]; then
-  V=""
   shift
+else
+  echo "Win SDK: $0 $*"
+  set -x # show bash commands; no need for V=-v
 fi
 
 TEMP_SDK_DIR=$1
