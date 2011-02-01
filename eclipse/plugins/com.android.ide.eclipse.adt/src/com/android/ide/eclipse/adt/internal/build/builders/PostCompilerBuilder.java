@@ -446,7 +446,6 @@ public class PostCompilerBuilder extends BaseBuilder {
                     // remove some aapt_package only markers.
                     removeMarkersFromContainer(project, AndroidConstants.MARKER_AAPT_PACKAGE);
 
-                    // need to figure out some path before we can execute aapt;
                     try {
                         helper.packageResources(manifestFile, libProjects, null /*resfilter*/,
                                 0 /*versionCode */, osBinPath,
