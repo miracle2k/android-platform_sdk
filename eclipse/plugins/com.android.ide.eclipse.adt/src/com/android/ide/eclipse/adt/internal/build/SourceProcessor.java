@@ -45,22 +45,19 @@ import java.util.Set;
  * It provides management for modified source file list, deleted source file list, reconciliation
  * of previous lists, storing the current state of the build.
  *
- * It also provides a base class for delta visitor that should be customized for each Generator
- * extending this class.
- *
  */
-public abstract class JavaGenerator {
+public abstract class SourceProcessor {
 
     public final static int COMPILE_STATUS_NONE = 0;
     public final static int COMPILE_STATUS_CODE = 0x1;
     public final static int COMPILE_STATUS_RES = 0x2;
 
     /** List of all source files, their dependencies, and their output. */
-    private final Map<IFile, NonJavaFileBundle> mFiles = new HashMap<IFile, NonJavaFileBundle>();
+    private final Map<IFile, SourceFileData> mFiles = new HashMap<IFile, SourceFileData>();
 
     private final IJavaProject mJavaProject;
     private final IFolder mGenFolder;
-    private final GeneratorDeltaVisitor mDeltaVisitor;
+    private final SourceChangeHandler mDeltaVisitor;
 
     /** List of source files pending compilation at the next build */
     private final List<IFile> mToCompile = new ArrayList<IFile>();
@@ -68,8 +65,8 @@ public abstract class JavaGenerator {
     /** List of removed source files pending cleaning at the next build. */
     private final List<IFile> mRemoved = new ArrayList<IFile>();
 
-    protected JavaGenerator(IJavaProject javaProject, IFolder genFolder,
-            GeneratorDeltaVisitor deltaVisitor) {
+    protected SourceProcessor(IJavaProject javaProject, IFolder genFolder,
+            SourceChangeHandler deltaVisitor) {
         mJavaProject = javaProject;
         mGenFolder = genFolder;
         mDeltaVisitor = deltaVisitor;
@@ -94,21 +91,21 @@ public abstract class JavaGenerator {
         }
     }
 
-    protected JavaGenerator(IJavaProject javaProject, IFolder genFolder) {
-        this(javaProject, genFolder, new GeneratorDeltaVisitor());
+    protected SourceProcessor(IJavaProject javaProject, IFolder genFolder) {
+        this(javaProject, genFolder, new SourceChangeHandler());
     }
 
 
     /**
-     * Returns whether the given file is an output of this generator by return the source
+     * Returns whether the given file is an output of this processor by return the source
      * file that generated it.
      * @param file the file to test.
      * @return the source file that generated the given file or null.
      */
     IFile isOutput(IFile file) {
-        for (NonJavaFileBundle bundle : mFiles.values()) {
-            if (bundle.generated(file)) {
-                return bundle.getSourceFile();
+        for (SourceFileData data : mFiles.values()) {
+            if (data.generated(file)) {
+                return data.getSourceFile();
             }
         }
 
@@ -124,28 +121,28 @@ public abstract class JavaGenerator {
      */
     List<IFile> isDependency(IFile file) {
         ArrayList<IFile> files = new ArrayList<IFile>();
-        for (NonJavaFileBundle bundle : mFiles.values()) {
-            if (bundle.dependsOn(file)) {
-                files.add(bundle.getSourceFile());
+        for (SourceFileData data : mFiles.values()) {
+            if (data.dependsOn(file)) {
+                files.add(data.getSourceFile());
             }
         }
 
         return files;
     }
 
-    void addBundle(NonJavaFileBundle bundle) {
-        mFiles.put(bundle.getSourceFile(), bundle);
+    void addData(SourceFileData data) {
+        mFiles.put(data.getSourceFile(), data);
     }
 
-    NonJavaFileBundle getBundle(IFile file) {
+    SourceFileData getFileData(IFile file) {
         return mFiles.get(file);
     }
 
-    Collection<NonJavaFileBundle> getBundles() {
+    Collection<SourceFileData> getAllFileData() {
         return mFiles.values();
     }
 
-    public final GeneratorDeltaVisitor getDeltaVisitor() {
+    public final SourceChangeHandler getChangeHandler() {
         return mDeltaVisitor;
     }
 
@@ -190,7 +187,7 @@ public abstract class JavaGenerator {
     }
 
     /**
-     * Returns the extension of the source files handled by this generator.
+     * Returns the extension of the source files handled by this processor.
      * @return
      */
     protected abstract String getExtension();
@@ -231,13 +228,13 @@ public abstract class JavaGenerator {
         // Remove the files created from source files that have been removed.
         for (IFile sourceFile : mRemoved) {
             // look if we already know the output
-            NonJavaFileBundle bundle = getBundle(sourceFile);
-            if (bundle != null) {
-                doRemoveFiles(bundle);
+            SourceFileData data = getFileData(sourceFile);
+            if (data != null) {
+                doRemoveFiles(data);
             }
         }
 
-        // remove the associated bundles.
+        // remove the associated file data.
         for (IFile removedFile : mRemoved) {
             mFiles.remove(removedFile);
         }
@@ -261,13 +258,13 @@ public abstract class JavaGenerator {
     /**
      * Returns the type of compilation. It can be any of (in combination too):
      * <p/>
-     * {@link #COMPILE_STATUS_CODE} means this generator created source files.
-     * {@link #COMPILE_STATUS_RES} means this generator created resources.
+     * {@link #COMPILE_STATUS_CODE} means this processor created source code files.
+     * {@link #COMPILE_STATUS_RES} means this process created resources.
      */
     protected abstract int getCompilationType();
 
-    protected void doRemoveFiles(NonJavaFileBundle bundle) throws CoreException {
-        List<IFile> outputFiles = bundle.getOutputFiles();
+    protected void doRemoveFiles(SourceFileData data) throws CoreException {
+        List<IFile> outputFiles = data.getOutputFiles();
         for (IFile outputFile : outputFiles) {
             if (outputFile.exists()) {
                 outputFile.getLocation().toFile().delete();
@@ -346,10 +343,10 @@ public abstract class JavaGenerator {
                switch (r.getType()) {
                    case IResource.FILE:
                        // if this a file, check that the file actually exist
-                       // and that it's the type of of file that's used in this generator
+                       // and that it's the type of of file that's used in this processor
                        if (r.exists() &&
                                getExtension().equalsIgnoreCase(r.getFileExtension())) {
-                           mFiles.put((IFile) r, new NonJavaFileBundle((IFile) r));
+                           mFiles.put((IFile) r, new SourceFileData((IFile) r));
                        }
                        break;
                    case IResource.FOLDER:
@@ -373,7 +370,7 @@ public abstract class JavaGenerator {
      * delta visitor
      * @param visitor the delta visitor.
      */
-    private void mergeFileModifications(GeneratorDeltaVisitor visitor) {
+    private void mergeFileModifications(SourceChangeHandler visitor) {
         Set<IFile> toRemove = visitor.getRemovedFiles();
         Set<IFile> toCompile = visitor.getFilesToCompile();
 

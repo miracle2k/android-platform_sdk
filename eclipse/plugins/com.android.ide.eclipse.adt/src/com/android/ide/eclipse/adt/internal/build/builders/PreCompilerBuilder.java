@@ -19,10 +19,10 @@ package com.android.ide.eclipse.adt.internal.build.builders;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
 import com.android.ide.eclipse.adt.internal.build.AaptParser;
-import com.android.ide.eclipse.adt.internal.build.AidlGenerator;
-import com.android.ide.eclipse.adt.internal.build.JavaGenerator;
+import com.android.ide.eclipse.adt.internal.build.AidlProcessor;
+import com.android.ide.eclipse.adt.internal.build.SourceProcessor;
 import com.android.ide.eclipse.adt.internal.build.Messages;
-import com.android.ide.eclipse.adt.internal.build.RenderScriptGenerator;
+import com.android.ide.eclipse.adt.internal.build.RenderScriptProcessor;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs.BuildVerbosity;
 import com.android.ide.eclipse.adt.internal.project.AndroidManifestHelper;
@@ -85,7 +85,7 @@ public class PreCompilerBuilder extends BaseBuilder {
      */
     private boolean mMustCompileResources = false;
 
-    private final List<JavaGenerator> mGeneratorList = new ArrayList<JavaGenerator>();
+    private final List<SourceProcessor> mProcessors = new ArrayList<SourceProcessor>();
 
     /** cache of the java package defined in the manifest */
     private String mManifestPackage;
@@ -232,8 +232,8 @@ public class PreCompilerBuilder extends BaseBuilder {
 
                 mMustCompileResources = true;
 
-                for (JavaGenerator generator : mGeneratorList) {
-                    generator.prepareFullBuild(project);
+                for (SourceProcessor processor : mProcessors) {
+                    processor.prepareFullBuild(project);
                 }
             } else {
                 AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
@@ -247,17 +247,17 @@ public class PreCompilerBuilder extends BaseBuilder {
                 if (delta == null) {
                     mMustCompileResources = true;
 
-                    for (JavaGenerator generator : mGeneratorList) {
-                        generator.prepareFullBuild(project);
+                    for (SourceProcessor processor : mProcessors) {
+                        processor.prepareFullBuild(project);
                     }
                 } else {
-                    dv = new PreCompilerDeltaVisitor(this, sourceFolderPathList, mGeneratorList);
+                    dv = new PreCompilerDeltaVisitor(this, sourceFolderPathList, mProcessors);
                     delta.accept(dv);
 
                     // record the state
                     mMustCompileResources |= dv.getCompileResources();
-                    for (JavaGenerator generator : mGeneratorList) {
-                        generator.doneVisiting(project);
+                    for (SourceProcessor processor : mProcessors) {
+                        processor.doneVisiting(project);
                     }
 
                     // get the java package from the visitor
@@ -461,31 +461,31 @@ public class PreCompilerBuilder extends BaseBuilder {
                 // force a clean
                 doClean(project, monitor);
                 mMustCompileResources = true;
-                for (JavaGenerator generator : mGeneratorList) {
-                    generator.prepareFullBuild(project);
+                for (SourceProcessor processor : mProcessors) {
+                    processor.prepareFullBuild(project);
                 }
 
                 saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES , mMustCompileResources);
             }
 
-            // run the Java generators
-            int generatorStatus = JavaGenerator.COMPILE_STATUS_NONE;
-            for (JavaGenerator generator : mGeneratorList) {
+            // run the source processors
+            int processorStatus = SourceProcessor.COMPILE_STATUS_NONE;
+            for (SourceProcessor processor : mProcessors) {
                 try {
-                    generatorStatus |= generator.compileFiles(this,
+                    processorStatus |= processor.compileFiles(this,
                             project, projectTarget, sourceFolderPathList, monitor);
                 } catch (Throwable t) {
                 }
             }
 
-            // if a generator created some resources file, force recompilation of the resources.
-            if ((generatorStatus & JavaGenerator.COMPILE_STATUS_RES) != 0) {
+            // if a processor created some resources file, force recompilation of the resources.
+            if ((processorStatus & SourceProcessor.COMPILE_STATUS_RES) != 0) {
                 mMustCompileResources = true;
                 // save the current state before attempting the compilation
                 saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES , mMustCompileResources);
             }
 
-            // handle the resources, after the java generators are run since some (renderscript)
+            // handle the resources, after the processors are run since some (renderscript)
             // generate resources.
             boolean compiledTheResources = mMustCompileResources;
             if (mMustCompileResources) {
@@ -493,7 +493,7 @@ public class PreCompilerBuilder extends BaseBuilder {
                 saveProjectBooleanProperty(PROPERTY_COMPILE_RESOURCES , false);
             }
 
-            if (generatorStatus == JavaGenerator.COMPILE_STATUS_NONE &&
+            if (processorStatus == SourceProcessor.COMPILE_STATUS_NONE &&
                     compiledTheResources == false) {
                 AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,
                         Messages.Nothing_To_Compile);
@@ -552,11 +552,11 @@ public class PreCompilerBuilder extends BaseBuilder {
 
         IJavaProject javaProject = JavaCore.create(project);
 
-        // load the java generators
-        JavaGenerator aidlGenerator = new AidlGenerator(javaProject, mGenFolder);
-        mGeneratorList.add(aidlGenerator);
-        JavaGenerator renderScriptGenerator = new RenderScriptGenerator(javaProject, mGenFolder);
-        mGeneratorList.add(renderScriptGenerator);
+        // load the source processors
+        SourceProcessor aidlProcessor = new AidlProcessor(javaProject, mGenFolder);
+        mProcessors.add(aidlProcessor);
+        SourceProcessor renderScriptProcessor = new RenderScriptProcessor(javaProject, mGenFolder);
+        mProcessors.add(renderScriptProcessor);
 
         mDerivedProgressMonitor = new DerivedProgressMonitor(mGenFolder);
     }
