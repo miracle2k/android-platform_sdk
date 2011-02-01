@@ -18,6 +18,9 @@ package com.android.ide.common.api;
 
 import com.android.annotations.Nullable;
 
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,7 +51,7 @@ import java.util.Map;
  * to adjust your code for the next tools release.</b>
  * </p>
  */
-public abstract class MenuAction {
+public abstract class MenuAction implements Comparable<MenuAction> {
 
     /**
      * The unique id of the action.
@@ -59,6 +62,84 @@ public abstract class MenuAction {
      * The UI-visible title of the action.
      */
     private final String mTitle;
+
+    /** A URL pointing to an icon, or null */
+    private URL mIconUrl;
+
+    /**
+     * The sorting priority of this item; actions can be sorted according to these
+     */
+    protected int mSortPriority;
+
+    // Factories
+
+    public static MenuAction createSeparator() {
+        return new Separator(sNextSortPriority++);
+    }
+
+    public static MenuAction createSeparator(int sortPriority) {
+        return new Separator(sortPriority);
+    }
+
+
+    public static MenuAction createAction(String id, String title, String groupId,
+            IMenuCallback callback) {
+        MenuAction.Action action = new MenuAction.Action(id, title, groupId, callback);
+        action.setSortPriority(sNextSortPriority++);
+        return action;
+    }
+
+    public static MenuAction createAction(String id, String title, String groupId,
+            IMenuCallback callback, URL iconUrl, int sortPriority) {
+        MenuAction action = new MenuAction.Action(id, title, groupId, callback);
+        action.setIconUrl(iconUrl);
+        action.setSortPriority(sortPriority);
+        return action;
+    }
+
+    public static MenuAction createToggle(String id, String title, boolean isChecked,
+            IMenuCallback callback) {
+        Toggle action = new Toggle(id, title, isChecked, callback);
+        action.setSortPriority(sNextSortPriority++);
+        return action;
+    }
+
+    public static MenuAction createToggle(String id, String title, boolean isChecked,
+            IMenuCallback callback, URL iconUrl, int sortPriority) {
+        Toggle toggle = new Toggle(id, title, isChecked, callback);
+        toggle.setIconUrl(iconUrl);
+        toggle.setSortPriority(sortPriority);
+        return toggle;
+    }
+
+    public static MenuAction createChoices(String id, String title, String groupId,
+            IMenuCallback callback, List<String> titles, List<URL> iconUrls, List<String> ids,
+            String current) {
+        OrderedChoices action = new OrderedChoices(id, title, groupId, callback, titles, iconUrls,
+                ids, current);
+        action.setSortPriority(sNextSortPriority++);
+        return action;
+    }
+
+    public static MenuAction createChoices(String id, String title, String groupId,
+            IMenuCallback callback, List<String> titles, List<URL> iconUrls, List<String> ids,
+            String current, URL iconUrl, int sortPriority) {
+        OrderedChoices choices = new OrderedChoices(id, title, groupId, callback, titles, iconUrls,
+                ids, current);
+        choices.setIconUrl(iconUrl);
+        choices.setSortPriority(sortPriority);
+        return choices;
+    }
+
+    public static MenuAction createChoices(String id, String title, String groupId,
+            IMenuCallback callback, ChoiceProvider provider,
+            String current, URL iconUrl, int sortPriority) {
+        OrderedChoices choices = new DelayedOrderedChoices(id, title, groupId, callback,
+                current, provider);
+        choices.setIconUrl(iconUrl);
+        choices.setSortPriority(sortPriority);
+        return choices;
+    }
 
     /**
      * Creates a new {@link MenuAction} with the given id and the given title.
@@ -114,6 +195,53 @@ public abstract class MenuAction {
         int h = mId == null ? 0 : mId.hashCode();
         h = h ^ (mTitle == null ? 0 : mTitle.hashCode());
         return h;
+    }
+
+    /**
+     * Gets a URL pointing to an icon to use for this action, if any.
+     *
+     * @return a URL pointing to an icon to use for this action, or null
+     */
+    public URL getIconUrl() {
+        return mIconUrl;
+    }
+
+    /**
+     * Sets a URL pointing to an icon to use for this action, if any.
+     *
+     * @param iconUrl a URL pointing to an icon to use for this action, or null
+     */
+    public void setIconUrl(URL iconUrl) {
+        mIconUrl = iconUrl;
+    }
+
+    /**
+     * Sets a priority used for sorting this action
+     *
+     * @param sortPriority a priority used for sorting this action
+     */
+    public void setSortPriority(int sortPriority) {
+        mSortPriority = sortPriority;
+    }
+
+    private static int sNextSortPriority = 0;
+
+    /**
+     * Return a priority used for sorting this action
+     *
+     * @return a priority used for sorting this action
+     */
+    public int getSortPriority() {
+        return mSortPriority;
+    }
+
+    // Implements Comparable<MenuAciton>
+    public int compareTo(MenuAction other) {
+        if (mSortPriority != other.mSortPriority) {
+            return mSortPriority - other.mSortPriority;
+        }
+
+        return mTitle.compareTo(other.mTitle);
     }
 
     /**
@@ -223,6 +351,15 @@ public abstract class MenuAction {
         }
     }
 
+    /** A separator to display between actions */
+    public static class Separator extends MenuAction {
+        /** Construct using the factory {@link #createSeparator(int)} */
+        private Separator(int sortPriority) {
+            super("_separator", ""); //$NON-NLS-1$ //$NON-NLS-2$
+            mSortPriority = sortPriority;
+        }
+    }
+
     /**
      * A toggle is a simple on/off action, displayed as an item in a context menu
      * with a check mark if the item is checked.
@@ -234,7 +371,7 @@ public abstract class MenuAction {
         /**
          * True if the item is displayed with a check mark.
          */
-        final private boolean mIsChecked;
+        private final boolean mIsChecked;
 
         /**
          * Creates a new immutable toggle action.
@@ -293,6 +430,100 @@ public abstract class MenuAction {
     }
 
     /**
+     * Like {@link Choices}, but with an explicit ordering among the children, and with
+     * optional icons on each child choice
+     */
+    public static class OrderedChoices extends Action {
+        protected List<String> mTitles;
+        protected List<URL> mIconUrls;
+        protected List<String> mIds;
+
+        /**
+         * One or more id for the checked choice(s) that will be check marked.
+         * Can be null. Can be an id not present in the choices map.
+         */
+        protected final String mCurrent;
+
+        public OrderedChoices(String id, String title, String groupId, IMenuCallback callback,
+                List<String> titles, List<URL> iconUrls, List<String> ids, String current) {
+            super(id, title, groupId, callback);
+            mTitles = titles;
+            mIconUrls = iconUrls;
+            mIds = ids;
+            mCurrent = current;
+        }
+
+        public List<URL> getIconUrls() {
+            return mIconUrls;
+        }
+
+        public List<String> getIds() {
+            return mIds;
+        }
+
+        public List<String> getTitles() {
+            return mTitles;
+        }
+
+        public String getCurrent() {
+            return mCurrent;
+        }
+    }
+
+    /** Provides the set of choices associated with an {@link OrderedChoices} object
+        when they are needed. Useful for lazy initialization of context menus and popup menus
+        until they are actually needed. */
+    public interface ChoiceProvider {
+        /**
+         * Adds in the needed titles, iconUrls (if any) and ids.
+         *
+         * @param titles a list of titles that the provider should append to
+         * @param iconUrls a list of icon URLs that the provider should append to
+         * @param ids a list of ids that the provider should append to
+         */
+        public void addChoices(List<String> titles, List<URL> iconUrls, List<String> ids);
+    }
+
+    /** Like {@link OrderedChoices}, but the set of choices is computed lazily */
+    private static class DelayedOrderedChoices extends OrderedChoices {
+        private final ChoiceProvider mProvider;
+
+        public DelayedOrderedChoices(String id, String title, String groupId,
+                IMenuCallback callback, String current, ChoiceProvider provider) {
+            super(id, title, groupId, callback, null, null, null, current);
+            mProvider = provider;
+        }
+
+        private void ensureInitialized() {
+            if (mTitles == null) {
+                mTitles = new ArrayList<String>();
+                mIconUrls = new ArrayList<URL>();
+                mIds = new ArrayList<String>();
+
+                mProvider.addChoices(mTitles, mIconUrls, mIds);
+            }
+        }
+
+        @Override
+        public List<URL> getIconUrls() {
+            ensureInitialized();
+            return mIconUrls;
+        }
+
+        @Override
+        public List<String> getIds() {
+            ensureInitialized();
+            return mIds;
+        }
+
+        @Override
+        public List<String> getTitles() {
+            ensureInitialized();
+            return mTitles;
+        }
+    }
+
+    /**
      * A "choices" is a one-out-of-many-choices action, displayed as a sub-menu with one or more
      * items, with either zero or more of them being checked.
      * <p/>
@@ -309,6 +540,7 @@ public abstract class MenuAction {
          * Special value which will insert a separator in the choices' submenu.
          */
         public final static String SEPARATOR = "----";
+
         /**
          * Character used to split multiple checked choices, see {@link #getCurrent()}.
          * The pipe character "|" is used, to natively match Android resource flag separators.

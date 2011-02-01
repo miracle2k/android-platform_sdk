@@ -1360,7 +1360,7 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
     public void stopEditors() {
         sAndroidLogo.dispose();
 
-        IconFactory.getInstance().Dispose();
+        IconFactory.getInstance().dispose();
 
         // Remove the resource listener that handles compiled resources.
         IWorkspace ws = ResourcesPlugin.getWorkspace();

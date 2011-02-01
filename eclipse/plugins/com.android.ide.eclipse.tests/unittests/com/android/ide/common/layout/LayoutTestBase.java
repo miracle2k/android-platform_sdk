@@ -238,6 +238,12 @@ public abstract class LayoutTestBase extends TestCase {
             fail("Not supported in tests yet");
             return null;
         }
+
+        public String[] displayMarginInput(String all, String left, String right, String top,
+                String bottom) {
+            fail("Not supported in tests yet");
+            return null;
+        }
     }
 
     public void testDummy() {

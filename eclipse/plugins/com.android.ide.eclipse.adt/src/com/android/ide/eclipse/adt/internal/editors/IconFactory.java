@@ -31,7 +31,9 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.plugin.AbstractUIPlugin;
 
+import java.net.URL;
 import java.util.HashMap;
 
 /**
@@ -40,7 +42,6 @@ import java.util.HashMap;
  * Icons are kept here and reused.
  */
 public class IconFactory {
-
     public static final int COLOR_RED     = SWT.COLOR_DARK_RED;
     public static final int COLOR_GREEN   = SWT.COLOR_DARK_GREEN;
     public static final int COLOR_BLUE    = SWT.COLOR_DARK_BLUE;
@@ -53,6 +54,7 @@ public class IconFactory {
     private static IconFactory sInstance;
 
     private HashMap<String, Image> mIconMap = new HashMap<String, Image>();
+    private HashMap<URL, Image> mUrlMap = new HashMap<URL, Image>();
     private HashMap<String, ImageDescriptor> mImageDescMap = new HashMap<String, ImageDescriptor>();
 
     private IconFactory() {
@@ -65,7 +67,7 @@ public class IconFactory {
         return sInstance;
     }
 
-    public void Dispose() {
+    public void dispose() {
         // Dispose icons
         for (Image icon : mIconMap.values()) {
             // The map can contain null values
@@ -74,6 +76,13 @@ public class IconFactory {
             }
         }
         mIconMap.clear();
+        for (Image icon : mUrlMap.values()) {
+            // The map can contain null values
+            if (icon != null) {
+                icon.dispose();
+            }
+        }
+        mUrlMap.clear();
     }
 
     /**
@@ -147,7 +156,7 @@ public class IconFactory {
         String key = Character.toString((char) shape) + Integer.toString(color) + osName;
         ImageDescriptor id = mImageDescMap.get(key);
         if (id == null && !mImageDescMap.containsKey(key)) {
-            id = AdtPlugin.imageDescriptorFromPlugin(
+            id = AbstractUIPlugin.imageDescriptorFromPlugin(
                     AdtPlugin.PLUGIN_ID,
                     String.format("/icons/%1$s.png", osName)); //$NON-NLS-1$
 
@@ -160,6 +169,23 @@ public class IconFactory {
             mImageDescMap.put(key, id);
         }
         return id;
+    }
+
+    /**
+     * Returns the image indicated by the given URL
+     *
+     * @param url the url to the image resources
+     * @return the image for the url, or null if it cannot be initialized
+     */
+    public Image getIcon(URL url) {
+        Image image = mUrlMap.get(url);
+        if (image == null) {
+            ImageDescriptor descriptor = ImageDescriptor.createFromURL(url);
+            image = descriptor.createImage();
+            mUrlMap.put(url, image);
+        }
+
+        return image;
     }
 
     /**

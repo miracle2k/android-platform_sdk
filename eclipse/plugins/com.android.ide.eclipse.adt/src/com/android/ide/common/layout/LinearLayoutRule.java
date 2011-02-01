@@ -17,9 +17,12 @@
 package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_BASELINE_ALIGNED;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ORIENTATION;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_WEIGHT_SUM;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_HORIZONTAL;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_VERTICAL;
 
@@ -39,7 +42,10 @@ import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.ide.common.api.IViewMetadata.FillPreference;
 
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -47,42 +53,57 @@ import java.util.List;
  * classes.
  */
 public class LinearLayoutRule extends BaseLayoutRule {
+    private static final String ACTION_ORIENTATION = "_orientation"; //$NON-NLS-1$
+    private static final String ACTION_WEIGHT = "_weight"; //$NON-NLS-1$
+    private static final String ACTION_DISTRIBUTE = "_distribute"; //$NON-NLS-1$
+    private static final String ACTION_BASELINE = "_baseline"; //$NON-NLS-1$
+
+    private static final URL ICON_HORIZONTAL =
+        LinearLayoutRule.class.getResource("hlinear.png"); //$NON-NLS-1$
+    private static final URL ICON_VERTICAL =
+        LinearLayoutRule.class.getResource("vlinear.png"); //$NON-NLS-1$
+    private static final URL ICON_WEIGHTS =
+        LinearLayoutRule.class.getResource("weights.png"); //$NON-NLS-1$
+    private static final URL ICON_DISTRIBUTE =
+        LinearLayoutRule.class.getResource("distribute.png"); //$NON-NLS-1$
+    private static final URL ICON_BASELINE =
+        LinearLayoutRule.class.getResource("baseline.png"); //$NON-NLS-1$
+
     /**
      * Add an explicit Orientation toggle to the context menu.
      */
     @Override
     public List<MenuAction> getContextMenu(final INode selectedNode) {
         if (supportsOrientation()) {
-            String curr_orient = selectedNode.getStringAttr(ANDROID_URI, ATTR_ORIENTATION);
-            if (curr_orient == null || curr_orient.length() == 0) {
-                curr_orient = VALUE_HORIZONTAL;
-            }
-
-            IMenuCallback onChange = new IMenuCallback() {
-                public void action(MenuAction action, final String valueId, Boolean newValue) {
-                    String actionId = action.getId();
-                    final INode node = selectedNode;
-
-                    if (actionId.equals("_orientation")) { //$NON-NLS-1$
-                        node.editXml("Change LinearLayout " + ATTR_ORIENTATION, new INodeHandler() {
-                            public void handle(INode n) {
-                                node.setAttribute(ANDROID_URI, ATTR_ORIENTATION, valueId);
-                            }
-                        });
-                    }
-                }
-            };
-
+            String current = getCurrentOrientation(selectedNode);
+            IMenuCallback onChange = new PropertyCallback(Collections.singletonList(selectedNode),
+                    "Change LinearLayout Orientation",
+                    ANDROID_URI, ATTR_ORIENTATION);
             return concatenate(super.getContextMenu(selectedNode),
-                new MenuAction.Choices("_orientation", "Orientation",  //$NON-NLS-1$
+                new MenuAction.Choices(ACTION_ORIENTATION, "Orientation",  //$NON-NLS-1$
                     mapify(
                         "horizontal", "Horizontal",                    //$NON-NLS-1$
                         "vertical", "Vertical"                         //$NON-NLS-1$
                     ),
-                    curr_orient, onChange));
+                    current, onChange));
         } else {
             return super.getContextMenu(selectedNode);
         }
+    }
+
+    /**
+     * Returns the current orientation, regardless of whether it has been defined in XML
+     *
+     * @param node The LinearLayout to look up the orientation for
+     * @return "horizontal" or "vertical" depending on the current orientation of the
+     *         linear layout
+     */
+    private String getCurrentOrientation(final INode node) {
+        String orientation = node.getStringAttr(ANDROID_URI, ATTR_ORIENTATION);
+        if (orientation == null || orientation.length() == 0) {
+            orientation = VALUE_HORIZONTAL;
+        }
+        return orientation;
     }
 
     /**
@@ -103,6 +124,113 @@ public class LinearLayoutRule extends BaseLayoutRule {
      */
     protected boolean supportsOrientation() {
         return true;
+    }
+
+    @Override
+    public void addLayoutActions(List<MenuAction> actions, final INode parentNode,
+            final List<? extends INode> children) {
+        super.addLayoutActions(actions, parentNode, children);
+        if (supportsOrientation()) {
+            actions.add(MenuAction.createChoices(
+                    ACTION_ORIENTATION, "Orientation",  //$NON-NLS-1$
+                    null,
+                    new PropertyCallback(Collections.singletonList(parentNode),
+                            "Change LinearLayout Orientation",
+                            ANDROID_URI, ATTR_ORIENTATION),
+                    Arrays.<String>asList("Set Horizontal Orientation", "Set Vertical Orientation"),
+                    Arrays.<URL>asList(ICON_HORIZONTAL, ICON_VERTICAL),
+                    Arrays.<String>asList("horizontal", "vertical"),
+                    getCurrentOrientation(parentNode),
+                    null /* icon */,
+                    -10
+            ));
+        }
+        if (!isVertical(parentNode)) {
+            String current = parentNode.getStringAttr(ANDROID_URI, ATTR_BASELINE_ALIGNED);
+            boolean isAligned =  current == null || Boolean.valueOf(current);
+            actions.add(MenuAction.createToggle(null, "Toggle Baseline Alignment",
+                    isAligned,
+                    new PropertyCallback(Collections.singletonList(parentNode),
+                            "Change Baseline Alignment",
+                            ANDROID_URI, ATTR_BASELINE_ALIGNED), // TODO: Also set index?
+                    ICON_BASELINE, 38));
+        }
+
+        // Gravity
+        if (children != null && children.size() > 0) {
+            actions.add(MenuAction.createSeparator(35));
+
+            // Margins
+            actions.add(createMarginAction(parentNode, children));
+
+            // Gravity
+            actions.add(createGravityAction(children));
+
+            // Weights
+            IMenuCallback actionCallback = new IMenuCallback() {
+                public void action(final MenuAction action, final String valueId,
+                        final Boolean newValue) {
+                    parentNode.editXml("Change Weight", new INodeHandler() {
+                        public void handle(INode n) {
+                            if (action.getId().equals(ACTION_WEIGHT)) {
+                                String weight =
+                                    children.get(0).getStringAttr(ANDROID_URI, ATTR_LAYOUT_WEIGHT);
+                                if (weight == null || weight.length() == 0) {
+                                    weight = "0.0"; //$NON-NLS-1$
+                                }
+                                weight = mRulesEngine.displayInput("Enter Weight Value:", weight,
+                                        null);
+                                if (weight != null) {
+                                    for (INode child : children) {
+                                        child.setAttribute(ANDROID_URI,
+                                                ATTR_LAYOUT_WEIGHT, weight);
+                                    }
+                                }
+                            } else if (action.getId().equals(ACTION_DISTRIBUTE)) {
+                                // Any XML to get weight sum?
+                                String weightSum = parentNode.getStringAttr(ANDROID_URI,
+                                        ATTR_WEIGHT_SUM);
+                                double sum = -1.0;
+                                if (weightSum != null) {
+                                    // Distribute
+                                    try {
+                                        sum = Double.parseDouble(weightSum);
+                                    } catch (NumberFormatException nfe) {
+                                        // Just keep using the default
+                                    }
+                                }
+                                INode[] targets = parentNode.getChildren();
+                                int numTargets = targets.length;
+                                double share;
+                                if (sum <= 0.0) {
+                                    // The sum will be computed from the children, so just
+                                    // use arbitrary amount
+                                    share = 1.0;
+                                } else {
+                                    share = sum / numTargets;
+                                }
+                                String value;
+                                if (share != (int) share) {
+                                    value = String.format("%.2f", (float) share); //$NON-NLS-1$
+                                } else {
+                                    value = Integer.toString((int) share);
+                                }
+                                for (INode target : targets) {
+                                    target.setAttribute(ANDROID_URI, ATTR_LAYOUT_WEIGHT, value);
+                                }
+                            } else {
+                                assert action.getId().equals(ACTION_BASELINE);
+                            }
+                        }
+                    });
+                }
+            };
+            actions.add(MenuAction.createSeparator(50));
+            actions.add(MenuAction.createAction(ACTION_DISTRIBUTE, "Distribute Weights Evenly",
+                    null, actionCallback, ICON_DISTRIBUTE, 60));
+            actions.add(MenuAction.createAction(ACTION_WEIGHT, "Change Layout Weight", null,
+                    actionCallback, ICON_WEIGHTS, 70));
+        }
     }
 
     // ==== Drag'n'drop support ====

@@ -57,7 +57,6 @@ import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -355,138 +354,6 @@ public class ConfigurationComposite extends Composite {
     }
 
     /**
-     * Abstract class implemented by the part which owns a {@link ConfigurationComposite}
-     * to define and handle custom buttons in the button bar. Each button is
-     * implemented using a button, with a callback when the button is selected.
-     */
-    public static abstract class CustomButton {
-
-        /** The UI label of the toggle. Can be null if the image exists. */
-        private final String mUiLabel;
-
-        /** The image to use for this toggle. Can be null if the label exists. */
-        private final Image mImage;
-
-        /** The tooltip for the toggle. Can be null. */
-        private final String mUiTooltip;
-
-        /** Whether the button is a toggle */
-        private final boolean mIsToggle;
-        /** The default value of the toggle. */
-        private final boolean mDefaultValue;
-
-        /**
-         * the SWT button.
-         */
-        private Button mButton;
-
-
-        /**
-         * Initializes a new {@link CustomButton}. The values set here will be used
-         * later to create the actual button.
-         *
-         * @param uiLabel      The UI label of the button. Can be null if the image exists.
-         * @param image        The image to use for this button. Can be null if the label exists.
-         * @param uiTooltip    The tooltip for the button. Can be null.
-         * @param isToggle     Whether the button is a toggle button.
-         * @param defaultValue The default value of the toggle if <var>isToggle</var> is true.
-         */
-        public CustomButton(
-                String uiLabel,
-                Image image,
-                String uiTooltip,
-                boolean isToggle,
-                boolean defaultValue) {
-            mUiLabel = uiLabel;
-            mImage = image;
-            mUiTooltip = uiTooltip;
-            mIsToggle = isToggle;
-            mDefaultValue = defaultValue;
-        }
-
-        /**
-         * Initializes a new {@link CustomButton} that is <b>not</b> a toggle.
-         * The values set here will be used later to create the actual button.
-         *
-         * @param uiLabel      The UI label of the button. Can be null if the image exists.
-         * @param image        The image to use for this button. Can be null if the label exists.
-         * @param uiTooltip    The tooltip for the button. Can be null.
-         */
-        public CustomButton(
-                String uiLabel,
-                Image image,
-                String uiTooltip) {
-            this(uiLabel, image, uiTooltip, false, false);
-        }
-
-
-        /**
-         * Called by the {@link ConfigurationComposite} when the button is selected
-         * @param newState the state of the button if the button is a toggle.
-         */
-        public abstract void onSelected(boolean newState);
-
-        private void createButton(Composite parent) {
-            int style = SWT.FLAT;
-            if (mIsToggle) {
-                style |= SWT.TOGGLE;
-            }
-            mButton = new Button(parent, style);
-
-            if (mUiTooltip != null) {
-                mButton.setToolTipText(mUiTooltip);
-            }
-            if (mImage != null) {
-                mButton.setImage(mImage);
-            }
-            if (mUiLabel != null) {
-                mButton.setText(mUiLabel);
-            }
-
-            if (mIsToggle && mDefaultValue) {
-                mButton.setSelection(true);
-            }
-
-            mButton.addSelectionListener(new SelectionAdapter() {
-                @Override
-                public void widgetSelected(SelectionEvent e) {
-                    onSelected(mButton.getSelection());
-                }
-            });
-        }
-
-        public boolean isEnabled() {
-            return mButton != null && mButton.isEnabled();
-        }
-
-        public void setEnabled(boolean enabledState) {
-            if (mButton != null) {
-                mButton.setEnabled(enabledState);
-            }
-        }
-
-        public void setToolTipText(String text) {
-            if (mButton != null) {
-                mButton.setToolTipText(text);
-            }
-        }
-
-        public void setSelection(boolean selected) {
-            if (mButton != null) {
-                mButton.setSelection(selected);
-            }
-        }
-
-        public boolean getSelection() {
-            if (mButton != null) {
-                return mButton.getSelection();
-            }
-
-            return mDefaultValue;
-        }
-    }
-
-    /**
      * Creates a new {@link ConfigurationComposite} and adds it to the parent.
      *
      * The method also receives custom buttons to set into the configuration composite. The list
@@ -495,31 +362,25 @@ public class ConfigurationComposite extends Composite {
      *
      * @param listener An {@link IConfigListener} that gets and sets configuration properties.
      *          Mandatory, cannot be null.
-     * @param customButtons An array of array of {@link CustomButton} to define extra action/toggle
-     *          buttons to display at the top of the composite. Can be empty or null.
      * @param parent The parent composite.
      * @param style The style of this composite.
      * @param initialState The initial state (serialized form) to use for the configuration
      */
     public ConfigurationComposite(IConfigListener listener,
-            CustomButton[][] customButtons,
             Composite parent, int style, String initialState) {
         super(parent, style);
         mListener = listener;
         mInitialState = initialState;
 
-        if (customButtons == null) {
-            customButtons = new CustomButton[0][0];
-        }
-
         GridLayout gl;
         GridData gd;
-        int cols = 9;  // device+config+locale+dock+day/night+separator*2+theme+apiLevel
+        int cols = 6;  // device+config+separator*2+theme+apiLevel
 
-        // ---- First line: custom buttons, clipping button, editing config display.
+        // ---- First line: locale, day/night, dock, editing config display.
         Composite labelParent = new Composite(this, SWT.NONE);
-        labelParent.setLayout(gl = new GridLayout(2 + customButtons.length + 1, false));
+        labelParent.setLayout(gl = new GridLayout(6, false));
         gl.marginWidth = gl.marginHeight = 0;
+        gl.marginTop = 3;
         labelParent.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
         gd.horizontalSpan = cols;
 
@@ -528,20 +389,42 @@ public class ConfigurationComposite extends Composite {
         mCurrentLayoutLabel.setLayoutData(gd = new GridData(GridData.FILL_HORIZONTAL));
         gd.widthHint = 50;
 
-        for (CustomButton[] buttons : customButtons) {
-            if (buttons.length == 1) {
-                buttons[0].createButton(labelParent);
-            } else if (buttons.length > 1) {
-                Composite buttonParent = new Composite(labelParent, SWT.NONE);
-                buttonParent.setLayout(gl = new GridLayout(buttons.length, false));
-                gl.marginWidth = gl.marginHeight = 0;
-                gl.horizontalSpacing = 1;
-                for (CustomButton button : buttons) {
-                    button.createButton(buttonParent);
-                }
-
+        mLocaleCombo = new Combo(labelParent, SWT.DROP_DOWN | SWT.READ_ONLY);
+        mLocaleCombo.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                onLocaleChange();
             }
+        });
+
+        // Layout bug workaround. Without this, in -some- scenarios the Locale combo box was
+        // coming up tiny. Setting a minimumWidth hint does not work either. We need to have
+        // 2 or more items in the locale combo box when the layout is first run. These items
+        // are removed as part of the locale initialization when the SDK is loaded.
+        mLocaleCombo.add("Locale"); //$NON-NLS-1$  // Dummy place holders
+        mLocaleCombo.add("Locale"); //$NON-NLS-1$
+
+        mDockCombo = new Combo(labelParent, SWT.DROP_DOWN | SWT.READ_ONLY);
+        for (DockMode mode : DockMode.values()) {
+            mDockCombo.add(mode.getLongDisplayValue());
         }
+        mDockCombo.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                onDockChange();
+            }
+        });
+
+        mNightCombo = new Combo(labelParent, SWT.DROP_DOWN | SWT.READ_ONLY);
+        for (NightMode mode : NightMode.values()) {
+            mNightCombo.add(mode.getLongDisplayValue());
+        }
+        mNightCombo.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                onDayChange();
+            }
+        });
 
         mCreateButton = new Button(labelParent, SWT.PUSH | SWT.FLAT);
         mCreateButton.setText("Create...");
@@ -579,42 +462,6 @@ public class ConfigurationComposite extends Composite {
             @Override
              public void widgetSelected(SelectionEvent e) {
                 onDeviceConfigChange();
-            }
-        });
-
-        mLocaleCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-        mLocaleCombo.setLayoutData(new GridData(
-                GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
-        mLocaleCombo.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                onLocaleChange();
-            }
-        });
-
-        mDockCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-        mDockCombo.setLayoutData(new GridData(
-                GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
-        for (DockMode mode : DockMode.values()) {
-            mDockCombo.add(mode.getLongDisplayValue());
-        }
-        mDockCombo.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                onDockChange();
-            }
-        });
-
-        mNightCombo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
-        mNightCombo.setLayoutData(new GridData(
-                GridData.HORIZONTAL_ALIGN_FILL | GridData.GRAB_HORIZONTAL));
-        for (NightMode mode : NightMode.values()) {
-            mNightCombo.add(mode.getLongDisplayValue());
-        }
-        mNightCombo.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                onDayChange();
             }
         });
 
@@ -1551,7 +1398,6 @@ public class ConfigurationComposite extends Composite {
                 return new Rectangle(0, 0, s1, s1);
         }
     }
-
 
     /**
      * Returns the current theme, or null if the combo has no selection.

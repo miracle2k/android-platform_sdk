@@ -452,6 +452,15 @@ public class BaseViewRule implements IViewRule {
     }
 
     /**
+     * Returns true if the given node is "filled" (e.g. has layout width set to match
+     * parent or fill parent
+     */
+    protected boolean isFilled(INode node, String attribute) {
+        String value = node.getStringAttr(ANDROID_URI, attribute);
+        return VALUE_MATCH_PARENT.equals(value) || VALUE_FILL_PARENT.equals(value);
+    }
+
+    /**
      * Returns fill_parent or match_parent, depending on whether the minimum supported
      * platform supports match_parent or not
      *
@@ -532,6 +541,10 @@ public class BaseViewRule implements IViewRule {
 
     public List<String> getSelectionHint(INode parentNode, INode childNode) {
         return null;
+    }
+
+    public void addLayoutActions(List<MenuAction> actions, INode parentNode,
+            List<? extends INode> children) {
     }
 
     // ==== Drag'n'drop support ====

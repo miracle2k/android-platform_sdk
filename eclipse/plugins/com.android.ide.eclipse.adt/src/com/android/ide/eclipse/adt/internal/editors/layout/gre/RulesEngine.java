@@ -42,6 +42,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.internal.ui.MarginChooser;
 import com.android.ide.eclipse.adt.internal.ui.ReferenceChooserDialog;
 import com.android.ide.eclipse.adt.internal.ui.ResourceChooser;
 import com.android.resources.ResourceType;
@@ -225,6 +226,35 @@ public class RulesEngine {
                 mInsertType = InsertType.CREATE;
                 return rule.getContextMenu(selectedNode);
 
+            } catch (Exception e) {
+                AdtPlugin.log(e, "%s.getContextMenu() failed: %s",
+                        rule.getClass().getSimpleName(),
+                        e.toString());
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Invokes {@link IViewRule#getContextMenu(INode)} on the rule matching the specified element.
+     *
+     * @param actions The list of actions to add layout actions into
+     * @param parentNode The layout node
+     * @param children The selected children of the node, if any (used to initialize values
+     *    of child layout controls, if applicable)
+     * @return Null if the rule failed, there's no rule or the rule does not provide
+     *   any custom menu actions. Otherwise, a list of {@link MenuAction}.
+     */
+    public List<MenuAction> callAddLayoutActions(List<MenuAction> actions,
+            NodeProxy parentNode, List<NodeProxy> children ) {
+        // try to find a rule for this element's FQCN
+        IViewRule rule = loadRule(parentNode.getNode());
+
+        if (rule != null) {
+            try {
+                mInsertType = InsertType.CREATE;
+                rule.addLayoutActions(actions, parentNode, children);
             } catch (Exception e) {
                 AdtPlugin.log(e, "%s.getContextMenu() failed: %s",
                         rule.getClass().getSimpleName(),
@@ -872,5 +902,24 @@ public class RulesEngine {
             return null;
         }
 
+        public String[] displayMarginInput(String all, String left, String right, String top,
+                String bottom) {
+            AndroidXmlEditor editor = mEditor.getLayoutEditor();
+            IProject project = editor.getProject();
+            if (project != null) {
+                Shell shell = AdtPlugin.getDisplay().getActiveShell();
+                if (shell == null) {
+                    return null;
+                }
+                AndroidTargetData data = editor.getTargetData();
+                MarginChooser dialog = new MarginChooser(shell, project, data, all, left, right,
+                        top, bottom);
+                if (dialog.open() == Window.OK) {
+                    return dialog.getMargins();
+                }
+            }
+
+            return null;
+        }
     }
 }

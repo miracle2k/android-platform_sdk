@@ -48,7 +48,6 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.C
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutReloadMonitor.ILayoutReloadListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.LayoutCreatorDialog;
-import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.CustomButton;
 import com.android.ide.eclipse.adt.internal.editors.layout.configuration.ConfigurationComposite.IConfigListener;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.IncludeFinder.Reference;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
@@ -56,7 +55,6 @@ import com.android.ide.eclipse.adt.internal.editors.ui.DecorComposite;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiDocumentNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.editors.xml.Hyperlinks;
-import com.android.ide.eclipse.adt.internal.preferences.AdtPrefs;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.configurations.ScreenSizeQualifier;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
@@ -75,7 +73,6 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.StreamException;
 import com.android.sdklib.xml.AndroidManifest;
-import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -244,15 +241,9 @@ public class GraphicalEditorPart extends EditorPart
 
     private boolean mUseExplodeMode;
 
-    private CustomButton mZoomRealSizeButton;
-    private CustomButton mZoomOutButton;
-    private CustomButton mZoomResetButton;
-    private CustomButton mZoomInButton;
-    private CustomButton mZoomFitButton;
-    private CustomButton mClippingButton;
-
     private int mMinSdkVersion;
     private int mTargetSdkVersion;
+    private LayoutActionBar mActionBar;
 
     public GraphicalEditorPart(LayoutEditor layoutEditor) {
         mLayoutEditor = layoutEditor;
@@ -299,114 +290,6 @@ public class GraphicalEditorPart extends EditorPart
         parent.setLayout(gl);
         gl.marginHeight = gl.marginWidth = 0;
 
-        // create the top part for the configuration control
-        IconFactory iconFactory = IconFactory.getInstance();
-        CustomButton[][] customButtons = new CustomButton[][] {
-                new CustomButton[] {
-                    mZoomRealSizeButton = new CustomButton(
-                            null, // label
-                            iconFactory.getIcon("zoomreal"), //$NON-NLS-1$
-                            "Emulate Real Size",
-                            true /*isToggle*/,
-                            false /*defaultValue*/
-                            ) {
-                        @Override
-                        public void onSelected(boolean newState) {
-                            if (rescaleToReal(newState)) {
-                                mZoomOutButton.setEnabled(!newState);
-                                mZoomResetButton.setEnabled(!newState);
-                                mZoomInButton.setEnabled(!newState);
-                                mZoomFitButton.setEnabled(!newState);
-                            } else {
-                                mZoomRealSizeButton.setSelection(!newState);
-                            }
-                        }
-                    },
-                    mZoomFitButton = new CustomButton(
-                            null, // label
-                            iconFactory.getIcon("zoomfit"), //$NON-NLS-1$
-                            "Zoom to Fit (0)"
-                            ) {
-                        @Override
-                        public void onSelected(boolean newState) {
-                            rescaleToFit();
-                        }
-                    },
-                    mZoomResetButton = new CustomButton(
-                            null, // label
-                            iconFactory.getIcon("zoom100"), //$NON-NLS-1$
-                            "Reset Zoom to 100% (1)"
-                            ) {
-                        @Override
-                        public void onSelected(boolean newState) {
-                            resetScale();
-                        }
-                    }
-                },
-                // Group zoom in/out separately
-                new CustomButton[] {
-                    mZoomOutButton = new CustomButton(
-                            null, // label
-                            iconFactory.getIcon("zoomminus"), //$NON-NLS-1$
-                            "Zoom Out (-)"
-                            ) {
-                        @Override
-                        public void onSelected(boolean newState) {
-                            rescale(-1);
-                        }
-                    },
-                    mZoomInButton = new CustomButton(
-                            null, // label
-                            iconFactory.getIcon("zoomplus"), //$NON-NLS-1$
-                            "Zoom In (+)"
-                            ) {
-                        @Override
-                        public void onSelected(boolean newState) {
-                            rescale(+1);
-                        }
-                    },
-                },
-                new CustomButton[] {
-                    new CustomButton(
-                            null, //text
-                            iconFactory.getIcon("explode"), //$NON-NLS-1$
-                            "Displays extra margins in the layout",
-                            true /*toggle*/,
-                            false /*defaultValue*/
-                            ) {
-                        @Override
-                        public void onSelected(boolean newState) {
-                            mUseExplodeMode = newState;
-                            recomputeLayout();
-                        }
-                    },
-                    new CustomButton(
-                            null, //text
-                            iconFactory.getIcon("outline"), //$NON-NLS-1$
-                            "Shows the outline of all views in the layout",
-                            true /*toggle*/,
-                            false /*defaultValue*/
-                            ) {
-                        @Override
-                        public void onSelected(boolean newState) {
-                            mCanvasViewer.getCanvas().setShowOutline(newState);
-                        }
-                    },
-                    mClippingButton =  new CustomButton(
-                            null, //text
-                            iconFactory.getIcon("clipping"), //$NON-NLS-1$
-                            "Toggles screen clipping on/off",
-                            true /*toggle*/,
-                            true /*defaultValue*/
-                            ) {
-                        @Override
-                        public void onSelected(boolean newState) {
-                            recomputeLayout();
-                        }
-                    }
-                }
-        };
-
         mConfigListener = new ConfigListener();
 
         // Check whether somebody has requested an initial state for the newly opened file.
@@ -433,7 +316,7 @@ public class GraphicalEditorPart extends EditorPart
             }
         }
 
-        mConfigComposite = new ConfigurationComposite(mConfigListener, customButtons, parent,
+        mConfigComposite = new ConfigurationComposite(mConfigListener, parent,
                 SWT.BORDER, initialState);
 
         mSashPalette = new SashForm(parent, SWT.HORIZONTAL);
@@ -443,10 +326,22 @@ public class GraphicalEditorPart extends EditorPart
         paleteDecor.setContent(new PaletteControl.PaletteDecor(this));
         mPalette = (PaletteControl) paleteDecor.getContentControl();
 
-        mSashError = new SashForm(mSashPalette, SWT.VERTICAL | SWT.BORDER);
+        Composite layoutBarAndCanvas = new Composite(mSashPalette, SWT.NONE);
+        GridLayout gridLayout = new GridLayout(1, false);
+        gridLayout.horizontalSpacing = 0;
+        gridLayout.verticalSpacing = 0;
+        gridLayout.marginWidth = 0;
+        gridLayout.marginHeight = 0;
+        layoutBarAndCanvas.setLayout(gridLayout);
+        mActionBar = new LayoutActionBar(layoutBarAndCanvas, SWT.NONE, this);
+        GridData detailsData = new GridData(SWT.FILL, SWT.FILL, false, false, 1, 1);
+        mActionBar.setLayoutData(detailsData);
+
+        mSashError = new SashForm(layoutBarAndCanvas, SWT.VERTICAL | SWT.BORDER);
         mSashError.setLayoutData(new GridData(GridData.FILL_BOTH));
 
         mCanvasViewer = new LayoutCanvasViewer(mLayoutEditor, mRulesEngine, mSashError, SWT.NONE);
+        mSashError.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 
         mErrorLabel = new StyledText(mSashError, SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
         mErrorLabel.setEditable(false);
@@ -463,16 +358,6 @@ public class GraphicalEditorPart extends EditorPart
 
         getSite().setSelectionProvider(mCanvasViewer);
         getSite().getPage().addSelectionListener(this);
-    }
-
-    /**
-     * Returns true if zooming in/out/to-fit/etc is allowed (which is not the case while
-     * emulating real size)
-     *
-     * @return true if zooming is allowed
-     */
-    boolean isZoomingAllowed() {
-        return mZoomInButton.isEnabled();
     }
 
     /**
@@ -500,80 +385,6 @@ public class GraphicalEditorPart extends EditorPart
             mCanvasViewer.setSelection(selection);
         }
     }
-
-    /**
-     * Rescales canvas.
-     * @param direction +1 for zoom in, -1 for zoom out
-     */
-    void rescale(int direction) {
-        double s = mCanvasViewer.getCanvas().getScale();
-
-        if (direction > 0) {
-            s = s * 1.2;
-        } else {
-            s = s / 1.2;
-        }
-
-        // Some operations are faster if the zoom is EXACTLY 1.0 rather than ALMOST 1.0.
-        // (This is because there is a fast-path when image copying and the scale is 1.0;
-        // in that case it does not have to do any scaling).
-        //
-        // If you zoom out 10 times and then back in 10 times, small rounding errors mean
-        // that you end up with a scale=1.0000000000000004. In the cases, when you get close
-        // to 1.0, just make the zoom an exact 1.0.
-        if (Math.abs(s-1.0) < 0.0001) {
-            s = 1.0;
-        }
-
-        mCanvasViewer.getCanvas().setScale(s, true /*redraw*/);
-
-    }
-
-    /**
-     * Reset the canvas scale to 100%
-     */
-    private void resetScale() {
-        mCanvasViewer.getCanvas().setScale(1, true /*redraw*/);
-    }
-
-    /**
-     * Reset the canvas scale to best fit (so content is as large as possible without scrollbars)
-     */
-    private void rescaleToFit() {
-        mCanvasViewer.getCanvas().setFitScale();
-    }
-
-    private boolean rescaleToReal(boolean real) {
-        if (real) {
-            return computeAndSetRealScale(true /*redraw*/);
-        } else {
-            // reset the scale to 100%
-            mCanvasViewer.getCanvas().setScale(1, true /*redraw*/);
-            return true;
-        }
-    }
-
-    private boolean computeAndSetRealScale(boolean redraw) {
-        // compute average dpi of X and Y
-        float dpi = (mConfigComposite.getXDpi() + mConfigComposite.getYDpi()) / 2.f;
-
-        // get the monitor dpi
-        float monitor = AdtPrefs.getPrefs().getMonitorDensity();
-        if (monitor == 0.f) {
-            ResolutionChooserDialog dialog = new ResolutionChooserDialog(
-                    mConfigComposite.getShell());
-            if (dialog.open() == Window.OK) {
-                monitor = dialog.getDensity();
-                AdtPrefs.getPrefs().setMonitorDensity(monitor);
-            } else {
-                return false;
-            }
-        }
-
-        mCanvasViewer.getCanvas().setScale(monitor / dpi, redraw);
-        return true;
-    }
-
 
     @Override
     public void dispose() {
@@ -1138,8 +949,6 @@ public class GraphicalEditorPart extends EditorPart
     private void updateCapabilities(AndroidTargetData targetData) {
         if (targetData != null) {
             LayoutLibrary layoutLib = targetData.getLayoutLibrary();
-            setClippingSupport(layoutLib.supports(Capability.UNBOUND_RENDERING));
-
             if (mIncludedWithin != null &&  !layoutLib.supports(Capability.EMBEDDED_LAYOUT)) {
                 showIn(null);
             }
@@ -1226,8 +1035,8 @@ public class GraphicalEditorPart extends EditorPart
 
             if (layoutLib != null) {
                 // if drawing in real size, (re)set the scaling factor.
-                if (mZoomRealSizeButton.getSelection()) {
-                    computeAndSetRealScale(false /* redraw */);
+                if (mActionBar.isZoomingRealSize()) {
+                    mActionBar.computeAndSetRealScale(false /* redraw */);
                 }
 
                 IProject project = mEditedFile.getProject();
@@ -1314,16 +1123,6 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     // --- private methods ---
-
-    private void setClippingSupport(boolean b) {
-        mClippingButton.setEnabled(b);
-        if (b) {
-            mClippingButton.setToolTipText("Toggles screen clipping on/off");
-        } else {
-            mClippingButton.setSelection(true);
-            mClippingButton.setToolTipText("Non clipped rendering is not supported");
-        }
-    }
 
     /**
      * Ensure that the file associated with this editor is valid (exists and is
@@ -1503,15 +1302,11 @@ public class GraphicalEditorPart extends EditorPart
         RenderLogger logger = new RenderLogger(mEditedFile.getName());
 
         RenderingMode renderingMode = RenderingMode.NORMAL;
-        if (mClippingButton.getSelection() == false) {
-            renderingMode = RenderingMode.FULL_EXPAND;
-        } else {
-            // FIXME set the rendering mode using ViewRule or something.
-            List<UiElementNode> children = model.getUiChildren();
-            if (children.size() > 0 &&
-                    children.get(0).getDescriptor().getXmlLocalName().equals(SCROLL_VIEW)) {
-                renderingMode = RenderingMode.V_SCROLL;
-            }
+        // FIXME set the rendering mode using ViewRule or something.
+        List<UiElementNode> children = model.getUiChildren();
+        if (children.size() > 0 &&
+                children.get(0).getDescriptor().getXmlLocalName().equals(SCROLL_VIEW)) {
+            renderingMode = RenderingMode.V_SCROLL;
         }
 
         RenderSession session = renderWithBridge(iProject, model, layoutLib, width, height,
@@ -2524,5 +2319,9 @@ public class GraphicalEditorPart extends EditorPart
 
     public ConfigurationComposite getConfigurationComposite() {
         return mConfigComposite;
+    }
+
+    public LayoutActionBar getLayoutActionBar() {
+        return mActionBar;
     }
 }

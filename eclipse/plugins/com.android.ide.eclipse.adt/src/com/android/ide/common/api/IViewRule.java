@@ -95,6 +95,20 @@ public interface IViewRule {
      */
     List<MenuAction> getContextMenu(INode node);
 
+    /**
+     * Invoked by the Rules Engine to ask the parent layout for the set of layout actions
+     * to display in the layout bar. The layout rule should add these into the provided
+     * list. The order the items are added in does not matter; the
+     * {@link MenuAction#getSortPriority()} values will be used to sort the actions prior
+     * to display, which makes it easier for parent rules and deriving rules to interleave
+     * their respective actions.
+     *
+     * @param actions the list of actions to add newly registered actions into
+     * @param parentNode the parent of the selection, or the selection itself if the root
+     * @param targets the targeted/selected nodes, if any
+     */
+    void addLayoutActions(List<MenuAction> actions,
+            INode parentNode, List<? extends INode> targets);
 
     // ==== Selection ====
 

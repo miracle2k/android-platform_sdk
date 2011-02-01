@@ -270,15 +270,16 @@ public class LayoutCanvas extends Canvas {
                 } else {
                     // Zooming actions
                     char c = e.character;
-                    GraphicalEditorPart editor = mLayoutEditor.getGraphicalEditor();
-                    if (c == '1' && editor.isZoomingAllowed()) {
+                    LayoutActionBar actionBar = mLayoutEditor.getGraphicalEditor()
+                            .getLayoutActionBar();
+                    if (c == '1' && actionBar.isZoomingAllowed()) {
                         setScale(1, true);
-                    } else if (c == '0' && editor.isZoomingAllowed()) {
+                    } else if (c == '0' && actionBar.isZoomingAllowed()) {
                         setFitScale();
-                    } else if (c == '+' && editor.isZoomingAllowed()) {
-                        editor.rescale(1);
-                    } else if (c == '-' && editor.isZoomingAllowed()) {
-                        editor.rescale(-1);
+                    } else if (c == '+' && actionBar.isZoomingAllowed()) {
+                        actionBar.rescale(1);
+                    } else if (c == '-' && actionBar.isZoomingAllowed()) {
+                        actionBar.rescale(-1);
                     }
                 }
             }
