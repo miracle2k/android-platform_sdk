@@ -2,14 +2,15 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension
-         point="org.eclipse.ui.views">
-      <view
-            category="com.android.ide.eclipse.ddms.views.category"
-            class="com.android.ide.eclipse.traceview.views.TraceviewView"
+         point="org.eclipse.ui.editors">
+      <editor
+            class="com.android.ide.eclipse.traceview.editors.TraceviewEditor"
+            default="true"
+            extensions="atv"
             icon="icons/android.png"
-            id="com.android.ide.eclipse.traceview.views.TraceviewView"
+            id="com.android.ide.eclipse.traceview.editors.TraceviewEditor"
             name="Traceview">
-      </view>
+      </editor>
    </extension>
 
 </plugin>

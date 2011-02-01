@@ -5,7 +5,8 @@ Bundle-SymbolicName: com.android.ide.eclipse.traceview;singleton:=true
 Bundle-Version: 10.0.0.qualifier
 Bundle-Activator: com.android.ide.eclipse.traceview.TraceviewPlugin
 Require-Bundle: org.eclipse.ui,
- org.eclipse.core.runtime
+ org.eclipse.core.runtime,
+ org.eclipse.ui.ide
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
  libs/traceview.jar
