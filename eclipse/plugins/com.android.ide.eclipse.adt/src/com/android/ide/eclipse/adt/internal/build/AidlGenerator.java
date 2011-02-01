@@ -56,9 +56,9 @@ public class AidlGenerator extends JavaGenerator {
 
     /**
      * Single line aidl error<br>
-     * "&lt;path&gt;:&lt;line&gt;: &lt;error&gt;"
-     * or
-     * "&lt;path&gt;:&lt;line&gt; &lt;error&gt;"
+     * {@code <path>:<line>: <error>}<br>
+     * or<br>
+     * {@code <path>:<line> <error>}<br>
      */
     private static Pattern sAidlPattern1 = Pattern.compile("^(.+?):(\\d+):?\\s(.+)$"); //$NON-NLS-1$
 

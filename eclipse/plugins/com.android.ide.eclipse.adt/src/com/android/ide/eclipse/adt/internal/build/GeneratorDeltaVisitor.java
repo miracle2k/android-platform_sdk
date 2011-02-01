@@ -90,7 +90,7 @@ public class GeneratorDeltaVisitor {
         return false;
     }
 
-    public void addFileToCompile(IFile file) {
+    protected void addFileToCompile(IFile file) {
         mToCompile.add(file);
     }
 
@@ -98,7 +98,7 @@ public class GeneratorDeltaVisitor {
         return mToCompile;
     }
 
-    public void addRemovedFile(IFile file) {
+    protected void addRemovedFile(IFile file) {
         mRemoved.add(file);
     }
 
@@ -109,6 +109,10 @@ public class GeneratorDeltaVisitor {
     public void reset() {
         mToCompile.clear();
         mRemoved.clear();
+    }
+
+    protected JavaGenerator getGenerator() {
+        return mGenerator;
     }
 
     void init(JavaGenerator generator) {

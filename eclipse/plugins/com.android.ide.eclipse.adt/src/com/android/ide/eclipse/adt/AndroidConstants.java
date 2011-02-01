@@ -162,6 +162,8 @@ public class AndroidConstants {
     public final static String RE_AIDL_EXT = "\\" + DOT_AIDL + "$"; //$NON-NLS-1$ //$NON-NLS-2$
     /** Regexp for rs extension, i.e. "\.rs$" */
     public final static String RE_RS_EXT = "\\" + DOT_RS + "$"; //$NON-NLS-1$ //$NON-NLS-2$
+    /** Regexp for .d extension, i.e. "\.d$" */
+    public final static String RE_DEP_EXT = "\\" + DOT_DEP + "$"; //$NON-NLS-1$ //$NON-NLS-2$
 
     /**
      * Namespace pattern for the custom resource XML, i.e. "http://schemas.android.com/apk/res/%s"

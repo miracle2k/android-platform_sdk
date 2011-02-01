@@ -176,6 +176,8 @@ public abstract class JavaGenerator {
         buildSourceFileList();
 
         mToCompile.addAll(mFiles.keySet());
+
+        saveState(project);
     }
 
     public final void doneVisiting(IProject project) {
@@ -281,7 +283,7 @@ public abstract class JavaGenerator {
     public final void saveState(IProject project) {
         // TODO: Optimize by saving only the files that need compilation
         ProjectHelper.saveStringProperty(project, getSavePropertyName(),
-                Boolean.toString(getToCompile().size() > 0));
+                Boolean.toString(mToCompile.size() > 0));
     }
 
     protected abstract void loadOutputAndDependencies();
