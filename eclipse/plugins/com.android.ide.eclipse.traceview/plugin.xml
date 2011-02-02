@@ -6,11 +6,17 @@
       <editor
             class="com.android.ide.eclipse.traceview.editors.TraceviewEditor"
             default="true"
-            extensions="atv"
+            extensions="trace"
             icon="icons/android.png"
             id="com.android.ide.eclipse.traceview.editors.TraceviewEditor"
             name="Traceview">
       </editor>
+   </extension>
+   <extension
+         point="com.android.ide.eclipse.ddms.traceviewLauncher">
+      <launcher
+            class="com.android.ide.eclipse.traceview.TraceviewLauncher">
+      </launcher>
    </extension>
 
 </plugin>

@@ -4,6 +4,7 @@
    <extension-point id="toolsLocator" name="Tools Locator" schema="schema/toolsLocator.exsd"/>
    <extension-point id="debuggerConnector" name="Debugger Connector" schema="schema/debuggerConnector.exsd"/>
    <extension-point id="sourceRevealer" name="Source Revealer" schema="schema/sourceRevealer.exsd"/>
+   <extension-point id="traceviewLauncher" name="TraceView Launcher" schema="schema/traceviewLauncher.exsd"/>
 
    <extension
          point="org.eclipse.ui.views">

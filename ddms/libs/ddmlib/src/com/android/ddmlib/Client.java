@@ -258,8 +258,9 @@ public class Client {
                 if (canStream) {
                     HandleProfiling.sendMPSS(this, 8*1024*1024, 0 /*flags*/);
                 } else {
-                    String file = "/sdcard/" + mClientData.getClientDescription().replaceAll("\\:.*", "") +
-                    ".trace";
+                    String file = "/sdcard/" +
+                        mClientData.getClientDescription().replaceAll("\\:.*", "") +
+                        DdmConstants.DOT_TRACE;
                     HandleProfiling.sendMPRS(this, file, 8*1024*1024, 0 /*flags*/);
                 }
             }

@@ -17,6 +17,7 @@
 package com.android.ddmuilib.handler;
 
 import com.android.ddmlib.Client;
+import com.android.ddmlib.DdmConstants;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.Log;
 import com.android.ddmlib.SyncException;
@@ -101,8 +102,8 @@ public class MethodProfilingHandler extends BaseFileHandler
 
     public void onSuccess(byte[] data, final Client client) {
         try {
-            File tempFile = saveTempFile(data);
-            openInTraceview(tempFile.getAbsolutePath());
+            File tempFile = saveTempFile(data, DdmConstants.DOT_TRACE);
+            open(tempFile.getAbsolutePath());
         } catch (IOException e) {
             String errorMsg = e.getMessage();
             displayErrorInUiThread(
@@ -117,7 +118,7 @@ public class MethodProfilingHandler extends BaseFileHandler
     private void pullAndOpen(final SyncService sync, final String remoteFilePath)
             throws InvocationTargetException, InterruptedException, IOException {
         // get a temp file
-        File temp = File.createTempFile("android", ".trace"); //$NON-NLS-1$ //$NON-NLS-2$
+        File temp = File.createTempFile("android", DdmConstants.DOT_TRACE); //$NON-NLS-1$
         final String tempPath = temp.getAbsolutePath();
 
         // pull the file
@@ -135,7 +136,7 @@ public class MethodProfilingHandler extends BaseFileHandler
                 String.format("Pulling %1$s from the device", remoteFilePath), mParentShell);
 
             // open the temp file in traceview
-            openInTraceview(tempPath);
+            open(tempPath);
         } catch (SyncException e) {
             if (e.wasCanceled() == false) {
                 displayErrorFromUiThread("Unable to download trace file:\n\n%1$s", e.getMessage());
@@ -145,7 +146,7 @@ public class MethodProfilingHandler extends BaseFileHandler
         }
     }
 
-    private void openInTraceview(String tempPath) {
+    protected void open(String tempPath) {
         // now that we have the file, we need to launch traceview
         String[] command = new String[2];
         command[0] = DdmUiPreferences.getTraceview();

@@ -201,7 +201,9 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
 
                     if (ACTION_OPEN.equals(value)) {
                         try {
-                            File tempFile = saveTempFile(data);
+                            // no need to give an extension since we're going to convert the
+                            // file anyway after.
+                            File tempFile = saveTempFile(data, null /*extension*/);
                             open(tempFile.getAbsolutePath());
                         } catch (Exception e) {
                             String errorMsg = e.getMessage();
@@ -252,13 +254,10 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
                     }
                 }
 
-                IDE.openEditorOnFileStore(
-                        getSite().getWorkbenchWindow().getActivePage(),
-                        fileStore);
+                IDE.openEditorOnFileStore(page, fileStore);
             }
         }
     }
-
 
     public DeviceView() {
         // the view is declared with allowMultiple="false" so we
@@ -455,7 +454,14 @@ public class DeviceView extends ViewPart implements IUiSelectionListener, IClien
 
         ClientData.setHprofDumpHandler(new HProfHandler(mParentShell));
         AndroidDebugBridge.addClientChangeListener(this);
-        ClientData.setMethodProfilingHandler(new MethodProfilingHandler(mParentShell));
+        ClientData.setMethodProfilingHandler(new MethodProfilingHandler(mParentShell) {
+            @Override
+            protected void open(String tempPath) {
+                if (DdmsPlugin.getDefault().launchTraceview(tempPath) == false) {
+                    super.open(tempPath);
+                }
+            }
+        });
     }
 
     @Override
