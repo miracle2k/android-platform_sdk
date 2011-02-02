@@ -49,7 +49,7 @@ import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
 public class ProfileView extends Composite implements Observer {
-    
+
     private TreeViewer mTreeViewer;
     private Text mSearchBox;
     private SelectionController mSelectionController;
@@ -199,7 +199,7 @@ public class ProfileView extends Composite implements Observer {
                         }
                     }
                 });
-        
+
         // Add a tree listener so that we can expand the parents and children
         // of a method when a method is expanded.
         mTreeViewer.addTreeListener(new ITreeViewerListener() {
@@ -300,9 +300,11 @@ public class ProfileView extends Composite implements Observer {
         ProfileNode[] nodes = md.getProfileNodes();
         mTreeViewer.setExpandedState(md, true);
         // Also expand the "Parents" and "Children" nodes.
-        for (ProfileNode node : nodes) {
-            if (node.isRecursive() == false)
-                mTreeViewer.setExpandedState(node, true);
+        if (nodes != null) {
+            for (ProfileNode node : nodes) {
+                if (node.isRecursive() == false)
+                    mTreeViewer.setExpandedState(node, true);
+            }
         }
     }
 }
