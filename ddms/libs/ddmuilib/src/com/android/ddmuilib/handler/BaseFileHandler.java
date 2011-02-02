@@ -155,8 +155,8 @@ public abstract class BaseFileHandler {
      * @return the File into which the data was written or null if it failed.
      * @throws IOException
      */
-    protected File saveTempFile(byte[] data) throws IOException {
-        File f = File.createTempFile("ddms", null);
+    protected File saveTempFile(byte[] data, String extension) throws IOException {
+        File f = File.createTempFile("ddms", extension);
         saveFile(data, f);
         return f;
     }

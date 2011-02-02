@@ -88,7 +88,7 @@ final class HandleProfiling extends ChunkHandler {
      * android.os.Debug.startMethodTracing() on the device.
      *
      * @param fileName is the name of the file to which profiling data
-     *          will be written (on the device); it will have ".trace"
+     *          will be written (on the device); it will have {@link DdmConstants#DOT_TRACE}
      *          appended if necessary
      * @param bufferSize is the desired buffer size in bytes (8MB is good)
      * @param flags see startMethodTracing() docs; use 0 for default behavior

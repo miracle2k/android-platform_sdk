@@ -82,6 +82,7 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
      */
     private IDebuggerConnector[] mDebuggerConnectors;
     private ISourceRevealer[] mSourceRevealers;
+    private ITraceviewLauncher[] mTraceviewLaunchers;
 
 
     /** Console for DDMS log message */
@@ -253,6 +254,7 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
 
         // get the other configElements and instantiante them in a Job.
         new Job("DDMS post-create init") {
+
             @Override
             protected IStatus run(IProgressMonitor monitor) {
                 try {
@@ -295,6 +297,10 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
                     elements = findConfigElements("com.android.ide.eclipse.ddms.sourceRevealer"); //$NON-NLS-1$
                     mSourceRevealers = instantiateSourceRevealers(elements);
 
+                    // get the available Traceview Launchers.
+                    elements = findConfigElements("com.android.ide.eclipse.ddms.traceviewLauncher"); //$NON-NLS-1$
+                    mTraceviewLaunchers = instantiateTraceviewLauncher(elements);
+
                     return Status.OK_STATUS;
                 } catch (CoreException e) {
                     return e.getStatus();
@@ -329,7 +335,7 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
             // only use the first one, ignore the others.
             IConfigurationElement configElement = configElements[0];
 
-            // instantiate the clas
+            // instantiate the class
             Object obj = configElement.createExecutableExtension("class"); //$NON-NLS-1$
             if (obj instanceof IToolsLocator) {
                 list.add((IToolsLocator) obj);
@@ -352,7 +358,7 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
             // only use the first one, ignore the others.
             IConfigurationElement configElement = configElements[0];
 
-            // instantiate the clas
+            // instantiate the class
             Object obj = configElement.createExecutableExtension("class"); //$NON-NLS-1$
             if (obj instanceof IDebuggerConnector) {
                 list.add((IDebuggerConnector) obj);
@@ -375,7 +381,7 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
             // only use the first one, ignore the others.
             IConfigurationElement configElement = configElements[0];
 
-            // instantiate the clas
+            // instantiate the class
             Object obj = configElement.createExecutableExtension("class"); //$NON-NLS-1$
             if (obj instanceof ISourceRevealer) {
                 list.add((ISourceRevealer) obj);
@@ -383,6 +389,30 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
         }
 
         return list.toArray(new ISourceRevealer[list.size()]);
+    }
+
+    /**
+     * Finds if any other plug-in is extending the exposed Extension Point called traceviewLauncher.
+     *
+     * @return an array of all locators found, or an empty array if none were found.
+     */
+    private ITraceviewLauncher[] instantiateTraceviewLauncher(
+            IConfigurationElement[] configElements)
+            throws CoreException {
+        ArrayList<ITraceviewLauncher> list = new ArrayList<ITraceviewLauncher>();
+
+        if (configElements.length > 0) {
+            // only use the first one, ignore the others.
+            IConfigurationElement configElement = configElements[0];
+
+            // instantiate the class
+            Object obj = configElement.createExecutableExtension("class"); //$NON-NLS-1$
+            if (obj instanceof ITraceviewLauncher) {
+                list.add((ITraceviewLauncher) obj);
+            }
+        }
+
+        return list.toArray(new ITraceviewLauncher[list.size()]);
     }
 
     public static Display getDisplay() {
@@ -732,5 +762,21 @@ public final class DdmsPlugin extends AbstractUIPlugin implements IDeviceChangeL
                 }
             }
         }
+    }
+
+    public boolean launchTraceview(String osPath) {
+        if (mTraceviewLaunchers != null) {
+            for (ITraceviewLauncher launcher : mTraceviewLaunchers) {
+                try {
+                    if (launcher.openFile(osPath)) {
+                        return true;
+                    }
+                } catch (Throwable t) {
+                    // ignore, we'll just not use this implementation.
+                }
+            }
+        }
+
+        return false;
     }
 }

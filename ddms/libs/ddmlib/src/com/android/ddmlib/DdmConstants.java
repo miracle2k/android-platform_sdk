@@ -29,6 +29,11 @@ public final class DdmConstants {
      */
     public final static int CURRENT_PLATFORM = currentPlatform();
 
+    /**
+     * Extension for Traceview files.
+     */
+    public final static String DOT_TRACE = ".trace";
+
     /** hprof-conv executable (with extension for the current OS)  */
     public final static String FN_HPROF_CONVERTER = (CURRENT_PLATFORM == PLATFORM_WINDOWS) ?
             "hprof-conv.exe" : "hprof-conv"; //$NON-NLS-1$ //$NON-NLS-2$

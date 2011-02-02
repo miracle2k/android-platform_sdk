@@ -17,6 +17,7 @@
 package com.android.ddmuilib.explorer;
 
 import com.android.ddmlib.AdbCommandRejectedException;
+import com.android.ddmlib.DdmConstants;
 import com.android.ddmlib.FileListingService;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
@@ -390,7 +391,7 @@ public class DeviceExplorer extends Panel {
         String path;
         try {
             // create a temp file for keyFile
-            File f = File.createTempFile(baseName, ".trace");
+            File f = File.createTempFile(baseName, DdmConstants.DOT_TRACE);
             f.delete();
             f.mkdir();
 
