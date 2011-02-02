@@ -46,10 +46,10 @@ public class MethodData {
     private Image mFadedImage;
     private HashMap<Integer, ProfileData> mParents;
     private HashMap<Integer, ProfileData> mChildren;
-    
+
     // The parents of this method when this method was in a recursive call
     private HashMap<Integer, ProfileData> mRecursiveParents;
-    
+
     // The children of this method when this method was in a recursive call
     private HashMap<Integer, ProfileData> mRecursiveChildren;
 
@@ -150,7 +150,7 @@ public class MethodData {
                     mParents);
         }
     }
-    
+
     private HashMap<Integer, ProfileData> updateInclusive(long time,
             MethodData contextMethod, MethodData elementMethod,
             boolean elementIsParent, HashMap<Integer, ProfileData> map) {
@@ -178,15 +178,15 @@ public class MethodData {
         ProfileData[] sortedChildren;
         ProfileData[] sortedRecursiveParents;
         ProfileData[] sortedRecursiveChildren;
-        
+
         sortedParents = sortProfileData(mParents);
         sortedChildren = sortProfileData(mChildren);
         sortedRecursiveParents = sortProfileData(mRecursiveParents);
         sortedRecursiveChildren = sortProfileData(mRecursiveChildren);
-        
+
         // Add "self" time to the top of the sorted children
         sortedChildren = addSelf(sortedChildren);
-        
+
         // Create the ProfileNode objects that we need
         ArrayList<ProfileNode> nodes = new ArrayList<ProfileNode>();
         ProfileNode profileNode;
@@ -212,7 +212,7 @@ public class MethodData {
         }
         mProfileNodes = nodes.toArray(new ProfileNode[nodes.size()]);
     }
-    
+
     // Create and return a ProfileData[] array that is a sorted copy
     // of the given HashMap values.
     private ProfileData[] sortProfileData(HashMap<Integer, ProfileData> map) {
@@ -222,12 +222,12 @@ public class MethodData {
         // Convert the hash values to an array of ProfileData
         Collection<ProfileData> values = map.values();
         ProfileData[] sorted = values.toArray(new ProfileData[values.size()]);
-        
+
         // Sort the array by elapsed inclusive time
         Arrays.sort(sorted, mByElapsedInclusive);
         return sorted;
     }
-    
+
     private ProfileData[] addSelf(ProfileData[] children) {
         ProfileData[] pdata;
         if (children == null) {
@@ -283,12 +283,16 @@ public class MethodData {
         return mProfileName;
     }
 
+    public String getSignature() {
+        return mSignature;
+    }
+
     public void computeProfileName() {
         if (mRank == -1) {
             mProfileName = mName;
             return;
         }
-        
+
         StringBuilder sb = new StringBuilder();
         sb.append(mRank);
         sb.append(" ");  //$NON-NLS-1$

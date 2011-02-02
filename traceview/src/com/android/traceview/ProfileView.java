@@ -16,10 +16,6 @@
 
 package com.android.traceview;
 
-import java.util.ArrayList;
-import java.util.Observable;
-import java.util.Observer;
-
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -48,6 +44,10 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
+import java.util.ArrayList;
+import java.util.Observable;
+import java.util.Observer;
+
 public class ProfileView extends Composite implements Observer {
 
     private TreeViewer mTreeViewer;
@@ -57,6 +57,11 @@ public class ProfileView extends Composite implements Observer {
     private Color mColorNoMatch;
     private Color mColorMatch;
     private MethodData mCurrentHighlightedMethod;
+    private MethodHandler mMethodHandler;
+
+    public interface MethodHandler {
+        void handleMethod(MethodData method);
+    }
 
     public ProfileView(Composite parent, TraceReader reader,
             SelectionController selectController) {
@@ -224,8 +229,16 @@ public class ProfileView extends Composite implements Observer {
                 ArrayList<Selection> selections = new ArrayList<Selection>();
                 selections.add(Selection.highlight("MethodData", md));
                 mSelectionController.change(selections, "ProfileView");
+
+                if (mMethodHandler != null && (event.stateMask & SWT.MOD1) != 0) {
+                    mMethodHandler.handleMethod(md);
+                }
             }
         });
+    }
+
+    public void setMethodHandler(MethodHandler handler) {
+        mMethodHandler = handler;
     }
 
     private void findName(String query) {

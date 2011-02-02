@@ -17,13 +17,25 @@ package com.android.ide.eclipse.traceview.editors;
 
 import com.android.traceview.ColorController;
 import com.android.traceview.DmTraceReader;
+import com.android.traceview.MethodData;
 import com.android.traceview.ProfileView;
 import com.android.traceview.SelectionController;
 import com.android.traceview.TimeLineView;
 import com.android.traceview.TraceReader;
 import com.android.traceview.TraceUnits;
+import com.android.traceview.ProfileView.MethodHandler;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
+import org.eclipse.jdt.core.search.SearchEngine;
+import org.eclipse.jdt.core.search.SearchMatch;
+import org.eclipse.jdt.core.search.SearchParticipant;
+import org.eclipse.jdt.core.search.SearchPattern;
+import org.eclipse.jdt.core.search.SearchRequestor;
+import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.graphics.Color;
@@ -38,7 +50,7 @@ import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
 
-public class TraceviewEditor extends EditorPart {
+public class TraceviewEditor extends EditorPart implements MethodHandler {
 
     private Composite mParent;
     private String mFilename;
@@ -122,7 +134,7 @@ public class TraceviewEditor extends EditorPart {
         new TimeLineView(sashForm1, reader, selectionController);
 
         // Create the profile view
-        new ProfileView(sashForm1, reader, selectionController);
+        new ProfileView(sashForm1, reader, selectionController).setMethodHandler(this);
 
         mParent.layout();
     }
@@ -131,5 +143,53 @@ public class TraceviewEditor extends EditorPart {
     public void setFocus() {
         mParent.setFocus();
     }
+
+    private static class TraceSearchRequestor extends SearchRequestor {
+        private MethodData mMethod;
+
+        public TraceSearchRequestor(MethodData method) {
+            mMethod = method;
+        }
+
+        @Override
+        public void acceptSearchMatch(SearchMatch match) throws CoreException {
+            Object element = match.getElement();
+            if (element instanceof IMethod) {
+                IMethod method = (IMethod) element;
+                if (method.getSignature().equals(mMethod.getSignature())) {
+                    JavaUI.openInEditor(method);
+                }
+            }
+        }
+    }
+
+    // ---- MethodHandler methods
+
+    public void handleMethod(MethodData method) {
+        // it's a bit complicated to convert the signature we have with what the
+        // search engine require, so we'll search by name only and test the signature
+        // when we get the result(s).
+        String methodName = method.getMethodName();
+        String className = method.getClassName().replaceAll("/", ".");  //$NON-NLS-1$  //$NON-NLS-21$
+        String fqmn = className + "." + methodName; //$NON-NLS-1$
+
+        try {
+            SearchEngine se = new SearchEngine();
+            se.search(SearchPattern.createPattern(
+                    fqmn,
+                    IJavaSearchConstants.METHOD,
+                    IJavaSearchConstants.DECLARATIONS,
+                    SearchPattern.R_EXACT_MATCH
+                    | SearchPattern.R_CASE_SENSITIVE),
+                    new SearchParticipant[] { SearchEngine .getDefaultSearchParticipant() },
+                SearchEngine.createWorkspaceScope(),
+                new TraceSearchRequestor(method),
+                new NullProgressMonitor());
+        } catch (CoreException e) {
+
+        }
+    }
+
+    // -----
 
 }
