@@ -91,4 +91,12 @@ public class ResourceValue implements IResourceValue {
     public void replaceWith(ResourceValue value) {
         mValue = value.mValue;
     }
+
+    @Override
+    public String toString() {
+        return "ResourceValue [" + mType + "/" + mName + " = " + mValue
+                + " (framework:" + mIsFramwork + ")]";
+    }
+
+
 }

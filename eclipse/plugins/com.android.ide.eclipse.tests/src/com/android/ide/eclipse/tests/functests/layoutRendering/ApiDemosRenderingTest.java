@@ -19,10 +19,10 @@ package com.android.ide.eclipse.tests.functests.layoutRendering;
 import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.common.rendering.api.IProjectCallback;
-import com.android.ide.common.rendering.api.Params;
+import com.android.ide.common.rendering.api.RenderParams;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
-import com.android.ide.common.rendering.api.Params.RenderingMode;
+import com.android.ide.common.rendering.api.RenderParams.RenderingMode;
 import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
@@ -207,13 +207,13 @@ public class ApiDemosRenderingTest extends SdkTestCase {
                     configuredProject, configuredFramework,
                     "Theme", false /*isProjectTheme*/);
 
-            RenderSession session = layoutLib.createSession(new Params(
+            RenderSession session = layoutLib.createSession(new RenderParams(
                     parser,
                     null /*projectKey*/,
                     320,
                     480,
                     RenderingMode.NORMAL,
-                    160, //density
+                    Density.MEDIUM,
                     160, //xdpi
                     160, // ydpi
                     resolver,

@@ -16,10 +16,11 @@
 
 package com.android.ide.common.rendering.api;
 
+import com.android.resources.Density;
 import com.android.resources.ScreenSize;
 
 
-public class Params {
+public class RenderParams {
 
     public final static long DEFAULT_TIMEOUT = 250; //ms
 
@@ -51,7 +52,7 @@ public class Params {
     private final int mScreenWidth;
     private final int mScreenHeight;
     private final RenderingMode mRenderingMode;
-    private final int mDensity;
+    private final Density mDensity;
     private final float mXdpi;
     private final float mYdpi;
     private final RenderResources mRenderResources;
@@ -67,6 +68,10 @@ public class Params {
     private IImageFactory mImageFactory = null;
 
     private ScreenSize mConfigScreenSize = null;
+    private String mAppIcon = null;
+    private String mAppLabel = null;
+    private String mLocale = null;
+    private boolean mForceNoDecor;
 
     /**
      *
@@ -95,10 +100,10 @@ public class Params {
      * @param targetSdkVersion the targetSdkVersion of the project
      * @param log the object responsible for displaying warning/errors to the user.
      */
-    public Params(ILayoutPullParser layoutDescription,
+    public RenderParams(ILayoutPullParser layoutDescription,
             Object projectKey,
             int screenWidth, int screenHeight, RenderingMode renderingMode,
-            int density, float xdpi, float ydpi,
+            Density density, float xdpi, float ydpi,
             RenderResources renderResources,
             IProjectCallback projectCallback,
             int minSdkVersion, int targetSdkVersion,
@@ -123,7 +128,7 @@ public class Params {
     /**
      * Copy constructor.
      */
-    public Params(Params params) {
+    public RenderParams(RenderParams params) {
         mLayoutDescription = params.mLayoutDescription;
         mProjectKey = params.mProjectKey;
         mScreenWidth = params.mScreenWidth;
@@ -142,6 +147,10 @@ public class Params {
         mTimeout = params.mTimeout;
         mImageFactory = params.mImageFactory;
         mConfigScreenSize = params.mConfigScreenSize;
+        mAppIcon = params.mAppIcon;
+        mAppLabel = params.mAppLabel;
+        mLocale = params.mLocale;
+        mForceNoDecor = params.mForceNoDecor;
     }
 
     public void setOverrideBgColor(int color) {
@@ -159,6 +168,22 @@ public class Params {
 
     public void setConfigScreenSize(ScreenSize size) {
         mConfigScreenSize  = size;
+    }
+
+    public void setAppIcon(String appIcon) {
+        mAppIcon = appIcon;
+    }
+
+    public void setAppLabel(String appLabel) {
+        mAppLabel = appLabel;
+    }
+
+    public void setLocale(String locale) {
+        mLocale = locale;
+    }
+
+    public void setForceNoDecor() {
+        mForceNoDecor = true;
     }
 
     public ILayoutPullParser getLayoutDescription() {
@@ -189,7 +214,7 @@ public class Params {
         return mRenderingMode;
     }
 
-    public int getDensity() {
+    public Density getDensity() {
         return mDensity;
     }
 
@@ -231,5 +256,21 @@ public class Params {
 
     public ScreenSize getConfigScreenSize() {
         return mConfigScreenSize;
+    }
+
+    public String getAppIcon() {
+        return mAppIcon;
+    }
+
+    public String getAppLabel() {
+        return mAppLabel;
+    }
+
+    public String getLocale() {
+        return mLocale;
+    }
+
+    public boolean isForceNoDecor() {
+        return mForceNoDecor;
     }
 }

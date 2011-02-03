@@ -26,11 +26,11 @@ import com.android.ide.common.rendering.StaticRenderSession;
 import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.common.rendering.api.LayoutLog;
-import com.android.ide.common.rendering.api.Params;
+import com.android.ide.common.rendering.api.RenderParams;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.Result;
-import com.android.ide.common.rendering.api.Params.RenderingMode;
+import com.android.ide.common.rendering.api.RenderParams.RenderingMode;
 import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
@@ -74,7 +74,6 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.io.IAbstractFile;
 import com.android.sdklib.io.StreamException;
 import com.android.sdklib.xml.AndroidManifest;
-import com.android.sdklib.xml.AndroidManifestParser;
 import com.android.sdkuilib.internal.widgets.ResolutionChooserDialog;
 
 import org.eclipse.core.resources.IFile;
@@ -1618,7 +1617,7 @@ public class GraphicalEditorPart extends EditorPart
             }
         }
 
-        int density = mConfigComposite.getDensity().getDpiValue();
+        Density density = mConfigComposite.getDensity();
         float xdpi = mConfigComposite.getXDpi();
         float ydpi = mConfigComposite.getYDpi();
         boolean isProjectTheme = mConfigComposite.isProjectTheme();
@@ -1661,7 +1660,7 @@ public class GraphicalEditorPart extends EditorPart
                 configuredProjectRes, frameworkResources,
                 theme, isProjectTheme);
 
-        Params params = new Params(
+        RenderParams params = new RenderParams(
                 topParser,
                 iProject /* projectKey */,
                 width, height,
@@ -1672,6 +1671,22 @@ public class GraphicalEditorPart extends EditorPart
                 mMinSdkVersion,
                 mTargetSdkVersion,
                 logger);
+
+        // FIXME make persistent and only reload when the manifest (or at least resources) chanage.
+        IFolderWrapper projectFolder = new IFolderWrapper(getProject());
+        IAbstractFile manifest = AndroidManifest.getManifest(projectFolder);
+        if (manifest != null) {
+            try {
+                params.setAppIcon(AndroidManifest.getApplicationIcon(manifest));
+            } catch (Exception e) {
+                // ignore.
+            }
+            try {
+                params.setAppLabel(AndroidManifest.getApplicationLabel(manifest));
+            } catch (Exception e) {
+                // ignore.
+            }
+        }
 
         ScreenSizeQualifier ssq = mConfigComposite.getCurrentConfig().getScreenSizeQualifier();
         if (ssq != null) {
@@ -2429,7 +2444,7 @@ public class GraphicalEditorPart extends EditorPart
         int oldMinSdkVersion = mMinSdkVersion;
         int oldTargetSdkVersion = mTargetSdkVersion;
 
-        IAbstractFile manifestFile = AndroidManifestParser.getManifest(
+        IAbstractFile manifestFile = AndroidManifest.getManifest(
                 new IFolderWrapper(mEditedFile.getProject()));
 
         if (manifestFile != null) {

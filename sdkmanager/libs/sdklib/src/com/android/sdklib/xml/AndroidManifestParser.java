@@ -632,7 +632,7 @@ public class AndroidManifestParser {
 
     public static ManifestData parse(IAbstractFolder projectFolder)
             throws SAXException, IOException, StreamException, ParserConfigurationException {
-        IAbstractFile manifestFile = getManifest(projectFolder);
+        IAbstractFile manifestFile = AndroidManifest.getManifest(projectFolder);
         if (manifestFile == null) {
             throw new FileNotFoundException();
         }
@@ -662,22 +662,6 @@ public class AndroidManifestParser {
             parser.parse(new InputSource(manifestFileStream), manifestHandler);
 
             return data;
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns an {@link IAbstractFile} object representing the manifest for the given project.
-     *
-     * @param project The project containing the manifest file.
-     * @return An IAbstractFile object pointing to the manifest or null if the manifest
-     *         is missing.
-     */
-    public static IAbstractFile getManifest(IAbstractFolder projectFolder) {
-        IAbstractFile file = projectFolder.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
-        if (file.exists()) {
-            return file;
         }
 
         return null;

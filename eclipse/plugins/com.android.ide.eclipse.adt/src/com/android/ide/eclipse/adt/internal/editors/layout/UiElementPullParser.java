@@ -65,7 +65,7 @@ public final class UiElementPullParser extends BasePullParser {
     private boolean mZeroAttributeIsPadding = false;
     private boolean mIncreaseExistingPadding = false;
     private List<ViewElementDescriptor> mLayoutDescriptors;
-    private final int mDensityValue;
+    private final Density mDensity;
     private final float mXdpi;
 
     /**
@@ -106,12 +106,12 @@ public final class UiElementPullParser extends BasePullParser {
      */
     public UiElementPullParser(UiElementNode top, boolean explodeRendering,
             Set<UiElementNode> explodeNodes,
-            int densityValue, float xdpi, IProject project) {
+            Density density, float xdpi, IProject project) {
         super();
         mRoot = top;
         mExplodedRendering = explodeRendering;
         mExplodeNodes = explodeNodes;
-        mDensityValue = densityValue;
+        mDensity = density;
         mXdpi = xdpi;
         if (mExplodedRendering) {
             // get the layout descriptor
@@ -571,7 +571,7 @@ public final class UiElementPullParser extends BasePullParser {
                         case COMPLEX_UNIT_DIP:
                         case COMPLEX_UNIT_SP: // intended fall-through since we don't
                                               // adjust for font size
-                            f *= (float)mDensityValue / Density.DEFAULT_DENSITY;
+                            f *= (float)mDensity.getDpiValue() / Density.DEFAULT_DENSITY;
                             break;
                         case COMPLEX_UNIT_PT:
                             f *= mXdpi * (1.0f / 72);

@@ -44,4 +44,11 @@ public class DensityBasedResourceValue extends ResourceValue implements IDensity
     public Density getDensity() {
         return Density.getEnum(mDensity.getDpiValue());
     }
+
+    @Override
+    public String toString() {
+        return "DensityBasedResourceValue ["
+                + getResourceType() + "/" + getName() + " = " + getValue()
+                + " (density:" + mDensity +", framework:" + isFramework() + ")]";
+    }
 }

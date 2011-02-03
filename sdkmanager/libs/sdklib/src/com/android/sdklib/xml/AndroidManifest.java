@@ -58,6 +58,8 @@ public final class AndroidManifest {
     public final static String ATTRIBUTE_GLESVERSION = "glEsVersion";
     public final static String ATTRIBUTE_PROCESS = "process";
     public final static String ATTRIBUTE_DEBUGGABLE = "debuggable";
+    public final static String ATTRIBUTE_LABEL = "label";
+    public final static String ATTRIBUTE_ICON = "icon";
     public final static String ATTRIBUTE_MIN_SDK_VERSION = "minSdkVersion";
     public final static String ATTRIBUTE_TARGET_SDK_VERSION = "targetSdkVersion";
     public final static String ATTRIBUTE_TARGET_PACKAGE = "targetPackage";
@@ -76,6 +78,22 @@ public final class AndroidManifest {
     public final static String ATTRIBUTE_REQ_TOUCHSCREEN = "reqTouchScreen";
 
     /**
+     * Returns an {@link IAbstractFile} object representing the manifest for the given project.
+     *
+     * @param project The project containing the manifest file.
+     * @return An IAbstractFile object pointing to the manifest or null if the manifest
+     *         is missing.
+     */
+    public static IAbstractFile getManifest(IAbstractFolder projectFolder) {
+        IAbstractFile file = projectFolder.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
+        if (file.exists()) {
+            return file;
+        }
+
+        return null;
+    }
+
+    /**
      * Returns the package for a given project.
      * @param projectFolder the folder of the project.
      * @return the package info or null (or empty) if not found.
@@ -84,8 +102,12 @@ public final class AndroidManifest {
      */
     public static String getPackage(IAbstractFolder projectFolder)
             throws XPathExpressionException, StreamException {
-        IAbstractFile file = projectFolder.getFile(SdkConstants.FN_ANDROID_MANIFEST_XML);
-        return getPackage(file);
+        IAbstractFile file = getManifest(projectFolder);
+        if (file != null) {
+            return getPackage(file);
+        }
+
+        return null;
     }
 
     /**
@@ -123,7 +145,8 @@ public final class AndroidManifest {
         String value = xPath.evaluate(
                 "/"  + NODE_MANIFEST +
                 "/"  + NODE_APPLICATION +
-                "/@" + ATTRIBUTE_DEBUGGABLE,
+                "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX +
+                ":"  + ATTRIBUTE_DEBUGGABLE,
                 new InputSource(manifestFile.getContents()));
 
         // default is not debuggable, which is the same behavior as parseBoolean
@@ -240,6 +263,43 @@ public final class AndroidManifest {
         }
     }
 
+    /**
+     * Returns the application icon  for a given manifest.
+     * @param manifestFile the manifest to parse.
+     * @return the icon or null (or empty) if not found.
+     * @throws XPathExpressionException
+     * @throws StreamException If any error happens when reading the manifest.
+     */
+    public static String getApplicationIcon(IAbstractFile manifestFile)
+            throws XPathExpressionException, StreamException {
+        XPath xPath = AndroidXPathFactory.newXPath();
+
+        return xPath.evaluate(
+                "/"  + NODE_MANIFEST +
+                "/"  + NODE_APPLICATION +
+                "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX +
+                ":"  + ATTRIBUTE_ICON,
+                new InputSource(manifestFile.getContents()));
+    }
+
+    /**
+     * Returns the application label  for a given manifest.
+     * @param manifestFile the manifest to parse.
+     * @return the label or null (or empty) if not found.
+     * @throws XPathExpressionException
+     * @throws StreamException If any error happens when reading the manifest.
+     */
+    public static String getApplicationLabel(IAbstractFile manifestFile)
+            throws XPathExpressionException, StreamException {
+        XPath xPath = AndroidXPathFactory.newXPath();
+
+        return xPath.evaluate(
+                "/"  + NODE_MANIFEST +
+                "/"  + NODE_APPLICATION +
+                "/@" + AndroidXPathFactory.DEFAULT_NS_PREFIX +
+                ":"  + ATTRIBUTE_LABEL,
+                new InputSource(manifestFile.getContents()));
+    }
 
     /**
      * Combines a java package, with a class value from the manifest to make a fully qualified
