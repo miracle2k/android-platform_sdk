@@ -227,6 +227,8 @@ public final class SdkConstants {
     public final static String FD_SKINS = "skins";
     /** Name of the SDK samples folder. */
     public final static String FD_SAMPLES = "samples";
+    /** Name of the SDK extras folder. */
+    public final static String FD_EXTRAS = "extras";
     /** Name of the SDK templates folder, i.e. "templates" */
     public final static String FD_TEMPLATES = "templates";
     /** Name of the SDK Ant folder, i.e. "ant" */

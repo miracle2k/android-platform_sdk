@@ -106,7 +106,7 @@
     </sdk:add-on>
 
     <sdk:extra>
-        <sdk:vendor>a</sdk:vendor>
+        <sdk:vendor>g</sdk:vendor>
         <sdk:path>usb_driver</sdk:path>
         <sdk:uses-license ref="license2" />
         <sdk:revision>43</sdk:revision>
@@ -126,6 +126,25 @@
     <sdk:extra>
         <sdk:vendor>android_vendor</sdk:vendor>
         <sdk:path>extra_api_dep</sdk:path>
+        <sdk:uses-license ref="license2" />
+        <sdk:revision>2</sdk:revision>
+        <sdk:archives>
+            <sdk:archive os="any" arch="any">
+                <sdk:size>65536</sdk:size>
+                <sdk:checksum type="sha1">2822ae37115ebf13412bbef91339ee0d9454525e</sdk:checksum>
+                <sdk:url>distrib/extra_mega_duff.zip</sdk:url>
+            </sdk:archive>
+        </sdk:archives>
+        <sdk:description>Some extra package that has a min-api-level of 42</sdk:description>
+        <sdk:desc-url>http://www.example.com/extra.html</sdk:desc-url>
+        <sdk:min-tools-rev>3</sdk:min-tools-rev>
+        <sdk:min-api-level>42</sdk:min-api-level>
+        <sdk:obsolete></sdk:obsolete>
+    </sdk:extra>
+
+    <sdk:extra>
+        <sdk:vendor>____</sdk:vendor>
+        <sdk:path>____</sdk:path>
         <sdk:uses-license ref="license2" />
         <sdk:revision>2</sdk:revision>
         <sdk:archives>

@@ -226,7 +226,7 @@ public class SamplePackage extends MinToolsPackage
         // The /samples dir at the root of the SDK
         File samplesRoot = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
 
-        // First find if this platform is already installed. If so, reuse the same directory.
+        // First find if this sample is already installed. If so, reuse the same directory.
         for (IAndroidTarget target : sdkManager.getTargets()) {
             if (target.isPlatform() &&
                     target.getVersion().equals(mVersion)) {
@@ -278,10 +278,6 @@ public class SamplePackage extends MinToolsPackage
             ITaskMonitor monitor,
             String osSdkRoot,
             File installFolder) {
-        File samplesRoot = new File(osSdkRoot, SdkConstants.FD_SAMPLES);
-        if (!samplesRoot.isDirectory()) {
-            samplesRoot.mkdir();
-        }
 
         if (installFolder != null && installFolder.isDirectory()) {
             // Get the hash computed during the last installation
