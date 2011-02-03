@@ -910,4 +910,25 @@
             commandId="com.android.ide.eclipse.adt.launch.LaunchShortcut.run"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
    </extension>
+   <extension point="org.eclipse.core.contenttype.contentTypes">
+    <content-type id="com.android.ide.eclipse.adt.binaryXml" name="Android Binary XML"
+        priority="high"
+        file-extensions="xml">
+        <describer
+            class="com.android.ide.eclipse.adt.internal.editors.binaryxml.BinaryXMLDescriber">
+        </describer>
+    </content-type>
+  </extension>
+  <extension point="org.eclipse.ui.editors">
+        <editor
+            name="Android Binary XML editor"
+            icon="$nl$/icons/android_file.png"
+            contributorClass="org.eclipse.wst.xml.ui.internal.tabletree.XMLMultiPageEditorActionBarContributor"
+            class="com.android.ide.eclipse.adt.internal.editors.binaryxml.BinaryXMLMultiPageEditorPart"
+            symbolicFontName="org.eclipse.wst.sse.ui.textfont"
+            id="com.android.ide.eclipse.adt.binedit.BinaryXMLMultiPageEditorPart">
+            <contentTypeBinding
+                contentTypeId="com.android.ide.eclipse.adt.binaryXml" />
+        </editor>
+    </extension>
 </plugin>
