@@ -659,7 +659,7 @@ class ImageEditorPanel extends JPanel {
         private boolean showPatches;
         private boolean showLock = true;
 
-        private Dimension size;
+        private final Dimension size;
 
         private boolean locked;
 
@@ -699,7 +699,6 @@ class ImageEditorPanel extends JPanel {
 
             setOpaque(true);
 
-            // Set dummy size.
             // Exact size will be set by setZoom() in AncestorListener#ancestorMoved.
             size = new Dimension(0, 0);
 
@@ -1029,14 +1028,16 @@ class ImageEditorPanel extends JPanel {
 
             zoom = value;
             if (size.height == 0 || (getHeight() - size.height) == 0) {
-                size = new Dimension(width * zoom, height * zoom + helpPanel.getHeight());
+                size.setSize(width * zoom, height * zoom + helpPanel.getHeight());
             } else {
-                size = new Dimension(width * zoom, height * zoom);
+                size.setSize(width * zoom, height * zoom);
             }
 
-            setSize(size);
-            ImageEditorPanel.this.validate();
-            repaint();
+            if (!size.equals(getSize())) {
+                setSize(size);
+                ImageEditorPanel.this.validate();
+                repaint();
+            }
         }
 
         void setPatchesVisible(boolean visible) {
