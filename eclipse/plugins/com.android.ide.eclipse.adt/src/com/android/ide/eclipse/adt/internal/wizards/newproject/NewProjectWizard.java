@@ -110,6 +110,7 @@ public class NewProjectWizard extends Wizard implements INewWizard {
     private static final String PARAM_ACTIVITY = "ACTIVITY_NAME";                   //$NON-NLS-1$
     private static final String PARAM_APPLICATION = "APPLICATION_NAME";             //$NON-NLS-1$
     private static final String PARAM_PACKAGE = "PACKAGE";                          //$NON-NLS-1$
+    private static final String PARAM_IMPORT_RESOURCE_CLASS = "IMPORT_RESOURCE_CLASS"; //$NON-NLS-1$
     private static final String PARAM_PROJECT = "PROJECT_NAME";                     //$NON-NLS-1$
     private static final String PARAM_STRING_NAME = "STRING_NAME";                  //$NON-NLS-1$
     private static final String PARAM_STRING_CONTENT = "STRING_CONTENT";            //$NON-NLS-1$
@@ -419,13 +420,7 @@ public class NewProjectWizard extends Wizard implements INewWizard {
         parameters.put(PARAM_MIN_SDK_VERSION, info.getMinSdkVersion());
 
         if (info.isCreateActivity()) {
-            // An activity name can be of the form ".package.Class" or ".Class".
-            // The initial dot is ignored, as it is always added later in the templates.
-            String activityName = info.getActivityName();
-            if (activityName.startsWith(".")) { //$NON-NLS-1$
-                activityName = activityName.substring(1);
-            }
-            parameters.put(PARAM_ACTIVITY, activityName);
+            parameters.put(PARAM_ACTIVITY, info.getActivityName());
         }
 
         // create a dictionary of string that will contain name+content.
@@ -809,6 +804,15 @@ public class NewProjectWizard extends Wizard implements INewWizard {
                 // now get the activity template
                 String activityTemplate = AdtPlugin.readEmbeddedTextFile(TEMPLATE_ACTIVITIES);
 
+                // If the activity name doesn't contain any dot, it's in the form
+                // "ClassName" and we need to expand it to ".ClassName" in the XML.
+                String name = (String) parameters.get(PARAM_ACTIVITY);
+                if (name.indexOf('.') == -1) {
+                    // Duplicate the parameters map to avoid changing the caller
+                    parameters = new HashMap<String, Object>(parameters);
+                    parameters.put(PARAM_ACTIVITY, "." + name); //$NON-NLS-1$
+                }
+
                 // Replace all keyword parameters to make main activity.
                 String activities = replaceParameters(activityTemplate, parameters);
 
@@ -1009,21 +1013,41 @@ public class NewProjectWizard extends Wizard implements INewWizard {
         // The PARAM_ACTIVITY key will be absent if no activity should be created,
         // in which case activityName will be null.
         String activityName = (String) parameters.get(PARAM_ACTIVITY);
-        Map<String, Object> java_activity_parameters = parameters;
-        if (activityName != null) {
-            if (activityName.indexOf('.') >= 0) {
-                // There are package names in the activity name. Transform packageName to add
-                // those sub packages and remove them from activityName.
-                packageName += "." + activityName; //$NON-NLS-1$
-                int pos = packageName.lastIndexOf('.');
-                activityName = packageName.substring(pos + 1);
-                packageName = packageName.substring(0, pos);
 
-                // Also update the values used in the JAVA_FILE_TEMPLATE below
-                // (but not the ones from the manifest so don't change the caller's dictionary)
-                java_activity_parameters = new HashMap<String, Object>(parameters);
-                java_activity_parameters.put(PARAM_PACKAGE, packageName);
-                java_activity_parameters.put(PARAM_ACTIVITY, activityName);
+        Map<String, Object> java_activity_parameters = new HashMap<String, Object>(parameters);
+        java_activity_parameters.put(PARAM_IMPORT_RESOURCE_CLASS, "");  //$NON-NLS-1$
+
+        if (activityName != null) {
+
+            String resourcePackageClass = null;
+
+            // An activity name can be of the form ".package.Class", ".Class" or FQDN.
+            // The initial dot is ignored, as it is always added later in the templates.
+            int lastDotIndex = activityName.lastIndexOf('.');
+
+            if (lastDotIndex != -1) {
+
+                // Resource class
+                if (lastDotIndex > 0) {
+                    resourcePackageClass = packageName + "." + AndroidConstants.FN_RESOURCE_BASE; //$NON-NLS-1$
+                }
+
+                // Package name
+                if (activityName.startsWith(".")) {  //$NON-NLS-1$
+                    packageName += activityName.substring(0, lastDotIndex);
+                } else {
+                    packageName = activityName.substring(0, lastDotIndex);
+                }
+
+                // Activity Class name
+                activityName = activityName.substring(lastDotIndex + 1);
+            }
+
+            java_activity_parameters.put(PARAM_ACTIVITY, activityName);
+            java_activity_parameters.put(PARAM_PACKAGE, packageName);
+            if (resourcePackageClass != null) {
+                String importResourceClass = "\nimport " + resourcePackageClass + ";";  //$NON-NLS-1$ // $NON-NLS-2$
+                java_activity_parameters.put(PARAM_IMPORT_RESOURCE_CLASS, importResourceClass);
             }
         }
 
