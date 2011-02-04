@@ -409,10 +409,13 @@ public abstract class Package implements IDescription, Comparable<Package> {
      * <p/>
      * Some types of packages install in a fix location, for example docs and tools.
      * In this case the returned folder may already exist with a different archive installed
-     * at the desired location.
+     * at the desired location. <br/>
      * For other packages types, such as add-on or platform, the folder name is only partially
      * relevant to determine the content and thus a real check will be done to provide an
      * existing or new folder depending on the current content of the SDK.
+     * <p/>
+     * Note that the installer *will* create all directories returned here just before
+     * installation so this method must not attempt to create them.
      *
      * @param osSdkRoot The OS path of the SDK root folder.
      * @param sdkManager An existing SDK manager to list current platforms and addons.
@@ -429,6 +432,11 @@ public abstract class Package implements IDescription, Comparable<Package> {
      * be continue. The installer will still install the remaining packages if possible.
      * <p/>
      * The base implementation always return true.
+     * <p/>
+     * Note that the installer *will* create all directories specified by
+     * {@link #getInstallFolder} just before installation, so they must not be
+     * created here. This is also called before the previous install dir is removed
+     * so the previous content is still there during upgrade.
      *
      * @param archive The archive that will be installed
      * @param monitor The {@link ITaskMonitor} to display errors.
@@ -513,6 +521,12 @@ public abstract class Package implements IDescription, Comparable<Package> {
      * - Add-on based on n <br/>
      * - Add-on based on n-1 <br/>
      * - Extra packages <br/>
+     * <p/>
+     * Important: this must NOT be used to compare if two packages are the same thing.
+     * This is achieved by {@link #sameItemAs(Package)} or {@link #canBeUpdatedBy(Package)}.
+     * <p/>
+     * This {@link #compareTo(Package)} method is purely an implementation detail to
+     * perform the right ordering of the packages in the list of available or installed packages.
      */
     public int compareTo(Package other) {
         int s1 = this.sortingScore();

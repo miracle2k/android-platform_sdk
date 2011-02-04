@@ -16,11 +16,13 @@
 
 package com.android.sdklib.internal.repository;
 
+import com.android.sdklib.SdkManager;
 import com.android.sdklib.repository.SdkAddonConstants;
 
 import org.w3c.dom.Document;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -171,29 +173,46 @@ public class SdkAddonSourceTest extends TestCase {
         assertEquals("Found My First add-on by John Doe, Android API 1, revision 1\n" +
                      "Found My Second add-on by John Deer, Android API 2, revision 42\n" +
                      "Found This add-on has no libraries by Joe Bar, Android API 4, revision 3\n" +
-                     "Found A Usb Driver package, revision 43 (Obsolete)\n" +
-                     "Found Android Vendor Extra Api Dep package, revision 2 (Obsolete)\n",
+                     "Found G USB Driver package, revision 43 (Obsolete)\n" +
+                     "Found Android Vendor Extra API Dep package, revision 2 (Obsolete)\n" +
+                     "Found Unkown Extra package, revision 2 (Obsolete)\n",
                 monitor.getCapturedDescriptions());
         assertEquals("", monitor.getCapturedResults());
 
         // check the packages we found... we expected to find 11 packages with each at least
         // one archive.
         Package[] pkgs = mSource.getPackages();
-        assertEquals(5, pkgs.length);
+        assertEquals(6, pkgs.length);
         for (Package p : pkgs) {
             assertTrue(p.getArchives().length >= 1);
         }
 
-        // Check the extra packages path
-        ArrayList<String> extraPaths = new ArrayList<String>();
+        // Check the extra packages path, vendor, install folder
+
+        final String osSdkPath = "SDK";
+        final SdkManager sdkManager = new MockEmptySdkManager(osSdkPath);
+
+        ArrayList<String> extraPaths   = new ArrayList<String>();
+        ArrayList<String> extraVendors = new ArrayList<String>();
+        ArrayList<File>   extraInstall = new ArrayList<File>();
         for (Package p : pkgs) {
             if (p instanceof ExtraPackage) {
                 extraPaths.add(((ExtraPackage) p).getPath());
+                extraVendors.add(((ExtraPackage) p).getVendor());
+                extraInstall.add(((ExtraPackage) p).getInstallFolder(osSdkPath, sdkManager));
             }
         }
         assertEquals(
-                "[a-usb_driver, android_vendor-extra_api_dep]",
+                "[usb_driver, extra_api_dep, extra0000005f]",
                 Arrays.toString(extraPaths.toArray()));
+        assertEquals(
+                "[g, android_vendor, vendor0000005f]",
+                Arrays.toString(extraVendors.toArray()));
+        assertEquals(
+                ("[SDK/extras/g/usb_driver, " +
+                  "SDK/extras/android_vendor/extra_api_dep, " +
+                  "SDK/extras/vendor0000005f/extra0000005f]").replace('/', File.separatorChar),
+                Arrays.toString(extraInstall.toArray()));
     }
 
     /**

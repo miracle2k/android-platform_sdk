@@ -16,6 +16,8 @@
 
 package com.android.sdklib;
 
+import com.android.annotations.VisibleForTesting;
+import com.android.annotations.VisibleForTesting.Visibility;
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion.AndroidVersionException;
@@ -42,7 +44,7 @@ import java.util.regex.Pattern;
  * @see PlatformTarget
  * @see AddOnTarget
  */
-public final class SdkManager {
+public class SdkManager {
 
     public final static String PROP_VERSION_SDK = "ro.build.version.sdk";              //$NON-NLS-1$
     public final static String PROP_VERSION_CODENAME = "ro.build.version.codename";    //$NON-NLS-1$
@@ -92,7 +94,8 @@ public final class SdkManager {
      *
      * @param osSdkPath the location of the SDK.
      */
-    private SdkManager(String osSdkPath) {
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected SdkManager(String osSdkPath) {
         mOsSdkPath = osSdkPath;
     }
 
@@ -146,7 +149,8 @@ public final class SdkManager {
      * <p/>
      * The array can be empty but not null.
      */
-    private void setTargets(IAndroidTarget[] targets) {
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected void setTargets(IAndroidTarget[] targets) {
         assert targets != null;
         mTargets = targets;
     }

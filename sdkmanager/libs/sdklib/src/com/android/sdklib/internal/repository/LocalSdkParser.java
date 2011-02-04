@@ -142,6 +142,7 @@ public class LocalSdkParser {
         scanMissingAddons(sdkManager, visited, packages, log);
         scanMissingSamples(osSdkRoot, visited, packages, log);
         scanExtras(osSdkRoot, visited, packages, log);
+        scanExtrasDirectory(osSdkRoot, visited, packages, log);
 
         Collections.sort(packages);
 
@@ -150,14 +151,36 @@ public class LocalSdkParser {
     }
 
     /**
-     * Find any other directory <em>at the top level</em> that hasn't been visited yet
-     * and assume they contain extra packages. This is <em>not</em> a recursive search.
+     * Find any directory in the /extras/vendors/path folders for extra packages.
+     * This isn't a recursive search.
      */
     private void scanExtras(String osSdkRoot,
             HashSet<File> visited,
             ArrayList<Package> packages,
             ISdkLog log) {
-        File root = new File(osSdkRoot);
+        File root = new File(osSdkRoot, SdkConstants.FD_EXTRAS);
+
+        if (!root.isDirectory()) {
+            // This should not happen. It makes listFiles() return null so let's avoid it.
+            return;
+        }
+
+        for (File vendor : root.listFiles()) {
+            if (vendor.isDirectory()) {
+                scanExtrasDirectory(vendor.getAbsolutePath(), visited, packages, log);
+            }
+        }
+    }
+
+    /**
+     * Find any other directory in the given "root" directory that hasn't been visited yet
+     * and assume they contain extra packages. This is <em>not</em> a recursive search.
+     */
+    private void scanExtrasDirectory(String extrasRoot,
+            HashSet<File> visited,
+            ArrayList<Package> packages,
+            ISdkLog log) {
+        File root = new File(extrasRoot);
 
         if (!root.isDirectory()) {
             // This should not happen. It makes listFiles() return null so let's avoid it.

@@ -16,11 +16,13 @@
 
 package com.android.sdklib.internal.repository;
 
+import com.android.sdklib.SdkManager;
 import com.android.sdklib.repository.SdkRepoConstants;
 
 import org.w3c.dom.Document;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -208,16 +210,30 @@ public class SdkRepoSourceTest extends TestCase {
             assertTrue(p.getArchives().length >= 1);
         }
 
-        // Check the extra packages path
-        ArrayList<String> extraPaths = new ArrayList<String>();
+        // Check the extra packages path, vendor, install folder
+
+        final String osSdkPath = "SDK";
+        final SdkManager sdkManager = new MockEmptySdkManager(osSdkPath);
+
+        ArrayList<String> extraPaths   = new ArrayList<String>();
+        ArrayList<String> extraVendors = new ArrayList<String>();
+        ArrayList<File>   extraInstall = new ArrayList<File>();
         for (Package p : pkgs) {
             if (p instanceof ExtraPackage) {
                 extraPaths.add(((ExtraPackage) p).getPath());
+                extraVendors.add(((ExtraPackage) p).getVendor());
+                extraInstall.add(((ExtraPackage) p).getInstallFolder(osSdkPath, sdkManager));
             }
         }
         assertEquals(
                 "[usb_driver]",
                 Arrays.toString(extraPaths.toArray()));
+        assertEquals(
+                "[]",
+                Arrays.toString(extraVendors.toArray()));
+        assertEquals(
+                "[SDK/extras/usb_driver]".replace('/', File.separatorChar),
+                Arrays.toString(extraInstall.toArray()));
     }
 
     /**
@@ -259,7 +275,7 @@ public class SdkRepoSourceTest extends TestCase {
                      "Found Android SDK Tools, revision 42\n" +
                      "Found This add-on has no libraries by Joe Bar, Android API 4, revision 3\n" +
                      "Found Usb Driver package, revision 43 (Obsolete)\n" +
-                     "Found Extra Api Dep package, revision 2 (Obsolete)\n" +
+                     "Found Extra API Dep package, revision 2 (Obsolete)\n" +
                      "Found Samples for SDK API 14, revision 24 (Obsolete)\n",
                 monitor.getCapturedDescriptions());
         assertEquals("", monitor.getCapturedResults());
@@ -272,16 +288,30 @@ public class SdkRepoSourceTest extends TestCase {
             assertTrue(p.getArchives().length >= 1);
         }
 
-        // Check the extra packages path
-        ArrayList<String> extraPaths = new ArrayList<String>();
+        // Check the extra packages path, vendor, install folder
+
+        final String osSdkPath = "SDK";
+        final SdkManager sdkManager = new MockEmptySdkManager(osSdkPath);
+
+        ArrayList<String> extraPaths   = new ArrayList<String>();
+        ArrayList<String> extraVendors = new ArrayList<String>();
+        ArrayList<File>   extraInstall = new ArrayList<File>();
         for (Package p : pkgs) {
             if (p instanceof ExtraPackage) {
                 extraPaths.add(((ExtraPackage) p).getPath());
+                extraVendors.add(((ExtraPackage) p).getVendor());
+                extraInstall.add(((ExtraPackage) p).getInstallFolder(osSdkPath, sdkManager));
             }
         }
         assertEquals(
                 "[usb_driver, extra_api_dep]",
                 Arrays.toString(extraPaths.toArray()));
+        assertEquals(
+                "[, ]",
+                Arrays.toString(extraVendors.toArray()));
+        assertEquals(
+                "[SDK/extras/usb_driver, SDK/extras/extra_api_dep]".replace('/', File.separatorChar),
+                Arrays.toString(extraInstall.toArray()));
     }
 
     /**
@@ -320,8 +350,8 @@ public class SdkRepoSourceTest extends TestCase {
                     "Found Documentation for Android SDK, API 2, revision 42\n" +
                     "Found Android SDK Tools, revision 42\n" +
                     "Found Android SDK Platform-tools, revision 3\n" +
-                    "Found A Usb Driver package, revision 43 (Obsolete)\n" +
-                    "Found Android Vendor Extra Api Dep package, revision 2 (Obsolete)\n" +
+                    "Found A USB Driver package, revision 43 (Obsolete)\n" +
+                    "Found Android Vendor Extra API Dep package, revision 2 (Obsolete)\n" +
                     "Found Samples for SDK API 14, revision 24 (Obsolete)\n",
                 monitor.getCapturedDescriptions());
         assertEquals("", monitor.getCapturedResults());
@@ -334,16 +364,31 @@ public class SdkRepoSourceTest extends TestCase {
             assertTrue(p.getArchives().length >= 1);
         }
 
-        // Check the extra packages path
-        ArrayList<String> extraPaths = new ArrayList<String>();
+        // Check the extra packages path, vendor, install folder
+
+        final String osSdkPath = "SDK";
+        final SdkManager sdkManager = new MockEmptySdkManager(osSdkPath);
+
+        ArrayList<String> extraPaths   = new ArrayList<String>();
+        ArrayList<String> extraVendors = new ArrayList<String>();
+        ArrayList<File>   extraInstall = new ArrayList<File>();
         for (Package p : pkgs) {
             if (p instanceof ExtraPackage) {
                 extraPaths.add(((ExtraPackage) p).getPath());
+                extraVendors.add(((ExtraPackage) p).getVendor());
+                extraInstall.add(((ExtraPackage) p).getInstallFolder(osSdkPath, sdkManager));
             }
         }
         assertEquals(
-                "[a-usb_driver, android_vendor-extra_api_dep]",
+                "[usb_driver, extra_api_dep]",
                 Arrays.toString(extraPaths.toArray()));
+        assertEquals(
+                "[a, android_vendor]",
+                Arrays.toString(extraVendors.toArray()));
+        assertEquals(
+                "[SDK/extras/a/usb_driver, SDK/extras/android_vendor/extra_api_dep]"
+                 .replace('/', File.separatorChar),
+                Arrays.toString(extraInstall.toArray()));
     }
 
     /**

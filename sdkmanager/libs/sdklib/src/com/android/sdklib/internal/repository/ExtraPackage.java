@@ -16,6 +16,7 @@
 
 package com.android.sdklib.internal.repository;
 
+import com.android.sdklib.NullSdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
@@ -50,7 +51,8 @@ public class ExtraPackage extends MinToolsPackage
     private final String mVendor;
 
     /**
-     * The sub-folder name. It must be a non-empty single-segment path.
+     * The sub-folder name. It must be a non-empty single-segment path and has the same
+     * rules as {@link #mVendor}.
      */
     private final String mPath;
 
@@ -164,7 +166,7 @@ public class ExtraPackage extends MinToolsPackage
 
         props.setProperty(PROP_PATH, mPath);
         if (mVendor != null) {
-            props.setProperty(PROP_PATH, mVendor);
+            props.setProperty(PROP_VENDOR, mVendor);
         }
 
         if (getMinApiLevel() != MIN_API_LEVEL_NOT_SPECIFIED) {
@@ -181,74 +183,126 @@ public class ExtraPackage extends MinToolsPackage
     }
 
     /**
-     * Static helper to check if a given path is acceptable for an "extra" package.
+     * Static helper to check if a given vendor and path is acceptable for an "extra" package.
      */
     public boolean isPathValid() {
-        if (SdkConstants.FD_ADDONS.equals(mPath) ||
-                SdkConstants.FD_PLATFORMS.equals(mPath) ||
-                SdkConstants.FD_PLATFORM_TOOLS.equals(mPath) ||
-                SdkConstants.FD_TOOLS.equals(mPath) ||
-                SdkConstants.FD_DOCS.equals(mPath) ||
-                RepoConstants.FD_TEMP.equals(mPath)) {
+        return isSegmentValid(mVendor) && isSegmentValid(mPath);
+    }
+
+    private boolean isSegmentValid(String segment) {
+        if (SdkConstants.FD_ADDONS.equals(segment) ||
+                SdkConstants.FD_PLATFORMS.equals(segment) ||
+                SdkConstants.FD_PLATFORM_TOOLS.equals(segment) ||
+                SdkConstants.FD_TOOLS.equals(segment) ||
+                SdkConstants.FD_DOCS.equals(segment) ||
+                RepoConstants.FD_TEMP.equals(segment)) {
             return false;
         }
-        return mPath != null && mPath.indexOf('/') == -1 && mPath.indexOf('\\') == -1;
+        return segment != null && segment.indexOf('/') == -1 && segment.indexOf('\\') == -1;
     }
 
     /**
-     * The install folder name. It is a single-segment path.
+     * Returns the sanitized path folder name. It is a single-segment path.
+     * <p/>
+     * The package is installed in SDK/extras/vendor_name/path_name.
      * <p/>
      * The paths "add-ons", "platforms", "tools" and "docs" are reserved and cannot be used.
      * This limitation cannot be written in the XML Schema and must be enforced here by using
      * the method {@link #isPathValid()} *before* installing the package.
      */
     public String getPath() {
-        String path = mPath;
-
-        if (mVendor != null && mVendor.length() > 0) {
-            path = mVendor + "-" + mPath;    //$NON-NLS-1$
-        }
-
-        int h = path.hashCode();
+        // The XSD specifies the XML vendor and path should only contain [a-zA-Z0-9]+
+        // and cannot be empty. Let's be defensive and enforce that anyway since things
+        // like "____" are still valid values that we don't want to allow.
 
         // Sanitize the path
-        path = path.replaceAll("[^a-zA-Z0-9-]+", "_");       //$NON-NLS-1$
-        if (path.length() == 0) {
-            path = String.format("unknown_extra%08x", h);  //$NON-NLS-1$
+        String path = mPath.replaceAll("[^a-zA-Z0-9-]+", "_");      //$NON-NLS-1$
+        if (path.length() == 0 || path.equals("_")) {               //$NON-NLS-1$
+            int h = path.hashCode();
+            path = String.format("extra%08x", h);                   //$NON-NLS-1$
         }
 
         return path;
     }
 
+    /**
+     * Returns the sanitized vendor folder name. It is a single-segment path.
+     * <p/>
+     * The package is installed in SDK/extras/vendor_name/path_name.
+     * <p/>
+     * An empty string is returned in case of error.
+     */
+    public String getVendor() {
+
+        // The XSD specifies the XML vendor and path should only contain [a-zA-Z0-9]+
+        // and cannot be empty. Let's be defensive and enforce that anyway since things
+        // like "____" are still valid values that we don't want to allow.
+
+        if (mVendor != null && mVendor.length() > 0) {
+            String vendor = mVendor;
+            // Sanitize the vendor
+            vendor = vendor.replaceAll("[^a-zA-Z0-9-]+", "_");      //$NON-NLS-1$
+            if (vendor.equals("_")) {                               //$NON-NLS-1$
+                int h = vendor.hashCode();
+                vendor = String.format("vendor%08x", h);            //$NON-NLS-1$
+            }
+
+            return vendor;
+        }
+
+        return ""; //$NON-NLS-1$
+    }
+
     /** Returns a short description for an {@link IDescription}. */
     @Override
     public String getShortDescription() {
-        String name = getPath();
-        if (name != null) {
-            // Uniformize all spaces in the name and upper case words.
+        String name = mPath;
 
-            name = name.replaceAll("[ _\t\f-]+", " ");     //$NON-NLS-1$ //$NON-NLS-2$
-
-            // Look at all lower case characters in range [1..n-1] and replace them by an upper
-            // case if they are preceded by a space. Also upper cases the first character of the
-            // string.
-            boolean changed = false;
-            char[] chars = name.toCharArray();
-            for (int n = chars.length - 1, i = 0; i < n; i++) {
-                if (Character.isLowerCase(chars[i]) && (i == 0 || chars[i - 1] == ' ')) {
-                    chars[i] = Character.toUpperCase(chars[i]);
-                    changed = true;
-                }
-            }
-            if (changed) {
-                name = new String(chars);
+        // In the past, we used to save the extras in a folder vendor-path,
+        // and that "vendor" would end up in the path when we reload the extra from
+        // disk. Detect this and compensate.
+        if (mVendor != null && mVendor.length() > 0) {
+            if (name.startsWith(mVendor + "-")) {  //$NON-NLS-1$
+                name = name.substring(mVendor.length() + 1);
             }
         }
+
+        // Uniformize all spaces in the name
+        if (name != null) {
+            name = name.replaceAll("[ _\t\f-]+", " ").trim();   //$NON-NLS-1$ //$NON-NLS-2$
+        }
+        if (name == null || name.length() == 0) {   //$NON-NLS-1$
+            name = "Unkown Extra";
+        }
+
+        if (mVendor != null && mVendor.length() > 0) {
+            name = mVendor + " " + name;  //$NON-NLS-1$
+            name = name.replaceAll("[ _\t\f-]+", " ").trim();   //$NON-NLS-1$ //$NON-NLS-2$
+        }
+
+        // Look at all lower case characters in range [1..n-1] and replace them by an upper
+        // case if they are preceded by a space. Also upper cases the first character of the
+        // string.
+        boolean changed = false;
+        char[] chars = name.toCharArray();
+        for (int n = chars.length - 1, i = 0; i < n; i++) {
+            if (Character.isLowerCase(chars[i]) && (i == 0 || chars[i - 1] == ' ')) {
+                chars[i] = Character.toUpperCase(chars[i]);
+                changed = true;
+            }
+        }
+        if (changed) {
+            name = new String(chars);
+        }
+
+        // Special case: reformat a few typical acronyms.
+        name = name.replaceAll(" Usb ", " USB ");   //$NON-NLS-1$
+        name = name.replaceAll(" Api ", " API ");   //$NON-NLS-1$
 
         String s = String.format("%1$s package, revision %2$d%3$s",
                 name,
                 getRevision(),
-                isObsolete() ? " (Obsolete)" : "");
+                isObsolete() ? " (Obsolete)" : "");  //$NON-NLS-2$
 
         return s;
     }
@@ -263,13 +317,13 @@ public class ExtraPackage extends MinToolsPackage
     public String getLongDescription() {
         String s = getDescription();
         if (s == null || s.length() == 0) {
-            s = String.format("Extra %1$s package", getPath());
+            s = String.format("Extra %1$s package by %2$s", getPath(), getVendor());
         }
 
         if (s.indexOf("revision") == -1) {
             s += String.format("\nRevision %1$d%2$s",
                     getRevision(),
-                    isObsolete() ? " (Obsolete)" : "");
+                    isObsolete() ? " (Obsolete)" : "");  //$NON-NLS-2$
         }
 
         if (getMinToolsRevision() != MIN_TOOLS_REV_NOT_SPECIFIED) {
@@ -278,6 +332,13 @@ public class ExtraPackage extends MinToolsPackage
 
         if (getMinApiLevel() != MIN_API_LEVEL_NOT_SPECIFIED) {
             s += String.format("\nRequires SDK Platform Android API %1$s", getMinApiLevel());
+        }
+
+        // For a local archive, also put the install path in the long description.
+        // This should help users locate the extra on their drive.
+        File localPath = getLocalArchivePath();
+        if (localPath != null) {
+            s += String.format("\nLocation: %1$s", localPath.getAbsolutePath());
         }
 
         return s;
@@ -291,16 +352,82 @@ public class ExtraPackage extends MinToolsPackage
      *
      * @param osSdkRoot The OS path of the SDK root folder.
      * @param sdkManager An existing SDK manager to list current platforms and addons.
+     *                   Not used in this implementation.
      * @return A new {@link File} corresponding to the directory to use to install this package.
      */
     @Override
     public File getInstallFolder(String osSdkRoot, SdkManager sdkManager) {
-        return new File(osSdkRoot, getPath());
+
+        // First find if this extra is already installed. If so, reuse the same directory.
+        LocalSdkParser localParser = new LocalSdkParser();
+        Package[] pkgs = localParser.parseSdk(osSdkRoot, sdkManager, new NullSdkLog());
+
+        for (Package pkg : pkgs) {
+            if (sameItemAs(pkg) && pkg instanceof ExtraPackage) {
+                File localPath = ((ExtraPackage) pkg).getLocalArchivePath();
+                if (localPath != null) {
+                    return localPath;
+                }
+            }
+        }
+
+        // The /extras dir at the root of the SDK
+        File path = new File(osSdkRoot, SdkConstants.FD_EXTRAS);
+
+        String vendor = getVendor();
+        if (vendor != null && vendor.length() > 0) {
+            path = new File(path, vendor);
+        }
+
+        String name = getPath();
+        if (name != null && name.length() > 0) {
+            path = new File(path, name);
+        }
+
+        return path;
     }
 
     @Override
     public boolean sameItemAs(Package pkg) {
-        // Extra packages are similar if they have the same path.
-        return pkg instanceof ExtraPackage && ((ExtraPackage)pkg).mPath.equals(mPath);
+        // Extra packages are similar if they have the same path and vendor
+        if (pkg instanceof ExtraPackage) {
+            ExtraPackage ep = (ExtraPackage) pkg;
+
+            // To be backward compatible, we need to support the old vendor-path form
+            if (ep.mPath != null && (ep.mVendor == null || ep.mVendor.length() == 0) &&
+                    mPath != null && mVendor != null) {
+                if (ep.mPath.equals(mVendor + "-" + mPath)) {  //$NON-NLS-1$
+                    return true;
+                }
+            }
+
+            if (!mPath.equals(ep.mPath)) {
+                return false;
+            }
+            if ((mVendor == null && ep.mVendor == null) ||
+                (mVendor != null && !mVendor.equals(ep.mVendor))) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    // ---
+
+    /**
+     * If this package is installed, returns the install path of the archive if valid.
+     * Returns null if not installed or if the path does not exist.
+     */
+    private File getLocalArchivePath() {
+        Archive[] archives = getArchives();
+        if (archives.length == 1 && archives[0].isLocal()) {
+            File path = new File(archives[0].getLocalOsPath());
+            if (path.isDirectory()) {
+                return path;
+            }
+        }
+
+        return null;
     }
 }
