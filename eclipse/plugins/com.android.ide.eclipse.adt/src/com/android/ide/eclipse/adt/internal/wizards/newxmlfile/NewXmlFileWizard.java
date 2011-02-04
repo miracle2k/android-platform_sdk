@@ -178,7 +178,7 @@ public class NewXmlFileWizard extends Wizard implements INewWizard {
         String result = sb.toString();
         String error = null;
         try {
-            byte[] buf = result.getBytes("UTF8");
+            byte[] buf = result.getBytes("UTF8");    //$NON-NLS-1$
             InputStream stream = new ByteArrayInputStream(buf);
             if (need_delete) {
                 file.delete(IResource.KEEP_HISTORY | IResource.FORCE, null /*monitor*/);
