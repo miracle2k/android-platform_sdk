@@ -78,7 +78,7 @@ public abstract class Bridge {
      * @return a new {@link RenderSession} object that contains the result of the scene creation and
      * first rendering.
      */
-    public RenderSession createSession(Params params) {
+    public RenderSession createSession(RenderParams params) {
         return null;
     }
 
@@ -89,7 +89,7 @@ public abstract class Bridge {
      * <p/>The cache is not configuration dependent and should only be cleared when a
      * resource changes (at this time only bitmaps and 9 patches go into the cache).
      * <p/>
-     * The project key provided must be similar to the one passed in {@link Params}.
+     * The project key provided must be similar to the one passed in {@link RenderParams}.
      *
      * @param projectKey the key for the project.
      */

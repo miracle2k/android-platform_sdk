@@ -26,7 +26,7 @@ import java.awt.image.BufferedImage;
  * rendered. The goal is to let the layoutlib caller create an image that's optimized for its use
  * case.
  *
- * If no factory is passed in {@link Params#setImageFactory(IImageFactory)}, then a default
+ * If no factory is passed in {@link RenderParams#setImageFactory(IImageFactory)}, then a default
  * {@link BufferedImage} of type {@link BufferedImage#TYPE_INT_ARGB} is created.
  *
  */

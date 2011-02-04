@@ -21,12 +21,12 @@ import com.android.ide.common.rendering.api.Bridge;
 import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.common.rendering.api.LayoutLog;
-import com.android.ide.common.rendering.api.Params;
+import com.android.ide.common.rendering.api.RenderParams;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.Result;
 import com.android.ide.common.rendering.api.ViewInfo;
-import com.android.ide.common.rendering.api.Params.RenderingMode;
+import com.android.ide.common.rendering.api.RenderParams.RenderingMode;
 import com.android.ide.common.rendering.api.Result.Status;
 import com.android.ide.common.rendering.legacy.LegacyCallback;
 import com.android.ide.common.rendering.legacy.ILegacyPullParser;
@@ -58,7 +58,7 @@ import java.util.Map.Entry;
  * Use {@link #load(String, ILogger)} to load the jar file.
  * <p/>
  * Use the layout library with:
- * {@link #init(String, Map)}, {@link #supports(Capability)}, {@link #createSession(Params)},
+ * {@link #init(String, Map)}, {@link #supports(Capability)}, {@link #createSession(RenderParams)},
  * {@link #dispose()}, {@link #clearCaches(Object)}.
  *
  * <p/>
@@ -274,9 +274,9 @@ public class LayoutLibrary {
      * @return a new {@link ILayoutScene} object that contains the result of the scene creation and
      * first rendering or null if {@link #getStatus()} doesn't return {@link LoadStatus#LOADED}.
      *
-     * @see Bridge#createSession(Params)
+     * @see Bridge#createSession(RenderParams)
      */
-    public RenderSession createSession(Params params) {
+    public RenderSession createSession(RenderParams params) {
         if (mBridge != null) {
             return mBridge.createSession(params);
         } else if (mLegacyBridge != null) {
@@ -338,7 +338,7 @@ public class LayoutLibrary {
         return apiLevel;
     }
 
-    private RenderSession createLegacySession(Params params) {
+    private RenderSession createLegacySession(RenderParams params) {
         if (params.getLayoutDescription() instanceof IXmlPullParser == false) {
             throw new IllegalArgumentException("Parser must be of type ILegacyPullParser");
         }
@@ -390,7 +390,7 @@ public class LayoutLibrary {
                     params.getProjectKey(),
                     params.getScreenWidth(), params.getScreenHeight(),
                     params.getRenderingMode() == RenderingMode.FULL_EXPAND ? true : false,
-                    params.getDensity(), params.getXdpi(), params.getYdpi(),
+                    params.getDensity().getDpiValue(), params.getXdpi(), params.getYdpi(),
                     resources.getThemeName(), resources.isProjectTheme(),
                     projectMap, frameworkMap,
                     (IProjectCallback) params.getProjectCallback(),
@@ -400,7 +400,7 @@ public class LayoutLibrary {
             result = mLegacyBridge.computeLayout(
                     (IXmlPullParser) params.getLayoutDescription(), params.getProjectKey(),
                     params.getScreenWidth(), params.getScreenHeight(),
-                    params.getDensity(), params.getXdpi(), params.getYdpi(),
+                    params.getDensity().getDpiValue(), params.getXdpi(), params.getYdpi(),
                     resources.getThemeName(), resources.isProjectTheme(),
                     projectMap, frameworkMap,
                     (IProjectCallback) params.getProjectCallback(), logWrapper);

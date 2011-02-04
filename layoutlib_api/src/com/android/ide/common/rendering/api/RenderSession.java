@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * An object allowing interaction with an Android layout.
  *
- * This is returned by {@link Bridge#createScene(Params)}.
+ * This is returned by {@link Bridge#createScene(RenderParams)}.
  * and can then be used for subsequent actions on the layout.
  *
  * @since 5
@@ -102,7 +102,7 @@ public class RenderSession {
      * @return a {@link Result} indicating the status of the action.
      */
     public Result render() {
-        return render(Params.DEFAULT_TIMEOUT);
+        return render(RenderParams.DEFAULT_TIMEOUT);
     }
 
     /**
