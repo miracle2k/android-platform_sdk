@@ -43,6 +43,7 @@ import org.eclipse.swt.widgets.Shell;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Calendar;
 
 
 /**
@@ -282,10 +283,13 @@ public class ScreenShotDialog extends Dialog {
      */
     private void saveImage(Shell shell) {
         FileDialog dlg = new FileDialog(shell, SWT.SAVE);
-        String fileName;
+
+        Calendar now = Calendar.getInstance();
+        String fileName = String.format("device-%tF-%tH%tM%tS.png",
+                now, now, now, now);
 
         dlg.setText("Save image...");
-        dlg.setFileName("device.png");
+        dlg.setFileName(fileName);
 
         String lastDir = DdmUiPreferences.getStore().getString("lastImageSaveDir");
         if (lastDir.length() == 0) {
