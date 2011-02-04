@@ -655,7 +655,7 @@ class ImageEditorPanel extends JPanel {
         private static final double STRIPES_SPACING = 6.0;
         private static final int STRIPES_ANGLE = 45;
 
-        private int zoom;
+        private int zoom = DEFAULT_ZOOM;
         private boolean showPatches;
         private boolean showLock = true;
 
