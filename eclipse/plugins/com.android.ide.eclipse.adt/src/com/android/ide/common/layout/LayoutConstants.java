@@ -32,6 +32,7 @@ public class LayoutConstants {
 
     /** The attribute name in a <code>&lt;view class="..."&gt;</code> element. */
     public static final String ATTR_CLASS = "class";                    //$NON-NLS-1$
+    public static final String ATTR_ON_CLICK = "onClick";               //$NON-NLS-1$
 
     // Some common layout element names
     public static final String RELATIVE_LAYOUT = "RelativeLayout";      //$NON-NLS-1$
