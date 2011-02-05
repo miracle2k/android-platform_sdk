@@ -26,11 +26,11 @@ import com.android.ide.common.rendering.StaticRenderSession;
 import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.common.rendering.api.LayoutLog;
-import com.android.ide.common.rendering.api.RenderParams;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.Result;
-import com.android.ide.common.rendering.api.RenderParams.RenderingMode;
+import com.android.ide.common.rendering.api.SessionParams;
+import com.android.ide.common.rendering.api.SessionParams.RenderingMode;
 import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.ide.eclipse.adt.AdtPlugin;
@@ -1660,11 +1660,11 @@ public class GraphicalEditorPart extends EditorPart
                 configuredProjectRes, frameworkResources,
                 theme, isProjectTheme);
 
-        RenderParams params = new RenderParams(
+        SessionParams params = new SessionParams(
                 topParser,
+                renderingMode,
                 iProject /* projectKey */,
                 width, height,
-                renderingMode,
                 density, xdpi, ydpi,
                 resolver,
                 mProjectCallback,

@@ -19,39 +19,18 @@ package com.android.ide.common.rendering.api;
 import com.android.resources.Density;
 import com.android.resources.ScreenSize;
 
-
-public class RenderParams {
+/**
+ * Base class for rendering parameters. This include the generic parameters but not what needs
+ * to be rendered or additional parameters.
+ *
+ */
+public abstract class RenderParams {
 
     public final static long DEFAULT_TIMEOUT = 250; //ms
 
-    public static enum RenderingMode {
-        NORMAL(false, false),
-        V_SCROLL(false, true),
-        H_SCROLL(true, false),
-        FULL_EXPAND(true, true);
-
-        private final boolean mHorizExpand;
-        private final boolean mVertExpand;
-
-        private RenderingMode(boolean horizExpand, boolean vertExpand) {
-            mHorizExpand = horizExpand;
-            mVertExpand = vertExpand;
-        }
-
-        public boolean isHorizExpand() {
-            return mHorizExpand;
-        }
-
-        public boolean isVertExpand() {
-            return mVertExpand;
-        }
-    }
-
-    private final ILayoutPullParser mLayoutDescription;
     private final Object mProjectKey;
     private final int mScreenWidth;
     private final int mScreenHeight;
-    private final RenderingMode mRenderingMode;
     private final Density mDensity;
     private final float mXdpi;
     private final float mYdpi;
@@ -75,12 +54,9 @@ public class RenderParams {
 
     /**
      *
-     * @param layoutDescription the {@link ILayoutPullParser} letting the LayoutLib Bridge visit the
-     * layout file.
      * @param projectKey An Object identifying the project. This is used for the cache mechanism.
      * @param screenWidth the screen width
      * @param screenHeight the screen height
-     * @param renderingMode The rendering mode.
      * @param density the density factor for the screen.
      * @param xdpi the screen actual dpi in X
      * @param ydpi the screen actual dpi in Y
@@ -100,19 +76,17 @@ public class RenderParams {
      * @param targetSdkVersion the targetSdkVersion of the project
      * @param log the object responsible for displaying warning/errors to the user.
      */
-    public RenderParams(ILayoutPullParser layoutDescription,
+    public RenderParams(
             Object projectKey,
-            int screenWidth, int screenHeight, RenderingMode renderingMode,
+            int screenWidth, int screenHeight,
             Density density, float xdpi, float ydpi,
             RenderResources renderResources,
             IProjectCallback projectCallback,
             int minSdkVersion, int targetSdkVersion,
             LayoutLog log) {
-        mLayoutDescription = layoutDescription;
         mProjectKey = projectKey;
         mScreenWidth = screenWidth;
         mScreenHeight = screenHeight;
-        mRenderingMode = renderingMode;
         mDensity = density;
         mXdpi = xdpi;
         mYdpi = ydpi;
@@ -129,11 +103,9 @@ public class RenderParams {
      * Copy constructor.
      */
     public RenderParams(RenderParams params) {
-        mLayoutDescription = params.mLayoutDescription;
         mProjectKey = params.mProjectKey;
         mScreenWidth = params.mScreenWidth;
         mScreenHeight = params.mScreenHeight;
-        mRenderingMode = params.mRenderingMode;
         mDensity = params.mDensity;
         mXdpi = params.mXdpi;
         mYdpi = params.mYdpi;
@@ -186,10 +158,6 @@ public class RenderParams {
         mForceNoDecor = true;
     }
 
-    public ILayoutPullParser getLayoutDescription() {
-        return mLayoutDescription;
-    }
-
     public Object getProjectKey() {
         return mProjectKey;
     }
@@ -208,10 +176,6 @@ public class RenderParams {
 
     public int getScreenHeight() {
         return mScreenHeight;
-    }
-
-    public RenderingMode getRenderingMode() {
-        return mRenderingMode;
     }
 
     public Density getDensity() {

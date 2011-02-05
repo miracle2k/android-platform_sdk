@@ -17,6 +17,9 @@
 package com.android.ide.common.rendering.api;
 
 
+import com.android.ide.common.rendering.api.Result.Status;
+
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.EnumSet;
 import java.util.Map;
@@ -78,8 +81,18 @@ public abstract class Bridge {
      * @return a new {@link RenderSession} object that contains the result of the scene creation and
      * first rendering.
      */
-    public RenderSession createSession(RenderParams params) {
+    public RenderSession createSession(SessionParams params) {
         return null;
+    }
+
+    /**
+     * Renders a Drawable. If the rendering is successful, the result image is accessible through
+     * {@link Result#getData()}. It is of type {@link BufferedImage}
+     * @param params the rendering parameters.
+     * @return the result of the action.
+     */
+    public Result renderDrawable(DrawableParams params) {
+        return Status.NOT_IMPLEMENTED.createResult();
     }
 
     /**
