@@ -19,17 +19,18 @@ package com.android.ide.common.rendering;
 import com.android.ide.common.log.ILogger;
 import com.android.ide.common.rendering.api.Bridge;
 import com.android.ide.common.rendering.api.Capability;
+import com.android.ide.common.rendering.api.DrawableParams;
 import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.common.rendering.api.LayoutLog;
-import com.android.ide.common.rendering.api.RenderParams;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.Result;
+import com.android.ide.common.rendering.api.SessionParams;
 import com.android.ide.common.rendering.api.ViewInfo;
-import com.android.ide.common.rendering.api.RenderParams.RenderingMode;
 import com.android.ide.common.rendering.api.Result.Status;
-import com.android.ide.common.rendering.legacy.LegacyCallback;
+import com.android.ide.common.rendering.api.SessionParams.RenderingMode;
 import com.android.ide.common.rendering.legacy.ILegacyPullParser;
+import com.android.ide.common.rendering.legacy.LegacyCallback;
 import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.common.sdk.LoadStatus;
 import com.android.layoutlib.api.ILayoutBridge;
@@ -41,6 +42,7 @@ import com.android.layoutlib.api.IXmlPullParser;
 import com.android.layoutlib.api.ILayoutResult.ILayoutViewInfo;
 import com.android.resources.ResourceType;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -58,7 +60,7 @@ import java.util.Map.Entry;
  * Use {@link #load(String, ILogger)} to load the jar file.
  * <p/>
  * Use the layout library with:
- * {@link #init(String, Map)}, {@link #supports(Capability)}, {@link #createSession(RenderParams)},
+ * {@link #init(String, Map)}, {@link #supports(Capability)}, {@link #createSession(SessionParams)},
  * {@link #dispose()}, {@link #clearCaches(Object)}.
  *
  * <p/>
@@ -274,9 +276,9 @@ public class LayoutLibrary {
      * @return a new {@link ILayoutScene} object that contains the result of the scene creation and
      * first rendering or null if {@link #getStatus()} doesn't return {@link LoadStatus#LOADED}.
      *
-     * @see Bridge#createSession(RenderParams)
+     * @see Bridge#createSession(SessionParams)
      */
-    public RenderSession createSession(RenderParams params) {
+    public RenderSession createSession(SessionParams params) {
         if (mBridge != null) {
             return mBridge.createSession(params);
         } else if (mLegacyBridge != null) {
@@ -284,6 +286,20 @@ public class LayoutLibrary {
         }
 
         return null;
+    }
+
+    /**
+     * Renders a Drawable. If the rendering is successful, the result image is accessible through
+     * {@link Result#getData()}. It is of type {@link BufferedImage}
+     * @param params the rendering parameters.
+     * @return the result of the action.
+     */
+    public Result renderDrawable(DrawableParams params) {
+        if (mBridge != null) {
+            return mBridge.renderDrawable(params);
+        }
+
+        return Status.NOT_IMPLEMENTED.createResult();
     }
 
     /**
@@ -338,7 +354,7 @@ public class LayoutLibrary {
         return apiLevel;
     }
 
-    private RenderSession createLegacySession(RenderParams params) {
+    private RenderSession createLegacySession(SessionParams params) {
         if (params.getLayoutDescription() instanceof IXmlPullParser == false) {
             throw new IllegalArgumentException("Parser must be of type ILegacyPullParser");
         }

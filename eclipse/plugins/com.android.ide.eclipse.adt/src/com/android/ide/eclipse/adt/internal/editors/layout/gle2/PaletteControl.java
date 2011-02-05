@@ -24,12 +24,13 @@ import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
 
 import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.Rect;
+import com.android.ide.common.api.MenuAction.Toggle;
 import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.LayoutLog;
-import com.android.ide.common.rendering.api.RenderParams.RenderingMode;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ViewInfo;
+import com.android.ide.common.rendering.api.SessionParams.RenderingMode;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;

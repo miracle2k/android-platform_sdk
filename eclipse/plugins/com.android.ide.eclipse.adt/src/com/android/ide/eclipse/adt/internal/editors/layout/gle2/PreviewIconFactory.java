@@ -25,7 +25,7 @@ import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.StyleResourceValue;
 import com.android.ide.common.rendering.api.ViewInfo;
-import com.android.ide.common.rendering.api.RenderParams.RenderingMode;
+import com.android.ide.common.rendering.api.SessionParams.RenderingMode;
 import com.android.ide.common.resources.ResourceResolver;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.DocumentDescriptor;
