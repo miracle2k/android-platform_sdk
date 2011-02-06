@@ -304,6 +304,23 @@ public class ImageUtilsTest extends TestCase {
         assertEquals(0xABCDEF91, ImageUtils.getColor("#ABCDEF91"));
     }
 
+    public void testGetBrightness() throws Exception {
+        assertEquals(96, ImageUtils.getBrightness(0x456789));
+        assertEquals(198, ImageUtils.getBrightness(0xABCDEF));
+
+        assertEquals(0, ImageUtils.getBrightness(0x0));
+        assertEquals(255, ImageUtils.getBrightness(0xFFFFFF));
+        assertEquals(299*255/1000, ImageUtils.getBrightness(0xFF0000));
+        assertEquals(587*255/1000, ImageUtils.getBrightness(0x00FF00));
+        assertEquals(114*255/1000, ImageUtils.getBrightness(0x0000FF));
+    }
+
+    public void testColorConversion() throws Exception {
+        assertEquals(0, ImageUtils.rgbToInt(ImageUtils.intToRgb(0), 0));
+        assertEquals(0xFFFFFFFF, ImageUtils.rgbToInt(ImageUtils.intToRgb(0xFFFFFF), 0xFF));
+        assertEquals(0x12345678, ImageUtils.rgbToInt(ImageUtils.intToRgb(0x345678), 0x12));
+    }
+
     public void testScaleImage() throws Exception {
         BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB_PRE);
         Graphics g = image.getGraphics();

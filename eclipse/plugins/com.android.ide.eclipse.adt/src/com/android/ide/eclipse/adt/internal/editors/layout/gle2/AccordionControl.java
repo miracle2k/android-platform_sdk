@@ -41,7 +41,9 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.ScrollBar;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The accordion control allows a series of labels with associated content that can be
@@ -191,9 +193,10 @@ public abstract class AccordionControl extends Composite {
      * @param greedy if true, grow vertically as much as possible
      * @param wrapChildren if true, configure the child area to be horizontally laid out
      *            with wrapping
+     * @param expand Set of headers to expand initially
      */
     public AccordionControl(Composite parent, int style, List<?> headers,
-            boolean greedy, boolean wrapChildren) {
+            boolean greedy, boolean wrapChildren, Set<String> expand) {
         super(parent, style);
         mWrap = wrapChildren;
 
@@ -208,7 +211,7 @@ public abstract class AccordionControl extends Composite {
 
         mOpen = IconFactory.getInstance().getIcon("open-folder");     //$NON-NLS-1$
         mClosed = IconFactory.getInstance().getIcon("closed-folder"); //$NON-NLS-1$
-        CLabel first = null;
+        List<CLabel> expandLabels = new ArrayList<CLabel>();
 
         for (Object header : headers) {
             final CLabel label = new CLabel(this, SWT.SHADOW_OUT);
@@ -279,14 +282,17 @@ public abstract class AccordionControl extends Composite {
             }
 
             updateIcon(label);
-            if (first == null) {
-                first = label;
+            if (expand != null && expand.contains(label.getText())) {
+                // Comparing "label.getText()" rather than "header" because we make some
+                // tweaks to the label (replacing & with && etc) and in the getExpandedCategories
+                // method we return the label texts
+                expandLabels.add(label);
             }
         }
 
-        // Initially show the first category
-        if (headers.size() > 0) {
-            toggle(first, false, false);
+        // Expand the requested categories
+        for (CLabel label : expandLabels) {
+            toggle(label, false, false);
         }
     }
 
@@ -364,5 +370,24 @@ public abstract class AccordionControl extends Composite {
     @Override
     protected void checkSubclass() {
         // Disable the check that prevents subclassing of SWT components
+    }
+
+    /**
+     * Returns the set of expanded categories in the palette. Note: Header labels will have
+     * escaped ampersand characters with double ampersands.
+     *
+     * @return the set of expanded categories in the palette - never null
+     */
+    public Set<String> getExpandedCategories() {
+        Set<String> expanded = new HashSet<String>();
+        for (Control c : getChildren()) {
+            if (c instanceof CLabel) {
+                if (isOpen(c)) {
+                    expanded.add(((CLabel) c).getText());
+                }
+            }
+        }
+
+        return expanded;
     }
 }

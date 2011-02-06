@@ -17,6 +17,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.Rect;
 
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 
 import java.awt.AlphaComposite;
@@ -61,6 +62,48 @@ public class ImageUtils {
         return false;
     }
 
+    /**
+     * Returns the perceived brightness of the given RGB integer on a scale from 0 to 255
+     *
+     * @param rgb the RGB triplet, 8 bits each
+     * @return the perceived brightness, with 0 maximally dark and 255 maximally bright
+     */
+    public static int getBrightness(int rgb) {
+        if ((rgb & 0xFFFFFF) != 0) {
+            int r = (rgb & 0xFF0000) >> 16;
+            int g = (rgb & 0x00FF00) >> 8;
+            int b = (rgb & 0x0000FF);
+            // See the containsDarkPixels implementation for details
+            return (int) ((299L*r + 587*g + 114*b) / 1000);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Converts an alpha-red-green-blue integer color into an {@link RGB} color.
+     * <p>
+     * <b>NOTE</b> - this will drop the alpha value since {@link RGB} objects do not
+     * contain transparency information.
+     *
+     * @param rgb the RGB integer to convert to a color description
+     * @return the color description corresponding to the integer
+     */
+    public static RGB intToRgb(int rgb) {
+        return new RGB((rgb & 0xFF0000) >>> 16, (rgb & 0xFF00) >>> 8, rgb & 0xFF);
+    }
+
+    /**
+     * Converts an {@link RGB} color into a alpha-red-green-blue integer
+     *
+     * @param rgb the RGB color descriptor to convert
+     * @param alpha the amount of alpha to add into the color integer (since the
+     *            {@link RGB} objects do not contain an alpha channel)
+     * @return an integer corresponding to the {@link RGB} color
+     */
+    public static int rgbToInt(RGB rgb, int alpha) {
+        return alpha << 24 | (rgb.red << 16) | (rgb.green << 8) | rgb.blue;
+    }
 
     /**
      * Crops blank pixels from the edges of the image and returns the cropped result. We
