@@ -41,7 +41,11 @@ public abstract class LegacyCallback implements
 
     public final String[] resolveResourceValue(int id) {
         Pair<ResourceType, String> info = resolveResourceId(id);
-        return new String[] { info.getSecond(), info.getFirst().getName() };
+        if (info != null) {
+            return new String[] { info.getSecond(), info.getFirst().getName() };
+        }
+
+        return null;
     }
 
     public final String resolveResourceValue(int[] id) {
