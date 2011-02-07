@@ -234,7 +234,14 @@ public class ElementDescriptor implements Comparable<ElementDescriptor> {
         IconFactory factory = IconFactory.getInstance();
         int color = hasChildren() ? IconFactory.COLOR_BLUE : IconFactory.COLOR_GREEN;
         int shape = hasChildren() ? IconFactory.SHAPE_RECT : IconFactory.SHAPE_CIRCLE;
-        Image icon = factory.getIcon(mXmlName, color, shape);
+        String name = mXmlName;
+        if (name.indexOf('.') != -1) {
+            // If the user uses a fully qualified name, such as
+            // "android.gesture.GestureOverlayView" in their XML, we need to look up
+            // only by basename
+            name = name.substring(name.lastIndexOf('.') + 1);
+        }
+        Image icon = factory.getIcon(name, color, shape);
         return icon != null ? icon : AdtPlugin.getAndroidLogo();
     }
 

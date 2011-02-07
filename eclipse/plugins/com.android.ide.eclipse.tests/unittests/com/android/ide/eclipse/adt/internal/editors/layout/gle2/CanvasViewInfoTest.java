@@ -29,6 +29,7 @@ import org.eclipse.swt.graphics.Rectangle;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -52,11 +53,11 @@ public class CanvasViewInfoTest extends TestCase {
             boolean hasChildren) {
         String name = fqn.substring(fqn.lastIndexOf('.') + 1);
         ViewElementDescriptor descriptor = createDesc(name, fqn, hasChildren);
-        if (parent != null) {
-            return (UiViewElementNode) parent.appendNewUiChild(descriptor);
-        } else {
-            return new UiViewElementNode(descriptor);
+        if (parent == null) {
+            // All node hierarchies should be wrapped inside a document node at the root
+            parent = new UiViewElementNode(createDesc("doc", "doc", true));
         }
+        return (UiViewElementNode) parent.appendNewUiChild(descriptor);
     }
 
     private static UiViewElementNode createNode(String fqn, boolean hasChildren) {
@@ -237,12 +238,16 @@ public class CanvasViewInfoTest extends TestCase {
         assertEquals(new Rectangle(10, 10, 89, 89), rootView.getAbsRect());
         assertEquals(new Rectangle(10, 10, 89, 89), rootView.getSelectionRect());
         assertNull(rootView.getParent());
+        assertTrue(rootView.isRoot());
         assertSame(rootNode, rootView.getUiViewNode());
         assertEquals(3, rootView.getChildren().size());
 
         CanvasViewInfo childView1 = rootView.getChildren().get(0);
+        assertFalse(childView1.isRoot());
         CanvasViewInfo includedView1 = rootView.getChildren().get(1);
+        assertFalse(includedView1.isRoot());
         CanvasViewInfo includedView2 = rootView.getChildren().get(2);
+        assertFalse(includedView1.isRoot());
 
         assertEquals("CheckBox", childView1.getName());
         assertSame(rootView, childView1.getParent());
@@ -540,6 +545,38 @@ public class CanvasViewInfoTest extends TestCase {
         assertEquals(2, bounds.size());
         assertEquals(new Rectangle(0, 0, 49, 19), bounds.get(0));
         assertEquals(new Rectangle(0, 20, 49, 19), bounds.get(1));
+    }
+
+    public void testGestureOverlayView() throws Exception {
+        // Test rendering of included views on layoutlib 5+ (e.g. has <include> tag)
+
+        UiViewElementNode rootNode = createNode("android.gesture.GestureOverlayView", true);
+        UiViewElementNode childNode = createNode(rootNode, "android.widget.LinearLayout", false);
+        UiViewElementNode grandChildNode = createNode(childNode, "android.widget.Button", false);
+        ViewInfo root = new ViewInfo("GestureOverlayView", rootNode, 10, 10, 100, 100);
+        ViewInfo child = new ViewInfo("LinearLayout", childNode, 0, 0, 50, 20);
+        root.setChildren(Collections.singletonList(child));
+        ViewInfo grandChild = new ViewInfo("Button", grandChildNode, 0, 20, 70, 25);
+        child.setChildren(Collections.singletonList(grandChild));
+        CanvasViewInfo rootView = CanvasViewInfo.create(root).getFirst();
+        assertNotNull(rootView);
+        assertEquals("GestureOverlayView", rootView.getName());
+
+        assertTrue(rootView.isRoot());
+        assertNull(rootView.getParent());
+        assertSame(rootNode, rootView.getUiViewNode());
+        assertEquals(1, rootView.getChildren().size());
+
+        CanvasViewInfo childView = rootView.getChildren().get(0);
+        assertEquals("LinearLayout", childView.getName());
+
+        // This should also be a root for the special case that the root is
+        assertTrue(childView.isRoot());
+
+        assertEquals(1, childView.getChildren().size());
+        CanvasViewInfo grandChildView = childView.getChildren().get(0);
+        assertEquals("Button", grandChildView.getName());
+        assertFalse(grandChildView.isRoot());
     }
 
     /**

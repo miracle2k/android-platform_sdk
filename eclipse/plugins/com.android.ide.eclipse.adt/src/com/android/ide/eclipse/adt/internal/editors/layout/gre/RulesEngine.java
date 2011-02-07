@@ -252,7 +252,7 @@ public class RulesEngine {
                 return rule.getSelectionHint(parentNode, childNode);
 
             } catch (Exception e) {
-                AdtPlugin.log(e, "%getSelectionHint() failed: %s",
+                AdtPlugin.log(e, "%s.getSelectionHint() failed: %s",
                         rule.getClass().getSimpleName(),
                         e.toString());
             }
@@ -564,6 +564,13 @@ public class RulesEngine {
             // target FQCN remains constant.
             if (targetFqcn == null) {
                 targetFqcn = fqcn;
+            }
+
+            if (fqcn.indexOf('.') == -1) {
+                // Deal with unknown descriptors; these lack the full qualified path and
+                // elements in the layout without a package are taken to be in the
+                // android.widget package.
+                fqcn = "android.widget." + fqcn; //$NON-NLS-1$
             }
 
             // Try to find a rule matching the "real" FQCN. If we find it, we're done.

@@ -78,7 +78,7 @@ import java.util.List;
      * @return True if and only if this element is at the root of the hierarchy
      */
     public boolean isRoot() {
-        return mNodeProxy.getParent() == null;
+        return mCanvasViewInfo.isRoot();
     }
 
     /**

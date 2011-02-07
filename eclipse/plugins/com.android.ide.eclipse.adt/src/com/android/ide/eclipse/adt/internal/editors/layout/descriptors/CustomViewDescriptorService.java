@@ -207,7 +207,9 @@ public final class CustomViewDescriptorService {
             IAndroidTarget target = currentSdk.getTarget(project);
             if (target != null) {
                 AndroidTargetData data = currentSdk.getTargetData(target);
-                builtInList = data.getLayoutDescriptors().getViewDescriptors();
+                if (data != null) {
+                    builtInList = data.getLayoutDescriptors().getViewDescriptors();
+                }
             }
         }
 
