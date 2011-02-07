@@ -346,6 +346,17 @@ public class CanvasViewInfo implements IPropertySource {
         // The root element is the one whose GRAND parent
         // is null (because the parent will be a -document-
         // node).
+
+        // Special case: a gesture overlay is sometimes added as the root, but for all intents
+        // and purposes it is its layout child that is the real root so treat that one as the
+        // root as well (such that the whole layout canvas does not highlight as part of hovers
+        // etc)
+        if (mParent != null
+                && mParent.mName.endsWith("GestureOverlayView") //$NON-NLS-1$
+                && mParent.isRoot()) {
+            return true;
+        }
+
         return mUiViewNode == null || mUiViewNode.getUiParent() == null ||
             mUiViewNode.getUiParent().getUiParent() == null;
     }
