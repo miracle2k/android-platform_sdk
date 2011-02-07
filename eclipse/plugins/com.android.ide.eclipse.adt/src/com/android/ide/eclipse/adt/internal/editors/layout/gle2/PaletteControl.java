@@ -322,6 +322,14 @@ public class PaletteControl extends Composite {
         return mCurrentDevice;
     }
 
+    /** Returns true if previews in the palette should be made available */
+    private boolean previewsAvailable() {
+        // Not layoutlib 5 -- we require transparency/custom background support to do
+        // a decent job with previews
+        LayoutLibrary layoutLibrary = mEditor.getLayoutLibrary();
+        return layoutLibrary != null && layoutLibrary.supports(Capability.TRANSPARENCY);
+    }
+
     /**
      * Loads or reloads the palette elements by using the layout and view descriptors from the
      * given target data.
@@ -367,6 +375,13 @@ public class PaletteControl extends Composite {
         if (mPaletteMode == null) {
             loadPaletteMode();
             assert mPaletteMode != null;
+        }
+
+        // Ensure that the palette mode is supported on this version of the layout library
+        if (!previewsAvailable()) {
+            if (mPaletteMode.isPreview()) {
+                mPaletteMode = PaletteMode.ICON_TEXT;
+            }
         }
 
         if (mPaletteMode.isPreview()) {
@@ -995,8 +1010,12 @@ public class PaletteControl extends Composite {
                         return true;
                     }
                 };
+                boolean previews = previewsAvailable();
                 for (PaletteMode mode : PaletteMode.values()) {
-                        manager.add(new PaletteModeAction(mode));
+                    if (mode.isPreview() && !previews) {
+                        continue;
+                    }
+                    manager.add(new PaletteModeAction(mode));
                 }
                 if (mPaletteMode.isPreview()) {
                     manager.add(new Separator());
