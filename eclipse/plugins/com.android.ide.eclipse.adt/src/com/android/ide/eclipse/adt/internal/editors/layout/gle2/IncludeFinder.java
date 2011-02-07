@@ -20,7 +20,6 @@ import static com.android.ide.eclipse.adt.AndroidConstants.EXT_XML;
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_LAYOUTS;
 import static com.android.ide.eclipse.adt.AndroidConstants.WS_SEP;
 import static com.android.sdklib.SdkConstants.FD_LAYOUT;
-
 import static org.eclipse.core.resources.IResourceDelta.ADDED;
 import static org.eclipse.core.resources.IResourceDelta.CHANGED;
 import static org.eclipse.core.resources.IResourceDelta.CONTENT;
@@ -77,6 +76,7 @@ import javax.xml.parsers.ParserConfigurationException;
  * The include finder finds other XML files that are including a given XML file, and does
  * so efficiently (caching results across IDE sessions etc).
  */
+@SuppressWarnings("restriction") // XML model
 public class IncludeFinder {
     /** Qualified name for the per-project persistent property include-map */
     private final static QualifiedName CONFIG_INCLUDES = new QualifiedName(AdtPlugin.PLUGIN_ID,
@@ -156,11 +156,7 @@ public class IncludeFinder {
     }
 
     /**
-     * Gets the list of all other layouts that are including the given layout. The
-     * returned Strings are user-readable references to files, which (for example) will
-     * omit the file extension suffix, as well as the layout prefix (unless it's not the
-     * base layout folder, such as layout-land). In order to get an actual
-     * project-relative path from this String, call {@link #getProjectRelativePath}.
+     * Gets the list of all other layouts that are including the given layout.
      *
      * @param included the file that is included
      * @return the files that are including the given file, or null or empty
@@ -877,21 +873,6 @@ public class IncludeFinder {
         finder.mIncludes = new HashMap<String, List<String>>();
         finder.mIncludedBy = new HashMap<String, List<String>>();
         return finder;
-    }
-
-    /**
-     * Returns the project-relative path (such as res/layout/foo.xml) of a include
-     * reference (which may be "foo", or "layout-land/foo").
-     *
-     * @param reference the include reference, as returned by {@link #getIncludedBy}.
-     * @return a project relative path pointing to the actual XML file that contained the
-     *         given reference
-     */
-    public static String getProjectRelativePath(String reference) {
-        if (!reference.contains(WS_SEP)) { //$NON-NLS-1$
-            reference = SdkConstants.FD_LAYOUT + WS_SEP + reference;
-        }
-        return SdkConstants.FD_RESOURCES + WS_SEP + reference + '.' + EXT_XML;
     }
 
     /** A reference to a particular file in the project */

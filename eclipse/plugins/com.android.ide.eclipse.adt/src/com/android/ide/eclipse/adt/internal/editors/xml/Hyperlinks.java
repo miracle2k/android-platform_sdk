@@ -37,6 +37,7 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.AndroidXmlEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
+import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
 import com.android.ide.eclipse.adt.internal.resources.manager.FolderTypeRelationship;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
@@ -323,8 +324,12 @@ public class Hyperlinks {
 
     /**
      * Is this a resource that can be defined in any file within the "values" folder?
+     *
+     * @param type the resource type to check
+     * @return true if the given resource type can be represented as a value under the
+     *         values/ folder
      */
-    private static boolean isValueResource(ResourceType type) {
+    public static boolean isValueResource(ResourceType type) {
         ResourceFolderType[] folderTypes = FolderTypeRelationship.getRelatedFolders(type);
         for (ResourceFolderType folderType : folderTypes) {
             if (folderType == ResourceFolderType.VALUES) {
@@ -333,6 +338,23 @@ public class Hyperlinks {
         }
 
         return false;
+    }
+
+    /**
+     * Returns the XML tag containing an element description for value items of the given
+     * resource type
+     *
+     * @param type the resource type to query the XML tag name for
+     * @return the tag name used for value declarations in XML of resources of the given
+     *         type
+     */
+    public static String getTagName(ResourceType type) {
+        if (type == ResourceType.ID) {
+            // Ids are recorded in <item> tags instead of <id> tags
+            return ResourcesDescriptors.ITEM_TAG;
+        }
+
+        return type.getName();
     }
 
     /**
@@ -739,11 +761,7 @@ public class Hyperlinks {
     /** Looks within an XML DOM document for the given resource name and returns it */
     private static Pair<IFile, IRegion> findValueInDocument(
             ResourceType type, String name, IFile file, Document document) {
-        String targetTag = type.getName();
-        if (type == ResourceType.ID) {
-            // Ids are recorded in <item> tags instead of <id> tags
-            targetTag = "item"; //$NON-NLS-1$
-        }
+        String targetTag = getTagName(type);
         Element root = document.getDocumentElement();
         if (root.getTagName().equals(ROOT_ELEMENT)) {
             NodeList children = root.getChildNodes();

@@ -1128,11 +1128,21 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      *         not be computed.
      */
     public String getIndent(Node xmlNode) {
-        assert xmlNode.getNodeType() == Node.ELEMENT_NODE;
+        return getIndent(getStructuredDocument(), xmlNode);
+    }
 
+    /**
+     * Returns the indentation String of the given node.
+     *
+     * @param document The Eclipse document containing the XML
+     * @param xmlNode The node whose indentation we want.
+     * @return The indent-string of the given node, or "" if the indentation for some reason could
+     *         not be computed.
+     */
+    public static String getIndent(IStructuredDocument document, Node xmlNode) {
+        assert xmlNode.getNodeType() == Node.ELEMENT_NODE;
         if (xmlNode instanceof IndexedRegion) {
             IndexedRegion region = (IndexedRegion)xmlNode;
-            IDocument document = getStructuredSourceViewer().getDocument();
             int startOffset = region.getStartOffset();
             return getIndentAtOffset(document, startOffset);
         }
@@ -1148,7 +1158,7 @@ public abstract class AndroidXmlEditor extends FormEditor implements IResourceCh
      * @return The indent-string of the given node, or "" if the indentation for some
      *         reason could not be computed.
      */
-    public static String getIndentAtOffset(IDocument document, int offset) {
+    public static String getIndentAtOffset(IStructuredDocument document, int offset) {
         try {
             IRegion lineInformation = document.getLineInformationOfOffset(offset);
             if (lineInformation != null) {
