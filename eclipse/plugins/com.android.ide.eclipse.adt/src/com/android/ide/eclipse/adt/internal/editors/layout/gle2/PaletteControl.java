@@ -324,10 +324,10 @@ public class PaletteControl extends Composite {
 
     /** Returns true if previews in the palette should be made available */
     private boolean previewsAvailable() {
-        // Not layoutlib 5 -- we require transparency/custom background support to do
+        // Not layoutlib 5 -- we require custom background support to do
         // a decent job with previews
         LayoutLibrary layoutLibrary = mEditor.getLayoutLibrary();
-        return layoutLibrary != null && layoutLibrary.supports(Capability.TRANSPARENCY);
+        return layoutLibrary != null && layoutLibrary.supports(Capability.CUSTOM_BACKGROUND_COLOR);
     }
 
     /**
@@ -805,7 +805,8 @@ public class PaletteControl extends Composite {
             Integer overrideBgColor = null;
             boolean hasTransparency = false;
             LayoutLibrary layoutLibrary = editor.getLayoutLibrary();
-            if (layoutLibrary != null && layoutLibrary.supports(Capability.TRANSPARENCY)) {
+            if (layoutLibrary != null &&
+                    layoutLibrary.supports(Capability.CUSTOM_BACKGROUND_COLOR)) {
                 // It doesn't matter what the background color is as long as the alpha
                 // is 0 (fully transparent). We're using red to make it more obvious if
                 // for some reason the background is painted when it shouldn't be.
