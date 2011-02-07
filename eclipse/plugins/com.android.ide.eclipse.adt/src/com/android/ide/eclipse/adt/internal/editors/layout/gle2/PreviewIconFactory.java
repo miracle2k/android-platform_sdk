@@ -191,9 +191,10 @@ public class PreviewIconFactory {
                 Pair<RGB, RGB> themeColors = getColorsFromTheme();
                 RGB bg = themeColors.getFirst();
                 RGB fg = themeColors.getSecond();
-                storeBackground(imageDir, bg, fg);
-
-                overrideBgColor = Integer.valueOf(ImageUtils.rgbToInt(bg, 0xFF));
+                if (bg != null) {
+                    storeBackground(imageDir, bg, fg);
+                    overrideBgColor = Integer.valueOf(ImageUtils.rgbToInt(bg, 0xFF));
+                }
             }
         }
 
