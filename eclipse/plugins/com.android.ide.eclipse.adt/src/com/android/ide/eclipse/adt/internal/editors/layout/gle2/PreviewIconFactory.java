@@ -20,6 +20,8 @@ import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.eclipse.adt.AndroidConstants.DOT_PNG;
 import static com.android.ide.eclipse.adt.AndroidConstants.DOT_XML;
 
+import com.android.ide.common.rendering.LayoutLibrary;
+import com.android.ide.common.rendering.api.Capability;
 import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.RenderSession;
 import com.android.ide.common.rendering.api.ResourceValue;
@@ -96,6 +98,21 @@ public class PreviewIconFactory {
     }
 
     /**
+     * Deletes all the persistent state for the current settings such that it will be regenerated
+     */
+    public void refresh() {
+        File imageDir = getImageDir(false);
+        if (imageDir != null && imageDir.exists()) {
+            File[] files = imageDir.listFiles();
+            for (File file : files) {
+                file.delete();
+            }
+            imageDir.delete();
+            reset();
+        }
+    }
+
+    /**
      * Returns an image descriptor for the given element descriptor, or null if no image
      * could be computed. The rendering parameters (SDK, theme etc) correspond to those
      * stored in the associated palette.
@@ -163,7 +180,22 @@ public class PreviewIconFactory {
      * disk
      */
     private boolean render() {
-        LayoutEditor layoutEditor = mPalette.getEditor().getLayoutEditor();
+        File imageDir = getImageDir(true);
+
+        GraphicalEditorPart editor = mPalette.getEditor();
+        LayoutEditor layoutEditor = editor.getLayoutEditor();
+        LayoutLibrary layoutLibrary = editor.getLayoutLibrary();
+        Integer overrideBgColor = null;
+        if (layoutLibrary != null) {
+            if (layoutLibrary.supports(Capability.TRANSPARENCY)) {
+                Pair<RGB, RGB> themeColors = getColorsFromTheme();
+                RGB bg = themeColors.getFirst();
+                RGB fg = themeColors.getSecond();
+                storeBackground(imageDir, bg, fg);
+
+                overrideBgColor = Integer.valueOf(ImageUtils.rgbToInt(bg, 0xFF));
+            }
+        }
 
         ViewMetadataRepository repository = ViewMetadataRepository.get();
         Document document = repository.getRenderingConfigDoc();
@@ -182,7 +214,6 @@ public class PreviewIconFactory {
         }
         UiDocumentNode model = (UiDocumentNode) documentDescriptor.createUiNode();
         model.setEditor(layoutEditor);
-        GraphicalEditorPart editor = mPalette.getEditor();
         model.setUnknownDescriptorProvider(editor.getModel().getUnknownDescriptorProvider());
 
         Element documentElement = document.getDocumentElement();
@@ -207,8 +238,9 @@ public class PreviewIconFactory {
                 int height = 2000;
                 Set<UiElementNode> expandNodes = Collections.<UiElementNode>emptySet();
                 RenderingMode renderingMode = RenderingMode.FULL_EXPAND;
+
                 session = editor.render(model, width, height, expandNodes,
-                        false /*hasTransparency*/, logger,
+                        overrideBgColor, true /*no decorations*/, logger,
                         renderingMode);
 
             } catch (Throwable t) {
@@ -221,25 +253,29 @@ public class PreviewIconFactory {
                 if (session.getResult().isSuccess()) {
                     BufferedImage image = session.getImage();
                     if (image != null && image.getWidth() > 0 && image.getHeight() > 0) {
-                        File imageDir = getImageDir(true);
 
-                        // TODO - use resource resolution instead?
+                        // Fallback for older platforms where we couldn't do background rendering
+                        // at the beginning of this method
                         if (mBackground == null) {
                             Pair<RGB, RGB> themeColors = getColorsFromTheme();
-
                             RGB bg = themeColors.getFirst();
                             RGB fg = themeColors.getSecond();
 
                             if (bg == null) {
+                                // Just use a pixel from the rendering instead.
                                 int p = image.getRGB(image.getWidth() - 1, image.getHeight() - 1);
-                                bg = new RGB((p & 0xFF0000) >> 16, (p & 0xFF00) >> 8, p & 0xFF);
-                                // This isn't reliable - for example, for some themes the
-                                // background is a 9 patch image - so in this case don't
-                                // set the foreground color
-                                fg = null;
+                                // However, in this case we don't trust the foreground color
+                                // even if one was found in the themes; pick one that is guaranteed
+                                // to contrast with the background
+                                bg = ImageUtils.intToRgb(p);
+                                if (ImageUtils.getBrightness(ImageUtils.rgbToInt(bg, 255)) < 128) {
+                                    fg = new RGB(255, 255, 255);
+                                } else {
+                                    fg = new RGB(0, 0, 0);
+                                }
                             }
-
                             storeBackground(imageDir, bg, fg);
+                            assert mBackground != null;
                         }
 
                         List<ViewInfo> viewInfoList = session.getRootViews();
@@ -297,12 +333,62 @@ public class PreviewIconFactory {
         if (theme != null) {
             background = resolveThemeColor(resources, "windowBackground"); //$NON-NLS-1$
             if (background == null) {
-                background = resolveThemeColor(resources, "colorBackground"); //$NON-NLS-1$
+                background = renderDrawableResource("windowBackground"); //$NON-NLS-1$
+                // This causes some harm with some themes: We'll find a color, say black,
+                // that isn't actually rendered in the theme. Better to use null here,
+                // which will cause the caller to pick a pixel from the observed background
+                // instead.
+                //if (background == null) {
+                //    background = resolveThemeColor(resources, "colorBackground"); //$NON-NLS-1$
+                //}
             }
             foreground = resolveThemeColor(resources, "textColorPrimary"); //$NON-NLS-1$
         }
 
+        // Ensure that the foreground color is suitably distinct from the background color
+        if (background != null) {
+            int bgRgb = ImageUtils.rgbToInt(background, 0xFF);
+            int backgroundBrightness = ImageUtils.getBrightness(bgRgb);
+            if (foreground == null) {
+                if (backgroundBrightness < 128) {
+                    foreground = new RGB(255, 255, 255);
+                } else {
+                    foreground = new RGB(0, 0, 0);
+                }
+            } else {
+                int fgRgb = ImageUtils.rgbToInt(foreground, 0xFF);
+                int foregroundBrightness = ImageUtils.getBrightness(fgRgb);
+                if (Math.abs(backgroundBrightness - foregroundBrightness) < 64) {
+                    if (backgroundBrightness < 128) {
+                        foreground = new RGB(255, 255, 255);
+                    } else {
+                        foreground = new RGB(0, 0, 0);
+                    }
+                }
+            }
+        }
+
         return Pair.of(background, foreground);
+    }
+
+    /**
+     * Renders the given resource which should refer to a drawable and returns a
+     * representative color value for the drawable (such as the color in the center)
+     *
+     * @param themeItemName the item in the theme to be looked up and rendered
+     * @return a color representing a typical color in the drawable
+     */
+    private RGB renderDrawableResource(String themeItemName) {
+        GraphicalEditorPart editor = mPalette.getEditor();
+        BufferedImage image = editor.renderThemeItem(themeItemName, 100, 100);
+        if (image != null) {
+            // Use the middle pixel as the color since that works better for gradients;
+            // solid colors work too.
+            int rgb = image.getRGB(image.getWidth() / 2, image.getHeight() / 2);
+            return ImageUtils.intToRgb(rgb);
+        }
+
+        return null;
     }
 
     private static RGB resolveThemeColor(ResourceResolver resources, String resourceName) {
@@ -318,7 +404,7 @@ public class PreviewIconFactory {
                 try {
                     int rgba = ImageUtils.getColor(value);
                     // Drop alpha channel
-                    return new RGB((rgba & 0xFF0000) >> 16, (rgba & 0xFF00) >> 8, rgba & 0xFF);
+                    return ImageUtils.intToRgb(rgba);
                 } catch (NumberFormatException nfe) {
                     ;
                 }
@@ -452,7 +538,7 @@ public class PreviewIconFactory {
             if (themeName.startsWith(themeNamePrefix)) {
                 themeName = themeName.substring(themeNamePrefix.length());
             }
-            String dirName = String.format("palette-preview-%s-%s-%s", cleanup(targetName),
+            String dirName = String.format("palette-preview-r10-%s-%s-%s", cleanup(targetName),
                     cleanup(themeName), cleanup(mPalette.getCurrentDevice()));
             IPath dirPath = pluginState.append(dirName);
 
@@ -481,7 +567,7 @@ public class PreviewIconFactory {
         mForeground = fg;
         File file = new File(imageDir, PREVIEW_INFO_FILE);
         String colors = String.format(
-                "background=#%02x%02x%02x\nforeground=#%02x%02x%02x\\n", //$NON-NLS-1$
+                "background=#%02x%02x%02x\nforeground=#%02x%02x%02x\n", //$NON-NLS-1$
                 bg.red, bg.green, bg.blue,
                 fg.red, fg.green, fg.blue);
         AdtPlugin.writeFile(file, colors);
@@ -544,12 +630,12 @@ public class PreviewIconFactory {
                 String colorString = (String) properties.get("background"); //$NON-NLS-1$
                 if (colorString != null) {
                     int rgb = ImageUtils.getColor(colorString.trim());
-                    mBackground = new RGB((rgb & 0xFF0000) >> 16, (rgb & 0xFF00) >> 8, rgb & 0xFF);
+                    mBackground = ImageUtils.intToRgb(rgb);
                 }
                 colorString = (String) properties.get("foreground"); //$NON-NLS-1$
                 if (colorString != null) {
                     int rgb = ImageUtils.getColor(colorString.trim());
-                    mForeground = new RGB((rgb & 0xFF0000) >> 16, (rgb & 0xFF00) >> 8, rgb & 0xFF);
+                    mForeground = ImageUtils.intToRgb(rgb);
                 }
             }
 

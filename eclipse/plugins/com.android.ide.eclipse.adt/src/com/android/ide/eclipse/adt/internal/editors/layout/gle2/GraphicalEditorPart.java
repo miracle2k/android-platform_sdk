@@ -24,6 +24,7 @@ import static com.android.ide.eclipse.adt.AndroidConstants.ANDROID_PKG;
 import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.rendering.StaticRenderSession;
 import com.android.ide.common.rendering.api.Capability;
+import com.android.ide.common.rendering.api.DrawableParams;
 import com.android.ide.common.rendering.api.ILayoutPullParser;
 import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.RenderSession;
@@ -130,6 +131,7 @@ import org.w3c.dom.Node;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -1258,15 +1260,15 @@ public class GraphicalEditorPart extends EditorPart
      * @param height the height to use for the layout, or -1 to use the height of the screen
      *            associated with this editor
      * @param explodeNodes a set of nodes to explode, or null for none
-     * @param transparentBackground If true, the rendering will <b>not</b> paint the
-     *            normal background requested by the theme, and it will instead paint the
-     *            background using a fully transparent background color
+     * @param overrideBgColor If non-null, use the given color as a background to render over
+     *        rather than the normal background requested by the theme
+     * @param noDecor If true, don't draw window decorations like the system bar
      * @param logger a logger where rendering errors are reported
      * @param renderingMode the {@link RenderingMode} to use for rendering
      * @return the resulting rendered image wrapped in an {@link RenderSession}
      */
     public RenderSession render(UiDocumentNode model, int width, int height,
-            Set<UiElementNode> explodeNodes, boolean transparentBackground,
+            Set<UiElementNode> explodeNodes, Integer overrideBgColor, boolean noDecor,
             LayoutLog logger, RenderingMode renderingMode) {
         if (!ensureFileValid()) {
             return null;
@@ -1278,7 +1280,7 @@ public class GraphicalEditorPart extends EditorPart
 
         IProject iProject = mEditedFile.getProject();
         return renderWithBridge(iProject, model, layoutLib, width, height, explodeNodes,
-                transparentBackground, logger, null /* includeWithin */, renderingMode);
+                overrideBgColor, noDecor, logger, null /* includeWithin */, renderingMode);
     }
 
     /**
@@ -1513,7 +1515,8 @@ public class GraphicalEditorPart extends EditorPart
         }
 
         RenderSession session = renderWithBridge(iProject, model, layoutLib, width, height,
-                explodeNodes, false, logger, mIncludedWithin, renderingMode);
+                explodeNodes, null /*custom background*/, false /*no decorations*/, logger,
+                mIncludedWithin, renderingMode);
 
         canvas.setSession(session, explodeNodes);
 
@@ -1555,7 +1558,7 @@ public class GraphicalEditorPart extends EditorPart
 
     private RenderSession renderWithBridge(IProject iProject, UiDocumentNode model,
             LayoutLibrary layoutLib, int width, int height, Set<UiElementNode> explodeNodes,
-            boolean transparentBackground, LayoutLog logger, Reference includeWithin,
+            Integer overrideBgColor, boolean noDecor, LayoutLog logger, Reference includeWithin,
             RenderingMode renderingMode) {
         ResourceManager resManager = ResourceManager.getInstance();
 
@@ -1671,6 +1674,9 @@ public class GraphicalEditorPart extends EditorPart
                 mMinSdkVersion,
                 mTargetSdkVersion,
                 logger);
+        if (noDecor) {
+            params.setForceNoDecor();
+        }
 
         // FIXME make persistent and only reload when the manifest (or at least resources) chanage.
         IFolderWrapper projectFolder = new IFolderWrapper(getProject());
@@ -1693,11 +1699,8 @@ public class GraphicalEditorPart extends EditorPart
             params.setConfigScreenSize(ssq.getValue());
         }
 
-        if (transparentBackground) {
-            // It doesn't matter what the background color is as long as the alpha
-            // is 0 (fully transparent). We're using red to make it more obvious if
-            // for some reason the background is painted when it shouldn't be.
-            params.setOverrideBgColor(0x00FF0000);
+        if (overrideBgColor != null) {
+            params.setOverrideBgColor(overrideBgColor.intValue());
         }
 
         // set the Image Overlay as the image factory.
@@ -1713,6 +1716,44 @@ public class GraphicalEditorPart extends EditorPart
         } finally {
             mProjectCallback.setLogger(null);
         }
+    }
+
+    /**
+     * Renders the given resource which should refer to a drawable and returns it
+     * as an image
+     *
+     * @param itemName the theme item to be looked up and rendered
+     * @param width the width of the drawable to be rendered
+     * @param height the height of the drawable to be rendered
+     * @return the image, or null if something went wrong
+     */
+    BufferedImage renderThemeItem(String itemName, int width, int height) {
+        ResourceResolver resources = createResolver();
+        LayoutLibrary layoutLibrary = getLayoutLibrary();
+        IProject project = getProject();
+        ResourceValue drawableResourceValue = resources.findItemInTheme(itemName);
+        Density density = mConfigComposite.getDensity();
+        float xdpi = mConfigComposite.getXDpi();
+        float ydpi = mConfigComposite.getYDpi();
+        ResourceManager resManager = ResourceManager.getInstance();
+        ProjectResources projectRes = resManager.getProjectResources(project);
+        ProjectCallback projectCallback = new ProjectCallback(
+                layoutLibrary.getClassLoader(), projectRes, project);
+        LayoutLog silentLogger = new LayoutLog();
+        DrawableParams params = new DrawableParams(drawableResourceValue, project,
+                width, height,
+                density, xdpi, ydpi, resources, projectCallback,
+                mMinSdkVersion, mTargetSdkVersion, silentLogger);
+        params.setForceNoDecor();
+        Result result = layoutLibrary.renderDrawable(params);
+        if (result != null && result.isSuccess()) {
+            Object data = result.getData();
+            if (data instanceof BufferedImage) {
+                return (BufferedImage) data;
+            }
+        }
+
+        return null;
     }
 
     ResourceResolver createResolver() {
