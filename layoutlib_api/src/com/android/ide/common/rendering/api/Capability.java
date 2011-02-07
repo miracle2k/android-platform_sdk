@@ -25,7 +25,7 @@ public enum Capability {
     UNBOUND_RENDERING,
     /** Ability to override the background of the rendering with transparency using
      * {@link SceneParams#setCustomBackgroundColor(int)} */
-    TRANSPARENCY,
+    CUSTOM_BACKGROUND_COLOR,
     /** Ability to call {@link LayoutScene#render()} and {@link LayoutScene#render(long)}. */
     RENDER,
     /**

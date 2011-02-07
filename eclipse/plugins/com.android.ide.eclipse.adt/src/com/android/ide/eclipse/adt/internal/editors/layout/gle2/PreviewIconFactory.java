@@ -187,7 +187,7 @@ public class PreviewIconFactory {
         LayoutLibrary layoutLibrary = editor.getLayoutLibrary();
         Integer overrideBgColor = null;
         if (layoutLibrary != null) {
-            if (layoutLibrary.supports(Capability.TRANSPARENCY)) {
+            if (layoutLibrary.supports(Capability.CUSTOM_BACKGROUND_COLOR)) {
                 Pair<RGB, RGB> themeColors = getColorsFromTheme();
                 RGB bg = themeColors.getFirst();
                 RGB fg = themeColors.getSecond();
