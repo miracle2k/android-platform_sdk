@@ -23,7 +23,13 @@ import org.eclipse.swt.widgets.ScrollBar;
  * Helper class to convert between control pixel coordinates and canvas coordinates.
  * Takes care of the zooming and offset of the canvas.
  */
-public class CanvasTransform implements ICanvasTransform {
+public class CanvasTransform {
+    /**
+     * Default margin around the rendered image, reduced
+     * when the contents do not fit.
+     */
+    public static final int DEFAULT_MARGIN = 25;
+
     /**
      * The canvas which controls the zooming.
      */
@@ -37,6 +43,9 @@ public class CanvasTransform implements ICanvasTransform {
 
     /** Left-top offset in client pixel coordinates. */
     private int mTranslate;
+
+    /** Current margin */
+    private int mMargin = DEFAULT_MARGIN;
 
     /** Scaling factor, > 0. */
     private double mScale;
@@ -116,8 +125,20 @@ public class CanvasTransform implements ICanvasTransform {
         // scaled image size
         int sx = (int) (mImgSize * mScale);
 
+        // Adjust margin such that for zoomed out views
+        // we don't waste space (unless the viewport is
+        // large enough to accommodate it)
+        int delta = mClientSize - sx;
+        if (delta < 0) {
+            mMargin = 0;
+        } else if (delta < 2 * DEFAULT_MARGIN) {
+            mMargin = delta / 2;
+        } else {
+            mMargin = DEFAULT_MARGIN;
+        }
+
         // actual client area is always reduced by the margins
-        int cx = mClientSize - 2 * IMAGE_MARGIN;
+        int cx = mClientSize - 2 * mMargin;
 
         if (sx < cx) {
             mTranslate = 0;
@@ -143,8 +164,12 @@ public class CanvasTransform implements ICanvasTransform {
         }
     }
 
+    public int getMargin() {
+        return mMargin;
+    }
+
     public int translate(int canvasX) {
-        return IMAGE_MARGIN - mTranslate + (int) (mScale * canvasX);
+        return mMargin - mTranslate + (int) (mScale * canvasX);
     }
 
     public int scale(int canwasW) {
@@ -152,6 +177,6 @@ public class CanvasTransform implements ICanvasTransform {
     }
 
     public int inverseTranslate(int screenX) {
-        return (int) ((screenX - IMAGE_MARGIN + mTranslate) / mScale);
+        return (int) ((screenX - mMargin + mTranslate) / mScale);
     }
 }

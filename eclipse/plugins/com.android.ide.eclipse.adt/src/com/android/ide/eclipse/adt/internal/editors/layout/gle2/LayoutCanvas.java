@@ -228,7 +228,8 @@ public class LayoutCanvas extends Canvas {
         mHScale = new CanvasTransform(this, getHorizontalBar());
         mVScale = new CanvasTransform(this, getVerticalBar());
 
-        IFile file = layoutEditor.getInputFile();
+        // Unit test suite passes a null here; TODO: Replace with mocking
+        IFile file = layoutEditor != null ? layoutEditor.getInputFile() : null;
         if (file != null) {
             String zoom = AdtPlugin.getFileProperty(file, NAME_ZOOM);
             if (zoom != null) {
@@ -579,17 +580,38 @@ public class LayoutCanvas extends Canvas {
 
     /** Scales the canvas to best fit */
     void setFitScale() {
-        Rectangle canvasSize = getClientArea();
-        int canvasWidth = canvasSize.width - 2 * ICanvasTransform.IMAGE_MARGIN;
-        int canvasHeight = canvasSize.height - 2 * ICanvasTransform.IMAGE_MARGIN;
-
         Image image = getImageOverlay().getImage();
         if (image != null) {
+            Rectangle canvasSize = getClientArea();
+            int canvasWidth = canvasSize.width;
+            int canvasHeight = canvasSize.height;
+
             ImageData imageData = image.getImageData();
             int sceneWidth = imageData.width;
             int sceneHeight = imageData.height;
-            double hScale = canvasWidth / (double) sceneWidth;
-            double vScale = canvasHeight / (double) sceneHeight;
+            if (sceneWidth == 0.0 || sceneHeight == 0.0) {
+                return;
+            }
+
+            // Reduce the margins if necessary
+            int hDelta = canvasWidth - sceneWidth;
+            int hMargin = 0;
+            if (hDelta > 2 * CanvasTransform.DEFAULT_MARGIN) {
+                hMargin = CanvasTransform.DEFAULT_MARGIN;
+            } else if (hDelta > 0) {
+                hMargin = hDelta / 2;
+            }
+
+            int vDelta = canvasHeight - sceneHeight;
+            int vMargin = 0;
+            if (vDelta > 2 * CanvasTransform.DEFAULT_MARGIN) {
+                vMargin = CanvasTransform.DEFAULT_MARGIN;
+            } else if (vDelta > 0) {
+                vMargin = vDelta / 2;
+            }
+
+            double hScale = canvasWidth / (double) (sceneWidth - hMargin);
+            double vScale = canvasHeight / (double) (sceneHeight - vMargin);
 
             double scale = Math.min(hScale, vScale);
             setScale(scale, true);
