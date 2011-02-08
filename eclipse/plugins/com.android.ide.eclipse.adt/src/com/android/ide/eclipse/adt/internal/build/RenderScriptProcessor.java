@@ -152,16 +152,16 @@ public class RenderScriptProcessor extends SourceProcessor {
         // create the command line
         String[] command = new String[13];
         int index = 0;
-        command[index++] = sdkOsPath + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER
-                + SdkConstants.FN_RENDERSCRIPT;
+        command[index++] = quote(sdkOsPath + SdkConstants.OS_SDK_PLATFORM_TOOLS_FOLDER
+                + SdkConstants.FN_RENDERSCRIPT);
         command[index++] = "-I";   //$NON-NLS-1$
-        command[index++] = projectTarget.getPath(IAndroidTarget.ANDROID_RS_CLANG);
+        command[index++] = quote(projectTarget.getPath(IAndroidTarget.ANDROID_RS_CLANG));
         command[index++] = "-I";   //$NON-NLS-1$
-        command[index++] = projectTarget.getPath(IAndroidTarget.ANDROID_RS);
+        command[index++] = quote(projectTarget.getPath(IAndroidTarget.ANDROID_RS));
         command[index++] = "-p";   //$NON-NLS-1$
-        command[index++] = genFolder.getLocation().toOSString();
+        command[index++] = quote(genFolder.getLocation().toOSString());
         command[index++] = "-o";   //$NON-NLS-1$
-        command[index++] = rawFolder.getLocation().toOSString();
+        command[index++] = quote(rawFolder.getLocation().toOSString());
 
         command[index++] = "-d";   //$NON-NLS-1$
         command[depIndex = index++] = null;
@@ -197,8 +197,8 @@ public class RenderScriptProcessor extends SourceProcessor {
             String osSourcePath = sourcePath.toOSString();
 
             // finish to set the command line.
-            command[depIndex] = getDependencyFolder(sourceFile).getLocation().toOSString();
-            command[index] = osSourcePath;
+            command[depIndex] = quote(getDependencyFolder(sourceFile).getLocation().toOSString());
+            command[index] = quote(osSourcePath);
 
             // launch the process
             if (execLlvmRsCc(builder, project, command, sourceFile, verbose) == false) {

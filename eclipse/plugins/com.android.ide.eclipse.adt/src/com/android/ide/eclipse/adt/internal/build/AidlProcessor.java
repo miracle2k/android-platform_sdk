@@ -103,14 +103,14 @@ public class AidlProcessor extends SourceProcessor {
         String[] command = new String[4 + sourceFolders.size()];
         int index = 0;
         command[index++] = projectTarget.getPath(IAndroidTarget.AIDL);
-        command[index++] = "-p" + projectTarget.getPath(IAndroidTarget.ANDROID_AIDL);
+        command[index++] = quote("-p" + projectTarget.getPath(IAndroidTarget.ANDROID_AIDL)); //$NON-NLS-1$
 
         // since the path are relative to the workspace and not the project itself, we need
         // the workspace root.
         IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
         for (IPath p : sourceFolders) {
             IFolder f = wsRoot.getFolder(p);
-            command[index++] = "-I" + f.getLocation().toOSString(); //$NON-NLS-1$
+            command[index++] = quote("-I" + f.getLocation().toOSString()); //$NON-NLS-1$
         }
 
         boolean verbose = AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE;
@@ -144,8 +144,8 @@ public class AidlProcessor extends SourceProcessor {
             }
 
             // finish to set the command line.
-            command[index] = osSourcePath;
-            command[index + 1] = data.getOutput().getLocation().toOSString();
+            command[index] = quote(osSourcePath);
+            command[index + 1] = quote(data.getOutput().getLocation().toOSString());
 
             // launch the process
             if (execAidl(builder, project, command, sourceFile, verbose) == false) {

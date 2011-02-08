@@ -20,6 +20,7 @@ import com.android.ide.eclipse.adt.internal.build.builders.BaseBuilder;
 import com.android.ide.eclipse.adt.internal.project.BaseProjectHelper;
 import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.sdklib.IAndroidTarget;
+import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -64,6 +65,19 @@ public abstract class SourceProcessor {
 
     /** List of removed source files pending cleaning at the next build. */
     private final List<IFile> mRemoved = new ArrayList<IFile>();
+
+    /**
+     * Quotes a path inside "". If the platform is not windows, the path is returned as is.
+     * @param path the path to quote
+     * @return the quoted path.
+     */
+    public static String quote(String path) {
+        if (SdkConstants.CURRENT_PLATFORM == SdkConstants.PLATFORM_WINDOWS) {
+            return "\"" + path + "\"";
+        }
+
+        return path;
+    }
 
     protected SourceProcessor(IJavaProject javaProject, IFolder genFolder,
             SourceChangeHandler deltaVisitor) {
