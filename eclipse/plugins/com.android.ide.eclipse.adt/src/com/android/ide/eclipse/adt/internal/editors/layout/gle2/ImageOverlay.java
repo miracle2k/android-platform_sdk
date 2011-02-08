@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
+import com.android.ide.common.api.Rect;
 import com.android.ide.common.rendering.api.IImageFactory;
 
 import org.eclipse.swt.SWT;
@@ -274,5 +275,18 @@ public class ImageOverlay extends Overlay implements IImageFactory {
         }
 
         return mAwtImage;
+    }
+
+    /**
+     * Returns the bounds of the current image, or null
+     *
+     * @return the bounds of the current image, or null
+     */
+    public Rect getImageBounds() {
+        if (mImage == null) {
+            return null;
+        }
+
+        return new Rect(0, 0, mImage.getImageData().width, mImage.getImageData().height);
     }
 }
