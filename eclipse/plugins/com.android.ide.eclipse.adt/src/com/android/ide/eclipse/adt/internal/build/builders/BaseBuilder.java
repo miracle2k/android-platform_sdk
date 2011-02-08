@@ -151,7 +151,7 @@ public abstract class BaseBuilder extends IncrementalProjectBuilder {
             IFile file = (IFile)resource;
 
             // remove previous markers
-            removeMarkersFromFile(file, AndroidConstants.MARKER_XML);
+            removeMarkersFromResource(file, AndroidConstants.MARKER_XML);
 
             // create  the error handler
             XmlErrorHandler reporter = new XmlErrorHandler(file, visitor);
@@ -190,18 +190,18 @@ public abstract class BaseBuilder extends IncrementalProjectBuilder {
     }
 
     /**
-     * Removes markers from a file.
+     * Removes markers from a resource and only the resource (not its children).
      * @param file The file from which to delete the markers.
      * @param markerId The id of the markers to remove. If null, all marker of
      * type <code>IMarker.PROBLEM</code> will be removed.
      */
-    public final void removeMarkersFromFile(IFile file, String markerId) {
+    public final void removeMarkersFromResource(IResource resource, String markerId) {
         try {
-            if (file.exists()) {
-                file.deleteMarkers(markerId, true, IResource.DEPTH_ZERO);
+            if (resource.exists()) {
+                resource.deleteMarkers(markerId, true, IResource.DEPTH_ZERO);
             }
         } catch (CoreException ce) {
-            String msg = String.format(Messages.Marker_Delete_Error, markerId, file.toString());
+            String msg = String.format(Messages.Marker_Delete_Error, markerId, resource.toString());
             AdtPlugin.printErrorToConsole(getProject(), msg);
         }
     }
@@ -220,24 +220,6 @@ public abstract class BaseBuilder extends IncrementalProjectBuilder {
         } catch (CoreException ce) {
             String msg = String.format(Messages.Marker_Delete_Error, markerId, folder.toString());
             AdtPlugin.printErrorToConsole(getProject(), msg);
-        }
-    }
-
-    /**
-     * Removes markers from a project and its children.
-     * @param project The project from which to delete the markers
-     * @param markerId The id of the markers to remove. If null, all marker of
-     * type <code>IMarker.PROBLEM</code> will be removed.
-     */
-    protected final static void removeMarkersFromProject(IProject project,
-            String markerId) {
-        try {
-            if (project.exists()) {
-                project.deleteMarkers(markerId, true, IResource.DEPTH_INFINITE);
-            }
-        } catch (CoreException ce) {
-            String msg = String.format(Messages.Marker_Delete_Error, markerId, project.getName());
-            AdtPlugin.printErrorToConsole(project, msg);
         }
     }
 

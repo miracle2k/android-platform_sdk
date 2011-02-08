@@ -66,6 +66,8 @@ public abstract class SourceProcessor {
     /** List of removed source files pending cleaning at the next build. */
     private final List<IFile> mRemoved = new ArrayList<IFile>();
 
+    private int mLastCompilationStatus = COMPILE_STATUS_NONE;
+
     /**
      * Quotes a path inside "". If the platform is not windows, the path is returned as is.
      * @param path the path to quote
@@ -183,6 +185,9 @@ public abstract class SourceProcessor {
     public final void prepareFullBuild(IProject project) {
         mDeltaVisitor.reset();
 
+        mToCompile.clear();
+        mRemoved.clear();
+
         // get all the source files
         buildSourceFileList();
 
@@ -209,16 +214,17 @@ public abstract class SourceProcessor {
     protected abstract String getSavePropertyName();
 
     /**
-     * Compiles the source files and return what type of file was generated.
+     * Compiles the source files and return a status bitmask of the type of file that was generated.
      *
-     * @see #getCompilationType()
      */
     public final int compileFiles(BaseBuilder builder,
             IProject project, IAndroidTarget projectTarget,
             List<IPath> sourceFolders, IProgressMonitor monitor) throws CoreException {
 
+        mLastCompilationStatus = COMPILE_STATUS_NONE;
+
         if (mToCompile.size() == 0 && mRemoved.size() == 0) {
-            return COMPILE_STATUS_NONE;
+            return mLastCompilationStatus;
         }
 
         // if a source file is being removed before we managed to compile it, it'll be in
@@ -260,7 +266,7 @@ public abstract class SourceProcessor {
         // before the project is closed/re-opened.)
         saveState(project);
 
-        return getCompilationType();
+        return mLastCompilationStatus;
     }
 
     protected abstract void doCompileFiles(
@@ -270,12 +276,14 @@ public abstract class SourceProcessor {
             throws CoreException;
 
     /**
-     * Returns the type of compilation. It can be any of (in combination too):
+     * Adds a compilation status. It can be any of (in combination too):
      * <p/>
      * {@link #COMPILE_STATUS_CODE} means this processor created source code files.
      * {@link #COMPILE_STATUS_RES} means this process created resources.
      */
-    protected abstract int getCompilationType();
+    protected void setCompilationStatus(int status) {
+        mLastCompilationStatus |= status;
+    }
 
     protected void doRemoveFiles(SourceFileData data) throws CoreException {
         List<IFile> outputFiles = data.getOutputFiles();

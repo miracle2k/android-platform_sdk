@@ -131,11 +131,6 @@ public class RenderScriptProcessor extends SourceProcessor {
     }
 
     @Override
-    protected int getCompilationType() {
-        return COMPILE_STATUS_CODE | COMPILE_STATUS_RES;
-    }
-
-    @Override
     protected void doCompileFiles(List<IFile> sources, BaseBuilder builder,
             IProject project, IAndroidTarget projectTarget, List<IPath> sourceFolders,
             List<IFile> notCompiledOut, IProgressMonitor monitor) throws CoreException {
@@ -170,6 +165,9 @@ public class RenderScriptProcessor extends SourceProcessor {
         boolean verbose = AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE;
         boolean someSuccess = false;
 
+        // remove the generic marker from the project
+        builder.removeMarkersFromResource(project, AndroidConstants.MARKER_RENDERSCRIPT);
+
         // loop until we've compile them all
         for (IFile sourceFile : sources) {
             if (verbose) {
@@ -184,11 +182,11 @@ public class RenderScriptProcessor extends SourceProcessor {
             }
 
             // Remove the RS error markers from the source file and the dependencies
-            builder.removeMarkersFromFile(sourceFile, AndroidConstants.MARKER_RENDERSCRIPT);
+            builder.removeMarkersFromResource(sourceFile, AndroidConstants.MARKER_RENDERSCRIPT);
             SourceFileData data = getFileData(sourceFile);
             if (data != null) {
                 for (IFile dep : data.getDependencyFiles()) {
-                    builder.removeMarkersFromFile(dep, AndroidConstants.MARKER_RENDERSCRIPT);
+                    builder.removeMarkersFromResource(dep, AndroidConstants.MARKER_RENDERSCRIPT);
                 }
             }
 
@@ -206,6 +204,9 @@ public class RenderScriptProcessor extends SourceProcessor {
                 // of file that will need compilation again.
                 notCompiledOut.add(sourceFile);
             } else {
+                // Success. we'll return that we generated code and resources.
+                setCompilationStatus(COMPILE_STATUS_CODE | COMPILE_STATUS_RES);
+
                 // need to parse the .d file to figure out the dependencies and the generated file
                 parseDependencyFileFor(sourceFile);
                 someSuccess = true;
@@ -252,7 +253,8 @@ public class RenderScriptProcessor extends SourceProcessor {
                         AdtPlugin.printErrorToConsole(project, results.toArray());
 
                         // mark the project
-                        BaseProjectHelper.markResource(project, AndroidConstants.MARKER_ADT,
+                        BaseProjectHelper.markResource(project,
+                                AndroidConstants.MARKER_RENDERSCRIPT,
                                 "Unparsed Renderscript error! Check the console for output.",
                                 IMarker.SEVERITY_ERROR);
                     } else {
@@ -266,7 +268,7 @@ public class RenderScriptProcessor extends SourceProcessor {
             String msg = String.format(
                     "Error executing Renderscript. Please check llvm-rs-cc is present at %1$s",
                     command[0]);
-            BaseProjectHelper.markResource(project, AndroidConstants.MARKER_ADT, msg,
+            BaseProjectHelper.markResource(project, AndroidConstants.MARKER_RENDERSCRIPT, msg,
                     IMarker.SEVERITY_ERROR);
             return false;
         } catch (InterruptedException e) {
@@ -274,7 +276,7 @@ public class RenderScriptProcessor extends SourceProcessor {
             String msg = String.format(
                     "Error executing Renderscript. Please check llvm-rs-cc is present at %1$s",
                     command[0]);
-            BaseProjectHelper.markResource(project, AndroidConstants.MARKER_ADT, msg,
+            BaseProjectHelper.markResource(project, AndroidConstants.MARKER_RENDERSCRIPT, msg,
                     IMarker.SEVERITY_ERROR);
             return false;
         }

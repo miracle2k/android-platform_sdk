@@ -350,7 +350,7 @@ public class PreCompilerBuilder extends BaseBuilder {
                 AndroidVersion projectVersion = projectTarget.getVersion();
 
                 // remove earlier marker from the manifest
-                removeMarkersFromFile(manifestFile, AndroidConstants.MARKER_ADT);
+                removeMarkersFromResource(manifestFile, AndroidConstants.MARKER_ADT);
 
                 if (minSdkValue != -1) {
                     String codename = projectVersion.getCodename();
@@ -529,11 +529,11 @@ public class PreCompilerBuilder extends BaseBuilder {
         }
 
         // Clear the project of the generic markers
-        removeMarkersFromProject(project, AndroidConstants.MARKER_AAPT_COMPILE);
-        removeMarkersFromProject(project, AndroidConstants.MARKER_XML);
-        removeMarkersFromProject(project, AndroidConstants.MARKER_AIDL);
-        removeMarkersFromProject(project, AndroidConstants.MARKER_RENDERSCRIPT);
-        removeMarkersFromProject(project, AndroidConstants.MARKER_ANDROID);
+        removeMarkersFromContainer(project, AndroidConstants.MARKER_AAPT_COMPILE);
+        removeMarkersFromContainer(project, AndroidConstants.MARKER_XML);
+        removeMarkersFromContainer(project, AndroidConstants.MARKER_AIDL);
+        removeMarkersFromContainer(project, AndroidConstants.MARKER_RENDERSCRIPT);
+        removeMarkersFromContainer(project, AndroidConstants.MARKER_ANDROID);
     }
 
     @Override
@@ -590,7 +590,7 @@ public class PreCompilerBuilder extends BaseBuilder {
             String osManifestPath = manifestLocation.toOSString();
 
             // remove the aapt markers
-            removeMarkersFromFile(manifest, AndroidConstants.MARKER_AAPT_COMPILE);
+            removeMarkersFromResource(manifest, AndroidConstants.MARKER_AAPT_COMPILE);
             removeMarkersFromContainer(resFolder, AndroidConstants.MARKER_AAPT_COMPILE);
 
             AdtPlugin.printBuildToConsole(BuildVerbosity.VERBOSE, project,

@@ -52,6 +52,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
@@ -195,8 +196,8 @@ public class PostCompilerBuilder extends BaseBuilder {
         IProject project = getProject();
 
         // Clear the project of the generic markers
-        removeMarkersFromProject(project, AndroidConstants.MARKER_AAPT_PACKAGE);
-        removeMarkersFromProject(project, AndroidConstants.MARKER_PACKAGING);
+        removeMarkersFromContainer(project, AndroidConstants.MARKER_AAPT_PACKAGE);
+        removeMarkersFromContainer(project, AndroidConstants.MARKER_PACKAGING);
     }
 
     // build() returns a list of project from which this project depends for future compilation.
@@ -331,7 +332,7 @@ public class PostCompilerBuilder extends BaseBuilder {
             }
 
             // remove older packaging markers.
-            removeMarkersFromProject(javaProject.getProject(), AndroidConstants.MARKER_PACKAGING);
+            removeMarkersFromContainer(javaProject.getProject(), AndroidConstants.MARKER_PACKAGING);
 
             if (outputFolder == null) {
                 // mark project and exit
@@ -640,14 +641,16 @@ public class PostCompilerBuilder extends BaseBuilder {
 
         IProject iProject = getProject();
 
-        // for this version, we stop on any marker (ie also markers coming from JDT).
-        // The depth is set to ZERO to make sure we don't stop on warning on resources.
-        // Only markers set directly on the project are considered.
-        stopOnMarker(iProject, null /*type*/, IResource.DEPTH_ZERO);
-
-        // now search for other Precompiler type markers.
-        stopOnMarker(iProject, AndroidConstants.MARKER_AAPT_COMPILE, IResource.DEPTH_ZERO);
-        stopOnMarker(iProject, AndroidConstants.MARKER_AIDL, IResource.DEPTH_ZERO);
+        // do a (hopefully quick) search for Precompiler type markers.
+        stopOnMarker(iProject, AndroidConstants.MARKER_AAPT_COMPILE, IResource.DEPTH_INFINITE);
+        stopOnMarker(iProject, AndroidConstants.MARKER_AIDL, IResource.DEPTH_INFINITE);
+        stopOnMarker(iProject, AndroidConstants.MARKER_RENDERSCRIPT, IResource.DEPTH_INFINITE);
         stopOnMarker(iProject, AndroidConstants.MARKER_ANDROID, IResource.DEPTH_ZERO);
+
+        // do a search for JDT markers.
+        stopOnMarker(iProject, IJavaModelMarker.JAVA_MODEL_PROBLEM_MARKER,
+                IResource.DEPTH_INFINITE);
+        stopOnMarker(iProject, IJavaModelMarker.BUILDPATH_PROBLEM_MARKER,
+                IResource.DEPTH_INFINITE);
     }
 }
