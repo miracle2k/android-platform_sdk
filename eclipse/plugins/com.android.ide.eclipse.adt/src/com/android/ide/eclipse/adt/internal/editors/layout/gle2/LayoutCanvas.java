@@ -110,6 +110,8 @@ import java.util.Set;
  */
 @SuppressWarnings("restriction") // For WorkBench "Show In" support
 public class LayoutCanvas extends Canvas {
+    private final static QualifiedName NAME_ZOOM =
+        new QualifiedName(AdtPlugin.PLUGIN_ID, "zoom");//$NON-NLS-1$
 
     private static final boolean DEBUG = false;
 
@@ -225,6 +227,22 @@ public class LayoutCanvas extends Canvas {
         mClipboardSupport = new ClipboardSupport(this, parent);
         mHScale = new CanvasTransform(this, getHorizontalBar());
         mVScale = new CanvasTransform(this, getVerticalBar());
+
+        IFile file = layoutEditor.getInputFile();
+        if (file != null) {
+            String zoom = AdtPlugin.getFileProperty(file, NAME_ZOOM);
+            if (zoom != null) {
+                try {
+                    double initialScale = Double.parseDouble(zoom);
+                    if (initialScale > 0.0) {
+                        mHScale.setScale(initialScale);
+                        mVScale.setScale(initialScale);
+                    }
+                } catch (NumberFormatException nfe) {
+                    // Ignore - use zoom=100%
+                }
+            }
+        }
 
         mGCWrapper = new GCWrapper(mHScale, mVScale);
 
@@ -544,11 +562,19 @@ public class LayoutCanvas extends Canvas {
     }
 
     /* package */ void setScale(double scale, boolean redraw) {
+        if (scale == getScale()) {
+            return;
+        }
+
         mHScale.setScale(scale);
         mVScale.setScale(scale);
         if (redraw) {
             redraw();
         }
+
+        // Clear the zoom setting if it is almost identical to 1.0
+        String zoomValue = (Math.abs(scale - 1.0) < 0.0001) ? null : Double.toString(scale);
+        AdtPlugin.setFileProperty(mLayoutEditor.getInputFile(), NAME_ZOOM, zoomValue);
     }
 
     /** Scales the canvas to best fit */
@@ -821,7 +847,7 @@ public class LayoutCanvas extends Canvas {
                             // Set initial state of a new file
                             // TODO: Only set rendering target portion of the state
                             QualifiedName qname = ConfigurationComposite.NAME_CONFIG_STATE;
-                            String state = leavingFile.getPersistentProperty(qname);
+                            String state = AdtPlugin.getFileProperty(leavingFile, qname);
                             xmlFile.setSessionProperty(GraphicalEditorPart.NAME_INITIAL_STATE,
                                     state);
                         } catch (CoreException e) {

@@ -1481,11 +1481,7 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
                         QualifiedName qname = new QualifiedName(
                                 AdtPlugin.PLUGIN_ID,
                                 UNKNOWN_EDITOR);
-                        try {
-                            file.setPersistentProperty(qname, "1"); //$NON-NLS-1$
-                        } catch (CoreException e) {
-                            // pass
-                        }
+                        setFileProperty(file, qname, "1"); //$NON-NLS-1$
                     }
                 }
             }
@@ -1497,16 +1493,11 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
                         QualifiedName qname = new QualifiedName(
                                 AdtPlugin.PLUGIN_ID,
                                 UNKNOWN_EDITOR);
-                        String prop = null;
-                        try {
-                            prop = file.getPersistentProperty(qname);
-                        } catch (CoreException e) {
-                            // pass
-                        }
+                        String prop = getFileProperty(file, qname);
                         if (prop != null && XmlEditor.canHandleFile(file)) {
                             try {
                                 // remove the property & set editor
-                                file.setPersistentProperty(qname, null);
+                                setFileProperty(file, qname, null);
 
                                 // the window can be null sometimes
                                 IWorkbench wb = PlatformUI.getWorkbench();
@@ -1534,7 +1525,7 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
                                     }
                                 }
                             } catch (CoreException e) {
-                                // setPersistentProperty or page.openEditor may have failed
+                                // page.openEditor may have failed
                             }
                         }
                     }
@@ -1610,6 +1601,38 @@ public class AdtPlugin extends AbstractUIPlugin implements ILogger {
 
     public static synchronized OutputStream getErrorStream() {
         return sPlugin.mAndroidConsoleErrorStream;
+    }
+
+    /**
+     * Sets the named persistent property for the given file to the given value
+     *
+     * @param file the file to associate the property with
+     * @param qname the name of the property
+     * @param value the new value, or null to clear the property
+     */
+    public static void setFileProperty(IFile file, QualifiedName qname, String value) {
+        try {
+            file.setPersistentProperty(qname, value);
+        } catch (CoreException e) {
+            log(e, "Cannot set property %1$s to %2$s", qname, value);
+        }
+    }
+
+    /**
+     * Gets the named persistent file property from the given file
+     *
+     * @param file the file to look up properties for
+     * @param qname the name of the property to look up
+     * @return the property value, or null
+     */
+    public static String getFileProperty(IFile file, QualifiedName qname) {
+        try {
+            return file.getPersistentProperty(qname);
+        } catch (CoreException e) {
+            log(e, "Cannot get property %1$s", qname);
+        }
+
+        return null;
     }
 
     /**
