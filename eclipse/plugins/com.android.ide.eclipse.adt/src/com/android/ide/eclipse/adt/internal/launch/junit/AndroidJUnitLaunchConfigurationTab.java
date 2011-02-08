@@ -71,7 +71,6 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -249,13 +248,12 @@ public class AndroidJUnitLaunchConfigurationTab extends AbstractLaunchConfigurat
         GridData gd = new GridData();
         gd.horizontalSpan = 3;
         mTestContainerRadioButton.setLayoutData(gd);
-        mTestContainerRadioButton.addSelectionListener(new SelectionListener() {
+        mTestContainerRadioButton.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 if (mTestContainerRadioButton.getSelection()) {
                     testModeChanged();
                 }
-            }
-            public void widgetDefaultSelected(SelectionEvent e) {
             }
         });
 

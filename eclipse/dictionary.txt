@@ -195,6 +195,7 @@ textfields
 thematically
 themed
 tmp
+toolbar
 tooltip
 tooltips
 traceview

@@ -21,7 +21,6 @@ import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.RulesEngine;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
-import com.android.sdklib.SdkConstants;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.w3c.dom.Node;
@@ -42,9 +41,6 @@ import java.util.List;
 
     /** The node proxy for drawing the selection. Null when mCanvasViewInfo is null. */
     private final NodeProxy mNodeProxy;
-
-    /** The name displayed over the selection, typically the widget class name. Can be null. */
-    private final String mName;
 
     /**
      * Creates a new {@link SelectionItem} object.
@@ -68,8 +64,6 @@ import java.util.List;
             mRect = new Rectangle(r.x, r.y, r.width, r.height);
             mNodeProxy = nodeFactory.create(canvasViewInfo);
         }
-
-        mName = initDisplayName(canvasViewInfo, gre);
     }
 
     /**
@@ -96,65 +90,12 @@ import java.util.List;
         return mRect;
     }
 
-    /**
-     * The name displayed over the selection, typically the widget class name.
-     * Can be null.
-     */
-    public String getName() {
-        return mName;
-    }
-
     /** Returns the node associated with this selection (may be null) */
     /* package */ NodeProxy getNode() {
         return mNodeProxy;
     }
 
     //----
-
-    private String initDisplayName(CanvasViewInfo canvasViewInfo, RulesEngine gre) {
-        if (canvasViewInfo == null) {
-            return null;
-        }
-
-        String fqcn = canvasViewInfo.getName();
-        if (fqcn == null) {
-            return null;
-        }
-
-        if (fqcn.equals(SdkConstants.CLASS_MOCK_VIEW)) {
-            // The MockView class from the layout bridge is used to display views that
-            // cannot be rendered properly (such as SurfaceView or missing custom views).
-            // This view itself already displays the class name it represents so we don't
-            // need to display anything here.
-            return "";
-        }
-
-        String name = gre.callGetDisplayName(canvasViewInfo.getUiViewNode());
-
-        if (name == null) {
-            // The name is typically a fully-qualified class name. Let's make it a tad shorter.
-
-            if (fqcn.startsWith("android.")) {                                      //$NON-NLS-1$
-                // For android classes, convert android.foo.Name to android...Name
-                int first = fqcn.indexOf('.');
-                int last = fqcn.lastIndexOf('.');
-                if (last > first) {
-                    name = fqcn.substring(0, first) + ".." + fqcn.substring(last);   //$NON-NLS-1$
-                }
-            } else {
-                // For custom non-android classes, it's best to keep the 2 first segments of
-                // the namespace, e.g. we want to get something like com.example...MyClass
-                int first = fqcn.indexOf('.');
-                first = fqcn.indexOf('.', first + 1);
-                int last = fqcn.lastIndexOf('.');
-                if (last > first) {
-                    name = fqcn.substring(0, first) + ".." + fqcn.substring(last);   //$NON-NLS-1$
-                }
-            }
-        }
-
-        return name;
-    }
 
     /**
      * Gets the XML text from the given selection for a text transfer.

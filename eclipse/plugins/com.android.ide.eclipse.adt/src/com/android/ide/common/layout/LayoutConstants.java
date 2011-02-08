@@ -53,6 +53,14 @@ public class LayoutConstants {
     public static final String ATTR_LAYOUT_PREFIX = "layout_";          //$NON-NLS-1$
     public static final String ATTR_LAYOUT_HEIGHT = "layout_height";    //$NON-NLS-1$
     public static final String ATTR_LAYOUT_WIDTH = "layout_width";      //$NON-NLS-1$
+    public static final String ATTR_LAYOUT_GRAVITY = "layout_gravity";  //$NON-NLS-1$
+    public static final String ATTR_LAYOUT_WEIGHT = "layout_weight";    //$NON-NLS-1$
+
+    public static final String ATTR_LAYOUT_MARGIN = "layout_margin";               //$NON-NLS-1$
+    public static final String ATTR_LAYOUT_MARGIN_LEFT = "layout_marginLeft";      //$NON-NLS-1$
+    public static final String ATTR_LAYOUT_MARGIN_RIGHT = "layout_marginRight";    //$NON-NLS-1$
+    public static final String ATTR_LAYOUT_MARGIN_TOP = "layout_marginTop";        //$NON-NLS-1$
+    public static final String ATTR_LAYOUT_MARGIN_BOTTOM = "layout_marginBottom";  //$NON-NLS-1$
 
     public static final String ATTR_LAYOUT_ALIGN_PARENT_TOP = "layout_alignParentTop"; //$NON-NLS-1$
     public static final String ATTR_LAYOUT_ALIGN_PARENT_BOTTOM = "layout_alignParentBottom"; //$NON-NLS-1$
@@ -135,6 +143,8 @@ public class LayoutConstants {
     // like fill_parent for API 8
     public static final String VALUE_MATCH_PARENT = "match_parent"; //$NON-NLS-1$
 
+    public static final String ATTR_WEIGHT_SUM = "weightSum"; //$NON-NLS-1$
+    public static final String ATTR_BASELINE_ALIGNED = "baselineAligned"; //$NON-NLS-1$
     public static String ATTR_ORIENTATION = "orientation"; //$NON-NLS-1$
 
     public static String VALUE_HORIZONTAL = "horizontal"; //$NON-NLS-1$

@@ -46,6 +46,7 @@ import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.ide.common.api.IAttributeInfo.Format;
@@ -651,6 +652,16 @@ public class RelativeLayoutRule extends BaseLayoutRule {
                 }
             }
         });
+    }
+
+    @Override
+    public void addLayoutActions(List<MenuAction> actions, final INode parentNode,
+            final List<? extends INode> children) {
+        super.addLayoutActions(actions, parentNode, children);
+
+        actions.add(createGravityAction(Collections.<INode>singletonList(parentNode)));
+        actions.add(MenuAction.createSeparator(25));
+        actions.add(createMarginAction(parentNode, children));
     }
 
     /**

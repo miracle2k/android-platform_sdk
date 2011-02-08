@@ -62,8 +62,7 @@ public class SelectionOverlay extends Overlay {
 
                 NodeProxy node = s.getNode();
                 if (node != null) {
-                    String name = s.getName();
-                    paintSelection(gcWrapper, s.getViewInfo(), node, name, isMultipleSelection);
+                    paintSelection(gcWrapper, s.getViewInfo(), node, isMultipleSelection);
                 }
             }
 
@@ -121,7 +120,7 @@ public class SelectionOverlay extends Overlay {
     }
 
     /** Called by the canvas when a view is being selected. */
-    private void paintSelection(IGraphics gc, CanvasViewInfo view, INode selectedNode, String displayName,
+    private void paintSelection(IGraphics gc, CanvasViewInfo view, INode selectedNode,
             boolean isMultipleSelection) {
         Rect r = selectedNode.getBounds();
 

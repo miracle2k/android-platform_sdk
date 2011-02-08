@@ -604,6 +604,8 @@ public class SelectionManager implements ISelectionProvider {
             // Update menu actions that depend on the selection
             updateMenuActions();
 
+            // Update the layout actions bar
+            mCanvas.getLayoutEditor().getGraphicalEditor().getLayoutActionBar().updateSelection();
         } finally {
             mInsideUpdateSelection = false;
         }

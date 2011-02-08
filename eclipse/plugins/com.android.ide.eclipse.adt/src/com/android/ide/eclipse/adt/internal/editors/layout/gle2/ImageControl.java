@@ -43,7 +43,7 @@ public class ImageControl extends Canvas implements MouseTrackListener {
     private int mTopMargin;
     private int mRightMargin;
     private int mBottomMargin;
-    private boolean mShowMouseOver;
+    private boolean mDisposeImage = true;
     private boolean mMouseIn;
     private Color mHoverColor;
     private float mScale = 1.0f;
@@ -92,8 +92,18 @@ public class ImageControl extends Canvas implements MouseTrackListener {
     public void dispose() {
         super.dispose();
 
-        mImage.dispose();
+        if (mDisposeImage) {
+            mImage.dispose();
+        }
         mImage = null;
+    }
+
+    public void setDisposeImage(boolean mDisposeImage) {
+        this.mDisposeImage = mDisposeImage;
+    }
+
+    public boolean getDisposeImage() {
+        return mDisposeImage;
     }
 
     @Override

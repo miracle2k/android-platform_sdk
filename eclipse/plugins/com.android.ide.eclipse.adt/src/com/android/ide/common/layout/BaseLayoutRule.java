@@ -18,13 +18,24 @@ package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_GRAVITY;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_MARGIN;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_MARGIN_BOTTOM;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_MARGIN_LEFT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_MARGIN_RIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_MARGIN_TOP;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_FILL_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_MATCH_PARENT;
+import static com.android.ide.common.layout.LayoutConstants.VALUE_WRAP_CONTENT;
 
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IAttributeInfo;
-import com.android.ide.common.api.IClientRulesEngine;
 import com.android.ide.common.api.IDragElement;
 import com.android.ide.common.api.IGraphics;
+import com.android.ide.common.api.IMenuCallback;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.MenuAction;
@@ -32,9 +43,12 @@ import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.ide.common.api.IAttributeInfo.Format;
 import com.android.ide.common.api.IDragElement.IDragAttribute;
+import com.android.ide.common.api.MenuAction.ChoiceProvider;
 import com.android.util.Pair;
 
+import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,20 +56,141 @@ import java.util.Map;
 import java.util.Set;
 
 public class BaseLayoutRule extends BaseViewRule {
+    private static final String ACTION_FILL_WIDTH = "_fillW";  //$NON-NLS-1$
+    private static final String ACTION_FILL_HEIGHT = "_fillH"; //$NON-NLS-1$
+    private static final String ACTION_MARGIN = "_margin";     //$NON-NLS-1$
+    private static final URL ICON_MARGINS =
+        BaseLayoutRule.class.getResource("margins.png"); //$NON-NLS-1$
+    private static final URL ICON_GRAVITY =
+        BaseLayoutRule.class.getResource("gravity.png"); //$NON-NLS-1$
+    private static final URL ICON_FILL_WIDTH =
+        BaseLayoutRule.class.getResource("fillwidth.png"); //$NON-NLS-1$
+    private static final URL ICON_FILL_HEIGHT =
+        BaseLayoutRule.class.getResource("fillheight.png"); //$NON-NLS-1$
 
-    @Override
-    public boolean onInitialize(String fqcn, IClientRulesEngine engine) {
-        return super.onInitialize(fqcn, engine);
+    // ==== Layout Actions support ====
+
+    // The Margin layout parameters are available for LinearLayout, FrameLayout, RelativeLayout,
+    // and their subclasses.
+    protected MenuAction createMarginAction(final INode parentNode,
+            final List<? extends INode> children) {
+
+        final List<? extends INode> targets = children == null || children.size() == 0 ?
+                Collections.singletonList(parentNode)
+                : children;
+        final INode first = targets.get(0);
+
+        IMenuCallback actionCallback = new IMenuCallback() {
+            public void action(MenuAction action, final String valueId, final Boolean newValue) {
+                parentNode.editXml("Change Margins", new INodeHandler() {
+                    public void handle(INode n) {
+                        String uri = ANDROID_URI;
+                        String all = first.getStringAttr(uri, ATTR_LAYOUT_MARGIN);
+                        String left = first.getStringAttr(uri, ATTR_LAYOUT_MARGIN_LEFT);
+                        String right = first.getStringAttr(uri, ATTR_LAYOUT_MARGIN_RIGHT);
+                        String top = first.getStringAttr(uri, ATTR_LAYOUT_MARGIN_TOP);
+                        String bottom = first.getStringAttr(uri, ATTR_LAYOUT_MARGIN_BOTTOM);
+                        String[] margins = mRulesEngine.displayMarginInput(all, left,
+                                right, top, bottom);
+                        if (margins != null) {
+                            assert margins.length == 5;
+                            for (INode child : targets) {
+                                child.setAttribute(uri, ATTR_LAYOUT_MARGIN, margins[0]);
+                                child.setAttribute(uri, ATTR_LAYOUT_MARGIN_LEFT, margins[1]);
+                                child.setAttribute(uri, ATTR_LAYOUT_MARGIN_RIGHT, margins[2]);
+                                child.setAttribute(uri, ATTR_LAYOUT_MARGIN_TOP, margins[3]);
+                                child.setAttribute(uri, ATTR_LAYOUT_MARGIN_BOTTOM, margins[4]);
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        return MenuAction.createAction(ACTION_MARGIN, "Change Margins...", null, actionCallback,
+                        ICON_MARGINS, 40);
+    }
+
+    // Both LinearLayout and RelativeLayout have a gravity (but RelativeLayout applies it
+    // to the parent whereas for LinearLayout it's on the children)
+    protected MenuAction createGravityAction(final List<? extends INode> targets) {
+        if (targets != null && targets.size() > 0) {
+            final INode first = targets.get(0);
+            ChoiceProvider provider = new ChoiceProvider() {
+                public void addChoices(List<String> titles, List<URL> iconUrls,
+                        List<String> ids) {
+                    IAttributeInfo info = first.getAttributeInfo(ANDROID_URI, ATTR_LAYOUT_GRAVITY);
+                    if (info != null) {
+                        // Generate list of possible gravity value constants
+                        assert IAttributeInfo.Format.FLAG.in(info.getFormats());
+                        for (String name : info.getFlagValues()) {
+                            titles.add(prettyName(name));
+                            ids.add(name);
+                        }
+                    }
+                }
+            };
+
+            return MenuAction.createChoices("_gravity", "Change Gravity", //$NON-NLS-1$
+                    null,
+                    new PropertyCallback(targets, "Change Gravity", ANDROID_URI,
+                            ATTR_LAYOUT_GRAVITY),
+                    provider,
+                    first.getStringAttr(ANDROID_URI, ATTR_LAYOUT_GRAVITY), ICON_GRAVITY,
+                    43);
+        }
+
+        return null;
     }
 
     @Override
-    public void onDispose() {
-        super.onDispose();
-    }
+    public void addLayoutActions(List<MenuAction> actions, final INode parentNode,
+            final List<? extends INode> children) {
+        super.addLayoutActions(actions, parentNode, children);
 
-    @Override
-    public List<MenuAction> getContextMenu(INode selectedNode) {
-        return super.getContextMenu(selectedNode);
+        final List<? extends INode> targets = children == null || children.size() == 0 ?
+                Collections.singletonList(parentNode)
+                : children;
+        final INode first = targets.get(0);
+
+        // Shared action callback
+        IMenuCallback actionCallback = new IMenuCallback() {
+            public void action(MenuAction action, final String valueId, final Boolean newValue) {
+                final String actionId = action.getId();
+                final String undoLabel;
+                if (actionId.equals(ACTION_FILL_WIDTH)) {
+                    undoLabel = "Change Width Fill";
+                } else if (actionId.equals(ACTION_FILL_HEIGHT)) {
+                    undoLabel = "Change Height Fill";
+                } else {
+                    return;
+                }
+                parentNode.editXml(undoLabel, new INodeHandler() {
+                    public void handle(INode n) {
+                        String attribute = actionId.equals(ACTION_FILL_WIDTH)
+                                ? ATTR_LAYOUT_WIDTH : ATTR_LAYOUT_HEIGHT;
+                        String value;
+                        if (newValue) {
+                            if (supportsMatchParent()) {
+                                value = VALUE_MATCH_PARENT;
+                            } else {
+                                value = VALUE_FILL_PARENT;
+                            }
+                        } else {
+                            value = VALUE_WRAP_CONTENT;
+                        }
+                        for (INode child : targets) {
+                            child.setAttribute(ANDROID_URI, attribute, value);
+                        }
+                    }
+                });
+            }
+        };
+
+        actions.add(MenuAction.createToggle(ACTION_FILL_WIDTH, "Toggle Fill Width",
+                isFilled(first, ATTR_LAYOUT_WIDTH), actionCallback, ICON_FILL_WIDTH, 10));
+        actions.add(MenuAction.createToggle(ACTION_FILL_HEIGHT, "Toggle Fill Height",
+                isFilled(first, ATTR_LAYOUT_HEIGHT), actionCallback, ICON_FILL_HEIGHT, 20));
     }
 
     // ==== Paste support ====

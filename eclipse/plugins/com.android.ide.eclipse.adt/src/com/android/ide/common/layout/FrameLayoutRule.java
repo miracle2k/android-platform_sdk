@@ -24,10 +24,12 @@ import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
 import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.util.Pair;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -143,5 +145,16 @@ public class FrameLayoutRule extends BaseLayoutRule {
                 }
             }
         });
+    }
+
+    @Override
+    public void addLayoutActions(List<MenuAction> actions, final INode parentNode,
+            final List<? extends INode> children) {
+        super.addLayoutActions(actions, parentNode, children);
+        actions.add(MenuAction.createSeparator(25));
+        actions.add(createMarginAction(parentNode, children));
+        if (children.size() > 0) {
+            actions.add(createGravityAction(children));
+        }
     }
 }

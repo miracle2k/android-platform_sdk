@@ -115,8 +115,23 @@ public interface IClientRulesEngine {
      * @param currentValue the current reference to select
      * @param resourceTypeName resource type, such as "id", "string", and so on (never
      *            null)
-     * @return the resource selected by the user, or null
+     * @return the margins selected by the user in the same order as the input arguments,
+     *         or null
      */
     String displayResourceInput(String resourceTypeName, String currentValue);
+
+    /**
+     * Displays an input dialog tailored for editing margin properties.
+     *
+     * @param all The current, initial value display for "all" margins (applied to all
+     *            sides)
+     * @param left The current, initial value to display for the "left" margin
+     * @param right The current, initial value to display for the "right" margin
+     * @param top The current, initial value to display for the "top" margin
+     * @param bottom The current, initial value to display for the "bottom" margin
+     * @return an array of length 5 containing the user entered values for the all, left,
+     *         right, top and bottom margins respectively
+     */
+    String[] displayMarginInput(String all, String left, String right, String top, String bottom);
 }
 
