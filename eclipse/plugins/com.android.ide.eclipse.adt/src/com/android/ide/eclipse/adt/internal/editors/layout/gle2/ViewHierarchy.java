@@ -202,8 +202,8 @@ public class ViewHierarchy {
     private ViewInfo createMergeInfo(RenderSession session) {
         BufferedImage image = session.getImage();
         ControlPoint imageSize = ControlPoint.create(mCanvas,
-                ICanvasTransform.IMAGE_MARGIN + image.getWidth(),
-                ICanvasTransform.IMAGE_MARGIN + image.getHeight());
+                mCanvas.getHorizontalTransform().getMargin() + image.getWidth(),
+                mCanvas.getVerticalTransform().getMargin() + image.getHeight());
         LayoutPoint layoutSize = imageSize.toLayout();
         UiDocumentNode model = mCanvas.getLayoutEditor().getUiRootNode();
         List<UiElementNode> children = model.getUiChildren();

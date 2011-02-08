@@ -91,11 +91,11 @@ public class GCWrapper implements IGraphics {
     private int mFontHeight = 0;
 
     /** The scaling of the canvas in X. */
-    private final ICanvasTransform mHScale;
+    private final CanvasTransform mHScale;
     /** The scaling of the canvas in Y. */
-    private final ICanvasTransform mVScale;
+    private final CanvasTransform mVScale;
 
-    public GCWrapper(ICanvasTransform hScale, ICanvasTransform vScale) {
+    public GCWrapper(CanvasTransform hScale, CanvasTransform vScale) {
         mHScale = hScale;
         mVScale = vScale;
         mGc = null;
