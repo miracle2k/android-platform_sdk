@@ -51,7 +51,6 @@ import com.android.sdklib.IAndroidTarget;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.draw2d.geometry.Rectangle;
@@ -671,18 +670,13 @@ public class ConfigurationComposite extends Composite {
 
                     // get the file stored state
                     boolean loadedConfigData = false;
-                    try {
-                        String data = mEditedFile.getPersistentProperty(NAME_CONFIG_STATE);
-
-                        if (mInitialState != null) {
-                            data = mInitialState;
-                            mInitialState = null;
-                        }
-                        if (data != null) {
-                            loadedConfigData = mState.setData(data);
-                        }
-                    } catch (CoreException e) {
-                        // pass
+                    String data = AdtPlugin.getFileProperty(mEditedFile, NAME_CONFIG_STATE);
+                    if (mInitialState != null) {
+                        data = mInitialState;
+                        mInitialState = null;
+                    }
+                    if (data != null) {
+                        loadedConfigData = mState.setData(data);
                     }
 
                     // update the themes and locales.
@@ -1094,11 +1088,7 @@ public class ConfigurationComposite extends Composite {
      * Stores the current config selection into the edited file.
      */
     public void storeState() {
-        try {
-            mEditedFile.setPersistentProperty(NAME_CONFIG_STATE, mState.getData());
-        } catch (CoreException e) {
-            // pass
-        }
+        AdtPlugin.setFileProperty(mEditedFile, NAME_CONFIG_STATE, mState.getData());
     }
 
     /**

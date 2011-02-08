@@ -437,7 +437,7 @@ public class ExtractIncludeAction extends Action {
         try {
             // Duplicate the current state into the newly created file
             QualifiedName qname = ConfigurationComposite.NAME_CONFIG_STATE;
-            String state = leavingFile.getPersistentProperty(qname);
+            String state = AdtPlugin.getFileProperty(leavingFile, qname);
             file.setSessionProperty(GraphicalEditorPart.NAME_INITIAL_STATE, state);
         } catch (CoreException e) {
             // pass
