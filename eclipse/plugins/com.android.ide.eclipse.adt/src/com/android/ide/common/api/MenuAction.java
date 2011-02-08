@@ -121,7 +121,7 @@ public abstract class MenuAction implements Comparable<MenuAction> {
         return action;
     }
 
-    public static MenuAction createChoices(String id, String title, String groupId,
+    public static OrderedChoices createChoices(String id, String title, String groupId,
             IMenuCallback callback, List<String> titles, List<URL> iconUrls, List<String> ids,
             String current, URL iconUrl, int sortPriority) {
         OrderedChoices choices = new OrderedChoices(id, title, groupId, callback, titles, iconUrls,
@@ -131,7 +131,7 @@ public abstract class MenuAction implements Comparable<MenuAction> {
         return choices;
     }
 
-    public static MenuAction createChoices(String id, String title, String groupId,
+    public static OrderedChoices createChoices(String id, String title, String groupId,
             IMenuCallback callback, ChoiceProvider provider,
             String current, URL iconUrl, int sortPriority) {
         OrderedChoices choices = new DelayedOrderedChoices(id, title, groupId, callback,
@@ -437,6 +437,7 @@ public abstract class MenuAction implements Comparable<MenuAction> {
         protected List<String> mTitles;
         protected List<URL> mIconUrls;
         protected List<String> mIds;
+        private boolean mRadio;
 
         /**
          * One or more id for the checked choice(s) that will be check marked.
@@ -467,6 +468,26 @@ public abstract class MenuAction implements Comparable<MenuAction> {
 
         public String getCurrent() {
             return mCurrent;
+        }
+
+        /**
+         * Set whether this choice list is best visualized as a radio group (instead of a
+         * dropdown)
+         *
+         * @param radio true if this choice list should be visualized as a radio group
+         */
+        public void setRadio(boolean radio) {
+            mRadio = radio;
+        }
+
+        /**
+         * Returns true if this choice list is best visualized as a radio group (instead
+         * of a dropdown)
+         *
+         * @return true if this choice list should be visualized as a radio group
+         */
+        public boolean isRadio() {
+            return mRadio;
         }
     }
 

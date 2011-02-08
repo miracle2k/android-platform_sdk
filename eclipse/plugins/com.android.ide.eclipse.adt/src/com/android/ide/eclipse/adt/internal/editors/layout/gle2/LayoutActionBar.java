@@ -32,6 +32,7 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -145,8 +146,7 @@ public class LayoutActionBar extends Composite {
 
                 if (action instanceof MenuAction.OrderedChoices) {
                     final MenuAction.OrderedChoices choices = (OrderedChoices) action;
-                    final List<URL> icons = choices.getIconUrls();
-                    if (icons == null || icons.size() == 0) {
+                    if (!choices.isRadio()) {
                         addDropdown(choices);
                     } else {
                         addSeparator(mLayoutToolBar);
@@ -191,6 +191,7 @@ public class LayoutActionBar extends Composite {
             public void widgetSelected(SelectionEvent e) {
                 toggle.getCallback().action(toggle, toggle.getId(),
                         button.getSelection());
+                updateSelection();
             }
         });
         if (toggle.isChecked()) {
@@ -214,15 +215,16 @@ public class LayoutActionBar extends Composite {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 menuAction.getCallback().action(menuAction, menuAction.getId(), false);
+                updateSelection();
             }
         });
     }
 
     private void addRadio(final MenuAction.OrderedChoices choices) {
-        final List<URL> icons = choices.getIconUrls();
-        final List<String> titles = choices.getTitles();
-        final List<String> ids = choices.getIds();
-        final String current = choices.getCurrent() != null ? choices.getCurrent() : ""; //$NON-NLS-1$
+        List<URL> icons = choices.getIconUrls();
+        List<String> titles = choices.getTitles();
+        List<String> ids = choices.getIds();
+        String current = choices.getCurrent() != null ? choices.getCurrent() : ""; //$NON-NLS-1$
 
         assert icons != null;
         assert icons.size() == titles.size();
@@ -239,6 +241,7 @@ public class LayoutActionBar extends Composite {
                 public void widgetSelected(SelectionEvent e) {
                     if (item.getSelection()) {
                         choices.getCallback().action(choices, id, null);
+                        updateSelection();
                     }
                 }
             });
@@ -250,13 +253,6 @@ public class LayoutActionBar extends Composite {
     }
 
     private void addDropdown(final MenuAction.OrderedChoices choices) {
-        final List<URL> icons = choices.getIconUrls();
-        final List<String> titles = choices.getTitles();
-        final List<String> ids = choices.getIds();
-        final String current = choices.getCurrent() != null ? choices.getCurrent() : ""; //$NON-NLS-1$
-
-        assert icons == null || icons.size() == 0;
-
         final ToolItem combo = new ToolItem(mLayoutToolBar, SWT.DROP_DOWN);
         URL iconUrl = choices.getIconUrl();
         if (iconUrl != null) {
@@ -272,12 +268,23 @@ public class LayoutActionBar extends Composite {
                 Point point = new Point(event.x, event.y);
                 point = combo.getDisplay().map(mLayoutToolBar, null, point);
 
-                final Menu menu = new Menu(mLayoutToolBar.getShell(), SWT.POP_UP);
+                Menu menu = new Menu(mLayoutToolBar.getShell(), SWT.POP_UP);
+
+                List<URL> icons = choices.getIconUrls();
+                List<String> titles = choices.getTitles();
+                List<String> ids = choices.getIds();
+                String current = choices.getCurrent() != null ? choices.getCurrent() : ""; //$NON-NLS-1$
+
                 for (int i = 0; i < titles.size(); i++) {
                     String title = titles.get(i);
                     final String id = ids.get(i);
+                    URL itemIconUrl = icons != null && icons.size() > 0 ? icons.get(i) : null;
                     MenuItem item = new MenuItem(menu, SWT.CHECK);
                     item.setText(title);
+                    if (itemIconUrl != null) {
+                        Image itemIcon = IconFactory.getInstance().getIcon(itemIconUrl);
+                        item.setImage(itemIcon);
+                    }
 
                     boolean selected = id.equals(current);
                     if (selected) {
@@ -288,6 +295,7 @@ public class LayoutActionBar extends Composite {
                         @Override
                         public void widgetSelected(SelectionEvent e) {
                             choices.getCallback().action(choices, id, null);
+                            updateSelection();
                         }
                     });
                 }

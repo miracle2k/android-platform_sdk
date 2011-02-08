@@ -18,7 +18,6 @@ package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
-import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_GRAVITY;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_MARGIN;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_MARGIN_BOTTOM;
@@ -113,13 +112,14 @@ public class BaseLayoutRule extends BaseViewRule {
 
     // Both LinearLayout and RelativeLayout have a gravity (but RelativeLayout applies it
     // to the parent whereas for LinearLayout it's on the children)
-    protected MenuAction createGravityAction(final List<? extends INode> targets) {
+    protected MenuAction createGravityAction(final List<? extends INode> targets, final
+            String attributeName) {
         if (targets != null && targets.size() > 0) {
             final INode first = targets.get(0);
             ChoiceProvider provider = new ChoiceProvider() {
                 public void addChoices(List<String> titles, List<URL> iconUrls,
                         List<String> ids) {
-                    IAttributeInfo info = first.getAttributeInfo(ANDROID_URI, ATTR_LAYOUT_GRAVITY);
+                    IAttributeInfo info = first.getAttributeInfo(ANDROID_URI, attributeName);
                     if (info != null) {
                         // Generate list of possible gravity value constants
                         assert IAttributeInfo.Format.FLAG.in(info.getFormats());
@@ -134,9 +134,9 @@ public class BaseLayoutRule extends BaseViewRule {
             return MenuAction.createChoices("_gravity", "Change Gravity", //$NON-NLS-1$
                     null,
                     new PropertyCallback(targets, "Change Gravity", ANDROID_URI,
-                            ATTR_LAYOUT_GRAVITY),
+                            attributeName),
                     provider,
-                    first.getStringAttr(ANDROID_URI, ATTR_LAYOUT_GRAVITY), ICON_GRAVITY,
+                    first.getStringAttr(ANDROID_URI, attributeName), ICON_GRAVITY,
                     43);
         }
 
