@@ -80,41 +80,32 @@ public class SelectionOverlay extends Overlay {
         INode parent = node.getParent();
         if (parent instanceof NodeProxy) {
             NodeProxy parentNode = (NodeProxy) parent;
+            List<String> infos = rulesEngine.callGetSelectionHint(parentNode, node);
+            if (infos != null && infos.size() > 0) {
+                gcWrapper.useStyle(DrawingStyle.HELP);
 
-            // Get the top parent, to display data under it
-            INode topParent = parentNode;
-            while (true) {
-                INode p = topParent.getParent();
-                if (p == null) {
-                    break;
+                Rect b = mCanvas.getImageOverlay().getImageBounds();
+                if (b == null) {
+                    return;
                 }
-                topParent = p;
-            }
 
-            Rect b = topParent.getBounds();
-            if (b.isValid()) {
-                List<String> infos = rulesEngine.callGetSelectionHint(parentNode, node);
-                if (infos != null && infos.size() > 0) {
-                    gcWrapper.useStyle(DrawingStyle.HELP);
-                    double scale = mCanvas.getScale();
-
-                    // Compute the location to display the help. This is done in
-                    // layout coordinates, so we need to apply the scale in reverse
-                    // when making pixel margins
-                    // TODO: We could take the Canvas dimensions into account to see
-                    // where there is more room.
-                    // TODO: The scrollbars should take the presence of hint text
-                    // into account.
-                    int x, y;
-                    if (b.w > b.h) {
-                        x = (int) (b.x + 3 / scale);
-                        y = (int) (b.y + b.h + 10 / scale);
-                    } else {
-                        x = (int) (b.x + b.w + 10 / scale);
-                        y = (int) (b.y + 3 / scale);
-                    }
-                    gcWrapper.drawBoxedStrings(x, y, infos);
+                // Compute the location to display the help. This is done in
+                // layout coordinates, so we need to apply the scale in reverse
+                // when making pixel margins
+                // TODO: We could take the Canvas dimensions into account to see
+                // where there is more room.
+                // TODO: The scrollbars should take the presence of hint text
+                // into account.
+                double scale = mCanvas.getScale();
+                int x, y;
+                if (b.w > b.h) {
+                    x = (int) (b.x + 3 / scale);
+                    y = (int) (b.y + b.h + 6 / scale);
+                } else {
+                    x = (int) (b.x + b.w + 6 / scale);
+                    y = (int) (b.y + 3 / scale);
                 }
+                gcWrapper.drawBoxedStrings(x, y, infos);
             }
         }
     }
