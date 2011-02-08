@@ -45,6 +45,7 @@ import com.android.resources.DockMode;
 import com.android.resources.NightMode;
 import com.android.resources.ResourceType;
 import com.android.resources.ScreenOrientation;
+import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
 
 import org.eclipse.core.resources.IFile;
@@ -277,6 +278,9 @@ public class ConfigurationComposite extends Composite {
 
                             if (values.length == 7 && mTargetList != null) {
                                 target = stringToTarget(values[6]);
+                            } else {
+                                // No render target stored; try to find the best default
+                                target = findDefaultRenderTarget();
                             }
 
                             return true;
@@ -703,9 +707,13 @@ public class ConfigurationComposite extends Composite {
                         targetData = Sdk.getCurrent().getTargetData(mState.target);
                     } else {
                         findAndSetCompatibleConfig(false /*favorCurrentConfig*/);
-                        // We don't want the -first- combobox item, we want the
-                        // default one which is sometimes a different index
-                        //mTargetCombo.select(0);
+
+                        // Default to modern layout lib
+                        IAndroidTarget target = findDefaultRenderTarget();
+                        if (target != null) {
+                            targetData = Sdk.getCurrent().getTargetData(target);
+                            mTargetCombo.select(mTargetList.indexOf(target));
+                        }
                     }
 
                     // update the string showing the config value
@@ -721,6 +729,26 @@ public class ConfigurationComposite extends Composite {
         }
 
         return targetData;
+    }
+
+    /** Return the default render target to use, or null if no strong preference */
+    private IAndroidTarget findDefaultRenderTarget() {
+        // Default to layoutlib version 5
+        Sdk current = Sdk.getCurrent();
+        if (current != null) {
+            for (IAndroidTarget target : current.getTargets()) {
+                // Only Honeycomb has layoutlib version 5; as soon as we backport
+                // adjust this algorithm to find the lowest version that contains
+                // layoutlib 5
+                AndroidVersion version = target.getVersion();
+                int apiLevel = version.getApiLevel();
+                if (apiLevel >= 11) { // Layoutlib so far has been backported to 11
+                    return target;
+                }
+            }
+        }
+
+        return null;
     }
 
     private static class ConfigBundle {
