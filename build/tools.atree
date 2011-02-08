@@ -73,6 +73,7 @@ sdk/files/android.el tools/lib/android.el
 
 # Java Libraries for the tools
 framework/androidprefs.jar       tools/lib/androidprefs.jar
+framework/common.jar             tools/lib/common.jar
 sdk/apkbuilder/etc/apkbuilder    tools/apkbuilder
 framework/sdkstats.jar           tools/lib/sdkstats.jar
 framework/archquery.jar          tools/lib/archquery.jar
