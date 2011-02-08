@@ -90,11 +90,6 @@ public class AidlProcessor extends SourceProcessor {
     }
 
     @Override
-    protected int getCompilationType() {
-        return COMPILE_STATUS_CODE;
-    }
-
-    @Override
     protected void doCompileFiles(List<IFile> sources, BaseBuilder builder,
             IProject project, IAndroidTarget projectTarget,
             List<IPath> sourceFolders, List<IFile> notCompiledOut, IProgressMonitor monitor)
@@ -115,6 +110,9 @@ public class AidlProcessor extends SourceProcessor {
 
         boolean verbose = AdtPrefs.getPrefs().getBuildVerbosity() == BuildVerbosity.VERBOSE;
 
+        // remove the generic marker from the project
+        builder.removeMarkersFromResource(project, AndroidConstants.MARKER_AIDL);
+
         // loop until we've compile them all
         for (IFile sourceFile : sources) {
             if (verbose) {
@@ -129,7 +127,7 @@ public class AidlProcessor extends SourceProcessor {
             }
 
             // Remove the AIDL error markers from the aidl file
-            builder.removeMarkersFromFile(sourceFile, AndroidConstants.MARKER_AIDL);
+            builder.removeMarkersFromResource(sourceFile, AndroidConstants.MARKER_AIDL);
 
             // get the path of the source file.
             IPath sourcePath = sourceFile.getLocation();
@@ -152,6 +150,9 @@ public class AidlProcessor extends SourceProcessor {
                 // aidl failed. File should be marked. We add the file to the list
                 // of file that will need compilation again.
                 notCompiledOut.add(sourceFile);
+            } else {
+                // Success. we'll return that we generated code
+                setCompilationStatus(COMPILE_STATUS_CODE);
             }
         }
     }
@@ -171,7 +172,6 @@ public class AidlProcessor extends SourceProcessor {
 
         }
     }
-
 
     /**
      * Execute the aidl command line, parse the output, and mark the aidl file
@@ -217,7 +217,7 @@ public class AidlProcessor extends SourceProcessor {
                         AdtPlugin.printErrorToConsole(project, results.toArray());
 
                         // mark the project
-                        BaseProjectHelper.markResource(project, AndroidConstants.MARKER_ADT,
+                        BaseProjectHelper.markResource(project, AndroidConstants.MARKER_AIDL,
                                 Messages.Unparsed_AIDL_Errors, IMarker.SEVERITY_ERROR);
                     } else {
                         AdtPlugin.printToConsole(project, results.toArray());
@@ -228,13 +228,13 @@ public class AidlProcessor extends SourceProcessor {
         } catch (IOException e) {
             // mark the project and exit
             String msg = String.format(Messages.AIDL_Exec_Error, command[0]);
-            BaseProjectHelper.markResource(project, AndroidConstants.MARKER_ADT, msg,
+            BaseProjectHelper.markResource(project, AndroidConstants.MARKER_AIDL, msg,
                     IMarker.SEVERITY_ERROR);
             return false;
         } catch (InterruptedException e) {
             // mark the project and exit
             String msg = String.format(Messages.AIDL_Exec_Error, command[0]);
-            BaseProjectHelper.markResource(project, AndroidConstants.MARKER_ADT, msg,
+            BaseProjectHelper.markResource(project, AndroidConstants.MARKER_AIDL, msg,
                     IMarker.SEVERITY_ERROR);
             return false;
         }

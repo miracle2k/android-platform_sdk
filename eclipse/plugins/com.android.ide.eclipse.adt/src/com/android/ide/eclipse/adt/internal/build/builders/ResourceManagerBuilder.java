@@ -64,7 +64,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
         IProject project = getProject();
 
         // Clear the project of the generic markers
-        removeMarkersFromProject(project, AndroidConstants.MARKER_ADT);
+        removeMarkersFromContainer(project, AndroidConstants.MARKER_ADT);
     }
 
     // build() returns a list of project from which this project depends for future compilation.
@@ -77,7 +77,7 @@ public class ResourceManagerBuilder extends BaseBuilder {
         IJavaProject javaProject = JavaCore.create(project);
 
         // Clear the project of the generic markers
-        removeMarkersFromProject(project, AndroidConstants.MARKER_ADT);
+        removeMarkersFromContainer(project, AndroidConstants.MARKER_ADT);
 
         // check for existing target marker, in which case we abort.
         // (this means: no SDK, no target, or unresolvable target.)
