@@ -17,6 +17,7 @@
 package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_GRAVITY;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_ID;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_PREFIX;
 import static com.android.ide.common.layout.LayoutConstants.VALUE_ABOVE;
@@ -659,7 +660,8 @@ public class RelativeLayoutRule extends BaseLayoutRule {
             final List<? extends INode> children) {
         super.addLayoutActions(actions, parentNode, children);
 
-        actions.add(createGravityAction(Collections.<INode>singletonList(parentNode)));
+        actions.add(createGravityAction(Collections.<INode>singletonList(parentNode),
+                ATTR_GRAVITY));
         actions.add(MenuAction.createSeparator(25));
         actions.add(createMarginAction(parentNode, children));
     }

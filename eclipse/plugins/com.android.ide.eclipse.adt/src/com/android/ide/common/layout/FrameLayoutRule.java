@@ -16,6 +16,8 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_GRAVITY;
+
 import com.android.ide.common.api.DrawingStyle;
 import com.android.ide.common.api.DropFeedback;
 import com.android.ide.common.api.IDragElement;
@@ -154,7 +156,7 @@ public class FrameLayoutRule extends BaseLayoutRule {
         actions.add(MenuAction.createSeparator(25));
         actions.add(createMarginAction(parentNode, children));
         if (children.size() > 0) {
-            actions.add(createGravityAction(children));
+            actions.add(createGravityAction(children, ATTR_LAYOUT_GRAVITY));
         }
     }
 }

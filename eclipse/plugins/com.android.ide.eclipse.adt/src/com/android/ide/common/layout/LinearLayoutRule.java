@@ -18,6 +18,7 @@ package com.android.ide.common.layout;
 
 import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_BASELINE_ALIGNED;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_GRAVITY;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WEIGHT;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
@@ -41,6 +42,7 @@ import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
 import com.android.ide.common.api.IViewMetadata.FillPreference;
+import com.android.ide.common.api.MenuAction.OrderedChoices;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -131,7 +133,7 @@ public class LinearLayoutRule extends BaseLayoutRule {
             final List<? extends INode> children) {
         super.addLayoutActions(actions, parentNode, children);
         if (supportsOrientation()) {
-            actions.add(MenuAction.createChoices(
+            OrderedChoices action = MenuAction.createChoices(
                     ACTION_ORIENTATION, "Orientation",  //$NON-NLS-1$
                     null,
                     new PropertyCallback(Collections.singletonList(parentNode),
@@ -143,7 +145,9 @@ public class LinearLayoutRule extends BaseLayoutRule {
                     getCurrentOrientation(parentNode),
                     null /* icon */,
                     -10
-            ));
+            );
+            action.setRadio(true);
+            actions.add(action);
         }
         if (!isVertical(parentNode)) {
             String current = parentNode.getStringAttr(ANDROID_URI, ATTR_BASELINE_ALIGNED);
@@ -164,7 +168,7 @@ public class LinearLayoutRule extends BaseLayoutRule {
             actions.add(createMarginAction(parentNode, children));
 
             // Gravity
-            actions.add(createGravityAction(children));
+            actions.add(createGravityAction(children, ATTR_LAYOUT_GRAVITY));
 
             // Weights
             IMenuCallback actionCallback = new IMenuCallback() {

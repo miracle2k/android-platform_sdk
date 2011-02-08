@@ -143,6 +143,7 @@ public class LayoutConstants {
     // like fill_parent for API 8
     public static final String VALUE_MATCH_PARENT = "match_parent"; //$NON-NLS-1$
 
+    public static final String ATTR_GRAVITY = "gravity"; //$NON-NLS-1$
     public static final String ATTR_WEIGHT_SUM = "weightSum"; //$NON-NLS-1$
     public static final String ATTR_BASELINE_ALIGNED = "baselineAligned"; //$NON-NLS-1$
     public static String ATTR_ORIENTATION = "orientation"; //$NON-NLS-1$
