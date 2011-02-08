@@ -122,10 +122,8 @@ public class CanvasTransform implements ICanvasTransform {
         if (sx < cx) {
             mTranslate = 0;
             mScrollbar.setEnabled(false);
-            mScrollbar.setVisible(false);
         } else {
             mScrollbar.setEnabled(true);
-            mScrollbar.setVisible(true);
 
             int selection = mScrollbar.getSelection();
             int thumb = cx;
