@@ -24,7 +24,6 @@ import com.android.sdklib.internal.repository.ITaskFactory;
 import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.MockEmptySdkManager;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.SdkSource;
 import com.android.sdklib.internal.repository.Archive.Arch;
 import com.android.sdklib.internal.repository.Archive.Os;
 import com.android.sdklib.mock.MockLog;
@@ -103,7 +102,7 @@ public class UpdaterDataTest extends TestCase {
 
         m._installArchives(archives);
         // TODO fix bug 14393: a2 is not installed because a1 has not been installed yet.
-        assertEquals("[a1]", Arrays.toString(m.getInstalled()));
+        assertEquals("[a1, a2]", Arrays.toString(m.getInstalled()));
     }
 
     // ---
@@ -120,8 +119,8 @@ public class UpdaterDataTest extends TestCase {
             setTaskFactory(new MockTaskFactory());
         }
 
-        /** Gives access to the internal {@link #installArchives(Collection)}. */
-        public void _installArchives(Collection<ArchiveInfo> result) {
+        /** Gives access to the internal {@link #installArchives(List)}. */
+        public void _installArchives(List<ArchiveInfo> result) {
             installArchives(result);
         }
 
