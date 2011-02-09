@@ -22,7 +22,7 @@ import com.android.sdklib.SdkManager;
 /**
  * An invalid SDK Manager, just good enough to avoid passing a null reference.
  */
-class MockEmptySdkManager extends SdkManager {
+public class MockEmptySdkManager extends SdkManager {
     public MockEmptySdkManager(String osSdkPath) {
         super(osSdkPath);
         setTargets(new IAndroidTarget[0]);

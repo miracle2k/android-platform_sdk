@@ -8,6 +8,7 @@ LOCAL_JAVA_RESOURCE_DIRS := .
 
 LOCAL_JAVA_LIBRARIES := \
 	sdklib \
+	common \
 	androidprefs \
 	swt \
 	org.eclipse.jface_3.4.2.M20090107-0800 \

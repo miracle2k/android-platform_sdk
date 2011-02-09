@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.sdkmanager;
+package com.android.sdklib.mock;
 
 import com.android.sdklib.ISdkLog;
 
 import java.util.ArrayList;
 import java.util.Formatter;
 
+/**
+ * An instance of {@link ISdkLog} that captures all messages to an internal list.
+ * Messages can be retrieved later using {@link #toString()}.
+ * Useful for unit-tests.
+ */
 public class MockLog implements ISdkLog {
     private ArrayList<String> mMessages = new ArrayList<String>();
 

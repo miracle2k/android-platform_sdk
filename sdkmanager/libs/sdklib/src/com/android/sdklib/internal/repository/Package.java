@@ -16,6 +16,8 @@
 
 package com.android.sdklib.internal.repository;
 
+import com.android.annotations.VisibleForTesting;
+import com.android.annotations.VisibleForTesting.Visibility;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.repository.Archive.Arch;
@@ -150,7 +152,16 @@ public abstract class Package implements IDescription, Comparable<Package> {
         mSource = source;
 
         mArchives = new Archive[1];
-        mArchives[0] = new Archive(this,
+        mArchives[0] = createLocalArchive(props, archiveOs, archiveArch, archiveOsPath);
+    }
+
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected Archive createLocalArchive(
+            Properties props,
+            Os archiveOs,
+            Arch archiveArch,
+            String archiveOsPath) {
+        return new Archive(this,
                 props,
                 archiveOs,
                 archiveArch,

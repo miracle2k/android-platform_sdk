@@ -7,5 +7,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/SdkLib"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/AndroidPrefs"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/3"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/common"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
