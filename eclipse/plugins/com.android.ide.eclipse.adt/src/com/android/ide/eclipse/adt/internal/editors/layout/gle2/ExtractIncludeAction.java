@@ -57,6 +57,7 @@ import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.window.Window;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
@@ -476,6 +477,7 @@ public class ExtractIncludeAction extends Action {
         sb.append("<include layout=\"@layout/"); //$NON-NLS-1$
         sb.append(newName);
         sb.append('"');
+        sb.append(' ');
 
         // Create new id for the include itself
         if (referenceId != null) {
@@ -788,6 +790,13 @@ public class ExtractIncludeAction extends Action {
                 }
             }
         });
+
+        // Save file to trigger include finder scanning (as well as making the
+        // actual show-include feature work since it relies on reading files from
+        // disk, not a live buffer)
+        IEditorPart editorPart = editor;
+        IWorkbenchPage page = editorPart.getEditorSite().getPage();
+        page.saveEditor(editorPart, false);
     }
 
     /**
