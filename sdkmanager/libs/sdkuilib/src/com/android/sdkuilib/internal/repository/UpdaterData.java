@@ -56,10 +56,12 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Data shared between {@link UpdaterWindowImpl} and its pages.
@@ -383,12 +385,15 @@ class UpdaterData implements IUpdaterData {
      * @param archives The archives to install. Incompatible ones will be skipped.
      */
     @VisibleForTesting(visibility=Visibility.PRIVATE)
-    protected void installArchives(final Collection<ArchiveInfo> archives) {
+    protected void installArchives(final List<ArchiveInfo> archives) {
         if (mTaskFactory == null) {
             throw new IllegalArgumentException("Task Factory is null");
         }
 
         final boolean forceHttp = getSettingsController().getForceHttp();
+
+        // sort all archives based on their dependency level.
+        Collections.sort(archives, new InstallOrderComparator());
 
         mTaskFactory.start("Installing Archives", new ITask() {
             public void run(ITaskMonitor monitor) {
@@ -546,6 +551,53 @@ class UpdaterData implements IUpdaterData {
                 }
             }
         });
+    }
+
+    /**
+     * A comparator to sort all the {@link ArchiveInfo} based on their
+     * dependency level. This forces the installer to install first all packages
+     * with no dependency, then those with one level of dependency, etc.
+     */
+    private static class InstallOrderComparator implements Comparator<ArchiveInfo> {
+
+        private final Map<ArchiveInfo, Integer> mOrders = new HashMap<ArchiveInfo, Integer>();
+
+        public int compare(ArchiveInfo o1, ArchiveInfo o2) {
+            int n1 = getDependencyOrder(o1);
+            int n2 = getDependencyOrder(o2);
+
+            return n1 - n2;
+        }
+
+        private int getDependencyOrder(ArchiveInfo ai) {
+            if (ai == null) {
+                return 0;
+            }
+
+            // reuse cached value, if any
+            Integer cached = mOrders.get(ai);
+            if (cached != null) {
+                return cached.intValue();
+            }
+
+            ArchiveInfo[] deps = ai.getDependsOn();
+            if (deps == null) {
+                return 0;
+            }
+
+            // compute dependencies, recursively
+            int n = deps.length;
+
+            for (ArchiveInfo dep : deps) {
+                n += getDependencyOrder(dep);
+            }
+
+            // cache it
+            mOrders.put(ai, Integer.valueOf(n));
+
+            return n;
+        }
+
     }
 
     /**
