@@ -551,7 +551,7 @@ public class CanvasViewInfo implements IPropertySource {
 
                 List<Rectangle> includedBounds = new ArrayList<Rectangle>();
                 for (CanvasViewInfo vi : rootView.getChildren()) {
-                    if (vi.isPrimaryNodeSibling()) {
+                    if (vi.getNodeSiblings() == null || vi.isPrimaryNodeSibling()) {
                         includedBounds.add(vi.getAbsRect());
                     }
                 }
