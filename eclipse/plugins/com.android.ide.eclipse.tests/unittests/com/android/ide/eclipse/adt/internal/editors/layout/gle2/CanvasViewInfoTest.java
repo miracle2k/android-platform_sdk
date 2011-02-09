@@ -547,6 +547,38 @@ public class CanvasViewInfoTest extends TestCase {
         assertEquals(new Rectangle(0, 20, 49, 19), bounds.get(1));
     }
 
+    public void testIncludeBounds2() throws Exception {
+        UiViewElementNode rootNode = createNode("android.widget.LinearLayout", true);
+        ViewInfo root = new ViewInfo("included", null, 0, 0, 100, 100);
+
+        UiViewElementNode node1 = createNode(rootNode, "childNode1", false);
+        UiViewElementNode node2 = createNode(rootNode, "childNode2", false);
+
+        // Sets alternating merge cookies and checks whether the node sibling lists are
+        // okay and merged correctly
+
+        ViewInfo childView1 = new ViewInfo("childView1", node1, 0, 20, 50, 40);
+        ViewInfo childView2 = new ViewInfo("childView2", node2, 0, 40, 50, 60);
+
+        root.setChildren(Arrays.asList(childView1, childView2));
+
+        Pair<CanvasViewInfo, List<Rectangle>> result = CanvasViewInfo.create(root);
+        CanvasViewInfo rootView = result.getFirst();
+        List<Rectangle> bounds = result.getSecond();
+        assertNotNull(rootView);
+
+        assertEquals("included", rootView.getName());
+        assertNull(rootView.getParent());
+        assertNull(rootView.getUiViewNode());
+        assertEquals(2, rootView.getChildren().size());
+        assertEquals(2, rootView.getUniqueChildren().size());
+
+        Rectangle bounds1 = bounds.get(0);
+        Rectangle bounds2 = bounds.get(1);
+        assertEquals(new Rectangle(0, 20, 49, 19), bounds1);
+        assertEquals(new Rectangle(0, 40, 49, 19), bounds2);
+    }
+
     public void testGestureOverlayView() throws Exception {
         // Test rendering of included views on layoutlib 5+ (e.g. has <include> tag)
 
