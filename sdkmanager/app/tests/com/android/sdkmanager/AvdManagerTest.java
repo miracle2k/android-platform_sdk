@@ -23,6 +23,7 @@ import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.io.FileWrapper;
+import com.android.sdklib.mock.MockLog;
 
 import java.io.File;
 import java.util.Map;

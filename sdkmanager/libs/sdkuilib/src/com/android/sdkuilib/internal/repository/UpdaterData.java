@@ -16,6 +16,8 @@
 
 package com.android.sdkuilib.internal.repository;
 
+import com.android.annotations.VisibleForTesting;
+import com.android.annotations.VisibleForTesting.Visibility;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
@@ -226,8 +228,9 @@ class UpdaterData implements IUpdaterData {
     /**
      * Initializes the {@link SdkManager} and the {@link AvdManager}.
      */
-    private void initSdk() {
-        mSdkManager = SdkManager.createManager(mOsSdkRoot, mSdkLog);
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected void initSdk() {
+        setSdkManager(SdkManager.createManager(mOsSdkRoot, mSdkLog));
         try {
             mAvdManager = null; // remove the old one if needed.
             mAvdManager = new AvdManager(mSdkManager, mSdkLog);
@@ -245,6 +248,11 @@ class UpdaterData implements IUpdaterData {
 
         // notify listeners.
         broadcastOnSdkReload();
+    }
+
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected void setSdkManager(SdkManager sdkManager) {
+        mSdkManager = sdkManager;
     }
 
     /**
@@ -372,9 +380,10 @@ class UpdaterData implements IUpdaterData {
      * Install the list of given {@link Archive}s. This is invoked by the user selecting some
      * packages in the remote page and then clicking "install selected".
      *
-     * @param result The archives to install. Incompatible ones will be skipped.
+     * @param archives The archives to install. Incompatible ones will be skipped.
      */
-    public void installArchives(final Collection<ArchiveInfo> result) {
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected void installArchives(final Collection<ArchiveInfo> archives) {
         if (mTaskFactory == null) {
             throw new IllegalArgumentException("Task Factory is null");
         }
@@ -385,7 +394,7 @@ class UpdaterData implements IUpdaterData {
             public void run(ITaskMonitor monitor) {
 
                 final int progressPerArchive = 2 * ArchiveInstaller.NUM_MONITOR_INC;
-                monitor.setProgressMax(result.size() * progressPerArchive);
+                monitor.setProgressMax(archives.size() * progressPerArchive);
                 monitor.setDescription("Preparing to install archives");
 
                 boolean installedAddon = false;
@@ -402,7 +411,7 @@ class UpdaterData implements IUpdaterData {
                 }
 
                 int numInstalled = 0;
-                nextArchive: for (ArchiveInfo ai : result) {
+                nextArchive: for (ArchiveInfo ai : archives) {
                     Archive archive = ai.getNewArchive();
                     if (archive == null) {
                         // This is not supposed to happen.
@@ -443,7 +452,7 @@ class UpdaterData implements IUpdaterData {
                             broadcastPreInstallHook();
                         }
 
-                        ArchiveInstaller installer = new ArchiveInstaller();
+                        ArchiveInstaller installer = createArchiveInstaler();
                         if (installer.install(archive,
                                               mOsSdkRoot,
                                               forceHttp,
@@ -976,6 +985,15 @@ class UpdaterData implements IUpdaterData {
                 }
             });
         }
+    }
+
+    /**
+     * Internal helper to return a new {@link ArchiveInstaller}.
+     * This allows us to override the installer for unit-testing.
+     */
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected ArchiveInstaller createArchiveInstaler() {
+        return new ArchiveInstaller();
     }
 
 }

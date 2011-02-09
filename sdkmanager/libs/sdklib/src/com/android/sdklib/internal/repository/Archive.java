@@ -16,6 +16,9 @@
 
 package com.android.sdklib.internal.repository;
 
+import com.android.annotations.VisibleForTesting;
+import com.android.annotations.VisibleForTesting.Visibility;
+
 import java.io.File;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -200,7 +203,8 @@ public class Archive implements IDescription, Comparable<Archive> {
      * Creates a new local archive.
      * Uses the properties from props first, if possible. Props can be null.
      */
-    Archive(Package pkg, Properties props, Os os, Arch arch, String localOsPath) {
+    @VisibleForTesting(visibility=Visibility.PACKAGE)
+    protected Archive(Package pkg, Properties props, Os os, Arch arch, String localOsPath) {
         mPackage = pkg;
 
         mOs   = props == null ? os   : Os.valueOf(  props.getProperty(PROP_OS,   os.toString()));
