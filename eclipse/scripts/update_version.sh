@@ -22,16 +22,10 @@ if [ `basename "$PWD"` != "eclipse" ]; then
 fi
 
 # quote dots for regexps
-OLD="${OLD//./\.}"
-NEW="${NEW//./\.}"
-
-# Find all the files with the old pattern, except changes.txt and
-# p4 edit them. Skip that if there's no p4 in path.
-if which g4 1>/dev/null 2>/dev/null ; then
-    grep -rl "$OLD" * | grep -E "\.xml$|\.MF$" | xargs -n 5 g4 edit
-fi
+OLD="${OLD//./\.}\.qualifier"
+NEW="${NEW//./\.}\.qualifier"
 
 # Now find the same files but this time use sed to replace in-place with
 # the new pattern. Old files get backuped with the .old extension.
-grep -rl "$OLD" * | grep -E "\.xml$|\.MF$" | xargs -n 1 sed -i.old "s/$OLD/$NEW/g"
+grep -rl "$OLD" * | grep -E "\.xml$|\.MF$" | xargs -n 1 sed -i -e "s/$OLD/$NEW/g"
 
