@@ -686,6 +686,7 @@ class UpdaterData implements IUpdaterData {
                 includeObsoletes);
 
         if (selectedArchives == null) {
+            loadRemoteAddonsList();
             ul.addNewPlatforms(
                     archives,
                     getSources(),
@@ -733,6 +734,7 @@ class UpdaterData implements IUpdaterData {
                 getLocalSdkParser().getPackages(),
                 includeObsoletes);
 
+        loadRemoteAddonsList();
         ul.addNewPlatforms(
                 archives,
                 getSources(),

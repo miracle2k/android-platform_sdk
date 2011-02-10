@@ -223,6 +223,7 @@ public class LocalPackagesPage extends Composite implements ISdkChangeListener {
         mDescriptionLabel.setText("");  //$NON-NLS1-$
     }
 
+    /** User selected the 'update all' button. */
     private void onUpdateSelected() {
         mUpdaterData.updateOrInstallAll_WithGUI(
                 null /*selectedArchives*/,
