@@ -475,6 +475,7 @@ public class PreCompilerBuilder extends BaseBuilder {
                     processorStatus |= processor.compileFiles(this,
                             project, projectTarget, sourceFolderPathList, monitor);
                 } catch (Throwable t) {
+                    AdtPlugin.log(t, "Failed to run one of the source processor");
                 }
             }
 

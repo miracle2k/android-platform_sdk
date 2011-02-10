@@ -136,9 +136,14 @@ public class AidlProcessor extends SourceProcessor {
             // look if we already know the output
             SourceFileData data = getFileData(sourceFile);
             if (data == null) {
-                IFile javaFile = getAidlOutputFile(sourceFile, true /*createFolders*/, monitor);
-                data = new SourceFileData(sourceFile, javaFile);
+                data = new SourceFileData(sourceFile);
                 addData(data);
+            }
+
+            // if there's no output file yet, compute it.
+            if (data.getOutput() == null) {
+                IFile javaFile = getAidlOutputFile(sourceFile, true /*createFolders*/, monitor);
+                data.setOutputFile(javaFile);
             }
 
             // finish to set the command line.

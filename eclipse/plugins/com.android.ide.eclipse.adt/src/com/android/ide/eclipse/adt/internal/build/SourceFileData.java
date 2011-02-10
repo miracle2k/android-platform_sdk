@@ -113,7 +113,11 @@ public class SourceFileData {
      * one file.
      */
     public IFile getOutput() {
-        return mOutputFiles.get(0);
+        if (mOutputFiles.size() > 0) {
+            return mOutputFiles.get(0);
+        }
+
+        return null;
     }
 
     public List<IFile> getOutputFiles() {
