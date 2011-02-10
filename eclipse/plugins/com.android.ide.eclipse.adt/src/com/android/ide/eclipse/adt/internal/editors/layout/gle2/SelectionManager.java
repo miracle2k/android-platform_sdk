@@ -16,11 +16,17 @@
 package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 
 import com.android.ide.common.api.INode;
+import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.sdklib.SdkConstants;
 
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.gef.ui.parts.TreeViewer;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -30,8 +36,10 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.w3c.dom.Node;
 
@@ -237,6 +245,34 @@ public class SelectionManager implements ISelectionProvider {
         } finally {
             mInsideUpdateSelection = false;
         }
+    }
+
+    /**
+     * The menu has been activated; ensure that the menu click is over the existing
+     * selection, and if not, update the selection.
+     *
+     * @param e the {@link MenuDetectEvent} which triggered the menu
+     */
+    public void menuClick(MenuDetectEvent e) {
+        LayoutPoint p = ControlPoint.create(mCanvas, e).toLayout();
+
+        // Right click button is used to display a context menu.
+        // If there's an existing selection and the click is anywhere in this selection
+        // and there are no modifiers being used, we don't want to change the selection.
+        // Otherwise we select the item under the cursor.
+
+        for (SelectionItem cs : mSelections) {
+            if (cs.isRoot()) {
+                continue;
+            }
+            if (cs.getRect().contains(p.x, p.y)) {
+                // The cursor is inside the selection. Don't change anything.
+                return;
+            }
+        }
+
+        CanvasViewInfo vi = mCanvas.getViewHierarchy().findViewInfoAt(p);
+        selectSingle(vi);
     }
 
     /**
@@ -504,9 +540,69 @@ public class SelectionManager implements ISelectionProvider {
             mSelections.add(createSelection(vi));
         }
 
-
         fireSelectionChanged();
         redraw();
+    }
+
+    public void selectNone() {
+        mSelections.clear();
+        mAltSelection = null;
+        fireSelectionChanged();
+        redraw();
+    }
+
+    /** Selects the parent of the current selection */
+    public void selectParent() {
+        if (mSelections.size() == 1) {
+            CanvasViewInfo parent = mSelections.get(0).getViewInfo().getParent();
+            if (parent != null) {
+                selectSingle(parent);
+            }
+        }
+    }
+
+    /** Finds all widgets in the layout that have the same type as the primary */
+    public void selectSameType() {
+        // Find all
+        if (mSelections.size() == 1) {
+            mSelections.clear();
+            mAltSelection = null;
+            addSameType(mCanvas.getViewHierarchy().getRoot(),
+                    mSelections.get(0).getViewInfo().getUiViewNode().getDescriptor());
+            fireSelectionChanged();
+            redraw();
+        }
+    }
+
+    /** Helper for {@link #selectSameType} */
+    private void addSameType(CanvasViewInfo root, ElementDescriptor descriptor) {
+        if (root.getUiViewNode().getDescriptor() == descriptor) {
+            mSelections.add(createSelection(root));
+        }
+
+        for (CanvasViewInfo child : root.getChildren()) {
+            addSameType(child, descriptor);
+        }
+    }
+
+    /** Selects the siblings of the primary */
+    public void selectSiblings() {
+        // Find all
+        if (mSelections.size() == 1) {
+            CanvasViewInfo vi = mSelections.get(0).getViewInfo();
+            mSelections.clear();
+            mAltSelection = null;
+            CanvasViewInfo parent = vi.getParent();
+            if (parent == null) {
+                selectNone();
+            } else {
+                for (CanvasViewInfo child : parent.getChildren()) {
+                    mSelections.add(createSelection(child));
+                }
+                fireSelectionChanged();
+                redraw();
+            }
+        }
     }
 
     /**
@@ -601,11 +697,15 @@ public class SelectionManager implements ISelectionProvider {
                 }
             });
 
-            // Update menu actions that depend on the selection
-            updateMenuActions();
+            LayoutEditor editor = mCanvas.getLayoutEditor();
+            if (editor != null) {
+                // Update menu actions that depend on the selection
+                updateMenuActions();
 
-            // Update the layout actions bar
-            mCanvas.getLayoutEditor().getGraphicalEditor().getLayoutActionBar().updateSelection();
+                // Update the layout actions bar
+                LayoutActionBar layoutActionBar = editor.getGraphicalEditor().getLayoutActionBar();
+                layoutActionBar.updateSelection();
+            }
         } finally {
             mInsideUpdateSelection = false;
         }
@@ -712,5 +812,112 @@ public class SelectionManager implements ISelectionProvider {
     /* package */ SelectionItem createSelection(CanvasViewInfo vi) {
         return new SelectionItem(vi, mCanvas.getRulesEngine(),
                 mCanvas.getNodeFactory());
+    }
+
+    /**
+     * Returns true if there is nothing selected
+     *
+     * @return true if there is nothing selected
+     */
+    public boolean isEmpty() {
+        return mSelections.size() == 0;
+    }
+
+    /**
+     * "Select" context menu which lists various menu options related to selection:
+     * <ul>
+     * <li> Select All
+     * <li> Select Parent
+     * <li> Select None
+     * <li> Select Siblings
+     * <li> Select Same Type
+     * </ul>
+     * etc.
+     */
+    public static class SelectionMenu extends SubmenuAction {
+        private final GraphicalEditorPart mEditor;
+
+        public SelectionMenu(GraphicalEditorPart editor) {
+            super("Select");
+            mEditor = editor;
+        }
+
+        @Override
+        public String getId() {
+            return "-selectionmenu"; //$NON-NLS-1$
+        }
+
+        @Override
+        protected void addMenuItems(Menu menu) {
+            LayoutCanvas canvas = mEditor.getCanvasControl();
+            SelectionManager selectionManager = canvas.getSelectionManager();
+            List<SelectionItem> selections = selectionManager.getSelections();
+            boolean selectedOne = selections.size() == 1;
+            boolean notRoot = selectedOne && !selections.get(0).isRoot();
+            boolean haveSelection = selections.size() > 0;
+
+            Action a;
+            a = selectionManager.new SelectAction("Select Parent", SELECT_PARENT);
+            new ActionContributionItem(a).fill(menu, -1);
+            a.setEnabled(notRoot);
+            a.setAccelerator(SWT.ESC);
+
+            a = selectionManager.new SelectAction("Select Siblings", SELECT_SIBLINGS);
+            new ActionContributionItem(a).fill(menu, -1);
+            a.setEnabled(notRoot);
+
+            a = selectionManager.new SelectAction("Select Same Type", SELECT_SAME_TYPE);
+            new ActionContributionItem(a).fill(menu, -1);
+            a.setEnabled(selectedOne);
+
+            new Separator().fill(menu, -1);
+
+            // Special case for Select All: Use global action
+            a = canvas.getSelectAllAction();
+            new ActionContributionItem(a).fill(menu, -1);
+            a.setEnabled(true);
+
+            a = selectionManager.new SelectAction("Select None", SELECT_NONE);
+            new ActionContributionItem(a).fill(menu, -1);
+            a.setEnabled(haveSelection);
+        }
+    }
+
+    private static final int SELECT_PARENT = 1;
+    private static final int SELECT_SIBLINGS = 2;
+    private static final int SELECT_SAME_TYPE = 3;
+    private static final int SELECT_NONE = 4; // SELECT_ALL is handled separately
+
+    private class SelectAction extends Action {
+        private final int mType;
+
+        public SelectAction(String title, int type) {
+            super(title, IAction.AS_PUSH_BUTTON);
+            mType = type;
+        }
+
+        @Override
+        public void run() {
+            switch (mType) {
+                case SELECT_NONE:
+                    selectNone();
+                    break;
+                case SELECT_PARENT:
+                    selectParent();
+                    break;
+                case SELECT_SAME_TYPE:
+                    selectSameType();
+                    break;
+                case SELECT_SIBLINGS:
+                    selectSiblings();
+                    break;
+            }
+
+            List<INode> nodes = new ArrayList<INode>();
+            for (SelectionItem item : getSelections()) {
+                nodes.add(item.getNode());
+            }
+            updateOutlineSelection(nodes);
+        }
     }
 }

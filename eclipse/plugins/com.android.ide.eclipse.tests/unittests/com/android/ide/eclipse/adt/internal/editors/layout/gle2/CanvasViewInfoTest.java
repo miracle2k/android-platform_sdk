@@ -40,7 +40,7 @@ import junit.framework.TestCase;
 
 public class CanvasViewInfoTest extends TestCase {
 
-    private static ViewElementDescriptor createDesc(String name, String fqn, boolean hasChildren) {
+    public static ViewElementDescriptor createDesc(String name, String fqn, boolean hasChildren) {
         if (hasChildren) {
             return new ViewElementDescriptor(name, name, fqn, "", "", new AttributeDescriptor[0],
                     new AttributeDescriptor[0], new ElementDescriptor[1], false);
@@ -49,7 +49,7 @@ public class CanvasViewInfoTest extends TestCase {
         }
     }
 
-    private static UiViewElementNode createNode(UiViewElementNode parent, String fqn,
+    public static UiViewElementNode createNode(UiViewElementNode parent, String fqn,
             boolean hasChildren) {
         String name = fqn.substring(fqn.lastIndexOf('.') + 1);
         ViewElementDescriptor descriptor = createDesc(name, fqn, hasChildren);
@@ -60,7 +60,7 @@ public class CanvasViewInfoTest extends TestCase {
         return (UiViewElementNode) parent.appendNewUiChild(descriptor);
     }
 
-    private static UiViewElementNode createNode(String fqn, boolean hasChildren) {
+    public static UiViewElementNode createNode(String fqn, boolean hasChildren) {
         return createNode(null, fqn, hasChildren);
     }
 

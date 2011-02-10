@@ -64,6 +64,8 @@ import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
+import org.eclipse.swt.events.MenuDetectEvent;
+import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
@@ -286,6 +288,8 @@ public class LayoutCanvas extends Canvas {
                 // handle backspace for other platforms as well.
                 if (e.keyCode == SWT.BS) {
                     mDeleteAction.run();
+                } else if (e.keyCode == SWT.ESC) {
+                    mSelectionManager.selectParent();
                 } else {
                     // Zooming actions
                     char c = e.character;
@@ -517,6 +521,11 @@ public class LayoutCanvas extends Canvas {
      */
     public ClipboardSupport getClipboardSupport() {
         return mClipboardSupport;
+    }
+
+    /** Returns the Select All action bound to this canvas */
+    Action getSelectAllAction() {
+        return mSelectAllAction;
     }
 
     /**
@@ -1158,6 +1167,16 @@ public class LayoutCanvas extends Canvas {
         new DynamicContextMenu(mLayoutEditor, this, mMenuManager);
         Menu menu = mMenuManager.createContextMenu(this);
         setMenu(menu);
+
+        // Add listener to detect when the menu is about to be posted, such that
+        // we can sync the selection. Without this, you can right click on something
+        // in the canvas which is NOT selected, and the context menu will show items related
+        // to the selection, NOT the item you clicked on!!
+        addMenuDetectListener(new MenuDetectListener() {
+            public void menuDetected(MenuDetectEvent e) {
+                mSelectionManager.menuClick(e);
+            }
+        });
     }
 
     /**
@@ -1173,15 +1192,13 @@ public class LayoutCanvas extends Canvas {
     private void setupStaticMenuActions(IMenuManager manager) {
         manager.removeAll();
 
+        manager.add(new SelectionManager.SelectionMenu(mLayoutEditor.getGraphicalEditor()));
+        manager.add(new Separator());
         manager.add(mCutAction);
         manager.add(mCopyAction);
         manager.add(mPasteAction);
-
         manager.add(new Separator());
-
         manager.add(mDeleteAction);
-        manager.add(mSelectAllAction);
-
         manager.add(new Separator());
         manager.add(new PlayAnimationMenu(this));
         manager.add(new Separator());
