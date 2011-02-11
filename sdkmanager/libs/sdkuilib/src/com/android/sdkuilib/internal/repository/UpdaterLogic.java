@@ -302,8 +302,26 @@ class UpdaterLogic {
                     // Found a suitable update. Only accept the remote package
                     // if it provides at least one compatible archive
 
+                    addArchives:
                     for (Archive a : remotePkg.getArchives()) {
                         if (a.isCompatible()) {
+
+                            // If we're trying to add a package for revision N,
+                            // make sure we don't also have a package for revision N-1.
+                            for (int i = updates.size() - 1; i >= 0; i--) {
+                                Package pkgFound = updates.get(i).getParentPackage();
+                                if (pkgFound.canBeUpdatedBy(remotePkg) == UpdateInfo.UPDATE) {
+                                    // This package can update one we selected earlier.
+                                    // Remove the one that can be updated by this new one.
+                                   updates.remove(i);
+                                } else if (remotePkg.canBeUpdatedBy(pkgFound) ==
+                                                UpdateInfo.UPDATE) {
+                                    // There is a package in the list that is already better
+                                    // than the one we want to add, so don't add it.
+                                    break addArchives;
+                                }
+                            }
+
                             updates.add(a);
                             break;
                         }
