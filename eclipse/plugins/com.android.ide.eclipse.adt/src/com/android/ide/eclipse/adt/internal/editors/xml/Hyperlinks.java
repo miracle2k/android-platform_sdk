@@ -111,6 +111,7 @@ import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
@@ -750,16 +751,33 @@ public class Hyperlinks {
             }
 
             // Create a configuration from the current file
+            IProject project = null;
             IEditorInput editorInput = editor.getEditorInput();
             if (editorInput instanceof FileEditorInput) {
                 IFile file = ((FileEditorInput) editorInput).getFile();
-                IProject project = file.getProject();
+                project = file.getProject();
                 ProjectResources pr = ResourceManager.getInstance().getProjectResources(project);
                 IContainer parent = file.getParent();
                 if (parent instanceof IFolder) {
                     ResourceFolder resFolder = pr.getResourceFolder((IFolder) parent);
                     if (resFolder != null) {
                         return resFolder.getConfiguration();
+                    }
+                }
+            }
+
+            // Might be editing a Java file, where there is no configuration context.
+            // Instead look at surrounding files in the workspace and obtain one valid
+            // configuration.
+            for (IEditorReference reference : editor.getSite().getPage().getEditorReferences()) {
+                IEditorPart part = reference.getEditor(false /*restore*/);
+                if (part instanceof LayoutEditor) {
+                    LayoutEditor layoutEditor = (LayoutEditor) part;
+                    if (project == null || layoutEditor.getProject() == project) {
+                        GraphicalEditorPart graphicalEditor = layoutEditor.getGraphicalEditor();
+                        if (graphicalEditor != null) {
+                            return graphicalEditor.getConfiguration();
+                        }
                     }
                 }
             }
