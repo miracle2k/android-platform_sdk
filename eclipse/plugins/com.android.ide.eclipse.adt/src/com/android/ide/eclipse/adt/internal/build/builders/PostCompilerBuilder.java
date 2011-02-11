@@ -641,16 +641,21 @@ public class PostCompilerBuilder extends BaseBuilder {
 
         IProject iProject = getProject();
 
-        // do a (hopefully quick) search for Precompiler type markers.
-        stopOnMarker(iProject, AndroidConstants.MARKER_AAPT_COMPILE, IResource.DEPTH_INFINITE);
-        stopOnMarker(iProject, AndroidConstants.MARKER_AIDL, IResource.DEPTH_INFINITE);
-        stopOnMarker(iProject, AndroidConstants.MARKER_RENDERSCRIPT, IResource.DEPTH_INFINITE);
-        stopOnMarker(iProject, AndroidConstants.MARKER_ANDROID, IResource.DEPTH_ZERO);
+        // do a (hopefully quick) search for Precompiler type markers. Those are always only
+        // errors.
+        stopOnMarker(iProject, AndroidConstants.MARKER_AAPT_COMPILE, IResource.DEPTH_INFINITE,
+                false /*checkSeverity*/);
+        stopOnMarker(iProject, AndroidConstants.MARKER_AIDL, IResource.DEPTH_INFINITE,
+                false /*checkSeverity*/);
+        stopOnMarker(iProject, AndroidConstants.MARKER_RENDERSCRIPT, IResource.DEPTH_INFINITE,
+                false /*checkSeverity*/);
+        stopOnMarker(iProject, AndroidConstants.MARKER_ANDROID, IResource.DEPTH_ZERO,
+                false /*checkSeverity*/);
 
-        // do a search for JDT markers.
+        // do a search for JDT markers. Those can be errors or warnings
         stopOnMarker(iProject, IJavaModelMarker.JAVA_MODEL_PROBLEM_MARKER,
-                IResource.DEPTH_INFINITE);
+                IResource.DEPTH_INFINITE, true /*checkSeverity*/);
         stopOnMarker(iProject, IJavaModelMarker.BUILDPATH_PROBLEM_MARKER,
-                IResource.DEPTH_INFINITE);
+                IResource.DEPTH_INFINITE, true /*checkSeverity*/);
     }
 }
