@@ -339,7 +339,7 @@ public class LayoutActionBar extends Composite {
         mZoomFitButton.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                rescaleToFit();
+                rescaleToFit(true);
             }
         });
 
@@ -431,8 +431,8 @@ public class LayoutActionBar extends Composite {
     /**
      * Reset the canvas scale to best fit (so content is as large as possible without scrollbars)
      */
-    void rescaleToFit() {
-        mEditor.getCanvasControl().setFitScale();
+    void rescaleToFit(boolean onlyZoomOut) {
+        mEditor.getCanvasControl().setFitScale(onlyZoomOut);
     }
 
     boolean rescaleToReal(boolean real) {

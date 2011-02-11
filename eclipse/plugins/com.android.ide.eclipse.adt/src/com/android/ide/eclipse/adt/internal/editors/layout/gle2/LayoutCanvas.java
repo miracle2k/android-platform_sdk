@@ -298,7 +298,10 @@ public class LayoutCanvas extends Canvas {
                     if (c == '1' && actionBar.isZoomingAllowed()) {
                         setScale(1, true);
                     } else if (c == '0' && actionBar.isZoomingAllowed()) {
-                        setFitScale();
+                        setFitScale(true);
+                    } else if (e.keyCode == '0' && (e.stateMask & SWT.MOD2) != 0
+                            && actionBar.isZoomingAllowed()) {
+                        setFitScale(false);
                     } else if (c == '+' && actionBar.isZoomingAllowed()) {
                         actionBar.rescale(1);
                     } else if (c == '-' && actionBar.isZoomingAllowed()) {
@@ -587,8 +590,14 @@ public class LayoutCanvas extends Canvas {
         AdtPlugin.setFileProperty(mLayoutEditor.getInputFile(), NAME_ZOOM, zoomValue);
     }
 
-    /** Scales the canvas to best fit */
-    void setFitScale() {
+    /**
+     * Scales the canvas to best fit
+     *
+     * @param onlyZoomOut if true, then the zooming factor will never be larger than 1,
+     *            which means that this function will zoom out if necessary to show the
+     *            rendered image, but it will never zoom in.
+     */
+    void setFitScale(boolean onlyZoomOut) {
         Image image = getImageOverlay().getImage();
         if (image != null) {
             Rectangle canvasSize = getClientArea();
@@ -619,10 +628,15 @@ public class LayoutCanvas extends Canvas {
                 vMargin = vDelta / 2;
             }
 
-            double hScale = canvasWidth / (double) (sceneWidth - hMargin);
-            double vScale = canvasHeight / (double) (sceneHeight - vMargin);
+            double hScale = (canvasWidth - 2 * hMargin) / (double) sceneWidth;
+            double vScale = (canvasHeight - 2 * vMargin) / (double) sceneHeight;
 
             double scale = Math.min(hScale, vScale);
+
+            if (onlyZoomOut) {
+                scale = Math.min(1.0, scale);
+            }
+
             setScale(scale, true);
         }
     }

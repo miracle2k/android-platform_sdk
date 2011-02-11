@@ -164,6 +164,12 @@ public class ConfigurationComposite extends Composite {
         void onConfigurationChange();
 
         /**
+         * Called after a device has changed (in addition to {@link #onConfigurationChange}
+         * getting called)
+         */
+        void onDevicePostChange();
+
+        /**
          * Called when the current theme changes. The theme can be queried with
          * {@link ConfigurationComposite#getTheme()}.
          */
@@ -1770,6 +1776,7 @@ public class ConfigurationComposite extends Composite {
 
         if (computeCurrentConfig() && mListener != null) {
             mListener.onConfigurationChange();
+            mListener.onDevicePostChange();
         }
     }
 
