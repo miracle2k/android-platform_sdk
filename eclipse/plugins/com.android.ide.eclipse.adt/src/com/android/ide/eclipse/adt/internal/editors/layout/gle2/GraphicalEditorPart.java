@@ -716,6 +716,17 @@ public class GraphicalEditorPart extends EditorPart
                 }
             }.schedule();
         }
+
+        /**
+         * When the device changes, zoom the view to fit, but only up to 100% (e.g. zoom
+         * out to fit the content, or zoom back in if we were zoomed out more from the
+         * previous view, but only up to 100% such that we never blow up pixels
+         */
+        public void onDevicePostChange() {
+            if (mActionBar.isZoomingAllowed()) {
+                getCanvasControl().setFitScale(true);
+            }
+        }
     }
 
     /**
