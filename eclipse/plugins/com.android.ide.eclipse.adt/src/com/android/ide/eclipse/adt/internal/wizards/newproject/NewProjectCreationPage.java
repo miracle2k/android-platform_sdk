@@ -31,8 +31,8 @@ import com.android.ide.eclipse.adt.internal.wizards.newproject.NewTestProjectCre
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.project.ProjectProperties;
-import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
+import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.ManifestData;
 import com.android.sdklib.xml.ManifestData.Activity;
@@ -48,6 +48,11 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.JavaConventions;
+import org.eclipse.jdt.internal.ui.packageview.PackageExplorerPart;
+import org.eclipse.jdt.internal.ui.workingsets.IWorkingSetIDs;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.ITreeSelection;
+import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.osgi.util.TextProcessor;
 import org.eclipse.swt.SWT;
@@ -63,17 +68,22 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.IWorkingSet;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -159,7 +169,7 @@ public class NewProjectCreationPage extends WizardPage {
 
     private final ArrayList<String> mSamplesPaths = new ArrayList<String>();
     private Combo mSamplesCombo;
-
+    private WorkingSetGroup mWorkingSetGroup;
 
 
     /**
@@ -170,6 +180,12 @@ public class NewProjectCreationPage extends WizardPage {
         setPageComplete(false);
         setTitle("New Android Project");
         setDescription("Creates a new Android Project resource.");
+        mWorkingSetGroup = new WorkingSetGroup();
+        setWorkingSets(new IWorkingSet[0]);
+    }
+
+    public void init(IStructuredSelection selection, IWorkbenchPart activePart) {
+        setWorkingSets(NewProjectWizard.getSelectedWorkingSet(selection, activePart));
     }
 
     // --- Getters used by NewProjectWizard ---
@@ -212,6 +228,9 @@ public class NewProjectCreationPage extends WizardPage {
         public String getSourceFolder();
         /** Returns the current sdk target or null if none has been selected yet. */
         public IAndroidTarget getSdkTarget();
+        /** Returns the current working sets or null if none has been selected yet. */
+        public IWorkingSet[] getSelectedWorkingSets();
+
     }
 
 
@@ -297,6 +316,11 @@ public class NewProjectCreationPage extends WizardPage {
         public IAndroidTarget getSdkTarget() {
             return mSdkTargetSelector == null ? null : mSdkTargetSelector.getSelected();
         }
+
+        /** Returns the current sdk target or null if none has been selected yet. */
+        public IWorkingSet[] getSelectedWorkingSets() {
+            return getWorkingSets();
+        }
     }
 
     /**
@@ -372,6 +396,9 @@ public class NewProjectCreationPage extends WizardPage {
         setErrorMessage(null);
         setMessage(null);
         setControl(scrolledComposite);
+
+        Control workingSetControl = mWorkingSetGroup.createControl(composite);;
+        workingSetControl.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         // Validate. This will complain about the first empty field.
         validatePageComplete();
@@ -1632,6 +1659,25 @@ public class NewProjectCreationPage extends WizardPage {
             setMessage(message, messageType == MSG_WARNING ? WizardPage.WARNING : WizardPage.ERROR);
         }
         return messageType;
+    }
+
+    /**
+     * Returns the working sets to which the new project should be added.
+     *
+     * @return the selected working sets to which the new project should be added
+     */
+    public IWorkingSet[] getWorkingSets() {
+        return mWorkingSetGroup.getSelectedWorkingSets();
+    }
+
+    /**
+     * Sets the working sets to which the new project should be added.
+     *
+     * @param workingSets the initial selected working sets
+     */
+    public void setWorkingSets(IWorkingSet[] workingSets) {
+        assert workingSets != null;
+        mWorkingSetGroup.setWorkingSets(workingSets);
     }
 
 }

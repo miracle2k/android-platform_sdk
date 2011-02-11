@@ -45,6 +45,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaConventions;
+import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.osgi.util.TextProcessor;
 import org.eclipse.swt.SWT;
@@ -67,6 +68,8 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.IWorkingSet;
 
 import java.io.File;
 import java.net.URI;
@@ -155,6 +158,7 @@ public class NewTestProjectCreationPage extends WizardPage {
     private Label mTestTargetPackageLabel;
 
     private String mLastExistingPackageName;
+    private WorkingSetGroup mWorkingSetGroup;
 
 
     /**
@@ -165,6 +169,12 @@ public class NewTestProjectCreationPage extends WizardPage {
         setPageComplete(false);
         setTitle("New Android Test Project");
         setDescription("Creates a new Android Test Project resource.");
+        mWorkingSetGroup= new WorkingSetGroup();
+        setWorkingSets(new IWorkingSet[0]);
+    }
+
+    public void init(IStructuredSelection selection, IWorkbenchPart activePart) {
+        setWorkingSets(NewProjectWizard.getSelectedWorkingSet(selection, activePart));
     }
 
     // --- Getters used by NewProjectWizard ---
@@ -314,6 +324,9 @@ public class NewTestProjectCreationPage extends WizardPage {
         setErrorMessage(null);
         setMessage(null);
         setControl(scrolledComposite);
+
+        Control workingSetControl = mWorkingSetGroup.createControl(composite);
+        workingSetControl.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         // Validate. This will complain about the first empty field.
         validatePageComplete();
@@ -746,7 +759,10 @@ public class NewTestProjectCreationPage extends WizardPage {
      */
     private void useMainProjectInformation() {
         if (mInfo.isTestingMain() && mMainInfo != null) {
-
+            IWorkingSet[] workingSets = mMainInfo.getSelectedWorkingSets();
+            if (workingSets != null && workingSets.length > 0) {
+                mWorkingSetGroup.setWorkingSets(workingSets);
+            }
             String projName = String.format("%1$sTest", mMainInfo.getProjectName());
             String appName = String.format("%1$sTest", mMainInfo.getApplicationName());
 
@@ -1341,5 +1357,25 @@ public class NewTestProjectCreationPage extends WizardPage {
         }
         return messageType;
     }
+
+    /**
+     * Returns the working sets to which the new project should be added.
+     *
+     * @return the selected working sets to which the new project should be added
+     */
+    public IWorkingSet[] getWorkingSets() {
+        return mWorkingSetGroup.getSelectedWorkingSets();
+    }
+
+    /**
+     * Sets the working sets to which the new project should be added.
+     *
+     * @param workingSets the initial selected working sets
+     */
+    public void setWorkingSets(IWorkingSet[] workingSets) {
+        assert workingSets != null;
+        mWorkingSetGroup.setWorkingSets(workingSets);
+    }
+
 
 }
