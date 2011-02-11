@@ -1211,13 +1211,13 @@ public class LogPanel extends SelectionDependentPanel {
         } else {
             messageIndex = mBufferEnd;
 
+            // increment the next usable slot index
+            mBufferEnd = (mBufferEnd + 1) % STRING_BUFFER_LENGTH;
+
             // check we aren't overwriting start
             if (mBufferEnd == mBufferStart) {
                 mBufferStart = (mBufferStart + 1) % STRING_BUFFER_LENGTH;
             }
-
-            // increment the next usable slot index
-            mBufferEnd = (mBufferEnd + 1) % STRING_BUFFER_LENGTH;
         }
 
         LogMessage oldMessage = null;
