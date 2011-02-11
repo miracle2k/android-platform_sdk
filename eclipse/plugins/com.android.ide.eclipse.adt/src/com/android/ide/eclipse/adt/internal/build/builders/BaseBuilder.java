@@ -309,17 +309,29 @@ public abstract class BaseBuilder extends IncrementalProjectBuilder {
        }
 
         // abort if there are TARGET or ADT type markers
-        stopOnMarker(iProject, AndroidConstants.MARKER_TARGET, IResource.DEPTH_ZERO);
-        stopOnMarker(iProject, AndroidConstants.MARKER_ADT, IResource.DEPTH_ZERO);
+        stopOnMarker(iProject, AndroidConstants.MARKER_TARGET, IResource.DEPTH_ZERO,
+                false /*checkSeverity*/);
+        stopOnMarker(iProject, AndroidConstants.MARKER_ADT, IResource.DEPTH_ZERO,
+                false /*checkSeverity*/);
     }
 
-    protected void stopOnMarker(IProject project, String markerType, int depth)
+    protected void stopOnMarker(IProject project, String markerType, int depth,
+            boolean checkSeverity)
             throws AbortBuildException {
         try {
             IMarker[] markers = project.findMarkers(markerType, false /*includeSubtypes*/, depth);
 
             if (markers.length > 0) {
-                throw new AbortBuildException();
+                if (checkSeverity == false) {
+                    throw new AbortBuildException();
+                } else {
+                    for (IMarker marker : markers) {
+                        int severity = marker.getAttribute(IMarker.SEVERITY, -1 /*defaultValue*/);
+                        if (severity == IMarker.SEVERITY_ERROR) {
+                            throw new AbortBuildException();
+                        }
+                    }
+                }
             }
         } catch (CoreException e) {
             // don't stop, something's really screwed up and the build will break later with
