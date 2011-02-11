@@ -170,12 +170,22 @@ public abstract class SdkSource implements IDescription {
         return mPackages;
     }
 
+    @VisibleForTesting(visibility=Visibility.PRIVATE)
+    protected void setPackages(Package[] packages) {
+        mPackages = packages;
+
+        if (mPackages != null) {
+            // Order the packages.
+            Arrays.sort(mPackages, null);
+        }
+    }
+
     /**
      * Clear the internal packages list. After this call, {@link #getPackages()} will return
      * null till load() is called.
      */
     public void clearPackages() {
-        mPackages = null;
+        setPackages(null);
     }
 
     /**
@@ -740,10 +750,7 @@ public abstract class SdkSource implements IDescription {
                 }
             }
 
-            mPackages = packages.toArray(new Package[packages.size()]);
-
-            // Order the packages.
-            Arrays.sort(mPackages, null);
+            setPackages(packages.toArray(new Package[packages.size()]));
 
             return true;
         }
