@@ -21,7 +21,6 @@ import static com.android.ide.common.layout.LayoutConstants.ATTR_SRC;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_TEXT;
 import static com.android.ide.common.layout.LayoutConstants.DRAWABLE_PREFIX;
 import static com.android.ide.common.layout.LayoutConstants.LAYOUT_PREFIX;
-
 import static org.eclipse.jface.viewers.StyledString.QUALIFIER_STYLER;
 
 import com.android.annotations.VisibleForTesting;
@@ -589,6 +588,8 @@ public class OutlinePage extends ContentOutlinePage
         mMenuManager.add(mMoveDownAction);
         mMenuManager.add(new Separator());
 
+        mMenuManager.add(new SelectionManager.SelectionMenu(mGraphicalEditorPart));
+        mMenuManager.add(new Separator());
         final String prefix = LayoutCanvas.PREFIX_CANVAS_ACTION;
         mMenuManager.add(new DelegateAction(prefix + ActionFactory.CUT.getId()));
         mMenuManager.add(new DelegateAction(prefix + ActionFactory.COPY.getId()));
@@ -597,7 +598,6 @@ public class OutlinePage extends ContentOutlinePage
         mMenuManager.add(new Separator());
 
         mMenuManager.add(new DelegateAction(prefix + ActionFactory.DELETE.getId()));
-        mMenuManager.add(new DelegateAction(prefix + ActionFactory.SELECT_ALL.getId()));
 
         mMenuManager.addMenuListener(new IMenuListener() {
             public void menuAboutToShow(IMenuManager manager) {

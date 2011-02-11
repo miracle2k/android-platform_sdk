@@ -19,6 +19,7 @@ package com.android.ide.eclipse.adt.internal.editors.layout.gle2;
 import org.eclipse.swt.dnd.DragSourceEvent;
 import org.eclipse.swt.dnd.DragSourceListener;
 import org.eclipse.swt.dnd.DropTargetEvent;
+import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 
@@ -54,6 +55,20 @@ public final class ControlPoint {
         // widget.
         assert event.widget == canvas : event.widget;
         return new ControlPoint(canvas, event.x, event.y);
+    }
+
+    /**
+     * Constructs a new {@link ControlPoint} from the given menu detect event.
+     *
+     * @param canvas The {@link LayoutCanvas} this point is within.
+     * @param event The menu detect event to construct the {@link ControlPoint} from.
+     * @return A {@link ControlPoint} which corresponds to the given
+     *         {@link MenuDetectEvent}.
+     */
+    public static ControlPoint create(LayoutCanvas canvas, MenuDetectEvent event) {
+        // The menu detect events are always display-relative.
+        org.eclipse.swt.graphics.Point p = canvas.toControl(event.x, event.y);
+        return new ControlPoint(canvas, p.x, p.y);
     }
 
     /**
