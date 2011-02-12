@@ -31,8 +31,8 @@ import com.android.ide.eclipse.adt.internal.wizards.newproject.NewTestProjectCre
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.internal.project.ProjectProperties;
-import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
+import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
 import com.android.sdklib.xml.AndroidManifest;
 import com.android.sdklib.xml.ManifestData;
 import com.android.sdklib.xml.ManifestData.Activity;
@@ -48,11 +48,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.JavaConventions;
-import org.eclipse.jdt.internal.ui.packageview.PackageExplorerPart;
-import org.eclipse.jdt.internal.ui.workingsets.IWorkingSetIDs;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.ITreeSelection;
-import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.osgi.util.TextProcessor;
 import org.eclipse.swt.SWT;
@@ -68,7 +64,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
@@ -82,8 +77,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -185,7 +178,7 @@ public class NewProjectCreationPage extends WizardPage {
     }
 
     public void init(IStructuredSelection selection, IWorkbenchPart activePart) {
-        setWorkingSets(NewProjectWizard.getSelectedWorkingSet(selection, activePart));
+        setWorkingSets(WorkingSetHelper.getSelectedWorkingSet(selection, activePart));
     }
 
     // --- Getters used by NewProjectWizard ---
@@ -378,6 +371,7 @@ public class NewProjectCreationPage extends WizardPage {
         createLocationGroup(composite);
         createTargetGroup(composite);
         createPropertiesGroup(composite);
+        createWorkingSetGroup(composite);
 
         // Update state the first time
         enableLocationWidgets();
@@ -396,9 +390,6 @@ public class NewProjectCreationPage extends WizardPage {
         setErrorMessage(null);
         setMessage(null);
         setControl(scrolledComposite);
-
-        Control workingSetControl = mWorkingSetGroup.createControl(composite);;
-        workingSetControl.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         // Validate. This will complain about the first empty field.
         validatePageComplete();
@@ -708,6 +699,11 @@ public class NewProjectCreationPage extends WizardPage {
                 validatePageComplete();
             }
         });
+    }
+
+    private void createWorkingSetGroup(final Composite composite) {
+        Composite group = mWorkingSetGroup.createControl(composite);
+        group.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
     }
 
 

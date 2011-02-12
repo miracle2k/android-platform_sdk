@@ -89,6 +89,7 @@ import java.util.regex.Pattern;
  * Note: this class is public so that it can be accessed from unit tests.
  * It is however an internal class. Its API may change without notice.
  * It should semantically be considered as a private final class.
+ * <p/>
  * Do not derive from this class.
  */
 public class NewTestProjectCreationPage extends WizardPage {
@@ -174,7 +175,7 @@ public class NewTestProjectCreationPage extends WizardPage {
     }
 
     public void init(IStructuredSelection selection, IWorkbenchPart activePart) {
-        setWorkingSets(NewProjectWizard.getSelectedWorkingSet(selection, activePart));
+        setWorkingSets(WorkingSetHelper.getSelectedWorkingSet(selection, activePart));
     }
 
     // --- Getters used by NewProjectWizard ---
@@ -308,6 +309,7 @@ public class NewTestProjectCreationPage extends WizardPage {
         createTestTargetGroup(composite);
         createTargetGroup(composite);
         createPropertiesGroup(composite);
+        createWorkingSetGroup(composite);
 
         // Update state the first time
         enableLocationWidgets();
@@ -324,9 +326,6 @@ public class NewTestProjectCreationPage extends WizardPage {
         setErrorMessage(null);
         setMessage(null);
         setControl(scrolledComposite);
-
-        Control workingSetControl = mWorkingSetGroup.createControl(composite);
-        workingSetControl.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         // Validate. This will complain about the first empty field.
         validatePageComplete();
@@ -706,6 +705,12 @@ public class NewTestProjectCreationPage extends WizardPage {
         });
     }
 
+    private void createWorkingSetGroup(final Composite composite) {
+        Composite group = mWorkingSetGroup.createControl(composite);
+        group.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+        mToggleComposites.add(group);
+    }
 
     //--- Internal getters & setters ------------------
 
@@ -759,10 +764,8 @@ public class NewTestProjectCreationPage extends WizardPage {
      */
     private void useMainProjectInformation() {
         if (mInfo.isTestingMain() && mMainInfo != null) {
-            IWorkingSet[] workingSets = mMainInfo.getSelectedWorkingSets();
-            if (workingSets != null && workingSets.length > 0) {
-                mWorkingSetGroup.setWorkingSets(workingSets);
-            }
+            useMainWorkingSets();
+
             String projName = String.format("%1$sTest", mMainInfo.getProjectName());
             String appName = String.format("%1$sTest", mMainInfo.getApplicationName());
 
@@ -803,6 +806,17 @@ public class NewTestProjectCreationPage extends WizardPage {
                 mMinSdkVersionField.setText(mMainInfo.getMinSdkVersion());
                 mInternalMinSdkVersionUpdate = false;
             }
+        }
+    }
+
+    private void useMainWorkingSets() {
+        IWorkingSet[] workingSets = mMainInfo.getSelectedWorkingSets();
+        if (workingSets != null) {
+            // getSelectedWorkingSets returns an empty list if the working set feature is disabled.
+            if (workingSets.length > 0) {
+                mWorkingSetGroup.setChecked(true);
+            }
+            mWorkingSetGroup.setWorkingSets(workingSets);
         }
     }
 

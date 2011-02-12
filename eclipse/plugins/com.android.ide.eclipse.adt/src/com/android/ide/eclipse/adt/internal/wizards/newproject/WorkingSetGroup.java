@@ -1,18 +1,13 @@
-/*
- * Copyright (C) 2011 The Android Open Source Project
+/*******************************************************************************
+ * Copyright (c) 2000, 2009 IBM Corporation and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  *
- * Licensed under the Eclipse Public License, Version 1.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.eclipse.org/org/documents/epl-v10.php
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+ * Contributors:
+ *     IBM Corporation - initial API and implementation
+ *******************************************************************************/
 
 package com.android.ide.eclipse.adt.internal.wizards.newproject;
 
@@ -21,6 +16,7 @@ import org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;
 import org.eclipse.jdt.internal.ui.workingsets.IWorkingSetIDs;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
@@ -34,9 +30,11 @@ import org.eclipse.ui.dialogs.WorkingSetConfigurationBlock;
  * Creates the working set group with controls that allow
  * the selection of working sets
  */
+@SuppressWarnings("restriction")
 public class WorkingSetGroup {
 
     private WorkingSetConfigurationBlock fWorkingSetBlock;
+    private Button mEnableButton;
 
     public WorkingSetGroup() {
         String[] workingSetIds = new String[] {
@@ -46,13 +44,22 @@ public class WorkingSetGroup {
                 .getDialogSettings());
     }
 
-    public Control createControl(Composite composite) {
+    public Composite createControl(Composite composite) {
         Group workingSetGroup = new Group(composite, SWT.NONE);
         workingSetGroup.setFont(composite.getFont());
         workingSetGroup.setText(NewWizardMessages.NewJavaProjectWizardPageOne_WorkingSets_group);
         workingSetGroup.setLayout(new GridLayout(1, false));
 
         fWorkingSetBlock.createContent(workingSetGroup);
+
+        // WorkingSetGroup is implemented in such a way that the checkbox it contains
+        // can only be programmatically set if there's an existing working set associated
+        // *before* we construct the control. However the control is created when the
+        // wizard is opened, not when the page is first shown.
+        //
+        // One choice is to duplicate the class in our project.
+        // Or find the checkbox we want and trigger it manually.
+        mEnableButton = findCheckbox(workingSetGroup);
 
         return workingSetGroup;
     }
@@ -63,5 +70,34 @@ public class WorkingSetGroup {
 
     public IWorkingSet[] getSelectedWorkingSets() {
         return fWorkingSetBlock.getSelectedWorkingSets();
+    }
+
+    public boolean isChecked() {
+        return mEnableButton == null ? false : mEnableButton.getSelection();
+    }
+
+    public void setChecked(boolean state) {
+        if (mEnableButton != null) {
+            mEnableButton.setSelection(state);
+        }
+    }
+
+    /**
+     * Finds the first button of style Checkbox in the given parent composite.
+     * Returns null if not found.
+     */
+    private Button findCheckbox(Composite parent) {
+        for (Control control : parent.getChildren()) {
+            if (control instanceof Button && (control.getStyle() & SWT.CHECK) == SWT.CHECK) {
+                return (Button) control;
+            } else if (control instanceof Composite) {
+                Button found = findCheckbox((Composite) control);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+
+        return null;
     }
 }
