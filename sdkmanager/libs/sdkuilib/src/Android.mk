@@ -6,6 +6,10 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
 LOCAL_JAVA_RESOURCE_DIRS := .
 
+# IMPORTANT: if you add a new dependency here, please make sure
+# to also check the following file:
+#   sdkmanager/app/etc/android.bat
+# (Note: there is no manifest.txt for sdkuilib.)
 LOCAL_JAVA_LIBRARIES := \
 	sdklib \
 	common \
