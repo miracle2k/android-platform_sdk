@@ -173,7 +173,8 @@ public class ExtractIncludeAction extends Action {
         Element primaryNode = getPrimaryNode();
         if (primaryNode != null) {
             String id = primaryNode.getAttributeNS(ANDROID_URI, ATTR_ID);
-            if (id.startsWith(ID_PREFIX) || id.startsWith(NEW_ID_PREFIX)) {
+            // id null check for https://bugs.eclipse.org/bugs/show_bug.cgi?id=272378
+            if (id != null && (id.startsWith(ID_PREFIX) || id.startsWith(NEW_ID_PREFIX))) {
                 // Use everything following the id/, and make it lowercase since that is
                 // the convention for layouts
                 defaultName = id.substring(id.indexOf('/') + 1).toLowerCase();
@@ -340,7 +341,8 @@ public class ExtractIncludeAction extends Action {
         Element primaryNode = getPrimaryNode();
         if (primaryNode != null) {
             String oldId = primaryNode.getAttributeNS(ANDROID_URI, ATTR_ID);
-            if (oldId.length() > 0) {
+            // id null check for https://bugs.eclipse.org/bugs/show_bug.cgi?id=272378
+            if (oldId != null && oldId.length() > 0) {
                 return oldId;
             }
         }
