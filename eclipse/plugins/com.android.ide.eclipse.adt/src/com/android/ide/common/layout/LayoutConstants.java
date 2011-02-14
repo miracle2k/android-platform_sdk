@@ -38,6 +38,8 @@ public class LayoutConstants {
     public static final String RELATIVE_LAYOUT = "RelativeLayout";      //$NON-NLS-1$
     public static final String LINEAR_LAYOUT   = "LinearLayout";        //$NON-NLS-1$
     public static final String ABSOLUTE_LAYOUT = "AbsoluteLayout";      //$NON-NLS-1$
+    public static final String TABLE_LAYOUT = "TableLayout";            //$NON-NLS-1$
+    public static final String TABLE_ROW = "TableRow";                  //$NON-NLS-1$
     public static final String LIST_VIEW = "ListView";                  //$NON-NLS-1$
     public static final String GALLERY = "Gallery";                     //$NON-NLS-1$
     public static final String GRID_VIEW = "GridView";                  //$NON-NLS-1$
@@ -84,6 +86,7 @@ public class LayoutConstants {
     public static final String VALUE_WRAP_CONTENT = "wrap_content";             //$NON-NLS-1$
     public static final String VALUE_FILL_PARENT = "fill_parent";               //$NON-NLS-1$
     public static final String VALUE_TRUE = "true";                             //$NON-NLS-1$
+    public static final String VALUE_FALSE= "false";                            //$NON-NLS-1$
     public static final String VALUE_N_DIP = "%ddip";                           //$NON-NLS-1$
 
     public static final String VALUE_CENTER_VERTICAL = "centerVertical";        //$NON-NLS-1$
@@ -114,17 +117,29 @@ public class LayoutConstants {
      */
     public static final String ANDROID_URI = SdkConstants.NS_RESOURCES;
 
+    /**
+     * The package name where the widgets live (the ones that require no prefix in layout
+     * files)
+     */
+    public static final String ANDROID_WIDGET_PREFIX = "android.widget."; //$NON-NLS-1$
+
     /** The fully qualified class name of an EditText view */
     public static final String FQCN_EDIT_TEXT = "android.widget.EditText"; //$NON-NLS-1$
 
     /** The fully qualified class name of a LinearLayout view */
     public static final String FQCN_LINEAR_LAYOUT = "android.widget.LinearLayout"; //$NON-NLS-1$
 
+    /** The fully qualified class name of a RelativeLayout view */
+    public static final String FQCN_RELATIVE_LAYOUT = "android.widget.RelativeLayout"; //$NON-NLS-1$
+
     /** The fully qualified class name of a FrameLayout view */
     public static final String FQCN_FRAME_LAYOUT = "android.widget.FrameLayout"; //$NON-NLS-1$
 
     /** The fully qualified class name of a TableRow view */
     public static final String FQCN_TABLE_ROW = "android.widget.TableRow"; //$NON-NLS-1$
+
+    /** The fully qualified class name of a TableLayout view */
+    public static final String FQCN_TABLE_LAYOUT = "android.widget.TableLayout"; //$NON-NLS-1$
 
     /** The fully qualified class name of a TabWidget view */
     public static final String FQCN_TAB_WIDGET = "android.widget.TabWidget"; //$NON-NLS-1$

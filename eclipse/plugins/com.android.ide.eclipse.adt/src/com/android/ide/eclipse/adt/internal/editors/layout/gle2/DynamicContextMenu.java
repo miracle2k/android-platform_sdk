@@ -23,6 +23,9 @@ import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gre.NodeProxy;
+import com.android.ide.eclipse.adt.internal.editors.layout.refactoring.ChangeLayoutAction;
+import com.android.ide.eclipse.adt.internal.editors.layout.refactoring.ExtractIncludeAction;
+import com.android.ide.eclipse.adt.internal.editors.layout.refactoring.WrapInAction;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -37,8 +40,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 /**
@@ -200,19 +203,18 @@ import java.util.regex.Pattern;
             }
         }
 
-        insertExtractAsInclude(endId);
+        insertVisualRefactorings(endId);
     }
 
-    private void insertExtractAsInclude(String endId) {
+    private void insertVisualRefactorings(String endId) {
         // Extract As <include> refactoring.
         // Only include the menu item if you are not right clicking on a root,
         // or on an included view, or on a non-contiguous selection
-        IAction extractIncludeAction = new ExtractIncludeAction(mCanvas);
-        if (extractIncludeAction.isEnabled()) {
-            mMenuManager.insertBefore(endId, new Separator());
-            mMenuManager.insertBefore(endId, extractIncludeAction);
-            mMenuManager.insertBefore(endId, new Separator());
-        }
+        mMenuManager.insertBefore(endId, new Separator());
+        mMenuManager.insertBefore(endId, ExtractIncludeAction.create(mEditor));
+        mMenuManager.insertBefore(endId, WrapInAction.create(mEditor));
+        mMenuManager.insertBefore(endId, ChangeLayoutAction.create(mEditor));
+        mMenuManager.insertBefore(endId, new Separator());
     }
 
     /**

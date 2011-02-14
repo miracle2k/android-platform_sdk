@@ -204,6 +204,7 @@ translucency
 ui
 uncomment
 undescribed
+undoable
 unhide
 unicode
 uninstall

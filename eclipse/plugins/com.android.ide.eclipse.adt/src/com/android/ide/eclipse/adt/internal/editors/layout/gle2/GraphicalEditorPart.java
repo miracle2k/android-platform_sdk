@@ -794,7 +794,7 @@ public class GraphicalEditorPart extends EditorPart
     }
 
     /** Refresh the configured project resources associated with this editor */
-    /*package*/ void refreshProjectResources() {
+    public void refreshProjectResources() {
         mConfiguredProjectRes = null;
         mConfigListener.getConfiguredProjectResources();
     }

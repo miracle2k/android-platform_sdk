@@ -115,7 +115,7 @@ public class SelectionManager implements ISelectionProvider {
      * @see #getSelection() {@link #getSelection()} to retrieve a {@link TreeViewer}
      *                      compatible {@link ISelection}.
      */
-    /* package */ List<SelectionItem> getSelections() {
+    List<SelectionItem> getSelections() {
         return mUnmodifiableSelection;
     }
 

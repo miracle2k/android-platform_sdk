@@ -25,6 +25,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.SeparatorAttribu
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextAttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.TextValueDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.XmlnsAttributeDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.DomUtilities;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiFlagAttributeNode;
@@ -762,7 +763,7 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
      * Returns the XML DOM node corresponding to the given offset of the given document.
      */
     public static Node getNode(ITextViewer viewer, int offset) {
-        return AndroidXmlEditor.getNode(viewer.getDocument(), offset);
+        return DomUtilities.getNode(viewer.getDocument(), offset);
     }
 
     /**

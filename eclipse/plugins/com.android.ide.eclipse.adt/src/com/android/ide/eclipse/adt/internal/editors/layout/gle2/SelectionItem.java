@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * Represents one selection in {@link LayoutCanvas}.
  */
-/* package */ class SelectionItem {
+class SelectionItem {
 
     /** Current selected view info. Can be null. */
     private final CanvasViewInfo mCanvasViewInfo;

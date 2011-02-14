@@ -25,6 +25,7 @@ import com.android.ide.eclipse.adt.internal.editors.descriptors.IUnknownDescript
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.CustomViewDescriptorService;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors;
 import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.ViewElementDescriptor;
+import com.android.ide.eclipse.adt.internal.editors.layout.gle2.DomUtilities;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.OutlinePage;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.PropertySheetPage;
@@ -351,7 +352,7 @@ public class LayoutEditor extends AndroidXmlEditor implements IShowEditorInput, 
             ISourceViewer textViewer = getStructuredSourceViewer();
             int caretOffset = textViewer.getTextWidget().getCaretOffset();
             if (caretOffset >= 0) {
-                Node node = AndroidXmlEditor.getNode(textViewer.getDocument(), caretOffset);
+                Node node = DomUtilities.getNode(textViewer.getDocument(), caretOffset);
                 if (node != null && mGraphicalEditor != null) {
                     mGraphicalEditor.select(node);
                 }

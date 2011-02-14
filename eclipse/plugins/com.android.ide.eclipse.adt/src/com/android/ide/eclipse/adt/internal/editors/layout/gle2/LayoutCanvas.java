@@ -432,7 +432,7 @@ public class LayoutCanvas extends Canvas {
     /**
      * Returns the {@link LayoutEditor} associated with this canvas.
      */
-    /* package */ LayoutEditor getLayoutEditor() {
+    LayoutEditor getLayoutEditor() {
         return mLayoutEditor;
     }
 
