@@ -43,7 +43,10 @@ import org.eclipse.swt.widgets.Text;
 public class EditFilterDialog extends Dialog {
 
     private static final int DLG_WIDTH = 400;
-    private static final int DLG_HEIGHT = 250;
+    private static final int DLG_HEIGHT = 260;
+
+    private static final String IMAGE_WARNING = "warning.png"; //$NON-NLS-1$
+    private static final String IMAGE_EMPTY = "empty.png"; //$NON-NLS-1$
 
     private Shell mParent;
 
@@ -68,6 +71,8 @@ public class EditFilterDialog extends Dialog {
 
     private Button mOkButton;
 
+    private Label mNameWarning;
+    private Label mTagWarning;
     private Label mPidWarning;
 
     public EditFilterDialog(Shell parent) {
@@ -151,7 +156,7 @@ public class EditFilterDialog extends Dialog {
         // top part with the filter name
         Composite nameComposite = new Composite(mShell, SWT.NONE);
         nameComposite.setLayoutData(new GridData(GridData.FILL_BOTH));
-        nameComposite.setLayout(new GridLayout(2, false));
+        nameComposite.setLayout(new GridLayout(3, false));
 
         Label l = new Label(nameComposite, SWT.NONE);
         l.setText("Filter Name:");
@@ -171,6 +176,10 @@ public class EditFilterDialog extends Dialog {
                 validate();
             }
         });
+
+        mNameWarning = new Label(nameComposite, SWT.NONE);
+        mNameWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(IMAGE_EMPTY,
+                mShell.getDisplay()));
 
         // separator
         l = new Label(mShell, SWT.SEPARATOR | SWT.HORIZONTAL);
@@ -192,15 +201,18 @@ public class EditFilterDialog extends Dialog {
                 tagText.setText(mTag);
             }
         }
-        GridData gd = new GridData(GridData.FILL_HORIZONTAL);
-        gd.horizontalSpan = 2;
-        tagText.setLayoutData(gd);
+
+        tagText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         tagText.addModifyListener(new ModifyListener() {
             public void modifyText(ModifyEvent e) {
                 mTag = tagText.getText().trim();
                 validate();
             }
         });
+
+        mTagWarning = new Label(main, SWT.NONE);
+        mTagWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(IMAGE_EMPTY,
+                mShell.getDisplay()));
 
         l = new Label(main, SWT.NONE);
         l.setText("by pid:");
@@ -223,14 +235,14 @@ public class EditFilterDialog extends Dialog {
         });
 
         mPidWarning = new Label(main, SWT.NONE);
-        mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage("empty.png", //$NON-NLS-1$
+        mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(IMAGE_EMPTY,
                 mShell.getDisplay()));
 
         l = new Label(main, SWT.NONE);
         l.setText("by Log level:");
 
         final Combo logCombo = new Combo(main, SWT.DROP_DOWN | SWT.READ_ONLY);
-        gd = new GridData(GridData.FILL_HORIZONTAL);
+        GridData gd = new GridData(GridData.FILL_HORIZONTAL);
         gd.horizontalSpan = 2;
         logCombo.setLayoutData(gd);
 
@@ -324,26 +336,58 @@ public class EditFilterDialog extends Dialog {
      */
     private void validate() {
 
+        boolean result = true;
+
         // then we check it only contains digits.
         if (mPid != null) {
             if (mPid.matches("[0-9]*") == false) { //$NON-NLS-1$
-                mOkButton.setEnabled(false);
                 mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
-                        "warning.png", //$NON-NLS-1$
+                        IMAGE_WARNING,
                         mShell.getDisplay()));
-                return;
+                mPidWarning.setToolTipText("PID must be a number"); //$NON-NLS-1$
+                result = false;
             } else {
                 mPidWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
-                        "empty.png", //$NON-NLS-1$
+                        IMAGE_EMPTY,
                         mShell.getDisplay()));
+                mPidWarning.setToolTipText(null);
             }
         }
 
-        if (mName == null || mName.length() == 0) {
-            mOkButton.setEnabled(false);
-            return;
+        // then we check it not contains character | or :
+        if (mTag != null) {
+            if (mTag.matches(".*[:|].*") == true) { //$NON-NLS-1$
+                mTagWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
+                        IMAGE_WARNING,
+                        mShell.getDisplay()));
+                mTagWarning.setToolTipText("Tag cannot contain | or :"); //$NON-NLS-1$
+                result = false;
+            } else {
+                mTagWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
+                        IMAGE_EMPTY,
+                        mShell.getDisplay()));
+                mTagWarning.setToolTipText(null);
+            }
         }
 
-        mOkButton.setEnabled(true);
+        // then we check it not contains character | or :
+        if (mName != null && mName.length() > 0) {
+            if (mName.matches(".*[:|].*") == true) { //$NON-NLS-1$
+                mNameWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
+                        IMAGE_WARNING,
+                        mShell.getDisplay()));
+                mNameWarning.setToolTipText("Name cannot contain | or :"); //$NON-NLS-1$
+                result = false;
+            } else {
+                mNameWarning.setImage(ImageLoader.getDdmUiLibLoader().loadImage(
+                        IMAGE_EMPTY,
+                        mShell.getDisplay()));
+                mNameWarning.setToolTipText(null);
+            }
+        } else {
+            result = false;
+        }
+
+        mOkButton.setEnabled(result);
     }
 }
