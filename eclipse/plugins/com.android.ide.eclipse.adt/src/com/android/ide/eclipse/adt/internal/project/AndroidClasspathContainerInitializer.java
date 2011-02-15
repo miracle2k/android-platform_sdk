@@ -67,6 +67,8 @@ import java.util.regex.Pattern;
  */
 public class AndroidClasspathContainerInitializer extends ClasspathContainerInitializer {
 
+    public static final String NULL_API_URL = "<null>"; //$NON-NLS-1$
+
     public static final String SOURCES_ZIP = "/sources.zip"; //$NON-NLS-1$
 
     public static final String COM_ANDROID_IDE_ECLIPSE_ADT_SOURCE =
@@ -530,8 +532,7 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
             }
         }
         IClasspathAttribute[] attributes = null;
-        if (apiURL != null) {
-
+        if (apiURL != null && !NULL_API_URL.equals(apiURL)) {
             IClasspathAttribute cpAttribute = JavaCore.newClasspathAttribute(
                     IClasspathAttribute.JAVADOC_LOCATION_ATTRIBUTE_NAME, apiURL);
             attributes = new IClasspathAttribute[] {
@@ -824,12 +825,22 @@ public class AndroidClasspathContainerInitializer extends ClasspathContainerInit
                                             getAndroidSourceProperty(target), null);
                                 }
                                 IClasspathAttribute[] extraAttributtes = entry.getExtraAttributes();
+                                if (extraAttributtes.length == 0) {
+                                    ProjectHelper.saveStringProperty(root, PROPERTY_ANDROID_API,
+                                            NULL_API_URL);
+                                }
                                 for (int j = 0; j < extraAttributtes.length; j++) {
                                     IClasspathAttribute extraAttribute = extraAttributtes[j];
+                                    String value = extraAttribute.getValue();
+                                    if ((value == null || value.trim().length() == 0)
+                                            && IClasspathAttribute.JAVADOC_LOCATION_ATTRIBUTE_NAME
+                                                    .equals(extraAttribute.getName())) {
+                                        value = NULL_API_URL;
+                                    }
                                     if (IClasspathAttribute.JAVADOC_LOCATION_ATTRIBUTE_NAME
                                             .equals(extraAttribute.getName())) {
                                         ProjectHelper.saveStringProperty(root,
-                                                PROPERTY_ANDROID_API, extraAttribute.getValue());
+                                                PROPERTY_ANDROID_API, value);
 
                                     }
                                 }
