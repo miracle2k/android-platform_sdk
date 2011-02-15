@@ -39,8 +39,10 @@ import java.util.Set;
  * and it will cease to exist when the XML node ceases to exist.
  */
 public class ElementDescriptor implements Comparable<ElementDescriptor> {
+    private static final String ELEMENT_ICON_FILENAME = "element"; //$NON-NLS-1$
+
     /** The XML element node name. Case sensitive. */
-    private final String mXmlName;
+    protected final String mXmlName;
     /** The XML element name for the user interface, typically capitalized. */
     private final String mUiName;
     /** The list of allowed attributes. */
@@ -223,26 +225,11 @@ public class ElementDescriptor implements Comparable<ElementDescriptor> {
 
     /**
      * Returns an optional icon for the element.
-     * <p/>
-     * By default this tries to return an icon based on the XML name of the element.
-     * If this fails, it tries to return the default Android logo as defined in the
-     * plugin. If all fails, it returns null.
      *
      * @return An icon for this element or null.
      */
     public Image getIcon() {
-        IconFactory factory = IconFactory.getInstance();
-        int color = hasChildren() ? IconFactory.COLOR_BLUE : IconFactory.COLOR_GREEN;
-        int shape = hasChildren() ? IconFactory.SHAPE_RECT : IconFactory.SHAPE_CIRCLE;
-        String name = mXmlName;
-        if (name.indexOf('.') != -1) {
-            // If the user uses a fully qualified name, such as
-            // "android.gesture.GestureOverlayView" in their XML, we need to look up
-            // only by basename
-            name = name.substring(name.lastIndexOf('.') + 1);
-        }
-        Image icon = factory.getIcon(name, color, shape);
-        return icon != null ? icon : AdtPlugin.getAndroidLogo();
+        return IconFactory.getInstance().getIcon(ELEMENT_ICON_FILENAME);
     }
 
     /**
