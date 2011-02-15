@@ -1641,7 +1641,8 @@ public class GraphicalEditorPart extends EditorPart
             assert mConfigComposite.getDisplay().getThread() == Thread.currentThread();
 
             boolean recompute = false;
-            if (flags.rClass) {
+            // we only care about the r class of the main project.
+            if (flags.rClass && libraryChanged == false) {
                 recompute = true;
                 if (mEditedFile != null) {
                     ResourceManager manager = ResourceManager.getInstance();
@@ -1664,8 +1665,7 @@ public class GraphicalEditorPart extends EditorPart
             }
 
             // if a resources was modified.
-            // also, if a layout in a library was modified.
-            if (flags.resources || (libraryChanged && flags.layout)) {
+            if (flags.resources) {
                 recompute = true;
 
                 // TODO: differentiate between single and multi resource file changed, and whether

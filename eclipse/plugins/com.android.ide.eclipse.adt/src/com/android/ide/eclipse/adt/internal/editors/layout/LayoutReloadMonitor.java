@@ -62,7 +62,6 @@ public final class LayoutReloadMonitor {
         public boolean code = false;
         /** any non-layout resource changes */
         public boolean resources = false;
-        public boolean layout = false;
         public boolean rClass = false;
         public boolean localeList = false;
         public boolean manifest = false;
@@ -363,11 +362,7 @@ public final class LayoutReloadMonitor {
                     mProjectFlags.put(project, changeFlags);
                 }
 
-                if (resTypes[0] != ResourceType.LAYOUT) {
-                    changeFlags.resources = true;
-                } else {
-                    changeFlags.layout = true;
-                }
+                changeFlags.resources = true;
             }
         }
     };
