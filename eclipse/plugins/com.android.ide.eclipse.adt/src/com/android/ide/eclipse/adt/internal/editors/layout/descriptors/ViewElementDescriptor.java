@@ -16,10 +16,14 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.descriptors;
 
+import com.android.ide.eclipse.adt.AdtPlugin;
+import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.AttributeDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.descriptors.ElementDescriptor;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
+
+import org.eclipse.swt.graphics.Image;
 
 /**
  * {@link ViewElementDescriptor} describes the properties expected for a given XML element node
@@ -134,4 +138,33 @@ public final class ViewElementDescriptor extends ElementDescriptor {
     public void setSuperClass(ViewElementDescriptor superClassDesc) {
         mSuperClassDesc = superClassDesc;
     }
+
+    /**
+     * Returns an optional icon for the element.
+     * <p/>
+     * By default this tries to return an icon based on the XML name of the element.
+     * If this fails, it tries to return the default element icon as defined in the
+     * plugin. If all fails, it returns null.
+     *
+     * @return An icon for this element or null.
+     */
+    @Override
+    public Image getIcon() {
+        IconFactory factory = IconFactory.getInstance();
+        String name = mXmlName;
+        if (name.indexOf('.') != -1) {
+            // If the user uses a fully qualified name, such as
+            // "android.gesture.GestureOverlayView" in their XML, we need to look up
+            // only by basename
+            name = name.substring(name.lastIndexOf('.') + 1);
+        }
+
+        Image icon = factory.getIcon(name);
+        if (icon == null) {
+            icon = AdtPlugin.getAndroidLogo();
+        }
+
+        return icon;
+    }
+
 }

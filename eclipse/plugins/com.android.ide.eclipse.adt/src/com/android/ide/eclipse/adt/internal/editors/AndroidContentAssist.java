@@ -61,6 +61,8 @@ import java.util.regex.Pattern;
  */
 public abstract class AndroidContentAssist implements IContentAssistProcessor {
 
+    private static final String ATTRIBUTE_ICON_FILENAME = "attribute";
+
     /** Regexp to detect a full attribute after an element tag.
      * <pre>Syntax:
      *    name = "..." quoted string with all but < and "
@@ -494,7 +496,26 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
                         }
                     }
                 }
-                CompletionProposal proposal = new CompletionProposal(
+
+                final CompletionProposal proposal;
+
+                // For attributes, automatically insert ns:attribute="" and place the cursor
+                // inside the quotes.
+                if (choice instanceof AttributeDescriptor) {
+                    // Special case for attributes: insert ="" stuff and locate caret inside ""
+                    String suffix = "=\"\""; //$NON-NLS-1$
+                    proposal = new CompletionProposal(
+                        keyword + suffix ,                 // String replacementString
+                        offset - wordPrefix.length(),       // int replacementOffset
+                        wordPrefix.length() + selectionLength,  // int replacementLength
+                        keyword.length() + suffix.length() - 1, // cursorPosition
+                        icon,                               // Image image
+                        keyword,                            // displayString - don't include =""
+                        null,                               // IContextInformation contextInformation
+                        tooltip                             // String additionalProposalInfo
+                        );
+                } else {
+                    proposal = new CompletionProposal(
                         keyword + end_tag,                  // String replacementString
                         offset - wordPrefix.length(),           // int replacementOffset
                         wordPrefix.length() + selectionLength,  // int replacementLength
@@ -504,7 +525,7 @@ public abstract class AndroidContentAssist implements IContentAssistProcessor {
                         null,                               // IContextInformation contextInformation
                         tooltip                             // String additionalProposalInfo
                         );
-
+                }
                 proposals.add(proposal);
             }
         }

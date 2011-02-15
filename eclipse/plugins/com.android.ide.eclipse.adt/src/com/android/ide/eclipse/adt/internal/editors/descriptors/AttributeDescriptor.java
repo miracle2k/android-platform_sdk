@@ -17,7 +17,6 @@
 package com.android.ide.eclipse.adt.internal.editors.descriptors;
 
 import com.android.ide.common.api.IAttributeInfo;
-import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.editors.IconFactory;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiAttributeNode;
 import com.android.ide.eclipse.adt.internal.editors.uimodel.UiElementNode;
@@ -36,6 +35,8 @@ import org.eclipse.swt.graphics.Image;
  * the correct UiAttributeNode-derived class.
  */
 public abstract class AttributeDescriptor {
+    private static final String ATTRIBUTE_ICON_FILENAME = "attribute"; //$NON-NLS-1$
+
     private final String mXmlLocalName;
     private final String mNsUri;
     private final IAttributeInfo mAttrInfo;
@@ -95,18 +96,11 @@ public abstract class AttributeDescriptor {
 
     /**
      * Returns an optional icon for the attribute.
-     * <p/>
-     * By default this tries to return an icon based on the XML name of the attribute.
-     * If this fails, it tries to return the default Android logo as defined in the
-     * plugin. If all fails, it returns null.
      *
      * @return An icon for this element or null.
      */
     public Image getIcon() {
-        IconFactory factory = IconFactory.getInstance();
-        Image icon;
-        icon = factory.getIcon(getXmlLocalName(), IconFactory.COLOR_RED, IconFactory.SHAPE_CIRCLE);
-        return icon != null ? icon : AdtPlugin.getAndroidLogo();
+        return IconFactory.getInstance().getIcon(ATTRIBUTE_ICON_FILENAME);
     }
 
     /**
