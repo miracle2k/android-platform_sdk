@@ -745,7 +745,7 @@ public final class FileListingService {
 
         try {
             // create the command
-            String command = "ls -l " + entry.getFullPath(); //$NON-NLS-1$
+            String command = "ls -l " + entry.getFullEscapedPath(); //$NON-NLS-1$
 
             // create the receiver object that will parse the result from ls
             LsReceiver receiver = new LsReceiver(entry, entryList, linkList);
