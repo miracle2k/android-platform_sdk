@@ -245,6 +245,14 @@ public class GraphicalEditorPart extends EditorPart
     private int mTargetSdkVersion;
     private LayoutActionBar mActionBar;
 
+    /**
+     * Flags which tracks whether this editor is currently active which is set whenever
+     * {@link #activated()} is called and clear whenever {@link #deactivated()} is called.
+     * This is used to suppress repeated calls to {@link #activate()} to avoid doing
+     * unnecessary work.
+     */
+    private boolean mActive;
+
     public GraphicalEditorPart(LayoutEditor layoutEditor) {
         mLayoutEditor = layoutEditor;
         setPartName("Graphical Layout");
@@ -877,8 +885,18 @@ public class GraphicalEditorPart extends EditorPart
      * Responds to a page change that made the Graphical editor page the activated page.
      */
     public void activated() {
-        if (mNeedsRecompute) {
-            recomputeLayout();
+        if (!mActive) {
+            mActive = true;
+
+            boolean changed = mConfigComposite.syncRenderState();
+            if (changed) {
+                // Will also force recomputeLayout()
+                return;
+            }
+
+            if (mNeedsRecompute) {
+                recomputeLayout();
+            }
         }
     }
 
@@ -886,7 +904,7 @@ public class GraphicalEditorPart extends EditorPart
      * Responds to a page change that made the Graphical editor page the deactivated page
      */
     public void deactivated() {
-        // nothing to be done here for now.
+        mActive = false;
     }
 
     /**
