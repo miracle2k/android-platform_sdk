@@ -146,7 +146,7 @@
             modes="debug, run"
             name="Android Application"
             public="true"
-            sourceLocatorId="org.eclipse.jdt.launching.sourceLocator.JavaSourceLookupDirector"
+            sourceLocatorId="com.android.ide.eclipse.adt.internal.sourcelookup.AdtSourceLookupDirector"
             sourcePathComputerId="org.eclipse.jdt.launching.sourceLookup.javaSourcePathComputer">
       </launchConfigurationType>
    </extension>
