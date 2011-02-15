@@ -176,6 +176,20 @@ public class ViewHierarchy {
             if (infos != null) {
                 mLastValidViewInfoRoot = infos.getFirst();
                 mIncludedBounds = infos.getSecond();
+
+                if (mLastValidViewInfoRoot.getUiViewNode() == null &&
+                        mLastValidViewInfoRoot.getChildren().isEmpty()) {
+                    GraphicalEditorPart editor = mCanvas.getLayoutEditor().getGraphicalEditor();
+                    if (editor.getIncludedWithin() != null) {
+                        // Somehow, this view was supposed to be rendered within another
+                        // view, yet this view was rendered as part of the other view.
+                        // In that case, abort attempting to show included in; clear the
+                        // include context and trigger a standalone re-render.
+                        editor.showIn(null);
+                        return;
+                    }
+                }
+
             } else {
                 mLastValidViewInfoRoot = null;
                 mIncludedBounds = null;
