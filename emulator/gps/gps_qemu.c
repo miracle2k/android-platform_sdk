@@ -660,7 +660,7 @@ epoll_deregister( int  epoll_fd, int  fd )
  * when started, messages from the QEMU GPS daemon. these are simple NMEA sentences
  * that must be parsed to be converted into GPS fixes sent to the framework
  */
-static void*
+static void
 gps_state_thread( void*  arg )
 {
     GpsState*   state = (GpsState*) arg;
@@ -693,7 +693,7 @@ gps_state_thread( void*  arg )
         for (ne = 0; ne < nevents; ne++) {
             if ((events[ne].events & (EPOLLERR|EPOLLHUP)) != 0) {
                 LOGE("EPOLLERR or EPOLLHUP after epoll_wait() !?");
-                goto Exit;
+                return;
             }
             if ((events[ne].events & EPOLLIN) != 0) {
                 int  fd = events[ne].data.fd;
@@ -709,7 +709,7 @@ gps_state_thread( void*  arg )
 
                     if (cmd == CMD_QUIT) {
                         D("gps thread quitting on demand");
-                        goto Exit;
+                        return;
                     }
                     else if (cmd == CMD_START) {
                         if (!started) {
@@ -754,13 +754,11 @@ gps_state_thread( void*  arg )
             }
         }
     }
-Exit:
-    return NULL;
 }
 
 
 static void
-gps_state_init( GpsState*  state )
+gps_state_init( GpsState*  state, GpsCallbacks* callbacks )
 {
     state->init       = 1;
     state->control[0] = -1;
@@ -781,10 +779,14 @@ gps_state_init( GpsState*  state )
         goto Fail;
     }
 
-    if ( pthread_create( &state->thread, NULL, gps_state_thread, state ) != 0 ) {
+    state->thread = callbacks->create_thread_cb( "gps_state_thread", gps_state_thread, state );
+
+    if ( !state->thread ) {
         LOGE("could not create gps thread: %s", strerror(errno));
         goto Fail;
     }
+
+    state->callbacks = *callbacks;
 
     D("gps state initialized");
     return;
@@ -809,12 +811,10 @@ qemu_gps_init(GpsCallbacks* callbacks)
     GpsState*  s = _gps_state;
 
     if (!s->init)
-        gps_state_init(s);
+        gps_state_init(s, callbacks);
 
     if (s->fd < 0)
         return -1;
-
-    s->callbacks = *callbacks;
 
     return 0;
 }
