@@ -8,9 +8,13 @@ LOCAL_JAVA_RESOURCE_DIRS := .
 
 LOCAL_JAR_MANIFEST := ../etc/manifest.txt
 
-# If the dependency list is changed, etc/manifest.txt
-# MUST be updated as well (Except for swt.jar which is dynamically
-# added based on whether the VM is 32 or 64 bit)
+# IMPORTANT: if you add a new dependency here, please make sure
+# to also check the following files:
+#   sdkmanager/app/etc/manifest.txt
+#   sdkmanager/app/etc/android.bat
+# (Note that we don't reference swt.jar in these files since
+#  it is dynamically added by android.bat/.sh based on whether the
+#  current VM is 32 or 64 bit.)
 LOCAL_JAVA_LIBRARIES := \
 	androidprefs \
 	sdklib \

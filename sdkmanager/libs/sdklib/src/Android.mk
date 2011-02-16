@@ -19,6 +19,11 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
 LOCAL_JAVA_RESOURCE_DIRS := .
 LOCAL_JAR_MANIFEST := ../manifest.txt
+
+# IMPORTANT: if you add a new dependency here, please make sure
+# to also check the following files:
+#   sdkmanager/sdklib/manifest.txt
+#   sdkmanager/app/etc/android.bat
 LOCAL_JAVA_LIBRARIES := \
         androidprefs \
         common \
