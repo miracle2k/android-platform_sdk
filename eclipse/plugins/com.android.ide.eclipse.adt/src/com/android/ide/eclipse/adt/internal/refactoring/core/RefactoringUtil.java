@@ -41,49 +41,6 @@ public class RefactoringUtil {
     private static boolean sRefactorAppPackage = false;
 
     /**
-     * Returns the new class name combined with a package name
-     * the oldName and newName are class names as found in the manifest
-     * (for instance with a leading dot or with a single element,
-     * that needs to be recombined with a package name)
-     *
-     * @param javaPackage the package name
-     * @param oldName the old name
-     * @param newName the new name
-     *
-     * @return the new name
-     */
-    public static String getNewValue(String javaPackage, String oldName, String newName) {
-        if (oldName == null || oldName.length() == 0) {
-            return null;
-        }
-        if (javaPackage == null || javaPackage.length() == 0) {
-            return null;
-        }
-        if (newName == null || newName.length() == 0) {
-            return null;
-        }
-        if (!newName.startsWith(javaPackage + ".")) { //$NON-NLS-1$
-            return newName;
-        } else if (newName.length() > (javaPackage.length() + 1)) {
-            String value = newName.substring(javaPackage.length() + 1);
-            return value;
-        }
-        boolean startWithDot = (oldName.charAt(0) == '.');
-        boolean hasDot = (oldName.indexOf('.') != -1);
-        if (startWithDot || !hasDot) {
-
-            if (startWithDot) {
-                return "." + newName;
-            } else {
-                int lastPeriod = newName.lastIndexOf(".");
-                return newName.substring(lastPeriod + 1);
-            }
-        } else {
-            return newName;
-        }
-    }
-
-    /**
      * Releases SSE read model; saves SSE model if exists edit model
      * Called in dispose method of refactoring change classes
      *

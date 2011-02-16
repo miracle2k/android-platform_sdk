@@ -277,7 +277,7 @@ public class AndroidDocumentChange extends DocumentChange {
         if (name != null) {
             String newValue;
             if (combinePackage) {
-                newValue = RefactoringUtil.getNewValue(getAppPackage(), name, newName);
+                newValue = AndroidManifest.extractActivityName(newName, getAppPackage());
             } else {
                 newValue = newName;
             }
