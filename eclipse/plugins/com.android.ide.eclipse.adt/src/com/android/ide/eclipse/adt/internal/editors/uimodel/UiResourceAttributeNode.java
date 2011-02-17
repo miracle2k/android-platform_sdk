@@ -208,8 +208,7 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
             }
         } else {
             // If there's a prefix with "android:" in it, use the system resources
-            //
-            // TODO find a way to only list *public* framework resources here.
+            // Non-public framework resources are filtered out later.
             AndroidTargetData data = editor.getTargetData();
             repository = data.getSystemResources();
             isSystem = true;
@@ -264,8 +263,18 @@ public class UiResourceAttributeNode extends UiTextAttributeNode {
                 sb.append(typeName).append('/');
                 String base = sb.toString();
 
-                for (ResourceItem item : repository.getResources(resType)) {
-                    results.add(base + item.getName());
+                if (isSystem) {
+                    AndroidTargetData targetData = editor.getTargetData();
+                    for (ResourceItem item : repository.getResources(resType)) {
+                        String name = item.getName();
+                        if (targetData == null || targetData.isPublicResource(resType, name)) {
+                            results.add(base + name);
+                        }
+                    }
+                } else {
+                    for (ResourceItem item : repository.getResources(resType)) {
+                        results.add(base + item.getName());
+                    }
                 }
             }
         }

@@ -31,6 +31,8 @@ import com.android.ide.eclipse.adt.internal.refactorings.extractstring.ExtractSt
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceHelper;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
+import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
+import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.resources.ResourceType;
 
 import org.eclipse.core.resources.IFile;
@@ -74,6 +76,10 @@ import org.w3c.dom.Text;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -84,19 +90,13 @@ import java.util.regex.Pattern;
 public class ResourceChooser extends AbstractElementListSelectionDialog {
 
     private Pattern mProjectResourcePattern;
-
     private ResourceType mResourceType;
-
     private IResourceRepository mProjectResources;
-
-    private final static boolean SHOW_SYSTEM_RESOURCE = false;  // TODO re-enable at some point
     private Pattern mSystemResourcePattern;
-    private IResourceRepository mSystemResources;
     private Button mProjectButton;
     private Button mSystemButton;
-
+    private Button mNewButton;
     private String mCurrentResource;
-
     private final IProject mProject;
 
     /**
@@ -120,11 +120,8 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
         mProjectResourcePattern = Pattern.compile(
                 "@" + mResourceType.getName() + "/(.+)"); //$NON-NLS-1$ //$NON-NLS-2$
 
-        if (SHOW_SYSTEM_RESOURCE) {
-            mSystemResources = systemResources;
-            mSystemResourcePattern = Pattern.compile(
-                    "@android:" + mResourceType.getName() + "/(.+)"); //$NON-NLS-1$ //$NON-NLS-2$
-        }
+        mSystemResourcePattern = Pattern.compile(
+                "@android:" + mResourceType.getName() + "/(.+)"); //$NON-NLS-1$ //$NON-NLS-2$
 
         setTitle("Resource Chooser");
         setMessage(String.format("Choose a %1$s resource",
@@ -146,7 +143,7 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
             ResourceItem item = (ResourceItem)elements[0];
 
             mCurrentResource = ResourceHelper.getXmlString(mResourceType, item,
-                    SHOW_SYSTEM_RESOURCE && mSystemButton.getSelection());
+                    mSystemButton.getSelection());
         }
     }
 
@@ -174,9 +171,6 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
      * @param top the parent composite
      */
     private void createButtons(Composite top) {
-        if (!SHOW_SYSTEM_RESOURCE) {
-            return;
-        }
         mProjectButton = new Button(top, SWT.RADIO);
         mProjectButton.setText("Project Resources");
         mProjectButton.addSelectionListener(new SelectionAdapter() {
@@ -184,7 +178,8 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
             public void widgetSelected(SelectionEvent e) {
                 super.widgetSelected(e);
                 if (mProjectButton.getSelection()) {
-                    setListElements(mProjectResources.getResources(mResourceType));
+                    setupResourceList();
+                    mNewButton.setEnabled(true);
                 }
             }
         });
@@ -194,8 +189,9 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 super.widgetSelected(e);
-                if (mProjectButton.getSelection()) {
-                    setListElements(mSystemResources.getResources(mResourceType));
+                if (mSystemButton.getSelection()) {
+                    setupResourceList();
+                    mNewButton.setEnabled(false);
                 }
             }
         });
@@ -206,16 +202,15 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
      * @param top the parent composite
      */
     private void createNewResButtons(Composite top) {
-
-        Button newResButton = new Button(top, SWT.NONE);
+        mNewButton = new Button(top, SWT.NONE);
 
         String title = String.format("New %1$s...", mResourceType.getDisplayName());
-        newResButton.setText(title);
+        mNewButton.setText(title);
 
         // We only support adding new strings right now
-        newResButton.setEnabled(Hyperlinks.isValueResource(mResourceType));
+        mNewButton.setEnabled(Hyperlinks.isValueResource(mResourceType));
 
-        newResButton.addSelectionListener(new SelectionAdapter() {
+        mNewButton.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 super.widgetSelected(e);
@@ -227,8 +222,8 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
                     String newName = createNewValue(mResourceType);
                     if (newName != null) {
                         // Recompute the "current resource" to select the new id
-                        setupResourceList();
-                        selectItemName(newName);
+                        ResourceItem[] items = setupResourceList();
+                        selectItemName(newName, items);
                     }
                 }
             }
@@ -361,10 +356,10 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
                     IDialogConstants.OK_ID) {
 
                 // Recompute the "current resource" to select the new id
-                setupResourceList();
+                ResourceItem[] items = setupResourceList();
 
                 // select it if possible
-                selectItemName(ref.getXmlStringId());
+                selectItemName(ref.getXmlStringId(), items);
             }
         } catch (InterruptedException ex) {
             // Interrupted. Pass.
@@ -372,36 +367,37 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
     }
 
     /**
-     * @return The repository currently selected.
-     */
-    private IResourceRepository getCurrentRepository() {
-        IResourceRepository repo = mProjectResources;
-
-        if (SHOW_SYSTEM_RESOURCE && mSystemButton.getSelection()) {
-            repo = mSystemResources;
-        }
-        return repo;
-    }
-
-    /**
      * Setups the current list.
      */
-    private void setupResourceList() {
-        IResourceRepository repo = getCurrentRepository();
-        setListElements(repo.getResources(mResourceType));
+    private ResourceItem[] setupResourceList() {
+        ResourceItem[] items = null;
+        if (mProjectButton.getSelection()) {
+            items = mProjectResources.getResources(mResourceType);
+            setListElements(items);
+        } else if (mSystemButton.getSelection()) {
+            AndroidTargetData targetData = Sdk.getCurrent().getTargetData(mProject);
+            if (targetData != null) {
+                Collection<String> names = targetData.getPublicResourceNames(mResourceType);
+                List<ResourceItem> list = new ArrayList<ResourceItem>();
+                for (String name : names) {
+                    list.add(new ResourceItem(name));
+                }
+                Collections.sort(list);
+                items = list.toArray(new ResourceItem[list.size()]);
+                setListElements(items);
+            }
+        }
+
+        return items;
     }
 
     /**
      * Select an item by its name, if possible.
      */
-    private void selectItemName(String itemName) {
-        if (itemName == null) {
+    private void selectItemName(String itemName, ResourceItem[] items) {
+        if (itemName == null || items == null) {
             return;
         }
-
-        IResourceRepository repo = getCurrentRepository();
-
-        ResourceItem[] items = repo.getResources(mResourceType);
 
         for (ResourceItem item : items) {
             if (itemName.equals(item.getName())) {
@@ -421,34 +417,31 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
 
         // Is this a system resource?
         // If not a system resource or if they are not available, this will be a project res.
-        if (SHOW_SYSTEM_RESOURCE) {
-            Matcher m = mSystemResourcePattern.matcher(resourceString);
-            if (m.matches()) {
-                itemName = m.group(1);
-                isSystem = true;
-            }
+        Matcher m = mSystemResourcePattern.matcher(resourceString);
+        if (m.matches()) {
+            itemName = m.group(1);
+            isSystem = true;
         }
 
         if (!isSystem && itemName == null) {
             // Try to match project resource name
-            Matcher m = mProjectResourcePattern.matcher(resourceString);
+            m = mProjectResourcePattern.matcher(resourceString);
             if (m.matches()) {
                 itemName = m.group(1);
             }
         }
 
         // Update the repository selection
-        if (SHOW_SYSTEM_RESOURCE) {
-            mProjectButton.setSelection(!isSystem);
-            mSystemButton.setSelection(isSystem);
-        }
+        mProjectButton.setSelection(!isSystem);
+        mSystemButton.setSelection(isSystem);
+        mNewButton.setEnabled(!isSystem);
 
         // Update the list
-        setupResourceList();
+        ResourceItem[] items = setupResourceList();
 
         // If we have a selection name, select it
         if (itemName != null) {
-            selectItemName(itemName);
+            selectItemName(itemName, items);
         }
     }
 

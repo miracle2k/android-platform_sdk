@@ -16,6 +16,11 @@
 
 package com.android.ide.eclipse.adt.internal.sdk;
 
+import static com.android.sdklib.SdkConstants.FD_DATA;
+import static com.android.sdklib.SdkConstants.FD_RES;
+import static com.android.sdklib.SdkConstants.FD_VALUES;
+import static java.io.File.separator;
+
 import com.android.ide.common.rendering.LayoutLibrary;
 import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.sdk.LoadStatus;
@@ -28,15 +33,32 @@ import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.Resour
 import com.android.ide.eclipse.adt.internal.editors.xml.descriptors.XmlDescriptors;
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
+import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.IAndroidTarget.IOptionalLibrary;
 
 import org.eclipse.core.runtime.IStatus;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
  * This class contains the data of an Android Target as loaded from the SDK.
@@ -74,6 +96,7 @@ public class AndroidTargetData {
     private XmlDescriptors mXmlDescriptors;
 
     private Map<String, Map<String, Integer>> mEnumValueMap;
+    private Map<ResourceType, Collection<String>> mPublicAttributeNames;
 
     private ProjectResources mFrameworkResources;
     private LayoutLibrary mLayoutLibrary;
@@ -335,5 +358,125 @@ public class AndroidTargetData {
     private void setValues(String name, String[] values) {
         mAttributeValues.remove(name);
         mAttributeValues.put(name, values);
+    }
+
+    /**
+     * Returns true if the given name represents a public attribute of the given type.
+     *
+     * @param type the type of resource
+     * @param name the name of the resource
+     * @return true if the given property is public
+     */
+    public boolean isPublicResource(ResourceType type, String name) {
+        Collection<String> names = getNameMap(type);
+        if (names != null) {
+            return names.contains(name);
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns all public properties (in no particular order) of a given resource type.
+     *
+     * @param type the type of resource
+     * @return an unmodifiable collection of public resource names
+     */
+    public Collection<String> getPublicResourceNames(ResourceType type) {
+        Collection<String> names = getNameMap(type);
+        if (names != null) {
+            return Collections.<String>unmodifiableCollection(names);
+        }
+
+        return Collections.emptyList();
+    }
+
+    /** Returns a (possibly cached) list of names for the given resource type, or null */
+    private Collection<String> getNameMap(ResourceType type) {
+        if (mPublicAttributeNames == null) {
+            mPublicAttributeNames = readPublicAttributeLists();
+        }
+
+        return mPublicAttributeNames.get(type);
+    }
+
+    /**
+     * Reads the public.xml file in data/res/values/ for this SDK and
+     * returns the result as a map from resource type to a list of names
+     */
+    private Map<ResourceType, Collection<String>> readPublicAttributeLists() {
+        String relative = FD_DATA + separator + FD_RES + separator + FD_VALUES + separator +
+            "public.xml"; //$NON-NLS-1$
+        File file = new File(mTarget.getLocation(), relative);
+        if (file.isFile()) {
+            Map<ResourceType, Collection<String>> map =
+                new HashMap<ResourceType, Collection<String>>();
+            Document document = null;
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            Reader reader = null;
+            try {
+                reader = new BufferedReader(new FileReader(file));
+                InputSource is = new InputSource(reader);
+                factory.setNamespaceAware(true);
+                factory.setValidating(false);
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                document = builder.parse(is);
+
+                ResourceType lastType = null;
+                String lastTypeName = "";
+
+                NodeList children = document.getDocumentElement().getChildNodes();
+                for (int i = 0, n = children.getLength(); i < n; i++) {
+                    Node node = children.item(i);
+                    if (node.getNodeType() == Node.ELEMENT_NODE) {
+                        Element element = (Element) node;
+                        String name = element.getAttribute("name"); //$NON-NLS-1$
+                        if (name.length() > 0) {
+                            String typeName = element.getAttribute("type"); //$NON-NLS-1$
+                            ResourceType type = null;
+                            if (typeName.equals(lastTypeName)) {
+                                type = lastType;
+                            } else {
+                                type = ResourceType.getEnum(typeName);
+                                lastType = type;
+                                lastTypeName = typeName;
+                            }
+                            if (type != null) {
+                                Collection<String> list = map.get(type);
+                                if (list == null) {
+                                    // Use sets for some of the larger maps to make
+                                    // searching for isPublicResource faster.
+                                    if (type == ResourceType.ATTR) {
+                                        list = new HashSet<String>(900);
+                                    } else if (type == ResourceType.STYLE) {
+                                        list = new HashSet<String>(300);
+                                    } else if (type == ResourceType.DRAWABLE) {
+                                        list = new HashSet<String>(200);
+                                    } else {
+                                        list = new ArrayList<String>(30);
+                                    }
+                                    map.put(type, list);
+                                }
+                                list.add(name);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                AdtPlugin.log(e, "Can't read and parse public attribute list");
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        // Nothing to be done here - we don't care if it closed or not.
+                    }
+                }
+            }
+
+            return map;
+
+        }
+        return Collections.emptyMap();
     }
 }
