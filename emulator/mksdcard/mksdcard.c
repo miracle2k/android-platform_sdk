@@ -27,7 +27,7 @@
 
 /* a simple and portable program used to generate a blank FAT32 image file
  *
- * usage:  mksdcard  [-l label] <size> <filename>
+ * usage: mksdcard [-l label] <size> <filename>
  */
 
 #include <time.h>
@@ -43,6 +43,10 @@
 #define  BACKUP_BOOT_SECTOR  6
 #define  NUM_FATS            2
 
+/* sectors_per_disk is encoded as a signed int */
+#define MAX_SECTORS_PER_DISK 0x7FFFFFFF
+#define MAX_DISK_SIZE ((Wide)MAX_SECTORS_PER_DISK * BYTES_PER_SECTOR)
+
 typedef long long      Wide;   /* might be something else if you don't use GCC */
 typedef unsigned char  Byte;
 typedef Byte*          Bytes;
@@ -53,10 +57,10 @@ typedef Byte*          Bytes;
 #define  POKES(p,v)   ( BYTE_(p,0) = (Byte)(v), BYTE_(p,1) = (Byte)((v) >> 8) )
 #define  POKEW(p,v)   ( BYTE_(p,0) = (Byte)(v), BYTE_(p,1) = (Byte)((v) >> 8), BYTE_(p,2) = (Byte)((v) >> 16), BYTE_(p,3) = (Byte)((v) >> 24) )
 
-static Byte  s_boot_sector   [ BYTES_PER_SECTOR ];       /* boot sector */
+static Byte  s_boot_sector   [ BYTES_PER_SECTOR ];   /* boot sector */
 static Byte  s_fsinfo_sector [ BYTES_PER_SECTOR ];   /* FS Info sector */
-static Byte  s_fat_head      [ BYTES_PER_SECTOR ];        /* first FAT sector */
-static Byte  s_zero_sector   [ BYTES_PER_SECTOR ];     /* empty sector */
+static Byte  s_fat_head      [ BYTES_PER_SECTOR ];   /* first FAT sector */
+static Byte  s_zero_sector   [ BYTES_PER_SECTOR ];   /* empty sector */
 
 /* this is the date and time when creating the disk */
 static int
@@ -172,22 +176,28 @@ fat_init( Bytes  fat )
 static int
 write_sector( FILE*  file, Bytes  sector )
 {
-    return fwrite( sector, 1, 512, file ) != 512;
+    int result = fwrite( sector, 1, BYTES_PER_SECTOR, file ) != BYTES_PER_SECTOR;
+    if (result) {
+      fprintf(stderr, "Failed to write sector of %d bytes: %s\n", BYTES_PER_SECTOR, strerror(errno));
+    }
+    return result;
 }
 
 static int
 write_empty( FILE*   file, Wide  count )
 {
-    static  Byte  empty[64*1024];
+    static  Byte  empty[256*1024];
+    memset(empty, 0, sizeof(empty));
 
-    count *= 512;
+    count *= BYTES_PER_SECTOR;
     while (count > 0) {
         int  len = sizeof(empty);
         if (len > count)
-            len = count;
-
-        if ( fwrite( empty, 1, len, file ) != (size_t)len )
+          len = count;
+        if ( fwrite( empty, 1, len, file ) != (size_t)len ) {
+            fprintf(stderr, "Failed to write %d bytes: %s\n", len, strerror(errno));
             return 1;
+        }
 
         count -= len;
     }
@@ -201,6 +211,10 @@ static void usage (void)
     fprintf(stderr, "  if <size> is a simple integer, it specifies a size in bytes\n" );
     fprintf(stderr, "  if <size> is an integer followed by 'K', it specifies a size in KiB\n" );
     fprintf(stderr, "  if <size> is an integer followed by 'M', it specifies a size in MiB\n" );
+    fprintf(stderr, "  if <size> is an integer followed by 'G', it specifies a size in GiB\n" );
+    fprintf(stderr, "\nMinimum size is 8M. The Android emulator cannot use smaller images.\n" );
+    fprintf(stderr, "Maximum size is %lld bytes, %lldK, %lldM or %lldG\n",
+            MAX_DISK_SIZE, MAX_DISK_SIZE >> 10, MAX_DISK_SIZE >> 20, MAX_DISK_SIZE >> 30);
     exit(1);
 }
 
@@ -211,7 +225,7 @@ int  main( int argc, char**  argv )
     int    sectors_per_disk;
     char*  end;
     const char*  label = NULL;
-    FILE*  f;
+    FILE*  f = NULL;
 
     for ( ; argc > 1 && argv[1][0] == '-'; argc--, argv++ )
     {
@@ -238,19 +252,28 @@ int  main( int argc, char**  argv )
     if (argc != 3)
         usage();
 
-    disk_size = strtol( argv[1], &end, 10 );
-    if (disk_size == 0 && errno == EINVAL)
+    disk_size = strtoll( argv[1], &end, 10 );
+    if (disk_size <= 0 || errno == EINVAL || errno == ERANGE) {
+        fprintf(stderr, "Invalid argument size '%s'\n\n", argv[1]);
         usage();
+    }
 
     if (*end == 'K')
         disk_size *= 1024;
     else if (*end == 'M')
         disk_size *= 1024*1024;
+    else if (*end == 'G')
+        disk_size *= 1024*1024*1024;
 
-    if (disk_size < 8*1024*1024)
-        fprintf(stderr, "### WARNING : SD Card images < 8 MB cannot be used with the Android emulator\n");
+    if (disk_size < 8*1024*1024) {
+        fprintf(stderr, "Invalid argument: size '%s' is too small.\n\n", argv[1]);
+        usage();
+    } else if (disk_size > MAX_DISK_SIZE) {
+        fprintf(stderr, "Invalid argument: size '%s' is too large.\n\n", argv[1]);
+        usage();
+    }
 
-    sectors_per_disk = disk_size / 512;
+    sectors_per_disk = disk_size / BYTES_PER_SECTOR;
     sectors_per_fat  = get_sectors_per_fat( disk_size, get_sectors_per_cluster( disk_size ) );
 
     boot_sector_init( s_boot_sector, s_fsinfo_sector, disk_size, NULL );
@@ -258,7 +281,8 @@ int  main( int argc, char**  argv )
 
     f = fopen( argv[2], "wb" );
     if ( !f ) {
-        fprintf(stderr, "could not create file '%s', aborting...\n", argv[2] );
+      fprintf(stderr, "Could not create file '%s': %s\n", argv[2], strerror(errno));
+      goto FailWrite;
     }
 
    /* here's the layout:
@@ -274,7 +298,7 @@ int  main( int argc, char**  argv )
     *  zero sectors
    */
 
-    if ( write_sector( f, s_boot_sector ) )  goto FailWrite;
+    if ( write_sector( f, s_boot_sector ) ) goto FailWrite;
     if ( write_sector( f, s_fsinfo_sector ) ) goto FailWrite;
     if ( BACKUP_BOOT_SECTOR > 0 ) {
         if ( write_empty( f, BACKUP_BOOT_SECTOR - 2 ) ) goto FailWrite;
@@ -282,8 +306,7 @@ int  main( int argc, char**  argv )
         if ( write_sector( f, s_fsinfo_sector ) ) goto FailWrite;
         if ( write_empty( f, RESERVED_SECTORS - 2 - BACKUP_BOOT_SECTOR ) ) goto FailWrite;
     }
-    else
-        if ( write_empty( f, RESERVED_SECTORS - 2 ) ) goto FailWrite;
+    else if ( write_empty( f, RESERVED_SECTORS - 2 ) ) goto FailWrite;
 
     if ( write_sector( f, s_fat_head ) ) goto FailWrite;
     if ( write_empty( f, sectors_per_fat-1 ) ) goto FailWrite;
@@ -297,8 +320,10 @@ int  main( int argc, char**  argv )
     return 0;
 
 FailWrite:
-    fprintf(stderr, "could not write to '%s', aborting...\n", argv[2] );
-    unlink( argv[2] );
-    fclose(f);
+    if (f != NULL) {
+      fclose(f);
+      unlink( argv[2] );
+      fprintf(stderr, "File '%s' was not created.\n", argv[2]);
+    }
     return 1;
 }
