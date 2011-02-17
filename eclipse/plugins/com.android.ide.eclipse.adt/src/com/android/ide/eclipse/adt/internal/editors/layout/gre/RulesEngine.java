@@ -16,6 +16,7 @@
 
 package com.android.ide.eclipse.adt.internal.editors.layout.gre;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_WIDGET_PREFIX;
 import static com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDescriptors.VIEW_MERGE;
 
 import com.android.ide.common.api.DropFeedback;
@@ -600,7 +601,7 @@ public class RulesEngine {
                 // Deal with unknown descriptors; these lack the full qualified path and
                 // elements in the layout without a package are taken to be in the
                 // android.widget package.
-                fqcn = "android.widget." + fqcn; //$NON-NLS-1$
+                fqcn = ANDROID_WIDGET_PREFIX + fqcn;
             }
 
             // Try to find a rule matching the "real" FQCN. If we find it, we're done.

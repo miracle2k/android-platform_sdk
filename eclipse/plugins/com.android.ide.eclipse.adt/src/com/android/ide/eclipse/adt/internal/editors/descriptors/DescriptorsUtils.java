@@ -357,12 +357,12 @@ public final class DescriptorsUtils {
      * @return The capitalized string
      */
     public static String capitalize(String str) {
-        if (str == null || str.length() < 1 || str.charAt(0) < 'a' || str.charAt(0) > 'z') {
+        if (str == null || str.length() < 1 || Character.isUpperCase(str.charAt(0))) {
             return str;
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append((char)(str.charAt(0) + 'A' - 'a'));
+        sb.append(Character.toUpperCase(str.charAt(0)));
         sb.append(str.substring(1));
         return sb.toString();
     }
@@ -890,34 +890,5 @@ public final class DescriptorsUtils {
         }
 
         return false;
-    }
-
-    /**
-     * Converts the given attribute value to an XML-attribute-safe value, meaning that
-     * single and double quotes are replaced with their corresponding XML entities.
-     *
-     * @param attrValue the value to be escaped
-     * @return the escaped value
-     */
-    public static String toXmlAttributeValue(String attrValue) {
-        // Must escape ' and "
-        if (attrValue.indexOf('"') == -1 && attrValue.indexOf('\'') == -1) {
-            return attrValue;
-        }
-
-        int n = attrValue.length();
-        StringBuilder sb = new StringBuilder(2 * n);
-        for (int i = 0; i < n; i++) {
-            char c = attrValue.charAt(i);
-            if (c == '"') {
-                sb.append("&quot;"); //$NON-NLS-1$
-            } else if (c == '\'') {
-                sb.append("&apos;"); //$NON-NLS-1$
-            } else {
-                sb.append(c);
-            }
-        }
-
-        return sb.toString();
     }
 }
