@@ -28,6 +28,10 @@ public enum Capability {
     CUSTOM_BACKGROUND_COLOR,
     /** Ability to call {@link LayoutScene#render()} and {@link LayoutScene#render(long)}. */
     RENDER,
+    /** Ability to ask for a layout only with no rendering through
+     * {@link SessionParams#setLayoutOnly()}
+     */
+    LAYOUT_ONLY,
     /**
      * Ability to control embedded layout parsers through {@link IXmlPullParser#getParser(String)}
      */
@@ -39,7 +43,6 @@ public enum Capability {
      * {@link LayoutScene#setProperty(Object, String, String)}<br>
      * The method that receives an animation listener can only use it if the
      * ANIMATED_VIEW_MANIPULATION, or FULL_ANIMATED_VIEW_MANIPULATION is also supported.
-     *
      * */
     VIEW_MANIPULATION,
     /** Ability to play animations with<br>
