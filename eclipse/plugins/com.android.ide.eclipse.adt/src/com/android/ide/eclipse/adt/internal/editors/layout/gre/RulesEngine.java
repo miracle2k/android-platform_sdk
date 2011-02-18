@@ -876,7 +876,7 @@ public class RulesEngine {
         public String displayResourceInput(String resourceTypeName, String currentValue) {
             AndroidXmlEditor editor = mEditor.getLayoutEditor();
             IProject project = editor.getProject();
-            ResourceType type = ResourceType.valueOf(resourceTypeName.toUpperCase());
+            ResourceType type = ResourceType.getEnum(resourceTypeName);
             if (project != null) {
                 // get the resource repository for this project and the system resources.
                 IResourceRepository projectRepository = ResourceManager.getInstance()
