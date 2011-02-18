@@ -138,7 +138,16 @@ public final class AvdManager {
     /**
      * Pattern for matching SD Card sizes, e.g. "4K" or "16M".
      */
-    public final static Pattern SDCARD_SIZE_PATTERN = Pattern.compile("(\\d+)([MK])"); //$NON-NLS-1$
+    public final static Pattern SDCARD_SIZE_PATTERN = Pattern.compile("(\\d+)([KMG])"); //$NON-NLS-1$
+
+    /**
+     * Minimal size of an SDCard image file in bytes. Currently 9 MiB.
+     */
+    public static final long SDCARD_MIN_BYTE_SIZE = 9<<20;
+    /**
+     * Maximal size of an SDCard image file in bytes. Currently 1023 GiB.
+     */
+    public static final long SDCARD_MAX_BYTE_SIZE = 1023L<<30;
 
     /** Regex used to validate characters that compose an AVD name. */
     public final static Pattern RE_AVD_NAME = Pattern.compile("[a-zA-Z0-9._-]+"); //$NON-NLS-1$
@@ -640,26 +649,18 @@ public final class AvdManager {
                         try {
                             long sdcardSize = Long.parseLong(m.group(1));
 
-                            // prevent overflow: no more than 999GB
-                            // 10 digit for MiB, 13 for KiB
-                            int digitCount = m.group(1).length();
-
                             String sdcardSizeModifier = m.group(2);
-                            if ("K".equals(sdcardSizeModifier)) {
-                                sdcardSize *= 1024L;
-                            } else { // must be "M" per the pattern
-                                sdcardSize *= 1024L * 1024L;
-                                digitCount += 3; // convert the number of digit into "KiB"
+                            if ("K".equals(sdcardSizeModifier)) {           //$NON-NLS-1$
+                                sdcardSize <<= 10;
+                            } else if ("M".equals(sdcardSizeModifier)) {    //$NON-NLS-1$
+                                sdcardSize <<= 20;
+                            } else if ("G".equals(sdcardSizeModifier)) {    //$NON-NLS-1$
+                                sdcardSize <<= 30;
                             }
 
-                            if (digitCount >= 13) {
-                                log.error(null, "SD Card size is too big!");
-                                needCleanup = true;
-                                return null;
-                            }
-
-                            if (sdcardSize < 9 * 1024 * 1024) {
-                                log.error(null, "SD Card size must be at least 9MB");
+                            if (sdcardSize < SDCARD_MIN_BYTE_SIZE ||
+                                    sdcardSize > SDCARD_MAX_BYTE_SIZE) {
+                                log.error(null, "SD Card size must be in the range 9 MiB..1023 GiB.");
                                 needCleanup = true;
                                 return null;
                             }

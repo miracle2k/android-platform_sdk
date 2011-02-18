@@ -322,6 +322,7 @@ final class AvdCreationDialog extends GridDialog {
         mSdCardSizeCombo = new Combo(sdCardGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
         mSdCardSizeCombo.add("KiB");
         mSdCardSizeCombo.add("MiB");
+        mSdCardSizeCombo.add("GiB");
         mSdCardSizeCombo.select(1);
         mSdCardSizeCombo.addSelectionListener(validateListener);
 
@@ -918,30 +919,25 @@ final class AvdCreationDialog extends GridDialog {
             } else {
                 String valueString = mSdCardSize.getText();
                 if (valueString.length() > 0) {
-                    // prevent overflow: no more than 999GB
-                    // 10 digit for MiB, 13 for KiB
-                    if (valueString.length() >= 10 +
-                            (mSdCardSizeCombo.getSelectionIndex() == 0 ? 3 : 0)) {
-                        error = "SD Card size is too big!";
-                    } else {
-                        try {
-                            long value = Long.parseLong(valueString);
+                    long value = 0;
+                    try {
+                        value = Long.parseLong(valueString);
 
-                            switch (mSdCardSizeCombo.getSelectionIndex()) {
-                                case 0:
-                                    value *= 1024L;
-                                    break;
-                                case 1:
-                                    value *= 1024L * 1024L;
-                                    break;
-                            }
-
-                            if (value < 9 * 1024 * 1024) {
-                                error = "SD Card size must be at least 9 MiB";
-                            }
-                        } catch (NumberFormatException e) {
-                            // will never happen thanks to the VerifyListener.
+                        int sizeIndex = mSdCardSizeCombo.getSelectionIndex();
+                        if (sizeIndex >= 0) {
+                            // index 0 shifts by 10 (1024=K), index 1 by 20, etc.
+                            value <<= 10*(1 + sizeIndex);
                         }
+
+                        if (value < AvdManager.SDCARD_MIN_BYTE_SIZE ||
+                                value > AvdManager.SDCARD_MAX_BYTE_SIZE) {
+                            value = 0;
+                        }
+                    } catch (Exception e) {
+                        // ignore, we'll test value below.
+                    }
+                    if (value <= 0) {
+                        error = "SD Card size is invalid. Range is 9 MiB..1023 GiB.";
                     }
                 }
             }
@@ -1112,10 +1108,13 @@ final class AvdCreationDialog extends GridDialog {
                 // add the unit
                 switch (mSdCardSizeCombo.getSelectionIndex()) {
                     case 0:
-                        sdName += "K";
+                        sdName += "K";  //$NON-NLS-1$
                         break;
                     case 1:
-                        sdName += "M";
+                        sdName += "M";  //$NON-NLS-1$
+                        break;
+                    case 2:
+                        sdName += "G";  //$NON-NLS-1$
                         break;
                     default:
                         // shouldn't be here
