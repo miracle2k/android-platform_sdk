@@ -25,6 +25,7 @@ import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo.AvdStatus;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.io.FileWrapper;
+import com.android.util.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -157,7 +158,26 @@ public final class AvdManager {
 
     public final static String HARDWARE_INI = "hardware.ini"; //$NON-NLS-1$
 
-    /** An immutable structure describing an Android Virtual Device. */
+    /**
+     * Status returned by {@link AvdManager#isAvdNameConflicting(String)}.
+     */
+    public static enum AvdConflict {
+        /** There is no known conflict for the given AVD name. */
+        NO_CONFLICT,
+        /** The AVD name conflicts with an existing valid AVD. */
+        CONFLICT_EXISTING_AVD,
+        /** The AVD name conflicts with an existing invalid AVD. */
+        CONFLICT_INVALID_AVD,
+        /**
+         * The AVD name does not conflict with any known AVD however there are
+         * files or directory that would cause a conflict if this were to be created.
+         */
+        CONFLICT_EXISTING_PATH,
+    }
+
+    /**
+     * An immutable structure describing an Android Virtual Device.
+     */
     public static final class AvdInfo implements Comparable<AvdInfo> {
 
         /**
@@ -255,12 +275,27 @@ public final class AvdManager {
         }
 
         /**
+         * Helper method that returns the default AVD folder that would be used for a given
+         * AVD name <em>if and only if</em> the AVD was created with the default choice.
+         * <p/>
+         * Callers must NOT use this to "guess" the actual folder from an actual AVD since
+         * the purpose of the AVD .ini file is to be able to change this folder.
+         * <p/>
+         * For an actual existing AVD, callers must use {@link #getPath()} instead.
+         *
+         * @throws AndroidLocationException if there's a problem getting android root directory.
+         */
+        public static File getAvdFolder(String name) throws AndroidLocationException {
+            return new File(AndroidLocation.getFolder() + AndroidLocation.FOLDER_AVD,
+                            name + AvdManager.AVD_FOLDER_EXTENSION);
+        }
+
+        /**
          * Helper method that returns the .ini {@link File} for a given AVD name.
          * @throws AndroidLocationException if there's a problem getting android root directory.
          */
         public static File getIniFile(String name) throws AndroidLocationException {
-            String avdRoot;
-            avdRoot = getBaseAvdFolder();
+            String avdRoot = getBaseAvdFolder();
             return new File(avdRoot, name + INI_EXTENSION);
         }
 
@@ -485,6 +520,53 @@ public final class AvdManager {
     }
 
     /**
+     * Returns whether this AVD name would generate a conflict.
+     *
+     * @param name the name of the AVD to return
+     * @return A pair of {@link AvdConflict} and the path or AVD name that conflicts.
+     */
+    public Pair<AvdConflict, String> isAvdNameConflicting(String name) {
+
+        boolean ignoreCase = SdkConstants.currentPlatform() == SdkConstants.PLATFORM_WINDOWS;
+
+        // Check whether we have a conflict with an existing or invalid AVD
+        // known to the manager.
+        synchronized (mAllAvdList) {
+            for (AvdInfo info : mAllAvdList) {
+                String name2 = info.getName();
+                if (name2.equals(name) || (ignoreCase && name2.equalsIgnoreCase(name))) {
+                    if (info.getStatus() == AvdStatus.OK) {
+                        return Pair.of(AvdConflict.CONFLICT_EXISTING_AVD, name2);
+                    } else {
+                        return Pair.of(AvdConflict.CONFLICT_INVALID_AVD, name2);
+                    }
+                }
+            }
+        }
+
+        // No conflict with known AVDs.
+        // Are some existing files/folders in the way of creating this AVD?
+
+        try {
+            File file = AvdInfo.getIniFile(name);
+            if (file.exists()) {
+                return Pair.of(AvdConflict.CONFLICT_EXISTING_PATH, file.getPath());
+            }
+
+            file = AvdInfo.getAvdFolder(name);
+            if (file.exists()) {
+                return Pair.of(AvdConflict.CONFLICT_EXISTING_PATH, file.getPath());
+            }
+
+        } catch (AndroidLocationException e) {
+            // ignore
+        }
+
+
+        return Pair.of(AvdConflict.NO_CONFLICT, null);
+    }
+
+    /**
      * Reloads the AVD list.
      * @param log the log object to receive action logs. Cannot be null.
      * @throws AndroidLocationException if there was an error finding the location of the
@@ -564,7 +646,7 @@ public final class AvdManager {
             }
 
             // actually write the ini file
-            iniFile = createAvdIniFile(name, avdFolder, target);
+            iniFile = createAvdIniFile(name, avdFolder, target, removePrevious);
 
             // writes the userdata.img in it.
             String imagePath = target.getPath(IAndroidTarget.IMAGES);
@@ -958,13 +1040,23 @@ public final class AvdManager {
      * @param name of the AVD.
      * @param avdFolder path for the data folder of the AVD.
      * @param target of the AVD.
+     * @param removePrevious True if an existing ini file should be removed.
      * @throws AndroidLocationException if there's a problem getting android root directory.
      * @throws IOException if {@link File#getAbsolutePath()} fails.
      */
-    private File createAvdIniFile(String name, File avdFolder, IAndroidTarget target)
+    private File createAvdIniFile(String name,
+            File avdFolder,
+            IAndroidTarget target,
+            boolean removePrevious)
             throws AndroidLocationException, IOException {
         HashMap<String, String> values = new HashMap<String, String>();
         File iniFile = AvdInfo.getIniFile(name);
+        if (iniFile.isFile()) {
+            iniFile.delete();
+        } else if (iniFile.isDirectory()) {
+            deleteContentOf(iniFile);
+            iniFile.delete();
+        }
         values.put(AVD_INFO_PATH, avdFolder.getAbsolutePath());
         values.put(AVD_INFO_TARGET, target.hashString());
         writeIniFile(iniFile, values);
@@ -980,7 +1072,10 @@ public final class AvdManager {
      * @throws IOException if {@link File#getAbsolutePath()} fails.
      */
     private File createAvdIniFile(AvdInfo info) throws AndroidLocationException, IOException {
-        return createAvdIniFile(info.getName(), new File(info.getPath()), info.getTarget());
+        return createAvdIniFile(info.getName(),
+                new File(info.getPath()),
+                info.getTarget(),
+                false /*removePrevious*/);
     }
 
     /**

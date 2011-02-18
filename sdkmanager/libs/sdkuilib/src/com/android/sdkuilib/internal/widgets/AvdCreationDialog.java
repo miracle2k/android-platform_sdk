@@ -16,20 +16,21 @@
 
 package com.android.sdkuilib.internal.widgets;
 
-import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
-import com.android.sdklib.internal.avd.AvdManager.AvdInfo;
 import com.android.sdklib.internal.avd.HardwareProperties;
+import com.android.sdklib.internal.avd.AvdManager.AvdConflict;
+import com.android.sdklib.internal.avd.AvdManager.AvdInfo;
 import com.android.sdklib.internal.avd.HardwareProperties.HardwareProperty;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.io.FileWrapper;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 import com.android.sdkuilib.ui.GridDialog;
+import com.android.util.Pair;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.CellEditor;
@@ -73,8 +74,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 
 /**
@@ -153,8 +154,8 @@ final class AvdCreationDialog extends GridDialog {
         public void modifyText(ModifyEvent e) {
             String name = mAvdName.getText().trim();
             if (mEditAvdInfo == null || !name.equals(mEditAvdInfo.getName())) {
-                AvdInfo avdMatch = mAvdManager.getAvd(name, false /*validAvdOnly*/);
-                if (avdMatch != null) {
+                Pair<AvdConflict, String> conflict = mAvdManager.isAvdNameConflicting(name);
+                if (conflict.getFirst() != AvdManager.AvdConflict.NO_CONFLICT) {
                     // If we're changing the state from disabled to enabled, make sure
                     // to uncheck the button, to force the user to voluntarily re-enforce it.
                     // This happens when editing an existing AVD and changing the name from
@@ -953,24 +954,47 @@ final class AvdCreationDialog extends GridDialog {
                 String height = mSkinSizeHeight.getText(); // rejects non digit.
 
                 if (width.length() == 0 || height.length() == 0) {
-                    error = "Skin size is incorrect.\nBoth dimensions must be > 0";
+                    error = "Skin size is incorrect.\nBoth dimensions must be > 0.";
                 }
             }
         }
 
         // Check for duplicate AVD name
-        if (isCreate && hasAvdName && error == null) {
-            AvdInfo avdMatch = mAvdManager.getAvd(avdName, false /*validAvdOnly*/);
-            if (avdMatch != null && !mForceCreation.getSelection()) {
+        if (isCreate && hasAvdName && error == null && !mForceCreation.getSelection()) {
+            Pair<AvdConflict, String> conflict = mAvdManager.isAvdNameConflicting(avdName);
+            assert conflict != null;
+            switch(conflict.getFirst()) {
+            case NO_CONFLICT:
+                break;
+            case CONFLICT_EXISTING_AVD:
+            case CONFLICT_INVALID_AVD:
                 error = String.format(
                         "The AVD name '%s' is already used.\n" +
                         "Check \"Override the existing AVD\" to delete the existing one.",
                         avdName);
+                break;
+            case CONFLICT_EXISTING_PATH:
+                error = String.format(
+                        "Conflict with %s\n" +
+                        "Check \"Override the existing AVD\" to delete the existing one.",
+                        conflict.getSecond());
+                break;
+            default:
+                // Hmm not supposed to happen... probably someone expanded the
+                // enum without adding something here. In this case just do an
+                // assert and use a generic error message.
+                error = String.format(
+                        "Conflict %s with %s.\n" +
+                        "Check \"Override the existing AVD\" to delete the existing one.",
+                        conflict.getFirst().toString(),
+                        conflict.getSecond());
+                assert false;
+                break;
             }
         }
 
         if (error == null && mEditAvdInfo != null && isCreate) {
-            warning = String.format("The AVD '%1$s' will be duplicated into '%2$s'",
+            warning = String.format("The AVD '%1$s' will be duplicated into '%2$s'.",
                     mEditAvdInfo.getName(),
                     avdName);
         }
@@ -1153,9 +1177,7 @@ final class AvdCreationDialog extends GridDialog {
 
         File avdFolder = null;
         try {
-            avdFolder = new File(
-                    AndroidLocation.getFolder() + AndroidLocation.FOLDER_AVD,
-                    avdName + AvdManager.AVD_FOLDER_EXTENSION);
+            avdFolder = AvdManager.AvdInfo.getAvdFolder(avdName);
         } catch (AndroidLocationException e) {
             return false;
         }

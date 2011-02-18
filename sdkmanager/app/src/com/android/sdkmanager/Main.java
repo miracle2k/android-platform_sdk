@@ -923,8 +923,7 @@ public class Main {
             if (paramFolderPath != null) {
                 avdFolder = new File(paramFolderPath);
             } else {
-                avdFolder = new File(AndroidLocation.getFolder() + AndroidLocation.FOLDER_AVD,
-                        avdName + AvdManager.AVD_FOLDER_EXTENSION);
+                avdFolder = AvdManager.AvdInfo.getAvdFolder(avdName);
             }
 
             // Validate skin is either default (empty) or NNNxMMM or a valid skin name.
