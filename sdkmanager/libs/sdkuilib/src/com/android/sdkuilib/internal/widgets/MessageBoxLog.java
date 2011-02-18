@@ -95,7 +95,15 @@ public final class MessageBoxLog implements ISdkLog {
         if (logMessages.size() > 0) {
             final StringBuilder sb = new StringBuilder(mMessage + "\n\n");
             for (String msg : logMessages) {
-                sb.append(msg);
+                if (msg.length() > 0) {
+                    if (msg.charAt(0) != '\n') {
+                        int n = sb.length();
+                        if (n > 0 && sb.charAt(n-1) != '\n') {
+                            sb.append('\n');
+                        }
+                    }
+                    sb.append(msg);
+                }
             }
 
             // display the message

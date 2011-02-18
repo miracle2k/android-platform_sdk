@@ -212,7 +212,7 @@ static void usage (void)
     fprintf(stderr, "  if <size> is an integer followed by 'K', it specifies a size in KiB\n" );
     fprintf(stderr, "  if <size> is an integer followed by 'M', it specifies a size in MiB\n" );
     fprintf(stderr, "  if <size> is an integer followed by 'G', it specifies a size in GiB\n" );
-    fprintf(stderr, "\nMinimum size is 8M. The Android emulator cannot use smaller images.\n" );
+    fprintf(stderr, "\nMinimum size is 9M. The Android emulator cannot use smaller images.\n" );
     fprintf(stderr, "Maximum size is %lld bytes, %lldK, %lldM or %lldG\n",
             MAX_DISK_SIZE, MAX_DISK_SIZE >> 10, MAX_DISK_SIZE >> 20, MAX_DISK_SIZE >> 30);
     exit(1);
@@ -265,7 +265,7 @@ int  main( int argc, char**  argv )
     else if (*end == 'G')
         disk_size *= 1024*1024*1024;
 
-    if (disk_size < 8*1024*1024) {
+    if (disk_size < 9*1024*1024) {
         fprintf(stderr, "Invalid argument: size '%s' is too small.\n\n", argv[1]);
         usage();
     } else if (disk_size > MAX_DISK_SIZE) {
