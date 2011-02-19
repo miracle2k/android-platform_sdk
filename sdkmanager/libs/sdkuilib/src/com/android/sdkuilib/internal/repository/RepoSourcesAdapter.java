@@ -316,13 +316,13 @@ public class RepoSourcesAdapter {
         // get the installed packages
         Package[] installedPackages = mUpdaterData.getInstalledPackages();
 
+        // we'll populate this package list with either upgrades or new packages.
         ArrayList<Package> filteredList = new ArrayList<Package>();
 
         // for each remote packages, we look for an existing version.
         // If no existing version -> add to the list
         // if existing version but with older revision -> add it to the list
         for (Package remotePkg : remotePackages) {
-            boolean newPkg = true;
 
             // Obsolete packages are not offered as updates.
             if (remotePkg.isObsolete()) {
@@ -332,20 +332,27 @@ public class RepoSourcesAdapter {
             // For all potential packages, we also make sure that there's an archive for
             // the current platform, or we simply skip them.
             if (remotePkg.hasCompatibleArchive()) {
-                for (Package installedPkg : installedPackages) {
+                boolean keepPkg = true;
+
+                nextPkg: for (Package installedPkg : installedPackages) {
                     UpdateInfo info = installedPkg.canBeUpdatedBy(remotePkg);
-                    if (info == UpdateInfo.UPDATE) {
-                        filteredList.add(remotePkg);
-                        newPkg = false;
-                        break; // there shouldn't be 2 revisions of the same package
-                    } else if (info != UpdateInfo.INCOMPATIBLE) {
-                        newPkg = false;
-                        break; // there shouldn't be 2 revisions of the same package
+                    switch(info) {
+                    case UPDATE:
+                        // The remote package is an update to an existing one.
+                        // We're done looking.
+                        keepPkg = true;
+                        break nextPkg;
+                    case NOT_UPDATE:
+                        // The remote package is the same as one that is already installed.
+                        keepPkg = false;
+                        break;
+                    case INCOMPATIBLE:
+                        // We can't compare and decide on incompatible things.
+                        break;
                     }
                 }
 
-                // if we have not found the same package, then we add it (it's a new package)
-                if (newPkg) {
+                if (keepPkg) {
                     filteredList.add(remotePkg);
                 }
             }
