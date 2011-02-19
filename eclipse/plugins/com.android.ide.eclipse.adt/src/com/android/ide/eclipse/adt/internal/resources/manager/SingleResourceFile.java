@@ -24,8 +24,6 @@ import com.android.sdklib.io.IAbstractFile;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.xml.parsers.SAXParserFactory;
 
@@ -41,16 +39,6 @@ public class SingleResourceFile extends ResourceFile {
     static {
         sParserFactory.setNamespaceAware(true);
     }
-
-    private final static Pattern sXmlPattern = Pattern.compile("^(.+)\\.xml", //$NON-NLS-1$
-            Pattern.CASE_INSENSITIVE);
-
-    private final static Pattern[] sDrawablePattern = new Pattern[] {
-        Pattern.compile("^(.+)\\.9\\.png", Pattern.CASE_INSENSITIVE), //$NON-NLS-1$
-        Pattern.compile("^(.+)\\.png", Pattern.CASE_INSENSITIVE), //$NON-NLS-1$
-        Pattern.compile("^(.+)\\.jpg", Pattern.CASE_INSENSITIVE), //$NON-NLS-1$
-        Pattern.compile("^(.+)\\.gif", Pattern.CASE_INSENSITIVE), //$NON-NLS-1$
-    };
 
     private String mResourceName;
     private ResourceType mType;
@@ -133,31 +121,11 @@ public class SingleResourceFile extends ResourceFile {
         // get the name from the filename.
         String name = getFile().getName();
 
-        if (type == ResourceType.ANIM ||
-                type == ResourceType.ANIMATOR ||
-                type == ResourceType.COLOR ||
-                type == ResourceType.INTERPOLATOR ||
-                type == ResourceType.LAYOUT ||
-                type == ResourceType.MENU ||
-                type == ResourceType.XML) {
-            Matcher m = sXmlPattern.matcher(name);
-            if (m.matches()) {
-                return m.group(1);
-            }
-        } else if (type == ResourceType.DRAWABLE) {
-            for (Pattern p : sDrawablePattern) {
-                Matcher m = p.matcher(name);
-                if (m.matches()) {
-                    return m.group(1);
-                }
-            }
-
-            // also try the Xml pattern for selector/shape based drawable.
-            Matcher m = sXmlPattern.matcher(name);
-            if (m.matches()) {
-                return m.group(1);
-            }
+        int pos = name.indexOf('.');
+        if (pos != -1) {
+            name = name.substring(0, pos);
         }
+
         return name;
     }
 }
