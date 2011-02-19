@@ -394,19 +394,33 @@ public class ExtraPackage extends MinToolsPackage
             ExtraPackage ep = (ExtraPackage) pkg;
 
             // To be backward compatible, we need to support the old vendor-path form
-            if (ep.mPath != null && (ep.mVendor == null || ep.mVendor.length() == 0) &&
-                    mPath != null && mVendor != null) {
-                if (ep.mPath.equals(mVendor + "-" + mPath)) {  //$NON-NLS-1$
+            // in either the current or the remote package.
+            //
+            // The vendor test below needs to account for an old installed package
+            // (e.g. with an install path of vendor-name) that has then beeen updated
+            // in-place and thus when reloaded contains the vendor name in both the
+            // path and the vendor attributes.
+            if (ep.mPath != null && mPath != null && mVendor != null) {
+                if (ep.mPath.equals(mVendor + "-" + mPath) &&  //$NON-NLS-1$
+                        (ep.mVendor == null || ep.mVendor.length() == 0
+                                || ep.mVendor.equals(mVendor))) {
                     return true;
                 }
             }
+            if (mPath != null && ep.mPath != null && ep.mVendor != null) {
+                if (mPath.equals(ep.mVendor + "-" + ep.mPath) &&  //$NON-NLS-1$
+                        (mVendor == null || mVendor.length() == 0 || mVendor.equals(ep.mVendor))) {
+                    return true;
+                }
+            }
+
 
             if (!mPath.equals(ep.mPath)) {
                 return false;
             }
             if ((mVendor == null && ep.mVendor == null) ||
-                (mVendor != null && !mVendor.equals(ep.mVendor))) {
-                return false;
+                (mVendor != null && mVendor.equals(ep.mVendor))) {
+                return true;
             }
         }
 
