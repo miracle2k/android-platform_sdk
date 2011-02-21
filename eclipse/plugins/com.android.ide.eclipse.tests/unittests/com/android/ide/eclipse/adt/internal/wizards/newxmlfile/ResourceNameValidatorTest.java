@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.android.ide.eclipse.adt.internal.wizards.newxmlfile;
+
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
+import com.android.resources.ResourceType;
 
 import java.util.Collections;
 
@@ -22,18 +26,25 @@ import junit.framework.TestCase;
 public class ResourceNameValidatorTest extends TestCase {
     public void testValidator() throws Exception {
         // Valid
-        assertTrue(ResourceNameValidator.create(true).isValid("foo") == null);
-        assertTrue(ResourceNameValidator.create(true).isValid("foo.xml") == null);
-        assertTrue(ResourceNameValidator.create(true).isValid("Foo123_$") == null);
+        ResourceNameValidator validator = ResourceNameValidator.create(true,
+                ResourceFolderType.VALUES);
+        assertTrue(validator.isValid("foo") == null);
+        assertTrue(validator.isValid("foo.xml") == null);
+        assertTrue(validator.isValid("Foo123_$") == null);
 
         // Invalid
-        assertTrue(ResourceNameValidator.create(true).isValid("") != null);
-        assertTrue(ResourceNameValidator.create(true).isValid(" ") != null);
-        assertTrue(ResourceNameValidator.create(true).isValid("foo.xm") != null);
-        assertTrue(ResourceNameValidator.create(true).isValid("foo bar") != null);
-        assertTrue(ResourceNameValidator.create(true).isValid("1foo") != null);
-        assertTrue(ResourceNameValidator.create(true).isValid("foo%bar") != null);
-        assertTrue(ResourceNameValidator.create(true, Collections.singleton("foo"))
-                .isValid("foo") != null);
+        assertTrue(validator.isValid("") != null);
+        assertTrue(validator.isValid(" ") != null);
+        assertTrue(validator.isValid("foo.xm") != null);
+        assertTrue(validator.isValid("foo bar") != null);
+        assertTrue(validator.isValid("1foo") != null);
+        assertTrue(validator.isValid("foo%bar") != null);
+        assertTrue(ResourceNameValidator.create(true, Collections.singleton("foo"),
+                ResourceType.STRING).isValid("foo") != null);
+
+        // Only lowercase chars allowed in file-based resource names
+        assertTrue(ResourceNameValidator.create(true, ResourceFolderType.LAYOUT)
+                .isValid("Foo123_$") != null);
+
     }
 }
