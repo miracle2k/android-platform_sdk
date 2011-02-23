@@ -41,8 +41,8 @@ import com.android.ide.eclipse.adt.internal.editors.layout.LayoutEditor;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.GraphicalEditorPart;
 import com.android.ide.eclipse.adt.internal.editors.manifest.ManifestEditor;
 import com.android.ide.eclipse.adt.internal.editors.resources.descriptors.ResourcesDescriptors;
+import com.android.ide.eclipse.adt.internal.resources.ResourceNameValidator;
 import com.android.ide.eclipse.adt.internal.resources.configurations.FolderConfiguration;
-import com.android.ide.eclipse.adt.internal.resources.manager.FolderTypeRelationship;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFile;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolder;
@@ -485,24 +485,6 @@ public class Hyperlinks {
     private static String getServiceClassFqcn(XmlContext context) {
         // Same logic
         return getActivityClassFqcn(context);
-    }
-
-    /**
-     * Is this a resource that can be defined in any file within the "values" folder?
-     *
-     * @param type the resource type to check
-     * @return true if the given resource type can be represented as a value under the
-     *         values/ folder
-     */
-    public static boolean isValueResource(ResourceType type) {
-        ResourceFolderType[] folderTypes = FolderTypeRelationship.getRelatedFolders(type);
-        for (ResourceFolderType folderType : folderTypes) {
-            if (folderType == ResourceFolderType.VALUES) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -1181,8 +1163,7 @@ public class Hyperlinks {
                 });
 
                 // Is this something found in a values/ folder?
-                boolean valueResource = isValueResource(type);
-                //boolean fileResource = isFileResource(type);
+                boolean valueResource = ResourceNameValidator.isValueBasedResourceType(type);
 
                 for (ResourceFile file : matches) {
                     String folderName = file.getFolder().getFolder().getName();

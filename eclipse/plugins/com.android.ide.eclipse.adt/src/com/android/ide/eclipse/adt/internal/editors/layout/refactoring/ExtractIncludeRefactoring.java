@@ -38,7 +38,7 @@ import com.android.ide.eclipse.adt.internal.editors.layout.descriptors.LayoutDes
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.CanvasViewInfo;
 import com.android.ide.eclipse.adt.internal.editors.layout.gle2.DomUtilities;
 import com.android.ide.eclipse.adt.internal.editors.layout.uimodel.UiViewElementNode;
-import com.android.ide.eclipse.adt.internal.wizards.newxmlfile.ResourceNameValidator;
+import com.android.ide.eclipse.adt.internal.resources.ResourceNameValidator;
 import com.android.util.Pair;
 
 import org.eclipse.core.resources.IContainer;
