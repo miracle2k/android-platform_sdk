@@ -20,8 +20,10 @@ import static com.android.ide.eclipse.adt.AndroidConstants.DOT_XML;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
+import com.android.ide.eclipse.adt.internal.editors.xml.Hyperlinks;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
+import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.resources.ResourceType;
 
@@ -40,12 +42,21 @@ public class ResourceNameValidator implements IInputValidator {
     /** Set of existing names to check for conflicts with */
     private Set<String> mExisting;
 
+    /**
+     * True if the resource name being considered is a "file" based resource (where the
+     * resource name is the actual file name, rather than just a value attribute inside an
+     * XML file name of arbitrary name
+     */
+    private boolean mIsFileType;
+
     /** If true, allow .xml as a name suffix */
     private boolean mAllowXmlExtension;
 
-    private ResourceNameValidator(boolean allowXmlExtension, Set<String> existing) {
+    private ResourceNameValidator(boolean allowXmlExtension, Set<String> existing,
+            boolean isFileType) {
         mAllowXmlExtension = allowXmlExtension;
         mExisting = existing;
+        mIsFileType = isFileType;
     }
 
     public String isValid(String newText) {
@@ -71,7 +82,19 @@ public class ResourceNameValidator implements IInputValidator {
             for (int i = 1, n = newText.length(); i < n; i++) {
                 char c = newText.charAt(i);
                 if (!Character.isJavaIdentifierPart(c)) {
-                    return String.format("%1$c is not a valid resource name character", c);
+                    return String.format("'%1$c' is not a valid resource name character", c);
+                }
+            }
+
+            if (mIsFileType) {
+                // AAPT only allows lowercase+digits+_:
+                // "%s: Invalid file name: must contain only [a-z0-9_.]","
+                for (int i = 0, n = newText.length(); i < n; i++) {
+                    char c = newText.charAt(i);
+                    if (!(c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_') {
+                        return String.format(
+                          "File-based resource names must contain only lowercase a-z, 0-9, or _.");
+                    }
                 }
             }
 
@@ -97,10 +120,13 @@ public class ResourceNameValidator implements IInputValidator {
      *
      * @param allowXmlExtension if true, allow .xml to be entered as a suffix for the
      *            resource name
+     * @param type the resource type of the resource name being validated
      * @return a new {@link ResourceNameValidator}
      */
-    public static ResourceNameValidator create(boolean allowXmlExtension) {
-        return new ResourceNameValidator(allowXmlExtension, null);
+    public static ResourceNameValidator create(boolean allowXmlExtension,
+            ResourceFolderType type) {
+        boolean isFileType = type != ResourceFolderType.VALUES;
+        return new ResourceNameValidator(allowXmlExtension, null, isFileType);
     }
 
     /**
@@ -110,10 +136,13 @@ public class ResourceNameValidator implements IInputValidator {
      *            resource name
      * @param existing An optional set of names that already exist (and therefore will not
      *            be considered valid if entered as the new name)
+     * @param type the resource type of the resource name being validated
      * @return a new {@link ResourceNameValidator}
      */
-    public static ResourceNameValidator create(boolean allowXmlExtension, Set<String> existing) {
-        return new ResourceNameValidator(allowXmlExtension, existing);
+    public static ResourceNameValidator create(boolean allowXmlExtension, Set<String> existing,
+            ResourceType type) {
+        boolean isFileType = !Hyperlinks.isValueResource(type);
+        return new ResourceNameValidator(allowXmlExtension, existing, isFileType);
     }
 
     /**
@@ -135,6 +164,7 @@ public class ResourceNameValidator implements IInputValidator {
             existing.add(resource.getName());
         }
 
-        return new ResourceNameValidator(allowXmlExtension, existing);
+        boolean isFileType = !Hyperlinks.isValueResource(type);
+        return new ResourceNameValidator(allowXmlExtension, existing, isFileType);
     }
 }

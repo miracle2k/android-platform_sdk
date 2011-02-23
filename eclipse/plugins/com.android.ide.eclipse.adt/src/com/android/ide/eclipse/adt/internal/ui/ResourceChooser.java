@@ -33,6 +33,7 @@ import com.android.ide.eclipse.adt.internal.resources.ResourceHelper;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
+import com.android.ide.eclipse.adt.internal.wizards.newxmlfile.ResourceNameValidator;
 import com.android.resources.ResourceType;
 
 import org.eclipse.core.resources.IFile;
@@ -446,12 +447,13 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
     }
 
     /** Dialog asking for a Name/Value pair */
-    private static class NameValueDialog extends SelectionStatusDialog implements Listener {
+    private class NameValueDialog extends SelectionStatusDialog implements Listener {
         private org.eclipse.swt.widgets.Text mNameText;
         private org.eclipse.swt.widgets.Text mValueText;
         private String mInitialName;
         private String mName;
         private String mValue;
+        private ResourceNameValidator mValidator;
 
         public NameValueDialog(Shell parent, String initialName) {
             super(parent);
@@ -464,7 +466,7 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
             container.setLayout(new GridLayout(2, false));
             GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
             // Wide enough to accommodate the error label
-            gridData.widthHint = 400;
+            gridData.widthHint = 500;
             container.setLayoutData(gridData);
 
 
@@ -520,7 +522,15 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
             } else if (mValue.length() == 0) {
                 status = new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID, "Enter a value");
             } else {
-                status = new Status(IStatus.OK, AdtPlugin.PLUGIN_ID, null);
+                if (mValidator == null) {
+                    mValidator = ResourceNameValidator.create(false, mProject, mResourceType);
+                }
+                String error = mValidator.isValid(mName);
+                if (error != null) {
+                    status = new Status(IStatus.ERROR, AdtPlugin.PLUGIN_ID, error);
+                } else {
+                    status = new Status(IStatus.OK, AdtPlugin.PLUGIN_ID, null);
+                }
             }
             updateStatus(status);
         }

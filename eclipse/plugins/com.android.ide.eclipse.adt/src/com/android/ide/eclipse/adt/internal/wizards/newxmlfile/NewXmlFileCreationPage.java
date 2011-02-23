@@ -1255,12 +1255,6 @@ class NewXmlFileCreationPage extends WizardPage {
             error = "Please select an Android project.";
         }
 
-        // -- validate filename
-        if (error == null) {
-            String fileName = getFileName();
-            error = ResourceNameValidator.create(true).isValid(fileName);
-        }
-
         // -- validate type
         if (error == null) {
             TypeInfo type = getSelectedType();
@@ -1268,6 +1262,13 @@ class NewXmlFileCreationPage extends WizardPage {
             if (type == null) {
                 error = "One of the types must be selected (e.g. layout, values, etc.)";
             }
+        }
+
+        // -- validate filename
+        if (error == null) {
+            String fileName = getFileName();
+            ResourceFolderType folderType = getSelectedType().getResFolderType();
+            error = ResourceNameValidator.create(true, folderType).isValid(fileName);
         }
 
         // -- validate type API level
