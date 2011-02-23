@@ -16,7 +16,10 @@
 
 package com.android.ide.common.layout;
 
+import static com.android.ide.common.layout.LayoutConstants.ANDROID_URI;
 import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_GRAVITY;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_HEIGHT;
+import static com.android.ide.common.layout.LayoutConstants.ATTR_LAYOUT_WIDTH;
 
 import com.android.ide.common.api.DrawingStyle;
 import com.android.ide.common.api.DropFeedback;
@@ -25,10 +28,13 @@ import com.android.ide.common.api.IFeedbackPainter;
 import com.android.ide.common.api.IGraphics;
 import com.android.ide.common.api.INode;
 import com.android.ide.common.api.INodeHandler;
+import com.android.ide.common.api.IViewMetadata;
 import com.android.ide.common.api.IViewRule;
+import com.android.ide.common.api.InsertType;
 import com.android.ide.common.api.MenuAction;
 import com.android.ide.common.api.Point;
 import com.android.ide.common.api.Rect;
+import com.android.ide.common.api.IViewMetadata.FillPreference;
 import com.android.util.Pair;
 
 import java.util.List;
@@ -157,6 +163,23 @@ public class FrameLayoutRule extends BaseLayoutRule {
         actions.add(createMarginAction(parentNode, children));
         if (children.size() > 0) {
             actions.add(createGravityAction(children, ATTR_LAYOUT_GRAVITY));
+        }
+    }
+
+    @Override
+    public void onChildInserted(INode node, INode parent, InsertType insertType) {
+        // Look at the fill preferences and fill embedded layouts etc
+        String fqcn = node.getFqcn();
+        IViewMetadata metadata = mRulesEngine.getMetadata(fqcn);
+        if (metadata != null) {
+            FillPreference fill = metadata.getFillPreference();
+            String fillParent = getFillParentValueName();
+            if (fill.fillHorizontally(true)) {
+                node.setAttribute(ANDROID_URI, ATTR_LAYOUT_WIDTH, fillParent);
+            }
+            if (fill.fillVertically(false)) {
+                node.setAttribute(ANDROID_URI, ATTR_LAYOUT_HEIGHT, fillParent);
+            }
         }
     }
 }
