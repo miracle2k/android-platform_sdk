@@ -31,9 +31,9 @@ import com.android.ide.eclipse.adt.internal.refactorings.extractstring.ExtractSt
 import com.android.ide.eclipse.adt.internal.resources.IResourceRepository;
 import com.android.ide.eclipse.adt.internal.resources.ResourceHelper;
 import com.android.ide.eclipse.adt.internal.resources.ResourceItem;
+import com.android.ide.eclipse.adt.internal.resources.ResourceNameValidator;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
-import com.android.ide.eclipse.adt.internal.wizards.newxmlfile.ResourceNameValidator;
 import com.android.resources.ResourceType;
 
 import org.eclipse.core.resources.IFile;
@@ -208,8 +208,8 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
         String title = String.format("New %1$s...", mResourceType.getDisplayName());
         mNewButton.setText(title);
 
-        // We only support adding new strings right now
-        mNewButton.setEnabled(Hyperlinks.isValueResource(mResourceType));
+        // We only support adding new values right now
+        mNewButton.setEnabled(ResourceNameValidator.isValueBasedResourceType(mResourceType));
 
         mNewButton.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -219,7 +219,7 @@ public class ResourceChooser extends AbstractElementListSelectionDialog {
                 if (mResourceType == ResourceType.STRING) {
                     createNewString();
                 } else {
-                    assert Hyperlinks.isValueResource(mResourceType);
+                    assert ResourceNameValidator.isValueBasedResourceType(mResourceType);
                     String newName = createNewValue(mResourceType);
                     if (newName != null) {
                         // Recompute the "current resource" to select the new id

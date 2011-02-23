@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.ide.eclipse.adt.internal.wizards.newxmlfile;
+package com.android.ide.eclipse.adt.internal.resources;
 
 import static com.android.ide.eclipse.adt.AndroidConstants.DOT_XML;
 
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.AndroidConstants;
-import com.android.ide.eclipse.adt.internal.editors.xml.Hyperlinks;
+import com.android.ide.eclipse.adt.internal.resources.manager.FolderTypeRelationship;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResourceItem;
 import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceFolderType;
@@ -91,7 +91,7 @@ public class ResourceNameValidator implements IInputValidator {
                 // "%s: Invalid file name: must contain only [a-z0-9_.]","
                 for (int i = 0, n = newText.length(); i < n; i++) {
                     char c = newText.charAt(i);
-                    if (!(c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_') {
+                    if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')) {
                         return String.format(
                           "File-based resource names must contain only lowercase a-z, 0-9, or _.");
                     }
@@ -141,7 +141,7 @@ public class ResourceNameValidator implements IInputValidator {
      */
     public static ResourceNameValidator create(boolean allowXmlExtension, Set<String> existing,
             ResourceType type) {
-        boolean isFileType = !Hyperlinks.isValueResource(type);
+        boolean isFileType = isFileBasedResourceType(type);
         return new ResourceNameValidator(allowXmlExtension, existing, isFileType);
     }
 
@@ -164,7 +164,54 @@ public class ResourceNameValidator implements IInputValidator {
             existing.add(resource.getName());
         }
 
-        boolean isFileType = !Hyperlinks.isValueResource(type);
+        boolean isFileType = isFileBasedResourceType(type);
         return new ResourceNameValidator(allowXmlExtension, existing, isFileType);
+    }
+
+    /**
+     * Is this a resource that is defined in a file named by the resource plus the XML
+     * extension?
+     * <p>
+     * Some resource types can be defined <b>both</b> as a separate XML file as well as
+     * defined within a value XML file along with other properties. This method will
+     * return true for these resource types as well. In other words, a ResourceType can
+     * return true for both {@link #isValueBasedResourceType} and
+     * {@link #isFileBasedResourceType}.
+     *
+     * @param type the resource type to check
+     * @return true if the given resource type is stored in a file named by the resource
+     */
+    public static boolean isFileBasedResourceType(ResourceType type) {
+        ResourceFolderType[] folderTypes = FolderTypeRelationship.getRelatedFolders(type);
+        for (ResourceFolderType folderType : folderTypes) {
+            if (folderType != ResourceFolderType.VALUES) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Is this a resource that can be defined in any file within the "values" folder?
+     * <p>
+     * Some resource types can be defined <b>both</b> as a separate XML file as well
+     * as defined within a value XML file. This method will return true for these types
+     * as well. In other words, a ResourceType can return true for both
+     * {@link #isValueBasedResourceType} and {@link #isFileBasedResourceType}.
+     *
+     * @param type the resource type to check
+     * @return true if the given resource type can be represented as a value under the
+     *         values/ folder
+     */
+    public static boolean isValueBasedResourceType(ResourceType type) {
+        ResourceFolderType[] folderTypes = FolderTypeRelationship.getRelatedFolders(type);
+        for (ResourceFolderType folderType : folderTypes) {
+            if (folderType == ResourceFolderType.VALUES) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
