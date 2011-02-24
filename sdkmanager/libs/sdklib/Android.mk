@@ -14,4 +14,6 @@
 # limitations under the License.
 #
 SDKLIB_LOCAL_DIR := $(call my-dir)
-include $(SDKLIB_LOCAL_DIR)/src/Android.mk
+
+# Build all sub-directories
+include $(call all-makefiles-under,$(SDKLIB_LOCAL_DIR))

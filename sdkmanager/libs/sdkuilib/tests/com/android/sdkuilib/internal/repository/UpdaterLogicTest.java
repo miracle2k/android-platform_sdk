@@ -21,16 +21,13 @@ import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.repository.Archive;
 import com.android.sdklib.internal.repository.ITaskFactory;
-import com.android.sdklib.internal.repository.ITaskMonitor;
 import com.android.sdklib.internal.repository.MockAddonPackage;
 import com.android.sdklib.internal.repository.MockBrokenPackage;
 import com.android.sdklib.internal.repository.MockPlatformPackage;
 import com.android.sdklib.internal.repository.MockPlatformToolPackage;
 import com.android.sdklib.internal.repository.MockToolPackage;
 import com.android.sdklib.internal.repository.Package;
-import com.android.sdklib.internal.repository.SdkRepoSource;
 import com.android.sdklib.internal.repository.SdkSource;
-import com.android.sdklib.internal.repository.SdkSourceCategory;
 import com.android.sdklib.internal.repository.SdkSources;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 
