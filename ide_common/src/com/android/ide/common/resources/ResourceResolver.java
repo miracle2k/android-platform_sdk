@@ -537,7 +537,6 @@ public class ResourceResolver extends RenderResources {
                     null /*data*/);
         }
 
-        assert false;
         return null;
     }
 }
