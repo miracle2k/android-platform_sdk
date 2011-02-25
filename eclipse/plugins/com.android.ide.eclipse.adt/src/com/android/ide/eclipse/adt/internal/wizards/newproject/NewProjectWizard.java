@@ -24,10 +24,10 @@ import com.android.ide.eclipse.adt.internal.project.ProjectHelper;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.wizards.newproject.NewProjectCreationPage.IMainInfo;
 import com.android.ide.eclipse.adt.internal.wizards.newproject.NewTestProjectCreationPage.TestInfo;
+import com.android.io.StreamException;
 import com.android.resources.Density;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.StreamException;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;

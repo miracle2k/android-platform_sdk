@@ -16,6 +16,7 @@
 
 package com.android.sdklib.internal.avd;
 
+import com.android.io.FileWrapper;
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
@@ -24,7 +25,6 @@ import com.android.sdklib.SdkConstants;
 import com.android.sdklib.SdkManager;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo.AvdStatus;
 import com.android.sdklib.internal.project.ProjectProperties;
-import com.android.sdklib.io.FileWrapper;
 import com.android.util.Pair;
 
 import java.io.BufferedReader;

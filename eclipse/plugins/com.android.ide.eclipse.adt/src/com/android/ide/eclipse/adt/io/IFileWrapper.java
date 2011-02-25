@@ -16,9 +16,9 @@
 
 package com.android.ide.eclipse.adt.io;
 
-import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.IAbstractFolder;
-import com.android.sdklib.io.StreamException;
+import com.android.io.IAbstractFile;
+import com.android.io.IAbstractFolder;
+import com.android.io.StreamException;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;

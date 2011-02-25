@@ -19,9 +19,9 @@ package com.android.ide.eclipse.adt.internal.project;
 import com.android.ide.eclipse.adt.AdtPlugin;
 import com.android.ide.eclipse.adt.internal.project.XmlErrorHandler.XmlErrorListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
-import com.android.sdklib.io.FileWrapper;
-import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.StreamException;
+import com.android.io.FileWrapper;
+import com.android.io.IAbstractFile;
+import com.android.io.StreamException;
 import com.android.sdklib.xml.AndroidManifestParser;
 import com.android.sdklib.xml.ManifestData;
 
