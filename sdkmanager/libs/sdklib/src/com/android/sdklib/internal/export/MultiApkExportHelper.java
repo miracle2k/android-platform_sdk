@@ -16,10 +16,10 @@
 
 package com.android.sdklib.internal.export;
 
+import com.android.io.FileWrapper;
+import com.android.io.IAbstractFile;
+import com.android.io.StreamException;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.FileWrapper;
-import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.StreamException;
 import com.android.sdklib.xml.AndroidManifestParser;
 import com.android.sdklib.xml.ManifestData;
 import com.android.sdklib.xml.ManifestData.SupportsScreens;

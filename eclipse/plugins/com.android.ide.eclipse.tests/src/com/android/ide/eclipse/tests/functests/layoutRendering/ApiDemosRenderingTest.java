@@ -39,6 +39,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.ProjectResources;
 import com.android.ide.eclipse.adt.internal.resources.manager.ResourceManager;
 import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.tests.SdkTestCase;
+import com.android.io.FolderWrapper;
 import com.android.resources.Density;
 import com.android.resources.Keyboard;
 import com.android.resources.KeyboardState;
@@ -50,7 +51,6 @@ import com.android.resources.ScreenSize;
 import com.android.resources.TouchScreen;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.FolderWrapper;
 import com.android.util.Pair;
 
 import org.kxml2.io.KXmlParser;

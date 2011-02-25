@@ -43,9 +43,9 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.internal.ui.EclipseUiHelper;
 import com.android.ide.eclipse.ddms.DdmsPlugin;
+import com.android.io.StreamException;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.StreamException;
 import com.android.sdkstats.SdkStatsService;
 
 import org.eclipse.core.resources.IFile;

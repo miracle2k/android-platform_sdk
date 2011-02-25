@@ -16,6 +16,7 @@
 
 package com.android.sdkuilib.internal.widgets;
 
+import com.android.io.FileWrapper;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.ISdkLog;
@@ -27,7 +28,6 @@ import com.android.sdklib.internal.avd.AvdManager.AvdConflict;
 import com.android.sdklib.internal.avd.AvdManager.AvdInfo;
 import com.android.sdklib.internal.avd.HardwareProperties.HardwareProperty;
 import com.android.sdklib.internal.project.ProjectProperties;
-import com.android.sdklib.io.FileWrapper;
 import com.android.sdkuilib.internal.repository.icons.ImageFactory;
 import com.android.sdkuilib.ui.GridDialog;
 import com.android.util.Pair;

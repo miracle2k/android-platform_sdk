@@ -16,6 +16,7 @@
 
 package com.android.sdkmanager;
 
+import com.android.io.FileWrapper;
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.IAndroidTarget;
@@ -31,7 +32,6 @@ import com.android.sdklib.internal.project.ProjectCreator;
 import com.android.sdklib.internal.project.ProjectCreator.OutputLevel;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
-import com.android.sdklib.io.FileWrapper;
 import com.android.sdklib.repository.SdkRepoConstants;
 import com.android.sdklib.xml.AndroidXPathFactory;
 import com.android.sdkmanager.internal.repository.AboutPage;

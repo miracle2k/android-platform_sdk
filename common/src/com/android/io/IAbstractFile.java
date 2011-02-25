@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.sdklib.io;
+package com.android.io;
 
 import java.io.InputStream;
 import java.io.OutputStream;

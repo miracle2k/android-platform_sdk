@@ -18,11 +18,11 @@ package com.android.sdklib;
 
 import com.android.annotations.VisibleForTesting;
 import com.android.annotations.VisibleForTesting.Visibility;
+import com.android.io.FileWrapper;
 import com.android.prefs.AndroidLocation;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion.AndroidVersionException;
 import com.android.sdklib.internal.project.ProjectProperties;
-import com.android.sdklib.io.FileWrapper;
 import com.android.util.Pair;
 
 import java.io.File;

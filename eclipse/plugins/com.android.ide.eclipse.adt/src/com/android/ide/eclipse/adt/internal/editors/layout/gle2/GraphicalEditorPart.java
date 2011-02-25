@@ -66,12 +66,12 @@ import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk.ITargetChangeListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
+import com.android.io.IAbstractFile;
+import com.android.io.StreamException;
 import com.android.resources.Density;
 import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.StreamException;
 import com.android.sdklib.xml.AndroidManifest;
 
 import org.eclipse.core.resources.IFile;

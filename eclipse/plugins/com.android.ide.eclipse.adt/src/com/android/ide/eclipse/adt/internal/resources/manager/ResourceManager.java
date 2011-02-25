@@ -25,13 +25,13 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IProjectListener;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
+import com.android.io.FolderWrapper;
+import com.android.io.IAbstractFile;
+import com.android.io.IAbstractFolder;
+import com.android.io.IAbstractResource;
 import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.FolderWrapper;
-import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.IAbstractFolder;
-import com.android.sdklib.io.IAbstractResource;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;

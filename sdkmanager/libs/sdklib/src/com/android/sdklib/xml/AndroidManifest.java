@@ -16,10 +16,10 @@
 
 package com.android.sdklib.xml;
 
+import com.android.io.IAbstractFile;
+import com.android.io.IAbstractFolder;
+import com.android.io.StreamException;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.IAbstractFolder;
-import com.android.sdklib.io.StreamException;
 
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;

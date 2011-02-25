@@ -52,12 +52,12 @@ import com.android.ide.eclipse.adt.internal.sdk.AndroidTargetData;
 import com.android.ide.eclipse.adt.internal.sdk.Sdk;
 import com.android.ide.eclipse.adt.io.IFileWrapper;
 import com.android.ide.eclipse.adt.io.IFolderWrapper;
+import com.android.io.FileWrapper;
+import com.android.io.IAbstractFile;
+import com.android.io.IAbstractFolder;
 import com.android.resources.ResourceType;
 import com.android.sdklib.IAndroidTarget;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.FileWrapper;
-import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.IAbstractFolder;
 import com.android.util.Pair;
 
 import org.apache.xerces.parsers.DOMParser;

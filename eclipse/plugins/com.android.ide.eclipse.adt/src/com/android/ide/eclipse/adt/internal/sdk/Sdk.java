@@ -31,6 +31,7 @@ import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonit
 import com.android.ide.eclipse.adt.internal.resources.manager.GlobalProjectMonitor.IResourceEventListener;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState.LibraryDifference;
 import com.android.ide.eclipse.adt.internal.sdk.ProjectState.LibraryState;
+import com.android.io.StreamException;
 import com.android.prefs.AndroidLocation.AndroidLocationException;
 import com.android.sdklib.AndroidVersion;
 import com.android.sdklib.IAndroidTarget;
@@ -41,7 +42,6 @@ import com.android.sdklib.internal.avd.AvdManager;
 import com.android.sdklib.internal.project.ProjectProperties;
 import com.android.sdklib.internal.project.ProjectPropertiesWorkingCopy;
 import com.android.sdklib.internal.project.ProjectProperties.PropertyType;
-import com.android.sdklib.io.StreamException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;

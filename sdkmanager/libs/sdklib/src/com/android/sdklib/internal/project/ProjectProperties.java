@@ -16,12 +16,12 @@
 
 package com.android.sdklib.internal.project;
 
+import com.android.io.FolderWrapper;
+import com.android.io.IAbstractFile;
+import com.android.io.IAbstractFolder;
+import com.android.io.StreamException;
 import com.android.sdklib.ISdkLog;
 import com.android.sdklib.SdkConstants;
-import com.android.sdklib.io.FolderWrapper;
-import com.android.sdklib.io.IAbstractFile;
-import com.android.sdklib.io.IAbstractFolder;
-import com.android.sdklib.io.StreamException;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
