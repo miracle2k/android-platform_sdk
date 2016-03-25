@@ -394,8 +394,11 @@ final class AdbHelper {
 
                 count = adbChan.read(buf);
                 if (count < 0) {
-                    // we're at the end, we flush the output
-                    rcvr.flush();
+                    // we're at the end, we flush the output if exist
+                    if(rcvr != null) {
+                        rcvr.flush();
+                    }
+                    
                     Log.v("ddms", "execute '" + command + "' on '" + device + "' : EOF hit. Read: "
                             + count);
                     break;
